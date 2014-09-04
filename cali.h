@@ -6,7 +6,7 @@
 #ifndef HAIL_HAIL_H
 #define HAIL_HAIL_H
 
-#include "hail_types.h"
+#include "cali_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -17,21 +17,58 @@ extern "C" {
  * --- Attributes ------------------------------------------------------
  */
 
+/**
+ * Create an attribute with a predefined datatype
+ * @param name Name of the attribute
+ * @param type Attribute datatype
+ * @param properties Attribute properties
+ * @return Attribute handle
+ */
+
 ctx_attr_h 
 ctx_create_attribute    (const char*         name, 
                          ctx_attr_type       type, 
                          ctx_attr_properties properties);
+
+
+/**
+ * Create an attribute with a user-defined datatype
+ * @param name Name of the attribute
+ * @param typesize Size of the datatype
+ * @param properties Attribute properties
+ * @return Attribute handle
+ */
 
 ctx_attr_h 
 ctx_create_usr_attribute(const char*         name, 
                          size_t              typesize, 
                          ctx_attr_properties properties);
 
+/**
+ * Find attribute by name 
+ * @param name Name of attribute
+ * @return Attribute handle, or CTX_INV_HANDLE if attribute was not found
+ */
+
 ctx_attr_h
 ctx_find_attribute      (const char*         name);
 
+/**
+ * Get name of attribute
+ * @param attr Attribute handle
+ * @return Attribute name
+ */
+
 const char*
 ctx_get_attribute_name  (ctx_attr_h          attr);
+
+/**
+ * Get attribute datatype and datatype size
+ * @param attr Attribute handle
+ * @param typesize If not NULL, the call writes the datatype size to this 
+ * address
+ * @return Attribute name
+ */
 
 ctx_attr_type
 ctx_get_attribute_type  (ctx_attr_h          attr,
@@ -42,8 +79,20 @@ ctx_get_attribute_type  (ctx_attr_h          attr,
  * --- Environment -----------------------------------------------------
  */
 
+/**
+ * Get the environment handle of the execution scope (e.g., thread) in which
+ * this function is called
+ * @return Environment handle
+ */
+
 ctx_env_h
 ctx_get_environment();
+
+/**
+ * Create a new environment for the local scope of execution (e.g., thread) by
+ * cloning the current context state of the enclosing environment.
+ * @return CTX_SUCCESS if the environment was cloned successfully
+ */
 
 ctx_err
 ctx_clone_environment(ctx_env_h  env, 
