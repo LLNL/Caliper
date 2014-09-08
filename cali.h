@@ -90,7 +90,7 @@ ctx_get_environment();
 
 /**
  * Create a new environment for the local scope of execution (e.g., thread) by
- * cloning the current context state of the enclosing environment.
+ * cloning the current context state of the enclosing environment. (Tool API)
  * @return CTX_SUCCESS if the environment was cloned successfully
  */
 
@@ -121,28 +121,60 @@ ctx_try_get_context  (ctx_env_h  env,
  * --- Low-level instrumentation API -----------------------------------
  */
 
+/**
+ * Begins scope of value @param value for attribute @param attr in environment @env.
+ * The new value is nested under the current open scopes of @param attr. 
+ */
 ctx_err
 ctx_begin    (ctx_env_h  env,
               ctx_attr_h attr, 
               void*      value);
+
+/**
+ * Begins scope @param value for attribute @param attr in environment @env.
+ * May not succeed if concurrent accesses to Caliper data take place. 
+ * @return CTX_SUCCESS if successful
+ */
 
 ctx_err
 ctx_try_begin(ctx_env_h  env,
               ctx_attr_h attr, 
               void*      value);
 
+/**
+ * Ends scope of the innermost value for attribute @param attr in environment @env. 
+ */
+
 ctx_err
 ctx_end      (ctx_env_h  env,
               ctx_attr_h attr);
+
+/**
+ * Ends scope of the innermost value for attribute @param attr in environment @env. 
+ * May not succeed if concurrent accesses to Caliper data take place. 
+ * @return CTX_SUCCESS if successful
+ */
 
 ctx_err
 ctx_try_end  (ctx_env_h  env,
               ctx_attr_h attr);
 
+/**
+ * Ends scope of the current innermost value and begins scope of @param value for attribute
+ * @param attr in environment @param env.
+ */
+
 ctx_err  
 ctx_set      (ctx_env_h  env,
               ctx_attr_h attr, 
               void*      value);
+
+/**
+ * Ends scope of the current innermost value and begins scope of @param value for attribute
+ * @param attr in environment @param env.
+ * May not succeed if concurrent accesses to Caliper data take place. 
+ * @return CTX_SUCCESS if successful
+ */
 
 ctx_err  
 ctx_try_set  (ctx_env_h  env,
