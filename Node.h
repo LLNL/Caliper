@@ -8,49 +8,43 @@
 
 #include "cali_types.h"
 
+#include "IdType.h"
+
 #include "util/tree.hpp"
 
 
-namespace cali {
-
-//
-// Forward declarations
-
-
+namespace cali 
+{
 
 //
 // --- Node base class 
 //
 
-class Node : public IdType {
-    ctx_id_t                  m_attribute;
+class Node : public IdType, public util::IntrusiveTree<Node> 
+{
+    util::IntrusiveTree<Node>::Node m_treenode;
 
-    union {
-        int64_t  int64;
-        uint64_t uint64;
-        double   dbl;
-        char[8]  string8;
-        char*    string256;
-        void*    data;
-    }                         m_value;
+    ctx_id_t    m_attribute;
 
-    util::IntrusiveTree<Node> m_tree;
+    std::size_t m_datasize;
+    void*       m_data;
 
 public:
 
-    Node(ctx_id_t id, std::size_t typesize);
+    Node(ctx_id_t id, ctx_id_t attr, void* data, size_t size);
+
+    Node(const Node&) = delete;
+
+    Node& operator = (const Node&) = delete;
 
     ~Node();
 
-    void set_attribute(ctx_id_t attr) {
-        m_attribute = attr;
-    }
+    bool equals(ctx_id_t attr, void* data, size_t size) const;
 
-    ctx_id_t attribute() const {
-        return m_attribute;
-    }
+    ctx_id_t attribute() const { return m_attribute; }
 
-    const void* value() const { return m_value.data } ;
+    size_t size() const        { return m_datasize;  }
+    const void* value() const  { return m_data;      }
 };
 
 } // namespace cali

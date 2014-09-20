@@ -6,8 +6,12 @@
 #ifndef CALI_CALIPER_H
 #define CALI_CALIPER_H
 
-#include <memory>
+#include "cali_types.h"
 
+#include "Attribute.h"
+
+#include <memory>
+#include <utility>
 
 namespace cali
 {
@@ -25,27 +29,37 @@ class Caliper
 
 public:
 
-    void addNewAttribute(const Attribute& attr);
+    Caliper(const Caliper&) = delete;
+
+    Caliper& operator = (const Caliper&) = delete;
+
+
+    // --- Context API
+
+    ctx_id_t current_environment() const;
+
+    ctx_id_t clone_environment(ctx_id_t env);
+
+    std::size_t context_size(ctx_id_t env) const;
+    std::size_t get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const;
+
+    ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size);
+    ctx_err end(ctx_id_t env, const Attribute& attr);
+    ctx_err set(ctx_id_t env, const Attribute& attr, const void* data, size_t size);
+
+
+    // --- Attribute API
+
+    std::pair<bool, Attribute> get_attribute(ctx_id_t id) const;
+    std::pair<bool, Attribute> get_attribute(const std::string& name) const;
+
+    Attribute create_attribute(const std::string& name, ctx_attr_properties prop, ctx_attr_type type);
+
+
+    // --- Caliper singleton API
 
     static Caliper* instance();
-
     static Caliper* try_instance();
-
-    static ctx_id_t get_new_node_id() { 
-        return get_new_id() * 2 + 1;
-    }
-
-    static ctx_id_t get_new_attr_id() {
-        return get_new_id() * 2;
-    }
-
-    static bool is_node_id(ctx_id_t id) {
-        return id % 2 == 1;
-    }
-
-    static bool is_attr_id(ctx_id_t id) {
-        return id % 2 == 0;
-    }
 };
 
 } // namespace cali
