@@ -66,7 +66,7 @@ struct Caliper::CaliperImpl
 
     // --- helpers
 
-    Node* create_node(ctx_id_t attr, void* data, size_t size) {
+    Node* create_node(ctx_id_t attr, const void* data, size_t size) {
         const size_t align = 8;
         const size_t pad   = align - sizeof(Node)%align;
 
@@ -82,7 +82,7 @@ struct Caliper::CaliperImpl
 
     // --- interface
 
-    ctx_err begin(ctx_id_t env, const Attribute& attr, void* data, size_t size) {
+    ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
@@ -133,7 +133,7 @@ struct Caliper::CaliperImpl
         return CTX_SUCCESS;
     }
 
-    ctx_err set(ctx_id_t env, const Attribute& attr, void* data, size_t size) {
+    ctx_err set(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
@@ -211,7 +211,7 @@ Caliper::get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const
 }
 
 ctx_err 
-Caliper::begin(ctx_id_t env, const Attribute& attr, void* data, size_t size)
+Caliper::begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
 {
     return mP->begin(env, attr, data, size);
 }
@@ -223,7 +223,7 @@ Caliper::end(ctx_id_t env, const Attribute& attr)
 }
 
 ctx_err 
-Caliper::set(ctx_id_t env, const Attribute& attr, void* data, size_t size)
+Caliper::set(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
 {
     return mP->set(env, attr, data, size);
 }

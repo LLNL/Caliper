@@ -74,7 +74,7 @@ MemoryPool::MemoryPool(size_t bytes)
 
 MemoryPool::~MemoryPool()
 {
-    mP->reset();
+    mP.reset();
 }
 
 void* MemoryPool::allocate(size_t bytes)

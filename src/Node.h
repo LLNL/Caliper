@@ -39,7 +39,7 @@ public:
 
     ~Node();
 
-    bool equals(ctx_id_t attr, void* data, size_t size) const;
+    bool equals(ctx_id_t attr, const void* data, size_t size) const;
 
     ctx_id_t attribute() const { return m_attribute; }
 

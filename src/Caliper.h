@@ -29,6 +29,8 @@ class Caliper
 
 public:
 
+    ~Caliper();
+
     Caliper(const Caliper&) = delete;
 
     Caliper& operator = (const Caliper&) = delete;
