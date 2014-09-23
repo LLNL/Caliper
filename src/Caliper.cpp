@@ -83,10 +83,15 @@ struct Caliper::CaliperImpl
     // --- interface
 
     ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
+        ctx_err ret = CTX_EINV;
+
+        if (attr == Attribute::invalid)
+            return CTX_EINV;
+
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
-            m_context.set(env, attr.id(), val, attr.clone());
+            ret = m_context.set(env, attr.id(), val, attr.is_global());
         } else {
             auto p = m_context.get(env, attr.id());
 
@@ -103,15 +108,20 @@ struct Caliper::CaliperImpl
                     parent->append(node);
             }
 
-            m_context.set(env, attr.id(), node->id(), attr.clone());
+            ret = m_context.set(env, attr.id(), node->id(), attr.is_global());
         }
 
-        return CTX_SUCCESS;
+        return ret;
     }
 
     ctx_err end(ctx_id_t env, const Attribute& attr) {
+        if (attr == Attribute::invalid)
+            return CTX_EINV;
+
+        ctx_err ret = CTX_SUCCESS;
+
         if (attr.store_as_value())
-            m_context.unset(env, attr.id());
+            ret = m_context.unset(env, attr.id());
         else {
             auto p = m_context.get(env, attr.id());
 
@@ -125,19 +135,24 @@ struct Caliper::CaliperImpl
                 node = node->parent();
 
             if (node)
-                m_context.set(env, node->attribute(), node->id());
+                ret = m_context.set(env, node->attribute(), node->id());
             else
-                m_context.unset(env, attr.id());
+                ret = m_context.unset(env, attr.id());
         }
 
-        return CTX_SUCCESS;
+        return ret;
     }
 
     ctx_err set(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
+        if (attr == Attribute::invalid)
+            return CTX_EINV;
+
+        ctx_err ret = CTX_EINV;
+
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
-            m_context.set(env, attr.id(), val, attr.clone());
+            ret = m_context.set(env, attr.id(), val, attr.is_global());
         } else {
             auto p = m_context.get(env, attr.id());
 
@@ -154,10 +169,10 @@ struct Caliper::CaliperImpl
                     parent->append(node);
             }
 
-            m_context.set(env, attr.id(), node->id(), attr.clone());
+            ret = m_context.set(env, attr.id(), node->id(), attr.is_global());
         }
 
-        return CTX_SUCCESS;
+        return ret;
     }
 };
 
@@ -244,9 +259,9 @@ Caliper::get_attribute(const std::string& name) const
 }
 
 Attribute 
-Caliper::create_attribute(const std::string& name, ctx_attr_properties prop, ctx_attr_type type)
+Caliper::create_attribute(const std::string& name, ctx_attr_type type, int prop)
 {
-    return mP->m_attributes.create(name, prop, type);
+    return mP->m_attributes.create(name, type, prop);
 }
 
 

@@ -18,36 +18,37 @@ namespace cali
 
     class Attribute : public IdType {
         std::string         m_name;
-        ctx_attr_properties m_properties;
+        int                 m_properties;
         ctx_attr_type       m_type;
 
         Attribute(ctx_id_t            id,
                   const std::string&  name, 
-                  ctx_attr_properties properties,
-                  ctx_attr_type       type);
+                  ctx_attr_type       type,
+                  int                 properties);
 
         friend class AttributeStore;
 
     public:
 
         Attribute(const Attribute&) = default;
-
         Attribute(Attribute&&) = default;
+
+        Attribute& operator = (const Attribute&) = default;
 
         ctx_attr_type type() const {
             return m_type;
         }
 
         bool store_as_value() const { 
-            return m_properties & CTX_ATTR_BYVALUE; 
+            return m_properties & CTX_ATTR_ASVALUE; 
         } 
 
         bool is_autocombineable() const   { 
-            return !store_as_value() && (m_properties & CTX_ATTR_AUTOCOMBINE);
+            return !store_as_value() && !(m_properties & CTX_ATTR_NOMERGE);
         } 
 
-        bool clone() const {
-            return !(m_properties & CTX_ATTR_NOCLONE);
+        bool is_global() const {
+            return m_properties & CTX_ATTR_GLOBAL;
         }
 
         static Attribute invalid;

@@ -12,6 +12,7 @@ set(CALIPER_HEADERS
     cali_types.h)
 
 set(CALIPER_SOURCES
+    Annotation.cpp
     Attribute.cpp
     AttributeStore.cpp
     Caliper.cpp

@@ -30,10 +30,7 @@ public:
     std::pair<bool, Attribute> get(ctx_id_t id) const;
     std::pair<bool, Attribute> get(const std::string& name) const;
 
-    Attribute create(const std::string&  name, 
-                     ctx_attr_properties properties = CTX_ATTR_AUTOCOMBINE,
-                     ctx_attr_type       type = CTX_TYPE_USR);
-
+    Attribute create(const std::string&  name, ctx_attr_type type, int properties);
 };
 
 }; // namespace cali

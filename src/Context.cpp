@@ -75,9 +75,9 @@ struct Context::ContextImpl
         return make_pair(true, it->second);
     }
 
-    void set (ctx_id_t env, ctx_id_t key, uint64_t value, bool /* clone */) {
+    ctx_err set (ctx_id_t env, ctx_id_t key, uint64_t value, bool /* global */) {
         if (!(env < m_environments.size()))
-            return;
+            return CTX_EINV;
 
         auto env_p = m_environments.begin() + env;
         auto it = lower_bound(env_p->begin(), env_p->end(), make_pair(key, uint64_t(0)));
@@ -86,17 +86,21 @@ struct Context::ContextImpl
             it->second = value;
         else
             env_p->insert(it, make_pair(key, value));
+
+        return CTX_SUCCESS;
     }
 
-    void unset(ctx_id_t env, uint64_t key) {
+    ctx_err unset(ctx_id_t env, uint64_t key) {
         if (!(env < m_environments.size()))
-            return;
+            return CTX_EINV;
 
         auto env_p = m_environments.begin() + env;
         auto it = lower_bound(env_p->begin(), env_p->end(), make_pair(key, uint64_t(0)));
 
         if (it != env_p->end() && it->first == key)
             env_p->erase(it);
+
+        return CTX_SUCCESS;
     }
 };
 
@@ -135,12 +139,12 @@ pair<bool, uint64_t> Context::get(ctx_id_t env, ctx_id_t key) const
     return mP->get(env, key);
 }
 
-void Context::set(ctx_id_t env, ctx_id_t key, uint64_t value, bool clone)
+ctx_err Context::set(ctx_id_t env, ctx_id_t key, uint64_t value, bool global)
 {
-    mP->set(env, key, value, clone);
+    return mP->set(env, key, value, global);
 }
 
-void Context::unset(ctx_id_t env, ctx_id_t key)
+ctx_err Context::unset(ctx_id_t env, ctx_id_t key)
 {
-    mP->unset(env, key);
+    return mP->unset(env, key);
 }

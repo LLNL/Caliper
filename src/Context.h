@@ -31,8 +31,8 @@ public:
     std::size_t get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const;
     
     std::pair<bool, uint64_t> get(ctx_id_t env, ctx_id_t key) const;
-    void set(ctx_id_t env, ctx_id_t key, uint64_t value, bool clone = true);
-    void unset(ctx_id_t env, ctx_id_t key);
+    ctx_err set(ctx_id_t env, ctx_id_t key, uint64_t value, bool global = false);
+    ctx_err unset(ctx_id_t env, ctx_id_t key);
 };
 
 } // namespace cali

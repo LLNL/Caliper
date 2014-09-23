@@ -17,9 +17,7 @@ class AttributeStore::AttributeStoreImpl
 
 public:
 
-    Attribute create(const std::string&  name, 
-                     ctx_attr_properties properties,
-                     ctx_attr_type       type) {
+    Attribute create(const std::string&  name, ctx_attr_type type, int properties) {
         auto it = namelist.find(name);
 
         if (it != namelist.end())
@@ -28,7 +26,7 @@ public:
         ctx_id_t id = attributes.size();
 
         namelist.insert(make_pair(name, id));
-        attributes.push_back(Attribute(id, name, properties, type));
+        attributes.push_back(Attribute(id, name, type, properties));
 
         return attributes.back();
     }
@@ -75,7 +73,7 @@ pair<bool, Attribute> AttributeStore::get(const std::string& name) const
     return mP->get(name);
 }
 
-Attribute AttributeStore::create(const std::string& name, ctx_attr_properties properties, ctx_attr_type type)
+Attribute AttributeStore::create(const std::string& name, ctx_attr_type type, int properties)
 {
-    return mP->create(name, properties, type);
+    return mP->create(name, type, properties);
 }

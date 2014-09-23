@@ -26,18 +26,19 @@ typedef uint64_t ctx_id_t;
 /* } ctx_entry_t; */
 
 typedef enum {
-  CTX_TYPE_USR = 0,
-  CTX_TYPE_INT,
-  CTX_TYPE_STRING,
-  CTX_TYPE_ADDR,
-  CTX_TYPE_DOUBLE,
+  CTX_TYPE_INV    = -1,
+  CTX_TYPE_USR    = 0,
+  CTX_TYPE_INT    = 1,
+  CTX_TYPE_STRING = 2,
+  CTX_TYPE_ADDR   = 3,
+  CTX_TYPE_DOUBLE = 4
 } ctx_attr_type;
 
 typedef enum {
-  CTX_ATTR_BASIC       = 0,
-  CTX_ATTR_BYVALUE     = (1 << 0),
-  CTX_ATTR_AUTOCOMBINE = (1 << 1),
-  CTX_ATTR_NOCLONE     = (1 << 2)
+  CTX_ATTR_DEFAULT     = 0,
+  CTX_ATTR_ASVALUE     = 1,
+  CTX_ATTR_NOMERGE     = 2,
+  CTX_ATTR_GLOBAL      = 4
 } ctx_attr_properties;
 
 typedef enum {
