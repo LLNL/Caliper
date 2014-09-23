@@ -118,26 +118,34 @@ struct Caliper::CaliperImpl
         if (attr == Attribute::invalid)
             return CTX_EINV;
 
-        ctx_err ret = CTX_SUCCESS;
+        ctx_err  ret = CTX_EINV;
+        ctx_id_t key = attr.id();
 
         if (attr.store_as_value())
-            ret = m_context.unset(env, attr.id());
+            ret = m_context.unset(env, key);
         else {
-            auto p = m_context.get(env, attr.id());
+            auto p = m_context.get(env, key);
 
             if (!p.first)
                 return CTX_EINV;
 
             Node* node = m_nodes[p.second];
 
-            // For now, revert to parent of node with same attribute
-            while (node && node->attribute() != attr.id())
-                node = node->parent();
+            if (node->attribute() != attr.id()) {
+                // For now, just continue before first node with this attribute
+                while (node && node->attribute() != attr.id())
+                    node = node->parent();
+
+                if (!node)
+                    return CTX_EINV;
+            }
+
+            node = node->parent();
 
             if (node)
-                ret = m_context.set(env, node->attribute(), node->id());
+                ret = m_context.set(env, key, node->id());
             else
-                ret = m_context.unset(env, attr.id());
+                ret = m_context.unset(env, key);
         }
 
         return ret;
