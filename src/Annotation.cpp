@@ -11,7 +11,7 @@ using namespace cali;
 
 // --- Constructors / destructor
 
-Annotation::Annotation(const std::string& name, Option opt)
+Annotation::Annotation(const string& name, int opt)
     : m_attr { Attribute::invalid }, m_name { name }, m_opt { opt }, m_depth { 0 }
 {
     auto p = Caliper::instance()->get_attribute(name);
@@ -39,7 +39,7 @@ ctx_err Annotation::begin(double data)
     return begin(CTX_TYPE_DOUBLE, &data, sizeof(double));
 }
 
-ctx_err Annotation::begin(const std::string& data)
+ctx_err Annotation::begin(const string& data)
 {
     return begin(CTX_TYPE_STRING, data.data(), data.size());
 }
@@ -76,10 +76,12 @@ ctx_err Annotation::set(double data)
     return set(CTX_TYPE_DOUBLE, &data, sizeof(double));
 }
 
-ctx_err Annotation::set(const std::string& data)
+ctx_err Annotation::set(const string& data)
 {
     return set(CTX_TYPE_STRING, data.c_str(), data.size());
 }
+
+// --- set() workhorse
 
 ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
 {
@@ -97,6 +99,32 @@ ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
         ++m_depth;
 
     return ret;
+}
+
+// --- set() static overloads
+
+pair<Annotation, ctx_err> Annotation::set(const string& name, int data, int opt)
+{
+    Annotation a { name, opt };
+    ctx_err  err = a.set(data);
+
+    return make_pair(std::move(a), err);
+}
+
+pair<Annotation, ctx_err> Annotation::set(const string& name, double data, int opt)
+{
+    Annotation a { name, opt };
+    ctx_err  err = a.set(data);
+
+    return make_pair(std::move(a), err);
+}
+
+pair<Annotation, ctx_err> Annotation::set(const string& name, const string& data, int opt)
+{
+    Annotation a { name, opt };
+    ctx_err  err = a.set(data);
+
+    return make_pair(std::move(a), err);
 }
 
 

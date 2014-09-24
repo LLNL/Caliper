@@ -6,7 +6,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <vector>
 
+using namespace std;
 
 void begin_foo_op()
 {
@@ -18,6 +20,23 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
+void print_context()
+{
+    cali::Caliper* c { cali::Caliper::instance() };
+    ctx_id_t     env { c->current_environment()  };
+
+    vector<uint64_t> ctx(c->context_size(env), 0);
+
+    const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
+
+    cout << "Context size: " << ctxsize << ": ";
+
+    for (size_t i = 0; i < ctxsize / 2; ++i)
+        cout << "(" << ctx[i*2] << ", " << ctx[i*2+1] << ") ";
+
+    cout << endl;
+}
+
 int main(int argc, char* argv[])
 {
     cali::Annotation phase { "phase" };
@@ -25,23 +44,25 @@ int main(int argc, char* argv[])
     phase.begin("main");
 
     int count = argc > 1 ? atoi(argv[1]) : 42;
-        
-    cali::Annotation("loopcount").set(count);
-    cali::Annotation iteration { "iteration", cali::Annotation::StoreAsValue };
 
     phase.begin("loop");
 
-    for (int i = 0; i < count; ++i) {
-        iteration.set(i);
+    {
+        auto a = cali::Annotation::set("loopcount", count);
 
-        begin_foo_op();
+        cali::Annotation iteration { "iteration", cali::Annotation::StoreAsValue };
 
-        std::cout << "Context size " << cali::Caliper::instance()->context_size(0) << std::endl; 
+        for (int i = 0; i < count; ++i) {
+            iteration.set(i);
 
-        end_foo_op();
+            begin_foo_op();
+            print_context();
 
-        std::cout << "Context size " << cali::Caliper::instance()->context_size(0) << std::endl;
+            end_foo_op();
+            print_context();
+        }
     }
 
-    phase.end();    
+    phase.end();
+    print_context();
 }
