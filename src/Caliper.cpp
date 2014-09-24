@@ -50,11 +50,14 @@ struct Caliper::CaliperImpl
 
     Context              m_context;
 
+    Node                 m_root;
 
     // --- constructor
 
     CaliperImpl()
-        : m_mempool { 2 * 1024 * 1024 } { 
+        : m_mempool { 2 * 1024 * 1024 }, 
+        m_root { CTX_INV_ID, CTX_INV_ID, 0, 0 } 
+    {
         m_nodes.reserve(cali_node_pool_size);
     }
 
@@ -88,14 +91,16 @@ struct Caliper::CaliperImpl
         if (attr == Attribute::invalid)
             return CTX_EINV;
 
+        ctx_id_t key = attr.id();
+
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
-            ret = m_context.set(env, attr.id(), val, attr.is_global());
+            ret = m_context.set(env, key, val, attr.is_global());
         } else {
-            auto p = m_context.get(env, attr.id());
+            auto p = m_context.get(env, key);
 
-            Node* parent = p.first ? m_nodes[p.second] : nullptr;
+            Node* parent = p.first ? m_nodes[p.second] : &m_root;
             Node* node   = parent ? parent->first_child() : nullptr;
 
             for ( ; node && !node->equals(attr.id(), data, size); node = node->next_sibling())
@@ -108,7 +113,7 @@ struct Caliper::CaliperImpl
                     parent->append(node);
             }
 
-            ret = m_context.set(env, attr.id(), node->id(), attr.is_global());
+            ret = m_context.set(env, key, node->id(), attr.is_global());
         }
 
         return ret;
@@ -142,10 +147,10 @@ struct Caliper::CaliperImpl
 
             node = node->parent();
 
-            if (node)
-                ret = m_context.set(env, key, node->id());
-            else
+            if (node == &m_root)
                 ret = m_context.unset(env, key);
+            else if (node)
+                ret = m_context.set(env, key, node->id());
         }
 
         return ret;
@@ -165,6 +170,10 @@ struct Caliper::CaliperImpl
             auto p = m_context.get(env, attr.id());
 
             Node* parent = p.first ? m_nodes[p.second]->parent() : nullptr;
+
+            if (!parent)
+                parent = &m_root;
+
             Node* node   = parent ? parent->first_child() : nullptr;
 
             for ( ; node && !node->equals(attr.id(), data, size); node = node->next_sibling())
