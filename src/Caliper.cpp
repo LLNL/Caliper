@@ -46,11 +46,11 @@ struct Caliper::CaliperImpl
     MemoryPool           m_mempool;
 
     vector<Node*>        m_nodes;
-    AttributeStore       m_attributes;
+    Node                 m_root;
 
+    AttributeStore       m_attributes;
     Context              m_context;
 
-    Node                 m_root;
 
     // --- constructor
 
@@ -160,21 +160,24 @@ struct Caliper::CaliperImpl
         if (attr == Attribute::invalid)
             return CTX_EINV;
 
-        ctx_err ret = CTX_EINV;
+        ctx_err  ret = CTX_EINV;
+        ctx_id_t key = attr.id();
 
         if (attr.store_as_value() && size <= sizeof(uint64_t)) {
             uint64_t val = 0;
             memcpy(&val, data, sizeof(uint64_t));
-            ret = m_context.set(env, attr.id(), val, attr.is_global());
+            ret = m_context.set(env, key, val, attr.is_global());
         } else {
-            auto p = m_context.get(env, attr.id());
+            auto p = m_context.get(env, key);
 
-            Node* parent = p.first ? m_nodes[p.second]->parent() : nullptr;
+            Node* parent { nullptr };
 
+            if (p.first)
+                parent = m_nodes[p.second]->parent();
             if (!parent)
                 parent = &m_root;
 
-            Node* node   = parent ? parent->first_child() : nullptr;
+            Node* node = parent->first_child();
 
             for ( ; node && !node->equals(attr.id(), data, size); node = node->next_sibling())
                 ;
@@ -186,7 +189,7 @@ struct Caliper::CaliperImpl
                     parent->append(node);
             }
 
-            ret = m_context.set(env, attr.id(), node->id(), attr.is_global());
+            ret = m_context.set(env, key, node->id(), attr.is_global());
         }
 
         return ret;

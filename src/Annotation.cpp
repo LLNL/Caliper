@@ -44,6 +44,8 @@ ctx_err Annotation::begin(const string& data)
     return begin(CTX_TYPE_STRING, data.data(), data.size());
 }
 
+// --- begin() workhorse
+
 ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
 {
     if (m_attr == Attribute::invalid)
@@ -52,8 +54,7 @@ ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
     if (!m_attr.type() == type)
         return CTX_EINV;
 
-    Caliper* c  = Caliper::instance();
-
+    Caliper*  c = Caliper::instance();
     ctx_err ret = c->begin(c->current_environment(), m_attr, data, size);
 
     if (ret == CTX_SUCCESS)
@@ -92,7 +93,6 @@ ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
         return CTX_EINV;
 
     Caliper* c  = Caliper::instance();
-
     ctx_err ret = c->set(c->current_environment(), m_attr, data, size);
 
     if (ret == CTX_SUCCESS)
@@ -132,8 +132,7 @@ pair<Annotation, ctx_err> Annotation::set(const string& name, const string& data
 
 ctx_err Annotation::end()
 {
-    Caliper* c = Caliper::instance();
-
+    Caliper*  c = Caliper::instance();
     ctx_err ret = c->end(c->current_environment(), m_attr);
 
     if (m_depth > 0)
