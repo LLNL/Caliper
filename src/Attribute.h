@@ -35,18 +35,15 @@ namespace cali
 
         Attribute& operator = (const Attribute&) = default;
 
-        ctx_attr_type type() const {
-            return m_type;
-        }
+        std::string   name() const { return m_name; }
+        ctx_attr_type type() const { return m_type; }        
 
         bool store_as_value() const { 
             return m_properties & CTX_ATTR_ASVALUE; 
-        } 
-
+        }
         bool is_autocombineable() const   { 
             return !store_as_value() && !(m_properties & CTX_ATTR_NOMERGE);
-        } 
-
+        }
         bool is_global() const {
             return m_properties & CTX_ATTR_GLOBAL;
         }

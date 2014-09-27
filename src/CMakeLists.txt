@@ -18,7 +18,8 @@ set(CALIPER_SOURCES
     Caliper.cpp
     Context.cpp
     MemoryPool.cpp
-    Node.cpp)
+    Node.cpp
+    Query.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 

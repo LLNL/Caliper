@@ -31,10 +31,8 @@ void print_context()
 
     const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
 
-    cout << "Context size: " << ctxsize << ": ";
-
-    for (size_t i = 0; i < ctxsize / 2; ++i)
-        cout << "(" << ctx[i*2] << ", " << ctx[i*2+1] << ") ";
+    for (auto const q : c->unpack(ctx.data(), ctxsize))
+        cout << *(c->query(q)) << "\n";
 
     cout << endl;
 }

@@ -11,8 +11,8 @@
 namespace cali
 {
 
-class Annotation {
-
+class Annotation 
+{
     Attribute   m_attr;
     std::string m_name;
     int         m_opt;
