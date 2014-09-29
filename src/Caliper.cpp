@@ -201,7 +201,7 @@ struct Caliper::CaliperImpl
     vector<QueryKey> unpack(const uint64_t buf[], size_t size) const {
         vector<QueryKey> vec;
 
-        for (size_t i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size / 2; ++i) {
             ctx_id_t attr = buf[2*i];
             uint64_t val  = buf[2*i+1];
 
