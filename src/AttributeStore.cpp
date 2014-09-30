@@ -2,6 +2,7 @@
 /// AttributeStore class implementation
 
 #include "AttributeStore.h"
+#include "SigsafeRWLock.h"
 
 #include <map>
 #include <vector>
@@ -9,13 +10,15 @@
 using namespace cali;
 using namespace std;
 
-class AttributeStore::AttributeStoreImpl
+struct AttributeStore::AttributeStoreImpl
 {
+    // --- Data
+    
+    mutable SigsafeRWLock lock;
 
     vector<Attribute>     attributes;
     map<string, ctx_id_t> namelist;
 
-public:
 
     Attribute create(const std::string&  name, ctx_attr_type type, int properties) {
         auto it = namelist.find(name);
@@ -65,15 +68,27 @@ AttributeStore::~AttributeStore()
 
 pair<bool, Attribute> AttributeStore::get(ctx_id_t id) const
 {
-    return mP->get(id);
+    mP->lock.rlock();
+    auto p = mP->get(id);
+    mP->lock.unlock();
+
+    return p;
 }
 
 pair<bool, Attribute> AttributeStore::get(const std::string& name) const
 {
-    return mP->get(name);
+    mP->lock.rlock();
+    auto p = mP->get(name);
+    mP->lock.unlock();
+
+    return p;
 }
 
 Attribute AttributeStore::create(const std::string& name, ctx_attr_type type, int properties)
 {
-    return mP->create(name, type, properties);
+    mP->lock.wlock();
+    Attribute attr = mP->create(name, type, properties);
+    mP->lock.unlock();
+
+    return attr;
 }

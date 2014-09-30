@@ -8,6 +8,7 @@
 #include "Context.h"
 #include "MemoryPool.h"
 #include "Node.h"
+#include "SigsafeRWLock.h"
 
 #include <signal.h>
 
@@ -43,13 +44,14 @@ struct Caliper::CaliperImpl
 
     // --- data
     
-    MemoryPool           m_mempool;
+    MemoryPool            m_mempool;
 
-    vector<Node*>        m_nodes;
-    Node                 m_root;
+    mutable SigsafeRWLock m_nodelock;
+    vector<Node*>         m_nodes;
+    Node                  m_root;
 
-    AttributeStore       m_attributes;
-    Context              m_context;
+    AttributeStore        m_attributes;
+    Context               m_context;
 
 
     // --- constructor
@@ -74,10 +76,14 @@ struct Caliper::CaliperImpl
         const size_t pad   = align - sizeof(Node)%align;
 
         char* ptr  = static_cast<char*>(m_mempool.allocate(sizeof(Node) + pad + size));
+
+        m_nodelock.wlock();
+
         Node* node = new(ptr) 
-            Node(m_nodes.size(), attr, memcpy(ptr+sizeof(Node)+pad, data, size), size);
+            Node(m_nodes.size(), attr, memcpy(ptr+sizeof(Node)+pad, data, size), size);        
 
         m_nodes.push_back(node);
+        m_nodelock.unlock();
 
         return node;
     }
@@ -100,17 +106,24 @@ struct Caliper::CaliperImpl
         } else {
             auto p = m_context.get(env, key);
 
+            m_nodelock.rlock();
+
             Node* parent = p.first ? m_nodes[p.second] : &m_root;
             Node* node   = parent ? parent->first_child() : nullptr;
 
             while ( node && !node->equals(attr.id(), data, size) )
                 node = node->next_sibling();
 
+            m_nodelock.unlock();
+
             if (!node) {
                 node = create_node(attr.id(), data, size);
 
-                if (parent)
+                if (parent) {
+                    m_nodelock.wlock();
                     parent->append(node);
+                    m_nodelock.unlock();
+                }
             }
 
             ret = m_context.set(env, key, node->id(), attr.is_global());
@@ -134,6 +147,8 @@ struct Caliper::CaliperImpl
             if (!p.first)
                 return CTX_EINV;
 
+            m_nodelock.rlock();
+
             Node* node = m_nodes[p.second];
 
             if (node->attribute() != attr.id()) {
@@ -146,6 +161,7 @@ struct Caliper::CaliperImpl
             }
 
             node = node->parent();
+            m_nodelock.unlock();
 
             if (node == &m_root)
                 ret = m_context.unset(env, key);
@@ -172,6 +188,8 @@ struct Caliper::CaliperImpl
 
             Node* parent { nullptr };
 
+            m_nodelock.rlock();
+
             if (p.first)
                 parent = m_nodes[p.second]->parent();
             if (!parent)
@@ -182,11 +200,16 @@ struct Caliper::CaliperImpl
             while ( node && !node->equals(attr.id(), data, size) )
                 node = node->next_sibling();
 
+            m_nodelock.unlock();
+
             if (!node) {
                 node = create_node(attr.id(), data, size);
 
-                if (parent)
+                if (parent) {
+                    m_nodelock.wlock();
                     parent->append(node);
+                    m_nodelock.unlock();
+                }
             }
 
             ret = m_context.set(env, key, node->id(), attr.is_global());
@@ -217,10 +240,14 @@ struct Caliper::CaliperImpl
                 while (val < m_nodes.size()) {
                     vec.push_back(QueryKey(attr, val));
 
+                    m_nodelock.rlock();
+
                     Node* parent = m_nodes[val]->parent();
 
                     attr = parent ? parent->attribute() : CTX_INV_ID;
                     val  = parent ? parent->id() : CTX_INV_ID;
+
+                    m_nodelock.unlock();
                 }
             }
         }

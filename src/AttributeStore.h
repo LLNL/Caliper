@@ -17,7 +17,7 @@ namespace cali
 
 class AttributeStore 
 {
-    class AttributeStoreImpl;
+    struct AttributeStoreImpl;
     
     std::unique_ptr<AttributeStoreImpl> mP;
     

@@ -19,8 +19,11 @@ set(CALIPER_SOURCES
     Context.cpp
     MemoryPool.cpp
     Node.cpp
-    Query.cpp)
+    Query.cpp
+    SigsafeRWLock.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 
 add_library(caliper ${CALIPER_SOURCES})
+
+target_link_libraries(caliper ${CMAKE_THREAD_LIBS_INIT})

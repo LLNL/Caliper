@@ -2,6 +2,7 @@
 /// Caliper Context class implementation
 
 #include "Context.h"
+#include "SigsafeRWLock.h"
 
 #include <algorithm>
 #include <utility>
@@ -13,11 +14,12 @@ using namespace std;
 
 struct Context::ContextImpl 
 {
-    // --- data 
+    // --- data
 
     typedef vector< pair<ctx_id_t, uint64_t> > env_vec_t;
 
-    vector<env_vec_t> m_environments;
+    vector<env_vec_t>     m_environments;
+    mutable SigsafeRWLock m_lock;
 
 
     // --- constructor
@@ -114,37 +116,63 @@ Context::~Context()
     mP.reset();
 }
 
-ctx_id_t Context::clone_environment(ctx_id_t id)
+ctx_id_t Context::clone_environment(ctx_id_t env)
 {
-    return mP->clone_environment(id);
+    mP->m_lock.wlock();
+    ctx_id_t ret = mP->clone_environment(env);
+    mP->m_lock.unlock();
+
+    return ret;
 }
 
 void Context::release_environment(ctx_id_t env)
 {
-    return mP->release_environment(env);
+    mP->m_lock.wlock();
+    mP->release_environment(env);
+    mP->m_lock.unlock();
 }
 
 size_t Context::context_size(ctx_id_t env) const 
 {
-    return mP->record_size(env);
+    mP->m_lock.rlock();
+    size_t ret = mP->record_size(env);
+    mP->m_lock.unlock();
+
+    return ret;
 }
 
 size_t Context::get_context(ctx_id_t env, uint64_t buf[], size_t len) const
 {
-    return mP->get_context(env, buf, len);
+    mP->m_lock.rlock();
+    size_t ret = mP->get_context(env, buf, len);
+    mP->m_lock.unlock();
+
+    return ret;
 }
 
 pair<bool, uint64_t> Context::get(ctx_id_t env, ctx_id_t key) const
 {
-    return mP->get(env, key);
+    mP->m_lock.rlock();
+    auto p= mP->get(env, key);
+    mP->m_lock.unlock();
+
+    return p;
 }
 
 ctx_err Context::set(ctx_id_t env, ctx_id_t key, uint64_t value, bool global)
 {
-    return mP->set(env, key, value, global);
+    mP->m_lock.wlock();
+    ctx_err ret = mP->set(env, key, value, global);
+    mP->m_lock.unlock();
+
+    return ret;
 }
 
 ctx_err Context::unset(ctx_id_t env, ctx_id_t key)
 {
-    return mP->unset(env, key);
+    mP->m_lock.wlock();
+    ctx_err ret = mP->unset(env, key);
+    mP->m_lock.unlock();
+
+    return ret;
 }

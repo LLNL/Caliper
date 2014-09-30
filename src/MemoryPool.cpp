@@ -2,6 +2,7 @@
 /// Memory pool class definition
 
 #include "MemoryPool.h"
+#include "SigsafeRWLock.h"
 
 #include <algorithm>
 #include <cstring>
@@ -24,6 +25,8 @@ struct MemoryPool::MemoryPoolImpl
         size_t wmark;
         size_t size;
     };
+
+    SigsafeRWLock lock;
         
     vector< Chunk<uint64_t> > chunks;
 
@@ -79,5 +82,9 @@ MemoryPool::~MemoryPool()
 
 void* MemoryPool::allocate(size_t bytes)
 {
-    return mP->allocate(bytes, false);
+    mP->lock.wlock();
+    void* ptr = mP->allocate(bytes, false);
+    mP->lock.unlock();
+
+    return ptr;
 }
