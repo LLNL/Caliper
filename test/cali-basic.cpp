@@ -29,10 +29,12 @@ void print_context()
 
     vector<uint64_t> ctx(c->context_size(env), 0);
 
+    cout << "Context size: " << ctx.size() << endl;
+
     const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
 
-    for (auto const q : c->unpack(ctx.data(), ctxsize))
-        cout << *(c->query(q)) << "\n";
+    for (auto const &q : c->unpack(ctx.data(), ctxsize))
+        cout << *q << "\n";
 
     cout << endl;
 }

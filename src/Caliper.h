@@ -81,8 +81,11 @@ public:
         friend class Caliper;
     };
 
-    std::vector<QueryKey>  unpack(const uint64_t buf[], std::size_t size) const;
-    std::unique_ptr<Query> query(const QueryKey& key) const;
+    std::vector< std::unique_ptr<cali::Query> >  
+                           unpack(const uint64_t  buf[], 
+                                  std::size_t     size) const;
+
+    std::unique_ptr<Query> query (const QueryKey& key )  const;
 
 
     // --- Caliper singleton API
