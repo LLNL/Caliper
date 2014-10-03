@@ -58,7 +58,7 @@ ostream& cali::operator << (ostream& os, const Query& q)
         ctx_attr_type type     = q.type();
         const char*   type_str = type > 0 && type <= CTX_TYPE_DOUBLE ? attr_type_string[type] : "INVALID";
 
-        os << "{ Attr = " << q.attribute() 
+        os << "{ Attr = " << q.attribute_name() 
            << ", Type = " << type_str
            << ", Size = " << q.size()
            << ", Data = ";

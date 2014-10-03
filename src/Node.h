@@ -44,7 +44,7 @@ public:
     ctx_id_t attribute() const { return m_attribute; }
 
     size_t size() const        { return m_datasize;  }
-    const void* data() const  { return m_data;      }
+    const void* data() const   { return m_data;      }
 };
 
 } // namespace cali

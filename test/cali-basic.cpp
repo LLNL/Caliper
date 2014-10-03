@@ -2,6 +2,7 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
+#include <TextNodeWriter.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -77,6 +78,11 @@ int main(int argc, char* argv[])
     // End innermost level phase->"loop"
     phase.end();
     print_context();
+
+    cout << "Nodes: " << endl;
+    cali::TextNodeWriter writer(cout);
+
+    cali::Caliper::instance()->write_nodes(writer);
 
     // implicitly end phase->"main"
 }

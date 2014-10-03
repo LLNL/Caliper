@@ -20,6 +20,11 @@ namespace cali
 
 // Forward declarations
 
+class NodeWriter;
+
+
+/// @class Caliper
+
 class Caliper 
 {
     struct CaliperImpl;
@@ -86,6 +91,11 @@ public:
                                   std::size_t     size) const;
 
     std::unique_ptr<Query> query (const QueryKey& key )  const;
+
+
+    // --- Serialization API
+
+    void write_nodes(NodeWriter& w);
 
 
     // --- Caliper singleton API

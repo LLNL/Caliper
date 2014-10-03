@@ -9,6 +9,7 @@
 #include "MemoryPool.h"
 #include "Node.h"
 #include "SigsafeRWLock.h"
+#include "Writer.h"
 
 #include <signal.h>
 
@@ -16,6 +17,7 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include <utility>
 
 using namespace cali;
 using namespace std;
@@ -89,7 +91,7 @@ struct Caliper::CaliperImpl
     }
 
 
-    // --- interface
+    // --- Annotation interface
 
     ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
         ctx_err ret = CTX_EINV;
@@ -219,7 +221,7 @@ struct Caliper::CaliperImpl
     }
 
 
-    // --- Query API
+    // --- Query interface
 
     class CaliperQuery : public Query {
         const CaliperImpl* cI;
@@ -232,10 +234,11 @@ struct Caliper::CaliperImpl
             : cI { c }, m_attr { attr }, m_value { val }
             { }
 
-        bool          valid() const override     { return !(m_attr == Attribute::invalid); }
+        bool          valid() const override          { return !(m_attr == Attribute::invalid); }
 
-        std::string   attribute() const override { return m_attr.name(); }
-        ctx_attr_type type() const override      { return m_attr.type(); }
+        ctx_id_t      attribute() const override      { return m_attr.id();   }
+        std::string   attribute_name() const override { return m_attr.name(); }
+        ctx_attr_type type() const override           { return m_attr.type(); }
 
         size_t        size() const override {
             if (m_attr.store_as_value()) 
@@ -298,6 +301,23 @@ struct Caliper::CaliperImpl
     unique_ptr<cali::Query> query(const Attribute& attr, uint64_t val) {
         return unique_ptr<cali::Query> { new CaliperQuery(this, attr, val) };
     }
+
+
+    // --- Serialization API
+
+    void write_nodes(NodeWriter& w) {
+        // Need locking?
+        for (Node* node : m_nodes) {
+            NodeWriter::NodeInfo info = { 
+                node->id(), 
+                node->parent()       ? node->parent()->id()       :  CTX_INV_ID, 
+                node->first_child()  ? node->first_child()->id()  :  CTX_INV_ID, 
+                node->next_sibling() ? node->next_sibling()->id() : CTX_INV_ID
+            };
+
+            w.write(info, CaliperQuery(this, m_attributes.get(node->attribute()).second, node->id()));
+        }
+    }
 };
 
 
@@ -305,7 +325,7 @@ struct Caliper::CaliperImpl
 
 volatile sig_atomic_t Caliper::CaliperImpl::s_siglock = 1;
 mutex                 Caliper::CaliperImpl::s_mutex;
-    
+
 unique_ptr<Caliper>   Caliper::CaliperImpl::s_caliper;
 
 Caliper::QueryKey     Caliper::QueryKey::invalid { CTX_INV_ID, 0 };
@@ -324,6 +344,7 @@ Caliper::~Caliper()
 {
     mP.reset(nullptr);
 }
+
 
 // --- Context API
 
@@ -350,6 +371,9 @@ Caliper::get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const
 {
     return mP->m_context.get_context(env, buf, len);
 }
+
+
+// --- Annotation interface
 
 ctx_err 
 Caliper::begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
@@ -403,6 +427,15 @@ std::unique_ptr<Query>
 Caliper::query(const QueryKey& key) const
 {
     return mP->query(mP->m_attributes.get(key.m_attr).second, key.m_value);
+}
+
+
+// --- Serialization API
+
+void
+Caliper::write_nodes(NodeWriter& w)
+{
+    mP->write_nodes(w);
 }
 
 

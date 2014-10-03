@@ -17,7 +17,8 @@ class Query
 {
 public:
 
-    virtual std::string   attribute() const = 0;
+    virtual ctx_id_t      attribute() const = 0;
+    virtual std::string   attribute_name() const = 0;
     virtual ctx_attr_type type() const = 0;
 
     virtual std::size_t   size() const = 0;
