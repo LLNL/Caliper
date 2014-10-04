@@ -17,6 +17,7 @@ set(CALIPER_SOURCES
     AttributeStore.cpp
     Caliper.cpp
     Context.cpp
+    ContextRecord.cpp
     MemoryPool.cpp
     Node.cpp
     Query.cpp

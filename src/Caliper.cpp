@@ -6,8 +6,10 @@
 
 #include "AttributeStore.h"
 #include "Context.h"
+#include "ContextRecord.h"
 #include "MemoryPool.h"
 #include "Node.h"
+#include "NodePtrQuery.h"
 #include "SigsafeRWLock.h"
 #include "Writer.h"
 
@@ -221,85 +223,19 @@ struct Caliper::CaliperImpl
     }
 
 
-    // --- Query interface
+    // --- Retrieval
 
-    class CaliperQuery : public Query {
-        const CaliperImpl* cI;
-        Attribute m_attr;
-        uint64_t  m_value;
+    const Node* get(ctx_id_t id) const {
+        if (id > m_nodes.size())
+            return nullptr;
 
-    public:
+        const Node* ret = nullptr;
 
-        CaliperQuery(const CaliperImpl* c, const Attribute& attr, uint64_t val)
-            : cI { c }, m_attr { attr }, m_value { val }
-            { }
+        m_nodelock.rlock();
+        ret = m_nodes[id];
+        m_nodelock.unlock();
 
-        bool          valid() const override          { return !(m_attr == Attribute::invalid); }
-
-        ctx_id_t      attribute() const override      { return m_attr.id();   }
-        std::string   attribute_name() const override { return m_attr.name(); }
-        ctx_attr_type type() const override           { return m_attr.type(); }
-
-        size_t        size() const override {
-            if (m_attr.store_as_value()) 
-                return sizeof(uint64_t);
-
-            cI->m_nodelock.rlock();
-            size_t ret = cI->m_nodes[m_value]->size();
-            cI->m_nodelock.unlock();
-
-            return ret;
-        }
-        const void*   data() const override {
-            if (m_attr.store_as_value()) 
-                return &m_value;
-
-            cI->m_nodelock.rlock();
-            const void* ptr = cI->m_nodes[m_value]->data();
-            cI->m_nodelock.unlock();
-
-            return ptr;
-        }
-    };
-
-    vector< unique_ptr<Query> > unpack(const uint64_t buf[], size_t size) const {
-        vector< unique_ptr<Query> > vec;
-
-        for (size_t i = 0; i < size / 2; ++i) {
-            ctx_id_t attr = buf[2*i];
-            uint64_t val  = buf[2*i+1];
-
-            auto p = m_attributes.get(attr);
-
-            if (!p.first) // Oops?! Shouldn't happen
-                return vec;
-            
-            if (p.second.store_as_value())
-                vec.push_back(unique_ptr<Query>(new CaliperQuery(this, p.second, val)));
-            else {
-                // unpack all nodes up to root
-                while (p.first && val < m_nodes.size()) {
-                    vec.push_back(unique_ptr<Query>(new CaliperQuery(this, p.second, val)));
-
-                    m_nodelock.rlock();
-
-                    Node* parent = m_nodes[val]->parent();
-
-                    attr = parent ? parent->attribute() : CTX_INV_ID;
-                    val  = parent ? parent->id() : CTX_INV_ID;
-
-                    m_nodelock.unlock();
-
-                    p = m_attributes.get(attr);
-                }
-            }
-        }
-
-        return vec;
-    }
-
-    unique_ptr<cali::Query> query(const Attribute& attr, uint64_t val) {
-        return unique_ptr<cali::Query> { new CaliperQuery(this, attr, val) };
+        return ret;
     }
 
 
@@ -307,16 +243,9 @@ struct Caliper::CaliperImpl
 
     void write_nodes(NodeWriter& w) {
         // Need locking?
-        for (Node* node : m_nodes) {
-            NodeWriter::NodeInfo info = { 
-                node->id(), 
-                node->parent()       ? node->parent()->id()       :  CTX_INV_ID, 
-                node->first_child()  ? node->first_child()->id()  :  CTX_INV_ID, 
-                node->next_sibling() ? node->next_sibling()->id() : CTX_INV_ID
-            };
-
-            w.write(info, CaliperQuery(this, m_attributes.get(node->attribute()).second, node->id()));
-        }
+        for (Node* node : m_nodes)
+            if (node)
+                w.write(NodePtrQuery(m_attributes.get(node->attribute()).second, node));
     }
 };
 
@@ -417,16 +346,13 @@ Caliper::create_attribute(const std::string& name, ctx_attr_type type, int prop)
 
 // --- Caliper query API
 
-std::vector< unique_ptr<Query> > 
+std::vector< std::unique_ptr<Query> >
 Caliper::unpack(const uint64_t buf[], size_t size) const
 {
-    return mP->unpack(buf, size);
-}
-
-std::unique_ptr<Query> 
-Caliper::query(const QueryKey& key) const
-{
-    return mP->query(mP->m_attributes.get(key.m_attr).second, key.m_value);
+    return ContextRecord::unpack(
+        [this](ctx_id_t id){ return mP->m_attributes.get(id); },
+        [this](ctx_id_t id){ return mP->get(id); },
+        buf, size);                                 
 }
 
 

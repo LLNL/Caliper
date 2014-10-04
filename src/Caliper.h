@@ -90,8 +90,6 @@ public:
                            unpack(const uint64_t  buf[], 
                                   std::size_t     size) const;
 
-    std::unique_ptr<Query> query (const QueryKey& key )  const;
-
 
     // --- Serialization API
 

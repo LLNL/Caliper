@@ -94,18 +94,17 @@ struct TextNodeWriter::TextNodeWriterImpl
 
     // --- interface
 
-    void write(const NodeWriter::NodeInfo& info, const Query& q) {
+    void write(const NodeQuery& q) {
         // tree info
 
-        for ( ctx_id_t i : { info.id, info.parent, info.first_child, info.next_sibling } ) {
+        for ( ctx_id_t i : { q.id(), q.parent(), q.first_child(), q.next_sibling() } ) {
             if (i != CTX_INV_ID)
                 m_os << i;
 
             m_os << m_sep;
         }
 
-        write_string(q.attribute_name());
-        m_os << m_sep;
+        m_os << q.attribute() << m_sep;
 
         write_type(q.type());
         m_os << m_sep;
@@ -129,7 +128,7 @@ TextNodeWriter::~TextNodeWriter()
     mP.reset();
 }
 
-void TextNodeWriter::write(const NodeWriter::NodeInfo& info, const Query& q)
+void TextNodeWriter::write(const NodeQuery& q)
 {
-    mP->write(info, q);
+    mP->write(q);
 }

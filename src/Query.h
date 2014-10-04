@@ -29,6 +29,19 @@ public:
 
 std::ostream& operator << (std::ostream& os, const Query& entry);
 
+
+// --- NodeQuery
+
+class NodeQuery : public Query
+{
+public:
+
+    virtual ctx_id_t     id() const = 0;
+    virtual ctx_id_t     parent() const = 0;
+    virtual ctx_id_t     first_child() const = 0;
+    virtual ctx_id_t     next_sibling() const = 0;
+};
+
 }
 
 #endif // CALI_QUERY_H

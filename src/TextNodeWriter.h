@@ -9,7 +9,7 @@
 namespace cali
 {
 
-class Query;
+class NodeQuery;
 
 class TextNodeWriter : public NodeWriter 
 {   
@@ -23,7 +23,7 @@ public:
 
     ~TextNodeWriter();
 
-    void write(const NodeWriter::NodeInfo& info, const Query& q) override;
+    void write(const NodeQuery&) override;
 };
 
 }
