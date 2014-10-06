@@ -59,8 +59,8 @@ public:
 
     // --- Attribute API
 
-    std::pair<bool, Attribute> get_attribute(ctx_id_t id) const;
-    std::pair<bool, Attribute> get_attribute(const std::string& name) const;
+    Attribute get_attribute(ctx_id_t id) const;
+    Attribute get_attribute(const std::string& name) const;
 
     Attribute create_attribute(const std::string& name, ctx_attr_type type, int prop = CTX_ATTR_DEFAULT);
 

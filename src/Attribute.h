@@ -48,7 +48,7 @@ namespace cali
             return m_properties & CTX_ATTR_GLOBAL;
         }
 
-        static Attribute invalid;
+        static const Attribute invalid;
     };
 
 } // namespace cali

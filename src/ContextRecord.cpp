@@ -38,35 +38,34 @@ public:
 
 
 vector< unique_ptr<Query> >
-ContextRecord::unpack(std::function<std::pair<bool, Attribute> (ctx_id_t)> get_attr,
-                      std::function<const Node* (ctx_id_t)> get_node,
+ContextRecord::unpack(std::function<Attribute  (ctx_id_t)> get_attr,
+                      std::function<const Node*(ctx_id_t)> get_node,
                       const uint64_t buf[], size_t size)
 {
     vector< unique_ptr<Query> > vec;
 
     for (size_t i = 0; i < size / 2; ++i) {
-        ctx_id_t attr = buf[2*i];
-        uint64_t val  = buf[2*i+1];
+        ctx_id_t  id   = buf[2*i];
+        uint64_t  val  = buf[2*i+1];
+        Attribute attr = get_attr(id);
 
-        auto p = get_attr(attr);
-
-        if (!p.first) // Oops?! Shouldn't happen
+        if (attr == Attribute::invalid) // Oops?! Shouldn't happen
             return vec;
             
-        if (p.second.store_as_value())
-            vec.push_back(unique_ptr<Query>(new ::ValueQuery(p.second, val)));
+        if (attr.store_as_value())
+            vec.push_back(unique_ptr<Query>(new ::ValueQuery(attr, val)));
         else {
             const Node* node = get_node(val);
 
             // unpack all nodes up to root
-            while (p.first && node) {
-                vec.push_back(unique_ptr<Query>(new NodePtrQuery(p.second, node)));
+            while (node && !(attr == Attribute::invalid)) {
+                vec.push_back(unique_ptr<Query>(new NodePtrQuery(attr, node)));
 
                 // Locking ... ? Should work though since this should be read-only data
                 node = node->parent();
-                attr = node ? node->attribute() : CTX_INV_ID;
+                id   = node ? node->attribute() : CTX_INV_ID;
 
-                p = get_attr(attr);
+                attr = get_attr(id);
             }
         }
     }

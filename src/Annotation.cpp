@@ -14,10 +14,7 @@ using namespace cali;
 Annotation::Annotation(const string& name, int opt)
     : m_attr { Attribute::invalid }, m_name { name }, m_opt { opt }, m_depth { 0 }
 {
-    auto p = Caliper::instance()->get_attribute(name);
-
-    if (p.first)
-        m_attr = p.second;
+    m_attr = Caliper::instance()->get_attribute(name);
 }
 
 Annotation::~Annotation() {

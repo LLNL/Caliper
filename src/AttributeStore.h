@@ -10,7 +10,7 @@
 
 #include <memory>
 #include <string>
-#include <utility>
+
 
 namespace cali 
 {
@@ -27,8 +27,8 @@ public:
 
     ~AttributeStore();
 
-    std::pair<bool, Attribute> get(ctx_id_t id) const;
-    std::pair<bool, Attribute> get(const std::string& name) const;
+    Attribute get(ctx_id_t id) const;
+    Attribute get(const std::string& name) const;
 
     Attribute create(const std::string&  name, ctx_attr_type type, int properties);
 };

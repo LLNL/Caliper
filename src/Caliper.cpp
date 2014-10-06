@@ -245,7 +245,7 @@ struct Caliper::CaliperImpl
         // Need locking?
         for (Node* node : m_nodes)
             if (node)
-                w.write(NodePtrQuery(m_attributes.get(node->attribute()).second, node));
+                w.write(NodePtrQuery(m_attributes.get(node->attribute()), node));
     }
 };
 
@@ -325,13 +325,13 @@ Caliper::set(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
 
 // --- Attribute API
 
-std::pair<bool, Attribute> 
+Attribute
 Caliper::get_attribute(ctx_id_t id) const
 {
     return mP->m_attributes.get(id);
 }
 
-std::pair<bool, Attribute> 
+Attribute
 Caliper::get_attribute(const std::string& name) const
 {
     return mP->m_attributes.get(name);
