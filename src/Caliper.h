@@ -20,6 +20,7 @@ namespace cali
 
 // Forward declarations
 
+class AttributeWriter;
 class NodeWriter;
 
 
@@ -94,6 +95,7 @@ public:
     // --- Serialization API
 
     void write_nodes(NodeWriter& w);
+    void write_attributes(AttributeWriter& w);
 
 
     // --- Caliper singleton API

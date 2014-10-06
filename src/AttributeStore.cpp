@@ -2,7 +2,9 @@
 /// AttributeStore class implementation
 
 #include "AttributeStore.h"
+
 #include "SigsafeRWLock.h"
+#include "Writer.h"
 
 #include <map>
 #include <vector>
@@ -49,6 +51,11 @@ struct AttributeStore::AttributeStoreImpl
 
         return attributes[it->second];
     }
+
+    void write(AttributeWriter& w) const {
+        for ( const Attribute& a : attributes )
+            w.write(a);
+    }
 };
 
 
@@ -91,4 +98,11 @@ Attribute AttributeStore::create(const std::string& name, ctx_attr_type type, in
     mP->lock.unlock();
 
     return attr;
+}
+
+void AttributeStore::write(AttributeWriter& w) const
+{
+    mP->lock.rlock();
+    mP->write(w);
+    mP->lock.unlock();
 }

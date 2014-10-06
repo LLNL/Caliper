@@ -38,6 +38,8 @@ namespace cali
         std::string   name() const { return m_name; }
         ctx_attr_type type() const { return m_type; }        
 
+        int           properties() const { return m_properties; } 
+
         bool store_as_value() const { 
             return m_properties & CTX_ATTR_ASVALUE; 
         }

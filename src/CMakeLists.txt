@@ -22,6 +22,7 @@ set(CALIPER_SOURCES
     Node.cpp
     Query.cpp
     SigsafeRWLock.cpp
+    TextAttributeWriter.cpp
     TextNodeWriter.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")

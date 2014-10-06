@@ -2,6 +2,7 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
+#include <TextAttributeWriter.h>
 #include <TextNodeWriter.h>
 
 #include <cstdlib>
@@ -79,10 +80,16 @@ int main(int argc, char* argv[])
     phase.end();
     print_context();
 
-    cout << "Nodes: " << endl;
-    cali::TextNodeWriter writer(cout);
+    // Test serialization API
+    {
+        cali::TextNodeWriter      nodewrt(cout);
+        cout << "Nodes: " << endl;
+        cali::Caliper::instance()->write_nodes(nodewrt);
 
-    cali::Caliper::instance()->write_nodes(writer);
+        cali::TextAttributeWriter attrwrt(cout);
+        cout << "Attributes: " << endl;
+        cali::Caliper::instance()->write_attributes(attrwrt);
+    }
 
     // implicitly end phase->"main"
 }

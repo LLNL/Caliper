@@ -364,6 +364,12 @@ Caliper::write_nodes(NodeWriter& w)
     mP->write_nodes(w);
 }
 
+void
+Caliper::write_attributes(AttributeWriter& w)
+{
+    mP->m_attributes.write(w);
+}
+
 
 // --- Caliper singleton API
 

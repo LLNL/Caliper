@@ -15,6 +15,8 @@
 namespace cali 
 {
 
+class AttributeWriter;
+
 class AttributeStore 
 {
     struct AttributeStoreImpl;
@@ -31,6 +33,8 @@ public:
     Attribute get(const std::string& name) const;
 
     Attribute create(const std::string&  name, ctx_attr_type type, int properties);
+
+    void      write(AttributeWriter& w) const;
 };
 
 }; // namespace cali
