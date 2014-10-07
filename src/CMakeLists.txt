@@ -18,12 +18,11 @@ set(CALIPER_SOURCES
     Caliper.cpp
     Context.cpp
     ContextRecord.cpp
+    CsvWriter.cpp
     MemoryPool.cpp
     Node.cpp
     Query.cpp
-    SigsafeRWLock.cpp
-    TextAttributeWriter.cpp
-    TextNodeWriter.cpp)
+    SigsafeRWLock.cpp)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 

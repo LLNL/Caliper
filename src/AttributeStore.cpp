@@ -52,9 +52,9 @@ struct AttributeStore::AttributeStoreImpl
         return attributes[it->second];
     }
 
-    void write(AttributeWriter& w) const {
+    void foreach_attribute(std::function<void(const Attribute&)> proc) const {
         for ( const Attribute& a : attributes )
-            w.write(a);
+            proc(a);
     }
 };
 
@@ -100,9 +100,9 @@ Attribute AttributeStore::create(const std::string& name, ctx_attr_type type, in
     return attr;
 }
 
-void AttributeStore::write(AttributeWriter& w) const
+void AttributeStore::foreach_attribute(std::function<void(const Attribute&)> proc) const
 {
     mP->lock.rlock();
-    mP->write(w);
+    mP->foreach_attribute(proc);
     mP->lock.unlock();
 }

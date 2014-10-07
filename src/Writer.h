@@ -4,10 +4,6 @@
 #ifndef CALI_WRITER_H
 #define CALI_WRITER_H
 
-#include "cali_types.h"
-
-#include <tuple>
-
 
 namespace cali
 {
@@ -15,20 +11,12 @@ namespace cali
 class Attribute;
 class NodeQuery;
 
-class NodeWriter
+class Writer
 {
 
 public:
 
     virtual void write(const NodeQuery&) = 0;
-};
-
-class AttributeWriter
-{
-
-public:
-
-    virtual void write(const Attribute&) = 0;
 };
 
 }

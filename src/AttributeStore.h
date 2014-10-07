@@ -34,7 +34,7 @@ public:
 
     Attribute create(const std::string&  name, ctx_attr_type type, int properties);
 
-    void      write(AttributeWriter& w) const;
+    void      foreach_attribute(std::function<void(const Attribute&)> proc) const;
 };
 
 }; // namespace cali

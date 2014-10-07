@@ -11,17 +11,18 @@
 #include "Attribute.h"
 #include "Query.h"
 
+#include <functional>
 #include <memory>
 #include <utility>
 #include <vector>
+
 
 namespace cali
 {
 
 // Forward declarations
 
-class AttributeWriter;
-class NodeWriter;
+class NodeQuery;
 
 
 /// @class Caliper
@@ -68,34 +69,15 @@ public:
 
     // --- Query API
 
-    class QueryKey 
-    {
-        ctx_id_t m_attr;
-        uint64_t m_value;
-
-        QueryKey(ctx_id_t attr, uint64_t value)
-            : m_attr { attr }, m_value { value }
-            { }
-
-    public:
-
-        static QueryKey invalid;
-
-        QueryKey() 
-            : QueryKey { invalid } { }
-
-        friend class Caliper;
-    };
-
     std::vector< std::unique_ptr<cali::Query> >  
-                           unpack(const uint64_t  buf[], 
-                                  std::size_t     size) const;
+              unpack(const uint64_t  buf[], 
+                     std::size_t     size) const;
 
 
-    // --- Serialization API
+    // --- Serialization / data access API
 
-    void write_nodes(NodeWriter& w);
-    void write_attributes(AttributeWriter& w);
+    void foreach_node(std::function<void(const NodeQuery&)>);
+    void foreach_attribute(std::function<void(const Attribute&)>);
 
 
     // --- Caliper singleton API

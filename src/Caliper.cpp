@@ -241,11 +241,11 @@ struct Caliper::CaliperImpl
 
     // --- Serialization API
 
-    void write_nodes(NodeWriter& w) {
+    void foreach_node(std::function<void(const NodeQuery&)> proc) {
         // Need locking?
         for (Node* node : m_nodes)
             if (node)
-                w.write(NodePtrQuery(m_attributes.get(node->attribute()), node));
+                proc(NodePtrQuery(m_attributes.get(node->attribute()), node));
     }
 };
 
@@ -256,8 +256,6 @@ volatile sig_atomic_t Caliper::CaliperImpl::s_siglock = 1;
 mutex                 Caliper::CaliperImpl::s_mutex;
 
 unique_ptr<Caliper>   Caliper::CaliperImpl::s_caliper;
-
-Caliper::QueryKey     Caliper::QueryKey::invalid { CTX_INV_ID, 0 };
 
 
 //
@@ -359,15 +357,15 @@ Caliper::unpack(const uint64_t buf[], size_t size) const
 // --- Serialization API
 
 void
-Caliper::write_nodes(NodeWriter& w)
+Caliper::foreach_node(std::function<void(const NodeQuery&)> proc)
 {
-    mP->write_nodes(w);
+    mP->foreach_node(proc);
 }
 
 void
-Caliper::write_attributes(AttributeWriter& w)
+Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
 {
-    mP->m_attributes.write(w);
+    mP->m_attributes.foreach_attribute(proc);
 }
 
 
