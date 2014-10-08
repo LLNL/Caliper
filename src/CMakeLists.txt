@@ -18,7 +18,7 @@ set(CALIPER_SOURCES
     Caliper.cpp
     Context.cpp
     ContextRecord.cpp
-    CsvWriter.cpp
+    CsvSpec.cpp
     MemoryPool.cpp
     Node.cpp
     Query.cpp

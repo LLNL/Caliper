@@ -2,7 +2,7 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
-#include <CsvWriter.h>
+#include <CsvSpec.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -81,12 +81,14 @@ int main(int argc, char* argv[])
 
     // Test serialization API
     {
+        using std::placeholders::_1;
+
         cout << "Nodes:" << endl;
         cali::Caliper::instance()->foreach_node(
-            [](const cali::NodeQuery& q){ cali::CsvWriter::write_node(cout, q); });
+            std::bind(&cali::CsvSpec::write_node, std::ref(cout), _1));
         cout << "Attributes:" << endl;
         cali::Caliper::instance()->foreach_attribute(
-            [](const cali::Attribute& a){ cali::CsvWriter::write_attribute(cout, a); });
+            std::bind(&cali::CsvSpec::write_attribute, std::ref(cout), _1));
     }
 
     // implicitly end phase->"main"

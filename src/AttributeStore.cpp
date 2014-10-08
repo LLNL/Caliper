@@ -3,8 +3,8 @@
 
 #include "AttributeStore.h"
 
+#include "Reader.h"
 #include "SigsafeRWLock.h"
-#include "Writer.h"
 
 #include <map>
 #include <vector>
@@ -56,6 +56,19 @@ struct AttributeStore::AttributeStoreImpl
         for ( const Attribute& a : attributes )
             proc(a);
     }
+
+    void read(AttributeReader& r) {
+        attributes.clear();
+        namelist.clear();
+
+        for (AttributeReader::AttributeInfo info = r.read(); info.id != CTX_INV_ID; info = r.read()) {
+            if (attributes.size() < info.id)
+                attributes.reserve(info.id);
+
+            attributes[info.id] = Attribute(info.id, info.name, info.type, info.properties);
+            namelist.insert(make_pair(info.name, info.id));
+        }
+    }
 };
 
 
@@ -104,5 +117,12 @@ void AttributeStore::foreach_attribute(std::function<void(const Attribute&)> pro
 {
     mP->lock.rlock();
     mP->foreach_attribute(proc);
+    mP->lock.unlock();
+}
+
+void AttributeStore::read(AttributeReader& r)
+{
+    mP->lock.wlock();
+    mP->read(r);
     mP->lock.unlock();
 }
