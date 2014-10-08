@@ -7,8 +7,8 @@
 #include "Query.h"
 
 #include <algorithm>
-#include <iomanip>
 #include <iostream>
+#include <iomanip>
 #include <iterator>
 #include <map>
 
@@ -46,7 +46,7 @@ struct CsvSpecImpl
     void write_type(ostream& os, ctx_attr_type type) const {
         const char* attr_type_string[] = { "usr", "int", "string", "addr", "double" };
 
-        os << (type > 0 && type <= CTX_TYPE_DOUBLE ? attr_type_string[type] : "INVALID");
+        os << (type >= 0 && type <= CTX_TYPE_DOUBLE ? attr_type_string[type] : "INVALID");
     }
 
     void write_data(ostream& os, ctx_attr_type type, const void* data, size_t size) const {
@@ -57,9 +57,8 @@ struct CsvSpecImpl
 
         switch (type) {
         case CTX_TYPE_USR:
-            os << ios_base::hex;// << setw(2) << setfill(0);
-            copy(static_cast<const char*>(data), static_cast<const char*>(data) + size,
-                 ostream_iterator<char>(os, ""));
+            copy(static_cast<const unsigned char*>(data), static_cast<const unsigned char*>(data) + size,
+                 ostream_iterator<unsigned>(os << std::hex << setw(2) << setfill('0'), m_delim.c_str()));
             break;
 
         case CTX_TYPE_STRING:
@@ -200,4 +199,3 @@ CsvSpec::write_node(ostream& os, const NodeQuery& q)
     CaliperCsvSpec.write_data(os, q.type(), q.data(), q.size());
     os << endl;
 }
-

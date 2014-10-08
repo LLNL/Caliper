@@ -49,7 +49,18 @@ int main(int argc, char* argv[])
     // Begin scope of phase->"main"
     phase.begin("main");
 
-    int count = argc > 1 ? atoi(argv[1]) : 42;
+    int count = argc > 1 ? atoi(argv[1]) : 4;
+
+    // An annotation with a user-defined datatype
+
+    struct my_weird_type {
+        unsigned u = 42;
+        char     c = 'c';
+        float    f = 42.42;
+    } my_weird_elem;
+
+    cali::Annotation usr = cali::Annotation("mydata");
+    usr.set(CTX_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
 
     // Add new scope phase->"loop" under phase->"main" 
     phase.begin("loop");
@@ -90,6 +101,9 @@ int main(int argc, char* argv[])
         cali::Caliper::instance()->foreach_attribute(
             std::bind(&cali::CsvSpec::write_attribute, std::ref(cout), _1));
     }
+
+    // explicitly end "usr"
+    usr.end();
 
     // implicitly end phase->"main"
 }
