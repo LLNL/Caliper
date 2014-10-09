@@ -16,6 +16,7 @@
 #include <signal.h>
 
 #include <cstring>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -54,6 +55,7 @@ struct Caliper::CaliperImpl
     vector<Node*>         m_nodes;
     Node                  m_root;
 
+    mutable SigsafeRWLock m_attribute_lock;
     AttributeStore        m_attributes;
     Context               m_context;
 
@@ -326,19 +328,31 @@ Caliper::set(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
 Attribute
 Caliper::get_attribute(ctx_id_t id) const
 {
-    return mP->m_attributes.get(id);
+    mP->m_attribute_lock.rlock();
+    Attribute a = mP->m_attributes.get(id);
+    mP->m_attribute_lock.unlock();
+
+    return a;
 }
 
 Attribute
 Caliper::get_attribute(const std::string& name) const
 {
-    return mP->m_attributes.get(name);
+    mP->m_attribute_lock.rlock();
+    Attribute a = mP->m_attributes.get(name);
+    mP->m_attribute_lock.unlock();
+
+    return a;
 }
 
 Attribute 
 Caliper::create_attribute(const std::string& name, ctx_attr_type type, int prop)
 {
-    return mP->m_attributes.create(name, type, prop);
+    mP->m_attribute_lock.wlock();
+    Attribute a = mP->m_attributes.create(name, type, prop);
+    mP->m_attribute_lock.unlock();
+
+    return a;
 }
 
 
@@ -348,7 +362,7 @@ std::vector< std::unique_ptr<Query> >
 Caliper::unpack(const uint64_t buf[], size_t size) const
 {
     return ContextRecord::unpack(
-        [this](ctx_id_t id){ return mP->m_attributes.get(id); },
+        [this](ctx_id_t id){ return get_attribute(id); },
         [this](ctx_id_t id){ return mP->get(id); },
         buf, size);                                 
 }
@@ -365,7 +379,9 @@ Caliper::foreach_node(std::function<void(const NodeQuery&)> proc)
 void
 Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
 {
+    mP->m_attribute_lock.rlock();
     mP->m_attributes.foreach_attribute(proc);
+    mP->m_attribute_lock.unlock();
 }
 
 

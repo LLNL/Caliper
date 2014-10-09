@@ -4,7 +4,6 @@
 #include "AttributeStore.h"
 
 #include "Reader.h"
-#include "SigsafeRWLock.h"
 
 #include <map>
 #include <vector>
@@ -16,8 +15,6 @@ struct AttributeStore::AttributeStoreImpl
 {
     // --- Data
     
-    mutable SigsafeRWLock lock;
-
     vector<Attribute>     attributes;
     map<string, ctx_id_t> namelist;
 
@@ -88,41 +85,25 @@ AttributeStore::~AttributeStore()
 
 Attribute AttributeStore::get(ctx_id_t id) const
 {
-    mP->lock.rlock();
-    auto p = mP->get(id);
-    mP->lock.unlock();
-
-    return p;
+    return mP->get(id);
 }
 
 Attribute AttributeStore::get(const std::string& name) const
 {
-    mP->lock.rlock();
-    auto p = mP->get(name);
-    mP->lock.unlock();
-
-    return p;
+    return mP->get(name);;
 }
 
 Attribute AttributeStore::create(const std::string& name, ctx_attr_type type, int properties)
 {
-    mP->lock.wlock();
-    Attribute attr = mP->create(name, type, properties);
-    mP->lock.unlock();
-
-    return attr;
+    return mP->create(name, type, properties);
 }
 
 void AttributeStore::foreach_attribute(std::function<void(const Attribute&)> proc) const
 {
-    mP->lock.rlock();
     mP->foreach_attribute(proc);
-    mP->lock.unlock();
 }
 
 void AttributeStore::read(AttributeReader& r)
 {
-    mP->lock.wlock();
     mP->read(r);
-    mP->lock.unlock();
 }
