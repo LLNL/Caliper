@@ -3,15 +3,14 @@
 ///
 
 #include "Caliper.h"
-
-#include "AttributeStore.h"
 #include "Context.h"
-#include "ContextRecord.h"
 #include "MemoryPool.h"
-#include "Node.h"
-#include "NodePtrQuery.h"
 #include "SigsafeRWLock.h"
-#include "Writer.h"
+
+#include <AttributeStore.h>
+#include <ContextRecord.h>
+#include <Node.h>
+#include <NodePtrQuery.h>
 
 #include <signal.h>
 

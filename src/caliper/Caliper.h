@@ -6,10 +6,8 @@
 #ifndef CALI_CALIPER_H
 #define CALI_CALIPER_H
 
-#include "cali_types.h"
-
-#include "Attribute.h"
-#include "Query.h"
+#include <Attribute.h>
+#include <Query.h>
 
 #include <functional>
 #include <memory>

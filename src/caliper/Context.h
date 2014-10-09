@@ -4,7 +4,7 @@
 #ifndef CALI_CONTEXT_H
 #define CALI_CONTEXT_H
 
-#include "cali_types.h"
+#include <cali_types.h>
 
 #include <memory>
 #include <utility>

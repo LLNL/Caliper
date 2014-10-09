@@ -1,9 +1,9 @@
 /// @file Annotation.h
 /// Caliper C++ annotation interface
 
-#include "Attribute.h"
+#include <Attribute.h>
 
-#include "cali_types.h"
+#include <cali_types.h>
 
 #include <string>
 #include <utility>
