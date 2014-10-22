@@ -134,12 +134,15 @@ struct CsvSpec
     }
 
     void write_record(ostream& os, const RecordMap& record) {
+        int count = 0;
+
         for (auto &e : record) {
-            os << e.first << '=';
+            os << (count++ ? m_sep : "") << e.first << '=';
             write_string(os, e.second.to_string());
-            os << m_sep;
         }
-        os << endl;
+
+        if (count)
+            os << endl;
     }
 }; // struct CsvSpec
 

@@ -97,8 +97,10 @@ int main(int argc, char* argv[])
     {
         cali::Caliper* caliper = cali::Caliper::instance();
 
-        cali::CsvWriter().write([=](std::function<void(const cali::Attribute&)> f){ caliper->foreach_attribute(f); },
-                                [=](std::function<void(const cali::Node&)> f){ caliper->foreach_node(f); });
+        using std::placeholders::_1;
+
+        cali::CsvWriter().write(std::bind(&cali::Caliper::foreach_attribute, caliper, _1),
+                                std::bind(&cali::Caliper::foreach_node,      caliper, _1));
     }
 
     // implicitly end phase->"main"
