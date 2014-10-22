@@ -9,6 +9,7 @@
 #include "cali_types.h"
 
 #include "IdType.h"
+#include "RecordMap.h"
 
 #include <string>
 
@@ -49,6 +50,8 @@ namespace cali
         bool is_global() const {
             return m_properties & CTX_ATTR_GLOBAL;
         }
+
+        RecordMap record() const;
 
         static const Attribute invalid;
     };

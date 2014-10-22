@@ -7,7 +7,7 @@
 #define CALI_CALIPER_H
 
 #include <Attribute.h>
-#include <Query.h>
+#include <RecordMap.h>
 
 #include <functional>
 #include <memory>
@@ -20,7 +20,7 @@ namespace cali
 
 // Forward declarations
 
-class NodeQuery;
+class Node;
 
 
 /// @class Caliper
@@ -46,7 +46,6 @@ public:
     // --- Context API
 
     ctx_id_t current_environment() const;
-
     ctx_id_t clone_environment(ctx_id_t env);
 
     std::size_t context_size(ctx_id_t env) const;
@@ -67,14 +66,12 @@ public:
 
     // --- Query API
 
-    std::vector< std::unique_ptr<cali::Query> >  
-              unpack(const uint64_t  buf[], 
-                     std::size_t     size) const;
+    std::vector<RecordMap> unpack(const uint64_t buf[], std::size_t size) const;
 
 
     // --- Serialization / data access API
 
-    void foreach_node(std::function<void(const NodeQuery&)>);
+    void foreach_node(std::function<void(const Node&)>);
     void foreach_attribute(std::function<void(const Attribute&)>);
 
 

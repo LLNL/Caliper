@@ -10,7 +10,6 @@
 #include <AttributeStore.h>
 #include <ContextRecord.h>
 #include <Node.h>
-#include <NodePtrQuery.h>
 
 #include <signal.h>
 
@@ -63,7 +62,7 @@ struct Caliper::CaliperImpl
 
     CaliperImpl()
         : m_mempool { 2 * 1024 * 1024 }, 
-        m_root { CTX_INV_ID, CTX_INV_ID, 0, 0 } 
+        m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
     {
         m_nodes.reserve(cali_node_pool_size);
     }
@@ -76,7 +75,7 @@ struct Caliper::CaliperImpl
 
     // --- helpers
 
-    Node* create_node(ctx_id_t attr, const void* data, size_t size) {
+    Node* create_node(const Attribute& attr, const void* data, size_t size) {
         const size_t align = 8;
         const size_t pad   = align - sizeof(Node)%align;
 
@@ -122,7 +121,7 @@ struct Caliper::CaliperImpl
             m_nodelock.unlock();
 
             if (!node) {
-                node = create_node(attr.id(), data, size);
+                node = create_node(attr, data, size);
 
                 if (parent) {
                     m_nodelock.wlock();
@@ -208,7 +207,7 @@ struct Caliper::CaliperImpl
             m_nodelock.unlock();
 
             if (!node) {
-                node = create_node(attr.id(), data, size);
+                node = create_node(attr, data, size);
 
                 if (parent) {
                     m_nodelock.wlock();
@@ -242,11 +241,11 @@ struct Caliper::CaliperImpl
 
     // --- Serialization API
 
-    void foreach_node(std::function<void(const NodeQuery&)> proc) {
+    void foreach_node(std::function<void(const Node&)> proc) {
         // Need locking?
         for (Node* node : m_nodes)
             if (node)
-                proc(NodePtrQuery(m_attributes.get(node->attribute()), node));
+                proc(*node);
     }
 };
 
@@ -357,7 +356,7 @@ Caliper::create_attribute(const std::string& name, ctx_attr_type type, int prop)
 
 // --- Caliper query API
 
-std::vector< std::unique_ptr<Query> >
+std::vector<RecordMap>
 Caliper::unpack(const uint64_t buf[], size_t size) const
 {
     return ContextRecord::unpack(
@@ -370,7 +369,7 @@ Caliper::unpack(const uint64_t buf[], size_t size) const
 // --- Serialization API
 
 void
-Caliper::foreach_node(std::function<void(const NodeQuery&)> proc)
+Caliper::foreach_node(std::function<void(const Node&)> proc)
 {
     mP->foreach_node(proc);
 }

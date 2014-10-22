@@ -3,8 +3,6 @@
 
 #include "AttributeStore.h"
 
-#include "Reader.h"
-
 #include <map>
 #include <vector>
 
@@ -54,18 +52,18 @@ struct AttributeStore::AttributeStoreImpl
             proc(a);
     }
 
-    void read(AttributeReader& r) {
-        attributes.clear();
-        namelist.clear();
+    // void read(AttributeReader& r) {
+    //     attributes.clear();
+    //     namelist.clear();
 
-        for (AttributeReader::AttributeInfo info = r.read(); info.id != CTX_INV_ID; info = r.read()) {
-            if (attributes.size() < info.id)
-                attributes.reserve(info.id);
+    //     for (AttributeReader::AttributeInfo info = r.read(); info.id != CTX_INV_ID; info = r.read()) {
+    //         if (attributes.size() < info.id)
+    //             attributes.reserve(info.id);
 
-            attributes[info.id] = Attribute(info.id, info.name, info.type, info.properties);
-            namelist.insert(make_pair(info.name, info.id));
-        }
-    }
+    //         attributes[info.id] = Attribute(info.id, info.name, info.type, info.properties);
+    //         namelist.insert(make_pair(info.name, info.id));
+    //     }
+    // }
 };
 
 
@@ -103,7 +101,7 @@ void AttributeStore::foreach_attribute(std::function<void(const Attribute&)> pro
     mP->foreach_attribute(proc);
 }
 
-void AttributeStore::read(AttributeReader& r)
-{
-    mP->read(r);
-}
+// void AttributeStore::read(AttributeReader& r)
+// {
+//     mP->read(r);
+// }

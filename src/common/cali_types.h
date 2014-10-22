@@ -29,9 +29,12 @@ typedef enum {
   CTX_TYPE_INV    = -1,
   CTX_TYPE_USR    = 0,
   CTX_TYPE_INT    = 1,
-  CTX_TYPE_STRING = 2,
-  CTX_TYPE_ADDR   = 3,
-  CTX_TYPE_DOUBLE = 4
+  CTX_TYPE_UINT   = 2,
+  CTX_TYPE_STRING = 3,
+  CTX_TYPE_ADDR   = 4,
+  CTX_TYPE_DOUBLE = 5,
+  CTX_TYPE_BOOL   = 6,
+  CTX_TYPE_TYPE   = 7
 } ctx_attr_type;
 
 typedef enum {

@@ -15,9 +15,6 @@
 namespace cali 
 {
 
-class AttributeReader;
-
-
 class AttributeStore 
 {
     struct AttributeStoreImpl;
@@ -36,9 +33,6 @@ public:
     Attribute create(const std::string&  name, ctx_attr_type type, int properties);
 
     void      foreach_attribute(std::function<void(const Attribute&)> proc) const;
-
-    /// Resets store and reads attributes from @param r. 
-    void      read(AttributeReader& r);
 };
 
 }; // namespace cali

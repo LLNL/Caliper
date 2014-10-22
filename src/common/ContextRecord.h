@@ -7,6 +7,7 @@
 #include "cali_types.h"
 
 #include "Attribute.h"
+#include "RecordMap.h"
 
 #include <functional>
 #include <vector>
@@ -16,7 +17,6 @@ namespace cali
 {
 
 class Node;
-class Query;
 
 class ContextRecord
 {
@@ -24,7 +24,7 @@ class ContextRecord
 public:
 
     static 
-    std::vector< std::unique_ptr<cali::Query> > 
+    std::vector<RecordMap> 
     unpack(std::function<cali::Attribute  (ctx_id_t)> get_attr, 
            std::function<const cali::Node*(ctx_id_t)> get_node,
            const uint64_t buf[], size_t size);

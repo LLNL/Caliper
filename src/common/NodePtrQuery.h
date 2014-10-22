@@ -9,16 +9,16 @@
 #include "Attribute.h"
 #include "Node.h"
 #include "Query.h"
+#include "Variant.h"
 
 #include <iostream>
-
 
 namespace cali
 {
 
 // --- NodeQuery API
 
-class NodePtrQuery : public NodeQuery
+class NodeRecord : public Record
 {
     cali::Attribute   m_attr;
     const cali::Node* m_node;
@@ -32,31 +32,16 @@ public:
     ~NodePtrQuery()
         { }
 
-    ctx_id_t      attribute() const override      { return m_attr.id();    }
-    std::string   attribute_name() const override { return m_attr.name();  }
-    ctx_attr_type type() const override           { return m_attr.type();  }
+    std::vector<std::string> keys() const override {
+        return { 
+            "attribute", "attribute_name", "data",  
+                "first_child", "id", "next_sibling", "parent", "type" };
+    }
 
-    std::size_t   size() const override           { return m_node->size(); }
-    const void*   data() const override           { return m_node->data(); }
+    Variant get(const std::string& key) const override;
 
-    bool          valid() const override {
+    bool valid() const override {
         return m_node && !(m_attr == Attribute::invalid);
-    }
-
-    ctx_id_t id() const { 
-        return m_node->id(); 
-    }
-    ctx_id_t parent() const {
-        cali::Node* node = m_node->parent();
-        return node ? node->id() : CTX_INV_ID;
-    }
-    ctx_id_t first_child() const {
-        cali::Node* node = m_node->first_child();
-        return node ? node->id() : CTX_INV_ID;
-    }
-    ctx_id_t next_sibling() const {
-        cali::Node* node = m_node->next_sibling();
-        return node ? node->id() : CTX_INV_ID;
     }
 };
 

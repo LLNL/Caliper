@@ -3,6 +3,7 @@ set(CALIPER_COMMON_SOURCES
     AttributeStore.cpp
     ContextRecord.cpp
     Node.cpp
-    Query.cpp)
+    RecordMap.cpp
+    Variant.cpp)
 
 add_library(caliper-common ${CALIPER_COMMON_SOURCES})

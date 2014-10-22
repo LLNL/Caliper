@@ -2,7 +2,7 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
-#include <CsvSpec.h>
+#include <Csv.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -35,7 +35,7 @@ void print_context()
     const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
 
     for (auto const &q : c->unpack(ctx.data(), ctxsize))
-        cout << *q << "\n";
+        cout << q << "\n";
 
     cout << endl;
 }
@@ -90,20 +90,16 @@ int main(int argc, char* argv[])
     phase.end();
     print_context();
 
-    // Test serialization API
-    {
-        using std::placeholders::_1;
-
-        cout << "Nodes:" << endl;
-        cali::Caliper::instance()->foreach_node(
-            std::bind(&cali::CsvSpec::write_node, std::ref(cout), _1));
-        cout << "Attributes:" << endl;
-        cali::Caliper::instance()->foreach_attribute(
-            std::bind(&cali::CsvSpec::write_attribute, std::ref(cout), _1));
-    }
-
     // explicitly end "usr"
     usr.end();
+
+    // Test serialization API
+    {
+        cali::Caliper* caliper = cali::Caliper::instance();
+
+        cali::CsvWriter().write([=](std::function<void(const cali::Attribute&)> f){ caliper->foreach_attribute(f); },
+                                [=](std::function<void(const cali::Node&)> f){ caliper->foreach_node(f); });
+    }
 
     // implicitly end phase->"main"
 }
