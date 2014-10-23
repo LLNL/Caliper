@@ -46,6 +46,8 @@ struct Caliper::CaliperImpl
 
 
     // --- data
+
+    std::function<ctx_id_t()> m_env_cb;
     
     MemoryPool            m_mempool;
 
@@ -278,7 +280,7 @@ Caliper::~Caliper()
 ctx_id_t 
 Caliper::current_environment() const
 {
-    return 0;
+    return mP->m_env_cb ? mP->m_env_cb() : 0;
 }
 
 ctx_id_t 
@@ -297,6 +299,12 @@ std::size_t
 Caliper::get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const
 {
     return mP->m_context.get_context(env, buf, len);
+}
+
+void 
+Caliper::set_environment_callback(std::function<ctx_id_t()> cb)
+{
+    mP->m_env_cb = cb;
 }
 
 

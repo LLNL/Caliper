@@ -79,6 +79,10 @@ ctx_get_attribute_type  (ctx_attr_h          attr,
  * --- Environment -----------------------------------------------------
  */
 
+extern "C" {
+  typedef ctx_id_t (*cali_environment_callback)(); 
+};
+
 /**
  * Get the environment handle of the execution scope (e.g., thread) in which
  * this function is called
@@ -97,6 +101,9 @@ ctx_get_environment();
 ctx_err
 ctx_clone_environment(ctx_env_h  env, 
                       ctx_env_h* new_env);
+
+ctx_err
+ctx_set_environment_callback(cali_environment_callback cb);
 
 
 /*
