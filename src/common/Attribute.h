@@ -32,7 +32,7 @@ namespace cali
     public:
 
         Attribute(const Attribute&) = default;
-        Attribute(Attribute&&) = default; // the Intel compiler (15.0.x) doesn't like it
+        Attribute(Attribute&&) = default;
 
         Attribute& operator = (const Attribute&) = default;
 
@@ -52,6 +52,7 @@ namespace cali
         }
 
         RecordMap record() const;
+        static Attribute read(const RecordMap&);
 
         static const Attribute invalid;
     };

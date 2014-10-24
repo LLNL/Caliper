@@ -231,7 +231,6 @@ Variant::to_string() const
         ret.assign(static_cast<const char*>(m_value.ptr), m_size);
         break;
     case CTX_TYPE_ADDR:
-        // FIXME
     {
         ostringstream os;
         os << std::hex << m_value.v_uint;

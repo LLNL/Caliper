@@ -70,24 +70,6 @@ struct CsvSpec
         return vec;
     }
 
-    int read_properties(const std::string& str) const {
-        const map<string, ctx_attr_properties> propmap = { 
-            { "value",   CTX_ATTR_ASVALUE }, 
-            { "nomerge", CTX_ATTR_NOMERGE }, 
-            { "global",  CTX_ATTR_GLOBAL  } };
-
-        int prop = CTX_ATTR_DEFAULT;
-
-        for (const string &s : split(str, m_delim[0])) { 
-            auto it = propmap.find(s);
-
-            if (it != propmap.end())
-                prop |= it->second;
-        }
-
-        return prop;
-    }
-
     vector<unsigned char> read_data(const std::string& str, ctx_attr_type type) const {
         vector<unsigned char> data;
 
