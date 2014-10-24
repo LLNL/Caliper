@@ -48,7 +48,7 @@ ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
     if (m_attr == Attribute::invalid)
         create_attribute(type);
 
-    if (!m_attr.type() == type)
+    if (!(m_attr.type() == type))
         return CTX_EINV;
 
     Caliper*  c = Caliper::instance();
@@ -86,7 +86,7 @@ ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
     if (m_attr == Attribute::invalid)
         create_attribute(type);
 
-    if (!m_attr.type() == type)
+    if (!(m_attr.type() == type))
         return CTX_EINV;
 
     Caliper* c  = Caliper::instance();

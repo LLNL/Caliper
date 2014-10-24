@@ -23,6 +23,7 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
+
 void print_context()
 {
     cali::Caliper* c { cali::Caliper::instance() };
@@ -32,6 +33,7 @@ void print_context()
 
     cout << "Context size: " << ctx.size() << endl;
 
+    // retrieve current context record
     const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
 
     for (auto const &q : c->unpack(ctx.data(), ctxsize))

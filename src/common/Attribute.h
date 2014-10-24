@@ -32,7 +32,7 @@ namespace cali
     public:
 
         Attribute(const Attribute&) = default;
-        Attribute(Attribute&&) = default;
+        Attribute(Attribute&&) = default; // the Intel compiler (15.0.x) doesn't like it
 
         Attribute& operator = (const Attribute&) = default;
 

@@ -48,10 +48,10 @@ public:
     ctx_id_t current_environment() const;
     ctx_id_t clone_environment(ctx_id_t env);
 
+    void set_environment_callback(std::function<ctx_id_t()> cb);
+
     std::size_t context_size(ctx_id_t env) const;
     std::size_t get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const;
-
-    void set_environment_callback(std::function<ctx_id_t()> cb);
 
 
     // --- Annotation API

@@ -232,7 +232,11 @@ Variant::to_string() const
         break;
     case CTX_TYPE_ADDR:
         // FIXME
-        ret = std::to_string(m_value.v_uint);
+    {
+        ostringstream os;
+        os << std::hex << m_value.v_uint;
+        ret = os.str();
+    }
         break;
     case CTX_TYPE_DOUBLE:
         ret = std::to_string(m_value.v_double);
