@@ -4,9 +4,9 @@
  boehme3@llnl.gov
 ==============================================================================
 
- Caliper is a generic context annotation system that allows programmers to
- provide arbitrary program context information to (performance) tools 
- at runtime.
+ Caliper is a generic context annotation system. It gives programmers
+ the ability to provide arbitrary program context information to 
+ (performance) tools at runtime.
 
 ------------------------------------------------------------------------------
  Documentation
