@@ -26,10 +26,11 @@ class CsvWriter
 public:
 
     CsvWriter();
+    CsvWriter(const std::string& basename);
 
     ~CsvWriter();
 
-    void write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
+    bool write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
                std::function<void(std::function<void(const Node&)>)>      foreach_node);
 };
 

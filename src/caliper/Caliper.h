@@ -79,6 +79,8 @@ public:
     void foreach_node(std::function<void(const Node&)>);
     void foreach_attribute(std::function<void(const Attribute&)>);
 
+    bool write();
+
 
     // --- Caliper singleton API
 

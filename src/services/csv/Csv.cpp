@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <iterator>
@@ -22,10 +23,10 @@ namespace
 
 struct CsvSpec
 {
-    std::string m_sep       { ","    }; ///< separator character
-    std::string m_delim     { ":"    }; ///< delimiter
-    char        m_esc       { '\\'   }; ///< escape character
-    std::string m_esc_chars { "\\\"" }; ///< characters that need to be escaped
+    std::string m_sep       { ","   }; ///< separator character
+    std::string m_delim     { ":"   }; ///< delimiter
+    char        m_esc       { '\\'  }; ///< escape character
+    std::string m_esc_chars { "\\," }; ///< characters that need to be escaped
 
     // --- write interface
 
@@ -139,23 +140,44 @@ static CsvSpec CaliperCsvSpec;
 
 struct CsvWriter::CsvWriterImpl
 {
-
+    std::string attr_file;
+    std::string node_file;
 };
 
 CsvWriter::CsvWriter()
     : mP { new CsvWriterImpl }
 { }
 
+CsvWriter::CsvWriter(const std::string& basename)
+    : mP { new CsvWriterImpl }
+{ 
+    mP->attr_file = basename + ".attributes.csv";
+    mP->node_file = basename + ".nodes.csv";
+}
+
 CsvWriter::~CsvWriter()
 {
     mP.reset();
 }
 
-void CsvWriter::write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
+bool CsvWriter::write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
                       std::function<void(std::function<void(const Node&)>)>      foreach_node)
 {
-    cout << "Attributes:" << endl;
-    foreach_attr([](const Attribute& a){ CaliperCsvSpec.write_record(cout, a.record()); });
-    cout << "Nodes:" << endl;
-    foreach_node([](const Node&      n){ CaliperCsvSpec.write_record(cout, n.record()); });
+    if (mP->attr_file.empty() || mP->node_file.empty()) {
+        cout << "Attributes:" << endl;
+        foreach_attr([](const Attribute& a){ CaliperCsvSpec.write_record(cout, a.record()); });
+        cout << "Nodes:" << endl;
+        foreach_node([](const Node&      n){ CaliperCsvSpec.write_record(cout, n.record()); });
+    } else {
+        ofstream astr(mP->attr_file.c_str());
+        ofstream nstr(mP->node_file.c_str());
+
+        if (!astr || !nstr)
+            return false;
+
+        foreach_attr([&](const Attribute& a){ CaliperCsvSpec.write_record(astr, a.record()); });
+        foreach_node([&](const Node&      n){ CaliperCsvSpec.write_record(nstr, n.record()); });
+    }
+
+    return true;
 }

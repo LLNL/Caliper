@@ -2,7 +2,6 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
-#include <Csv.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -96,14 +95,7 @@ int main(int argc, char* argv[])
     usr.end();
 
     // Test serialization API
-    {
-        cali::Caliper* caliper = cali::Caliper::instance();
-
-        using std::placeholders::_1;
-
-        cali::CsvWriter().write(std::bind(&cali::Caliper::foreach_attribute, caliper, _1),
-                                std::bind(&cali::Caliper::foreach_node,      caliper, _1));
-    }
+    cali::Caliper::instance()->write();
 
     // implicitly end phase->"main"
 }

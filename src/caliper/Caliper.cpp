@@ -7,6 +7,8 @@
 #include "MemoryPool.h"
 #include "SigsafeRWLock.h"
 
+#include <Csv.h>
+
 #include <AttributeStore.h>
 #include <ContextRecord.h>
 #include <Node.h>
@@ -388,6 +390,19 @@ Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
     mP->m_attribute_lock.rlock();
     mP->m_attributes.foreach_attribute(proc);
     mP->m_attribute_lock.unlock();
+}
+
+bool
+Caliper::write()
+{
+    // Output. Currently CSV writer and filenames are hard-coded.
+
+    CsvWriter writer("caliper");
+
+    using std::placeholders::_1;
+
+    return writer.write(std::bind(&Caliper::foreach_attribute, this,     _1),
+                        std::bind(&CaliperImpl::foreach_node,  mP.get(), _1));
 }
 
 
