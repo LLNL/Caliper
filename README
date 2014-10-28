@@ -27,5 +27,12 @@
  Building and installing
 ------------------------------------------------------------------------------
 
- Caliper requires a current C++11-compatible Compiler.
+ Building and installing Caliper requires cmake and a current C++11-compatible
+ Compiler. Unpack the source distribution and proceed as follows:
+
+ $ cd caliper/src/dir
+ $ mkdir build && cd build
+ $ cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/location ..
+ $ make 
+ $ make install
 
