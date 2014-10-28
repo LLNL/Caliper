@@ -65,12 +65,6 @@ public:
     Variant(ctx_attr_type val)
         : m_type { CTX_TYPE_TYPE   }, m_size { sizeof(ctx_attr_type) }
         { m_value.v_type = val; }
-    Variant(const char* val)
-        : m_type { CTX_TYPE_STRING }
-        { 
-            m_value.ptr = val;
-            m_size      = std::strlen(val); 
-        }
 
     Variant(ctx_attr_type type, std::size_t size, const void* data);
 

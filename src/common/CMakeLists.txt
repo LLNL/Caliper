@@ -14,6 +14,7 @@ set(CALIPER_COMMON_SOURCES
     ContextRecord.cpp
     Node.cpp
     RecordMap.cpp
+    RuntimeConfig.cpp
     Variant.cpp)
 
 add_library(caliper-common ${CALIPER_COMMON_SOURCES})

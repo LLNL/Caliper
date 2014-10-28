@@ -12,6 +12,7 @@
 #include <AttributeStore.h>
 #include <ContextRecord.h>
 #include <Node.h>
+#include <RuntimeConfig.h>
 
 #include <signal.h>
 
@@ -30,8 +31,6 @@ using namespace std;
 // --- static data initialization --------------------------------------------
 //
 
-const  std::size_t cali_node_pool_size = 100; // make this a config variable
-
 
 //
 // --- Caliper implementation
@@ -41,14 +40,18 @@ struct Caliper::CaliperImpl
 {
     // --- static data
 
-    static volatile sig_atomic_t s_siglock;
-    static std::mutex            s_mutex;
+    static volatile sig_atomic_t  s_siglock;
+    static std::mutex             s_mutex;
     
-    static unique_ptr<Caliper>   s_caliper;
+    static unique_ptr<Caliper>    s_caliper;
+
+    static const ConfigSet::Entry s_configdata[];
 
 
     // --- data
 
+    ConfigSet             m_config;
+    
     std::function<ctx_id_t()> m_env_cb;
     
     MemoryPool            m_mempool;
@@ -65,10 +68,17 @@ struct Caliper::CaliperImpl
     // --- constructor
 
     CaliperImpl()
-        : m_mempool { 2 * 1024 * 1024 }, 
+        : m_verbosity { 0 }, m_mempool { 2 * 1024 * 1024 }, 
         m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
     {
-        m_nodes.reserve(cali_node_pool_size);
+        m_config = RuntimeConfig::init("caliper", s_configdata);
+
+        m_nodes.reserve(m_config.get("node_pool_size").to_uint());
+
+        if (m_verbosity > 0)
+            cerr << "== CALIPER: initialized." << endl;
+        if (m_verbosity > 1)
+            RuntimeConfig::print(cerr);
     }
 
     ~CaliperImpl() {
@@ -256,10 +266,32 @@ struct Caliper::CaliperImpl
 
 // --- static member initialization
 
-volatile sig_atomic_t Caliper::CaliperImpl::s_siglock = 1;
-mutex                 Caliper::CaliperImpl::s_mutex;
+volatile sig_atomic_t  Caliper::CaliperImpl::s_siglock = 1;
+mutex                  Caliper::CaliperImpl::s_mutex;
 
-unique_ptr<Caliper>   Caliper::CaliperImpl::s_caliper;
+unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
+
+const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
+    // key, type, value, short description, long description
+    { "node_pool_size", CTX_TYPE_UINT, "100",
+      "Size of the Caliper node pool",
+      "Initial size of the Caliper node pool" 
+    },
+    { "verbose",        CTX_TYPE_UINT, "1",
+      "Verbosity level",
+      "Verbosity level.\n"
+      "  0: no output\n"
+      "  1: basic informational runtime output\n"
+      "  2: debug output" 
+    },
+    { "output",         CTX_TYPE_STRING, "csv",
+      "Caliper output format",
+      "Caliper output format\n"
+      "   csv:  CSV file output\n"
+      "   none: No output" 
+    },
+    ConfigSet::Terminator 
+};
 
 
 //
@@ -395,6 +427,9 @@ Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
 bool
 Caliper::write()
 {
+    if (m_config.get("output").to_string() == "none")
+        return true;
+
     // Output. Currently CSV writer and filenames are hard-coded.
 
     CsvWriter writer("caliper");
