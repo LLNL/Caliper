@@ -270,11 +270,11 @@ unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
 
 const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "node_pool_size",   CTX_TYPE_UINT, "100",
+    { "node_pool_size", CTX_TYPE_UINT, "100",
       "Size of the Caliper node pool",
       "Initial size of the Caliper node pool" 
     },
-    { "output",           CTX_TYPE_STRING, "csv",
+    { "output", CTX_TYPE_STRING, "csv",
       "Caliper metadata output format",
       "Caliper metadata output format. One of\n"
       "   csv:  CSV file output\n"

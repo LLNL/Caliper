@@ -15,7 +15,7 @@ using namespace std;
 
 namespace 
 {
-    const std::string prefix { "cali" };
+    const string prefix { "cali" };
 
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string
@@ -31,12 +31,14 @@ namespace
     }
 }
 
+namespace cali
+{
 
 //
 // --- ConfigSet implementation
 //
 
-struct cali::ConfigSetImpl
+struct ConfigSetImpl
 {
     // --- data
 
@@ -96,8 +98,8 @@ struct RuntimeConfigImpl
     void print(ostream& os) const {
         for ( auto set : m_database )
             for ( auto entry : set.second->m_dict )
-                os << "# " << entry.second.descr << '\n' 
-                   << ::config_var_name(set.first, entry.second.key) << '=' << entry.second.value << endl;
+                os << "# " << entry.second.descr << " (" << cali_type2string(entry.second.type) << ")\n" 
+                   << ::config_var_name(set.first, entry.first) << '=' << entry.second.value << endl;
     }
 
     static RuntimeConfigImpl* instance() {
@@ -109,6 +111,8 @@ struct RuntimeConfigImpl
 };
 
 unique_ptr<RuntimeConfigImpl> RuntimeConfigImpl::s_instance { nullptr };
+
+} // namespace cali
 
 
 //
