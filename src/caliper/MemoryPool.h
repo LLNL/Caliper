@@ -27,6 +27,7 @@ class MemoryPool
 
 public:
 
+    MemoryPool();
     MemoryPool(std::size_t bytes);
 
     ~MemoryPool();

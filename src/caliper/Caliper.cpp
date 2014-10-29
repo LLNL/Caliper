@@ -65,14 +65,11 @@ struct Caliper::CaliperImpl
     // --- constructor
 
     CaliperImpl()
-        : m_mempool { 2 * 1024 * 1024 }, 
-        m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
+        : m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
     {
         m_config = RuntimeConfig::init("caliper", s_configdata);
 
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
-
-        // FIXME: Read memory pool size from config
 
         Log(1).stream() << "Initialized" << endl;
 
@@ -274,10 +271,6 @@ unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
 
 const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "memory_pool_size", CTX_TYPE_UINT, "2097152",
-      "Size of the Caliper memory pool",
-      "Initial size of the Caliper memory pool (in bytes)" 
-    },
     { "node_pool_size",   CTX_TYPE_UINT, "100",
       "Size of the Caliper node pool",
       "Initial size of the Caliper node pool" 
