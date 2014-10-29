@@ -3,8 +3,10 @@ set(CALIPER_COMMON_HEADERS
     AttributeStore.h
     ContextRecord.h
     IdType.h
+    Log.h
     Node.h
     RecordMap.h
+    RuntimeConfig.h
     Variant.h
     cali_types.h)
 
@@ -12,6 +14,7 @@ set(CALIPER_COMMON_SOURCES
     Attribute.cpp
     AttributeStore.cpp
     ContextRecord.cpp
+    Log.cpp
     Node.cpp
     RecordMap.cpp
     RuntimeConfig.cpp

@@ -12,12 +12,14 @@
 #include <AttributeStore.h>
 #include <ContextRecord.h>
 #include <Node.h>
+#include <Log.h>
 #include <RuntimeConfig.h>
 
 #include <signal.h>
 
 #include <cstring>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <mutex>
 #include <vector>
@@ -68,17 +70,19 @@ struct Caliper::CaliperImpl
     // --- constructor
 
     CaliperImpl()
-        : m_verbosity { 0 }, m_mempool { 2 * 1024 * 1024 }, 
+        : m_mempool { 2 * 1024 * 1024 }, 
         m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
     {
         m_config = RuntimeConfig::init("caliper", s_configdata);
 
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
 
-        if (m_verbosity > 0)
-            cerr << "== CALIPER: initialized." << endl;
-        if (m_verbosity > 1)
-            RuntimeConfig::print(cerr);
+        // FIXME: Read memory pool size from config
+
+        Log(1).stream() << "Initialized" << std::endl;
+
+        if (Log::verbosity() == 2)
+            RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
     }
 
     ~CaliperImpl() {
@@ -273,18 +277,15 @@ unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
 
 const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "node_pool_size", CTX_TYPE_UINT, "100",
+    { "memory_pool_size", CTX_TYPE_UINT, "2097152",
+      "Size of the Caliper memory pool",
+      "Initial size of the Caliper memory pool (in bytes)" 
+    },
+    { "node_pool_size",   CTX_TYPE_UINT, "100",
       "Size of the Caliper node pool",
       "Initial size of the Caliper node pool" 
     },
-    { "verbose",        CTX_TYPE_UINT, "1",
-      "Verbosity level",
-      "Verbosity level.\n"
-      "  0: no output\n"
-      "  1: basic informational runtime output\n"
-      "  2: debug output" 
-    },
-    { "output",         CTX_TYPE_STRING, "csv",
+    { "output",           CTX_TYPE_STRING, "csv",
       "Caliper output format",
       "Caliper output format\n"
       "   csv:  CSV file output\n"
@@ -427,7 +428,7 @@ Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
 bool
 Caliper::write()
 {
-    if (m_config.get("output").to_string() == "none")
+    if (mP->m_config.get("output").to_string() == "none")
         return true;
 
     // Output. Currently CSV writer and filenames are hard-coded.
