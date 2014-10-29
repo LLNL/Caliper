@@ -30,11 +30,6 @@ using namespace std;
 
 
 //
-// --- static data initialization --------------------------------------------
-//
-
-
-//
 // --- Caliper implementation
 //
 
@@ -54,7 +49,7 @@ struct Caliper::CaliperImpl
 
     ConfigSet             m_config;
     
-    std::function<ctx_id_t()> m_env_cb;
+    function<ctx_id_t()>  m_env_cb;
     
     MemoryPool            m_mempool;
 
@@ -79,13 +74,15 @@ struct Caliper::CaliperImpl
 
         // FIXME: Read memory pool size from config
 
-        Log(1).stream() << "Initialized" << std::endl;
+        Log(1).stream() << "Initialized" << endl;
 
         if (Log::verbosity() == 2)
             RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
     }
 
     ~CaliperImpl() {
+        Log(1).stream() << "Finished" << endl;
+
         for ( auto &n : m_nodes )
             n->~Node();
     }
@@ -286,8 +283,8 @@ const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
       "Initial size of the Caliper node pool" 
     },
     { "output",           CTX_TYPE_STRING, "csv",
-      "Caliper output format",
-      "Caliper output format\n"
+      "Caliper metadata output format",
+      "Caliper metadata output format. One of\n"
       "   csv:  CSV file output\n"
       "   none: No output" 
     },

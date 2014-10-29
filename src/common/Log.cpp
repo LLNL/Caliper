@@ -51,6 +51,8 @@ struct LogImpl
             m_stream = it->second;
     }
 
+    // --- interface
+
     LogImpl() {
         m_config    = RuntimeConfig::init("log", s_configdata);
         m_verbosity = m_config.get("verbosity").to_uint();
@@ -82,14 +84,14 @@ const char*            LogImpl::s_prefix   { "== CALIPER: " };
 
 const ConfigSet::Entry LogImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "verbosity",        CTX_TYPE_UINT, "1",
+    { "verbosity", CTX_TYPE_UINT,   "1",
       "Verbosity level",
       "Verbosity level.\n"
       "  0: no output\n"
       "  1: basic informational runtime output\n"
       "  2: debug output" 
     },
-    { "logfile",          CTX_TYPE_STRING, "stderr",
+    { "logfile",   CTX_TYPE_STRING, "stderr",
       "Log file name",
       "Log file name or output stream. Either one of\n"
       "   stdout: Standard output stream,\n"

@@ -27,8 +27,12 @@ Annotation::~Annotation() {
 
 ctx_err Annotation::begin(int data)
 {
-    uint64_t buf = static_cast<uint64_t>(data);
-    return begin(CTX_TYPE_INT, &buf, sizeof(uint64_t));
+    // special case: allow assignment of int values to 'double' attributes
+    if (m_attr.type() == CTX_TYPE_DOUBLE)
+        return begin(static_cast<double>(data));
+
+    int64_t buf = static_cast<int64_t>(data);
+    return begin(CTX_TYPE_INT, &buf, sizeof(int64_t));
 }
 
 ctx_err Annotation::begin(double data)
@@ -65,8 +69,12 @@ ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
 
 ctx_err Annotation::set(int data)
 {
-    uint64_t buf = static_cast<uint64_t>(data);
-    return set(CTX_TYPE_INT, &buf, sizeof(uint64_t));
+    // special case: allow assignment of int values to 'double' attributes
+    if (m_attr.type() == CTX_TYPE_DOUBLE)
+        return set(static_cast<double>(data));
+
+    int64_t buf = static_cast<int64_t>(data);
+    return set(CTX_TYPE_INT, &buf, sizeof(int64_t));
 }
 
 ctx_err Annotation::set(double data)
@@ -93,7 +101,7 @@ ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
     ctx_err ret = c->set(c->current_environment(), m_attr, data, size);
 
     if (ret == CTX_SUCCESS)
-        ++m_depth;
+        ++m_depth; // FIXME: really?
 
     return ret;
 }
