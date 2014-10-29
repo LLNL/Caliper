@@ -30,15 +30,13 @@ struct MemoryPool::MemoryPoolImpl
         size_t size;
     };
 
+    ConfigSet                 m_config;
+
     SigsafeRWLock             m_lock;
         
     vector< Chunk<uint64_t> > m_chunks;
     size_t                    m_index;
-
     bool                      m_can_expand;
-
-    ConfigSet                 m_config;
-
 
     // --- interface 
 
@@ -67,9 +65,8 @@ struct MemoryPool::MemoryPoolImpl
     }
 
     MemoryPoolImpl() 
-        : m_index { 0 } {
-        m_config = RuntimeConfig::init("memory", s_configdata);
-
+        : m_config { RuntimeConfig::init("memory", s_configdata) }, m_index { 0 } 
+    {
         m_can_expand = m_config.get("can_expand").to_bool();
         size_t s     = m_config.get("pool_size").to_uint();
 

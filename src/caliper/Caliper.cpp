@@ -65,10 +65,9 @@ struct Caliper::CaliperImpl
     // --- constructor
 
     CaliperImpl()
-        : m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
+        : m_config { RuntimeConfig::init("caliper", s_configdata) }, 
+        m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
     {
-        m_config = RuntimeConfig::init("caliper", s_configdata);
-
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
 
         Log(1).stream() << "Initialized" << endl;
