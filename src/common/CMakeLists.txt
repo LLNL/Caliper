@@ -18,7 +18,8 @@ set(CALIPER_COMMON_SOURCES
     Node.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
-    Variant.cpp)
+    Variant.cpp
+    cali_types.c)
 
 add_library(caliper-common ${CALIPER_COMMON_SOURCES})
 

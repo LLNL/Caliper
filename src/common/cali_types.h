@@ -37,6 +37,12 @@ typedef enum {
   CTX_TYPE_TYPE   = 7
 } ctx_attr_type;
 
+const char* 
+cali_type2string(ctx_attr_type);
+
+ctx_attr_type 
+cali_string2type(const char*);
+
 typedef enum {
   CTX_ATTR_DEFAULT     = 0,
   CTX_ATTR_ASVALUE     = 1,

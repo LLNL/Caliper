@@ -174,22 +174,10 @@ ctx_attr_type
 Variant::to_attr_type(bool* okptr) 
 {
     if (m_type == CTX_TYPE_INV && !m_string.empty()) {
-        const map<string, ctx_attr_type> typemap = { 
-            { "usr",    CTX_TYPE_USR    },
-            { "int",    CTX_TYPE_INT    }, 
-            { "uint",   CTX_TYPE_UINT   },
-            { "string", CTX_TYPE_STRING },
-            { "addr",   CTX_TYPE_ADDR   },
-            { "double", CTX_TYPE_DOUBLE },
-            { "bool",   CTX_TYPE_BOOL   },
-            { "type",   CTX_TYPE_TYPE   } };
+        m_value.v_type = cali_string2type(m_string.c_str());
 
-        auto it = typemap.find(m_string);
-
-        if (it != typemap.end()) {
-            m_value.v_type = it->second;
+        if (m_value.v_type != CTX_TYPE_INV)
             m_type = CTX_TYPE_TYPE;
-        }   
     }
 
     bool ok = (m_type == CTX_TYPE_TYPE);
@@ -245,8 +233,7 @@ Variant::to_string() const
         break;
     case CTX_TYPE_TYPE:
     {
-        const char* tstr[] = { "usr", "int", "uint", "string", "addr", "double", "bool", "type" };
-        ret = (m_value.v_type < 0 || m_value.v_type > CTX_TYPE_TYPE) ? "invalid" : tstr[m_value.v_type];
+        ret = cali_type2string(m_value.v_type);
     }
         break;
     }
