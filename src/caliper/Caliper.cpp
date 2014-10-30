@@ -49,7 +49,7 @@ struct Caliper::CaliperImpl
 
     ConfigSet             m_config;
     
-    function<cali_id_t()>  m_env_cb;
+    function<cali_id_t()> m_env_cb;
     
     MemoryPool            m_mempool;
 
