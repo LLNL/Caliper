@@ -45,28 +45,28 @@ public:
 
     // --- Context API
 
-    ctx_id_t current_environment() const;
-    ctx_id_t clone_environment(ctx_id_t env);
+    cali_id_t current_environment() const;
+    cali_id_t clone_environment(cali_id_t env);
 
-    void set_environment_callback(std::function<ctx_id_t()> cb);
+    void set_environment_callback(std::function<cali_id_t()> cb);
 
-    std::size_t context_size(ctx_id_t env) const;
-    std::size_t get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const;
+    std::size_t context_size(cali_id_t env) const;
+    std::size_t get_context(cali_id_t env, uint64_t buf[], std::size_t len) const;
 
 
     // --- Annotation API
 
-    ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, std::size_t size);
-    ctx_err end(ctx_id_t env, const Attribute& attr);
-    ctx_err set(ctx_id_t env, const Attribute& attr, const void* data, std::size_t size);
+    cali_err begin(cali_id_t env, const Attribute& attr, const void* data, std::size_t size);
+    cali_err end(cali_id_t env, const Attribute& attr);
+    cali_err set(cali_id_t env, const Attribute& attr, const void* data, std::size_t size);
 
 
     // --- Attribute API
 
-    Attribute get_attribute(ctx_id_t id) const;
+    Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 
-    Attribute create_attribute(const std::string& name, ctx_attr_type type, int prop = CTX_ATTR_DEFAULT);
+    Attribute create_attribute(const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT);
 
 
     // --- Query API

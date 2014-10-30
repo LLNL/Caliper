@@ -27,15 +27,15 @@ class Node : public IdType, public util::IntrusiveTree<Node>
 {
     util::IntrusiveTree<Node>::Node m_treenode;
 
-    ctx_id_t      m_attribute;
-    ctx_attr_type m_type;
+    cali_id_t      m_attribute;
+    cali_attr_type m_type;
 
     std::size_t   m_datasize;
     void*         m_data;
 
 public:
 
-    Node(ctx_id_t id, const Attribute& attr, void* data, size_t size);
+    Node(cali_id_t id, const Attribute& attr, void* data, size_t size);
 
     Node(const Node&) = delete;
 
@@ -43,9 +43,9 @@ public:
 
     ~Node();
 
-    bool equals(ctx_id_t attr, const void* data, size_t size) const;
+    bool equals(cali_id_t attr, const void* data, size_t size) const;
 
-    ctx_id_t attribute() const { return m_attribute; }
+    cali_id_t attribute() const { return m_attribute; }
 
     size_t size() const        { return m_datasize;  }
     const void* data() const   { return m_data;      }

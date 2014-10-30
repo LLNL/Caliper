@@ -85,11 +85,11 @@ struct MemoryPool::MemoryPoolImpl
 
 const ConfigSet::Entry MemoryPool::MemoryPoolImpl::s_configdata[] = { 
     // key, type, value, short description, long description
-    { "pool_size", CTX_TYPE_UINT, "2097152",
+    { "pool_size", CALI_TYPE_UINT, "2097152",
       "Initial size of the Caliper memory pool (in bytes)",
       "Initial size of the Caliper memory pool (in bytes)" 
     },
-    { "can_expand", CTX_TYPE_BOOL, "true",
+    { "can_expand", CALI_TYPE_BOOL, "true",
       "Allow memory pool to expand at runtime",
       "Allow memory pool to expand at runtime"
     },

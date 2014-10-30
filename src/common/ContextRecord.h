@@ -25,8 +25,8 @@ public:
 
     static 
     std::vector<RecordMap> 
-    unpack(std::function<cali::Attribute  (ctx_id_t)> get_attr, 
-           std::function<const cali::Node*(ctx_id_t)> get_node,
+    unpack(std::function<cali::Attribute  (cali_id_t)> get_attr, 
+           std::function<const cali::Node*(cali_id_t)> get_node,
            const uint64_t buf[], size_t size);
 };
 

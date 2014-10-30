@@ -71,11 +71,11 @@ struct CsvSpec
         return vec;
     }
 
-    vector<unsigned char> read_data(const std::string& str, ctx_attr_type type) const {
+    vector<unsigned char> read_data(const std::string& str, cali_attr_type type) const {
         vector<unsigned char> data;
 
         switch (type) {
-        case CTX_TYPE_USR:
+        case CALI_TYPE_USR:
             {
                 // data is stored as sequence of hexadecimal byte values delimited by m_delim,
                 // e.g. "42:0:0:2a:f:a0:2:0:"
@@ -86,21 +86,21 @@ struct CsvSpec
             }
             break;
 
-        case CTX_TYPE_INT:
+        case CALI_TYPE_INT:
             {
                 union { int64_t i; unsigned char bytes[sizeof(int64_t)];   } u;
                 u.i = std::stoi(str);
                 std::copy(u.bytes, u.bytes + sizeof(int64_t),  std::back_inserter(data));
             }
             break;
-        case CTX_TYPE_ADDR:
+        case CALI_TYPE_ADDR:
             {
                 union { uint64_t i; unsigned char bytes[sizeof(uint64_t)]; } u;
                 u.i = std::stoul(str, 0, 16); // read hexadecimal value
                 std::copy(u.bytes, u.bytes + sizeof(uint64_t), std::back_inserter(data));
             }
             break;
-        case CTX_TYPE_DOUBLE:
+        case CALI_TYPE_DOUBLE:
             {
                 union { double d; unsigned char bytes[sizeof(double)];     } u;
                 u.d = std::stod(str);
@@ -108,7 +108,7 @@ struct CsvSpec
             }
             break;
 
-        case CTX_TYPE_STRING:
+        case CALI_TYPE_STRING:
             std::copy(str.begin(), str.end(), std::back_inserter(data));
             break;
         }

@@ -13,14 +13,14 @@ namespace cali
 {
 
 class IdType {
-    ctx_id_t m_id;
+    cali_id_t m_id;
 
 public:
 
-    IdType(ctx_id_t id)
+    IdType(cali_id_t id)
         : m_id(id) { }
 
-    ctx_id_t id() const { 
+    cali_id_t id() const { 
         return m_id;
     }
 

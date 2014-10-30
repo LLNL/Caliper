@@ -12,50 +12,50 @@
 extern "C" {
 #endif
 
-typedef uint64_t ctx_id_t;
+typedef uint64_t cali_id_t;
 
-#define CTX_INV_ID     0xFFFFFFFFFFFFFFFF
-#define CTX_INV_HANDLE 0
+#define CALI_INV_ID     0xFFFFFFFFFFFFFFFF
+#define CALI_INV_HANDLE 0
 
-/* typedef struct _ctx_entry { */
-/*   ctx_id_t      attr; */
+/* typedef struct _cali_entry { */
+/*   cali_id_t      attr; */
 /*   union { */
 /*     int64_t     value; */
-/*     ctx_node_h  node; */
+/*     cali_node_h  node; */
 /*   } */
-/* } ctx_entry_t; */
+/* } cali_entry_t; */
 
 typedef enum {
-  CTX_TYPE_INV    = -1,
-  CTX_TYPE_USR    = 0,
-  CTX_TYPE_INT    = 1,
-  CTX_TYPE_UINT   = 2,
-  CTX_TYPE_STRING = 3,
-  CTX_TYPE_ADDR   = 4,
-  CTX_TYPE_DOUBLE = 5,
-  CTX_TYPE_BOOL   = 6,
-  CTX_TYPE_TYPE   = 7
-} ctx_attr_type;
+  CALI_TYPE_INV    = -1,
+  CALI_TYPE_USR    = 0,
+  CALI_TYPE_INT    = 1,
+  CALI_TYPE_UINT   = 2,
+  CALI_TYPE_STRING = 3,
+  CALI_TYPE_ADDR   = 4,
+  CALI_TYPE_DOUBLE = 5,
+  CALI_TYPE_BOOL   = 6,
+  CALI_TYPE_TYPE   = 7
+} cali_attr_type;
 
 const char* 
-cali_type2string(ctx_attr_type);
+cali_type2string(cali_attr_type);
 
-ctx_attr_type 
+cali_attr_type 
 cali_string2type(const char*);
 
 typedef enum {
-  CTX_ATTR_DEFAULT     = 0,
-  CTX_ATTR_ASVALUE     = 1,
-  CTX_ATTR_NOMERGE     = 2,
-  CTX_ATTR_GLOBAL      = 4
-} ctx_attr_properties;
+  CALI_ATTR_DEFAULT     = 0,
+  CALI_ATTR_ASVALUE     = 1,
+  CALI_ATTR_NOMERGE     = 2,
+  CALI_ATTR_GLOBAL      = 4
+} cali_attr_properties;
 
 typedef enum {
-  CTX_SUCCESS = 0,
-  CTX_EBUSY,
-  CTX_ELOCKED,
-  CTX_EINV
-} ctx_err;
+  CALI_SUCCESS = 0,
+  CALI_EBUSY,
+  CALI_ELOCKED,
+  CALI_EINV
+} cali_err;
 
 #ifdef __cplusplus
 } // extern "C"

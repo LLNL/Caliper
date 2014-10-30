@@ -28,8 +28,8 @@ RecordMap value_record(const Attribute& attr, uint64_t val)
 
 
 vector<RecordMap>
-ContextRecord::unpack(std::function<Attribute  (ctx_id_t)> get_attr,
-                      std::function<const Node*(ctx_id_t)> get_node,
+ContextRecord::unpack(std::function<Attribute  (cali_id_t)> get_attr,
+                      std::function<const Node*(cali_id_t)> get_node,
                       const uint64_t buf[], size_t size)
 {
     vector<RecordMap> vec;
@@ -52,7 +52,7 @@ ContextRecord::unpack(std::function<Attribute  (ctx_id_t)> get_attr,
 
                 // Locking ... ? Should work though since this should be read-only data
                 node = node->parent();
-                attr = get_attr(node ? node->attribute() : CTX_INV_ID);
+                attr = get_attr(node ? node->attribute() : CALI_INV_ID);
             }
         }
     }

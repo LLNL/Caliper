@@ -24,15 +24,15 @@ public:
 
     ~Context();
 
-    ctx_id_t clone_environment(ctx_id_t env);
-    void release_environment(ctx_id_t env);
+    cali_id_t clone_environment(cali_id_t env);
+    void release_environment(cali_id_t env);
 
-    std::size_t context_size(ctx_id_t env) const;
-    std::size_t get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const;
+    std::size_t context_size(cali_id_t env) const;
+    std::size_t get_context(cali_id_t env, uint64_t buf[], std::size_t len) const;
     
-    std::pair<bool, uint64_t> get(ctx_id_t env, ctx_id_t key) const;
-    ctx_err set(ctx_id_t env, ctx_id_t key, uint64_t value, bool global = false);
-    ctx_err unset(ctx_id_t env, ctx_id_t key);
+    std::pair<bool, uint64_t> get(cali_id_t env, cali_id_t key) const;
+    cali_err set(cali_id_t env, cali_id_t key, uint64_t value, bool global = false);
+    cali_err unset(cali_id_t env, cali_id_t key);
 };
 
 } // namespace cali

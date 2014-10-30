@@ -15,36 +15,36 @@ using namespace cali;
 using namespace std;
 
 
-Variant::Variant(ctx_attr_type type, std::size_t size, const void* data)
+Variant::Variant(cali_attr_type type, std::size_t size, const void* data)
     : m_type { type }, m_size { size }
 {
     switch (m_type) {
-    case CTX_TYPE_INV:
+    case CALI_TYPE_INV:
         break;
-    case CTX_TYPE_USR:
-    case CTX_TYPE_STRING:
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
         m_value.ptr = data;
         break;
-    case CTX_TYPE_INT:
+    case CALI_TYPE_INT:
         m_value.v_int = *static_cast<const int64_t*>(data);
         break;
-    case CTX_TYPE_ADDR:
-    case CTX_TYPE_UINT:
+    case CALI_TYPE_ADDR:
+    case CALI_TYPE_UINT:
         m_value.v_uint = *static_cast<const uint64_t*>(data);
         break;
-    case CTX_TYPE_DOUBLE:
+    case CALI_TYPE_DOUBLE:
         m_value.v_uint = *static_cast<const double*>(data);
         break;
-    case CTX_TYPE_BOOL:
+    case CALI_TYPE_BOOL:
         m_value.v_bool = *static_cast<const bool*>(data);
         break;
-    case CTX_TYPE_TYPE:
-        m_value.v_type = *static_cast<const ctx_attr_type*>(data);
+    case CALI_TYPE_TYPE:
+        m_value.v_type = *static_cast<const cali_attr_type*>(data);
         break;
     }
 }
 
-ctx_id_t
+cali_id_t
 Variant::to_id(bool* okptr)  
 {
     return to_uint(okptr);
@@ -55,7 +55,7 @@ Variant::to_bool(bool* okptr)
 {
     bool ok = false;
 
-    if (m_type == CTX_TYPE_INV && !m_string.empty()) {
+    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         // try string
         {
             string lower;
@@ -80,22 +80,22 @@ Variant::to_bool(bool* okptr)
         }
 
         if (ok) {
-            m_type = CTX_TYPE_BOOL;
+            m_type = CALI_TYPE_BOOL;
             m_size = sizeof(bool);
         }
     }
 
-    ok = (m_type == CTX_TYPE_BOOL || m_type == CTX_TYPE_INT || m_type == CTX_TYPE_UINT);
+    ok = (m_type == CALI_TYPE_BOOL || m_type == CALI_TYPE_INT || m_type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
 
     switch (m_type) {
-    case CTX_TYPE_BOOL:
+    case CALI_TYPE_BOOL:
         return m_value.v_bool;
-    case CTX_TYPE_INT:
+    case CALI_TYPE_INT:
         return m_value.v_int  != 0;
-    case CTX_TYPE_UINT:
+    case CALI_TYPE_UINT:
         return m_value.v_uint != 0;
     default:
         break;
@@ -107,18 +107,18 @@ Variant::to_bool(bool* okptr)
 int
 Variant::to_int(bool* okptr)  
 {
-    if (m_type == CTX_TYPE_INV && !m_string.empty()) {
+    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
         is >> m_value.v_int;
 
         if (is) {
-            m_type = CTX_TYPE_INT;
+            m_type = CALI_TYPE_INT;
             m_size = sizeof(int64_t);
         }
     }
 
-    bool ok = (m_type == CTX_TYPE_INT);
+    bool ok = (m_type == CALI_TYPE_INT);
 
     if (okptr)
         *okptr = ok;
@@ -129,18 +129,18 @@ Variant::to_int(bool* okptr)
 unsigned
 Variant::to_uint(bool* okptr) 
 {
-    if (m_type == CTX_TYPE_INV && !m_string.empty()) {
+    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
         is >> m_value.v_uint;
 
         if (is) {
-            m_type = CTX_TYPE_UINT;
+            m_type = CALI_TYPE_UINT;
             m_size = sizeof(uint64_t);
         }
     }
 
-    bool ok = (m_type == CTX_TYPE_UINT);
+    bool ok = (m_type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
@@ -151,18 +151,18 @@ Variant::to_uint(bool* okptr)
 double
 Variant::to_double(bool* okptr)  
 {
-    if (m_type == CTX_TYPE_INV && !m_string.empty()) {
+    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
         is >> m_value.v_double;
 
         if (is) {
-            m_type = CTX_TYPE_DOUBLE;
+            m_type = CALI_TYPE_DOUBLE;
             m_size = sizeof(double);
         }
     }
 
-    bool ok = (m_type == CTX_TYPE_DOUBLE || m_type == CTX_TYPE_INT || m_type == CTX_TYPE_UINT);
+    bool ok = (m_type == CALI_TYPE_DOUBLE || m_type == CALI_TYPE_INT || m_type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
@@ -170,22 +170,22 @@ Variant::to_double(bool* okptr)
     return ok ? m_value.v_double : 0;
 }
 
-ctx_attr_type
+cali_attr_type
 Variant::to_attr_type(bool* okptr) 
 {
-    if (m_type == CTX_TYPE_INV && !m_string.empty()) {
+    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         m_value.v_type = cali_string2type(m_string.c_str());
 
-        if (m_value.v_type != CTX_TYPE_INV)
-            m_type = CTX_TYPE_TYPE;
+        if (m_value.v_type != CALI_TYPE_INV)
+            m_type = CALI_TYPE_TYPE;
     }
 
-    bool ok = (m_type == CTX_TYPE_TYPE);
+    bool ok = (m_type == CALI_TYPE_TYPE);
 
     if (okptr)
         *okptr = ok;
 
-    return ok ? m_value.v_type : CTX_TYPE_INV;
+    return ok ? m_value.v_type : CALI_TYPE_INV;
 }
 
 std::string
@@ -197,9 +197,9 @@ Variant::to_string() const
     string ret;
 
     switch (m_type) {
-    case CTX_TYPE_INV:
+    case CALI_TYPE_INV:
         break;
-    case CTX_TYPE_USR:
+    case CALI_TYPE_USR:
     {
         ostringstream os;
 
@@ -209,29 +209,29 @@ Variant::to_string() const
         ret = os.str();
     }
         break;
-    case CTX_TYPE_INT:
+    case CALI_TYPE_INT:
         ret = std::to_string(m_value.v_int);
         break;
-    case CTX_TYPE_UINT:
+    case CALI_TYPE_UINT:
         ret = std::to_string(m_value.v_uint);
         break;
-    case CTX_TYPE_STRING:
+    case CALI_TYPE_STRING:
         ret.assign(static_cast<const char*>(m_value.ptr), m_size);
         break;
-    case CTX_TYPE_ADDR:
+    case CALI_TYPE_ADDR:
     {
         ostringstream os;
         os << std::hex << m_value.v_uint;
         ret = os.str();
     }
         break;
-    case CTX_TYPE_DOUBLE:
+    case CALI_TYPE_DOUBLE:
         ret = std::to_string(m_value.v_double);
         break;
-    case CTX_TYPE_BOOL:
+    case CALI_TYPE_BOOL:
         ret = m_value.v_bool ? "true" : "false";
         break;
-    case CTX_TYPE_TYPE:
+    case CALI_TYPE_TYPE:
     {
         ret = cali_type2string(m_value.v_type);
     }

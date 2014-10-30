@@ -25,40 +25,40 @@ Annotation::~Annotation() {
 
 // --- begin() overloads
 
-ctx_err Annotation::begin(int data)
+cali_err Annotation::begin(int data)
 {
     // special case: allow assignment of int values to 'double' attributes
-    if (m_attr.type() == CTX_TYPE_DOUBLE)
+    if (m_attr.type() == CALI_TYPE_DOUBLE)
         return begin(static_cast<double>(data));
 
     int64_t buf = static_cast<int64_t>(data);
-    return begin(CTX_TYPE_INT, &buf, sizeof(int64_t));
+    return begin(CALI_TYPE_INT, &buf, sizeof(int64_t));
 }
 
-ctx_err Annotation::begin(double data)
+cali_err Annotation::begin(double data)
 {
-    return begin(CTX_TYPE_DOUBLE, &data, sizeof(double));
+    return begin(CALI_TYPE_DOUBLE, &data, sizeof(double));
 }
 
-ctx_err Annotation::begin(const string& data)
+cali_err Annotation::begin(const string& data)
 {
-    return begin(CTX_TYPE_STRING, data.data(), data.size());
+    return begin(CALI_TYPE_STRING, data.data(), data.size());
 }
 
 // --- begin() workhorse
 
-ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
+cali_err Annotation::begin(cali_attr_type type, const void* data, size_t size)
 {
     if (m_attr == Attribute::invalid)
         create_attribute(type);
 
     if (!(m_attr.type() == type))
-        return CTX_EINV;
+        return CALI_EINV;
 
     Caliper*  c = Caliper::instance();
-    ctx_err ret = c->begin(c->current_environment(), m_attr, data, size);
+    cali_err ret = c->begin(c->current_environment(), m_attr, data, size);
 
-    if (ret == CTX_SUCCESS)
+    if (ret == CALI_SUCCESS)
         ++m_depth;
 
     return ret;
@@ -67,40 +67,40 @@ ctx_err Annotation::begin(ctx_attr_type type, const void* data, size_t size)
 
 // --- set() overloads
 
-ctx_err Annotation::set(int data)
+cali_err Annotation::set(int data)
 {
     // special case: allow assignment of int values to 'double' attributes
-    if (m_attr.type() == CTX_TYPE_DOUBLE)
+    if (m_attr.type() == CALI_TYPE_DOUBLE)
         return set(static_cast<double>(data));
 
     int64_t buf = static_cast<int64_t>(data);
-    return set(CTX_TYPE_INT, &buf, sizeof(int64_t));
+    return set(CALI_TYPE_INT, &buf, sizeof(int64_t));
 }
 
-ctx_err Annotation::set(double data)
+cali_err Annotation::set(double data)
 {
-    return set(CTX_TYPE_DOUBLE, &data, sizeof(double));
+    return set(CALI_TYPE_DOUBLE, &data, sizeof(double));
 }
 
-ctx_err Annotation::set(const string& data)
+cali_err Annotation::set(const string& data)
 {
-    return set(CTX_TYPE_STRING, data.c_str(), data.size());
+    return set(CALI_TYPE_STRING, data.c_str(), data.size());
 }
 
 // --- set() workhorse
 
-ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
+cali_err Annotation::set(cali_attr_type type, const void* data, size_t size)
 {
     if (m_attr == Attribute::invalid)
         create_attribute(type);
 
     if (!(m_attr.type() == type))
-        return CTX_EINV;
+        return CALI_EINV;
 
     Caliper* c  = Caliper::instance();
-    ctx_err ret = c->set(c->current_environment(), m_attr, data, size);
+    cali_err ret = c->set(c->current_environment(), m_attr, data, size);
 
-    if (ret == CTX_SUCCESS)
+    if (ret == CALI_SUCCESS)
         ++m_depth; // FIXME: really?
 
     return ret;
@@ -108,26 +108,26 @@ ctx_err Annotation::set(ctx_attr_type type, const void* data, size_t size)
 
 // --- set() static overloads
 
-pair<Annotation, ctx_err> Annotation::set(const string& name, int data, int opt)
+pair<Annotation, cali_err> Annotation::set(const string& name, int data, int opt)
 {
     Annotation a { name, opt };
-    ctx_err  err = a.set(data);
+    cali_err  err = a.set(data);
 
     return make_pair(std::move(a), err);
 }
 
-pair<Annotation, ctx_err> Annotation::set(const string& name, double data, int opt)
+pair<Annotation, cali_err> Annotation::set(const string& name, double data, int opt)
 {
     Annotation a { name, opt };
-    ctx_err  err = a.set(data);
+    cali_err  err = a.set(data);
 
     return make_pair(std::move(a), err);
 }
 
-pair<Annotation, ctx_err> Annotation::set(const string& name, const string& data, int opt)
+pair<Annotation, cali_err> Annotation::set(const string& name, const string& data, int opt)
 {
     Annotation a { name, opt };
-    ctx_err  err = a.set(data);
+    cali_err  err = a.set(data);
 
     return make_pair(std::move(a), err);
 }
@@ -135,10 +135,10 @@ pair<Annotation, ctx_err> Annotation::set(const string& name, const string& data
 
 // --- end()
 
-ctx_err Annotation::end()
+cali_err Annotation::end()
 {
     Caliper*  c = Caliper::instance();
-    ctx_err ret = c->end(c->current_environment(), m_attr);
+    cali_err ret = c->end(c->current_environment(), m_attr);
 
     if (m_depth > 0)
         --m_depth;
@@ -149,14 +149,14 @@ ctx_err Annotation::end()
 
 // --- init_attribute 
 
-void Annotation::create_attribute(ctx_attr_type type)
+void Annotation::create_attribute(cali_attr_type type)
 {
-    // Option -> ctx_attr_properties map
+    // Option -> cali_attr_properties map
     const int prop[] = {
-        CTX_ATTR_DEFAULT,                   // Default      = 0
-        CTX_ATTR_ASVALUE,                   // StoreAsValue = 1
-        CTX_ATTR_NOMERGE,                   // NoMerge      = 2
-        CTX_ATTR_ASVALUE | CTX_ATTR_NOMERGE // StoreAsValue | NoMerge = 3
+        CALI_ATTR_DEFAULT,                   // Default      = 0
+        CALI_ATTR_ASVALUE,                   // StoreAsValue = 1
+        CALI_ATTR_NOMERGE,                   // NoMerge      = 2
+        CALI_ATTR_ASVALUE | CALI_ATTR_NOMERGE // StoreAsValue | NoMerge = 3
     };
 
     m_attr = Caliper::instance()->create_attribute(m_name, type, prop[m_opt & 0x03]);

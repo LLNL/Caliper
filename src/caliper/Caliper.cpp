@@ -49,7 +49,7 @@ struct Caliper::CaliperImpl
 
     ConfigSet             m_config;
     
-    function<ctx_id_t()>  m_env_cb;
+    function<cali_id_t()>  m_env_cb;
     
     MemoryPool            m_mempool;
 
@@ -66,7 +66,7 @@ struct Caliper::CaliperImpl
 
     CaliperImpl()
         : m_config { RuntimeConfig::init("caliper", s_configdata) }, 
-        m_root { CTX_INV_ID, Attribute::invalid, 0, 0 } 
+        m_root { CALI_INV_ID, Attribute::invalid, 0, 0 } 
     {
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
 
@@ -106,13 +106,13 @@ struct Caliper::CaliperImpl
 
     // --- Annotation interface
 
-    ctx_err begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
-        ctx_err ret = CTX_EINV;
+    cali_err begin(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
+        cali_err ret = CALI_EINV;
 
         if (attr == Attribute::invalid)
-            return CTX_EINV;
+            return CALI_EINV;
 
-        ctx_id_t key = attr.id();
+        cali_id_t key = attr.id();
 
         if (attr.store_as_value() && size == sizeof(uint64_t)) {
             uint64_t val = 0;
@@ -147,12 +147,12 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
-    ctx_err end(ctx_id_t env, const Attribute& attr) {
+    cali_err end(cali_id_t env, const Attribute& attr) {
         if (attr == Attribute::invalid)
-            return CTX_EINV;
+            return CALI_EINV;
 
-        ctx_err  ret = CTX_EINV;
-        ctx_id_t key = attr.id();
+        cali_err  ret = CALI_EINV;
+        cali_id_t key = attr.id();
 
         if (attr.store_as_value())
             ret = m_context.unset(env, key);
@@ -160,7 +160,7 @@ struct Caliper::CaliperImpl
             auto p = m_context.get(env, key);
 
             if (!p.first)
-                return CTX_EINV;
+                return CALI_EINV;
 
             m_nodelock.rlock();
 
@@ -172,7 +172,7 @@ struct Caliper::CaliperImpl
                     node = node->parent();
 
                 if (!node)
-                    return CTX_EINV;
+                    return CALI_EINV;
             }
 
             node = node->parent();
@@ -187,12 +187,12 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
-    ctx_err set(ctx_id_t env, const Attribute& attr, const void* data, size_t size) {
+    cali_err set(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
         if (attr == Attribute::invalid)
-            return CTX_EINV;
+            return CALI_EINV;
 
-        ctx_err  ret = CTX_EINV;
-        ctx_id_t key = attr.id();
+        cali_err  ret = CALI_EINV;
+        cali_id_t key = attr.id();
 
         if (attr.store_as_value() && size == sizeof(uint64_t)) {
             uint64_t val = 0;
@@ -236,7 +236,7 @@ struct Caliper::CaliperImpl
 
     // --- Retrieval
 
-    const Node* get(ctx_id_t id) const {
+    const Node* get(cali_id_t id) const {
         if (id > m_nodes.size())
             return nullptr;
 
@@ -270,11 +270,11 @@ unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
 
 const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "node_pool_size", CTX_TYPE_UINT, "100",
+    { "node_pool_size", CALI_TYPE_UINT, "100",
       "Size of the Caliper node pool",
       "Initial size of the Caliper node pool" 
     },
-    { "output", CTX_TYPE_STRING, "csv",
+    { "output", CALI_TYPE_STRING, "csv",
       "Caliper metadata output format",
       "Caliper metadata output format. One of\n"
       "   csv:  CSV file output\n"
@@ -301,32 +301,32 @@ Caliper::~Caliper()
 
 // --- Context API
 
-ctx_id_t 
+cali_id_t 
 Caliper::current_environment() const
 {
     return mP->m_env_cb ? mP->m_env_cb() : 0;
 }
 
-ctx_id_t 
-Caliper::clone_environment(ctx_id_t env)
+cali_id_t 
+Caliper::clone_environment(cali_id_t env)
 {
     return mP->m_context.clone_environment(env);
 }
 
 std::size_t 
-Caliper::context_size(ctx_id_t env) const
+Caliper::context_size(cali_id_t env) const
 {
     return mP->m_context.context_size(env);
 }
 
 std::size_t 
-Caliper::get_context(ctx_id_t env, uint64_t buf[], std::size_t len) const
+Caliper::get_context(cali_id_t env, uint64_t buf[], std::size_t len) const
 {
     return mP->m_context.get_context(env, buf, len);
 }
 
 void 
-Caliper::set_environment_callback(std::function<ctx_id_t()> cb)
+Caliper::set_environment_callback(std::function<cali_id_t()> cb)
 {
     mP->m_env_cb = cb;
 }
@@ -334,20 +334,20 @@ Caliper::set_environment_callback(std::function<ctx_id_t()> cb)
 
 // --- Annotation interface
 
-ctx_err 
-Caliper::begin(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
+cali_err 
+Caliper::begin(cali_id_t env, const Attribute& attr, const void* data, size_t size)
 {
     return mP->begin(env, attr, data, size);
 }
 
-ctx_err 
-Caliper::end(ctx_id_t env, const Attribute& attr)
+cali_err 
+Caliper::end(cali_id_t env, const Attribute& attr)
 {
     return mP->end(env, attr);
 }
 
-ctx_err 
-Caliper::set(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
+cali_err 
+Caliper::set(cali_id_t env, const Attribute& attr, const void* data, size_t size)
 {
     return mP->set(env, attr, data, size);
 }
@@ -356,7 +356,7 @@ Caliper::set(ctx_id_t env, const Attribute& attr, const void* data, size_t size)
 // --- Attribute API
 
 Attribute
-Caliper::get_attribute(ctx_id_t id) const
+Caliper::get_attribute(cali_id_t id) const
 {
     mP->m_attribute_lock.rlock();
     Attribute a = mP->m_attributes.get(id);
@@ -376,7 +376,7 @@ Caliper::get_attribute(const std::string& name) const
 }
 
 Attribute 
-Caliper::create_attribute(const std::string& name, ctx_attr_type type, int prop)
+Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop)
 {
     mP->m_attribute_lock.wlock();
     Attribute a = mP->m_attributes.create(name, type, prop);
@@ -392,8 +392,8 @@ std::vector<RecordMap>
 Caliper::unpack(const uint64_t buf[], size_t size) const
 {
     return ContextRecord::unpack(
-        [this](ctx_id_t id){ return get_attribute(id); },
-        [this](ctx_id_t id){ return mP->get(id); },
+        [this](cali_id_t id){ return get_attribute(id); },
+        [this](cali_id_t id){ return mP->get(id); },
         buf, size);                                 
 }
 

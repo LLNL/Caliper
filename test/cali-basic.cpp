@@ -26,7 +26,7 @@ void end_foo_op()
 void print_context()
 {
     cali::Caliper* c { cali::Caliper::instance() };
-    ctx_id_t     env { c->current_environment()  };
+    cali_id_t     env { c->current_environment()  };
 
     vector<uint64_t> ctx(c->context_size(env), 0);
 
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
     } my_weird_elem;
 
     cali::Annotation usr = cali::Annotation("mydata");
-    usr.set(CTX_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
+    usr.set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
 
     // Add new scope phase->"loop" under phase->"main" 
     phase.begin("loop");

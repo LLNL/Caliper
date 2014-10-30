@@ -31,12 +31,12 @@ namespace
 
     int read_properties(const std::string& str)
     {
-        const map<string, ctx_attr_properties> propmap = { 
-            { "value",   CTX_ATTR_ASVALUE }, 
-            { "nomerge", CTX_ATTR_NOMERGE }, 
-            { "global",  CTX_ATTR_GLOBAL  } };
+        const map<string, cali_attr_properties> propmap = { 
+            { "value",   CALI_ATTR_ASVALUE }, 
+            { "nomerge", CALI_ATTR_NOMERGE }, 
+            { "global",  CALI_ATTR_GLOBAL  } };
 
-        int prop = CTX_ATTR_DEFAULT;
+        int prop = CALI_ATTR_DEFAULT;
 
         for (const string &s : split(str, ':')) { 
             auto it = propmap.find(s);
@@ -51,11 +51,11 @@ namespace
     string write_properties(int properties) 
     {
         const struct property_tbl_entry {
-            ctx_attr_properties p; const char* str; const char* contstr;
+            cali_attr_properties p; const char* str; const char* contstr;
         } property_tbl[] = { 
-            { CTX_ATTR_ASVALUE, "value"   }, 
-            { CTX_ATTR_NOMERGE, "nomerge" }, 
-            { CTX_ATTR_GLOBAL,  "global"  }
+            { CALI_ATTR_ASVALUE, "value"   }, 
+            { CALI_ATTR_NOMERGE, "nomerge" }, 
+            { CALI_ATTR_GLOBAL,  "global"  }
         };
 
         int    count = 0;
@@ -70,7 +70,7 @@ namespace
 }
 
 
-Attribute::Attribute(ctx_id_t id, const std::string&  name, ctx_attr_type type, int prop)
+Attribute::Attribute(cali_id_t id, const std::string&  name, cali_attr_type type, int prop)
     : IdType { id }, 
     m_name { name }, m_properties { prop }, m_type { type }
 { }
@@ -83,7 +83,7 @@ RecordMap Attribute::record() const
         { "name", { m_name } },
         { "type", { m_type } } };
 
-    if (m_properties != CTX_ATTR_DEFAULT)
+    if (m_properties != CALI_ATTR_DEFAULT)
         recmap.insert(make_pair("properties", Variant(::write_properties(m_properties))));
 
     return recmap;
@@ -105,10 +105,10 @@ Attribute Attribute::read(const RecordMap& rec)
     it = rec.find("properties");
     Variant v_prop = it == rec.end() ? Variant() : it->second;
 
-    int properties = v_prop ? ::read_properties(v_prop.to_string()) : CTX_ATTR_DEFAULT;
+    int properties = v_prop ? ::read_properties(v_prop.to_string()) : CALI_ATTR_DEFAULT;
 
     return Attribute(v_id.to_id(), v_name.to_string(), v_type.to_attr_type(), properties);
 }
 
 
-const Attribute Attribute::invalid { CTX_INV_ID, "", CTX_TYPE_INV, CTX_ATTR_DEFAULT };
+const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };

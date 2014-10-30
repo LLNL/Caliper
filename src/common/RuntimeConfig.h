@@ -25,13 +25,13 @@ public:
 
     struct Entry {
         const char*   key;         ///< Variable key
-        ctx_attr_type type;        ///< Variable type
+        cali_attr_type type;        ///< Variable type
         const char*   value;       ///< (Default) value as string
         const char*   descr;       ///< One-line description
         const char*   long_descr;  ///< Extensive, multi-line description
     };
 
-    static constexpr Entry Terminator = { 0, CTX_TYPE_INV, 0, 0, 0 };
+    static constexpr Entry Terminator = { 0, CALI_TYPE_INV, 0, 0, 0 };
 
     constexpr ConfigSet() = default;
 

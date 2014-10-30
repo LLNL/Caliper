@@ -18,13 +18,13 @@ namespace cali
     class AttributeStore;
 
     class Attribute : public IdType {
-        std::string         m_name;
-        int                 m_properties;
-        ctx_attr_type       m_type;
+        std::string    m_name;
+        int            m_properties;
+        cali_attr_type m_type;
 
-        Attribute(ctx_id_t            id,
+        Attribute(cali_id_t            id,
                   const std::string&  name, 
-                  ctx_attr_type       type,
+                  cali_attr_type       type,
                   int                 properties);
 
         friend class AttributeStore;
@@ -36,19 +36,19 @@ namespace cali
 
         Attribute& operator = (const Attribute&) = default;
 
-        std::string   name() const { return m_name; }
-        ctx_attr_type type() const { return m_type; }        
+        std::string    name() const { return m_name; }
+        cali_attr_type type() const { return m_type; }        
 
-        int           properties() const { return m_properties; } 
+        int            properties() const { return m_properties; } 
 
         bool store_as_value() const { 
-            return m_properties & CTX_ATTR_ASVALUE; 
+            return m_properties & CALI_ATTR_ASVALUE; 
         }
         bool is_autocombineable() const   { 
-            return !store_as_value() && !(m_properties & CTX_ATTR_NOMERGE);
+            return !store_as_value() && !(m_properties & CALI_ATTR_NOMERGE);
         }
         bool is_global() const {
-            return m_properties & CTX_ATTR_GLOBAL;
+            return m_properties & CALI_ATTR_GLOBAL;
         }
 
         RecordMap record() const;

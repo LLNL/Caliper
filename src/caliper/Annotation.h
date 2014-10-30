@@ -18,7 +18,7 @@ class Annotation
     int         m_opt;
     int         m_depth;
 
-    void create_attribute(ctx_attr_type type);
+    void create_attribute(cali_attr_type type);
 
 public:
 
@@ -53,23 +53,23 @@ public:
         return *this;
     }
 
-    ctx_err begin(int data);
-    ctx_err begin(double data);
-    ctx_err begin(const std::string& data);
+    cali_err begin(int data);
+    cali_err begin(double data);
+    cali_err begin(const std::string& data);
 
-    ctx_err begin(ctx_attr_type type, const void* data, std::size_t size);
+    cali_err begin(cali_attr_type type, const void* data, std::size_t size);
 
-    ctx_err set(int data);
-    ctx_err set(double data);
-    ctx_err set(const std::string& data);
+    cali_err set(int data);
+    cali_err set(double data);
+    cali_err set(const std::string& data);
 
-    ctx_err set(ctx_attr_type type, const void* data, std::size_t size);
+    cali_err set(cali_attr_type type, const void* data, std::size_t size);
 
-    static std::pair<Annotation, ctx_err> set(const std::string& name, int data, int opt = Default);
-    static std::pair<Annotation, ctx_err> set(const std::string& name, double data, int opt = Default);
-    static std::pair<Annotation, ctx_err> set(const std::string& name, const std::string& data, int opt = Default);
+    static std::pair<Annotation, cali_err> set(const std::string& name, int data, int opt = Default);
+    static std::pair<Annotation, cali_err> set(const std::string& name, double data, int opt = Default);
+    static std::pair<Annotation, cali_err> set(const std::string& name, const std::string& data, int opt = Default);
 
-    ctx_err end();
+    cali_err end();
 };
 
 };

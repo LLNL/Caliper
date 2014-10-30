@@ -16,7 +16,7 @@ struct Context::ContextImpl
 {
     // --- data
 
-    typedef vector< pair<ctx_id_t, uint64_t> > env_vec_t;
+    typedef vector< pair<cali_id_t, uint64_t> > env_vec_t;
 
     vector<env_vec_t>     m_environments;
     mutable SigsafeRWLock m_lock;
@@ -32,24 +32,24 @@ struct Context::ContextImpl
 
     // --- interface
 
-    ctx_id_t clone_environment(ctx_id_t env) {
-        if (env == CTX_INV_ID || env >= m_environments.size())
-            return CTX_INV_ID;
+    cali_id_t clone_environment(cali_id_t env) {
+        if (env == CALI_INV_ID || env >= m_environments.size())
+            return CALI_INV_ID;
 
         m_environments.emplace_back( m_environments[env] );
 
         return m_environments.size();
     }
 
-    void release_environment(ctx_id_t env) {
+    void release_environment(cali_id_t env) {
         m_environments.erase(m_environments.begin() + env);
     }
 
-    size_t record_size(ctx_id_t env) const {
+    size_t record_size(cali_id_t env) const {
         return env < m_environments.size() ? m_environments[env].size() * 2 : 0;
     }
 
-    size_t get_context(ctx_id_t env, uint64_t buf[], size_t len) const {
+    size_t get_context(cali_id_t env, uint64_t buf[], size_t len) const {
         if (!(env < m_environments.size()))
             return 0;
 
@@ -64,7 +64,7 @@ struct Context::ContextImpl
         return s;
     }
 
-    pair<bool, uint64_t> get(ctx_id_t env, ctx_id_t key) const {
+    pair<bool, uint64_t> get(cali_id_t env, cali_id_t key) const {
         if (!(env < m_environments.size()))
             return make_pair<bool, uint64_t>(false, 0);
 
@@ -77,9 +77,9 @@ struct Context::ContextImpl
         return make_pair(true, it->second);
     }
 
-    ctx_err set (ctx_id_t env, ctx_id_t key, uint64_t value, bool /* global */) {
+    cali_err set (cali_id_t env, cali_id_t key, uint64_t value, bool /* global */) {
         if (!(env < m_environments.size()))
-            return CTX_EINV;
+            return CALI_EINV;
 
         auto env_p = m_environments.begin() + env;
         auto it = lower_bound(env_p->begin(), env_p->end(), make_pair(key, uint64_t(0)));
@@ -89,12 +89,12 @@ struct Context::ContextImpl
         else
             env_p->insert(it, make_pair(key, value));
 
-        return CTX_SUCCESS;
+        return CALI_SUCCESS;
     }
 
-    ctx_err unset(ctx_id_t env, uint64_t key) {
+    cali_err unset(cali_id_t env, uint64_t key) {
         if (!(env < m_environments.size()))
-            return CTX_EINV;
+            return CALI_EINV;
 
         auto env_p = m_environments.begin() + env;
         auto it = lower_bound(env_p->begin(), env_p->end(), make_pair(key, uint64_t(0)));
@@ -102,7 +102,7 @@ struct Context::ContextImpl
         if (it != env_p->end() && it->first == key)
             env_p->erase(it);
 
-        return CTX_SUCCESS;
+        return CALI_SUCCESS;
     }
 };
 
@@ -116,23 +116,23 @@ Context::~Context()
     mP.reset();
 }
 
-ctx_id_t Context::clone_environment(ctx_id_t env)
+cali_id_t Context::clone_environment(cali_id_t env)
 {
     mP->m_lock.wlock();
-    ctx_id_t ret = mP->clone_environment(env);
+    cali_id_t ret = mP->clone_environment(env);
     mP->m_lock.unlock();
 
     return ret;
 }
 
-void Context::release_environment(ctx_id_t env)
+void Context::release_environment(cali_id_t env)
 {
     mP->m_lock.wlock();
     mP->release_environment(env);
     mP->m_lock.unlock();
 }
 
-size_t Context::context_size(ctx_id_t env) const 
+size_t Context::context_size(cali_id_t env) const 
 {
     mP->m_lock.rlock();
     size_t ret = mP->record_size(env);
@@ -141,7 +141,7 @@ size_t Context::context_size(ctx_id_t env) const
     return ret;
 }
 
-size_t Context::get_context(ctx_id_t env, uint64_t buf[], size_t len) const
+size_t Context::get_context(cali_id_t env, uint64_t buf[], size_t len) const
 {
     mP->m_lock.rlock();
     size_t ret = mP->get_context(env, buf, len);
@@ -150,7 +150,7 @@ size_t Context::get_context(ctx_id_t env, uint64_t buf[], size_t len) const
     return ret;
 }
 
-pair<bool, uint64_t> Context::get(ctx_id_t env, ctx_id_t key) const
+pair<bool, uint64_t> Context::get(cali_id_t env, cali_id_t key) const
 {
     mP->m_lock.rlock();
     auto p= mP->get(env, key);
@@ -159,19 +159,19 @@ pair<bool, uint64_t> Context::get(ctx_id_t env, ctx_id_t key) const
     return p;
 }
 
-ctx_err Context::set(ctx_id_t env, ctx_id_t key, uint64_t value, bool global)
+cali_err Context::set(cali_id_t env, cali_id_t key, uint64_t value, bool global)
 {
     mP->m_lock.wlock();
-    ctx_err ret = mP->set(env, key, value, global);
+    cali_err ret = mP->set(env, key, value, global);
     mP->m_lock.unlock();
 
     return ret;
 }
 
-ctx_err Context::unset(ctx_id_t env, ctx_id_t key)
+cali_err Context::unset(cali_id_t env, cali_id_t key)
 {
     mP->m_lock.wlock();
-    ctx_err ret = mP->unset(env, key);
+    cali_err ret = mP->unset(env, key);
     mP->m_lock.unlock();
 
     return ret;

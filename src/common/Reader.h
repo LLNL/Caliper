@@ -20,9 +20,9 @@ class AttributeReader
 public:
 
     struct AttributeInfo {
-        ctx_id_t      id;
+        cali_id_t      id;
         std::string   name;
-        ctx_attr_type type;
+        cali_attr_type type;
         int           properties;
     };
 

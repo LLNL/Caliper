@@ -27,10 +27,10 @@ public:
 
     ~AttributeStore();
 
-    Attribute get(ctx_id_t id) const;
+    Attribute get(cali_id_t id) const;
     Attribute get(const std::string& name) const;
 
-    Attribute create(const std::string&  name, ctx_attr_type type, int properties);
+    Attribute create(const std::string&  name, cali_attr_type type, int properties);
 
     void      foreach_attribute(std::function<void(const Attribute&)> proc) const;
 };
