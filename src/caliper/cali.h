@@ -23,7 +23,7 @@ extern "C" {
  * @param name Name of the attribute
  * @param type Type of the attribute
  * @param properties Attribute properties
- * @return Attribute handle
+ * @return Attribute id
  */
 
 cali_id_t 
@@ -34,7 +34,7 @@ cali_create_attribute(const char*          name,
 /**
  * Find attribute by name 
  * @param name Name of attribute
- * @return Attribute handle, or CALI_INV_HANDLE if attribute was not found
+ * @return Attribute ID, or CALI_INV_ID if attribute was not found
  */
 
 cali_id_t
@@ -42,7 +42,7 @@ cali_find_attribute      (const char*         name);
 
 /**
  * Get name of attribute
- * @param attr Attribute handle
+ * @param attr Attribute id
  * @return Attribute name
  */
 
@@ -51,7 +51,7 @@ cali_get_attribute_name  (cali_id_t          attr);
 
 /**
  * Get attribute datatype and datatype size
- * @param attr Attribute handle
+ * @param attr Attribute id
  * @param typesize If not NULL, the call writes the datatype size to this 
  * address
  * @return Attribute name
