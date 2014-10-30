@@ -1,5 +1,5 @@
 /** 
- * @file hail.h 
+ * @file cali.h 
  * Context annotation library public C interface
  */
 
@@ -8,41 +8,28 @@
 
 #include "cali_types.h"
 
+#include <stddef.h> /* size_t */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /*
  * --- Attributes ------------------------------------------------------
  */
 
 /**
- * Create an attribute with a predefined datatype
+ * Create an attribute
  * @param name Name of the attribute
- * @param type Attribute datatype
+ * @param type Type of the attribute
  * @param properties Attribute properties
  * @return Attribute handle
  */
 
-cali_attr_h 
-cali_create_attribute    (const char*         name, 
-                         cali_attr_type       type);
-
-
-/**
- * Create an attribute with a user-defined datatype
- * @param name Name of the attribute
- * @param typesize Size of the datatype
- * @param properties Attribute properties
- * @return Attribute handle
- */
-
-cali_attr_h 
-cali_create_usr_attribute(const char*         name,
-                         cali_attr_type       type,
-                         size_t              typesize, 
-                         cali_attr_properties properties);
+cali_id_t 
+cali_create_attribute(const char*          name,
+                      cali_attr_type       type,
+                      cali_attr_properties properties);
 
 /**
  * Find attribute by name 
@@ -50,7 +37,7 @@ cali_create_usr_attribute(const char*         name,
  * @return Attribute handle, or CALI_INV_HANDLE if attribute was not found
  */
 
-cali_attr_h
+cali_id_t
 cali_find_attribute      (const char*         name);
 
 /**
@@ -60,7 +47,7 @@ cali_find_attribute      (const char*         name);
  */
 
 const char*
-cali_get_attribute_name  (cali_attr_h          attr);
+cali_get_attribute_name  (cali_id_t          attr);
 
 /**
  * Get attribute datatype and datatype size
@@ -71,8 +58,8 @@ cali_get_attribute_name  (cali_attr_h          attr);
  */
 
 cali_attr_type
-cali_get_attribute_type  (cali_attr_h          attr,
-                         size_t*             typesize);
+cali_get_attribute_type  (cali_id_t          attr,
+                          size_t*            typesize);
 
 
 /*
@@ -87,7 +74,7 @@ typedef cali_id_t (*cali_environment_callback)();
  * @return Environment handle
  */
 
-cali_env_h
+cali_id_t
 cali_get_environment();
 
 /**
@@ -97,8 +84,8 @@ cali_get_environment();
  */
 
 cali_err
-cali_clone_environment(cali_env_h  env, 
-                      cali_env_h* new_env);
+cali_clone_environment(cali_id_t  env, 
+                       cali_id_t* new_env);
 
 cali_err
 cali_set_environment_callback(cali_environment_callback cb);
@@ -110,25 +97,24 @@ cali_set_environment_callback(cali_environment_callback cb);
 
 /**
  * 
- *
+ * 
  */
 
 size_t
-cali_get_context_size (cali_env_h  env);
-
+cali_get_context_size(cali_id_t  env);
 
 /**
  * 
  *
  */
 
-cali_err
-cali_get_context      (cali_env_h  env,
+size_t
+cali_get_context     (cali_id_t  env,
                       uint64_t*  buf,
                       size_t     bufsize);
 
-cali_err
-cali_try_get_context  (cali_env_h  env,
+size_t
+cali_try_get_context (cali_id_t  env,
                       uint64_t*  buf,
                       size_t     bufsize);
 
@@ -137,31 +123,34 @@ cali_try_get_context  (cali_env_h  env,
  */
 
 /**
- * Begins scope of value @param value for attribute @param attr in environment @env.
+ * Begins scope of value @param value of size @param size for 
+ * attribute @param attr in environment @env.
  * The new value is nested under the current open scopes of @param attr. 
  */
 cali_err
-cali_begin    (cali_env_h  env,
-              cali_attr_h attr, 
-              void*      value);
+cali_begin    (cali_id_t   env,
+               cali_id_t   attr, 
+               const void* value,
+               size_t      size);
 
 /**
  * Ends scope of the innermost value for attribute @param attr in environment @env. 
  */
 
 cali_err
-cali_end      (cali_env_h  env,
-              cali_attr_h attr);
+cali_end      (cali_id_t  env,
+               cali_id_t  attr);
 
 /**
- * Ends scope of the current innermost value and begins scope of @param value for attribute
- * @param attr in environment @param env.
+ * Ends scope of the current innermost value and begins scope of @param value 
+ * of size @param size for attribute @param attr in environment @param env.
  */
 
 cali_err  
-cali_set      (cali_env_h  env,
-              cali_attr_h attr, 
-              void*      value);
+cali_set      (cali_id_t   env,
+               cali_id_t   attr, 
+               const void* value,
+               size_t      size);
 
 /**
  * Ends scope of the current innermost value and begins scope of @param value for attribute
@@ -171,46 +160,48 @@ cali_set      (cali_env_h  env,
  */
 
 cali_err  
-cali_try_set  (cali_env_h  env,
-              cali_attr_h attr, 
-              void*      value);
+cali_try_set  (cali_id_t   env,
+               cali_id_t   attr, 
+               const void* value);
 
 
 /*
  * --- Query / browse API ----------------------------------------------
  */
 
+/*
+
 cali_entry_t*
 cali_get_entry_for_attribute(const uint64_t* buf,
                             size_t          bufsize,
-                            cali_attr_h      attr,
+                            cali_id_t      attr,
                             cali_entry_t*    entry);                        
 
 cali_entry_t*
-cali_unpack_next     (const uint64_t*    buf,
+cali_unpack_next    (const uint64_t*    buf,
                      size_t             bufsize,
                      const cali_entry_t* prev,
                      cali_entry_t*       entry);
 
 cali_err
-cali_get_value       (const cali_entry_t* entry,
+cali_get_value      (const cali_entry_t* entry,
                      void*              value);
 
-cali_attr_h
+cali_id_t
 cali_get_attribute   (const cali_entry_t* entry);
 
 cali_entry_t*
-cali_get_first_child (const cali_entry_t* from,
+cali_get_first_child(const cali_entry_t* from,
                      cali_entry_t*       child);
 
 cali_entry_t*
 cali_get_next_sibling(const cali_entry_t* from,
-                     cali_entry_t*       sibling);
+                      cali_entry_t*       sibling);
 
 cali_entry_t*
 cali_get_parent      (const cali_entry_t* from,
-                     cali_entry_t*       parent);
-
+                      cali_entry_t*       parent);
+*/
 
 #ifdef __cplusplus
 } // extern "C"

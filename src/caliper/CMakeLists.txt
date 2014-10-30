@@ -11,7 +11,8 @@ set(CALIPER_SOURCES
     Caliper.cpp
     Context.cpp
     MemoryPool.cpp
-    SigsafeRWLock.cpp)
+    SigsafeRWLock.cpp
+    cali.cpp)
 
 add_library(caliper ${CALIPER_SOURCES})
 

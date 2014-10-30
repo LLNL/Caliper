@@ -22,9 +22,9 @@ namespace cali
         int            m_properties;
         cali_attr_type m_type;
 
-        Attribute(cali_id_t            id,
+        Attribute(cali_id_t           id,
                   const std::string&  name, 
-                  cali_attr_type       type,
+                  cali_attr_type      type,
                   int                 properties);
 
         friend class AttributeStore;

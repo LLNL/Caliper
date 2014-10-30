@@ -15,15 +15,6 @@ extern "C" {
 typedef uint64_t cali_id_t;
 
 #define CALI_INV_ID     0xFFFFFFFFFFFFFFFF
-#define CALI_INV_HANDLE 0
-
-/* typedef struct _cali_entry { */
-/*   cali_id_t      attr; */
-/*   union { */
-/*     int64_t     value; */
-/*     cali_node_h  node; */
-/*   } */
-/* } cali_entry_t; */
 
 typedef enum {
   CALI_TYPE_INV    = -1,
