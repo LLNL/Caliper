@@ -4,6 +4,7 @@ set(CALIPER_COMMON_HEADERS
     ContextRecord.h
     IdType.h
     Log.h
+    MetadataWriter.h
     Node.h
     RecordMap.h
     RuntimeConfig.h

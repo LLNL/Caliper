@@ -7,10 +7,11 @@
 #include "MemoryPool.h"
 #include "SigsafeRWLock.h"
 
-#include <Csv.h>
+#include <Services.h>
 
 #include <AttributeStore.h>
 #include <ContextRecord.h>
+#include <MetadataWriter.h>
 #include <Node.h>
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -69,6 +70,8 @@ struct Caliper::CaliperImpl
         m_root { CALI_INV_ID, Attribute::invalid, 0, 0 } 
     {
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
+
+        Services::register_services();
 
         Log(1).stream() << "Initialized" << endl;
 
@@ -415,19 +418,24 @@ Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
 }
 
 bool
-Caliper::write()
-{
-    if (mP->m_config.get("output").to_string() == "none")
+Caliper::write_metadata()
+{    
+    string writer_service_name = mP->m_config.get("output").to_string();
+
+    if (writer_service_name == "none")
         return true;
 
-    // Output. Currently CSV writer and filenames are hard-coded.
+    auto w = Services::get_metadata_writer(writer_service_name.c_str());
 
-    CsvWriter writer("caliper");
+    if (!w) {
+        Log(0).stream() << "Writer service \"" << writer_service_name << "\" not found!" << endl;
+        return false;
+    }
 
     using std::placeholders::_1;
 
-    return writer.write(std::bind(&Caliper::foreach_attribute, this,     _1),
-                        std::bind(&CaliperImpl::foreach_node,  mP.get(), _1));
+    return w->write(std::bind(&Caliper::foreach_attribute, this,     _1),
+                    std::bind(&CaliperImpl::foreach_node,  mP.get(), _1));
 }
 
 

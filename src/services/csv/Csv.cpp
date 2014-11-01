@@ -4,8 +4,10 @@
 #include "Csv.h"
 
 #include <Attribute.h>
+#include <Log.h>
 #include <Node.h>
 #include <RecordMap.h>
+#include <RuntimeConfig.h>
 
 #include <algorithm>
 #include <cctype>
@@ -23,6 +25,8 @@ namespace
 
 struct CsvSpec
 {
+    static const ConfigSet::Entry s_configdata[];
+
     std::string m_sep       { ","   }; ///< separator character
     std::string m_delim     { ":"   }; ///< delimiter
     char        m_esc       { '\\'  }; ///< escape character
@@ -131,6 +135,14 @@ struct CsvSpec
 
 static CsvSpec CaliperCsvSpec;
 
+const ConfigSet::Entry CsvSpec::s_configdata[] = {
+    { "basename", CALI_TYPE_STRING, "caliper",
+      "Base filename for .attributes.csv and .nodes.csv files.",
+      "Base filename for .attributes.csv and .nodes.csv files."
+    },
+    ConfigSet::Terminator
+};
+
 } // anonymous namespace
 
 
@@ -142,6 +154,15 @@ struct CsvWriter::CsvWriterImpl
 {
     std::string attr_file;
     std::string node_file;
+
+    ConfigSet   m_config;
+
+    CsvWriterImpl()
+        : m_config { RuntimeConfig::init("csv", ::CsvSpec::s_configdata) } 
+    {
+        attr_file = m_config.get("basename").to_string() + ".attributes.csv";
+        node_file = m_config.get("basename").to_string() + ".nodes.csv";
+    }
 };
 
 CsvWriter::CsvWriter()
@@ -150,10 +171,7 @@ CsvWriter::CsvWriter()
 
 CsvWriter::CsvWriter(const std::string& basename)
     : mP { new CsvWriterImpl }
-{ 
-    mP->attr_file = basename + ".attributes.csv";
-    mP->node_file = basename + ".nodes.csv";
-}
+{ }
 
 CsvWriter::~CsvWriter()
 {
@@ -180,4 +198,17 @@ bool CsvWriter::write(std::function<void(std::function<void(const Attribute&)>)>
     }
 
     return true;
+}
+
+namespace cali
+{
+    void csv_writer_register() {
+        RuntimeConfig::init("csv", ::CsvSpec::s_configdata);
+
+        Log(2).stream() << "registered csv writer" << endl;
+    }
+
+    std::unique_ptr<MetadataWriter> csv_writer_create() {
+        return unique_ptr<MetadataWriter>( new CsvWriter() );
+    }
 }

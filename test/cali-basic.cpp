@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
     usr.end();
 
     // Test serialization API
-    cali::Caliper::instance()->write();
+    cali::Caliper::instance()->write_metadata();
 
     // implicitly end phase->"main"
 }

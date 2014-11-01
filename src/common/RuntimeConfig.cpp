@@ -87,10 +87,15 @@ struct RuntimeConfigImpl
     }
 
     shared_ptr<ConfigSetImpl> init(const char* name, const ConfigSet::Entry* list) {
+        auto it = m_database.find(name);
+
+        if (it != m_database.end())
+            return it->second;
+
         shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
 
         ret->init(name, list);
-        m_database.insert(make_pair(string(name), ret));
+        m_database.insert(it, make_pair(string(name), ret));
 
         return ret;
     }

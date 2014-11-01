@@ -13,7 +13,7 @@ struct AttributeStore::AttributeStoreImpl
 {
     // --- Data
     
-    vector<Attribute>     attributes;
+    vector<Attribute>      attributes;
     map<string, cali_id_t> namelist;
 
 

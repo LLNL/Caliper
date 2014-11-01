@@ -6,6 +6,8 @@
 
 #include "cali_types.h"
 
+#include <MetadataWriter.h>
+
 #include <iostream>
 #include <functional>
 #include <memory>
@@ -17,7 +19,7 @@ namespace cali
 class Attribute;
 class Node;
 
-class CsvWriter
+class CsvWriter : public MetadataWriter
 {
     struct CsvWriterImpl;
 
@@ -31,7 +33,7 @@ public:
     ~CsvWriter();
 
     bool write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
-               std::function<void(std::function<void(const Node&)>)>      foreach_node);
+               std::function<void(std::function<void(const Node&)>)>      foreach_node) override;
 };
 
 } // namespace cali
