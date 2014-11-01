@@ -137,8 +137,8 @@ static CsvSpec CaliperCsvSpec;
 
 const ConfigSet::Entry CsvSpec::s_configdata[] = {
     { "basename", CALI_TYPE_STRING, "caliper",
-      "Base filename for .attributes.csv and .nodes.csv files.",
-      "Base filename for .attributes.csv and .nodes.csv files."
+      "Base filename for .attributes.csv and .nodes.csv files",
+      "Base filename for .attributes.csv and .nodes.csv files"
     },
     ConfigSet::Terminator
 };
@@ -205,7 +205,7 @@ namespace cali
     void csv_writer_register() {
         RuntimeConfig::init("csv", ::CsvSpec::s_configdata);
 
-        Log(2).stream() << "registered csv writer" << endl;
+        Log(2).stream() << "Registered csv writer" << endl;
     }
 
     std::unique_ptr<MetadataWriter> csv_writer_create() {
