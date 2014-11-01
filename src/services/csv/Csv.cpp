@@ -195,6 +195,8 @@ bool CsvWriter::write(std::function<void(std::function<void(const Attribute&)>)>
 
         foreach_attr([&](const Attribute& a){ CaliperCsvSpec.write_record(astr, a.record()); });
         foreach_node([&](const Node&      n){ CaliperCsvSpec.write_record(nstr, n.record()); });
+
+        Log(1).stream() << "Wrote " << mP->attr_file << " and " << mP->node_file << endl;
     }
 
     return true;
