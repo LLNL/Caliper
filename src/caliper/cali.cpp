@@ -46,7 +46,7 @@ cali_get_context(cali_id_t env, uint64_t* buf, size_t bufsize)
 //
 
 cali_id_t
-cali_get_environment()
+cali_get_environment(void)
 {
     return Caliper::instance()->current_environment();
 }
@@ -74,4 +74,17 @@ cali_set(cali_id_t env, cali_id_t attr, const void* value, size_t size)
 {
     Caliper* c = Caliper::instance();
     return c->set(env, c->get_attribute(attr), value, size);
+}
+
+//
+// --- I/O interface
+//
+
+cali_err
+cali_write_metadata(void)
+{
+    if (Caliper::instance()->write_metadata())
+        return CALI_SUCCESS;
+
+    return CALI_EINV;
 }

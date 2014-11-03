@@ -75,7 +75,7 @@ typedef cali_id_t (*cali_environment_callback)();
  */
 
 cali_id_t
-cali_get_environment();
+cali_get_environment(void);
 
 /**
  * Create a new environment for the local scope of execution (e.g., thread) by
@@ -164,6 +164,12 @@ cali_try_set  (cali_id_t   env,
                cali_id_t   attr, 
                const void* value);
 
+/**
+ * Write metadata using the current run-time configuration settings
+ */
+
+cali_err
+cali_write_metadata(void);
 
 /*
  * --- Query / browse API ----------------------------------------------

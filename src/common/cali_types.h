@@ -42,6 +42,12 @@ typedef enum {
 } cali_attr_properties;
 
 typedef enum {
+  CALI_OP_SUM = 1,
+  CALI_OP_MIN = 2,
+  CALI_OP_MAX = 3
+} cali_op;
+
+typedef enum {
   CALI_SUCCESS = 0,
   CALI_EBUSY,
   CALI_ELOCKED,

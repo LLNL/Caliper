@@ -54,4 +54,6 @@ int main(int argc, char* argv[])
   print_context(env);
 
   cali_end(env, attr_phase); /* end "main" */
+
+  cali_write_metadata();
 }
