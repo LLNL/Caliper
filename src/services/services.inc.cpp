@@ -5,18 +5,28 @@
 namespace cali
 {
 
-extern void timer_register(Caliper*);
+extern const CaliperService TimestampService;
 
-const Services::CaliperService caliper_services[] = {
-    { "timer", timer_register },
+const CaliperService caliper_services[] = {
+    TimestampService,
+
     // Terminator
-    { 0, 0 }
+    { nullptr, { nullptr } }
+};
+
+
+// --- Metadata Writer Services (will be refactored)
+
+struct MetadataWriterService {
+    const char*   name;
+    void                           (*register_fn)();
+    std::unique_ptr<MetadataWriter>(*create_fn)();
 };
 
 extern void csv_writer_register();
 extern unique_ptr<MetadataWriter> csv_writer_create();
 
-const Services::MetadataWriterService metadata_writer_services[] = {
+const MetadataWriterService metadata_writer_services[] = {
     { "csv", csv_writer_register, csv_writer_create },
     
     // Terminator

@@ -3,7 +3,9 @@
 
 #include "Services.h"
 
-#include "MetadataWriter.h"
+#include "CaliperService.h"
+
+#include <MetadataWriter.h>
 
 #include <functional>
 #include <map>

@@ -1,5 +1,7 @@
-///@file  Timer.cpp
-///@brief Time provider for caliper records
+///@file  Timestamp.cpp
+///@brief Timestamp provider for caliper records
+
+#include "../CaliperService.h"
 
 #include <Caliper.h>
 
@@ -13,7 +15,6 @@
 using namespace cali;
 using namespace std;
 
-
 namespace 
 {
 
@@ -23,8 +24,8 @@ chrono::time_point<chrono::high_resolution_clock> tstart;
 const ConfigSet::Entry s_configdata[] = {
     // key, type, value, short description, long description
     { "enable",   CALI_TYPE_BOOL, "false",
-      "Automatically add runtime to context queries",
-      "Automatically add runtime to context queries"
+      "Automatically add timestamp to context queries",
+      "Automatically add timestamp to context queries"
     },
     ConfigSet::Terminator
 };
@@ -38,26 +39,27 @@ void update_time(Caliper* c, cali_id_t env) {
     c->set(env, attribute, &usec, sizeof(usec));
 }
 
+/// Initialization handler
+void timestamp_register(Caliper* c)
+{
+    if (!RuntimeConfig::init("timer", s_configdata).get("enable").to_bool())
+        return;
+
+    // set start time and create time attribute
+    tstart    = chrono::high_resolution_clock::now();
+    attribute = 
+        c->create_attribute("time(usec)", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_GLOBAL);
+
+    // add callback for Caliper::get_context() event
+    c->events().queryEvt.connect(&update_time);
+
+    Log(2).stream() << "Registered timestamp service" << endl;
+}
+
 } // namespace
 
 
 namespace cali
 {
-
-void timer_register(Caliper* c)
-{
-    if (!RuntimeConfig::init("timer", ::s_configdata).get("enable").to_bool())
-        return;
-
-    // set start time and create time attribute
-    ::tstart    = chrono::high_resolution_clock::now();
-    ::attribute = 
-          c->create_attribute("time(usec)", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_GLOBAL);
-
-    // add callback for Caliper::get_context() event
-    c->events().queryEvt.connect(&update_time);
-
-    Log(2).stream() << "Registered timer" << endl;
-}
-
+    CaliperService TimestampService = { "timestamp", { ::timestamp_register } };
 } // namespace cali
