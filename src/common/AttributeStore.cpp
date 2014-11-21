@@ -31,6 +31,10 @@ struct AttributeStore::AttributeStoreImpl
         return attributes.back();
     }
 
+    size_t size() const {
+        return attributes.size();
+    }
+
     Attribute get(cali_id_t id) const {
         if (id < attributes.size())
             return attributes[id];
@@ -79,6 +83,11 @@ AttributeStore::AttributeStore()
 AttributeStore::~AttributeStore()
 {
     mP.reset();
+}
+
+size_t AttributeStore::size() const
+{
+    return mP->size();
 }
 
 Attribute AttributeStore::get(cali_id_t id) const

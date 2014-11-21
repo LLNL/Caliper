@@ -27,9 +27,15 @@ struct Services::ServicesImpl
 
     map< string, function<unique_ptr<MetadataWriter>()> > m_metadata_writers;
 
+
     // --- interface
 
-    void register_services() {
+    void register_services(Caliper* c) {
+        // register caliper services
+
+        for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
+            (s->register_fn)(c);
+
         // register metadata writers
 
         for (const MetadataWriterService* s = metadata_writer_services; s->name && s->create_fn; ++s) {
@@ -73,9 +79,9 @@ unique_ptr<Services::ServicesImpl> Services::ServicesImpl::s_instance { nullptr 
 // --- Services public interface
 //
 
-void Services::register_services()
+void Services::register_services(Caliper* c)
 {
-    return ServicesImpl::instance()->register_services();
+    return ServicesImpl::instance()->register_services(c);
 }
 
 unique_ptr<MetadataWriter> Services::get_metadata_writer(const char* name)

@@ -62,22 +62,15 @@ struct Caliper::CaliperImpl
     AttributeStore        m_attributes;
     Context               m_context;
 
+    Events                m_events;
+
 
     // --- constructor
 
     CaliperImpl()
         : m_config { RuntimeConfig::init("caliper", s_configdata) }, 
         m_root { CALI_INV_ID, Attribute::invalid, 0, 0 } 
-    {
-        m_nodes.reserve(m_config.get("node_pool_size").to_uint());
-
-        Services::register_services();
-
-        Log(1).stream() << "Initialized" << endl;
-
-        if (Log::verbosity() == 2)
-            RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
-    }
+    { }
 
     ~CaliperImpl() {
         Log(1).stream() << "Finished" << endl;
@@ -86,6 +79,18 @@ struct Caliper::CaliperImpl
             n->~Node();
     }
 
+    // deferred initialization: called when it's safe to use the public Caliper interface
+
+    void init() {
+        m_nodes.reserve(m_config.get("node_pool_size").to_uint());
+
+        Services::register_services(s_caliper.get());
+
+        Log(1).stream() << "Initialized" << endl;
+
+        if (Log::verbosity() >= 2)
+            RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
+    }
 
     // --- helpers
 
@@ -104,6 +109,17 @@ struct Caliper::CaliperImpl
         m_nodelock.unlock();
 
         return node;
+    }
+
+
+    // --- Context interface
+
+    std::size_t 
+    get_context(cali_id_t env, uint64_t buf[], std::size_t len) {
+        // invoke callbacks
+        m_events.queryEvt(s_caliper.get(), env);
+
+        return m_context.get_context(env, buf, len);
     }
 
 
@@ -147,6 +163,9 @@ struct Caliper::CaliperImpl
             ret = m_context.set(env, key, node->id(), attr.is_global());
         }
 
+        // invoke callbacks
+        m_events.beginEvt(s_caliper.get(), env, attr);
+
         return ret;
     }
 
@@ -186,6 +205,9 @@ struct Caliper::CaliperImpl
             else if (node)
                 ret = m_context.set(env, key, node->id());
         }
+
+        // invoke callbacks
+        m_events.endEvt(s_caliper.get(), env, attr);
 
         return ret;
     }
@@ -232,6 +254,9 @@ struct Caliper::CaliperImpl
 
             ret = m_context.set(env, key, node->id(), attr.is_global());
         }
+
+        // invoke callbacks
+        m_events.setEvt(s_caliper.get(), env, attr);
 
         return ret;
     }
@@ -301,6 +326,14 @@ Caliper::~Caliper()
     mP.reset(nullptr);
 }
 
+// --- Events interface
+
+Caliper::Events&
+Caliper::events()
+{
+    return mP->m_events;
+}
+
 
 // --- Context API
 
@@ -323,9 +356,9 @@ Caliper::context_size(cali_id_t env) const
 }
 
 std::size_t 
-Caliper::get_context(cali_id_t env, uint64_t buf[], std::size_t len) const
+Caliper::get_context(cali_id_t env, uint64_t buf[], std::size_t len) 
 {
-    return mP->m_context.get_context(env, buf, len);
+    return mP->get_context(env, buf, len);
 }
 
 void 
@@ -357,6 +390,16 @@ Caliper::set(cali_id_t env, const Attribute& attr, const void* data, size_t size
 
 
 // --- Attribute API
+
+size_t
+Caliper::num_attributes() const
+{
+    mP->m_attribute_lock.rlock();
+    size_t s = mP->m_attributes.size();
+    mP->m_attribute_lock.unlock();
+
+    return s;
+}
 
 Attribute
 Caliper::get_attribute(cali_id_t id) const
@@ -448,6 +491,10 @@ Caliper* Caliper::instance()
 
         if (!CaliperImpl::s_caliper) {
             CaliperImpl::s_caliper.reset(new Caliper);
+
+            // now it is safe to use the Caliper interface
+            CaliperImpl::s_caliper->mP->init();
+
             CaliperImpl::s_siglock = 0;
         }
     }

@@ -27,6 +27,8 @@ public:
 
     ~AttributeStore();
 
+    size_t    size() const;
+
     Attribute get(cali_id_t id) const;
     Attribute get(const std::string& name) const;
 

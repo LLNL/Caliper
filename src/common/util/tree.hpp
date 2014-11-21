@@ -1,6 +1,9 @@
 /// @file tree.hpp
 /// @brief Intrusive tree template class
 
+#ifndef UTIL_TREE_HPP
+#define UTIL_TREE_HPP
+
 #include <iterator>
 #include <queue>
 
@@ -214,3 +217,5 @@ public:
 };
 
 } // namespace util
+
+#endif

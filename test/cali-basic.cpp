@@ -28,9 +28,7 @@ void print_context()
     cali::Caliper* c { cali::Caliper::instance() };
     cali_id_t     env { c->current_environment()  };
 
-    vector<uint64_t> ctx(c->context_size(env), 0);
-
-    cout << "Context size: " << ctx.size() << endl;
+    vector<uint64_t> ctx(2 * c->num_attributes(), 0);
 
     // retrieve current context record
     const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());

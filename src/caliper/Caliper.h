@@ -9,6 +9,8 @@
 #include <Attribute.h>
 #include <RecordMap.h>
 
+#include <util/callback.hpp>
+
 #include <functional>
 #include <memory>
 #include <utility>
@@ -43,6 +45,26 @@ public:
     Caliper& operator = (const Caliper&) = delete;
 
 
+    // --- Events
+
+    struct Events {
+        util::callback<void(Caliper*, const Attribute&)> createAttrEvt;
+
+        util::callback<void(Caliper*, cali_id_t, const Attribute&)> beginEvt;
+        util::callback<void(Caliper*, cali_id_t, const Attribute&)> endEvt;
+        util::callback<void(Caliper*, cali_id_t, const Attribute&)> setEvt;
+
+        util::callback<void(Caliper*, cali_id_t)> cloneEvt;
+
+        util::callback<void(Caliper*, cali_id_t)> queryEvt;
+        util::callback<void(Caliper*, cali_id_t)> tryQueryEvt;
+
+        util::callback<void(Caliper*)> finishEvt;
+    };
+
+    Events&   events();
+    
+
     // --- Context API
 
     cali_id_t current_environment() const;
@@ -51,7 +73,7 @@ public:
     void set_environment_callback(std::function<cali_id_t()> cb);
 
     std::size_t context_size(cali_id_t env) const;
-    std::size_t get_context(cali_id_t env, uint64_t buf[], std::size_t len) const;
+    std::size_t get_context(cali_id_t env, uint64_t buf[], std::size_t len);
 
 
     // --- Annotation API
@@ -62,6 +84,8 @@ public:
 
 
     // --- Attribute API
+
+    size_t    num_attributes() const;
 
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
