@@ -17,7 +17,7 @@ class callback
 
 public:
 
-    void connect(const std::function<F>& f) {
+    void connect(std::function<F> f) {
         mCb.push_back(f);
     } 
 

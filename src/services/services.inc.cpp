@@ -5,12 +5,13 @@
 namespace cali
 {
 
+extern const CaliperService RecorderService;
 extern const CaliperService TimestampService;
 
 const CaliperService caliper_services[] = {
+    RecorderService,
     TimestampService,
 
-    // Terminator
     { nullptr, { nullptr } }
 };
 

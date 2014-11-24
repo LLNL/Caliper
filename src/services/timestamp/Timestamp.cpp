@@ -42,7 +42,7 @@ void update_time(Caliper* c, cali_id_t env) {
 /// Initialization handler
 void timestamp_register(Caliper* c)
 {
-    if (!RuntimeConfig::init("timer", s_configdata).get("enable").to_bool())
+    if (!RuntimeConfig::init("timestamp", s_configdata).get("enable").to_bool())
         return;
 
     // set start time and create time attribute

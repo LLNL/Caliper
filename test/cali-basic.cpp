@@ -76,10 +76,10 @@ int main(int argc, char* argv[])
             iteration.set(i);
 
             begin_foo_op();
-            print_context();
+            // print_context();
 
             end_foo_op();
-            print_context();
+            // print_context();
         }
 
         // "loopcount" and "iteration" annotations implicitly end here 
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
 
     // End innermost level phase->"loop"
     phase.end();
-    print_context();
+    // print_context();
 
     // explicitly end "usr"
     usr.end();

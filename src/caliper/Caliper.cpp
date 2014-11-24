@@ -352,7 +352,8 @@ Caliper::clone_environment(cali_id_t env)
 std::size_t 
 Caliper::context_size(cali_id_t env) const
 {
-    return mP->m_context.context_size(env);
+    // return mP->m_context.context_size(env);
+    return 2 * num_attributes();
 }
 
 std::size_t 

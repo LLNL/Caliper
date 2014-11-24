@@ -15,7 +15,8 @@ using namespace cali;
 using namespace std;
 
 // Include list of services:
-//   const Services::MetadataWriterService* metadata_writer_services
+//   const MetadataWriterService metadata_writer_services[]
+//   const CaliperService caliper_services[]
 #include "services.inc.cpp"
 
 namespace cali
