@@ -16,7 +16,6 @@ class Annotation
     Attribute   m_attr;
     std::string m_name;
     int         m_opt;
-    int         m_depth;
 
     void create_attribute(cali_attr_type type);
 
@@ -24,52 +23,55 @@ public:
 
     enum Option { Default = 0, StoreAsValue = 1, NoMerge = 2, KeepAlive = 128 };
 
-    Annotation(const std::string& name, int opt = Default);
+    class Scope {
+        Attribute m_attr;
+        bool      m_destruct;
 
-    Annotation(const Annotation&) = delete;
+        Scope(const Attribute& a) 
+            : m_attr { a }, m_destruct { false } { }
 
-    Annotation(Annotation&& a) 
-        : m_attr { a.m_attr }, m_name { a.m_name }, m_opt { a.m_opt }, m_depth { a.m_depth }
-        {
-            a.m_attr  = Attribute::invalid;
-            a.m_name.clear();
-            a.m_opt   = Default;
-            a.m_depth = 0;
+    public:
+
+        Scope(Scope&& s) 
+            : m_attr { s.m_attr }, m_destruct { true } { s.m_destruct = false; }
+
+        Scope(const Scope& s) = delete;
+
+        Scope& operator = (const Scope&) = delete;
+
+        Scope& operator = (Scope&& s) {
+            m_attr       = s.m_attr;
+            m_destruct   = true;
+
+            s.m_destruct = false;
         }
 
-    ~Annotation();
+        operator bool() const {
+            return !(m_attr == Attribute::invalid);
+        }
 
-    Annotation& operator = (const Annotation&) = delete;
+        ~Scope();
 
-    Annotation& operator = (Annotation&& a) { 
-        m_attr    = a.m_attr;
-        m_name    = std::move(a.m_name);
-        m_opt     = a.m_opt;
-        m_depth   = a.m_depth;
-        a.m_attr  = Attribute::invalid;
-        a.m_opt   = Default;
-        a.m_depth = 0;
+        friend class Annotation;
+    };
 
-        return *this;
-    }
+    Annotation(const std::string& name, int opt = Default);
 
-    cali_err begin(int data);
-    cali_err begin(double data);
-    cali_err begin(const std::string& data);
+    Annotation(const Annotation&) = default;
 
-    cali_err begin(cali_attr_type type, const void* data, std::size_t size);
+    Annotation& operator = (const Annotation&) = default;
 
-    cali_err set(int data);
-    cali_err set(double data);
-    cali_err set(const std::string& data);
+    Scope begin(int data);
+    Scope begin(double data);
+    Scope begin(const std::string& data);
+    Scope begin(cali_attr_type type, const void* data, std::size_t size);
 
-    cali_err set(cali_attr_type type, const void* data, std::size_t size);
+    Scope set(int data);
+    Scope set(double data);
+    Scope set(const std::string& data);
+    Scope set(cali_attr_type type, const void* data, std::size_t size);
 
-    static std::pair<Annotation, cali_err> set(const std::string& name, int data, int opt = Default);
-    static std::pair<Annotation, cali_err> set(const std::string& name, double data, int opt = Default);
-    static std::pair<Annotation, cali_err> set(const std::string& name, const std::string& data, int opt = Default);
-
-    cali_err end();
+    void  end();
 };
 
 };
