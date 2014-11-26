@@ -25,8 +25,8 @@ void end_foo_op()
 
 void print_context()
 {
-    cali::Caliper* c { cali::Caliper::instance() };
-    cali_id_t     env { c->current_environment()  };
+    cali::Caliper* c   { cali::Caliper::instance() };
+    cali_id_t      env { c->current_environment()  };
 
     vector<uint64_t> ctx(2 * c->num_attributes(), 0);
 
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
     cali::Annotation phase("phase");
 
     // Begin scope of phase->"main"
-    phase.begin("main");
+    auto a1 = phase.begin("main");
 
     int count = argc > 1 ? atoi(argv[1]) : 4;
 
@@ -58,15 +58,14 @@ int main(int argc, char* argv[])
         float    f = 42.42;
     } my_weird_elem;
 
-    cali::Annotation usr = cali::Annotation("mydata");
-    usr.set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
-
-    // Add new scope phase->"loop" under phase->"main" 
-    phase.begin("loop");
+    auto a2 = cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
 
     {
+        // Add new scope phase->"loop" under phase->"main" 
+        auto a3 = phase.begin("loop");
+
         // Set "loopcount" annotation to 'count' in current C++ scope
-        auto a = cali::Annotation::set("loopcount", count);
+        auto a4 = cali::Annotation("loopcount").set(count);
 
         // Declare "iteration" annotation, store entries explicitly as values
         cali::Annotation iteration("iteration", cali::Annotation::StoreAsValue);
@@ -76,21 +75,13 @@ int main(int argc, char* argv[])
             iteration.set(i);
 
             begin_foo_op();
-            // print_context();
-
             end_foo_op();
-            // print_context();
         }
 
-        // "loopcount" and "iteration" annotations implicitly end here 
+        iteration.end();
+
+        // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
-
-    // End innermost level phase->"loop"
-    phase.end();
-    // print_context();
-
-    // explicitly end "usr"
-    usr.end();
 
     // Test serialization API
     cali::Caliper::instance()->write_metadata();
