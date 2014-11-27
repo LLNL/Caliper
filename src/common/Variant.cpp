@@ -167,7 +167,16 @@ Variant::to_double(bool* okptr)
     if (okptr)
         *okptr = ok;
 
-    return ok ? m_value.v_double : 0;
+    switch (m_type) {
+    case CALI_TYPE_DOUBLE:
+        return m_value.v_double;
+    case CALI_TYPE_INT:
+        return m_value.v_int;
+    case CALI_TYPE_UINT:
+        return m_value.v_uint;
+    default:
+        return 0;
+    }
 }
 
 cali_attr_type
