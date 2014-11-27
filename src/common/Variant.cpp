@@ -26,20 +26,20 @@ Variant::Variant(cali_attr_type type, std::size_t size, const void* data)
         m_value.ptr = data;
         break;
     case CALI_TYPE_INT:
-        m_value.v_int = *static_cast<const int64_t*>(data);
+        m_value.v_int    = *static_cast<const int64_t*>(data);
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
-        m_value.v_uint = *static_cast<const uint64_t*>(data);
+        m_value.v_uint   = *static_cast<const uint64_t*>(data);
         break;
     case CALI_TYPE_DOUBLE:
-        m_value.v_uint = *static_cast<const double*>(data);
+        m_value.v_double = *static_cast<const double*>(data);
         break;
     case CALI_TYPE_BOOL:
-        m_value.v_bool = *static_cast<const bool*>(data);
+        m_value.v_bool   = *static_cast<const bool*>(data);
         break;
     case CALI_TYPE_TYPE:
-        m_value.v_type = *static_cast<const cali_attr_type*>(data);
+        m_value.v_type   = *static_cast<const cali_attr_type*>(data);
         break;
     }
 }
