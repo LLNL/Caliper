@@ -11,13 +11,6 @@ using namespace cali;
 using namespace std;
 
 
-Node::Node(cali_id_t id, const Attribute& attr, void* data, size_t size)
-    : IdType(id),
-      util::IntrusiveTree<Node>(this, &Node::m_treenode),
-      m_attribute(attr.id()), m_type(attr.type()), m_datasize(size), m_data(data)
-{
-}
-
 Node::~Node()
 {
     unlink();
@@ -25,8 +18,8 @@ Node::~Node()
 
 bool Node::equals(cali_id_t attr, const void* data, size_t size) const
 {
-    if (m_attribute == attr && m_datasize == size)
-        return (0 == memcmp(m_data, data, size));
+    if (m_attribute == attr)
+        return m_data == Variant(m_data.type(), data, size);
 
     return false;
 }
@@ -34,10 +27,10 @@ bool Node::equals(cali_id_t attr, const void* data, size_t size) const
 RecordMap Node::record() const
 {
     RecordMap recmap = {
-        { "id",        { id() }                       },
-        { "attribute", { m_attribute }                },
-        { "type",      { m_type }                     },
-        { "data",      { m_type, m_datasize, m_data } } };
+        { "id",        { id() }          },
+        { "attribute", { m_attribute }   },
+        { "type",      { m_data.type() } },
+        { "data",      { m_data }        } };
 
     if (parent() && parent()->id() != CALI_INV_ID)
         recmap.insert(make_pair( "parent", Variant(parent()->id()) ));

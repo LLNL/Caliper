@@ -8,16 +8,16 @@
 
 #include "cali_types.h"
 
+#include "Attribute.h"
 #include "IdType.h"
 #include "RecordMap.h"
+#include "Variant.h"
 
 #include "util/tree.hpp"
 
 
 namespace cali 
 {
-
-class Attribute;
 
 //
 // --- Node base class 
@@ -28,14 +28,16 @@ class Node : public IdType, public util::IntrusiveTree<Node>
     util::IntrusiveTree<Node>::Node m_treenode;
 
     cali_id_t      m_attribute;
-    cali_attr_type m_type;
-
-    std::size_t   m_datasize;
-    void*         m_data;
+    Variant        m_data;
 
 public:
 
-    Node(cali_id_t id, const Attribute& attr, void* data, size_t size);
+    Node(cali_id_t id, const Attribute& attr, const Variant& data)
+        : IdType(id),
+          util::IntrusiveTree<Node>(this, &Node::m_treenode), 
+          m_attribute { attr.id() }, m_data { data }
+        { }
+
 
     Node(const Node&) = delete;
 
@@ -43,12 +45,14 @@ public:
 
     ~Node();
 
+    bool equals(cali_id_t attr, const Variant& v) const {
+        return m_attribute == attr ? m_data == v : false;
+    }
+
     bool equals(cali_id_t attr, const void* data, size_t size) const;
 
     cali_id_t attribute() const { return m_attribute; }
-
-    size_t size() const        { return m_datasize;  }
-    const void* data() const   { return m_data;      }
+    Variant   data() const      { return m_data;      }
 
     RecordMap record() const;
 };

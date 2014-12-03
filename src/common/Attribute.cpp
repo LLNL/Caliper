@@ -69,13 +69,6 @@ namespace
     }
 }
 
-
-Attribute::Attribute(cali_id_t id, const std::string&  name, cali_attr_type type, int prop)
-    : IdType { id }, 
-    m_name { name }, m_properties { prop }, m_type { type }
-{ }
-
-
 RecordMap Attribute::record() const
 {
     RecordMap recmap = { 
@@ -88,7 +81,6 @@ RecordMap Attribute::record() const
 
     return recmap;
 }
-
 
 Attribute Attribute::read(const RecordMap& rec)
 {
@@ -109,6 +101,5 @@ Attribute Attribute::read(const RecordMap& rec)
 
     return Attribute(v_id.to_id(), v_name.to_string(), v_type.to_attr_type(), properties);
 }
-
 
 const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };
