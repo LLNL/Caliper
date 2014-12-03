@@ -15,7 +15,7 @@ using namespace cali;
 using namespace std;
 
 
-Variant::Variant(cali_attr_type type, std::size_t size, const void* data)
+Variant::Variant(cali_attr_type type, const void* data, std::size_t size)
     : m_type { type }, m_size { size }
 {
     switch (m_type) {
@@ -255,6 +255,29 @@ Variant::to_string()
 {
     m_string = const_cast<const Variant*>(this)->to_string();
     return m_string;
+}
+
+bool cali::operator == (const Variant& lhs, const Variant& rhs)
+{
+    if (lhs.m_type == CALI_TYPE_INV || rhs.m_type == CALI_TYPE_INV)
+        return lhs.to_string() == rhs.to_string();
+
+    if (lhs.m_type != rhs.m_type)
+        return false;
+
+    switch (lhs.m_type) {
+    case CALI_TYPE_STRING:
+    case CALI_TYPE_USR:
+        if (lhs.m_size == rhs.m_size)
+            if (lhs.m_value.ptr == rhs.m_value.ptr)
+                return true;
+            else
+                return 0 == memcmp(lhs.m_value.ptr, rhs.m_value.ptr, lhs.m_size);
+
+        return false;
+    default:
+        return lhs.m_value.v_uint == rhs.m_value.v_uint;
+    }
 }
 
 ostream& cali::operator << (ostream& os, const Variant& v)
