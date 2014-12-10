@@ -166,7 +166,7 @@ struct Caliper::CaliperImpl
 
         // Initialize bootstrap attributes
 
-        struct attr_node_t { Node* n; Attribute* a; cali_attr_type t; } attr_nodes[3] = { 
+        struct attr_node_t { Node* n; Attribute* a; cali_attr_type t; } attr_nodes[] = { 
             { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
             { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
             { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    } };

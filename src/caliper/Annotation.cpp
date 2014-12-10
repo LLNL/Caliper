@@ -5,6 +5,8 @@
 #include "Annotation.h"
 #include "Caliper.h"
 
+#include <Log.h>
+
 using namespace std;
 using namespace cali;
 
@@ -131,4 +133,7 @@ void Annotation::create_attribute(cali_attr_type type)
     };
 
     m_attr = Caliper::instance()->create_attribute(m_name, type, prop[m_opt & 0x03]);
+
+    if (m_attr == Attribute::invalid)
+        Log(0).stream() << "Could not create attribute " << m_name << endl;
 }

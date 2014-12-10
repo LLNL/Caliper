@@ -73,7 +73,7 @@ public:
         return (m_type == CALI_TYPE_INV || m_size == 0) && m_string.empty(); 
     };
     operator bool() const {
-        return empty();
+        return !empty();
     }
 
     cali_attr_type type() const { return m_type; }

@@ -33,7 +33,11 @@ public:
     public:
 
         Scope(Scope&& s) 
-            : m_attr { s.m_attr }, m_destruct { true } { s.m_destruct = false; }
+            : m_attr { s.m_attr }, m_destruct { true } 
+            { 
+                s.m_attr     = Attribute::invalid;
+                s.m_destruct = false;
+            }
 
         Scope(const Scope& s) = delete;
 
@@ -43,7 +47,10 @@ public:
             m_attr       = s.m_attr;
             m_destruct   = true;
 
+            s.m_attr     = Attribute::invalid;
             s.m_destruct = false;
+
+            return *this;
         }
 
         operator bool() const {
