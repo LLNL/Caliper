@@ -14,10 +14,12 @@
 #include <MetadataWriter.h>
 #include <Node.h>
 #include <Log.h>
+#include <RecordMap.h>
 #include <RuntimeConfig.h>
 
 #include <signal.h>
 
+#include <cassert>
 #include <cstring>
 #include <functional>
 #include <iostream>
@@ -45,32 +47,42 @@ struct Caliper::CaliperImpl
 
     static const ConfigSet::Entry s_configdata[];
 
-
     // --- data
 
-    ConfigSet             m_config;
+    ConfigSet              m_config;
     
-    function<cali_id_t()> m_env_cb;
+    function<cali_id_t()>  m_env_cb;
     
-    MemoryPool            m_mempool;
+    MemoryPool             m_mempool;
 
-    mutable SigsafeRWLock m_nodelock;
-    vector<Node*>         m_nodes;
-    Node                  m_root;
+    mutable SigsafeRWLock  m_nodelock;
+    vector<Node*>          m_nodes;
+    Node                   m_root;
 
-    mutable SigsafeRWLock m_attribute_lock;
-    AttributeStore        m_attributes;
-    Context               m_context;
+    mutable SigsafeRWLock  m_attribute_lock;
+    map<string, Node*>
+                           m_attribute_nodes;
+    map<cali_attr_type, Node*> 
+                           m_type_nodes;
 
-    Events                m_events;
+    Attribute              m_name_attr;
+    Attribute              m_type_attr;
+    Attribute              m_prop_attr;
+ 
+    Context                m_context;
 
+    Events                 m_events;
 
     // --- constructor
 
     CaliperImpl()
         : m_config { RuntimeConfig::init("caliper", s_configdata) }, 
-        m_root { CALI_INV_ID, Attribute::invalid, 0, 0 } 
-    { }
+        m_root { CALI_INV_ID, CALI_INV_ID, { } }, 
+        m_name_attr { Attribute::invalid }, 
+        m_type_attr { Attribute::invalid },  
+        m_prop_attr { Attribute::invalid }
+    { 
+    }
 
     ~CaliperImpl() {
         Log(1).stream() << "Finished" << endl;
@@ -81,8 +93,11 @@ struct Caliper::CaliperImpl
 
     // deferred initialization: called when it's safe to use the public Caliper interface
 
-    void init() {
+    void 
+    init() {
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
+
+        bootstrap();
 
         Services::register_services(s_caliper.get());
 
@@ -94,23 +109,199 @@ struct Caliper::CaliperImpl
 
     // --- helpers
 
-    Node* create_node(const Attribute& attr, const void* data, size_t size) {
+    Attribute 
+    make_attribute(const Node* node) const {
+        Variant   name, type, prop;
+        cali_id_t id = node ? node->id() : CALI_INV_ID;
+
+        for ( ; node ; node = node->parent() ) {
+            if      (node->attribute() == m_name_attr.id()) 
+                name = node->data();
+            else if (node->attribute() == m_prop_attr.id()) 
+                prop = node->data();
+            else if (node->attribute() == m_type_attr.id()) 
+                type = node->data();
+        }
+
+        if (!name || !type)
+            return Attribute::invalid;
+
+        int p = prop ? prop.to_int() : CALI_ATTR_DEFAULT;
+
+        return Attribute(id, name.to_string(), type.to_attr_type(), p);
+    }
+
+    void  
+    bootstrap() {
+        // Create initial nodes
+
+        static Node bootstrap_type_nodes[] = {
+            {  0, 9, { CALI_TYPE_USR    },  },
+            {  1, 9, { CALI_TYPE_INT    },  },
+            {  2, 9, { CALI_TYPE_UINT   },  },
+            {  3, 9, { CALI_TYPE_STRING },  },
+            {  4, 9, { CALI_TYPE_ADDR   },  },
+            {  5, 9, { CALI_TYPE_DOUBLE },  },
+            {  6, 9, { CALI_TYPE_BOOL   },  },
+            {  7, 9, { CALI_TYPE_TYPE   },  },
+            { CALI_INV_ID, CALI_INV_ID, { } } 
+        };
+        static Node bootstrap_attr_nodes[] = {
+            {  8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 20 } },
+            {  9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 20 } },
+            { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 20 } },
+            { CALI_INV_ID, CALI_INV_ID, { } } 
+        };
+
+        m_nodes.resize(11);
+
+        for ( Node* nodes : { bootstrap_type_nodes, bootstrap_attr_nodes } )
+            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node)
+                m_nodes[node->id()] = node;
+
+        // Fill type map
+
+        for (Node* node = bootstrap_type_nodes ; node->id() != CALI_INV_ID; ++node)
+            m_type_nodes[node->data().to_attr_type()] = node;
+
+        // Initialize bootstrap attributes
+
+        struct attr_node_t { Node* n; Attribute* a; cali_attr_type t; } attr_nodes[3] = { 
+            { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
+            { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
+            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    } };
+
+        for ( attr_node_t p : attr_nodes )
+            *(p.a) = Attribute(p.n->id(), p.n->data().to_string(), p.t);
+
+        // Create initial attribute hierarchy
+
+        m_type_nodes[CALI_TYPE_STRING]->append(m_nodes[m_name_attr.id()]);
+        m_type_nodes[CALI_TYPE_TYPE  ]->append(m_nodes[m_type_attr.id()]);
+        m_type_nodes[CALI_TYPE_INT   ]->append(m_nodes[m_prop_attr.id()]);
+    }
+
+    Node*
+    create_path(size_t n, const Attribute* attr, Variant* data, Node* parent = nullptr) {
+        // Calculate and allocate required memory
+
         const size_t align = 8;
         const size_t pad   = align - sizeof(Node)%align;
 
-        char* ptr  = static_cast<char*>(m_mempool.allocate(sizeof(Node) + pad + size));
+        size_t total_size  = 0;
+
+        for (size_t i = 0; i < n; ++i) {
+            total_size += sizeof(Node) + pad;
+
+            if (attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING)
+                total_size += data[i].size() + (align - data[i].size()%align);
+        }
+
+        char* ptr  = static_cast<char*>(m_mempool.allocate(total_size));
+        Node* node = nullptr;
+
+        // Create nodes
 
         m_nodelock.wlock();
 
-        Node* node = new(ptr) 
-            Node(m_nodes.size(), attr, memcpy(ptr+sizeof(Node)+pad, data, size), size);        
+        for (size_t i = 0; i < n; ++i) {
+            bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
+            const void* dptr { data[i].data() };
+            size_t size { data[i].size() }; 
 
-        m_nodes.push_back(node);
+            if (copy)
+                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
+
+            node = new(ptr) 
+                Node(m_nodes.size(), attr[i].id(), Variant(attr[i].type(), dptr, size));
+
+            m_nodes.push_back(node);
+
+            if (parent)
+                parent->append(node);
+
+            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
+            parent = node;
+        }
+
         m_nodelock.unlock();
 
         return node;
     }
 
+    Node* 
+    create_node(const Attribute& attr, const void* data, size_t size, Node* parent = nullptr) {
+        Variant v { attr.type(), data, size };
+
+        return create_path(1, &attr, &v, parent);
+    }
+
+    // --- Attribute interface
+
+    Attribute 
+    create_attribute(const std::string& name, cali_attr_type type, int prop) {
+        m_attribute_lock.wlock();
+
+        Node* node { nullptr };
+        auto it = m_attribute_nodes.find(name);
+
+        if (it != m_attribute_nodes.end()) {
+            node = it->second;
+        } else {
+            Node*     type_node = m_type_nodes[type];
+
+            assert(type_node);
+
+            Attribute attr[2] { m_prop_attr, m_name_attr };
+            Variant   data[2] { { prop }, { CALI_TYPE_STRING, name.c_str(), name.size() } };
+
+            if (prop == CALI_ATTR_DEFAULT)
+                node = create_path(1, &attr[1], &data[1], type_node);
+            else
+                node = create_path(2, &attr[0], &data[0], type_node);
+
+            if (node)
+                m_attribute_nodes.insert(make_pair(name, node));
+        }
+
+        m_attribute_lock.unlock();
+
+        return make_attribute(node);
+    }
+
+    Attribute
+    get_attribute(const string& name) const {
+        Node* node = nullptr;
+
+        m_attribute_lock.rlock();
+
+        auto it = m_attribute_nodes.find(name);
+
+        if (it != m_attribute_nodes.end())
+            node = it->second;
+
+        m_attribute_lock.unlock();
+
+        return make_attribute(node);
+    }
+
+    Attribute 
+    get_attribute(cali_id_t id) const {
+        m_nodelock.rlock();
+        Node* node = id < m_nodes.size() ? m_nodes[id] : nullptr;
+        m_nodelock.unlock();
+
+        return make_attribute(node);
+    }
+
+    size_t
+    num_attributes() const {
+        m_attribute_lock.rlock();
+        size_t size = m_attribute_nodes.size();
+        m_attribute_lock.unlock();
+
+        return size;
+    }
 
     // --- Context interface
 
@@ -125,7 +316,8 @@ struct Caliper::CaliperImpl
 
     // --- Annotation interface
 
-    cali_err begin(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
+    cali_err 
+    begin(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
         cali_err ret = CALI_EINV;
 
         if (attr == Attribute::invalid)
@@ -150,15 +342,8 @@ struct Caliper::CaliperImpl
 
             m_nodelock.unlock();
 
-            if (!node) {
-                node = create_node(attr, data, size);
-
-                if (parent) {
-                    m_nodelock.wlock();
-                    parent->append(node);
-                    m_nodelock.unlock();
-                }
-            }
+            if (!node)
+                node = create_node(attr, data, size, parent);
 
             ret = m_context.set(env, key, node->id(), attr.is_global());
         }
@@ -169,7 +354,8 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
-    cali_err end(cali_id_t env, const Attribute& attr) {
+    cali_err 
+    end(cali_id_t env, const Attribute& attr) {
         if (attr == Attribute::invalid)
             return CALI_EINV;
 
@@ -212,7 +398,8 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
-    cali_err set(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
+    cali_err 
+    set(cali_id_t env, const Attribute& attr, const void* data, size_t size) {
         if (attr == Attribute::invalid)
             return CALI_EINV;
 
@@ -242,15 +429,8 @@ struct Caliper::CaliperImpl
 
             m_nodelock.unlock();
 
-            if (!node) {
-                node = create_node(attr, data, size);
-
-                if (parent) {
-                    m_nodelock.wlock();
-                    parent->append(node);
-                    m_nodelock.unlock();
-                }
-            }
+            if (!node)
+                node = create_node(attr, data, size, parent);
 
             ret = m_context.set(env, key, node->id(), attr.is_global());
         }
@@ -264,7 +444,8 @@ struct Caliper::CaliperImpl
 
     // --- Retrieval
 
-    const Node* get(cali_id_t id) const {
+    const Node* 
+    get(cali_id_t id) const {
         if (id > m_nodes.size())
             return nullptr;
 
@@ -280,7 +461,8 @@ struct Caliper::CaliperImpl
 
     // --- Serialization API
 
-    void foreach_node(std::function<void(const Node&)> proc) {
+    void 
+    foreach_node(std::function<void(const Node&)> proc) {
         // Need locking?
         for (Node* node : m_nodes)
             if (node)
@@ -393,43 +575,16 @@ Caliper::set(cali_id_t env, const Attribute& attr, const void* data, size_t size
 // --- Attribute API
 
 size_t
-Caliper::num_attributes() const
-{
-    mP->m_attribute_lock.rlock();
-    size_t s = mP->m_attributes.size();
-    mP->m_attribute_lock.unlock();
-
-    return s;
-}
-
+Caliper::num_attributes() const                       { return mP->num_attributes();    }
 Attribute
-Caliper::get_attribute(cali_id_t id) const
-{
-    mP->m_attribute_lock.rlock();
-    Attribute a = mP->m_attributes.get(id);
-    mP->m_attribute_lock.unlock();
-
-    return a;
-}
-
+Caliper::get_attribute(cali_id_t id) const            { return mP->get_attribute(id);   }
 Attribute
-Caliper::get_attribute(const std::string& name) const
-{
-    mP->m_attribute_lock.rlock();
-    Attribute a = mP->m_attributes.get(name);
-    mP->m_attribute_lock.unlock();
-
-    return a;
-}
+Caliper::get_attribute(const std::string& name) const { return mP->get_attribute(name); }
 
 Attribute 
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop)
 {
-    mP->m_attribute_lock.wlock();
-    Attribute a = mP->m_attributes.create(name, type, prop);
-    mP->m_attribute_lock.unlock();
-
-    return a;
+    return mP->create_attribute(name, type, prop);
 }
 
 
@@ -439,7 +594,7 @@ std::vector<RecordMap>
 Caliper::unpack(const uint64_t buf[], size_t size) const
 {
     return ContextRecord::unpack(
-        [this](cali_id_t id){ return get_attribute(id); },
+        [this](cali_id_t id){ return mP->get_attribute(id); },
         [this](cali_id_t id){ return mP->get(id); },
         buf, size);                                 
 }
@@ -451,14 +606,6 @@ void
 Caliper::foreach_node(std::function<void(const Node&)> proc)
 {
     mP->foreach_node(proc);
-}
-
-void
-Caliper::foreach_attribute(std::function<void(const Attribute&)> proc)
-{
-    mP->m_attribute_lock.rlock();
-    mP->m_attributes.foreach_attribute(proc);
-    mP->m_attribute_lock.unlock();
 }
 
 bool
@@ -478,8 +625,7 @@ Caliper::write_metadata()
 
     using std::placeholders::_1;
 
-    return w->write(std::bind(&Caliper::foreach_attribute, this,     _1),
-                    std::bind(&CaliperImpl::foreach_node,  mP.get(), _1));
+    return w->write(std::bind(&CaliperImpl::foreach_node, mP.get(), _1));
 }
 
 

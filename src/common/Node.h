@@ -8,7 +8,6 @@
 
 #include "cali_types.h"
 
-#include "Attribute.h"
 #include "IdType.h"
 #include "RecordMap.h"
 #include "Variant.h"
@@ -27,15 +26,15 @@ class Node : public IdType, public util::IntrusiveTree<Node>
 {
     util::IntrusiveTree<Node>::Node m_treenode;
 
-    cali_id_t      m_attribute;
-    Variant        m_data;
+    cali_id_t m_attribute;
+    Variant   m_data;
 
 public:
 
-    Node(cali_id_t id, const Attribute& attr, const Variant& data)
+    Node(cali_id_t id, cali_id_t attr, const Variant& data)
         : IdType(id),
           util::IntrusiveTree<Node>(this, &Node::m_treenode), 
-          m_attribute { attr.id() }, m_data { data }
+          m_attribute { attr }, m_data { data }
         { }
 
 

@@ -17,8 +17,7 @@ class MetadataWriter
 public:
 
     virtual bool 
-    write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
-          std::function<void(std::function<void(const Node&)>)>      foreach_node) = 0;
+    write(std::function<void(std::function<void(const Node&)>)> foreach_node) = 0;
 };
 
 } // namespace cali

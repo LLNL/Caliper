@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <cstring>
 #include <iomanip>
 #include <iterator>
 #include <map>
@@ -13,7 +14,6 @@
 
 using namespace cali;
 using namespace std;
-
 
 Variant::Variant(cali_attr_type type, const void* data, std::size_t size)
     : m_type { type }, m_size { size }
@@ -42,6 +42,37 @@ Variant::Variant(cali_attr_type type, const void* data, std::size_t size)
         m_value.v_type   = *static_cast<const cali_attr_type*>(data);
         break;
     }
+}
+
+const void*
+Variant::data() const
+{
+    switch (m_type) {
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
+        return m_value.ptr;
+        break;
+    case CALI_TYPE_INT:
+        return &m_value.v_int;
+        break;
+    case CALI_TYPE_ADDR:
+    case CALI_TYPE_UINT:
+        return &m_value.v_uint;
+        break;
+    case CALI_TYPE_DOUBLE:
+        return &m_value.v_double;
+        break;
+    case CALI_TYPE_BOOL:
+        return &m_value.v_bool;
+        break;
+    case CALI_TYPE_TYPE:
+        return &m_value.v_type;
+        break;        
+    default:
+        break;
+    }
+
+    return nullptr;
 }
 
 cali_id_t
@@ -268,12 +299,12 @@ bool cali::operator == (const Variant& lhs, const Variant& rhs)
     switch (lhs.m_type) {
     case CALI_TYPE_STRING:
     case CALI_TYPE_USR:
-        if (lhs.m_size == rhs.m_size)
+        if (lhs.m_size == rhs.m_size) {
             if (lhs.m_value.ptr == rhs.m_value.ptr)
                 return true;
             else
                 return 0 == memcmp(lhs.m_value.ptr, rhs.m_value.ptr, lhs.m_size);
-
+        }
         return false;
     default:
         return lhs.m_value.v_uint == rhs.m_value.v_uint;

@@ -26,7 +26,7 @@ class Attribute : public IdType
 
 public:
 
-    Attribute(cali_id_t id, const std::string& name, cali_attr_type type, int prop)
+    Attribute(cali_id_t id, const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT)
         : IdType { id },
         m_name { name }, m_properties { prop }, m_type { type }
         { }

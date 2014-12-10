@@ -73,7 +73,7 @@ RecordMap Attribute::record() const
 {
     RecordMap recmap = { 
         { "id",   { id()   } },
-        { "name", { m_name } },
+        { "name", Variant(m_name) },
         { "type", { m_type } } };
 
     if (m_properties != CALI_ATTR_DEFAULT)

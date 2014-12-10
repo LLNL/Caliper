@@ -39,7 +39,7 @@ public:
     Variant(const Variant& v) = default;
     Variant(Variant&& v) = default;
 
-    Variant(const std::string& string)
+    explicit Variant(const std::string& string)
         : m_type { CALI_TYPE_INV }, m_size { 0 }, m_string { string }
         { }
 
@@ -77,6 +77,8 @@ public:
     }
 
     cali_attr_type type() const { return m_type; }
+    const void*    data() const;
+    size_t         size() const { return m_size; }
 
     cali_id_t      to_id(bool* okptr = nullptr);
     int            to_int(bool* okptr = nullptr);

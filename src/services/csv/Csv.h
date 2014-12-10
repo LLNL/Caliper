@@ -16,7 +16,6 @@
 namespace cali
 {
 
-class Attribute;
 class Node;
 
 class CsvWriter : public MetadataWriter
@@ -32,8 +31,7 @@ public:
 
     ~CsvWriter();
 
-    bool write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
-               std::function<void(std::function<void(const Node&)>)>      foreach_node) override;
+    bool write(std::function<void(std::function<void(const Node&)>)> foreach_node) override;
 };
 
 } // namespace cali

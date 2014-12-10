@@ -152,15 +152,12 @@ const ConfigSet::Entry CsvSpec::s_configdata[] = {
 
 struct CsvWriter::CsvWriterImpl
 {
-    std::string attr_file;
     std::string node_file;
-
     ConfigSet   m_config;
 
     CsvWriterImpl()
         : m_config { RuntimeConfig::init("csv", ::CsvSpec::s_configdata) } 
     {
-        attr_file = m_config.get("basename").to_string() + ".attributes.csv";
         node_file = m_config.get("basename").to_string() + ".nodes.csv";
     }
 };
@@ -178,25 +175,20 @@ CsvWriter::~CsvWriter()
     mP.reset();
 }
 
-bool CsvWriter::write(std::function<void(std::function<void(const Attribute&)>)> foreach_attr,
-                      std::function<void(std::function<void(const Node&)>)>      foreach_node)
+bool CsvWriter::write(std::function<void(std::function<void(const Node&)>)>      foreach_node)
 {
-    if (mP->attr_file.empty() || mP->node_file.empty()) {
-        cout << "Attributes:" << endl;
-        foreach_attr([](const Attribute& a){ CaliperCsvSpec.write_record(cout, a.record()); });
+    if (mP->node_file.empty()) {
         cout << "Nodes:" << endl;
-        foreach_node([](const Node&      n){ CaliperCsvSpec.write_record(cout, n.record()); });
+        foreach_node([](const Node&  n){ CaliperCsvSpec.write_record(cout, n.record()); });
     } else {
-        ofstream astr(mP->attr_file.c_str());
         ofstream nstr(mP->node_file.c_str());
 
-        if (!astr || !nstr)
+        if (!nstr)
             return false;
 
-        foreach_attr([&](const Attribute& a){ CaliperCsvSpec.write_record(astr, a.record()); });
-        foreach_node([&](const Node&      n){ CaliperCsvSpec.write_record(nstr, n.record()); });
+        foreach_node([&](const Node& n){ CaliperCsvSpec.write_record(nstr, n.record()); });
 
-        Log(1).stream() << "Wrote " << mP->attr_file << " and " << mP->node_file << endl;
+        Log(1).stream() << "Wrote " << mP->node_file << endl;
     }
 
     return true;
