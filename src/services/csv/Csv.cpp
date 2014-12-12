@@ -137,8 +137,8 @@ static CsvSpec CaliperCsvSpec;
 
 const ConfigSet::Entry CsvSpec::s_configdata[] = {
     { "basename", CALI_TYPE_STRING, "caliper",
-      "Base filename for .attributes.csv and .nodes.csv files",
-      "Base filename for .attributes.csv and .nodes.csv files"
+      "Base filename for .nodes.csv files",
+      "Base filename for .nodes.csv files"
     },
     ConfigSet::Terminator
 };

@@ -107,30 +107,6 @@ struct Caliper::CaliperImpl
             RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
     }
 
-    // --- helpers
-
-    Attribute 
-    make_attribute(const Node* node) const {
-        Variant   name, type, prop;
-        cali_id_t id = node ? node->id() : CALI_INV_ID;
-
-        for ( ; node ; node = node->parent() ) {
-            if      (node->attribute() == m_name_attr.id()) 
-                name = node->data();
-            else if (node->attribute() == m_prop_attr.id()) 
-                prop = node->data();
-            else if (node->attribute() == m_type_attr.id()) 
-                type = node->data();
-        }
-
-        if (!name || !type)
-            return Attribute::invalid;
-
-        int p = prop ? prop.to_int() : CALI_ATTR_DEFAULT;
-
-        return Attribute(id, name.to_string(), type.to_attr_type(), p);
-    }
-
     void  
     bootstrap() {
         // Create initial nodes
@@ -166,19 +142,44 @@ struct Caliper::CaliperImpl
 
         // Initialize bootstrap attributes
 
-        struct attr_node_t { Node* n; Attribute* a; cali_attr_type t; } attr_nodes[] = { 
+        struct attr_node_t { 
+            Node* node; Attribute* attr; cali_attr_type type;
+        } attr_nodes[] = { 
             { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
             { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
-            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    } };
+            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    } 
+        };
 
-        for ( attr_node_t p : attr_nodes )
-            *(p.a) = Attribute(p.n->id(), p.n->data().to_string(), p.t);
+        for ( attr_node_t p : attr_nodes ) {
+            // Create attribute 
+            *(p.attr) = Attribute(p.node->id(), p.node->data().to_string(), p.type);
+            // Append to type node
+            m_type_nodes[p.type]->append(p.node);
+        }
+    }
 
-        // Create initial attribute hierarchy
+    // --- helpers
 
-        m_type_nodes[CALI_TYPE_STRING]->append(m_nodes[m_name_attr.id()]);
-        m_type_nodes[CALI_TYPE_TYPE  ]->append(m_nodes[m_type_attr.id()]);
-        m_type_nodes[CALI_TYPE_INT   ]->append(m_nodes[m_prop_attr.id()]);
+    Attribute 
+    make_attribute(const Node* node) const {
+        Variant   name, type, prop;
+        cali_id_t id = node ? node->id() : CALI_INV_ID;
+
+        for ( ; node ; node = node->parent() ) {
+            if      (node->attribute() == m_name_attr.id()) 
+                name = node->data();
+            else if (node->attribute() == m_prop_attr.id()) 
+                prop = node->data();
+            else if (node->attribute() == m_type_attr.id()) 
+                type = node->data();
+        }
+
+        if (!name || !type)
+            return Attribute::invalid;
+
+        int p = prop ? prop.to_int() : CALI_ATTR_DEFAULT;
+
+        return Attribute(id, name.to_string(), type.to_attr_type(), p);
     }
 
     Node*
