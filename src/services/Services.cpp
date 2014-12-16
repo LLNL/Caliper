@@ -4,10 +4,15 @@
 #include "Services.h"
 
 #include "CaliperService.h"
+#include "RuntimeConfig.h"
+
+#include "util/split.hpp"
 
 #include <MetadataWriter.h>
 
+#include <algorithm>
 #include <functional>
+#include <iterator>
 #include <map>
 #include <string>
 
@@ -27,6 +32,9 @@ struct Services::ServicesImpl
     // --- data
 
     static std::unique_ptr<ServicesImpl> s_instance;
+    static const ConfigSet::Entry        s_configdata[];
+
+    ConfigSet m_config;
 
     map< string, function<unique_ptr<MetadataWriter>()> > m_metadata_writers;
 
@@ -34,10 +42,15 @@ struct Services::ServicesImpl
     // --- interface
 
     void register_services(Caliper* c) {
+        vector<string> services;
+
+        util::split(m_config.get("enable").to_string(), ':', back_inserter(services));
+
         // register caliper services
 
         for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
-            (s->register_fn)(c);
+            if (find(services.begin(), services.end(), string(s->name)) != services.end())
+                (s->register_fn)(c);
 
         // register metadata writers
 
@@ -65,6 +78,10 @@ struct Services::ServicesImpl
             os << it.first;
     }
 
+    ServicesImpl()
+        : m_config { RuntimeConfig::init("services", s_configdata) }
+        { }
+
     static ServicesImpl* instance() {
         if (!s_instance)
             s_instance.reset(new ServicesImpl);
@@ -74,6 +91,15 @@ struct Services::ServicesImpl
 };
 
 unique_ptr<Services::ServicesImpl> Services::ServicesImpl::s_instance { nullptr };
+
+const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
+    // key, type, value, short description, long description
+    { "enable", CALI_TYPE_STRING, "",
+      "List of service modules to enable",
+      "A list of colon-separated names of the service modules to enable"      
+    },
+    ConfigSet::Terminator
+};
 
 } // namespace cali
 
