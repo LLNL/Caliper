@@ -4,11 +4,11 @@
 #include "Services.h"
 
 #include "CaliperService.h"
-#include "RuntimeConfig.h"
 
-#include "util/split.hpp"
-
+#include <RuntimeConfig.h>
 #include <MetadataWriter.h>
+
+#include <util/split.hpp>
 
 #include <algorithm>
 #include <functional>
