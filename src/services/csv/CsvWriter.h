@@ -1,8 +1,8 @@
 /// @file Csv.h
 /// Csv reader/writer class definitions
 
-#ifndef CALI_CSVSPEC_H
-#define CALI_CSVSPEC_H
+#ifndef CALI_CSVWRITER_H
+#define CALI_CSVWRITER_H
 
 #include "cali_types.h"
 

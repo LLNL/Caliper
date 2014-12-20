@@ -25,12 +25,11 @@ namespace
 
 struct CsvSpec
 {
-    static const ConfigSet::Entry s_configdata[];
 
-    std::string m_sep       { ","   }; ///< separator character
-    std::string m_delim     { ":"   }; ///< delimiter
-    char        m_esc       { '\\'  }; ///< escape character
-    std::string m_esc_chars { "\\," }; ///< characters that need to be escaped
+
+    std::string m_sep       { ","    }; ///< separator character
+    char        m_esc       { '\\'   }; ///< escape character
+    std::string m_esc_chars { "\\,=" }; ///< characters that need to be escaped
 
     // --- write interface
 
@@ -53,7 +52,7 @@ struct CsvSpec
 
     // --- read interface
 
-    std::vector<std::string> split(const std::string& list, char sep) const {
+    vector<string> split(const string& list, char sep) const {
         vector<string> vec;
         string str;
 
@@ -75,51 +74,6 @@ struct CsvSpec
         return vec;
     }
 
-    vector<unsigned char> read_data(const std::string& str, cali_attr_type type) const {
-        vector<unsigned char> data;
-
-        switch (type) {
-        case CALI_TYPE_USR:
-            {
-                // data is stored as sequence of hexadecimal byte values delimited by m_delim,
-                // e.g. "42:0:0:2a:f:a0:2:0:"
-
-                for (const string &s : split(str, m_delim[0]))
-                    if (s.size())
-                        data.push_back(static_cast<unsigned char>(std::stoul(s, 0, 16)));
-            }
-            break;
-
-        case CALI_TYPE_INT:
-            {
-                union { int64_t i; unsigned char bytes[sizeof(int64_t)];   } u;
-                u.i = std::stoi(str);
-                std::copy(u.bytes, u.bytes + sizeof(int64_t),  std::back_inserter(data));
-            }
-            break;
-        case CALI_TYPE_ADDR:
-            {
-                union { uint64_t i; unsigned char bytes[sizeof(uint64_t)]; } u;
-                u.i = std::stoul(str, 0, 16); // read hexadecimal value
-                std::copy(u.bytes, u.bytes + sizeof(uint64_t), std::back_inserter(data));
-            }
-            break;
-        case CALI_TYPE_DOUBLE:
-            {
-                union { double d; unsigned char bytes[sizeof(double)];     } u;
-                u.d = std::stod(str);
-                std::copy(u.bytes, u.bytes + sizeof(double),   std::back_inserter(data));
-            }
-            break;
-
-        case CALI_TYPE_STRING:
-            std::copy(str.begin(), str.end(), std::back_inserter(data));
-            break;
-        }
-
-        return data;
-    }
-
     void write_record(ostream& os, const RecordMap& record) {
         int count = 0;
 
@@ -131,17 +85,25 @@ struct CsvSpec
         if (count)
             os << endl;
     }
+
+    RecordMap read_record(const string& line) {
+        vector<string> entries = split(line, m_sep[0]);
+        RecordMap      rec;
+
+        for (const string& entry : entries) {
+            vector<string> keyval = split(entry, '=');
+
+            if (keyval.size() == 2)
+                rec.insert(make_pair(keyval[0], Variant(keyval[1])));
+            else
+                Log(1).stream() << "Invalid CSV entry: " << entry << endl;
+        }
+
+        return rec;
+    }
 }; // struct CsvSpec
 
 static CsvSpec CaliperCsvSpec;
-
-const ConfigSet::Entry CsvSpec::s_configdata[] = {
-    { "basename", CALI_TYPE_STRING, "caliper",
-      "Base filename for .nodes.csv files",
-      "Base filename for .nodes.csv files"
-    },
-    ConfigSet::Terminator
-};
 
 } // anonymous namespace
 
@@ -152,6 +114,8 @@ const ConfigSet::Entry CsvSpec::s_configdata[] = {
 
 struct CsvWriter::CsvWriterImpl
 {
+    static const ConfigSet::Entry s_configdata[];
+
     std::string node_file;
     ConfigSet   m_config;
 
@@ -160,6 +124,14 @@ struct CsvWriter::CsvWriterImpl
     {
         node_file = m_config.get("basename").to_string() + ".nodes.csv";
     }
+};
+
+const ConfigSet::Entry CsvWriter::CsvWriterImpl::s_configdata[] = {
+    { "basename", CALI_TYPE_STRING, "caliper",
+      "Base filename for .nodes.csv files",
+      "Base filename for .nodes.csv files"
+    },
+    ConfigSet::Terminator
 };
 
 CsvWriter::CsvWriter()
@@ -175,7 +147,7 @@ CsvWriter::~CsvWriter()
     mP.reset();
 }
 
-bool CsvWriter::write(std::function<void(std::function<void(const Node&)>)>      foreach_node)
+bool CsvWriter::write(std::function<void(std::function<void(const Node&)>)> foreach_node)
 {
     if (mP->node_file.empty()) {
         cout << "Nodes:" << endl;

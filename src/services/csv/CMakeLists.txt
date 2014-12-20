@@ -1,7 +1,9 @@
 include_directories("../../common")
 
 set(CALIPER_CSV_SOURCES
-    Csv.cpp)
+    CsvReader.cpp
+    CsvSpec.cpp
+    CsvWriter.cpp)
 
 add_library(caliper-csv ${CALIPER_CSV_SOURCES})
 
