@@ -50,12 +50,7 @@ struct CsvSpecImpl
             if (*it == sep) {
                 vec.push_back(str);
                 str.clear();
-            } else if (*it == '"') {
-                // read string
-                for (++it; it != list.end() && *it != '"'; ++it)
-                    if (*it == m_esc && (++it != list.end()))
-                        str.push_back(*it);
-            } else if (!isspace(*it))
+            } else 
                 str.push_back(*it);
         }
 

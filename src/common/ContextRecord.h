@@ -11,7 +11,6 @@
 
 #include <functional>
 #include <vector>
-#include <memory>
 
 namespace cali
 {

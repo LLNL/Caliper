@@ -28,7 +28,7 @@ public:
     // --- I/O API 
     // 
 
-    void read(const char* filename);
+    bool read(const char* filename);
 
     //
     // --- Query API

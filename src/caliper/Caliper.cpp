@@ -123,9 +123,9 @@ struct Caliper::CaliperImpl
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
         static Node bootstrap_attr_nodes[] = {
-            {  8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 20 } },
-            {  9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 20 } },
-            { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 20 } },
+            {  8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 19 } },
+            {  9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 19 } },
+            { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 19 } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 

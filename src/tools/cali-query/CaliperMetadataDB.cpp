@@ -8,6 +8,7 @@
 #include <Node.h>
 #include <RecordMap.h>
 
+#include <iostream>
 #include <map>
 #include <vector>
 
@@ -29,8 +30,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         struct entry_t { 
             const char* key; Variant* val; 
         } entries[] = {
-                { "id",     &id     }, { "attr", &attr }, 
-                { "parent", &parent }, { "data", &data } 
+                { "id",     &id     }, { "attribute", &attr }, 
+                { "parent", &parent }, { "data",      &data }
         };
 
         for ( entry_t& e : entries ) {
@@ -39,7 +40,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                 *(e.val) = it->second;
         }
 
-        if (!id || !attr || !data)
+        if (!id || !attr || !data || id.to_id() == CALI_INV_ID)
             return;
 
         // FIXME: Consider need to do deep copies!
@@ -48,22 +49,22 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         // FIXME: Do some error checking here
 
-        if (m_nodes.size() < id)
-            m_nodes.resize(id + 1);
+        if (m_nodes.size() <= node->id())
+            m_nodes.resize(node->id() + 1);
 
-        m_nodes[id] = node;
+        m_nodes[node->id()] = node;
 
-        if (parent)
+        if (parent && parent.to_id() < m_nodes.size())
             m_nodes[parent.to_id()]->append(node);
 
         // Check if this is one of the basic attribute nodes
 
         struct attr_t {
-            string name; cali_id_t* id;
+            const char* name; cali_id_t* id;
         } base_attributes[] = {
             { "cali.attribute.name", &m_name_attr_id },
-            { "cali.attribute.name", &m_prop_attr_id },
-            { "cali.attribute.name", &m_type_attr_id }
+            { "cali.attribute.prop", &m_prop_attr_id },
+            { "cali.attribute.type", &m_type_attr_id }
         };
 
         for ( attr_t &a : base_attributes )
@@ -79,6 +80,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             return it->second;
 
         // Create the attribute from node
+
+        if (id >= m_nodes.size())
+            return Attribute::invalid;
 
         Variant name, type, prop;
         Node*   node = m_nodes[id];
@@ -103,10 +107,20 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return attr;
     }
 
-    void read(const char* filename) {
+    bool read(const char* filename) {
         CsvReader reader(filename);
 
-        reader.read(std::bind(&CaliperMetadataDBImpl::create_node, this, std::placeholders::_1));
+        bool ret = 
+            reader.read(std::bind(&CaliperMetadataDBImpl::create_node, this, std::placeholders::_1));
+
+        if (m_name_attr_id == CALI_INV_ID || 
+            m_prop_attr_id == CALI_INV_ID || 
+            m_type_attr_id == CALI_INV_ID)
+            ret = false;
+
+        cerr << "Read " << m_nodes.size() << " nodes" << endl;
+
+        return ret;
     }
 
     ~CaliperMetadataDBImpl() {
@@ -127,10 +141,10 @@ CaliperMetadataDB::CaliperMetadataDB()
 CaliperMetadataDB::~CaliperMetadataDB()
 { } 
 
-void
+bool
 CaliperMetadataDB::read(const char* filename)
 {
-    mP->read(filename);
+    return mP->read(filename);
 }
 
 const Node* 

@@ -40,7 +40,7 @@ public:
     Variant(Variant&& v) = default;
 
     explicit Variant(const std::string& string)
-        : m_type { CALI_TYPE_INV }, m_size { 0 }, m_string { string }
+        : m_type { CALI_TYPE_INV }, m_size { 0 }, m_string { string }, m_value { 0 }
         { }
 
     Variant(bool val)
