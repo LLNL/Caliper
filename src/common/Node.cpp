@@ -29,9 +29,10 @@ RecordMap Node::record() const
     RecordMap recmap = {
         { "id",        { id() }          },
         { "attribute", { m_attribute }   },
-        { "type",      { m_data.type() } },
         { "data",      { m_data }        } };
 
+    if (m_data.type() != CALI_TYPE_INV)
+        recmap.insert(make_pair( "type",   Variant(m_data.type())  ));
     if (parent() && parent()->id() != CALI_INV_ID)
         recmap.insert(make_pair( "parent", Variant(parent()->id()) ));
 
