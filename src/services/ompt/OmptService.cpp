@@ -30,24 +30,21 @@ map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
 
 // The OMPT interface function pointers
 
-typedef int             (*set_callback_fptr_t) (ompt_event_t, ompt_callback_t);
-typedef ompt_thread_id_t(*get_thread_id_fptr_t)(void);
-
-struct ompt_fn_t {
-    set_callback_fptr_t  set_callback;
-    get_thread_id_fptr_t get_thread_id;
+struct OmptAPI {
+    ompt_set_callback_t  set_callback  { nullptr };
+    ompt_get_thread_id_t get_thread_id { nullptr };
 
     bool
     init(ompt_function_lookup_t lookup) {
-        set_callback  = (set_callback_fptr_t)  (*lookup)("ompt_set_callback");
-        get_thread_id = (get_thread_id_fptr_t) (*lookup)("ompt_get_thread_id");
+        set_callback  = (ompt_set_callback_t)  (*lookup)("ompt_set_callback");
+        get_thread_id = (ompt_get_thread_id_t) (*lookup)("ompt_get_thread_id");
 
         if (!set_callback || !get_thread_id)
             return false;
 
         return true;
     }
-} ompt_fn;
+} omptapi;
 
 
 //
@@ -105,11 +102,11 @@ cb_event_control(uint64_t command, uint64_t modifier)
 cali_id_t
 get_environment() 
 {
-    if (!ompt_fn.get_thread_id)
+    if (!omptapi.get_thread_id)
         return 0;
 
     cali_id_t        env       = 0;
-    ompt_thread_id_t thread_id = (*ompt_fn.get_thread_id)();
+    ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
 
     // FIXME: use some sort of thread-local storage to avoid map lookup & lock
     thread_env_lock.rlock();
@@ -133,7 +130,7 @@ get_environment()
 bool
 register_ompt_callbacks()
 {
-    if (!ompt_fn.set_callback)
+    if (!omptapi.set_callback)
         return false;
 
     struct callback_info_t { 
@@ -146,7 +143,7 @@ register_ompt_callbacks()
     };
 
     for ( auto cb : callbacks ) 
-        if ((*ompt_fn.set_callback)(cb.event, cb.cbptr) == 0)
+        if ((*omptapi.set_callback)(cb.event, cb.cbptr) == 0)
             return false;
 
     return true;
@@ -191,7 +188,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     // register callbacks
 
-    if (!::ompt_fn.init(lookup) || !::register_ompt_callbacks()) {
+    if (!::omptapi.init(lookup) || !::register_ompt_callbacks()) {
         Log(0).stream() << "Callback registration error: OMPT interface disabled" << endl;
         return 0;
     }
