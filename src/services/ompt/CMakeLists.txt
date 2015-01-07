@@ -1,0 +1,14 @@
+include_directories("../../common")
+include_directories("../../caliper")
+
+include_directories(${OMPT_DIR}/include)
+
+set(CALIPER_OMPT_SOURCES
+    OmptService.cpp)
+
+add_library(caliper-ompt ${CALIPER_OMPT_SOURCES})
+
+target_link_libraries(caliper-ompt caliper-common)
+target_link_libraries(caliper-ompt caliper)
+
+install(TARGETS caliper-ompt DESTINATION lib)
