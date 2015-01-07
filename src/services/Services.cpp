@@ -1,6 +1,8 @@
 /// @file Services.cpp
 /// Services class implementation
 
+#include "caliper-config.h"
+
 #include "Services.h"
 
 #include "CaliperService.h"

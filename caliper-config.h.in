@@ -1,0 +1,6 @@
+#ifndef CALIPER_CONFIG_H
+#define CALIPER_CONFIG_H
+
+#cmakedefine CALIPER_HAVE_OMPT 
+
+#endif // CALIPER_CONFIG_H
