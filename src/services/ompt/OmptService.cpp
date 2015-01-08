@@ -7,6 +7,7 @@
 #include <SigsafeRWLock.h>
 
 #include <Log.h>
+#include <RuntimeConfig.h>
 
 #include <ompt.h>
 
@@ -21,11 +22,17 @@ namespace
 // --- Data
 //
 
+const ConfigSet::Entry configdata[] = {
+    ConfigSet::Terminator
+};
+
 bool                             enable_ompt { false };
 Attribute                        thread_attr { Attribute::invalid };
 
 SigsafeRWLock                    thread_env_lock;
 map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
+
+ConfigSet                        config;
 
 
 // The OMPT interface function pointers
@@ -94,6 +101,15 @@ cb_event_control(uint64_t command, uint64_t modifier)
     // Should react to enable / disable measurement commands.
 }
 
+// ompt_event_runtime_shutdown
+
+void
+cb_event_runtime_shutdown(void)
+{
+    // This seems to be called after the Caliper static object has been destroyed.
+    // Hence, we can't do much here.
+}
+
 
 //
 // -- Caliper callbacks
@@ -137,9 +153,10 @@ register_ompt_callbacks()
         ompt_event_t    event;
         ompt_callback_t cbptr;
     } callbacks[] = {
-        { ompt_event_thread_begin, (ompt_callback_t) &cb_event_thread_begin },
-        { ompt_event_thread_end,   (ompt_callback_t) &cb_event_thread_end   },
-        { ompt_event_control,      (ompt_callback_t) &cb_event_control      }
+        { ompt_event_thread_begin,     (ompt_callback_t) &cb_event_thread_begin     },
+        { ompt_event_thread_end,       (ompt_callback_t) &cb_event_thread_end       },
+        { ompt_event_control,          (ompt_callback_t) &cb_event_control          },
+//        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
     };
 
     for ( auto cb : callbacks ) 
@@ -155,13 +172,15 @@ register_ompt_callbacks()
 void 
 omptservice_initialize(Caliper* c) 
 {
+    config      = RuntimeConfig::init("ompt", configdata);
+
     enable_ompt = true;
     thread_attr = c->create_attribute("thread", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
     c->set_environment_callback(&get_environment);
 }
     
-}  // namespace 
+}  // namespace [ anonymous ]
 
 
 // The OpenMP tools interface intialization function, called by the OpenMP 
@@ -198,8 +217,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
     return 1;
 }
 
-}
-
+} // extern "C"
 
 namespace cali
 {
