@@ -548,6 +548,10 @@ Caliper::get_context(cali_id_t env, uint64_t buf[], std::size_t len)
 void 
 Caliper::set_environment_callback(std::function<cali_id_t()> cb)
 {
+    if (mP->m_env_cb)
+        Log(0).stream() 
+            << "Caliper::set_environment_callback(): error: callback already set" << endl;
+
     mP->m_env_cb = cb;
 }
 
