@@ -36,9 +36,10 @@ struct Context::ContextImpl
         if (env == CALI_INV_ID || env >= m_environments.size())
             return CALI_INV_ID;
 
+        cali_id_t ret = m_environments.size();
         m_environments.emplace_back( m_environments[env] );
 
-        return m_environments.size();
+        return ret;
     }
 
     void release_environment(cali_id_t env) {
