@@ -9,6 +9,13 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#define CALIPER_OMPT_USE_PTHREAD_TLS
+
+#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
+#include <pthread.h>
+#include <cstdlib>
+#endif
+
 #include <ompt.h>
 
 
@@ -29,8 +36,12 @@ const ConfigSet::Entry configdata[] = {
 bool                             enable_ompt { false };
 Attribute                        thread_attr { Attribute::invalid };
 
+#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
+pthread_key_t                    thread_env_key;
+#else
 SigsafeRWLock                    thread_env_lock;
 map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
+#endif
 
 ConfigSet                        config;
 
@@ -75,9 +86,15 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         // Clone default environment
         env_id = c->clone_environment(0);
 
+#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
+    cali_id_t* ptr = static_cast<cali_id_t*>(malloc(sizeof(cali_id_t)));
+    *ptr = env_id;
+    pthread_setspecific(thread_env_key, ptr);
+#else
     thread_env_lock.wlock();
     thread_env.insert(make_pair(thread_id, env_id));
     thread_env_lock.unlock();
+#endif
 
     // Set the thread id in the new environment
 
@@ -124,14 +141,17 @@ get_environment()
     cali_id_t        env       = 0;
     ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
 
-    // FIXME: use some sort of thread-local storage to avoid map lookup & lock
+#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
+    cali_id_t* ptr = static_cast<cali_id_t*>(pthread_getspecific(thread_env_key));
+    if (ptr)
+        env = *ptr;
+#else
     thread_env_lock.rlock();
-
     auto it = thread_env.find(thread_id);
     if (it != thread_env.end())
         env = it->second;
-
     thread_env_lock.unlock();
+#endif
 
     return env;
 }
@@ -155,7 +175,7 @@ register_ompt_callbacks()
     } callbacks[] = {
         { ompt_event_thread_begin,     (ompt_callback_t) &cb_event_thread_begin     },
         { ompt_event_thread_end,       (ompt_callback_t) &cb_event_thread_end       },
-        { ompt_event_control,          (ompt_callback_t) &cb_event_control          },
+        { ompt_event_control,          (ompt_callback_t) &cb_event_control          }
 //        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
     };
 
@@ -204,6 +224,11 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     Log(1).stream() << "Initializing OMPT interface v" << ompt_version
                     << " with " << runtime_version << endl;
+
+    // initialize thread-local storage key
+#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
+    pthread_key_create(&thread_env_key, &std::free);
+#endif
 
     // register callbacks
 
