@@ -10,8 +10,10 @@
 #include <RuntimeConfig.h>
 
 #include <iostream>
+#include <mutex>
 #include <fstream>
 #include <string>
+#include <unordered_set>
 
 using namespace cali;
 using namespace std;
@@ -29,6 +31,10 @@ class Recorder
 
     ConfigSet m_config;
 
+    mutex     m_active_envs_mutex;
+    unordered_set<cali_id_t> m_active_envs;
+
+    mutex     m_stream_mutex;
     Stream    m_stream;
     Format    m_format;
     ofstream  m_ofstream;
@@ -95,14 +101,22 @@ class Recorder
 
         switch (m_format) {
         case Format::Text:
+            m_stream_mutex.lock();
             for (size_t p = 0; (p+1) < size; p += 2)
                 str << buf[p] << ':' << buf[p+1] << ' ';
             str << endl;
+            m_stream_mutex.unlock();
+
             break;
         case Format::Unpacked:
-            for (auto const &q : Caliper::instance()->unpack(buf, size))
+            vector<RecordMap> rec { Caliper::instance()->unpack(buf, size) };
+
+            m_stream_mutex.lock();
+            for (auto const &q : rec)
                 str << q << '\n';
             str << endl;
+            m_stream_mutex.unlock();
+
             break;
         }
     }
@@ -111,14 +125,24 @@ class Recorder
     // record callback
 
     void record(Caliper* c, cali_id_t env) {
+        // prevent recursion from set()/begin() calls made by other services on get_context()
+        {
+            lock_guard<mutex> lock(m_active_envs_mutex);
+
+            if (m_active_envs.count(env))
+                return;
+
+            m_active_envs.insert(env);
+        }
+
         uint64_t buf[40];
         size_t   s = c->get_context(env, buf, 40);
 
         write(buf, s);
-    }
-
-    void record_callback(Caliper* c, cali_id_t env, const Attribute&) {
-        record(c, env);
+        
+        m_active_envs_mutex.lock();
+        m_active_envs.erase(env);
+        m_active_envs_mutex.unlock();
     }
 
     void register_callbacks(Caliper* c) {
@@ -128,6 +152,7 @@ class Recorder
 
         c->events().beginEvt.connect(f);
         c->events().endEvt  .connect(f);
+        c->events().setEvt  .connect(f);
     }
 
     Recorder(Caliper* c)
