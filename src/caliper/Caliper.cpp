@@ -173,10 +173,17 @@ struct Caliper::CaliperImpl
 
     cali_context_scope_t 
     get_scope(const Attribute& attr) const {
-        if (attr.properties()      & CALI_ATTR_SCOPE_PROCESS)
-            return CALI_SCOPE_PROCESS;
-        else if (attr.properties() & CALI_ATTR_SCOPE_TASK)
-            return CALI_SCOPE_TASK;
+        const struct scope_tbl_t {
+            cali_attr_properties attrscope; cali_context_scope_t ctxscope;
+        } scope_tbl[] = {
+            { CALI_ATTR_SCOPE_THREAD,  CALI_SCOPE_THREAD  },
+            { CALI_ATTR_SCOPE_PROCESS, CALI_SCOPE_PROCESS },
+            { CALI_ATTR_SCOPE_TASK,    CALI_SCOPE_TASK    }
+        };
+
+        for (scope_tbl_t s : scope_tbl)
+            if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == s.attrscope)
+                return s.ctxscope;
 
         // make thread scope the default
         return CALI_SCOPE_THREAD;

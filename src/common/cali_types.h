@@ -38,10 +38,12 @@ typedef enum {
   CALI_ATTR_DEFAULT       =  0,
   CALI_ATTR_ASVALUE       =  1,
   CALI_ATTR_NOMERGE       =  2,
-  CALI_ATTR_SCOPE_PROCESS = 12, /* = 01100 : mutually exclusive with SCOPE_THREAD and SCOPE_TASK */
-  CALI_ATTR_SCOPE_THREAD  = 20, /* = 10100 */ 
-  CALI_ATTR_SCOPE_TASK    = 24  /* = 11000 */
+  CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */ 
+  CALI_ATTR_SCOPE_THREAD  = 20, 
+  CALI_ATTR_SCOPE_TASK    = 24 
 } cali_attr_properties;
+
+#define CALI_ATTR_SCOPE_MASK 28
 
 typedef enum {
   CALI_OP_SUM = 1,
