@@ -5,6 +5,7 @@
 namespace cali
 {
 
+extern const CaliperService DebugService;
 extern const CaliperService RecorderService;
 extern const CaliperService TimestampService;
 #ifdef CALIPER_HAVE_OMPT
@@ -12,6 +13,7 @@ extern const CaliperService OmptService;
 #endif
 
 const CaliperService caliper_services[] = {
+    DebugService,
     RecorderService,
     TimestampService,
 #ifdef CALIPER_HAVE_OMPT
