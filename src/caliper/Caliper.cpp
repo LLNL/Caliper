@@ -289,9 +289,11 @@ struct Caliper::CaliperImpl
         case CALI_SCOPE_THREAD:
             if (m_get_thread_env_cb)
                 return m_get_thread_env_cb();
+            break;
         case CALI_SCOPE_TASK:
             if (m_get_task_env_cb)
                 return m_get_task_env_cb();
+            break;
         }
 
         return default_environment(scope);
@@ -356,7 +358,11 @@ struct Caliper::CaliperImpl
 
         m_attribute_lock.unlock();
 
-        return make_attribute(node);
+        Attribute attr { make_attribute(node) };
+
+        m_events.createAttrEvt(s_caliper.get(), attr);
+
+        return attr;
     }
 
     Attribute
@@ -402,8 +408,8 @@ struct Caliper::CaliperImpl
 
         // collect context from current TASK/THREAD/PROCESS environments
 
-        cali_id_t envs[3] = { 0, 0, 0 };
-        int       nenvs = 0;
+        cali_id_t envs[3] { 0, 0, 0 };
+        int       nenvs   { 0 };
 
         switch (scope) {
         case CALI_SCOPE_TASK:
