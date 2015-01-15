@@ -7,29 +7,37 @@
 
 #include <Log.h>
 
+#include <mutex>
+
 using namespace cali;
 using namespace std;
 
 namespace
 {
 
+mutex dbg_mutex;
+
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
-    Log(2).stream() << "Event: create_attribute (attr = " << attr.name() << ")" << endl;
+    lock_guard<mutex> lock(dbg_mutex);
+    Log(2).stream() << "Event: create_attribute (attr = " << attr.record() << ")" << endl;
 }
 
 void begin_cb(Caliper* c, cali_id_t env, const Attribute& attr)
 {
+    lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: begin (env = " << env << ", attr = " << attr.name() << ")" << endl;
 }
 
 void end_cb(Caliper* c, cali_id_t env, const Attribute& attr)
 {
+    lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: end (env = " << env << ", attr = " << attr.name() << ")" << endl;
 }
 
 void set_cb(Caliper* c, cali_id_t env, const Attribute& attr)
 {
+    lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: set (env = " << env << ", attr = " << attr.name() << ")" << endl;
 }
 
@@ -38,6 +46,8 @@ const char* scopestrings[] = { "process", "thread", "task" };
 void query_cb(Caliper* c, cali_context_scope_t scope)
 {
     cali_id_t env = c->current_environment(scope);
+
+    lock_guard<mutex> lock(dbg_mutex);
 
     Log(2).stream() 
         << "Event: get_context (scope = " << scopestrings[scope] 
@@ -49,6 +59,8 @@ void try_query_cb(Caliper* c, cali_context_scope_t scope)
 {
     cali_id_t env = c->current_environment(scope);
 
+    lock_guard<mutex> lock(dbg_mutex);
+
     Log(2).stream() 
         << "Event: try_get_context (scope = " << scopestrings[scope] 
         << ", env = " << env
@@ -57,6 +69,7 @@ void try_query_cb(Caliper* c, cali_context_scope_t scope)
 
 void finish_cb(Caliper* c)
 {
+    lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: finish" << endl;
 }
 

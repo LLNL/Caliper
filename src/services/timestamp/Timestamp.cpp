@@ -40,7 +40,7 @@ void timestamp_register(Caliper* c)
     // add callback for Caliper::get_context() event
     c->events().queryEvt.connect(&update_time);
 
-    Log(2).stream() << "Registered timestamp service" << endl;
+    Log(1).stream() << "Registered timestamp service" << endl;
 }
 
 } // namespace

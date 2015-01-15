@@ -134,16 +134,16 @@ cb_event_runtime_shutdown(void)
 cali_id_t
 get_environment() 
 {
-    if (!omptapi.get_thread_id)
-        return 0;
-
-    cali_id_t env  = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
+    cali_id_t env = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
 
 #ifdef CALIPER_OMPT_USE_PTHREAD_TLS
     cali_id_t* ptr = static_cast<cali_id_t*>(pthread_getspecific(thread_env_key));
     if (ptr)
         env = *ptr;
 #else
+    if (!omptapi.get_thread_id)
+        return env;
+
     ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
 
     thread_env_lock.rlock();
@@ -198,6 +198,8 @@ omptservice_initialize(Caliper* c)
     thread_attr = c->create_attribute("thread", CALI_TYPE_UINT);
 
     c->set_environment_callback(CALI_SCOPE_THREAD, &get_environment);
+
+    Log(1).stream() << "Registered OMPT service" << endl;
 }
 
 }  // namespace [ anonymous ]
