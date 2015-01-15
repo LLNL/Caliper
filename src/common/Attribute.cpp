@@ -32,9 +32,10 @@ namespace
     int read_properties(const std::string& str)
     {
         const map<string, cali_attr_properties> propmap = { 
-            { "value",   CALI_ATTR_ASVALUE }, 
-            { "nomerge", CALI_ATTR_NOMERGE }, 
-            { "global",  CALI_ATTR_GLOBAL  } };
+            { "value",         CALI_ATTR_ASVALUE       }, 
+            { "nomerge",       CALI_ATTR_NOMERGE       }, 
+            { "scope_process", CALI_ATTR_SCOPE_PROCESS },
+            { "scope_task",    CALI_ATTR_SCOPE_TASK    } };
 
         int prop = CALI_ATTR_DEFAULT;
 
@@ -53,9 +54,10 @@ namespace
         const struct property_tbl_entry {
             cali_attr_properties p; const char* str; const char* contstr;
         } property_tbl[] = { 
-            { CALI_ATTR_ASVALUE, "value"   }, 
-            { CALI_ATTR_NOMERGE, "nomerge" }, 
-            { CALI_ATTR_GLOBAL,  "global"  }
+            { CALI_ATTR_ASVALUE,       "value"          }, 
+            { CALI_ATTR_NOMERGE,       "nomerge"        }, 
+            { CALI_ATTR_SCOPE_PROCESS, "scope_process"  },
+            { CALI_ATTR_SCOPE_TASK,    "scope_task"     }
         };
 
         int    count = 0;

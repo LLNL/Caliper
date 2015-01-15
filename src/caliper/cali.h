@@ -6,7 +6,9 @@
 #ifndef CALI_CALI_H
 #define CALI_CALI_H
 
-#include "cali_types.h"
+#include "cali_definitions.h"
+
+#include <cali_types.h>
 
 #include <stddef.h> /* size_t */
 
@@ -69,16 +71,19 @@ cali_get_attribute_type  (cali_id_t          attr,
 typedef cali_id_t (*cali_environment_callback)(); 
 
 /**
- * Get the environment handle of the execution scope (e.g., thread) in which
+ * Get the environment handle of the execution scope @param scope in which
  * this function is called
  * @return Environment handle
  */
 
 cali_id_t
-cali_get_environment(void);
+cali_current_environment(cali_context_scope_t scope);
+
+cali_err
+cali_create_environment(cali_id_t *new_env);
 
 /**
- * Create a new environment for the local scope of execution (e.g., thread) by
+ * Create a new environment by
  * cloning the current context state of the enclosing environment. (Tool API)
  * @return CALI_SUCCESS if the environment was cloned successfully
  */
@@ -88,7 +93,10 @@ cali_clone_environment(cali_id_t  env,
                        cali_id_t* new_env);
 
 cali_err
-cali_set_environment_callback(cali_environment_callback cb);
+cali_release_environment(cali_id_t env);
+
+cali_err
+cali_set_environment_callback(cali_context_scope_t scope, cali_environment_callback cb);
 
 
 /*
@@ -101,7 +109,7 @@ cali_set_environment_callback(cali_environment_callback cb);
  */
 
 size_t
-cali_get_context_size(cali_id_t  env);
+cali_get_context_size(cali_context_scope_t scope);
 
 /**
  * 
@@ -109,14 +117,14 @@ cali_get_context_size(cali_id_t  env);
  */
 
 size_t
-cali_get_context     (cali_id_t  env,
-                      uint64_t*  buf,
-                      size_t     bufsize);
+cali_get_context     (cali_context_scope_t scope,
+                      uint64_t*            buf,
+                      size_t               bufsize);
 
 size_t
-cali_try_get_context (cali_id_t  env,
-                      uint64_t*  buf,
-                      size_t     bufsize);
+cali_try_get_context (cali_context_scope_t scope,
+                      uint64_t*            buf,
+                      size_t               bufsize);
 
 /*
  * --- Low-level instrumentation API -----------------------------------
@@ -124,44 +132,40 @@ cali_try_get_context (cali_id_t  env,
 
 /**
  * Begins scope of value @param value of size @param size for 
- * attribute @param attr in environment @env.
+ * attribute @param attr.
  * The new value is nested under the current open scopes of @param attr. 
  */
 cali_err
-cali_begin    (cali_id_t   env,
-               cali_id_t   attr, 
+cali_begin    (cali_id_t   attr, 
                const void* value,
                size_t      size);
 
 /**
- * Ends scope of the innermost value for attribute @param attr in environment @env. 
+ * Ends scope of the innermost value for attribute @param attr.
  */
 
 cali_err
-cali_end      (cali_id_t  env,
-               cali_id_t  attr);
+cali_end      (cali_id_t  attr);
 
 /**
  * Ends scope of the current innermost value and begins scope of @param value 
- * of size @param size for attribute @param attr in environment @param env.
+ * of size @param size for attribute @param attr.
  */
 
 cali_err  
-cali_set      (cali_id_t   env,
-               cali_id_t   attr, 
+cali_set      (cali_id_t   attr, 
                const void* value,
                size_t      size);
 
 /**
  * Ends scope of the current innermost value and begins scope of @param value for attribute
- * @param attr in environment @param env.
+ * @param attr.
  * May not succeed if concurrent accesses to Caliper data take place. 
  * @return CALI_SUCCESS if successful
  */
 
 cali_err  
-cali_try_set  (cali_id_t   env,
-               cali_id_t   attr, 
+cali_try_set  (cali_id_t   attr,
                const void* value);
 
 /**

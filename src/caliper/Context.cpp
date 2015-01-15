@@ -42,6 +42,16 @@ struct Context::ContextImpl
         return ret;
     }
 
+    cali_id_t create_environment() {
+        env_vec_t env;
+        env.reserve(8);
+
+        cali_id_t ret = m_environments.size();
+        m_environments.push_back(move(env));
+
+        return ret;
+    }
+
     void release_environment(cali_id_t env) {
         m_environments.erase(m_environments.begin() + env);
     }
@@ -78,7 +88,7 @@ struct Context::ContextImpl
         return make_pair(true, it->second);
     }
 
-    cali_err set (cali_id_t env, cali_id_t key, uint64_t value, bool /* global */) {
+    cali_err set (cali_id_t env, cali_id_t key, uint64_t value) {
         if (!(env < m_environments.size()))
             return CALI_EINV;
 
@@ -126,6 +136,15 @@ cali_id_t Context::clone_environment(cali_id_t env)
     return ret;
 }
 
+cali_id_t Context::create_environment()
+{
+    mP->m_lock.wlock();
+    cali_id_t ret = mP->create_environment();
+    mP->m_lock.unlock();
+
+    return ret;
+}
+
 void Context::release_environment(cali_id_t env)
 {
     mP->m_lock.wlock();
@@ -160,10 +179,10 @@ pair<bool, uint64_t> Context::get(cali_id_t env, cali_id_t key) const
     return p;
 }
 
-cali_err Context::set(cali_id_t env, cali_id_t key, uint64_t value, bool global)
+cali_err Context::set(cali_id_t env, cali_id_t key, uint64_t value)
 {
     mP->m_lock.wlock();
-    cali_err ret = mP->set(env, key, value, global);
+    cali_err ret = mP->set(env, key, value);
     mP->m_lock.unlock();
 
     return ret;

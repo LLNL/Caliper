@@ -35,10 +35,12 @@ cali_attr_type
 cali_string2type(const char*);
 
 typedef enum {
-  CALI_ATTR_DEFAULT     = 0,
-  CALI_ATTR_ASVALUE     = 1,
-  CALI_ATTR_NOMERGE     = 2,
-  CALI_ATTR_GLOBAL      = 4
+  CALI_ATTR_DEFAULT       =  0,
+  CALI_ATTR_ASVALUE       =  1,
+  CALI_ATTR_NOMERGE       =  2,
+  CALI_ATTR_SCOPE_PROCESS = 12, /* = 01100 : mutually exclusive with SCOPE_THREAD and SCOPE_TASK */
+  CALI_ATTR_SCOPE_THREAD  = 20, /* = 10100 */ 
+  CALI_ATTR_SCOPE_TASK    = 24  /* = 11000 */
 } cali_attr_properties;
 
 typedef enum {

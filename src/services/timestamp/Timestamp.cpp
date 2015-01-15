@@ -22,11 +22,11 @@ chrono::time_point<chrono::high_resolution_clock> tstart;
 
 /// Event callback
 /// Updates timestamp on current global context
-void update_time(Caliper* c, cali_id_t env) {
+void update_time(Caliper* c, cali_context_scope_t) {
     auto now = chrono::high_resolution_clock::now();
     uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
-    c->set(env, attribute, &usec, sizeof(usec));
+    c->set(attribute, &usec, sizeof(usec));
 }
 
 /// Initialization handler
@@ -35,7 +35,7 @@ void timestamp_register(Caliper* c)
     // set start time and create time attribute
     tstart    = chrono::high_resolution_clock::now();
     attribute = 
-        c->create_attribute("time(usec)", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_GLOBAL);
+        c->create_attribute("time(usec)", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS);
 
     // add callback for Caliper::get_context() event
     c->events().queryEvt.connect(&update_time);

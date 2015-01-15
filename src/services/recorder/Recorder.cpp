@@ -136,7 +136,7 @@ class Recorder
         }
 
         uint64_t buf[40];
-        size_t   s = c->get_context(env, buf, 40);
+        size_t   s = c->get_context(CALI_SCOPE_THREAD, buf, 40);
 
         write(buf, s);
         

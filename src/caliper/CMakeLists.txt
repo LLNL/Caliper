@@ -4,7 +4,8 @@ include_directories ("../services")
 set(CALIPER_HEADERS
     Annotation.h
     Caliper.h
-    cali.h)
+    cali.h
+    cali_definitions.h)
 
 set(CALIPER_SOURCES
     Annotation.cpp

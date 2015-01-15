@@ -47,9 +47,6 @@ public:
     bool is_autocombineable() const   { 
         return !store_as_value() && !(m_properties & CALI_ATTR_NOMERGE);
     }
-    bool is_global() const {
-        return m_properties & CALI_ATTR_GLOBAL;
-    }
 
     RecordMap record() const;
     static Attribute read(const RecordMap&);

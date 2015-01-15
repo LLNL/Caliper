@@ -26,12 +26,11 @@ void end_foo_op()
 void print_context()
 {
     cali::Caliper* c   { cali::Caliper::instance() };
-    cali_id_t      env { c->current_environment()  };
 
     vector<uint64_t> ctx(2 * c->num_attributes(), 0);
 
     // retrieve current context record
-    const size_t ctxsize = c->get_context(env, ctx.data(), ctx.size());
+    const size_t ctxsize = c->get_context(CALI_SCOPE_THREAD, ctx.data(), ctx.size());
 
     for (auto const &q : c->unpack(ctx.data(), ctxsize))
         cout << q << "\n";

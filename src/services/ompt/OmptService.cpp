@@ -81,10 +81,9 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
     cali_id_t env_id = 0;
 
     if (type == ompt_thread_initial)
-        env_id = 0;
+        env_id = c->default_environment(CALI_SCOPE_THREAD);
     else
-        // Clone default environment
-        env_id = c->clone_environment(0);
+        env_id = c->create_environment();
 
 #ifdef CALIPER_OMPT_USE_PTHREAD_TLS
     cali_id_t* ptr = static_cast<cali_id_t*>(malloc(sizeof(cali_id_t)));
@@ -99,7 +98,7 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
     // Set the thread id in the new environment
 
     uint64_t buf = (uint64_t) thread_id;
-    c->set(env_id, thread_attr, &buf, sizeof(buf));
+    c->set(thread_attr, &buf, sizeof(buf));
 }
 
 // ompt_event_thread_end
@@ -138,14 +137,15 @@ get_environment()
     if (!omptapi.get_thread_id)
         return 0;
 
-    cali_id_t        env       = 0;
-    ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
+    cali_id_t env  = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
 
 #ifdef CALIPER_OMPT_USE_PTHREAD_TLS
     cali_id_t* ptr = static_cast<cali_id_t*>(pthread_getspecific(thread_env_key));
     if (ptr)
         env = *ptr;
 #else
+    ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
+
     thread_env_lock.rlock();
     auto it = thread_env.find(thread_id);
     if (it != thread_env.end())
@@ -195,11 +195,11 @@ omptservice_initialize(Caliper* c)
     config      = RuntimeConfig::init("ompt", configdata);
 
     enable_ompt = true;
-    thread_attr = c->create_attribute("thread", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+    thread_attr = c->create_attribute("thread", CALI_TYPE_UINT);
 
-    c->set_environment_callback(&get_environment);
+    c->set_environment_callback(CALI_SCOPE_THREAD, &get_environment);
 }
-    
+
 }  // namespace [ anonymous ]
 
 
@@ -213,7 +213,7 @@ extern "C" {
 int 
 ompt_initialize(ompt_function_lookup_t lookup,
                 const char*            runtime_version,
-                unsigned int           ompt_version)
+                unsigned int           /* ompt_version */)
 {
     // Make sure Caliper is initialized & OMPT service is enabled in Caliper config
 
@@ -222,8 +222,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
     if (!::enable_ompt)
         return 0;
 
-    Log(1).stream() << "Initializing OMPT interface v" << ompt_version
-                    << " with " << runtime_version << endl;
+    Log(1).stream() << "Initializing OMPT interface with " << runtime_version << endl;
 
     // initialize thread-local storage key
 #ifdef CALIPER_OMPT_USE_PTHREAD_TLS

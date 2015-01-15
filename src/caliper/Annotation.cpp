@@ -15,10 +15,8 @@ using namespace cali;
 
 Annotation::Scope::~Scope()
 {
-    if (m_destruct) {
-        Caliper* c { Caliper::instance() };
-        c->end(c->current_environment(), m_attr);
-    }
+    if (m_destruct)
+        Caliper::instance()->end(m_attr);
 }
 
 
@@ -63,8 +61,7 @@ Annotation::Scope Annotation::begin(cali_attr_type type, const void* data, size_
     if (!(m_attr.type() == type))
         return Scope(Attribute::invalid);
 
-    Caliper*  c = Caliper::instance();
-    c->begin(c->current_environment(), m_attr, data, size);
+    Caliper::instance()->begin(m_attr, data, size);
 
     return Scope(m_attr);
 }
@@ -102,8 +99,7 @@ Annotation::Scope Annotation::set(cali_attr_type type, const void* data, size_t 
     if (!(m_attr.type() == type))
         return Scope(Attribute::invalid);
 
-    Caliper* c  = Caliper::instance();
-    cali_err ret = c->set(c->current_environment(), m_attr, data, size);
+    cali_err ret = Caliper::instance()->set(m_attr, data, size);
 
     if (ret != CALI_SUCCESS)
         return Scope(Attribute::invalid);
@@ -115,8 +111,7 @@ Annotation::Scope Annotation::set(cali_attr_type type, const void* data, size_t 
 
 void Annotation::end()
 {
-    Caliper* c { Caliper::instance() };
-    c->end(c->current_environment(), m_attr);
+    Caliper::instance()->end(m_attr);
 }
 
 
