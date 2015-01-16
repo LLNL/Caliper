@@ -179,14 +179,14 @@ public:
 unique_ptr<Recorder>   Recorder::s_instance       { nullptr };
 
 const ConfigSet::Entry Recorder::s_configdata[] = {
-    { "format", CALI_TYPE_STRING, "none",
+    { "format", CALI_TYPE_STRING, "text",
       "Data recorder format",
       "Data recorder format. Possible values are\n"
-      "  txt:      Text format\n"
+      "  text:     Text format\n"
       "  unpacked: Unpacked text format (high overhead)\n"
       "  none:     Disable data recording"
     },
-    { "filename", CALI_TYPE_STRING, "none",
+    { "filename", CALI_TYPE_STRING, "stdout",
       "File name for event record stream",
       "File name for event record stream. Either one of\n"
       "   stdout: Standard output stream,\n"
