@@ -28,14 +28,21 @@ const ConfigSet::Entry configdata[] = {
       "Perform thread environment mapping in OMPT module.\n"
       "  Use if default thread environment mapping (e.g. through pthread service) is unavailable" 
     },
+    { "capture_state", CALI_TYPE_BOOL, "true",
+      "Capture the OpenMP runtime state on context queries",
+      "Capture the OpenMP runtime state on context queries"
+    },
     ConfigSet::Terminator
 };
 
 bool                             enable_ompt { false };
 Attribute                        thread_attr { Attribute::invalid };
+Attribute                        state_attr  { Attribute::invalid };
 
 SigsafeRWLock                    thread_env_lock;
 map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
+
+map<ompt_state_t, string>        runtime_states;
 
 ConfigSet                        config;
 
@@ -43,15 +50,19 @@ ConfigSet                        config;
 // The OMPT interface function pointers
 
 struct OmptAPI {
-    ompt_set_callback_t  set_callback  { nullptr };
-    ompt_get_thread_id_t get_thread_id { nullptr };
+    ompt_set_callback_t    set_callback    { nullptr };
+    ompt_get_thread_id_t   get_thread_id   { nullptr };
+    ompt_get_state_t       get_state       { nullptr };
+    ompt_enumerate_state_t enumerate_state { nullptr };
 
     bool
     init(ompt_function_lookup_t lookup) {
-        set_callback  = (ompt_set_callback_t)  (*lookup)("ompt_set_callback");
-        get_thread_id = (ompt_get_thread_id_t) (*lookup)("ompt_get_thread_id");
+        set_callback    = (ompt_set_callback_t)    (*lookup)("ompt_set_callback");
+        get_thread_id   = (ompt_get_thread_id_t)   (*lookup)("ompt_get_thread_id");
+        get_state       = (ompt_get_state_t)       (*lookup)("ompt_get_state");
+        enumerate_state = (ompt_enumerate_state_t) (*lookup)("ompt_enumerate_state");
 
-        if (!set_callback || !get_thread_id)
+        if (!set_callback || !get_thread_id || !get_state || !enumerate_state)
             return false;
 
         return true;
@@ -123,7 +134,7 @@ cb_event_runtime_shutdown(void)
 //
 
 cali_id_t
-get_environment() 
+get_thread_environment() 
 {
     cali_id_t env = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
 
@@ -139,6 +150,18 @@ get_environment()
     thread_env_lock.unlock();
 
     return env;
+}
+
+void
+query_cb(Caliper* c, cali_context_scope_t scope)
+{
+    if (!omptapi.get_state || !(scope == CALI_SCOPE_THREAD || scope == CALI_SCOPE_TASK))
+        return;
+
+    auto it = runtime_states.find((*omptapi.get_state)(NULL));
+
+    if (it != runtime_states.end())
+        c->set(state_attr, it->second.data(), it->second.size());
 }
 
 
@@ -171,6 +194,22 @@ register_ompt_callbacks()
     return true;
 }
 
+bool 
+register_ompt_states()
+{
+    if (!omptapi.enumerate_state)
+        return false;
+
+    ompt_state_t state = ompt_state_first;
+    const char*  state_name;
+
+    while ((*omptapi.enumerate_state)(state, (int*) &state, &state_name))
+        runtime_states[state] = state_name;
+
+    return true;
+}
+
+
 /// The Caliper service initialization callback.
 /// Register attributes and set Caliper callbacks here.
 
@@ -180,10 +219,14 @@ omptservice_initialize(Caliper* c)
     config      = RuntimeConfig::init("ompt", configdata);
 
     enable_ompt = true;
-    thread_attr = c->create_attribute("ompt.thread", CALI_TYPE_UINT);
+
+    thread_attr = 
+        c->create_attribute("ompt.thread.id", CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD);
+    state_attr  =
+        c->create_attribute("ompt.state",     CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
 
     if (config.get("environment_mapping").to_bool() == true)
-        c->set_environment_callback(CALI_SCOPE_THREAD, &get_environment);
+        c->set_environment_callback(CALI_SCOPE_THREAD, &get_thread_environment);
 
     Log(1).stream() << "Registered OMPT service" << endl;
 }
@@ -205,7 +248,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 {
     // Make sure Caliper is initialized & OMPT service is enabled in Caliper config
 
-    Caliper::instance();
+    Caliper* c = Caliper::instance();
 
     if (!::enable_ompt)
         return 0;
@@ -219,7 +262,12 @@ ompt_initialize(ompt_function_lookup_t lookup,
         return 0;
     }
 
-    Log(1).stream() << "OMPT callbacks enabled." << endl;
+    if (::config.get("capture_state").to_bool() == true) {
+        register_ompt_states();
+        c->events().queryEvt.connect(&query_cb);
+    }
+
+    Log(1).stream() << "OMPT interface enabled." << endl;
 
     return 1;
 }
