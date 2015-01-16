@@ -7,12 +7,17 @@ cmake_minimum_required(VERSION 2.8)
 
 find_package(Threads)
 
-# Set OMPT directory manually for now. Use automatic check later.
-set(OMPT_DIR "/g/g90/boehme3/local/ompt-intel-openmp/default")
-set(OMPT_FOUND true)
+# Find OMPT header
+find_path(OMPT_INCLUDE_DIR ompt.h
+  PATH_SUFFIXES include
+  HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
 
-if(OMPT_FOUND)
-  set(CALIPER_HAVE_OMPT true)
+if (OMPT_INCLUDE_DIR)
+  set(OMPT_FOUND TRUE)  
+  set(CALIPER_HAVE_OMPT TRUE)
+  message(STATUS "OpenMP tools interface header ompt.h found in " ${OMPT_INCLUDE_DIR})
+else()
+  message(STATUS "OpenMP tools interface header ompt.h not found")
 endif()
 
 # Create a config header file

@@ -1,7 +1,7 @@
 include_directories("../../common")
 include_directories("../../caliper")
 
-include_directories(${OMPT_DIR}/include)
+include_directories(${OMPT_INCLUDE_DIR})
 
 set(CALIPER_OMPT_SOURCES
     OmptService.cpp)
