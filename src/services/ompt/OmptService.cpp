@@ -67,7 +67,7 @@ struct OmptAPI {
 
         return true;
     }
-} omptapi;
+} api;
 
 
 //
@@ -138,10 +138,10 @@ get_thread_environment()
 {
     cali_id_t env = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
 
-    if (!omptapi.get_thread_id)
+    if (!api.get_thread_id)
         return env;
 
-    ompt_thread_id_t thread_id = (*omptapi.get_thread_id)();
+    ompt_thread_id_t thread_id = (*api.get_thread_id)();
 
     thread_env_lock.rlock();
     auto it = thread_env.find(thread_id);
@@ -155,10 +155,10 @@ get_thread_environment()
 void
 query_cb(Caliper* c, cali_context_scope_t scope)
 {
-    if (!omptapi.get_state || !(scope == CALI_SCOPE_THREAD || scope == CALI_SCOPE_TASK))
+    if (!api.get_state || !(scope == CALI_SCOPE_THREAD || scope == CALI_SCOPE_TASK))
         return;
 
-    auto it = runtime_states.find((*omptapi.get_state)(NULL));
+    auto it = runtime_states.find((*api.get_state)(NULL));
 
     if (it != runtime_states.end())
         c->set(state_attr, it->second.data(), it->second.size());
@@ -174,7 +174,7 @@ query_cb(Caliper* c, cali_context_scope_t scope)
 bool
 register_ompt_callbacks()
 {
-    if (!omptapi.set_callback)
+    if (!api.set_callback)
         return false;
 
     struct callback_info_t { 
@@ -188,7 +188,7 @@ register_ompt_callbacks()
     };
 
     for ( auto cb : callbacks ) 
-        if ((*omptapi.set_callback)(cb.event, cb.cbptr) == 0)
+        if ((*api.set_callback)(cb.event, cb.cbptr) == 0)
             return false;
 
     return true;
@@ -197,13 +197,13 @@ register_ompt_callbacks()
 bool 
 register_ompt_states()
 {
-    if (!omptapi.enumerate_state)
+    if (!api.enumerate_state)
         return false;
 
     ompt_state_t state = ompt_state_first;
     const char*  state_name;
 
-    while ((*omptapi.enumerate_state)(state, (int*) &state, &state_name))
+    while ((*api.enumerate_state)(state, (int*) &state, &state_name))
         runtime_states[state] = state_name;
 
     return true;
@@ -257,7 +257,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     // register callbacks
 
-    if (!::omptapi.init(lookup) || !::register_ompt_callbacks()) {
+    if (!::api.init(lookup) || !::register_ompt_callbacks()) {
         Log(0).stream() << "Callback registration error: OMPT interface disabled" << endl;
         return 0;
     }
