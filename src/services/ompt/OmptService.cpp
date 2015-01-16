@@ -9,13 +9,6 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
-#define CALIPER_OMPT_USE_PTHREAD_TLS
-
-#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
-#include <pthread.h>
-#include <cstdlib>
-#endif
-
 #include <ompt.h>
 
 
@@ -30,18 +23,19 @@ namespace
 //
 
 const ConfigSet::Entry configdata[] = {
+    { "environment_mapping", CALI_TYPE_BOOL, "false", 
+      "Perform thread environment mapping in OMPT module",
+      "Perform thread environment mapping in OMPT module.\n"
+      "  Use if default thread environment mapping (e.g. through pthread service) is unavailable" 
+    },
     ConfigSet::Terminator
 };
 
 bool                             enable_ompt { false };
 Attribute                        thread_attr { Attribute::invalid };
 
-#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
-pthread_key_t                    thread_env_key;
-#else
 SigsafeRWLock                    thread_env_lock;
 map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
-#endif
 
 ConfigSet                        config;
 
@@ -74,26 +68,23 @@ struct OmptAPI {
 void
 cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 {
-    // Create a new Caliper environment for each thread. 
-    // Record thread id -> environment id mapping for later use in get_environment()
-
     Caliper*  c = Caliper::instance();
-    cali_id_t env_id = 0;
 
-    if (type == ompt_thread_initial)
-        env_id = c->default_environment(CALI_SCOPE_THREAD);
-    else
-        env_id = c->create_environment();
+    if (config.get("environment_mapping").to_bool() == true) {
+        // Create a new Caliper environment for each thread. 
+        // Record thread id -> environment id mapping for later use in get_environment()
 
-#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
-    cali_id_t* ptr = static_cast<cali_id_t*>(malloc(sizeof(cali_id_t)));
-    *ptr = env_id;
-    pthread_setspecific(thread_env_key, ptr);
-#else
-    thread_env_lock.wlock();
-    thread_env.insert(make_pair(thread_id, env_id));
-    thread_env_lock.unlock();
-#endif
+        cali_id_t env_id = 0;
+
+        if (type == ompt_thread_initial)
+            env_id = c->default_environment(CALI_SCOPE_THREAD);
+        else
+            env_id = c->create_environment();
+
+        thread_env_lock.wlock();
+        thread_env.insert(make_pair(thread_id, env_id));
+        thread_env_lock.unlock();
+    }
 
     // Set the thread id in the new environment
 
@@ -136,11 +127,6 @@ get_environment()
 {
     cali_id_t env = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
 
-#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
-    cali_id_t* ptr = static_cast<cali_id_t*>(pthread_getspecific(thread_env_key));
-    if (ptr)
-        env = *ptr;
-#else
     if (!omptapi.get_thread_id)
         return env;
 
@@ -151,7 +137,6 @@ get_environment()
     if (it != thread_env.end())
         env = it->second;
     thread_env_lock.unlock();
-#endif
 
     return env;
 }
@@ -195,9 +180,10 @@ omptservice_initialize(Caliper* c)
     config      = RuntimeConfig::init("ompt", configdata);
 
     enable_ompt = true;
-    thread_attr = c->create_attribute("thread", CALI_TYPE_UINT);
+    thread_attr = c->create_attribute("ompt.thread", CALI_TYPE_UINT);
 
-    c->set_environment_callback(CALI_SCOPE_THREAD, &get_environment);
+    if (config.get("environment_mapping").to_bool() == true)
+        c->set_environment_callback(CALI_SCOPE_THREAD, &get_environment);
 
     Log(1).stream() << "Registered OMPT service" << endl;
 }
@@ -225,11 +211,6 @@ ompt_initialize(ompt_function_lookup_t lookup,
         return 0;
 
     Log(1).stream() << "Initializing OMPT interface with " << runtime_version << endl;
-
-    // initialize thread-local storage key
-#ifdef CALIPER_OMPT_USE_PTHREAD_TLS
-    pthread_key_create(&thread_env_key, &std::free);
-#endif
 
     // register callbacks
 

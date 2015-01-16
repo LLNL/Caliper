@@ -103,14 +103,14 @@ struct Caliper::CaliperImpl
     init() {
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
 
-        bootstrap();
-
-        Services::register_services(s_caliper.get());
-
         // Create default environments
 
         m_default_thread_env = m_context.create_environment();
         m_default_task_env   = m_context.create_environment();
+
+        bootstrap();
+
+        Services::register_services(s_caliper.get());
 
         Log(1).stream() << "Initialized" << endl;
 
