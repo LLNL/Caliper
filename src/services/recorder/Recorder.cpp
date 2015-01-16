@@ -125,6 +125,7 @@ class Recorder
     // record callback
 
     void record(Caliper* c, cali_id_t env) {
+        env = c->current_environment(CALI_SCOPE_THREAD);
         // prevent recursion from set()/begin() calls made by callbacks on get_context()
         {
             lock_guard<mutex> lock(m_active_envs_mutex);
