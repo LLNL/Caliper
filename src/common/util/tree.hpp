@@ -56,9 +56,13 @@ public:
         return r;
     }
 
-    T* parent()       const { return node(m_me).parent;     }
-    T* first_child()  const { return node(m_me).child_head; }
-    T* next_sibling() const { return node(m_me).next;       }
+    T* parent()                   { return node(m_me).parent;     }
+    T* first_child()              { return node(m_me).child_head; }
+    T* next_sibling()             { return node(m_me).next;       }
+
+    const T* parent()       const { return node(m_me).parent;     }
+    const T* first_child()  const { return node(m_me).child_head; }
+    const T* next_sibling() const { return node(m_me).next;       }
 
     void unlink_subtree(T* subtree) {
         if (!subtree)
