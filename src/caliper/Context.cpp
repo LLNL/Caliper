@@ -53,7 +53,8 @@ struct Context::ContextImpl
     }
 
     void release_environment(cali_id_t env) {
-        m_environments.erase(m_environments.begin() + env);
+        // Doesn't work; would change subsequent indices
+        // m_environments.erase(m_environments.begin() + env);
     }
 
     size_t record_size(cali_id_t env) const {
