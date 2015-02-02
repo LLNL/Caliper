@@ -56,8 +56,8 @@ public:
         util::callback<void(Caliper*, cali_id_t, const Attribute&)> endEvt;
         util::callback<void(Caliper*, cali_id_t, const Attribute&)> setEvt;
 
-        util::callback<void(Caliper*, cali_context_scope_t)> queryEvt;
-        util::callback<void(Caliper*, cali_context_scope_t)> tryQueryEvt;
+        util::callback<void(Caliper*, int)>              queryEvt;
+        util::callback<void(Caliper*, int)>              tryQueryEvt;
 
         util::callback<void(Caliper*)>                   finishEvt;
     };
@@ -78,8 +78,8 @@ public:
 
     // --- Context API
 
-    std::size_t context_size(cali_context_scope_t ctx) const;
-    std::size_t get_context(cali_context_scope_t ctx, uint64_t buf[], std::size_t len);
+    std::size_t context_size(int ctx) const;
+    std::size_t get_context(int ctx, uint64_t buf[], std::size_t len);
 
 
     // --- Annotation API

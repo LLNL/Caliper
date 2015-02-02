@@ -22,7 +22,7 @@ chrono::time_point<chrono::high_resolution_clock> tstart;
 
 /// Event callback
 /// Updates timestamp on current global context
-void update_time(Caliper* c, cali_context_scope_t) {
+void update_time(Caliper* c, int) {
     auto now = chrono::high_resolution_clock::now();
     uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 

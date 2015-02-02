@@ -43,27 +43,39 @@ void set_cb(Caliper* c, cali_id_t env, const Attribute& attr)
 
 const char* scopestrings[] = { "process", "thread", "task" };
 
-void query_cb(Caliper* c, cali_context_scope_t scope)
+string scope2string(int scope)
 {
-    cali_id_t env = c->current_environment(scope);
+    const cali_context_scope_t scopes[] = { 
+        CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS 
+    };
 
+    string out;
+
+    for (cali_context_scope_t s : scopes)
+        if (scope & s) {
+            if (out.size())
+                out.append(":");
+            out.append(scopestrings[s]);
+        }
+
+    return out;
+}
+
+void query_cb(Caliper* c, int scope)
+{
     lock_guard<mutex> lock(dbg_mutex);
 
     Log(2).stream() 
-        << "Event: get_context (scope = " << scopestrings[scope] 
-        << ", env = " << env
+        << "Event: get_context (scope = " << scope2string(scope) 
         << ")" << endl;
 }
 
-void try_query_cb(Caliper* c, cali_context_scope_t scope)
+void try_query_cb(Caliper* c, int scope)
 {
-    cali_id_t env = c->current_environment(scope);
-
     lock_guard<mutex> lock(dbg_mutex);
 
     Log(2).stream() 
-        << "Event: try_get_context (scope = " << scopestrings[scope] 
-        << ", env = " << env
+        << "Event: try_get_context (scope = " << scope2string(scope)
         << ")" << endl;
 }
 

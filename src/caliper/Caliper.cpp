@@ -409,7 +409,7 @@ struct Caliper::CaliperImpl
     // --- Context interface
 
     std::size_t 
-    get_context(cali_context_scope_t scope, uint64_t buf[], std::size_t len) {
+    get_context(int scope, uint64_t buf[], std::size_t len) {
         // invoke callbacks
         m_events.queryEvt(s_caliper.get(), scope);
 
@@ -418,14 +418,12 @@ struct Caliper::CaliperImpl
         cali_id_t envs[3] { 0, 0, 0 };
         int       nenvs   { 0 };
 
-        switch (scope) {
-        case CALI_SCOPE_TASK:
+        if (scope & CALI_SCOPE_TASK)
             envs[nenvs++] = current_environment(CALI_SCOPE_TASK);
-        case CALI_SCOPE_THREAD:
+        if (scope & CALI_SCOPE_THREAD)
             envs[nenvs++] = current_environment(CALI_SCOPE_THREAD);
-        case CALI_SCOPE_PROCESS:
+        if (scope & CALI_SCOPE_PROCESS)
             envs[nenvs++] = current_environment(CALI_SCOPE_PROCESS);
-        }
 
         size_t clen = 0;
 
@@ -685,14 +683,14 @@ Caliper::set_environment_callback(cali_context_scope_t scope, std::function<cali
 // --- Context API
 
 std::size_t 
-Caliper::context_size(cali_context_scope_t scope) const
+Caliper::context_size(int scope) const
 {
     // return mP->m_context.context_size(env);
     return 2 * num_attributes();
 }
 
 std::size_t 
-Caliper::get_context(cali_context_scope_t scope, uint64_t buf[], std::size_t len) 
+Caliper::get_context(int scope, uint64_t buf[], std::size_t len) 
 {
     return mP->get_context(scope, buf, len);
 }

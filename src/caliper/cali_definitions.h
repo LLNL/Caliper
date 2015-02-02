@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 typedef enum {
-  CALI_SCOPE_PROCESS = 0,
-  CALI_SCOPE_THREAD  = 1,
-  CALI_SCOPE_TASK    = 2 
+  CALI_SCOPE_PROCESS = 1,
+  CALI_SCOPE_THREAD  = 2,
+  CALI_SCOPE_TASK    = 4 
 } cali_context_scope_t;
 
 #ifdef __cplusplus
