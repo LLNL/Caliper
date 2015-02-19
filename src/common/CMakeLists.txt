@@ -6,6 +6,7 @@ set(CALIPER_COMMON_HEADERS
     Log.h
     MetadataWriter.h
     Node.h
+    Record.h
     RecordMap.h
     RuntimeConfig.h
     Variant.h
@@ -17,6 +18,7 @@ set(CALIPER_COMMON_SOURCES
     ContextRecord.cpp
     Log.cpp
     Node.cpp
+    Record.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
     Variant.cpp

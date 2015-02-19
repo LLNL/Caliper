@@ -3,6 +3,7 @@
 
 #include "CsvSpec.h"
 
+#include <Record.h>
 #include <Log.h>
 
 #include <vector>
@@ -59,6 +60,18 @@ struct CsvSpecImpl
         return vec;
     }
 
+    void write_record(ostream& os, const Record& record) {
+        int count = 0;
+
+        for (const Variant &v : record.raw_data()) {
+            os << (count++ ? m_sep : "");
+            write_string(os, v.to_string());
+        }
+
+        if (count)
+            os << endl;
+    }
+
     void write_record(ostream& os, const RecordMap& record) {
         int count = 0;
 
@@ -94,6 +107,12 @@ CsvSpecImpl CsvSpecImpl::s_caliper_csvspec;
 
 void
 CsvSpec::write_record(ostream& os, const RecordMap& record)
+{
+    ::CsvSpecImpl::s_caliper_csvspec.write_record(os, record);
+}
+
+void
+CsvSpec::write_record(ostream& os, const Record& record)
 {
     ::CsvSpecImpl::s_caliper_csvspec.write_record(os, record);
 }

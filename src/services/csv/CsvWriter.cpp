@@ -70,14 +70,14 @@ bool CsvWriter::write(std::function<void(std::function<void(const Node&)>)> fore
 {
     if (mP->node_file.empty()) {
         cout << "Nodes:" << endl;
-        foreach_node([](const Node&  n){ CsvSpec::write_record(cout, n.record()); });
+        foreach_node([](const Node&  n){ CsvSpec::write_record(cout, n.rec()); });
     } else {
         ofstream nstr(mP->node_file.c_str());
 
         if (!nstr)
             return false;
 
-        foreach_node([&](const Node& n){ CsvSpec::write_record(nstr, n.record()); });
+        foreach_node([&](const Node& n){ CsvSpec::write_record(nstr, n.rec()); });
 
         Log(1).stream() << "Wrote " << mP->node_file << endl;
     }

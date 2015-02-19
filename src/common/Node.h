@@ -9,6 +9,7 @@
 #include "cali_types.h"
 
 #include "IdType.h"
+#include "Record.h"
 #include "RecordMap.h"
 #include "Variant.h"
 
@@ -53,6 +54,7 @@ public:
     cali_id_t attribute() const { return m_attribute; }
     Variant   data() const      { return m_data;      }
 
+    Record    rec() const;
     RecordMap record() const;
 };
 
