@@ -18,7 +18,6 @@ set(CALIPER_COMMON_SOURCES
     ContextRecord.cpp
     Log.cpp
     Node.cpp
-    Record.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
     Variant.cpp

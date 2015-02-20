@@ -14,13 +14,14 @@
 namespace cali
 {
 
-class Record;
+class RecordDescriptor;
+class Variant;
 
 class CsvSpec 
 {
 public:
 
-    static void      write_record(std::ostream& os, const Record& record);
+    static void      write_record(std::ostream& os, const RecordDescriptor& record, const int* data_count, const Variant** data);
     static void      write_record(std::ostream& os, const RecordMap& record);
     static RecordMap read_record(const std::string& line);
 };

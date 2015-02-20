@@ -30,6 +30,8 @@ class Node : public IdType, public util::IntrusiveTree<Node>
     cali_id_t m_attribute;
     Variant   m_data;
 
+    static const RecordDescriptor s_record;
+
 public:
 
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
@@ -52,10 +54,17 @@ public:
     bool equals(cali_id_t attr, const void* data, size_t size) const;
 
     cali_id_t attribute() const { return m_attribute; }
-    Variant   data() const      { return m_data;      }
+    Variant   data() const      { return m_data;      }    
 
-    Record    rec() const;
+    /// @name Serialization API
+    /// @{
+
+    void      push_record(WriteRecordFn recfn) const;
+    static const RecordDescriptor& record_descriptor() { return s_record; }
+
     RecordMap record() const;
+
+    /// @}
 };
 
 } // namespace cali

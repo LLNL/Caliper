@@ -21,9 +21,9 @@ namespace
 {
 
 const ConfigSet::Entry csv_configdata[] = {
-    { "basename", CALI_TYPE_STRING, "caliper",
-      "Base filename for .nodes.csv files",
-      "Base filename for .nodes.csv files"
+    { "filename", CALI_TYPE_STRING, "caliper.csv",
+      "CSV output file name",
+      "CSV output file name"
     },
     ConfigSet::Terminator
 };
@@ -33,20 +33,15 @@ const ConfigSet::Entry csv_configdata[] = {
 
 struct CsvWriter::CsvWriterImpl
 {
-    std::string node_file;
-    ConfigSet   m_config;
+    ConfigSet m_config;
 
     CsvWriterImpl()
         : m_config { RuntimeConfig::init("csv", ::csv_configdata) } 
-    {
-        node_file = m_config.get("basename").to_string() + ".nodes.csv";
-    }
+    { }
 
-    CsvWriterImpl(const string& basename)
-        : m_config { RuntimeConfig::init("csv", ::csv_configdata) } 
-    {
-        node_file = basename + ".nodes.csv";
-    }
+    CsvWriterImpl(const string& filename)
+        : m_config { RuntimeConfig::init("csv", ::csv_configdata) }
+    { }
 };
 
 //
@@ -68,19 +63,18 @@ CsvWriter::~CsvWriter()
 
 bool CsvWriter::write(std::function<void(std::function<void(const Node&)>)> foreach_node)
 {
-    if (mP->node_file.empty()) {
-        cout << "Nodes:" << endl;
-        foreach_node([](const Node&  n){ CsvSpec::write_record(cout, n.rec()); });
-    } else {
-        ofstream nstr(mP->node_file.c_str());
+    string   filename = mP->m_config.get("filename").to_string();
+    ofstream nstr(filename.c_str());
 
-        if (!nstr)
-            return false;
+    if (!nstr)
+        return false;
 
-        foreach_node([&](const Node& n){ CsvSpec::write_record(nstr, n.rec()); });
+    foreach_node([&](const Node& n){ 
+            n.push_record([&](const RecordDescriptor r, const int* c, const Variant** data){
+                    CsvSpec::write_record(nstr, r, c, data); });
+                });
 
-        Log(1).stream() << "Wrote " << mP->node_file << endl;
-    }
+    Log(1).stream() << "Wrote " << filename << endl;
 
     return true;
 }

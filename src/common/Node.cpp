@@ -10,6 +10,12 @@
 using namespace cali;
 using namespace std;
 
+namespace
+{
+    const char* NodeRecordElements[] = { "id", "attr", "data", "parent" };
+}
+
+const RecordDescriptor Node::s_record { 0x100, "node", 4, ::NodeRecordElements };
 
 Node::~Node()
 {
@@ -24,28 +30,19 @@ bool Node::equals(cali_id_t attr, const void* data, size_t size) const
     return false;
 }
 
-Record Node::rec() const
+void Node::push_record(WriteRecordFn rec) const
 {
-    static const Record::Key keys[6] = {
-        Record::record_type_key, 
-        { 0x01, "id"     },
-        { 0x02, "attr"   },
-        { 0x03, "data"   },
-        { 0x04, "type"   },
-        { 0x05, "parent" } 
-    };
-
     cali_id_t parent_id = parent() ? parent()->id() : CALI_INV_ID;
 
-    Variant data[6] = { { Record::first_user_id + 1   },
-                        { id()          },
-                        { m_attribute   }, 
-                        m_data, 
-                        { m_data.type() },
-                        { parent_id     }
-    };
+    int n[] = { 1, 1, 1, (parent_id == CALI_INV_ID ? 0 : 1) };
 
-    return Record(parent_id != CALI_INV_ID ? 6 : 5, keys, data);
+    Variant  v_id     { id()        };
+    Variant  v_attr   { m_attribute }; 
+    Variant  v_parent { parent_id   };
+
+    const Variant* data[] = { &v_id, &v_attr, &m_data, &v_parent };
+
+    rec(s_record, n, data);
 }
 
 RecordMap Node::record() const
