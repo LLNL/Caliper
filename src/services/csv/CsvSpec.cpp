@@ -63,15 +63,9 @@ struct CsvSpecImpl
     void write_record(ostream& os, const RecordDescriptor& record, const int data_count[], const Variant* data[]) {
         os << "__rec=" << record.name;
 
-        for (unsigned e = 0; e < record.num_entries; ++e) {
-            if (data_count[e] <= 0)
-                continue;
-
-            os << "," << record.entries[e];
-
+        for (unsigned e = 0; e < record.num_entries; ++e)
             for (int c = 0; c < data_count[e]; ++c)
-                os << "=" << data[e][c].to_string();
-        }
+                os << "," << record.entries[e] << "=" << data[e][c].to_string();
 
         os << endl;
     }

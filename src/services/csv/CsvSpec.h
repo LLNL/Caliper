@@ -14,7 +14,7 @@
 namespace cali
 {
 
-class RecordDescriptor;
+struct RecordDescriptor;
 class Variant;
 
 class CsvSpec 
