@@ -45,16 +45,16 @@ cali_get_context(cali_context_scope_t scope, uint64_t* buf, size_t bufsize)
 // --- Environment interface
 //
 
-cali_id_t
-cali_current_environment(cali_context_scope_t scope)
+void*
+cali_current_contextbuffer(cali_context_scope_t scope)
 {
-    return Caliper::instance()->current_environment(scope);
+    return Caliper::instance()->current_contextbuffer(scope);
 }
 
 cali_err
-cali_create_environment(cali_id_t *new_env)
+cali_create_environment(void **new_env)
 {
-    *new_env = Caliper::instance()->create_environment();
+    *new_env = Caliper::instance()->create_contextbuffer();
     return CALI_SUCCESS;
 }
 

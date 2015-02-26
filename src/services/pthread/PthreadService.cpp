@@ -19,27 +19,22 @@ namespace
 
 pthread_key_t thread_env_key;
 
-void save_environment(cali_id_t env)
+void save_contextbuffer(ContextBuffer* ctxbuf)
 {
-    cali_id_t* ptr = static_cast<cali_id_t*>(malloc(sizeof(cali_id_t)));
-    *ptr = env;
-    pthread_setspecific(thread_env_key, ptr);
+    pthread_setspecific(thread_env_key, ctxbuf);
 }
 
-cali_id_t
-get_thread_environment()
+ContextBuffer*
+get_thread_contextbuffer()
 {
-    cali_id_t  env = 0;
-    cali_id_t* ptr = static_cast<cali_id_t*>(pthread_getspecific(thread_env_key));
+    ContextBuffer* ctxbuf = static_cast<ContextBuffer*>(pthread_getspecific(thread_env_key));
 
-    if (ptr) 
-        env = *ptr;
-    else {
-        env = Caliper::instance()->create_environment();
-        save_environment(env);
+    if (!ctxbuf) {
+        ctxbuf = Caliper::instance()->create_contextbuffer();
+        save_contextbuffer(ctxbuf);
     } 
 
-    return env;
+    return ctxbuf;
 }
 
 /// Initialization routine. 
@@ -47,10 +42,10 @@ get_thread_environment()
 /// map current (initialization) thread to default environment
 void pthreadservice_initialize(Caliper* c)
 {
-    pthread_key_create(&thread_env_key, &std::free);
-    save_environment(c->default_environment(CALI_SCOPE_THREAD));
+    pthread_key_create(&thread_env_key, NULL);
+    save_contextbuffer(c->default_contextbuffer(CALI_SCOPE_THREAD));
 
-    c->set_environment_callback(CALI_SCOPE_THREAD, &get_thread_environment);
+    c->set_contextbuffer_callback(CALI_SCOPE_THREAD, &get_thread_contextbuffer);
 
     Log(1).stream() << "Registered pthread service" << endl;
 }

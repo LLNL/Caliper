@@ -30,7 +30,7 @@ bool Node::equals(cali_id_t attr, const void* data, size_t size) const
     return false;
 }
 
-void Node::push_record(WriteRecordFn rec) const
+void Node::push_record(WriteRecordFn fn) const
 {
     cali_id_t parent_id = parent() ? parent()->id() : CALI_INV_ID;
 
@@ -42,7 +42,7 @@ void Node::push_record(WriteRecordFn rec) const
 
     const Variant* data[] = { &v_id, &v_attr, &m_data, &v_parent };
 
-    rec(s_record, n, data);
+    fn(s_record, n, data);
 }
 
 RecordMap Node::record() const

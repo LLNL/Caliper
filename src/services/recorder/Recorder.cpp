@@ -32,7 +32,7 @@ class Recorder
     ConfigSet m_config;
 
     mutex     m_active_envs_mutex;
-    unordered_set<cali_id_t> m_active_envs;
+    unordered_set<ContextBuffer*> m_active_envs;
 
     mutex     m_stream_mutex;
     Stream    m_stream;
@@ -102,8 +102,8 @@ class Recorder
         switch (m_format) {
         case Format::Text:
             m_stream_mutex.lock();
-            for (size_t p = 0; (p+1) < size; p += 2)
-                str << buf[p] << ':' << buf[p+1] << ' ';
+            for (size_t p = 0; p < size; ++p)
+                str << (p > 0 ? "," : "") << buf[p];
             str << endl;
             m_stream_mutex.unlock();
 
@@ -124,14 +124,14 @@ class Recorder
 
     // record callback
 
-    void record(Caliper* c, cali_id_t env) {
-        env = c->current_environment(CALI_SCOPE_THREAD);
+    void record(Caliper* c) {
+        ContextBuffer* ctx = c->current_contextbuffer(CALI_SCOPE_THREAD);
         // prevent recursion from set()/begin() calls made by callbacks on get_context()
         {
             lock_guard<mutex> lock(m_active_envs_mutex);
-            if (m_active_envs.count(env))
+            if (m_active_envs.count(ctx))
                 return;
-            m_active_envs.insert(env);
+            m_active_envs.insert(ctx);
         }
 
         uint64_t buf[64];
@@ -140,14 +140,14 @@ class Recorder
         write(buf, s);
         
         m_active_envs_mutex.lock();
-        m_active_envs.erase(env);
+        m_active_envs.erase(ctx);
         m_active_envs_mutex.unlock();
     }
 
     void register_callbacks(Caliper* c) {
         using std::placeholders::_1;
 
-        auto f = [&](Caliper* c, cali_id_t env, const Attribute&){ record(c, env); };
+        auto f = [&](Caliper* c, const Attribute&){ record(c); };
 
         c->events().beginEvt.connect(f);
         c->events().endEvt  .connect(f);

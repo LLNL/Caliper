@@ -76,9 +76,27 @@ Variant::data() const
 }
 
 cali_id_t
-Variant::to_id(bool* okptr)  
+Variant::to_id(bool* okptr) const
 {
-    return to_uint(okptr);
+    bool      ok = false;
+    cali_id_t id = to_uint(&ok);
+
+    if (okptr)
+        *okptr = ok;
+
+    return ok ? id : CALI_INV_ID;
+}
+
+cali_id_t
+Variant::to_id(bool* okptr)
+{
+    bool      ok = false;
+    cali_id_t id = to_uint(&ok);
+
+    if (okptr)
+        *okptr = ok;
+
+    return ok ? id : CALI_INV_ID;
 }
 
 bool
@@ -158,25 +176,44 @@ Variant::to_int(bool* okptr)
 }
 
 unsigned
-Variant::to_uint(bool* okptr) 
+Variant::to_uint(bool* okptr) const
 {
+    unsigned       uint = m_value.v_uint;
+    cali_attr_type type = m_type;
+
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
-        is >> m_value.v_uint;
+        is >> uint;
 
-        if (is) {
-            m_type = CALI_TYPE_UINT;
-            m_size = sizeof(uint64_t);
-        }
+        if (is)
+            type = CALI_TYPE_UINT;
     }
 
-    bool ok = (m_type == CALI_TYPE_UINT);
+    bool ok = (type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
 
-    return ok ? m_value.v_uint : 0;
+    return ok ? uint : 0;
+}
+
+unsigned
+Variant::to_uint(bool* okptr) 
+{
+    bool       ok = false;
+    unsigned uint = const_cast<const Variant*>(this)->to_uint(&ok);
+
+    if (m_type == CALI_TYPE_INV && ok) {
+        m_type         = CALI_TYPE_UINT;
+        m_size         = sizeof(uint64_t);
+        m_value.v_uint = uint;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return uint;
 }
 
 double

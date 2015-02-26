@@ -3,7 +3,7 @@
 ///
 
 #include "Caliper.h"
-#include "Context.h"
+#include "ContextBuffer.h"
 #include "MemoryPool.h"
 #include "SigsafeRWLock.h"
 
@@ -50,12 +50,13 @@ struct Caliper::CaliperImpl
     // --- data
 
     ConfigSet              m_config;
-    
-    cali_id_t              m_default_thread_env;
-    cali_id_t              m_default_task_env;
 
-    function<cali_id_t()>  m_get_thread_env_cb;
-    function<cali_id_t()>  m_get_task_env_cb;
+    ContextBuffer*         m_default_process_context;
+    ContextBuffer*         m_default_thread_context;
+    ContextBuffer*         m_default_task_context;
+
+    function<ContextBuffer*()>  m_get_thread_contextbuffer_cb;
+    function<ContextBuffer*()>  m_get_task_contextbuffer_cb;
     
     MemoryPool             m_mempool;
 
@@ -73,16 +74,15 @@ struct Caliper::CaliperImpl
     Attribute              m_type_attr;
     Attribute              m_prop_attr;
  
-    Context                m_context;
-
     Events                 m_events;
 
     // --- constructor
 
     CaliperImpl()
         : m_config { RuntimeConfig::init("caliper", s_configdata) }, 
-        m_default_thread_env { CALI_INV_ID },
-        m_default_task_env   { CALI_INV_ID },
+        m_default_process_context { new ContextBuffer },
+        m_default_thread_context  { new ContextBuffer },
+        m_default_task_context    { new ContextBuffer },
         m_root { CALI_INV_ID, CALI_INV_ID, { } }, 
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
@@ -102,11 +102,6 @@ struct Caliper::CaliperImpl
     void 
     init() {
         m_nodes.reserve(m_config.get("node_pool_size").to_uint());
-
-        // Create default environments
-
-        m_default_thread_env = m_context.create_environment();
-        m_default_task_env   = m_context.create_environment();
 
         bootstrap();
 
@@ -212,7 +207,7 @@ struct Caliper::CaliperImpl
     }
 
     Node*
-    create_path(size_t n, const Attribute* attr, Variant* data, Node* parent = nullptr) {
+    create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
         // Calculate and allocate required memory
 
         const size_t align = 8;
@@ -269,63 +264,61 @@ struct Caliper::CaliperImpl
 
     // --- Environment interface
 
-    cali_id_t
-    default_environment(cali_context_scope_t scope) const {
+    ContextBuffer*
+    default_contextbuffer(cali_context_scope_t scope) const {
         switch (scope) {
         case CALI_SCOPE_PROCESS:
-            return 0;
+            return m_default_process_context;
         case CALI_SCOPE_THREAD:
-            assert(m_default_thread_env != CALI_INV_ID);
-            return m_default_thread_env;
+            return m_default_thread_context;
         case CALI_SCOPE_TASK:
-            assert(m_default_task_env != CALI_INV_ID);
-            return m_default_task_env;
+            return m_default_task_context;
         }
 
         assert(!"Unknown context scope type!");
 
-        return CALI_INV_ID;
+        return nullptr;
     }
 
-    cali_id_t
-    current_environment(cali_context_scope_t scope) {
+    ContextBuffer*
+    current_contextbuffer(cali_context_scope_t scope) {
         switch (scope) {
         case CALI_SCOPE_PROCESS:
             // Currently, there is only one process environment which always gets ID 0
-            return 0;
+            return m_default_process_context;
         case CALI_SCOPE_THREAD:
-            if (m_get_thread_env_cb)
-                return m_get_thread_env_cb();
+            if (m_get_thread_contextbuffer_cb)
+                return m_get_thread_contextbuffer_cb();
             break;
         case CALI_SCOPE_TASK:
-            if (m_get_task_env_cb)
-                return m_get_task_env_cb();
+            if (m_get_task_contextbuffer_cb)
+                return m_get_task_contextbuffer_cb();
             break;
         }
 
-        return default_environment(scope);
+        return default_contextbuffer(scope);
     }
 
     void 
-    set_environment_callback(cali_context_scope_t scope, std::function<cali_id_t()> cb) {
+    set_contextbuffer_callback(cali_context_scope_t scope, std::function<ContextBuffer*()> cb) {
         switch (scope) {
         case CALI_SCOPE_THREAD:
-            if (m_get_thread_env_cb)
+            if (m_get_thread_contextbuffer_cb)
                 Log(0).stream() 
-                    << "Caliper::set_environment_callback(): error: callback already set" 
+                    << "Caliper::set_context_callback(): error: callback already set" 
                     << endl;
-            m_get_thread_env_cb = cb;
+            m_get_thread_contextbuffer_cb = cb;
             break;
         case CALI_SCOPE_TASK:
-            if (m_get_task_env_cb)
+            if (m_get_task_contextbuffer_cb)
                 Log(0).stream() 
-                    << "Caliper::set_environment_callback(): error: callback already set" 
+                    << "Caliper::set_context_callback(): error: callback already set" 
                     << endl;
-            m_get_task_env_cb = cb;
+            m_get_task_contextbuffer_cb = cb;
             break;
         default:
             Log(0).stream() 
-                << "Caliper::set_environment_callback(): error: cannot set process callback" 
+                << "Caliper::set_context_callback(): error: cannot set process callback" 
                 << endl;
         }
     }
@@ -415,20 +408,20 @@ struct Caliper::CaliperImpl
 
         // collect context from current TASK/THREAD/PROCESS environments
 
-        cali_id_t envs[3] { 0, 0, 0 };
-        int       nenvs   { 0 };
+        ContextBuffer* ctxbuf[3] { nullptr, nullptr, nullptr };
+        int            n         { 0 };
 
         if (scope & CALI_SCOPE_TASK)
-            envs[nenvs++] = current_environment(CALI_SCOPE_TASK);
+            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_TASK);
         if (scope & CALI_SCOPE_THREAD)
-            envs[nenvs++] = current_environment(CALI_SCOPE_THREAD);
+            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_THREAD);
         if (scope & CALI_SCOPE_PROCESS)
-            envs[nenvs++] = current_environment(CALI_SCOPE_PROCESS);
+            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_PROCESS);
 
         size_t clen = 0;
 
-        for (int e = 0; e < nenvs; ++e)
-            clen += m_context.get_context(envs[e], buf+clen, len - std::min(clen, len));
+        for (int e = 0; e < n && ctxbuf[e]; ++e)
+            clen += ctxbuf[e]->pull_context(buf+clen, len - std::min(clen, len));
 
         return clen;
     }
@@ -437,40 +430,37 @@ struct Caliper::CaliperImpl
     // --- Annotation interface
 
     cali_err 
-    begin(const Attribute& attr, const void* data, size_t size) {
+    begin(const Attribute& attr, const Variant& data) {
         cali_err ret = CALI_EINV;
 
         if (attr == Attribute::invalid)
             return CALI_EINV;
 
-        cali_id_t env = current_environment(get_scope(attr));
-        cali_id_t key = attr.id();
+        ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
-        if (attr.store_as_value() && size == sizeof(uint64_t)) {
-            uint64_t val = 0;
-            memcpy(&val, data, sizeof(uint64_t));
-            ret = m_context.set(env, key, val);
+        if (attr.store_as_value()) {
+            ret = ctx->set(attr, data);
         } else {
-            auto p = m_context.get(env, key);
+            cali_id_t id = ctx->get(attr).to_id();
 
             m_nodelock.rlock();
 
-            Node* parent = p.first ? m_nodes[p.second] : &m_root;
+            Node* parent = id != CALI_INV_ID ? m_nodes[id] : &m_root;
             Node* node   = parent ? parent->first_child() : nullptr;
 
-            while ( node && !node->equals(attr.id(), data, size) )
+            while ( node && !node->equals(attr.id(), data) )
                 node = node->next_sibling();
 
             m_nodelock.unlock();
 
             if (!node)
-                node = create_node(attr, data, size, parent);
+                node = create_path(1, &attr, &data, parent);
 
-            ret = m_context.set(env, key, node->id());
+            ret = ctx->set(attr, Variant(node->id()));
         }
 
         // invoke callbacks
-        m_events.beginEvt(s_caliper.get(), env, attr);
+        m_events.beginEvt(s_caliper.get(), attr);
 
         return ret;
     }
@@ -480,22 +470,20 @@ struct Caliper::CaliperImpl
         if (attr == Attribute::invalid)
             return CALI_EINV;
 
-        cali_err  ret = CALI_EINV;
-
-        cali_id_t env = current_environment(get_scope(attr));
-        cali_id_t key = attr.id();
+        cali_err ret = CALI_EINV;
+        ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
         if (attr.store_as_value())
-            ret = m_context.unset(env, key);
+            ret = ctx->unset(attr);
         else {
-            auto p = m_context.get(env, key);
+            cali_id_t id = ctx->get(attr).to_id();
 
-            if (!p.first)
+            if (id == CALI_INV_ID)
                 return CALI_EINV;
 
             m_nodelock.rlock();
 
-            Node* node = m_nodes[p.second];
+            Node* node = m_nodes[id];
 
             if (node->attribute() != attr.id()) {
                 // For now, just continue before first node with this attribute
@@ -510,62 +498,58 @@ struct Caliper::CaliperImpl
             m_nodelock.unlock();
 
             if (node == &m_root)
-                ret = m_context.unset(env, key);
+                ret = ctx->unset(attr);
             else if (node)
-                ret = m_context.set(env, key, node->id());
+                ret = ctx->set(attr, Variant(node->id()));
         }
 
         // invoke callbacks
-        m_events.endEvt(s_caliper.get(), env, attr);
+        m_events.endEvt(s_caliper.get(), attr);
 
         return ret;
     }
 
     cali_err 
-    set(const Attribute& attr, const void* data, size_t size) {
+    set(const Attribute& attr, const Variant& data) {
+        cali_err ret = CALI_EINV;
+
         if (attr == Attribute::invalid)
             return CALI_EINV;
 
-        cali_err  ret = CALI_EINV;
+        ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
-        cali_id_t env = current_environment(get_scope(attr));
-        cali_id_t key = attr.id();
-
-        if (attr.store_as_value() && size == sizeof(uint64_t)) {
-            uint64_t val = 0;
-            memcpy(&val, data, sizeof(uint64_t));
-            ret = m_context.set(env, key, val);
+        if (attr.store_as_value()) {
+            ret = ctx->set(attr, data);
         } else {
-            auto p = m_context.get(env, key);
+            cali_id_t id = ctx->get(attr).to_id();
 
             Node* parent { nullptr };
 
             m_nodelock.rlock();
 
-            if (p.first)
-                parent = m_nodes[p.second]->parent();
+            if (id != CALI_INV_ID)
+                parent = m_nodes[id]->parent();
             if (!parent)
                 parent = &m_root;
 
             Node* node = parent->first_child();
 
-            while ( node && !node->equals(attr.id(), data, size) )
+            while ( node && !node->equals(attr.id(), data) )
                 node = node->next_sibling();
 
             m_nodelock.unlock();
 
             if (!node)
-                node = create_node(attr, data, size, parent);
+                node = create_path(1, &attr, &data, parent);
 
-            ret = m_context.set(env, key, node->id());
+            ret = ctx->set(attr, node->id());
         }
 
         // invoke callbacks
-        m_events.setEvt(s_caliper.get(), env, attr);
+        m_events.setEvt(s_caliper.get(), attr);
 
         return ret;
     }
-
 
     // --- Retrieval
 
@@ -644,40 +628,34 @@ Caliper::events()
 
 // --- Context environment API
 
-cali_id_t
-Caliper::default_environment(cali_context_scope_t scope) const
+ContextBuffer*
+Caliper::default_contextbuffer(cali_context_scope_t scope) const
 {
-    return mP->default_environment(scope);
+    return mP->default_contextbuffer(scope);
 }
 
-cali_id_t 
-Caliper::current_environment(cali_context_scope_t scope)
+ContextBuffer*
+Caliper::current_contextbuffer(cali_context_scope_t scope)
 {
-    return mP->current_environment(scope);
+    return mP->current_contextbuffer(scope);
 }
 
-cali_id_t
-Caliper::create_environment()
+ContextBuffer*
+Caliper::create_contextbuffer()
 {
-    return mP->m_context.create_environment();
-}
-
-cali_id_t 
-Caliper::clone_environment(cali_id_t env)
-{
-    return mP->m_context.clone_environment(env);
+    return new ContextBuffer();
 }
 
 void
-Caliper::release_environment(cali_id_t env)
+Caliper::release_contextbuffer(ContextBuffer* ctxbuf)
 {
-    return mP->m_context.release_environment(env);
+    delete ctxbuf;
 }
 
 void 
-Caliper::set_environment_callback(cali_context_scope_t scope, std::function<cali_id_t()> cb)
+Caliper::set_contextbuffer_callback(cali_context_scope_t scope, std::function<ContextBuffer*()> cb)
 {
-    mP->set_environment_callback(scope, cb);
+    mP->set_contextbuffer_callback(scope, cb);
 }
 
 // --- Context API
@@ -701,7 +679,7 @@ Caliper::get_context(int scope, uint64_t buf[], std::size_t len)
 cali_err 
 Caliper::begin(const Attribute& attr, const void* data, size_t size)
 {
-    return mP->begin(attr, data, size);
+    return mP->begin(attr, Variant(attr.type(), data, size));
 }
 
 cali_err 
@@ -713,7 +691,7 @@ Caliper::end(const Attribute& attr)
 cali_err 
 Caliper::set(const Attribute& attr, const void* data, size_t size)
 {
-    return mP->set(attr, data, size);
+    return mP->set(attr, Variant(attr.type(), data, size));
 }
 
 

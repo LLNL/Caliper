@@ -23,22 +23,22 @@ void create_attr_cb(Caliper* c, const Attribute& attr)
     Log(2).stream() << "Event: create_attribute (attr = " << attr.record() << ")" << endl;
 }
 
-void begin_cb(Caliper* c, cali_id_t env, const Attribute& attr)
+void begin_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: begin (env = " << env << ", attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: begin (attr = " << attr.name() << ")" << endl;
 }
 
-void end_cb(Caliper* c, cali_id_t env, const Attribute& attr)
+void end_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: end (env = " << env << ", attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: end (attr = " << attr.name() << ")" << endl;
 }
 
-void set_cb(Caliper* c, cali_id_t env, const Attribute& attr)
+void set_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: set (env = " << env << ", attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: set (attr = " << attr.name() << ")" << endl;
 }
 
 const char* scopestrings[] = { "process", "thread", "task" };

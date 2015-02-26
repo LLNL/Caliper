@@ -76,27 +76,27 @@ typedef cali_id_t (*cali_environment_callback)();
  * @return Environment handle
  */
 
-cali_id_t
-cali_current_environment(cali_context_scope_t scope);
+void*
+cali_current_contextbuffer(cali_context_scope_t scope);
 
 cali_err
-cali_create_environment(cali_id_t *new_env);
+cali_create_environment(void **new_env);
 
-/**
- * Create a new environment by
- * cloning the current context state of the enclosing environment. (Tool API)
- * @return CALI_SUCCESS if the environment was cloned successfully
- */
+// /**
+//  * Create a new environment by
+//  * cloning the current context state of the enclosing environment. (Tool API)
+//  * @return CALI_SUCCESS if the environment was cloned successfully
+//  */
 
-cali_err
-cali_clone_environment(cali_id_t  env, 
-                       cali_id_t* new_env);
+// cali_err
+// cali_clone_environment(cali_id_t  env, 
+//                        cali_id_t* new_env);
 
-cali_err
-cali_release_environment(cali_id_t env);
+// cali_err
+// cali_release_environment(cali_id_t env);
 
-cali_err
-cali_set_environment_callback(cali_context_scope_t scope, cali_environment_callback cb);
+// cali_err
+// cali_set_environment_callback(cali_context_scope_t scope, cali_environment_callback cb);
 
 
 /*

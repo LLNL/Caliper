@@ -24,6 +24,7 @@ namespace cali
 
 // Forward declarations
 
+class ContextBuffer;
 class Node;
 
 
@@ -52,9 +53,9 @@ public:
     struct Events {
         util::callback<void(Caliper*, const Attribute&)> createAttrEvt;
 
-        util::callback<void(Caliper*, cali_id_t, const Attribute&)> beginEvt;
-        util::callback<void(Caliper*, cali_id_t, const Attribute&)> endEvt;
-        util::callback<void(Caliper*, cali_id_t, const Attribute&)> setEvt;
+        util::callback<void(Caliper*, const Attribute&)> beginEvt;
+        util::callback<void(Caliper*, const Attribute&)> endEvt;
+        util::callback<void(Caliper*, const Attribute&)> setEvt;
 
         util::callback<void(Caliper*, int)>              queryEvt;
         util::callback<void(Caliper*, int)>              tryQueryEvt;
@@ -66,14 +67,13 @@ public:
 
     // --- Context environment API
 
-    cali_id_t default_environment(cali_context_scope_t context) const;
-    cali_id_t current_environment(cali_context_scope_t context);
+    ContextBuffer* default_contextbuffer(cali_context_scope_t context) const;
+    ContextBuffer* current_contextbuffer(cali_context_scope_t context);
 
-    cali_id_t create_environment();
-    cali_id_t clone_environment(cali_id_t env);
-    void      release_environment(cali_id_t env);
+    ContextBuffer* create_contextbuffer();
+    void      release_contextbuffer(ContextBuffer*);
 
-    void      set_environment_callback(cali_context_scope_t context, std::function<cali_id_t()> cb);
+    void      set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);
 
 
     // --- Context API
@@ -84,8 +84,10 @@ public:
 
     // --- Annotation API
 
+    cali_err  begin(const Attribute& attr, const Variant& data);
     cali_err  begin(const Attribute& attr, const void* data, std::size_t size);
     cali_err  end(const Attribute& attr);
+    cali_err  set(const Attribute& attr, const Variant& data);
     cali_err  set(const Attribute& attr, const void* data, std::size_t size);
 
 

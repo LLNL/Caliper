@@ -81,8 +81,10 @@ public:
     size_t         size() const { return m_size; }
 
     cali_id_t      to_id(bool* okptr = nullptr);
+    cali_id_t      to_id(bool* okptr = nullptr) const;
     int            to_int(bool* okptr = nullptr);
     unsigned       to_uint(bool* okptr = nullptr);
+    unsigned       to_uint(bool* okptr = nullptr) const;
     bool           to_bool(bool* okptr = nullptr);
     double         to_double(bool* okptr = nullptr);
     cali_attr_type to_attr_type(bool* okptr = nullptr);
