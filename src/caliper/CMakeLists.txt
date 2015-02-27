@@ -10,7 +10,6 @@ set(CALIPER_HEADERS
 set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
-    Context.cpp
     ContextBuffer.cpp
     MemoryPool.cpp
     SigsafeRWLock.cpp
