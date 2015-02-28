@@ -109,13 +109,13 @@ class Recorder
 
             break;
         case Format::Unpacked:
-            vector<RecordMap> rec { Caliper::instance()->unpack(buf, size) };
+            // vector<RecordMap> rec { Caliper::instance()->unpack(buf, size) };
 
-            m_stream_mutex.lock();
-            for (auto const &q : rec)
-                str << q << '\n';
-            str << endl;
-            m_stream_mutex.unlock();
+            // m_stream_mutex.lock();
+            // for (auto const &q : rec)
+            //     str << q << '\n';
+            // str << endl;
+            // m_stream_mutex.unlock();
 
             break;
         }
@@ -135,7 +135,7 @@ class Recorder
         }
 
         uint64_t buf[64];
-        size_t   s = c->get_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, buf, 40);
+        size_t   s = c->pull_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, buf, 40);
 
         write(buf, s);
         

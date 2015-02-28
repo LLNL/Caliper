@@ -117,14 +117,17 @@ cali_get_context_size(cali_context_scope_t scope);
  */
 
 size_t
-cali_get_context     (cali_context_scope_t scope,
+cali_pull_context    (int                  scope,
                       uint64_t*            buf,
                       size_t               bufsize);
-
 size_t
-cali_try_get_context (cali_context_scope_t scope,
+cali_try_pull_context(int                  scope,
                       uint64_t*            buf,
                       size_t               bufsize);
+void
+cali_push_context    (int                  scope);
+void
+cali_try_push_context(int                  scope);
 
 /*
  * --- Low-level instrumentation API -----------------------------------
@@ -168,12 +171,15 @@ cali_err
 cali_try_set  (cali_id_t   attr,
                const void* value);
 
+
 /**
  * Write metadata using the current run-time configuration settings
  */
 
+/*
 cali_err
 cali_write_metadata(void);
+*/
 
 /*
  * --- Query / browse API ----------------------------------------------

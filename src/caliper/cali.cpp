@@ -36,9 +36,15 @@ cali_get_context_size(cali_context_scope_t scope)
 }
 
 size_t
-cali_get_context(cali_context_scope_t scope, uint64_t* buf, size_t bufsize)
+cali_pull_context(int scope, uint64_t* buf, size_t bufsize)
 {
-    return Caliper::instance()->get_context(scope, buf, bufsize);
+    return Caliper::instance()->pull_context(scope, buf, bufsize);
+}
+
+void
+cali_push_context(int scope)
+{
+    return Caliper::instance()->push_context(scope);
 }
 
 //
@@ -89,11 +95,11 @@ cali_set(cali_id_t attr, const void* value, size_t size)
 // --- I/O interface
 //
 
-cali_err
-cali_write_metadata(void)
-{
-    if (Caliper::instance()->write_metadata())
-        return CALI_SUCCESS;
+// cali_err
+// cali_write_metadata(void)
+// {
+//     if (Caliper::instance()->write_metadata())
+//         return CALI_SUCCESS;
 
-    return CALI_EINV;
-}
+//     return CALI_EINV;
+// }

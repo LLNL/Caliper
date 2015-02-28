@@ -19,6 +19,7 @@
 
 #include <signal.h>
 
+#include <atomic>
 #include <cassert>
 #include <cstring>
 #include <functional>
@@ -63,6 +64,8 @@ struct Caliper::CaliperImpl
     mutable SigsafeRWLock  m_nodelock;
     vector<Node*>          m_nodes;
     Node                   m_root;
+
+    atomic<vector<Node*>::size_type> m_num_written_nodes;
 
     mutable SigsafeRWLock  m_attribute_lock;
     map<string, Node*>
@@ -402,7 +405,7 @@ struct Caliper::CaliperImpl
     // --- Context interface
 
     std::size_t 
-    get_context(int scope, uint64_t buf[], std::size_t len) {
+    pull_context(int scope, uint64_t buf[], std::size_t len) {
         // invoke callbacks
         m_events.queryEvt(s_caliper.get(), scope);
 
@@ -426,6 +429,43 @@ struct Caliper::CaliperImpl
         return clen;
     }
 
+    void
+    push_context(int scope) {
+        // Write any nodes that haven't been written 
+
+        m_nodelock.rlock();
+        auto prev_written = m_num_written_nodes.exchange(m_nodes.size());
+
+        for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
+            (*it)->push_record(m_events.writeRecord);
+        m_nodelock.unlock();
+            
+        const int MAX_DATA  = 40;
+
+        int        all_n[3] = { 0, 0, 0 };
+        Variant all_data[3][MAX_DATA];
+
+        // Coalesce selected context buffer records into a single record
+
+        auto coalesce_rec = [&](const RecordDescriptor& rec, const int* n, const Variant** data){
+            assert(rec.num_entries == 3);
+
+            for (int i : { 0, 1, 2 }) {
+                for (int v = 0; v < n[i] && all_n[i]+v < MAX_DATA; ++v)
+                    all_data[i][all_n[i]+v] = data[i][v];
+
+                all_n[i] = min(all_n[i]+n[i], MAX_DATA);
+            }
+        };
+
+        for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
+            if (scope & s)
+                current_contextbuffer(s)->push_record(coalesce_rec);
+
+        const Variant* all_data_p[3] = { all_data[0], all_data[1], all_data[2] };
+
+        m_events.writeRecord(ContextBuffer::record_descriptor(), all_n, all_data_p);
+    }
 
     // --- Annotation interface
 
@@ -668,11 +708,16 @@ Caliper::context_size(int scope) const
 }
 
 std::size_t 
-Caliper::get_context(int scope, uint64_t buf[], std::size_t len) 
+Caliper::pull_context(int scope, uint64_t buf[], std::size_t len) 
 {
-    return mP->get_context(scope, buf, len);
+    return mP->pull_context(scope, buf, len);
 }
 
+void 
+Caliper::push_context(int scope) 
+{
+    return mP->push_context(scope);
+}
 
 // --- Annotation interface
 
@@ -713,14 +758,14 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
 // --- Caliper query API
 
-std::vector<RecordMap>
-Caliper::unpack(const uint64_t buf[], size_t size) const
-{
-    return ContextRecord::unpack(
-        [this](cali_id_t id){ return mP->get_attribute(id); },
-        [this](cali_id_t id){ return mP->get(id); },
-        buf, size);                                 
-}
+// std::vector<RecordMap>
+// Caliper::unpack(const uint64_t buf[], size_t size) const
+// {
+//     return ContextRecord::unpack(
+//         [this](cali_id_t id){ return mP->get_attribute(id); },
+//         [this](cali_id_t id){ return mP->get(id); },
+//         buf, size);                                 
+// }
 
 
 // --- Serialization API
@@ -730,27 +775,6 @@ Caliper::foreach_node(std::function<void(const Node&)> proc)
 {
     mP->foreach_node(proc);
 }
-
-bool
-Caliper::write_metadata()
-{    
-    string writer_service_name = mP->m_config.get("output").to_string();
-
-    if (writer_service_name == "none")
-        return true;
-
-    auto w = Services::get_metadata_writer(writer_service_name.c_str());
-
-    if (!w) {
-        Log(0).stream() << "Writer service \"" << writer_service_name << "\" not found!" << endl;
-        return false;
-    }
-
-    using std::placeholders::_1;
-
-    return w->write(std::bind(&CaliperImpl::foreach_node, mP.get(), _1));
-}
-
 
 // --- Caliper singleton API
 

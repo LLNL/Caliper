@@ -30,10 +30,10 @@ void print_context()
     vector<uint64_t> ctx(2 * c->num_attributes(), 0);
 
     // retrieve current context record
-    const size_t ctxsize = c->get_context(CALI_SCOPE_THREAD, ctx.data(), ctx.size());
+    const size_t ctxsize = c->pull_context(CALI_SCOPE_THREAD, ctx.data(), ctx.size());
 
-    for (auto const &q : c->unpack(ctx.data(), ctxsize))
-        cout << q << "\n";
+    // for (auto const &q : c->unpack(ctx.data(), ctxsize))
+    //     cout << q << "\n";
 
     cout << endl;
 }
@@ -81,9 +81,6 @@ int main(int argc, char* argv[])
 
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
-
-    // Test serialization API
-    cali::Caliper::instance()->write_metadata();
 
     // implicitly end phase->"main"
 }

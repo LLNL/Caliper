@@ -9,7 +9,7 @@
 #include "cali_definitions.h"
 
 #include <Attribute.h>
-#include <RecordMap.h>
+#include <Record.h>
 
 #include <util/callback.hpp>
 
@@ -61,6 +61,8 @@ public:
         util::callback<void(Caliper*, int)>              tryQueryEvt;
 
         util::callback<void(Caliper*)>                   finishEvt;
+
+        util::callback<void(const RecordDescriptor&,const int*,const Variant**)> writeRecord;
     };
 
     Events&   events();
@@ -78,9 +80,10 @@ public:
 
     // --- Context API
 
-    std::size_t context_size(int ctx) const;
-    std::size_t get_context(int ctx, uint64_t buf[], std::size_t len);
+    std::size_t context_size(int scope) const;
 
+    std::size_t pull_context(int scope, uint64_t buf[], std::size_t len);
+    void        push_context(int scope);
 
     // --- Annotation API
 
@@ -101,17 +104,10 @@ public:
     Attribute create_attribute(const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT);
 
 
-    // --- Query API
-
-    std::vector<RecordMap> unpack(const uint64_t buf[], std::size_t size) const;
-
-
     // --- Serialization / data access API
 
     void      foreach_node(std::function<void(const Node&)>);
     void      foreach_attribute(std::function<void(const Attribute&)>);
-
-    bool      write_metadata();
 
 
     // --- Caliper singleton API

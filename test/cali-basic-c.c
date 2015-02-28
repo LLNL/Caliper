@@ -18,7 +18,7 @@ void print_context()
   size_t    size = cali_get_context_size(CALI_SCOPE_THREAD);
   uint64_t* buf  = malloc(size * sizeof(uint64_t));
 
-  size = cali_get_context(CALI_SCOPE_THREAD, buf, size);
+  size = cali_pull_context(CALI_SCOPE_THREAD, buf, size);
 
   printf("Context size: %u, ", size/2);
   for (size_t e = 0; e < size; e += 2)
@@ -53,6 +53,4 @@ int main(int argc, char* argv[])
   print_context();
 
   cali_end(attr_phase); /* end "main" */
-
-  cali_write_metadata();
 }
