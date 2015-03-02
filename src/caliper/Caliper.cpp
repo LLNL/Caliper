@@ -68,8 +68,7 @@ struct Caliper::CaliperImpl
     atomic<vector<Node*>::size_type> m_num_written_nodes;
 
     mutable SigsafeRWLock  m_attribute_lock;
-    map<string, Node*>
-                           m_attribute_nodes;
+    map<string, Node*>     m_attribute_nodes;
     map<cali_attr_type, Node*> 
                            m_type_nodes;
 
@@ -87,6 +86,7 @@ struct Caliper::CaliperImpl
         m_default_thread_context  { new ContextBuffer },
         m_default_task_context    { new ContextBuffer },
         m_root { CALI_INV_ID, CALI_INV_ID, { } }, 
+        m_num_written_nodes { 0 },
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
         m_prop_attr { Attribute::invalid }

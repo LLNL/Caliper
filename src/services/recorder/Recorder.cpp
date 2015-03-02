@@ -5,6 +5,8 @@
 
 #include <Caliper.h>
 
+#include <CsvSpec.h>
+
 #include <ContextRecord.h>
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -26,60 +28,35 @@ class Recorder
     static unique_ptr<Recorder>   s_instance;
     static const ConfigSet::Entry s_configdata[];
 
-    enum class Format { None, Text, Unpacked };
     enum class Stream { None, File, StdErr, StdOut };
 
     ConfigSet m_config;
 
-    mutex     m_active_envs_mutex;
-    unordered_set<ContextBuffer*> m_active_envs;
-
     mutex     m_stream_mutex;
     Stream    m_stream;
-    Format    m_format;
     ofstream  m_ofstream;
 
     // --- helpers
 
     void init_recorder() {
-        {
-            string fmtname = m_config.get("format").to_string();
+        string strname = m_config.get("filename").to_string();
 
-            const map<string, Format> fmtmap { 
-                { "none",     Format::None     },
-                { "text",     Format::Text     },
-                { "unpacked", Format::Unpacked } };
+        const map<string, Stream> strmap { 
+            { "none",   Stream::None   },
+            { "stdout", Stream::StdOut },
+            { "stderr", Stream::StdErr } };
 
-            auto it = fmtmap.find(fmtname);
+        auto it = strmap.find(strname);
 
-            if (it == fmtmap.end()) {
-                Log(0).stream() << "Invalid recorder format name: \" " << fmtname << "\"";
+        if (it == strmap.end()) {
+            m_stream = Stream::File;
 
-                m_format = Format::None;
-            } else
-                m_format = it->second;
-        }
+            m_ofstream.open(strname);
 
-        {
-            string strname = m_config.get("filename").to_string();
-
-            const map<string, Stream> strmap { 
-                { "none",   Stream::None   },
-                { "stdout", Stream::StdOut },
-                { "stderr", Stream::StdErr } };
-
-            auto it = strmap.find(strname);
-
-            if (it == strmap.end()) {
-                m_stream = Stream::File;
-
-                m_ofstream.open(strname);
-
-                if (!m_ofstream)
-                    Log(0).stream() << "Could not open recording file " << strname << endl;
-            } else
-                m_stream = it->second;
-        }
+            if (!m_ofstream)
+                Log(0).stream() << "Could not open recording file " << strname << endl;
+        } else
+            m_stream = it->second;
     }
 
     std::ostream& get_stream() {
@@ -93,61 +70,19 @@ class Recorder
         }
     }
 
-
-    // writer 
-
-    void write(const uint64_t buf[], size_t size) {
-        ostream& str { get_stream() };
-
-        switch (m_format) {
-        case Format::Text:
-            m_stream_mutex.lock();
-            for (size_t p = 0; p < size; ++p)
-                str << (p > 0 ? "," : "") << buf[p];
-            str << endl;
-            m_stream_mutex.unlock();
-
-            break;
-        case Format::Unpacked:
-            // vector<RecordMap> rec { Caliper::instance()->unpack(buf, size) };
-
-            // m_stream_mutex.lock();
-            // for (auto const &q : rec)
-            //     str << q << '\n';
-            // str << endl;
-            // m_stream_mutex.unlock();
-
-            break;
-        }
-    }
-
-
-    // record callback
-
-    void record(Caliper* c) {
-        ContextBuffer* ctx = c->current_contextbuffer(CALI_SCOPE_THREAD);
-        // prevent recursion from set()/begin() calls made by callbacks on get_context()
-        {
-            lock_guard<mutex> lock(m_active_envs_mutex);
-            if (m_active_envs.count(ctx))
-                return;
-            m_active_envs.insert(ctx);
-        }
-
-        uint64_t buf[64];
-        size_t   s = c->pull_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, buf, 40);
-
-        write(buf, s);
-        
-        m_active_envs_mutex.lock();
-        m_active_envs.erase(ctx);
-        m_active_envs_mutex.unlock();
-    }
-
     void register_callbacks(Caliper* c) {
         using std::placeholders::_1;
 
-        auto f = [&](Caliper* c, const Attribute&){ record(c); };
+        auto recfn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
+            lock_guard<mutex> lock(m_stream_mutex);
+            CsvSpec::write_record(get_stream(), rec, count, data);
+        };
+
+        c->events().writeRecord.connect(recfn);
+
+        auto f = [&](Caliper* c, const Attribute&){ 
+            c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS); 
+        };
 
         c->events().beginEvt.connect(f);
         c->events().endEvt  .connect(f);
@@ -159,7 +94,7 @@ class Recorder
     { 
         init_recorder();
 
-        if (m_stream != Stream::None && m_format != Format::None) {
+        if (m_stream != Stream::None) {
             register_callbacks(c);
 
             Log(2).stream() << "Registered recorder service" << endl;
@@ -179,13 +114,6 @@ public:
 unique_ptr<Recorder>   Recorder::s_instance       { nullptr };
 
 const ConfigSet::Entry Recorder::s_configdata[] = {
-    { "format", CALI_TYPE_STRING, "text",
-      "Data recorder format",
-      "Data recorder format. Possible values are\n"
-      "  text:     Text format\n"
-      "  unpacked: Unpacked text format (high overhead)\n"
-      "  none:     Disable data recording"
-    },
     { "filename", CALI_TYPE_STRING, "stdout",
       "File name for event record stream",
       "File name for event record stream. Either one of\n"
