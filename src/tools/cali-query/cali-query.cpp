@@ -3,7 +3,6 @@
 
 #include "CaliperMetadataDB.h"
 
-#include <ContextRecord.h>
 #include <Node.h>
 
 #include <util/split.hpp>
@@ -51,13 +50,5 @@ int main(int argc, char* argv[])
         return -2;
     }
 
-    vector<uint64_t> ctx = ::read_context_string(argv[2]);
-        
-    using std::placeholders::_1;
-
-    for (const RecordMap& rec : 
-             ContextRecord::unpack(bind(&CaliperMetadataDB::attribute, &metadb, _1),
-                                   bind(&CaliperMetadataDB::node,      &metadb, _1),
-                                   &ctx.front(), ctx.size()))
-        cout << rec << endl;
+    vector<uint64_t> ctx = ::read_context_string(argv[2]);        
 }

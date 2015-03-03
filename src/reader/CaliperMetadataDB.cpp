@@ -37,7 +37,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         for ( entry_t& e : entries ) {
             auto it = rec.find(string(e.key));
             if (it != rec.end())
-                *(e.val) = it->second;
+                *(e.val) = it->second.front();
         }
 
         if (!id || !attr || !data || id.to_id() == CALI_INV_ID)

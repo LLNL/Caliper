@@ -6,12 +6,18 @@
 #include <iostream>
 
 
-std::ostream& operator << (std::ostream& os, const cali::RecordMap& r)
+std::ostream& operator << (std::ostream& os, const cali::RecordMap& record)
 {
     os << "{ ";
 
-    for (const auto &p : r)
-        os << p.first << '=' << p.second << ' ';
+    int count = 0;
+
+    for (const auto &entry : record) {
+        if (!entry.second.empty())
+            os << (count++ ? "," : "") << entry.first;
+        for (const auto &elem : entry.second)
+            os << '=' << elem;
+    }
 
     os << '}';
     

@@ -9,13 +9,14 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace cali
 {
 
 // --- RecordMap API
 
-typedef std::map< std::string, Variant > RecordMap;
+typedef std::map< std::string, std::vector<Variant> > RecordMap;
 
 }
 

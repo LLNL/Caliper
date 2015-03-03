@@ -76,9 +76,13 @@ struct CsvSpecImpl
     void write_record(ostream& os, const RecordMap& record) {
         int count = 0;
 
-        for (auto &e : record) {
-            os << (count++ ? m_sep : "") << e.first << '=';
-            write_string(os, e.second.to_string());
+        for (const auto &entry : record) {
+            if (!entry.second.empty())
+                os << (count++ ? "," : "") << entry.first;
+            for (const auto &elem : entry.second) {
+                os << '=';
+                write_string(os, elem.to_string());
+            }
         }
 
         if (count)
@@ -92,9 +96,14 @@ struct CsvSpecImpl
         for (const string& entry : entries) {
             vector<string> keyval = split(entry, '=');
 
-            if (keyval.size() == 2)
-                rec.insert(make_pair(keyval[0], Variant(keyval[1])));
-            else
+            if (keyval.size() > 1) {
+                vector<Variant> data;
+
+                for (auto it = keyval.begin()+1; it != keyval.end(); ++it)
+                    data.emplace_back(*it);
+
+                rec.insert(make_pair(keyval[0], std::move(data)));                
+            } else
                 Log(1).stream() << "Invalid CSV entry: " << entry << endl;
         }
 

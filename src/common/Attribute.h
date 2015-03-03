@@ -49,7 +49,6 @@ public:
     }
 
     RecordMap record() const;
-    static Attribute read(const RecordMap&);
 
     static const Attribute invalid;
 };

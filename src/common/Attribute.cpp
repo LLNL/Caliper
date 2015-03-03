@@ -76,34 +76,15 @@ namespace
 RecordMap Attribute::record() const
 {
     RecordMap recmap = { 
-        { "id",   { id()   } },
-        { "name", Variant(m_name) },
-        { "type", { m_type } } };
+        { "id",         { { id()   } }      },
+        { "name",       { Variant(m_name) } },
+        { "type",       { { m_type } }      },
+        { "properties", { }                 } };
 
     if (m_properties != CALI_ATTR_DEFAULT)
-        recmap.insert(make_pair("properties", Variant(::write_properties(m_properties))));
+        recmap["properties"].push_back(Variant(::write_properties(m_properties)));
 
     return recmap;
-}
-
-Attribute Attribute::read(const RecordMap& rec)
-{
-    auto it = rec.find("id");
-    Variant v_id   = it == rec.end() ? Variant() : it->second;
-    it = rec.find("name");
-    Variant v_name = it == rec.end() ? Variant() : it->second;
-    it = rec.find("type");
-    Variant v_type = it == rec.end() ? Variant() : it->second;
-
-    if (!v_id || !v_name || !v_type)
-        return Attribute::invalid;
-
-    it = rec.find("properties");
-    Variant v_prop = it == rec.end() ? Variant() : it->second;
-
-    int properties = v_prop ? ::read_properties(v_prop.to_string()) : CALI_ATTR_DEFAULT;
-
-    return Attribute(v_id.to_id(), v_name.to_string(), v_type.to_attr_type(), properties);
 }
 
 const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };

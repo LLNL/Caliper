@@ -48,14 +48,13 @@ void Node::push_record(WriteRecordFn fn) const
 RecordMap Node::record() const
 {
     RecordMap recmap = {
-        { "id",        { id() }          },
-        { "attribute", { m_attribute }   },
-        { "data",      { m_data }        } };
+        { "id",        { { id() }          } },
+        { "attribute", { { m_attribute }   } },
+        { "data",      { { m_data }        } },
+        { "parent",    { }                   } };
 
-    if (m_data.type() != CALI_TYPE_INV)
-        recmap.insert(make_pair( "type",   Variant(m_data.type())  ));
     if (parent() && parent()->id() != CALI_INV_ID)
-        recmap.insert(make_pair( "parent", Variant(parent()->id()) ));
+        recmap["parent"].push_back(Variant(parent()->id()));
 
     return recmap;
 }
