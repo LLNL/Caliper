@@ -48,8 +48,9 @@ void Node::push_record(WriteRecordFn fn) const
 RecordMap Node::record() const
 {
     RecordMap recmap = {
+        { "__rec",     { { CALI_TYPE_STRING, s_record.name, strlen(s_record.name) } } },
         { "id",        { { id() }          } },
-        { "attribute", { { m_attribute }   } },
+        { "attr",      { { m_attribute }   } },
         { "data",      { { m_data }        } },
         { "parent",    { }                   } };
 

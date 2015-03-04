@@ -8,8 +8,6 @@
 
 std::ostream& operator << (std::ostream& os, const cali::RecordMap& record)
 {
-    os << "{ ";
-
     int count = 0;
 
     for (const auto &entry : record) {
@@ -19,7 +17,5 @@ std::ostream& operator << (std::ostream& os, const cali::RecordMap& record)
             os << '=' << elem;
     }
 
-    os << '}';
-    
     return os;
 }

@@ -5,9 +5,11 @@
 
 #include <CsvReader.h>
 
+#include <Log.h>
 #include <Node.h>
 #include <RecordMap.h>
 
+#include <cassert>
 #include <iostream>
 #include <map>
 #include <vector>
@@ -15,8 +17,10 @@
 using namespace cali;
 using namespace std;
 
+
 struct CaliperMetadataDB::CaliperMetadataDBImpl
 {
+    Node                      m_root;         ///< (Artificial) root node
     vector<Node*>             m_nodes;        ///< Node list
     map<cali_id_t, Attribute> m_attributes;   ///< Attribute cache
 
@@ -24,7 +28,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     cali_id_t                 m_prop_attr_id = { CALI_INV_ID };
     cali_id_t                 m_type_attr_id = { CALI_INV_ID };
 
-    void create_node(const RecordMap& rec) {
+    void insert_node(const RecordMap& rec) {
         Variant id, attr, parent, data;
 
         struct entry_t { 
@@ -36,7 +40,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         for ( entry_t& e : entries ) {
             auto it = rec.find(string(e.key));
-            if (it != rec.end())
+            if (it != rec.end() && !it->second.empty())
                 *(e.val) = it->second.front();
         }
 
@@ -56,6 +60,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         if (parent && parent.to_id() < m_nodes.size())
             m_nodes[parent.to_id()]->append(node);
+        else
+            m_root.append(node);
 
         // Check if this is one of the basic attribute nodes
 
@@ -71,6 +77,96 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             if (*a.id == CALI_INV_ID && data.to_string() == a.name) {
                 *a.id = id.to_id(); break;
             }
+    }
+
+    Node* create_node(cali_id_t attr_id, const Variant& data, Node* parent) {
+        Node* node = new Node(m_nodes.size(), attr_id, data);
+        m_nodes.push_back(node);
+
+        if (parent)
+            parent->append(node);
+
+        return node;
+    }
+
+    RecordMap merge_node_record(const RecordMap& rec, IdMap& idmap) {
+        Variant v_id, v_attr, v_parent, v_data;
+
+        struct entry_t { 
+            const char* key; Variant* val; 
+        } entries[] = {
+            { "id",     &v_id     }, { "attr", &v_attr }, 
+            { "parent", &v_parent }, { "data", &v_data }
+        };
+
+        for ( entry_t& e : entries ) {
+            auto it = rec.find(string(e.key));
+            if (it != rec.end() && !it->second.empty())
+                *(e.val) = it->second.front();
+        }
+
+        if (!v_id || !v_attr || !v_data || v_id.to_id() == CALI_INV_ID || v_attr.to_id() == CALI_INV_ID) {
+            Log(1).stream() << "Invalid node record format" << endl;
+            return rec;
+        }
+
+        auto attr_it   = idmap.find(v_attr.to_id());
+        cali_id_t attr = (attr_it == idmap.end() ? v_attr.to_id() : attr_it->second);
+
+        Node* parent = &m_root;
+
+        if (!v_parent.empty()) {
+            auto parent_it = idmap.find(v_parent.to_id());
+            cali_id_t id   = (parent_it == idmap.end() ? v_parent.to_id() : parent_it->second);
+
+            assert(id < m_nodes.size());
+
+            parent = m_nodes[id];
+        }
+
+        Node* node = parent->first_child();
+
+        while ( node && !node->equals(attr, v_data) )
+            node = node->next_sibling();
+
+        if (!node)
+            node = create_node(attr, v_data, parent);
+
+        if (v_id.to_id() != node->id())
+            idmap.insert(make_pair(v_id.to_id(), node->id()));
+
+        return node->record();
+    }
+
+    RecordMap merge_ctx_record(const RecordMap& rec, IdMap& idmap) {
+        RecordMap record(rec);
+
+        for (const string& entry : { "implicit", "explicit" }) {
+            auto entry_it = record.find(entry);
+
+            if (entry_it != record.end())
+                for (Variant& elem : entry_it->second) {
+                    auto id_it = idmap.find(elem.to_id());
+                    if (id_it != idmap.end())
+                        elem = Variant(id_it->second);
+                }
+        }
+
+        return record;
+    }
+
+    RecordMap merge(const RecordMap& rec, IdMap& idmap) {
+        auto rec_name_it = rec.find("__rec");
+
+        if (rec_name_it == rec.end() || rec_name_it->second.empty())
+            return rec;
+
+        if      (rec_name_it->second.front().to_string() == "node")
+            return merge_node_record(rec, idmap);
+        else if (rec_name_it->second.front().to_string() == "ctx" )
+            return merge_ctx_record (rec, idmap);
+
+        return rec;
     }
 
     Attribute attribute(cali_id_t id) {
@@ -108,10 +204,20 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     bool read(const char* filename) {
+        for (Node* n : m_nodes)
+            delete n;
+
+        m_nodes.clear();
+        m_attributes.clear();
+
+        m_name_attr_id = CALI_INV_ID;
+        m_prop_attr_id = CALI_INV_ID;
+        m_type_attr_id = CALI_INV_ID;
+
         CsvReader reader(filename);
 
         bool ret = 
-            reader.read(std::bind(&CaliperMetadataDBImpl::create_node, this, std::placeholders::_1));
+            reader.read(std::bind(&CaliperMetadataDBImpl::insert_node, this, std::placeholders::_1));
 
         if (m_name_attr_id == CALI_INV_ID || 
             m_prop_attr_id == CALI_INV_ID || 
@@ -122,6 +228,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         return ret;
     }
+
+    CaliperMetadataDBImpl()
+        : m_root { CALI_INV_ID, CALI_INV_ID, { } }
+        { }
 
     ~CaliperMetadataDBImpl() {
         for (Node* n : m_nodes)
@@ -145,6 +255,12 @@ bool
 CaliperMetadataDB::read(const char* filename)
 {
     return mP->read(filename);
+}
+
+RecordMap
+CaliperMetadataDB::merge(const RecordMap& rec, IdMap& idmap)
+{
+    return mP->merge(rec, idmap);
 }
 
 const Node* 
