@@ -8,54 +8,48 @@
 #include <string>
 #include <vector>
 
-
 using namespace cali;
 using namespace std;
 
-
-namespace 
+RecordMap
+ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)> get_node)
 {
+    RecordMap out;
 
-RecordMap value_record(const Attribute& attr, uint64_t val)
-{
-    return { 
-        { "attribute", { attr.id()   } },
-        { "type",      { attr.type() } },
-        { "data",      { val         } } };
-}
+    auto entry_it = rec.find("__rec");
 
-} // anonymous namespace 
+    if (entry_it == rec.end() || entry_it->second.empty() || entry_it->second.front().to_string() != "ctx")
+        return out;
 
+    // implicit entries: 
 
-vector<RecordMap>
-ContextRecord::unpack(std::function<Attribute  (cali_id_t)> get_attr,
-                      std::function<const Node*(cali_id_t)> get_node,
-                      const uint64_t buf[], size_t size)
-{
-    vector<RecordMap> vec;
+    entry_it = rec.find("implicit");
 
-    for (size_t i = 0; i < size / 2; ++i) {
-        Attribute attr = get_attr(buf[2*i]);
-        uint64_t  val  = buf[2*i+1];
+    if (entry_it != rec.end())
+        for (const Variant& elem : entry_it->second) {
+            const Node* node = get_node(elem.to_id());
 
-        if (attr == Attribute::invalid) // Oops?! Shouldn't happen
-            return vec;
-            
-        if (attr.store_as_value())
-            vec.push_back(::value_record(attr, val));
-        else {
-            const Node* node = get_node(val);
+            for ( ; node && node->id() != CALI_INV_ID; node = node->parent() ) {
+                const Node* attr_node = get_node(node->attribute());
 
-            // unpack all nodes up to root
-            while (node && !(attr == Attribute::invalid)) {
-                vec.push_back(node->record());
-
-                // Locking ... ? Should work though since this should be read-only data
-                node = node->parent();
-                attr = get_attr(node ? node->attribute() : CALI_INV_ID);
+                if (attr_node)
+                    out[attr_node->data().to_string()].push_back(node->data());
             }
         }
+
+    auto expl_entry_it = rec.find("explicit");
+    auto data_entry_it = rec.find("data");
+
+    if (expl_entry_it == rec.end() || data_entry_it == rec.end() || expl_entry_it->second.empty())
+        return out;
+
+    for (unsigned i = 0; i < expl_entry_it->second.size() && i < data_entry_it->second.size(); ++i) {
+        const Node* attr_node = get_node(expl_entry_it->second[i].to_id());
+        const Node* node      = get_node(data_entry_it->second[i].to_id());
+
+        if (attr_node && node)
+            out[attr_node->data().to_string()].push_back(node->data());
     }
 
-    return vec;
+    return out;
 }
