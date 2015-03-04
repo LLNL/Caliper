@@ -45,10 +45,9 @@ ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)
 
     for (unsigned i = 0; i < expl_entry_it->second.size() && i < data_entry_it->second.size(); ++i) {
         const Node* attr_node = get_node(expl_entry_it->second[i].to_id());
-        const Node* node      = get_node(data_entry_it->second[i].to_id());
 
-        if (attr_node && node)
-            out[attr_node->data().to_string()].push_back(node->data());
+        if (attr_node)
+            out[attr_node->data().to_string()].push_back(data_entry_it->second[i]);
     }
 
     return out;
