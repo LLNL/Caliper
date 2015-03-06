@@ -23,7 +23,8 @@ using namespace util;
 
 namespace
 {
-    const char* usage = "cali-query [OPTION]... [FILE]...\n";
+    const char* usage = "cali-query [OPTION]... [FILE]..."
+        "\n  Read, merge, and filter caliper streams";
 
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
@@ -126,7 +127,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            cerr << usage << '\n';
+            cerr << usage << "\n\n";
 
             args.print_available_options(cerr);
 
