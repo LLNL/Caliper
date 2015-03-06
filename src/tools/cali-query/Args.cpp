@@ -9,7 +9,7 @@
 using namespace std;
 using namespace util;
 
-const Args::Table Args::Table::Terminator { 0, 0, 0, false, 0 };
+const Args::Table Args::Table::Terminator { 0, 0, 0, false, 0, 0 };
 
 struct Args::ArgsImpl
 {
