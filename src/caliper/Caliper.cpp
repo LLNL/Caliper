@@ -363,7 +363,7 @@ struct Caliper::CaliperImpl
 
         Attribute attr { make_attribute(node) };
 
-        m_events.createAttrEvt(s_caliper.get(), attr);
+        m_events.create_attr_evt(s_caliper.get(), attr);
 
         return attr;
     }
@@ -407,7 +407,7 @@ struct Caliper::CaliperImpl
     std::size_t 
     pull_context(int scope, uint64_t buf[], std::size_t len) {
         // invoke callbacks
-        m_events.queryEvt(s_caliper.get(), scope);
+        m_events.query_evt(s_caliper.get(), scope);
 
         // collect context from current TASK/THREAD/PROCESS environments
 
@@ -437,7 +437,7 @@ struct Caliper::CaliperImpl
         auto prev_written = m_num_written_nodes.exchange(m_nodes.size());
 
         for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
-            (*it)->push_record(m_events.writeRecord);
+            (*it)->push_record(m_events.write_record);
         m_nodelock.unlock();
             
         const int MAX_DATA  = 40;
@@ -464,7 +464,7 @@ struct Caliper::CaliperImpl
 
         const Variant* all_data_p[3] = { all_data[0], all_data[1], all_data[2] };
 
-        m_events.writeRecord(ContextBuffer::record_descriptor(), all_n, all_data_p);
+        m_events.write_record(ContextBuffer::record_descriptor(), all_n, all_data_p);
     }
 
     // --- Annotation interface
@@ -475,6 +475,9 @@ struct Caliper::CaliperImpl
 
         if (attr == Attribute::invalid)
             return CALI_EINV;
+
+        // invoke callbacks
+        m_events.pre_begin_evt(s_caliper.get(), attr);
 
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
@@ -500,7 +503,7 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.beginEvt(s_caliper.get(), attr);
+        m_events.post_begin_evt(s_caliper.get(), attr);
 
         return ret;
     }
@@ -512,6 +515,9 @@ struct Caliper::CaliperImpl
 
         cali_err ret = CALI_EINV;
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
+
+        // invoke callbacks
+        m_events.pre_end_evt(s_caliper.get(), attr);
 
         if (attr.store_as_value())
             ret = ctx->unset(attr);
@@ -544,7 +550,7 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.endEvt(s_caliper.get(), attr);
+        m_events.post_end_evt(s_caliper.get(), attr);
 
         return ret;
     }
@@ -557,6 +563,9 @@ struct Caliper::CaliperImpl
             return CALI_EINV;
 
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
+
+        // invoke callbacks
+        m_events.pre_set_evt(s_caliper.get(), attr);
 
         if (attr.store_as_value()) {
             ret = ctx->set(attr, data);
@@ -586,7 +595,7 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.setEvt(s_caliper.get(), attr);
+        m_events.post_set_evt(s_caliper.get(), attr);
 
         return ret;
     }

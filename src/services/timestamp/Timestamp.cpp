@@ -38,7 +38,7 @@ void timestamp_register(Caliper* c)
         c->create_attribute("time(usec)", CALI_TYPE_UINT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS);
 
     // add callback for Caliper::get_context() event
-    c->events().queryEvt.connect(&update_time);
+    c->events().query_evt.connect(&update_time);
 
     Log(1).stream() << "Registered timestamp service" << endl;
 }

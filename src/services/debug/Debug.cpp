@@ -87,13 +87,13 @@ void finish_cb(Caliper* c)
 
 void debug_register(Caliper* c)
 {
-    c->events().createAttrEvt.connect(&create_attr_cb);
-    c->events().beginEvt.connect(&begin_cb);
-    c->events().endEvt.connect(&end_cb);
-    c->events().setEvt.connect(&set_cb);
-    c->events().queryEvt.connect(&query_cb);
-    c->events().tryQueryEvt.connect(&try_query_cb);
-    c->events().finishEvt.connect(&finish_cb);
+    c->events().create_attr_evt.connect(&create_attr_cb);
+    c->events().pre_begin_evt.connect(&begin_cb);
+    c->events().pre_end_evt.connect(&end_cb);
+    c->events().pre_set_evt.connect(&set_cb);
+    c->events().query_evt.connect(&query_cb);
+    c->events().try_query_evt.connect(&try_query_cb);
+    c->events().finish_evt.connect(&finish_cb);
 
     Log(1).stream() << "Registered debug service" << endl;
 }

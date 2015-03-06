@@ -78,15 +78,15 @@ class Recorder
             CsvSpec::write_record(get_stream(), rec, count, data);
         };
 
-        c->events().writeRecord.connect(recfn);
+        c->events().write_record.connect(recfn);
 
         auto f = [&](Caliper* c, const Attribute&){ 
             c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS); 
         };
 
-        c->events().beginEvt.connect(f);
-        c->events().endEvt  .connect(f);
-        c->events().setEvt  .connect(f);
+        c->events().pre_begin_evt.connect(f);
+        c->events().pre_end_evt.connect(f);
+        c->events().pre_set_evt.connect(f);
     }
 
     Recorder(Caliper* c)

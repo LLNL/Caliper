@@ -51,18 +51,23 @@ public:
     // --- Events
 
     struct Events {
-        util::callback<void(Caliper*, const Attribute&)> createAttrEvt;
+        util::callback<void(Caliper*, const Attribute&)> create_attr_evt;
 
-        util::callback<void(Caliper*, const Attribute&)> beginEvt;
-        util::callback<void(Caliper*, const Attribute&)> endEvt;
-        util::callback<void(Caliper*, const Attribute&)> setEvt;
+        util::callback<void(Caliper*, const Attribute&)> pre_begin_evt;
+        util::callback<void(Caliper*, const Attribute&)> post_begin_evt;
+        util::callback<void(Caliper*, const Attribute&)> pre_end_evt;
+        util::callback<void(Caliper*, const Attribute&)> post_end_evt;
+        util::callback<void(Caliper*, const Attribute&)> pre_set_evt;
+        util::callback<void(Caliper*, const Attribute&)> post_set_evt;
 
-        util::callback<void(Caliper*, int)>              queryEvt;
-        util::callback<void(Caliper*, int)>              tryQueryEvt;
+        util::callback<void(Caliper*, int)>              query_evt;
+        util::callback<void(Caliper*, int)>              try_query_evt;
 
-        util::callback<void(Caliper*)>                   finishEvt;
+        util::callback<void(Caliper*)>                   finish_evt;
 
-        util::callback<void(const RecordDescriptor&,const int*,const Variant**)> writeRecord;
+        util::callback<void(const RecordDescriptor&,
+                            const int*,
+                            const Variant**)>            write_record;
     };
 
     Events&   events();
