@@ -28,7 +28,7 @@ namespace
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
         { "select", "select", 's', true,  
-          "Select context records: [-]attribute[(<|>|=)value][,...]", "QUERY_STRING" 
+          "Select context records: [-]attribute[(<|>|=)value][:...]", "QUERY_STRING" 
         },
         { "expand", "expand", 'e', false, "Expand context records",   nullptr },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },

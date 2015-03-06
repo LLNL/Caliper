@@ -195,7 +195,7 @@ struct Args::ArgsImpl
                     s += strlen(opt.argument_info) + 1;
                 }
 
-                os.write(whitespace, min(max_longopt-s, maxwhitespace));
+                os.write(whitespace, min(max_longopt+pad-s, maxwhitespace));
             } else 
                 os.write(whitespace, min(max_longopt+pad+opt_sep.size(), maxwhitespace));
 
@@ -207,14 +207,11 @@ struct Args::ArgsImpl
     }
 
     ArgsImpl() 
-        :    m_shortopt_prefix { "-" }, m_longopt_prefix { "--" }, m_options_end { "--" } 
         { }
 
-    ArgsImpl(const Args::Table table[]) 
-        :    m_shortopt_prefix { "-" }, m_longopt_prefix { "--" }, m_options_end { "--" } 
-        { 
-            add_table(table);
-        }
+    ArgsImpl(const Args::Table table[]) { 
+        add_table(table);
+    }
 };
 
 
