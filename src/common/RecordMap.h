@@ -18,6 +18,8 @@ namespace cali
 
 typedef std::map< std::string, std::vector<Variant> > RecordMap;
 
+std::string get_record_type(const RecordMap& rec);
+
 }
 
 std::ostream& operator << (std::ostream& os, const cali::RecordMap& r);
