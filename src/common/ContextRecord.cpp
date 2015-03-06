@@ -5,9 +5,6 @@
 
 #include "Node.h"
 
-#include <string>
-#include <vector>
-
 using namespace cali;
 using namespace std;
 
