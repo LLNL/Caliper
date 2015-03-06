@@ -3,6 +3,8 @@ include_directories ("../../reader")
 include_directories ("../../services/csv")
 
 set(CALIPER_QUERY_SOURCES
+    Args.cpp
+    RecordSelector.cpp
     cali-query.cpp)
 
 add_executable(cali-query ${CALIPER_QUERY_SOURCES})

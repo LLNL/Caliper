@@ -1,7 +1,9 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
+#include "Args.h"
 #include "RecordProcessor.h"
+#include "RecordSelector.h"
 
 #include <CaliperMetadataDB.h>
 
@@ -17,24 +19,20 @@
 
 using namespace cali;
 using namespace std;
+using namespace util;
 
 namespace
 {
     const char* usage = "Usage: cali-query <data file 1> ... <data file n>";
 
-    vector<uint64_t> read_context_string(const string& contextstring) {
-        vector<string>   strs;
+    const Args::Table argtbl[] = { 
+        { "select", "select=QUERY STRING", 's', true,  "Select context records: [-]attribute[(<|>|=)value][,...]" },
+        { "format", "format=(csv|expand)", 'f', true,  "Set the output format"    },
+        { "output", "output=FILE",         'o', true,  "Set the output file name" },
+        { "help",   "help",                'h', false, "Print help message"       },
 
-        util::split(contextstring, ':', back_inserter(strs));
-
-        vector<uint64_t> ctx;
-
-        for (const string &s : strs)
-            ctx.push_back(stoul(s));
-
-        return ctx;
-    }
-
+        Args::Table::Terminator
+    };
 
     void write_keyval(CaliperMetadataDB& db, const RecordMap& rec) {
         int nentry = 0;
@@ -66,9 +64,7 @@ namespace
             { } 
         
         void operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) {
-            auto rec_entry_it = rec.find("__rec");
-
-            if (rec_entry_it != rec.end() && !rec_entry_it->second.empty() && rec_entry_it->second.front().to_string() == "node") {
+            if (get_record_type(rec) == "node") {
                 auto id_entry_it = rec.find("id");
 
                 if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
@@ -106,25 +102,59 @@ namespace
 // --- main()
 //
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
-    if (argc < 2) {
-        cerr << ::usage << endl;
-        return -1;
+    Args args(::argtbl);
+
+    {
+        int i = args.parse(argc, argv);
+
+        if (i < argc) {
+            cerr << "cali-query: error: unknown option: " << argv[i] << endl;
+            return -1;
+        }
     }
+
+    if (args.is_set("help")) {
+        cerr << "cali-query [OPTION]... [FILE]...\n" << endl;
+        args.print_available_options(cerr);
+        return 0;
+    }
+
+    for (auto opt : args.options())
+        cerr << opt << endl;
+    for (auto arg : args.arguments())
+        cerr << arg << endl;
+
+    return 0;
 
     RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };    
 
-    processor = ::write_record;
+    // Build up processing chain back-to-front
+
+    string format = args.get("format", "csv");
+
+    if (format == "csv")
+        processor = ::write_record;
+    else if (format == "expanded")
+        processor = ::write_keyval;
+    else 
+        cerr << "Unknown output format: " << format << endl;
+
+    string select = args.get("select");
+
+    if (!select.empty())
+        processor = ::FilterStep(RecordSelector(select), processor);
+
     processor = ::FilterStep(::FilterDuplicateNodes(), processor);
 
     CaliperMetadataDB metadb;
 
-    for (int i = 1; i < argc; ++i) {
-        CsvReader reader(argv[i]);
+    for (const string& file : args.arguments()) {
+        CsvReader reader(file);
         IdMap     idmap;
 
         if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
-            cerr << "Could not read file " << argv[i] << endl;
+            cerr << "Could not read file " << file << endl;
     }
 }
