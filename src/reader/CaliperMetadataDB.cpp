@@ -28,6 +28,22 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     cali_id_t                 m_prop_attr_id = { CALI_INV_ID };
     cali_id_t                 m_type_attr_id = { CALI_INV_ID };
 
+    
+    void setup_attribute_nodes(cali_id_t id, const std::string& name) {
+        struct attr_t {
+            const char* name; cali_id_t* id;
+        } base_attributes[] = {
+            { "cali.attribute.name", &m_name_attr_id },
+            { "cali.attribute.prop", &m_prop_attr_id },
+            { "cali.attribute.type", &m_type_attr_id }
+        };
+
+        for ( attr_t &a : base_attributes )
+            if (*a.id == CALI_INV_ID && name == a.name) {
+                *a.id = id; break;
+            }        
+    }
+
     void insert_node(const RecordMap& rec) {
         Variant id, attr, parent, data;
 
@@ -64,19 +80,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             m_root.append(node);
 
         // Check if this is one of the basic attribute nodes
-
-        struct attr_t {
-            const char* name; cali_id_t* id;
-        } base_attributes[] = {
-            { "cali.attribute.name", &m_name_attr_id },
-            { "cali.attribute.prop", &m_prop_attr_id },
-            { "cali.attribute.type", &m_type_attr_id }
-        };
-
-        for ( attr_t &a : base_attributes )
-            if (*a.id == CALI_INV_ID && data.to_string() == a.name) {
-                *a.id = id.to_id(); break;
-            }
+        setup_attribute_nodes(id.to_id(), data.to_string());
     }
 
     Node* create_node(cali_id_t attr_id, const Variant& data, Node* parent) {
@@ -129,8 +133,12 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         while ( node && !node->equals(attr, v_data) )
             node = node->next_sibling();
 
-        if (!node)
+        if (!node) {
             node = create_node(attr, v_data, parent);
+
+            // Check if this is one of the basic attribute nodes
+            setup_attribute_nodes(node->id(), v_data.to_string());
+        }
 
         if (v_id.to_id() != node->id())
             idmap.insert(make_pair(v_id.to_id(), node->id()));
