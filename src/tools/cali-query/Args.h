@@ -25,8 +25,10 @@ public:
         char        shortopt;
 
         bool        has_argument;
-        const char* info;
 
+        const char* info;
+        const char* argument_info;
+      
         static const Table Terminator;
     };
 

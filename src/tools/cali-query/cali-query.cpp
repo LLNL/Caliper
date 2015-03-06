@@ -23,14 +23,16 @@ using namespace util;
 
 namespace
 {
-    const char* usage = "Usage: cali-query <data file 1> ... <data file n>";
+    const char* usage = "cali-query [OPTION]... [FILE]...\n";
 
-    const Args::Table argtbl[] = { 
-        { "select", "select=QUERY STRING", 's', true,  "Select context records: [-]attribute[(<|>|=)value][,...]" },
-        { "format", "format=(csv|expand)", 'f', true,  "Set the output format"    },
-        { "output", "output=FILE",         'o', true,  "Set the output file name" },
-        { "help",   "help",                'h', false, "Print help message"       },
-
+    const Args::Table option_table[] = { 
+        // name, longopt name, shortopt char, has argument, info, argument info
+        { "select", "select", 's', true,  
+          "Select context records: [-]attribute[(<|>|=)value][,...]", "QUERY_STRING" 
+        },
+        { "expand", "expand", 'e', false, "Expand context records",   nullptr },
+        { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
+        { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
     };
 
@@ -104,42 +106,45 @@ namespace
 
 int main(int argc, const char* argv[])
 {
-    Args args(::argtbl);
+    Args args(::option_table);
+
+
+    //
+    // --- Parse command line arguments
+    //
 
     {
         int i = args.parse(argc, argv);
 
         if (i < argc) {
-            cerr << "cali-query: error: unknown option: " << argv[i] << endl;
+            cerr << "cali-query: error: unknown option: " << argv[i] << '\n'
+                 << "  Available options: ";
+
+            args.print_available_options(cerr);
+            
             return -1;
+        }
+
+        if (args.is_set("help")) {
+            cerr << usage << '\n';
+
+            args.print_available_options(cerr);
+
+            return 0;
         }
     }
 
-    if (args.is_set("help")) {
-        cerr << "cali-query [OPTION]... [FILE]...\n" << endl;
-        args.print_available_options(cerr);
-        return 0;
-    }
 
-    for (auto opt : args.options())
-        cerr << opt << endl;
-    for (auto arg : args.arguments())
-        cerr << arg << endl;
+    //
+    // --- Build up processing chain (from back to front)
+    //
 
-    return 0;
+    RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
 
-    RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };    
-
-    // Build up processing chain back-to-front
-
-    string format = args.get("format", "csv");
-
-    if (format == "csv")
-        processor = ::write_record;
-    else if (format == "expanded")
+    if (args.is_set("expand"))
         processor = ::write_keyval;
     else 
-        cerr << "Unknown output format: " << format << endl;
+        processor = ::write_record;
 
     string select = args.get("select");
 
@@ -147,6 +152,11 @@ int main(int argc, const char* argv[])
         processor = ::FilterStep(RecordSelector(select), processor);
 
     processor = ::FilterStep(::FilterDuplicateNodes(), processor);
+
+
+    //
+    // --- Process inputs
+    //
 
     CaliperMetadataDB metadb;
 

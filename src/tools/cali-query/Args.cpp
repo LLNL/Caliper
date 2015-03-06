@@ -33,7 +33,7 @@ struct Args::ArgsImpl
 
     void add_table(const Table table[]) {
         for (const Table* t = table; t->name; ++t) {
-            decltype(m_options.size()) n = m_options.size();
+            auto n = m_options.size();
 
             m_options.push_back(*t);
 
@@ -41,6 +41,8 @@ struct Args::ArgsImpl
                 m_long_options.insert(make_pair(string(t->longopt), n));
             if (t->shortopt)
                 m_short_options.insert(make_pair(t->shortopt, n));
+
+            m_option_map.insert(make_pair(string(t->name), n));
         }
     }
 
@@ -74,7 +76,7 @@ struct Args::ArgsImpl
 
                 string optarg;
 
-                if (dpos+1 < arg.size())
+                if (dpos != string::npos && dpos+1 < arg.size())
                     optarg.assign(arg, dpos+1, string::npos);
                 if (m_options[it->second].has_argument && optarg.empty() && i+1 < argc)
                     optarg.assign(argv[++i]);
@@ -159,12 +161,17 @@ struct Args::ArgsImpl
     }
 
     void print_available_options(ostream& os) const {
-        string::size_type max_longopt = m_longopt_prefix.size();
+        const string::size_type pad         = 2;
+        string::size_type       max_longopt = m_longopt_prefix.size();
 
-        for (auto const& l : m_long_options)
-            max_longopt = max(max_longopt, m_longopt_prefix.size() + l.first.size());
+        // Get max longopt+argument info size for padding
+        for (auto const& l : m_long_options) {
+            string::size_type s = m_longopt_prefix.size() 
+                + l.first.size() 
+                + (m_options[l.second].argument_info ? strlen(m_options[l.second].argument_info) + 1 : 0);
 
-        const string::size_type pad = 2;
+            max_longopt = max(max_longopt, s);
+        }
 
         const string opt_sep(", ");
         const char*  whitespace = "                                        ";
@@ -179,8 +186,16 @@ struct Args::ArgsImpl
                 os.write(whitespace, min(m_shortopt_prefix.size()+1, maxwhitespace));
 
             if (opt.longopt) {
-                os << opt_sep << opt.longopt;
-                os.write(whitespace, min(max_longopt-strlen(opt.longopt)+pad, maxwhitespace));
+                os << opt_sep << m_longopt_prefix << opt.longopt;
+
+                string::size_type s = m_longopt_prefix.size() + strlen(opt.longopt);
+
+                if (opt.argument_info) {
+                    os << '=' << opt.argument_info;
+                    s += strlen(opt.argument_info) + 1;
+                }
+
+                os.write(whitespace, min(max_longopt-s, maxwhitespace));
             } else 
                 os.write(whitespace, min(max_longopt+pad+opt_sep.size(), maxwhitespace));
 
