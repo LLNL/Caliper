@@ -138,7 +138,9 @@ struct ContextBuffer::ContextBufferImpl
     void push_record(WriteRecordFn fn) {
         m_lock.rlock();
 
-        int               n[3] = { m_node.size(), m_attr.size(), m_data.size() };
+        int               n[3] = { static_cast<int>(m_node.size()), 
+                                   static_cast<int>(m_attr.size()),
+                                   static_cast<int>(m_data.size()) };
         const Variant* data[3] = { m_node.data(), m_attr.data(), m_data.data() };
 
         fn(ContextRecord::record_descriptor(), n, data);
