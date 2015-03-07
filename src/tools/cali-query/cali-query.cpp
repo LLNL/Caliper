@@ -57,6 +57,9 @@ namespace
         cout << rec << endl;
     }
 
+
+    /// A node record filter that filters redundant identical node records.
+    /// Redundant node records can occur when merging/unifying two streams.
     class FilterDuplicateNodes {
         cali_id_t       m_max_node;
 
@@ -86,9 +89,12 @@ namespace
         }
     };
 
+    /// FilterStep helper struct
+    /// Basically the chain link in the processing chain.
+    /// Passes result of @param m_filter_fn to @param m_push_fn
     struct FilterStep {
-        RecordFilterFn  m_filter_fn;
-        RecordProcessFn m_push_fn;
+        RecordFilterFn  m_filter_fn; ///< This processing step
+        RecordProcessFn m_push_fn;   ///< Next processing step
 
         FilterStep(RecordFilterFn filter_fn, RecordProcessFn push_fn) 
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
