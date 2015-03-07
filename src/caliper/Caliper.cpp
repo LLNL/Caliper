@@ -448,7 +448,7 @@ struct Caliper::CaliperImpl
         // Coalesce selected context buffer records into a single record
 
         auto coalesce_rec = [&](const RecordDescriptor& rec, const int* n, const Variant** data){
-            assert(rec.num_entries == 3);
+            assert(rec.id == ContextRecord::record_descriptor().id && rec.num_entries == 3);
 
             for (int i : { 0, 1, 2 }) {
                 for (int v = 0; v < n[i] && all_n[i]+v < MAX_DATA; ++v)
@@ -464,7 +464,7 @@ struct Caliper::CaliperImpl
 
         const Variant* all_data_p[3] = { all_data[0], all_data[1], all_data[2] };
 
-        m_events.write_record(ContextBuffer::record_descriptor(), all_n, all_data_p);
+        m_events.write_record(ContextRecord::record_descriptor(), all_n, all_data_p);
     }
 
     // --- Annotation interface

@@ -8,6 +8,14 @@
 using namespace cali;
 using namespace std;
 
+namespace 
+{
+    const char* RecordElements[] = { "implicit", "explicit", "data" };
+}
+
+const RecordDescriptor ContextRecord::s_record { 0x101, "ctx", 3, ::RecordElements };
+
+
 RecordMap
 ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)> get_node)
 {

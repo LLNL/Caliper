@@ -6,6 +6,7 @@
 #include "SigsafeRWLock.h"
 
 #include <Attribute.h>
+#include <ContextRecord.h>
 
 #include <cassert>
 #include <vector>
@@ -13,13 +14,6 @@
 
 using namespace cali;
 using namespace std;
-
-namespace 
-{
-    const char* RecordElements[] = { "implicit", "explicit", "data" };
-}
-
-const RecordDescriptor ContextBuffer::s_record { 0x101, "ctx", 3, ::RecordElements };
 
 
 struct ContextBuffer::ContextBufferImpl
@@ -147,7 +141,7 @@ struct ContextBuffer::ContextBufferImpl
         int               n[3] = { m_node.size(), m_attr.size(), m_data.size() };
         const Variant* data[3] = { m_node.data(), m_attr.data(), m_data.data() };
 
-        fn(s_record, n, data);
+        fn(ContextRecord::record_descriptor(), n, data);
 
         m_lock.unlock();
     }

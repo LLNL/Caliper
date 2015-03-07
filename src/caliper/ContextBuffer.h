@@ -20,8 +20,6 @@ class ContextBuffer
 
     std::unique_ptr<ContextBufferImpl> mP;
 
-    static const RecordDescriptor s_record;
-
 public:
 
     ContextBuffer();
@@ -46,8 +44,6 @@ public:
     /// @{
 
     void     push_record(WriteRecordFn fn) const;
-
-    static const RecordDescriptor& record_descriptor() { return s_record; }
 
     /// @}
 };
