@@ -445,7 +445,7 @@ struct Caliper::CaliperImpl
         int        all_n[3] = { 0, 0, 0 };
         Variant all_data[3][MAX_DATA];
 
-        // Coalesce selected context buffer records into a single record
+        // Coalesce selected context buffer and measurement records into a single record
 
         auto coalesce_rec = [&](const RecordDescriptor& rec, const int* n, const Variant** data){
             assert(rec.id == ContextRecord::record_descriptor().id && rec.num_entries == 3);
@@ -457,6 +457,8 @@ struct Caliper::CaliperImpl
                 all_n[i] = min(all_n[i]+n[i], MAX_DATA);
             }
         };
+
+        m_events.measure(scope, coalesce_rec);
 
         for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
             if (scope & s)
