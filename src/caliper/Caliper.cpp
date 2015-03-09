@@ -733,6 +733,12 @@ Caliper::push_context(int scope)
 // --- Annotation interface
 
 cali_err 
+Caliper::begin(const Attribute& attr, const Variant& data)
+{
+    return mP->begin(attr, data);
+}
+
+cali_err 
 Caliper::begin(const Attribute& attr, const void* data, size_t size)
 {
     return mP->begin(attr, Variant(attr.type(), data, size));
@@ -742,6 +748,12 @@ cali_err
 Caliper::end(const Attribute& attr)
 {
     return mP->end(attr);
+}
+
+cali_err 
+Caliper::set(const Attribute& attr, const Variant& data)
+{
+    return mP->set(attr, data);
 }
 
 cali_err 

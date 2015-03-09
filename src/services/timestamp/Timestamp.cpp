@@ -27,7 +27,7 @@ void pull_time(Caliper* c, int) {
     auto now = chrono::high_resolution_clock::now();
     uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
-    c->set(attribute, &usec, sizeof(usec));
+    c->set(attribute, Variant(usec));
 }
 
 void push_time(int scope, WriteRecordFn fn) {

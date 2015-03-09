@@ -40,7 +40,7 @@ Attribute                        thread_attr { Attribute::invalid };
 Attribute                        state_attr  { Attribute::invalid };
 
 SigsafeRWLock                    thread_env_lock;
-map<ompt_thread_id_t, cali_id_t> thread_env; ///< Thread ID -> Environment ID
+map<ompt_thread_id_t, ContextBuffer*> thread_env; ///< Thread ID -> Environment
 
 map<ompt_state_t, string>        runtime_states;
 
@@ -79,28 +79,27 @@ struct OmptAPI {
 void
 cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 {
-    Caliper*  c = Caliper::instance();
+    Caliper* c = Caliper::instance();
 
     if (config.get("environment_mapping").to_bool() == true) {
         // Create a new Caliper environment for each thread. 
         // Record thread id -> environment id mapping for later use in get_environment()
 
-        cali_id_t env_id = 0;
+        ContextBuffer* ctx;
 
         if (type == ompt_thread_initial)
-            env_id = c->default_environment(CALI_SCOPE_THREAD);
+            ctx = c->default_contextbuffer(CALI_SCOPE_THREAD);
         else
-            env_id = c->create_environment();
+            ctx = c->create_contextbuffer();
 
         thread_env_lock.wlock();
-        thread_env.insert(make_pair(thread_id, env_id));
+        thread_env.insert(make_pair(thread_id, ctx));
         thread_env_lock.unlock();
     }
 
     // Set the thread id in the new environment
 
-    uint64_t buf = (uint64_t) thread_id;
-    c->set(thread_attr, &buf, sizeof(buf));
+    c->set(thread_attr, Variant(static_cast<uint64_t>(thread_id)));
 }
 
 // ompt_event_thread_end
@@ -133,27 +132,27 @@ cb_event_runtime_shutdown(void)
 // -- Caliper callbacks
 //
 
-cali_id_t
-get_thread_environment() 
+ContextBuffer*
+get_thread_contextbuffer() 
 {
-    cali_id_t env = Caliper::instance()->default_environment(CALI_SCOPE_THREAD);
+    ContextBuffer* ctx = Caliper::instance()->default_contextbuffer(CALI_SCOPE_THREAD);
 
     if (!api.get_thread_id)
-        return env;
+        return ctx;
 
     ompt_thread_id_t thread_id = (*api.get_thread_id)();
 
     thread_env_lock.rlock();
     auto it = thread_env.find(thread_id);
     if (it != thread_env.end())
-        env = it->second;
+        ctx = it->second;
     thread_env_lock.unlock();
 
-    return env;
+    return ctx;
 }
 
 void
-query_cb(Caliper* c, cali_context_scope_t scope)
+query_cb(Caliper* c, int scope)
 {
     if (!api.get_state || !(scope == CALI_SCOPE_THREAD || scope == CALI_SCOPE_TASK))
         return;
@@ -161,7 +160,7 @@ query_cb(Caliper* c, cali_context_scope_t scope)
     auto it = runtime_states.find((*api.get_state)(NULL));
 
     if (it != runtime_states.end())
-        c->set(state_attr, it->second.data(), it->second.size());
+        c->set(state_attr, Variant(CALI_TYPE_STRING, it->second.data(), it->second.size()));
 }
 
 
@@ -226,7 +225,7 @@ omptservice_initialize(Caliper* c)
         c->create_attribute("ompt.state",     CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
 
     if (config.get("environment_mapping").to_bool() == true)
-        c->set_environment_callback(CALI_SCOPE_THREAD, &get_thread_environment);
+        c->set_contextbuffer_callback(CALI_SCOPE_THREAD, &get_thread_contextbuffer);
 
     Log(1).stream() << "Registered OMPT service" << endl;
 }
@@ -264,7 +263,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     if (::config.get("capture_state").to_bool() == true) {
         register_ompt_states();
-        c->events().queryEvt.connect(&query_cb);
+        c->events().query_evt.connect(&query_cb);
     }
 
     Log(1).stream() << "OMPT interface enabled." << endl;
