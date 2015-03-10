@@ -22,12 +22,14 @@ Attribute attribute { Attribute::invalid } ;
 chrono::time_point<chrono::high_resolution_clock> tstart;
 
 /// Event callback
-/// Updates timestamp on current global context
-void pull_time(Caliper* c, int) {
-    auto now = chrono::high_resolution_clock::now();
-    uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
-
-    c->set(attribute, Variant(usec));
+/// Updates timestamp on process context
+void pull_time(Caliper* c, int scope) {
+    if (scope & CALI_SCOPE_PROCESS) {
+        auto now = chrono::high_resolution_clock::now();
+        uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
+        
+        c->set(attribute, Variant(usec));
+    }
 }
 
 void push_time(int scope, WriteRecordFn fn) {
