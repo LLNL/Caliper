@@ -12,10 +12,11 @@
 #include <RuntimeConfig.h>
 
 #include <iostream>
+#include <iterator>
 #include <mutex>
 #include <fstream>
 #include <string>
-#include <unordered_set>
+#include <vector>
 
 using namespace cali;
 using namespace std;
@@ -31,6 +32,13 @@ class Recorder
     enum class Stream { None, File, StdErr, StdOut };
 
     ConfigSet m_config;
+
+    vector<RecordDescriptor>  m_record_buffer;
+    vector<Variant>           m_data_buffer;
+
+    bool                      m_buffer_can_grow;
+    vector<>::size_type       m_record_buffer_size;
+    vector<>::size_type       m_data_buffer_size; 
 
     mutex     m_stream_mutex;
     Stream    m_stream;
@@ -57,6 +65,13 @@ class Recorder
                 Log(0).stream() << "Could not open recording file " << strname << endl;
         } else
             m_stream = it->second;
+
+        m_buffer_can_grow    = m_config.get("buffer_can_grow").to_bool();
+        m_record_buffer_size = m_config.get("record_buffer_size").to_uint();
+        m_data_buffer_size   = m_config.get("data_buffer_size").to_uint();
+
+        m_record_buffer.reserve(m_record_buffer_size);
+        m_data_buffer.reserve(m_data_buffer_size);
     }
 
     std::ostream& get_stream() {
@@ -67,6 +82,48 @@ class Recorder
             return std::cerr;
         default:
             return m_ofstream;
+        }
+    }
+
+    void write_record(const RecordDescriptor& rec, const int* count, const Variant** data) {
+        CsvSpec::write_record(get_stream(), rec, count, data);
+    }
+
+    void write_buffer() {
+        const int MAX_RECORD = 16;
+
+        int      count[MAX_RECORD];
+        Variant* data[MAX_RECORD];        
+
+        for () {
+            
+        }
+
+        m_record_buffer.clear();
+        m_data_buffer.clear();
+    }
+
+    void buffer_record(const RecordDescriptor& rec, const int* count, const Variant** data) {
+        int total = rec.num_entries;
+
+        for (auto n = 0; n < rec.num_entries; ++n)
+            total += count[n];
+
+        lock_guard<mutex> lock(m_stream_mutex);
+
+        if (!m_buffer_can_grow && (m_record_buffer.size() + 1   < m_record_buffer_size || 
+                                   m_data_buffer.size() + total < m_data_buffer_size)) {
+            write_buffer(std::bind(&Recorder::write_record, this, std::placeholders::_1));
+            write_record(rec, count, data);
+        } else {
+            m_record_buffer.push_back(rec);
+
+            for (unsigned n = 0; n < rec.num_entries; ++n)
+                m_data_buffer.emplace_back( static_cast<uint64_t>(count[n]) );
+
+            for (unsigned entry = 0; entry < rec.num_entry; ++entry)
+                for (unsigned n = 0; n < count[entry]; ++n)
+                    m_data_buffer.push_back(data[entry][n]);
         }
     }
 
@@ -104,7 +161,9 @@ class Recorder
 public:
 
     ~Recorder() 
-        { }
+        { 
+            write_buffer();
+        }
 
     static void create(Caliper* c) {
         s_instance.reset(new Recorder(c));
@@ -121,6 +180,18 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
       "   stderr: Standard error stream,\n"
       "   none:   No output,\n"
       " or a file name."
+    },
+    { "record_buffer_size", CALI_TYPE_UINT, "8000",
+      "Size of record buffer",
+      "Size of record buffer. This is the number of records that can be buffered."
+    },
+    { "data_buffer_size", CALI_TYPE_UINT, "60000",
+      "Size of data buffer",
+      "Size of record buffer. This is the number of record entries that can be buffered."
+    },
+    { "buffer_can_grow", CALI_TYPE_BOOL, "true",
+      "Allow record and data buffers to grow at runtime if necessary",
+      "Allow record and data buffers to grow at runtime if necessary."
     },
     ConfigSet::Terminator
 };
