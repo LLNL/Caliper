@@ -97,7 +97,7 @@ class Recorder
         if (m_stream != Stream::None) {
             register_callbacks(c);
 
-            Log(2).stream() << "Registered recorder service" << endl;
+            Log(1).stream() << "Registered recorder service" << endl;
         }
     }
 
