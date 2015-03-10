@@ -47,6 +47,9 @@ public:
     bool is_autocombineable() const   { 
         return !store_as_value() && !(m_properties & CALI_ATTR_NOMERGE);
     }
+    bool skip_events() const {
+        return m_properties & CALI_ATTR_SKIP_EVENTS;
+    }
 
     RecordMap record() const;
 

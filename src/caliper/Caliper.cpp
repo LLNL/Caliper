@@ -479,7 +479,8 @@ struct Caliper::CaliperImpl
             return CALI_EINV;
 
         // invoke callbacks
-        m_events.pre_begin_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.pre_begin_evt(s_caliper.get(), attr);
 
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
@@ -505,7 +506,8 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.post_begin_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.post_begin_evt(s_caliper.get(), attr);
 
         return ret;
     }
@@ -519,7 +521,8 @@ struct Caliper::CaliperImpl
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
         // invoke callbacks
-        m_events.pre_end_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.pre_end_evt(s_caliper.get(), attr);
 
         if (attr.store_as_value())
             ret = ctx->unset(attr);
@@ -552,7 +555,8 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.post_end_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.post_end_evt(s_caliper.get(), attr);
 
         return ret;
     }
@@ -567,7 +571,8 @@ struct Caliper::CaliperImpl
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
         // invoke callbacks
-        m_events.pre_set_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.pre_set_evt(s_caliper.get(), attr);
 
         if (attr.store_as_value()) {
             ret = ctx->set(attr, data);
@@ -597,7 +602,8 @@ struct Caliper::CaliperImpl
         }
 
         // invoke callbacks
-        m_events.post_set_evt(s_caliper.get(), attr);
+        if (!attr.skip_events())
+            m_events.post_set_evt(s_caliper.get(), attr);
 
         return ret;
     }
