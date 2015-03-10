@@ -154,7 +154,7 @@ get_thread_contextbuffer()
 void
 query_cb(Caliper* c, int scope)
 {
-    if (!api.get_state || !(scope == CALI_SCOPE_THREAD || scope == CALI_SCOPE_TASK))
+    if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;
 
     auto it = runtime_states.find((*api.get_state)(NULL));
@@ -220,9 +220,11 @@ omptservice_initialize(Caliper* c)
     enable_ompt = true;
 
     thread_attr = 
-        c->create_attribute("ompt.thread.id", CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD);
+        c->create_attribute("ompt.thread.id", CALI_TYPE_UINT,   
+                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     state_attr  =
-        c->create_attribute("ompt.state",     CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+        c->create_attribute("ompt.state",     CALI_TYPE_STRING, 
+                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
     if (config.get("environment_mapping").to_bool() == true)
         c->set_contextbuffer_callback(CALI_SCOPE_THREAD, &get_thread_contextbuffer);

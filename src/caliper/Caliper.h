@@ -65,7 +65,7 @@ public:
 
         util::callback<void(Caliper*)>                   finish_evt;
 
-        util::callback<void(int,WriteRecordFn)>          measure;
+        util::callback<void(int, WriteRecordFn)>         measure;
 
         util::callback<void(const RecordDescriptor&,
                             const int*,

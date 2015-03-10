@@ -406,10 +406,14 @@ struct Caliper::CaliperImpl
 
     std::size_t 
     pull_context(int scope, uint64_t buf[], std::size_t len) {
-        // invoke callbacks
+        // Trigger query event: allows services to update context information
+
         m_events.query_evt(s_caliper.get(), scope);
 
-        // collect context from current TASK/THREAD/PROCESS environments
+        // TODO: run measure() to receive explicit measurements from services, then
+        // unset() these after the call
+
+        // Pull context from current TASK/THREAD/PROCESS environments
 
         ContextBuffer* ctxbuf[3] { nullptr, nullptr, nullptr };
         int            n         { 0 };
@@ -431,6 +435,10 @@ struct Caliper::CaliperImpl
 
     void
     push_context(int scope) {
+        // Trigger query event: allows services to update context information
+
+        m_events.query_evt(s_caliper.get(), scope);
+
         // Write any nodes that haven't been written 
 
         m_nodelock.rlock();
@@ -439,7 +447,7 @@ struct Caliper::CaliperImpl
         for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
             (*it)->push_record(m_events.write_record);
         m_nodelock.unlock();
-            
+
         const int MAX_DATA  = 40;
 
         int        all_n[3] = { 0, 0, 0 };
