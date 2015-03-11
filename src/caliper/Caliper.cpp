@@ -232,8 +232,6 @@ struct Caliper::CaliperImpl
 
         // Create nodes
 
-        m_nodelock.wlock();
-
         for (size_t i = 0; i < n; ++i) {
             bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
             const void* dptr { data[i].data() };
@@ -241,6 +239,8 @@ struct Caliper::CaliperImpl
 
             if (copy)
                 dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
+
+            m_nodelock.wlock();
 
             node = new(ptr) 
                 Node(m_nodes.size(), attr[i].id(), Variant(attr[i].type(), dptr, size));
@@ -250,20 +250,13 @@ struct Caliper::CaliperImpl
             if (parent)
                 parent->append(node);
 
+            m_nodelock.unlock();
+
             ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
         }
 
-        m_nodelock.unlock();
-
         return node;
-    }
-
-    Node* 
-    create_node(const Attribute& attr, const void* data, size_t size, Node* parent = nullptr) {
-        Variant v { attr.type(), data, size };
-
-        return create_path(1, &attr, &v, parent);
     }
 
 
@@ -441,15 +434,6 @@ struct Caliper::CaliperImpl
 
         m_events.query_evt(s_caliper.get(), scope);
 
-        // Write any nodes that haven't been written 
-
-        m_nodelock.rlock();
-        auto prev_written = m_num_written_nodes.exchange(m_nodes.size());
-
-        for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
-            (*it)->push_record(m_events.write_record);
-        m_nodelock.unlock();
-
         const int MAX_DATA  = 40;
 
         int        all_n[3] = { 0, 0, 0 };
@@ -475,6 +459,17 @@ struct Caliper::CaliperImpl
                 current_contextbuffer(s)->push_record(coalesce_rec);
 
         const Variant* all_data_p[3] = { all_data[0], all_data[1], all_data[2] };
+
+        // Write any nodes that haven't been written 
+
+        m_nodelock.rlock();
+        auto prev_written = m_num_written_nodes.exchange(m_nodes.size());
+
+        for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
+            (*it)->push_record(m_events.write_record);
+        m_nodelock.unlock();
+
+        // Write context record
 
         m_events.write_record(ContextRecord::record_descriptor(), all_n, all_data_p);
     }
