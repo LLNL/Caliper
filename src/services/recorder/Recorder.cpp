@@ -11,6 +11,7 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#include <cassert>
 #include <iostream>
 #include <iterator>
 #include <mutex>
@@ -85,7 +86,7 @@ class Recorder
         }
     }
 
-    void write_buffer() {
+    void flush_buffer() {
         const int MAX_RECORD = 16;
 
         int            count[MAX_RECORD];
@@ -94,8 +95,10 @@ class Recorder
         vector<Variant>::size_type dptr = 0;
 
         for (const RecordDescriptor& rec : m_record_buffer) {
+            assert(rec.num_entries < MAX_RECORD);
+
             for (unsigned n = 0; n < rec.num_entries; ++n)
-                count[n] = static_cast<int>(m_data_buffer[dptr++].to_int());
+                count[n] = m_data_buffer[dptr++].to_int();
             for (unsigned n = 0; n < rec.num_entries; ++n) {
                 data[n]  = &m_data_buffer[dptr];
                 dptr    += count[n];
@@ -103,6 +106,8 @@ class Recorder
 
             CsvSpec::write_record(get_stream(), rec, count, data);
         }
+
+        Log(2).stream() << "Wrote " << m_record_buffer.size() << " records." << endl;
 
         m_record_buffer.clear();
         m_data_buffer.clear();
@@ -114,19 +119,19 @@ class Recorder
         for (unsigned n = 0; n < rec.num_entries; ++n)
             total += count[n];
 
-        if (!m_buffer_can_grow && (m_record_buffer.size() + 1   < m_record_buffer_size || 
-                                   m_data_buffer.size() + total < m_data_buffer_size)) {
-            write_buffer();
-            CsvSpec::write_record(get_stream(), rec, count, data);
-        } else {
+        if (m_buffer_can_grow || (m_record_buffer.size() + 1   < m_record_buffer_size && 
+                                  m_data_buffer.size() + total < m_data_buffer_size)) {
             for (unsigned n = 0; n < rec.num_entries; ++n)
-                m_data_buffer.emplace_back( static_cast<uint64_t>(count[n]) );
+                m_data_buffer.emplace_back(count[n]);
 
             for (unsigned entry = 0; entry < rec.num_entries; ++entry)
                 for (int n = 0; n < count[entry]; ++n)
                     m_data_buffer.push_back(data[entry][n]);
 
             m_record_buffer.push_back(rec);
+        } else {
+            flush_buffer();
+            CsvSpec::write_record(get_stream(), rec, count, data);
         }
     }
 
@@ -154,7 +159,7 @@ class Recorder
         c->events().pre_end_evt.connect(f);
         c->events().pre_set_evt.connect(f);
 
-        c->events().finish_evt.connect([&](Caliper*){ write_buffer(); });
+        c->events().finish_evt.connect([&](Caliper*){ flush_buffer(); });
     }
 
     Recorder(Caliper* c)
