@@ -99,7 +99,7 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 
     // Set the thread id in the new environment
 
-    c->set(thread_attr, Variant(static_cast<uint64_t>(thread_id)));
+    c->set(thread_attr, Variant(static_cast<int>(thread_id)));
 }
 
 // ompt_event_thread_end
@@ -220,7 +220,7 @@ omptservice_initialize(Caliper* c)
     enable_ompt = true;
 
     thread_attr = 
-        c->create_attribute("ompt.thread.id", CALI_TYPE_UINT,   
+        c->create_attribute("ompt.thread.id", CALI_TYPE_INT,   
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     state_attr  =
         c->create_attribute("ompt.state",     CALI_TYPE_STRING, 
@@ -268,6 +268,10 @@ ompt_initialize(ompt_function_lookup_t lookup,
         c->events().query_evt.connect(&query_cb);
     }
 
+    // set default thread ID
+    if (::api.get_thread_id)
+        c->set(thread_attr, Variant(static_cast<int>((*api.get_thread_id)())));
+        
     Log(1).stream() << "OMPT interface enabled." << endl;
 
     return 1;
