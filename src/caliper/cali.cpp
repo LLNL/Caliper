@@ -71,24 +71,26 @@ cali_create_environment(void **new_env)
 //
 
 cali_err
-cali_begin(cali_id_t attr, const void* value, size_t size)
+cali_begin(cali_id_t attr_id, const void* value, size_t size)
 {
-    Caliper* c = Caliper::instance();
-    return c->begin(c->get_attribute(attr), value, size);
+    Caliper*     c = Caliper::instance();
+    Attribute attr = c->get_attribute(attr_id);
+    return c->begin(attr, Variant(attr.type(), value, size));
 }
 
 cali_err
-cali_end(cali_id_t attr)
+cali_end(cali_id_t attr_id)
 {
     Caliper* c = Caliper::instance();
-    return c->end(c->get_attribute(attr));
+    return c->end(c->get_attribute(attr_id));
 }
 
 cali_err  
-cali_set(cali_id_t attr, const void* value, size_t size)
+cali_set(cali_id_t attr_id, const void* value, size_t size)
 {
-    Caliper* c = Caliper::instance();
-    return c->set(c->get_attribute(attr), value, size);
+    Caliper*     c = Caliper::instance();
+    Attribute attr = c->get_attribute(attr_id);
+    return c->set(attr, Variant(attr.type(), value, size));
 }
 
 //

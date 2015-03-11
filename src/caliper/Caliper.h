@@ -16,7 +16,6 @@
 #include <functional>
 #include <memory>
 #include <utility>
-#include <vector>
 
 
 namespace cali
@@ -95,10 +94,8 @@ public:
     // --- Annotation API
 
     cali_err  begin(const Attribute& attr, const Variant& data);
-    cali_err  begin(const Attribute& attr, const void* data, std::size_t size);
     cali_err  end(const Attribute& attr);
     cali_err  set(const Attribute& attr, const Variant& data);
-    cali_err  set(const Attribute& attr, const void* data, std::size_t size);
 
 
     // --- Attribute API

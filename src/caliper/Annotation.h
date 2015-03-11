@@ -11,6 +11,8 @@
 namespace cali
 {
 
+class Variant;
+
 class Annotation 
 {
     Attribute   m_attr;
@@ -71,12 +73,16 @@ public:
     Scope begin(int data);
     Scope begin(double data);
     Scope begin(const std::string& data);
+    Scope begin(const char* data);
     Scope begin(cali_attr_type type, const void* data, std::size_t size);
+    Scope begin(const Variant& data);
 
     Scope set(int data);
     Scope set(double data);
     Scope set(const std::string& data);
+    Scope set(const char* data);
     Scope set(cali_attr_type type, const void* data, std::size_t size);
+    Scope set(const Variant& data);
 
     void  end();
 };
