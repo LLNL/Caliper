@@ -33,12 +33,12 @@ class Recorder
 
     ConfigSet m_config;
 
-    vector<RecordDescriptor>  m_record_buffer;
-    vector<Variant>           m_data_buffer;
+    vector<RecordDescriptor>   m_record_buffer;
+    vector<Variant>            m_data_buffer;
 
-    bool                      m_buffer_can_grow;
-    vector<>::size_type       m_record_buffer_size;
-    vector<>::size_type       m_data_buffer_size; 
+    bool                       m_buffer_can_grow;
+    vector<RecordDescriptor>::size_type m_record_buffer_size;
+    vector<Variant>::size_type m_data_buffer_size; 
 
     mutex     m_stream_mutex;
     Stream    m_stream;
@@ -85,18 +85,23 @@ class Recorder
         }
     }
 
-    void write_record(const RecordDescriptor& rec, const int* count, const Variant** data) {
-        CsvSpec::write_record(get_stream(), rec, count, data);
-    }
-
     void write_buffer() {
         const int MAX_RECORD = 16;
 
-        int      count[MAX_RECORD];
-        Variant* data[MAX_RECORD];        
+        int            count[MAX_RECORD];
+        const Variant* data[MAX_RECORD];        
 
-        for () {
-            
+        vector<Variant>::size_type dptr = 0;
+
+        for (const RecordDescriptor& rec : m_record_buffer) {
+            for (unsigned n = 0; n < rec.num_entries; ++n)
+                count[n] = static_cast<int>(m_data_buffer[dptr++].to_int());
+            for (unsigned n = 0; n < rec.num_entries; ++n) {
+                data[n]  = &m_data_buffer[dptr];
+                dptr    += count[n];
+            }
+
+            CsvSpec::write_record(get_stream(), rec, count, data);
         }
 
         m_record_buffer.clear();
@@ -106,36 +111,40 @@ class Recorder
     void buffer_record(const RecordDescriptor& rec, const int* count, const Variant** data) {
         int total = rec.num_entries;
 
-        for (auto n = 0; n < rec.num_entries; ++n)
+        for (unsigned n = 0; n < rec.num_entries; ++n)
             total += count[n];
-
-        lock_guard<mutex> lock(m_stream_mutex);
 
         if (!m_buffer_can_grow && (m_record_buffer.size() + 1   < m_record_buffer_size || 
                                    m_data_buffer.size() + total < m_data_buffer_size)) {
-            write_buffer(std::bind(&Recorder::write_record, this, std::placeholders::_1));
-            write_record(rec, count, data);
+            write_buffer();
+            CsvSpec::write_record(get_stream(), rec, count, data);
         } else {
-            m_record_buffer.push_back(rec);
-
             for (unsigned n = 0; n < rec.num_entries; ++n)
                 m_data_buffer.emplace_back( static_cast<uint64_t>(count[n]) );
 
-            for (unsigned entry = 0; entry < rec.num_entry; ++entry)
-                for (unsigned n = 0; n < count[entry]; ++n)
+            for (unsigned entry = 0; entry < rec.num_entries; ++entry)
+                for (int n = 0; n < count[entry]; ++n)
                     m_data_buffer.push_back(data[entry][n]);
+
+            m_record_buffer.push_back(rec);
         }
     }
 
     void register_callbacks(Caliper* c) {
-        using std::placeholders::_1;
-
         auto recfn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
             lock_guard<mutex> lock(m_stream_mutex);
             CsvSpec::write_record(get_stream(), rec, count, data);
         };
 
-        c->events().write_record.connect(recfn);
+        auto buffn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
+            lock_guard<mutex> lock(m_stream_mutex);
+            buffer_record(rec, count, data);
+        };        
+
+        if (!m_buffer_can_grow && m_record_buffer_size == 0)
+            c->events().write_record.connect(recfn);
+        else
+            c->events().write_record.connect(buffn);
 
         auto f = [&](Caliper* c, const Attribute&){ 
             c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS); 
@@ -144,6 +153,8 @@ class Recorder
         c->events().pre_begin_evt.connect(f);
         c->events().pre_end_evt.connect(f);
         c->events().pre_set_evt.connect(f);
+
+        c->events().finish_evt.connect([&](Caliper*){ write_buffer(); });
     }
 
     Recorder(Caliper* c)
@@ -161,9 +172,7 @@ class Recorder
 public:
 
     ~Recorder() 
-        { 
-            write_buffer();
-        }
+        { }
 
     static void create(Caliper* c) {
         s_instance.reset(new Recorder(c));

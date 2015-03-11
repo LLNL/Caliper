@@ -94,6 +94,8 @@ struct Caliper::CaliperImpl
     }
 
     ~CaliperImpl() {
+        m_events.finish_evt(s_caliper.get());
+
         Log(1).stream() << "Finished" << endl;
 
         for ( auto &n : m_nodes )
