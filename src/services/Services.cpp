@@ -8,8 +8,6 @@
 #include "CaliperService.h"
 
 #include <RuntimeConfig.h>
-#include <MetadataWriter.h>
-
 #include <util/split.hpp>
 
 #include <algorithm>
@@ -39,8 +37,6 @@ struct Services::ServicesImpl
 
     ConfigSet m_config;
 
-    map< string, function<unique_ptr<MetadataWriter>()> > m_metadata_writers;
-
 
     // --- interface
 
@@ -54,31 +50,6 @@ struct Services::ServicesImpl
         for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
             if (find(services.begin(), services.end(), string(s->name)) != services.end())
                 (s->register_fn)(c);
-
-        // register metadata writers
-
-        for (const MetadataWriterService* s = metadata_writer_services; s->name && s->create_fn; ++s) {
-            if (s->register_fn)
-                (s->register_fn)();
-
-            function<unique_ptr<MetadataWriter>()> create_fn = s->create_fn;
-
-            m_metadata_writers.insert(make_pair(string(s->name), create_fn));
-        }
-    }
-
-    unique_ptr<MetadataWriter> get_metadata_writer(const char* name) {
-        auto it = m_metadata_writers.find(name);
-
-        if (it == m_metadata_writers.end())
-            return { nullptr };
-
-        return (it->second)();
-    }
-
-    void print_writers(ostream& os) {
-        for ( auto const &it : m_metadata_writers )
-            os << it.first;
     }
 
     ServicesImpl()
@@ -114,9 +85,4 @@ const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
 void Services::register_services(Caliper* c)
 {
     return ServicesImpl::instance()->register_services(c);
-}
-
-unique_ptr<MetadataWriter> Services::get_metadata_writer(const char* name)
-{
-    return ServicesImpl::instance()->get_metadata_writer(name);
 }

@@ -10,7 +10,6 @@ namespace cali
 {
 
 class Caliper;
-class MetadataWriter;
 
 class Services
 {
@@ -20,8 +19,6 @@ class Services
 public:
 
     static void register_services(Caliper* c = nullptr);
-
-    static std::unique_ptr<MetadataWriter> get_metadata_writer(const char* name);
 };
 
 } // namespace cali

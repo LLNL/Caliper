@@ -5,7 +5,6 @@ set(CALIPER_SERVICES_SOURCES
 
 add_library(caliper-services ${CALIPER_SERVICES_SOURCES})
 
-target_link_libraries(caliper-services caliper-csv)
 target_link_libraries(caliper-services caliper-debug)
 target_link_libraries(caliper-services caliper-pthread)
 target_link_libraries(caliper-services caliper-recorder)
