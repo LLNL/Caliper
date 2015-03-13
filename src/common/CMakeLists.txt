@@ -11,6 +11,10 @@ set(CALIPER_COMMON_HEADERS
     RuntimeConfig.h
     Variant.h
     cali_types.h)
+set(CALIPER_UTIL_HEADERS
+    util/callback.hpp
+    util/split.hpp
+    util/tree.hpp)
 
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
@@ -26,4 +30,6 @@ set(CALIPER_COMMON_SOURCES
 add_library(caliper-common ${CALIPER_COMMON_SOURCES})
 
 install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include)
+install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/util)
+
 install(TARGETS caliper-common DESTINATION lib)
