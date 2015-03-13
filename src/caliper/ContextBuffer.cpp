@@ -125,7 +125,7 @@ struct ContextBuffer::ContextBufferImpl
 
             // add new "implicit" context entry ("value" is a node ID)
             index = m_node.size();
-            m_node.push_back(Variant(node->id()));
+            m_node.emplace_back(node->id());
             m_nptr.push_back(node);
 
             m_indices.insert(index_it, make_pair(attr.id(), index));
@@ -147,7 +147,7 @@ struct ContextBuffer::ContextBufferImpl
 
         auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));
 
-        if (index_it != m_indices.end()) {
+        if (index_it != m_indices.end() && index_it->first == attr.id()) {
             if (attr.store_as_value()) {
                 m_attr.erase(m_attr.begin() + index_it->second);
                 m_data.erase(m_data.begin() + index_it->second);
@@ -225,7 +225,7 @@ Node* ContextBuffer::get_node(const Attribute& attr) const
 
 cali_err ContextBuffer::set_node(const Attribute& attr, Node* node)
 {
-    return mP->set(attr, node);
+    return mP->set_node(attr, node);
 }
 
 cali_err ContextBuffer::set(const Attribute& attr, const Variant& data)

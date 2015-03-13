@@ -30,8 +30,9 @@ private:
     // --- private methods
 
     static IntrusiveList<T>::Node& node(T* t, IntrusiveList<T>::Node T::*node) { return (t->*node); }
+    static const IntrusiveList<T>::Node& node(const T* t, IntrusiveList<T>::Node T::*node) { return (t->*node); }
 
-    IntrusiveList<T>        tree(T* t) const { return IntrusiveList<T>(t, m_node); }
+    IntrusiveList<T>        list(T* t) const { return IntrusiveList<T>(t, m_node); }
     IntrusiveList<T>::Node& node(T* t) const { return node(t, m_node); }
 
 public:
@@ -60,7 +61,7 @@ public:
         // assert( node != 0 );
         // assert( node->*m_node->m_parent == 0 );
 
-        ins->unlink();
+        list(ins).unlink();
 
         IntrusiveList<T>::Node& n = node(m_me);
 
@@ -112,12 +113,43 @@ public:
         T&   operator * () { return *m_t; } 
     };
 
+    class const_iterator : public std::iterator<std::input_iterator_tag, const T> {
+        const T* m_t;
+        IntrusiveList<T>::Node T::*m_n;
+
+    public:
+
+        const_iterator(const T* t, IntrusiveList<T>::Node T::*n)
+            : m_t(t), m_n(n) { }
+
+        const_iterator& operator++() {
+            m_t = node(m_t, m_n).next;
+            return *this;
+        }
+
+        const_iterator operator++(int) { 
+            const_iterator tmp(*this); ++(*this); return tmp; 
+        }
+
+        bool operator == (const const_iterator& rhs) { return m_t == rhs.m_t; }
+        bool operator != (const const_iterator& rhs) { return m_t != rhs.m_t; }
+        const T& operator * () { return *m_t; } 
+    };
+
     IntrusiveList<T>::iterator begin() {
         return iterator(root(), m_node);
     }
 
     IntrusiveList<T>::iterator end() {
         return IntrusiveList<T>::iterator(0, m_node);
+    }
+
+    IntrusiveList<T>::const_iterator begin() const {
+        return const_iterator(root(), m_node);
+    }
+
+    IntrusiveList<T>::const_iterator end() const {
+        return IntrusiveList<T>::const_iterator(0, m_node);
     }
 };
 

@@ -62,10 +62,9 @@ struct Caliper::CaliperImpl
     MemoryPool             m_mempool;
 
     mutable SigsafeRWLock  m_nodelock;
-    vector<Node*>          m_nodes;
     Node                   m_root;
-
-    atomic<vector<Node*>::size_type> m_num_written_nodes;
+    Node*                  m_last_written_node;
+    atomic<unsigned>       m_node_id;
 
     mutable SigsafeRWLock  m_attribute_lock;
     map<string, Node*>     m_attribute_nodes;
@@ -86,7 +85,8 @@ struct Caliper::CaliperImpl
         m_default_thread_context  { new ContextBuffer },
         m_default_task_context    { new ContextBuffer },
         m_root { CALI_INV_ID, CALI_INV_ID, { } }, 
-        m_num_written_nodes { 0 },
+        m_last_written_node { &m_root },
+        m_node_id { 0 },
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
         m_prop_attr { Attribute::invalid }
@@ -98,16 +98,14 @@ struct Caliper::CaliperImpl
 
         Log(1).stream() << "Finished" << endl;
 
-        for ( auto &n : m_nodes )
-            n->~Node();
+        for ( auto &n : m_root )
+            n.~Node();
     }
 
     // deferred initialization: called when it's safe to use the public Caliper interface
 
     void 
     init() {
-        m_nodes.reserve(m_config.get("node_pool_size").to_uint());
-
         bootstrap();
 
         Services::register_services(s_caliper.get());
@@ -140,11 +138,13 @@ struct Caliper::CaliperImpl
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
-        m_nodes.resize(11);
-
         for ( Node* nodes : { bootstrap_type_nodes, bootstrap_attr_nodes } )
-            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node)
-                m_nodes[node->id()] = node;
+            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node) {
+                m_node_id.store(static_cast<unsigned>(node->id() + 1));
+
+                m_last_written_node->list().insert(node);
+                m_last_written_node = node;
+            }
 
         // Fill type map
 
@@ -240,15 +240,16 @@ struct Caliper::CaliperImpl
             if (copy)
                 dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
 
-            m_nodelock.wlock();
-
             node = new(ptr) 
-                Node(m_nodes.size(), attr[i].id(), Variant(attr[i].type(), dptr, size));
+                Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
 
-            m_nodes.push_back(node);
+            m_nodelock.wlock();
 
             if (parent)
                 parent->append(node);
+
+            m_last_written_node->list().insert(node);
+            m_last_written_node = node;
 
             m_nodelock.unlock();
 
@@ -381,11 +382,7 @@ struct Caliper::CaliperImpl
 
     Attribute 
     get_attribute(cali_id_t id) const {
-        m_nodelock.rlock();
-        Node* node = id < m_nodes.size() ? m_nodes[id] : nullptr;
-        m_nodelock.unlock();
-
-        return make_attribute(node);
+        return make_attribute(get(id));
     }
 
     size_t
@@ -461,11 +458,13 @@ struct Caliper::CaliperImpl
 
         // Write any nodes that haven't been written 
 
-        m_nodelock.rlock();
-        auto prev_written = m_num_written_nodes.exchange(m_nodes.size());
+        m_nodelock.wlock();
 
-        for (auto it = m_nodes.begin()+prev_written; it != m_nodes.end(); ++it)
-            (*it)->push_record(m_events.write_record);
+        for (Node* node; (node = m_root.list().next()) != 0; node->list().unlink())
+            node->push_record(m_events.write_record);
+
+        m_last_written_node = &m_root;
+
         m_nodelock.unlock();
 
         // Write context record
@@ -491,11 +490,13 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value()) {
             ret = ctx->set(attr, data);
         } else {
-            cali_id_t id = ctx->get(attr).to_id();
+            Node* parent = ctx->get_node(attr);
+
+            if (!parent || parent->id() == CALI_INV_ID)
+                parent = &m_root;
 
             m_nodelock.rlock();
 
-            Node* parent = id != CALI_INV_ID ? m_nodes[id] : &m_root;
             Node* node   = parent ? parent->first_child() : nullptr;
 
             while ( node && !node->equals(attr.id(), data) )
@@ -506,7 +507,7 @@ struct Caliper::CaliperImpl
             if (!node)
                 node = create_path(1, &attr, &data, parent);
 
-            ret = ctx->set(attr, Variant(node->id()));
+            ret = ctx->set_node(attr, node);
         }
 
         // invoke callbacks
@@ -531,14 +532,12 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value())
             ret = ctx->unset(attr);
         else {
-            cali_id_t id = ctx->get(attr).to_id();
+            Node* node = ctx->get_node(attr);
 
-            if (id == CALI_INV_ID)
+            if (!node)
                 return CALI_EINV;
 
             m_nodelock.rlock();
-
-            Node* node = m_nodes[id];
 
             if (node->attribute() != attr.id()) {
                 // For now, just continue before first node with this attribute
@@ -555,7 +554,7 @@ struct Caliper::CaliperImpl
             if (node == &m_root)
                 ret = ctx->unset(attr);
             else if (node)
-                ret = ctx->set(attr, Variant(node->id()));
+                ret = ctx->set_node(attr, node);
         }
 
         // invoke callbacks
@@ -581,16 +580,14 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value()) {
             ret = ctx->set(attr, data);
         } else {
-            cali_id_t id = ctx->get(attr).to_id();
+            Node* parent = ctx->get_node(attr);
 
-            Node* parent { nullptr };
-
-            m_nodelock.rlock();
-
-            if (id != CALI_INV_ID)
-                parent = m_nodes[id]->parent();
+            if (parent)
+                parent = parent->parent();
             if (!parent)
                 parent = &m_root;
+
+            m_nodelock.rlock();
 
             Node* node = parent->first_child();
 
@@ -602,7 +599,7 @@ struct Caliper::CaliperImpl
             if (!node)
                 node = create_path(1, &attr, &data, parent);
 
-            ret = ctx->set(attr, node->id());
+            ret = ctx->set_node(attr, node);
         }
 
         // invoke callbacks
@@ -616,13 +613,16 @@ struct Caliper::CaliperImpl
 
     const Node* 
     get(cali_id_t id) const {
-        if (id > m_nodes.size())
-            return nullptr;
-
         const Node* ret = nullptr;
 
         m_nodelock.rlock();
-        ret = m_nodes[id];
+
+        for (auto &n : m_root)
+            if (n.id() == id) {
+                ret = &n;
+                break;
+            }
+
         m_nodelock.unlock();
 
         return ret;
@@ -634,9 +634,9 @@ struct Caliper::CaliperImpl
     void 
     foreach_node(std::function<void(const Node&)> proc) {
         // Need locking?
-        for (Node* node : m_nodes)
-            if (node)
-                proc(*node);
+        for (auto &n : m_root)
+            if (n.id() != CALI_INV_ID)
+                proc(n);
     }
 };
 

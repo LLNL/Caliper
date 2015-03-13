@@ -15,7 +15,7 @@ std::string cali::get_record_type(const cali::RecordMap& rec)
     return { };
 }
 
-std::ostream& operator << (std::ostream& os, const cali::RecordMap& record)
+std::ostream& cali::operator << (std::ostream& os, const cali::RecordMap& record)
 {
     int count = 0;
 
