@@ -405,8 +405,7 @@ struct Caliper::CaliperImpl
 
         m_events.query_evt(s_caliper.get(), scope);
 
-        // TODO: run measure() to receive explicit measurements from services, then
-        // unset() these after the call
+        // TODO: run measure() to receive explicit measurements from services
 
         // Pull context from current TASK/THREAD/PROCESS environments
 

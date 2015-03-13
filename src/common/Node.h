@@ -13,6 +13,7 @@
 #include "RecordMap.h"
 #include "Variant.h"
 
+#include "util/list.hpp"
 #include "util/tree.hpp"
 
 
@@ -26,6 +27,9 @@ namespace cali
 class Node : public IdType, public util::IntrusiveTree<Node> 
 {
     util::IntrusiveTree<Node>::Node m_treenode;
+    util::IntrusiveList<Node>::Node m_listnode;
+
+    util::IntrusiveList<Node> m_list;
 
     cali_id_t m_attribute;
     Variant   m_data;
@@ -37,6 +41,7 @@ public:
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
         : IdType(id),
           util::IntrusiveTree<Node>(this, &Node::m_treenode), 
+          m_list { this, &Node::m_listnode },
           m_attribute { attr }, m_data { data }
         { }
 
@@ -63,6 +68,13 @@ public:
     static const RecordDescriptor& record_descriptor() { return s_record; }
 
     RecordMap record() const;
+
+    /// @}
+    /// @name List access
+    /// @{
+
+    util::IntrusiveList<Node>& list() { return m_list; }
+    const util::IntrusiveList<Node>& list() const { return m_list; }
 
     /// @}
 };

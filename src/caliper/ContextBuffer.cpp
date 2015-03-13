@@ -7,6 +7,7 @@
 
 #include <Attribute.h>
 #include <ContextRecord.h>
+#include <Node.h>
 
 #include <cassert>
 #include <vector>
@@ -25,6 +26,7 @@ struct ContextBuffer::ContextBufferImpl
     vector<Variant> m_node;
     vector<Variant> m_attr;
     vector<Variant> m_data;
+    vector<Node*>   m_nptr;
 
     vector< pair<cali_id_t, int> > m_indices;
 
@@ -34,6 +36,7 @@ struct ContextBuffer::ContextBufferImpl
         m_node.reserve(32);
         m_attr.reserve(32);
         m_data.reserve(32);
+        m_nptr.reserve(32);
 
         m_indices.reserve(64);
     }
@@ -49,6 +52,21 @@ struct ContextBuffer::ContextBufferImpl
 
         if (index_it != m_indices.end() && index_it->first == attr.id())
             ret = (attr.store_as_value() ? m_data[index_it->second] : m_node[index_it->second]);
+
+        m_lock.unlock();
+
+        return ret;
+    }
+
+    Node* get_node(const Attribute& attr) const {
+        Node* ret = nullptr;
+
+        m_lock.rlock();
+
+        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));        
+
+        if (!attr.store_as_value() && index_it != m_indices.end() && index_it->first == attr.id())
+            ret = m_nptr[index_it->second];
 
         m_lock.unlock();
 
@@ -74,6 +92,7 @@ struct ContextBuffer::ContextBufferImpl
                 // add new "implicit" context entry ("value" is a node ID)
                 index = m_node.size();
                 m_node.push_back(value);
+                m_nptr.push_back(nullptr);
             }
 
             m_indices.insert(index_it, make_pair(attr.id(), index));
@@ -81,9 +100,39 @@ struct ContextBuffer::ContextBufferImpl
             if (attr.store_as_value())
                 // replace existing "explicit" context entry
                 m_data[index_it->second] = value;
-            else
+            else {
                 // replace existing "implicit" context (value is a node ID)
                 m_node[index_it->second] = value;
+                m_nptr[index_it->second] = nullptr;
+            }
+        }
+
+        m_lock.unlock();
+
+        return CALI_SUCCESS;
+    }
+
+    cali_err set_node(const Attribute& attr, Node* node) {
+        if (!node || attr.store_as_value())
+            return CALI_EINV;
+
+        m_lock.wlock();
+
+        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));
+
+        if (index_it == m_indices.end() || index_it->first != attr.id()) {
+            int index = 0;
+
+            // add new "implicit" context entry ("value" is a node ID)
+            index = m_node.size();
+            m_node.push_back(Variant(node->id()));
+            m_nptr.push_back(node);
+
+            m_indices.insert(index_it, make_pair(attr.id(), index));
+        } else {
+            // replace existing "implicit" context (value is a node ID)
+            m_node[index_it->second] = Variant(node->id());
+            m_nptr[index_it->second] = node;
         }
 
         m_lock.unlock();
@@ -102,9 +151,10 @@ struct ContextBuffer::ContextBufferImpl
             if (attr.store_as_value()) {
                 m_attr.erase(m_attr.begin() + index_it->second);
                 m_data.erase(m_data.begin() + index_it->second);
-            } else 
+            } else {
                 m_node.erase(m_node.begin() + index_it->second);
-
+                m_nptr.erase(m_nptr.begin() + index_it->second);
+            }
             m_indices.erase(index_it);
         } else 
             ret = CALI_EINV;
@@ -166,6 +216,16 @@ ContextBuffer::~ContextBuffer()
 Variant ContextBuffer::get(const Attribute& attr) const
 {
     return mP->get(attr);
+}
+
+Node* ContextBuffer::get_node(const Attribute& attr) const
+{
+    return mP->get_node(attr);
+}
+
+cali_err ContextBuffer::set_node(const Attribute& attr, Node* node)
+{
+    return mP->set(attr, node);
 }
 
 cali_err ContextBuffer::set(const Attribute& attr, const Variant& data)
