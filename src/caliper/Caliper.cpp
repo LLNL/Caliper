@@ -331,14 +331,21 @@ struct Caliper::CaliperImpl
         if (!(prop & CALI_ATTR_SCOPE_PROCESS) && !(prop & CALI_ATTR_SCOPE_TASK))
             prop |= CALI_ATTR_SCOPE_THREAD;
 
-        m_attribute_lock.wlock();
-
         Node* node { nullptr };
-        auto it = m_attribute_nodes.find(name);
 
-        if (it != m_attribute_nodes.end()) {
+        // Check if an attribute with this name already exists
+
+        m_attribute_lock.rlock();
+
+        auto it = m_attribute_nodes.find(name);
+        if (it != m_attribute_nodes.end())
             node = it->second;
-        } else {
+
+        m_attribute_lock.unlock();
+
+        // Create attribute nodes
+
+        if (!node) {
             Node*     type_node = m_type_nodes[type];
 
             assert(type_node);
@@ -351,11 +358,24 @@ struct Caliper::CaliperImpl
             else
                 node = create_path(2, &attr[0], &data[0], type_node);
 
-            if (node)
-                m_attribute_nodes.insert(make_pair(name, node));
+            if (node) {
+                // Check again if attribute already exists; might have been created by 
+                // another thread in the meantime.
+                // We've created some redundant nodes then, but that's fine
+                m_attribute_lock.wlock();
+
+                auto it = m_attribute_nodes.lower_bound(name);
+
+                if (it == m_attribute_nodes.end() || it->first != name)
+                    m_attribute_nodes.emplace_hint(it, name, node);
+                else
+                    node = it->second;
+
+                m_attribute_lock.unlock();
+            }
         }
 
-        m_attribute_lock.unlock();
+        // Create attribute object
 
         Attribute attr { make_attribute(node) };
 
