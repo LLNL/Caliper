@@ -28,6 +28,8 @@ typedef enum {
   CALI_TYPE_TYPE   = 7
 } cali_attr_type;
 
+#define CALI_MAXTYPE CALI_TYPE_TYPE
+
 const char* 
 cali_type2string(cali_attr_type);
 

@@ -68,8 +68,7 @@ struct Caliper::CaliperImpl
 
     mutable SigsafeRWLock  m_attribute_lock;
     map<string, Node*>     m_attribute_nodes;
-    map<cali_attr_type, Node*> 
-                           m_type_nodes;
+    Node*                  m_type_nodes[CALI_MAXTYPE+1];
 
     Attribute              m_name_attr;
     Attribute              m_type_attr;
@@ -380,8 +379,8 @@ struct Caliper::CaliperImpl
         // Create attribute nodes
 
         if (!node) {
+            assert(type >= 0 && type <= CALI_MAXTYPE);
             Node*     type_node = m_type_nodes[type];
-
             assert(type_node);
 
             Attribute attr[2] { m_prop_attr, m_name_attr };
