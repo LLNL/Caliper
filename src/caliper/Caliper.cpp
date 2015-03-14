@@ -211,6 +211,9 @@ struct Caliper::CaliperImpl
         return Attribute(id, name.to_string(), type.to_attr_type(), p);
     }
 
+
+    /// @brief Creates @param n new nodes hierarchically under @param parent 
+
     Node*
     create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
         // Calculate and allocate required memory
@@ -260,6 +263,37 @@ struct Caliper::CaliperImpl
         return node;
     }
 
+    /// @brief Retreive the given node hierarchy under @param parent
+    /// Creates new nodes if necessery
+
+    Node*
+    get_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+        Node*  node = parent ? parent : &m_root;
+        size_t base = 0;
+
+        for (size_t i = 0; i < n; ++i) {
+            parent = node;
+
+            m_nodelock.rlock();
+
+            node   = parent->first_child();
+
+            while ( node && !node->equals(attr[i].id(), data[i]) )
+                node = node->next_sibling();
+
+            m_nodelock.unlock();
+
+            if (!node)
+                break;
+
+            ++base;
+        }
+
+        if (!node)
+            node = create_path(n-base, attr+base, data+base, parent);
+
+        return node;
+    }
 
     // --- Environment interface
 
@@ -354,9 +388,9 @@ struct Caliper::CaliperImpl
             Variant   data[2] { { prop }, { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
             if (prop == CALI_ATTR_DEFAULT)
-                node = create_path(1, &attr[1], &data[1], type_node);
+                node = get_path(1, &attr[1], &data[1], type_node);
             else
-                node = create_path(2, &attr[0], &data[0], type_node);
+                node = get_path(2, &attr[0], &data[0], type_node);
 
             if (node) {
                 // Check again if attribute already exists; might have been created by 
@@ -507,28 +541,10 @@ struct Caliper::CaliperImpl
 
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
-        if (attr.store_as_value()) {
+        if (attr.store_as_value())
             ret = ctx->set(attr, data);
-        } else {
-            Node* parent = ctx->get_node(attr);
-
-            if (!parent || parent->id() == CALI_INV_ID)
-                parent = &m_root;
-
-            m_nodelock.rlock();
-
-            Node* node   = parent ? parent->first_child() : nullptr;
-
-            while ( node && !node->equals(attr.id(), data) )
-                node = node->next_sibling();
-
-            m_nodelock.unlock();
-
-            if (!node)
-                node = create_path(1, &attr, &data, parent);
-
-            ret = ctx->set_node(attr, node);
-        }
+        else
+            ret = ctx->set_node(attr, get_path(1, &attr, &data, ctx->get_node(attr)));
 
         // invoke callbacks
         if (!attr.skip_events())
@@ -604,22 +620,8 @@ struct Caliper::CaliperImpl
 
             if (parent)
                 parent = parent->parent();
-            if (!parent)
-                parent = &m_root;
 
-            m_nodelock.rlock();
-
-            Node* node = parent->first_child();
-
-            while ( node && !node->equals(attr.id(), data) )
-                node = node->next_sibling();
-
-            m_nodelock.unlock();
-
-            if (!node)
-                node = create_path(1, &attr, &data, parent);
-
-            ret = ctx->set_node(attr, node);
+            ret = ctx->set_node(attr, get_path(1, &attr, &data, parent));
         }
 
         // invoke callbacks
