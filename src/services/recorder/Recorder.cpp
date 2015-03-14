@@ -107,7 +107,7 @@ class Recorder
             CsvSpec::write_record(get_stream(), rec, count, data);
         }
 
-        Log(2).stream() << "Wrote " << m_record_buffer.size() << " records." << endl;
+        Log(1).stream() << "Wrote " << m_record_buffer.size() << " records." << endl;
 
         m_record_buffer.clear();
         m_data_buffer.clear();

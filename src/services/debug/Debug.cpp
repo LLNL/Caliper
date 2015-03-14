@@ -26,22 +26,22 @@ void create_attr_cb(Caliper* c, const Attribute& attr)
 void begin_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: begin (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_begin (attr = " << attr.name() << ")" << endl;
 }
 
 void end_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: end (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_end (attr = " << attr.name() << ")" << endl;
 }
 
 void set_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: set (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_set (attr = " << attr.name() << ")" << endl;
 }
 
-const char* scopestrings[] = { "process", "thread", "task" };
+const char* scopestrings[] = { "", "process", "thread", "", "task" };
 
 string scope2string(int scope)
 {
@@ -66,7 +66,7 @@ void query_cb(Caliper* c, int scope)
     lock_guard<mutex> lock(dbg_mutex);
 
     Log(2).stream() 
-        << "Event: get_context (scope = " << scope2string(scope) 
+        << "Event: query_evt (scope = " << scope2string(scope) 
         << ")" << endl;
 }
 
@@ -75,7 +75,7 @@ void try_query_cb(Caliper* c, int scope)
     lock_guard<mutex> lock(dbg_mutex);
 
     Log(2).stream() 
-        << "Event: try_get_context (scope = " << scope2string(scope)
+        << "Event: try_query_evt (scope = " << scope2string(scope)
         << ")" << endl;
 }
 

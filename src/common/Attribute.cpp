@@ -55,11 +55,12 @@ namespace
         const struct property_tbl_entry {
             cali_attr_properties p; int mask; const char* str;
         } property_tbl[] = { 
-            { CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE,    "value"          }, 
-            { CALI_ATTR_NOMERGE,       CALI_ATTR_NOMERGE,    "nomerge"        }, 
-            { CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK, "scope_process"  },
-            { CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK, "scope_task"     },
-            { CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK, "scope_thread"   }
+            { CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE,     "value"          }, 
+            { CALI_ATTR_NOMERGE,       CALI_ATTR_NOMERGE,     "nomerge"        }, 
+            { CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK,  "scope_process"  },
+            { CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK,  "scope_task"     },
+            { CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK,  "scope_thread"   },
+            { CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS, "skip_events"    }
         };
 
         int    count = 0;

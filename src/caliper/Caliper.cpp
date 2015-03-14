@@ -638,11 +638,19 @@ struct Caliper::CaliperImpl
 
         m_nodelock.rlock();
 
-        for (auto &n : m_root)
-            if (n.id() == id) {
-                ret = &n;
-                break;
-            }
+        for (const Node* typenode : m_type_nodes)
+            for (auto &n : *typenode)
+                if (n.id() == id) {
+                    ret = &n;
+                    break;
+                }
+
+        if (!ret)
+            for (auto &n : m_root)
+                if (n.id() == id) {
+                    ret = &n;
+                    break;
+                }
 
         m_nodelock.unlock();
 
