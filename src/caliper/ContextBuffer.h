@@ -13,6 +13,7 @@ namespace cali
 {
 
 class Attribute;
+class Node;
 
 class ContextBuffer
 {
@@ -29,7 +30,9 @@ public:
     /// @{
 
     Variant  get(const Attribute&) const;
+    Node*    get_node(const Attribute&) const;
 
+    cali_err set_node(const Attribute&, Node*);
     cali_err set(const Attribute&, const Variant&);
     cali_err unset(const Attribute&);
 

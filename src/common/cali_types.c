@@ -21,12 +21,10 @@ static const struct typemap_t {
   { NULL,     CALI_TYPE_INV    }
 };
 
-static const int typemax = CALI_TYPE_TYPE;
-
 const char*
 cali_type2string(cali_attr_type type)
 {
-  return (type >= 0 && type <= CALI_TYPE_TYPE ? typemap[type].str : "invalid");
+  return (type >= 0 && type <= CALI_MAXTYPE ? typemap[type].str : "invalid");
 }
 
 cali_attr_type

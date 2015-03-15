@@ -34,6 +34,7 @@ private:
     // --- private methods
 
     static IntrusiveTree<T>::Node& node(T* t, IntrusiveTree<T>::Node T::*node) { return (t->*node); }
+    static const IntrusiveTree<T>::Node& node(const T* t, IntrusiveTree<T>::Node T::*node) { return (t->*node); }
 
     IntrusiveTree<T>        tree(T* t) const { return IntrusiveTree<T>(t, m_node); }
     IntrusiveTree<T>::Node& node(T* t) const { return node(t, m_node); }
@@ -167,6 +168,40 @@ public:
         T&   operator * () { return *m_t; } 
     };
 
+    class const_depthfirst_iterator : public std::iterator<std::input_iterator_tag, T> {
+        const T* m_t;
+        IntrusiveTree<T>::Node T::*m_n;
+
+    public:
+
+        const_depthfirst_iterator(const T* t, IntrusiveTree<T>::Node T::*n)
+            : m_t(t), m_n(n) { }
+
+        const_depthfirst_iterator& operator++() {
+            if (node(m_t, m_n).child_head)
+                m_t = node(m_t, m_n).child_head;
+            else if (node(m_t, m_n).next)
+                m_t = node(m_t, m_n).next;
+            else {
+                // find first parent node with a sibling
+                while (node(m_t, m_n).parent && !node(m_t, m_n).next)
+                    m_t = node(m_t, m_n).parent;
+
+                m_t = node(m_t, m_n).next;    
+            }
+
+            return *this;
+        }
+
+        const_depthfirst_iterator operator++(int) { 
+            const_depthfirst_iterator tmp(*this); ++(*this); return tmp; 
+        }
+
+        bool operator == (const const_depthfirst_iterator& rhs) { return m_t == rhs.m_t; }
+        bool operator != (const const_depthfirst_iterator& rhs) { return m_t != rhs.m_t; }
+        const T& operator * () { return *m_t; } 
+    };
+
     IntrusiveTree<T>::depthfirst_iterator begin() {
         return depthfirst_iterator(root(), m_node);
     }
@@ -175,6 +210,13 @@ public:
         return IntrusiveTree<T>::depthfirst_iterator(0, m_node);
     }
 
+    IntrusiveTree<T>::const_depthfirst_iterator begin() const {
+        return const_depthfirst_iterator(root(), m_node);
+    }
+
+    IntrusiveTree<T>::const_depthfirst_iterator end() const {
+        return IntrusiveTree<T>::const_depthfirst_iterator(0, m_node);
+    }
 
     class breadthfirst_iterator : public std::iterator<std::input_iterator_tag, T> {
         T* m_t;
