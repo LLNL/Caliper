@@ -274,12 +274,8 @@ struct Caliper::CaliperImpl
             parent = node;
 
             m_nodelock.rlock();
-
-            node   = parent->first_child();
-
-            while ( node && !node->equals(attr[i].id(), data[i]) )
-                node = node->next_sibling();
-
+            for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
+                ;
             m_nodelock.unlock();
 
             if (!node)
