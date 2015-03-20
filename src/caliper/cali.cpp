@@ -58,9 +58,9 @@ cali_current_contextbuffer(cali_context_scope_t scope)
 }
 
 cali_err
-cali_create_environment(void **new_env)
+cali_create_contextbuffer(cali_context_scope_t scope, void **new_env)
 {
-    *new_env = Caliper::instance()->create_contextbuffer();
+    *new_env = Caliper::instance()->create_contextbuffer(scope);
     return CALI_SUCCESS;
 }
 

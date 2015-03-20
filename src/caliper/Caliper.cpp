@@ -99,6 +99,9 @@ struct Caliper::CaliperImpl
 
         for ( auto &n : m_root )
             n.~Node();
+
+        // prevent re-initialization
+        s_siglock = 2;
     }
 
     // deferred initialization: called when it's safe to use the public Caliper interface
@@ -351,6 +354,19 @@ struct Caliper::CaliperImpl
         }
     }
 
+    ContextBuffer*
+    create_contextbuffer(cali_context_scope_t scope) {
+        ContextBuffer* ctx = new ContextBuffer;
+        m_events.create_context_evt(scope, ctx);
+
+        return ctx;
+    }
+
+    void
+    release_contextbuffer(ContextBuffer* ctx) {
+        m_events.destroy_context_evt(ctx);
+        delete ctx;
+    }
 
     // --- Attribute interface
 
@@ -727,15 +743,15 @@ Caliper::current_contextbuffer(cali_context_scope_t scope)
 }
 
 ContextBuffer*
-Caliper::create_contextbuffer()
+Caliper::create_contextbuffer(cali_context_scope_t scope)
 {
-    return new ContextBuffer();
+    return mP->create_contextbuffer(scope);
 }
 
 void
 Caliper::release_contextbuffer(ContextBuffer* ctxbuf)
 {
-    delete ctxbuf;
+    mP->release_contextbuffer(ctxbuf);
 }
 
 void 
@@ -826,7 +842,11 @@ Caliper::foreach_node(std::function<void(const Node&)> proc)
 
 Caliper* Caliper::instance()
 {
-    if (CaliperImpl::s_siglock == 1) {
+    if (CaliperImpl::s_siglock != 0) {
+        if (CaliperImpl::s_siglock == 2)
+            // Caliper had been initialized previously; we're past the static destructor
+            return nullptr;
+
         lock_guard<mutex> lock(CaliperImpl::s_mutex);
 
         if (!CaliperImpl::s_caliper) {

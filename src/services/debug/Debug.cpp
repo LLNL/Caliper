@@ -61,6 +61,18 @@ string scope2string(int scope)
     return out;
 }
 
+void create_context_cb(cali_context_scope_t scope, ContextBuffer* ctx)
+{
+    lock_guard<mutex> lock(dbg_mutex);
+    Log(2).stream() << "Event: create_context (scope = " << scope2string(scope) << ")" << endl;
+}
+
+void destroy_context_cb(ContextBuffer* ctx)
+{
+    lock_guard<mutex> lock(dbg_mutex);
+    Log(2).stream() << "Event: destroy_context" << endl;
+}
+
 void query_cb(Caliper* c, int scope)
 {
     lock_guard<mutex> lock(dbg_mutex);
@@ -79,6 +91,12 @@ void try_query_cb(Caliper* c, int scope)
         << ")" << endl;
 }
 
+void measure_cb(int scope, WriteRecordFn)
+{
+    lock_guard<mutex> lock(dbg_mutex);
+    Log(2).stream() << "Event: measure (scope = " << scope2string(scope) << ")" << endl;
+}
+
 void finish_cb(Caliper* c)
 {
     lock_guard<mutex> lock(dbg_mutex);
@@ -94,6 +112,9 @@ void debug_register(Caliper* c)
     c->events().query_evt.connect(&query_cb);
     c->events().try_query_evt.connect(&try_query_cb);
     c->events().finish_evt.connect(&finish_cb);
+    c->events().create_context_evt.connect(&create_context_cb);
+    c->events().destroy_context_evt.connect(&destroy_context_cb);
+    c->events().measure.connect(&measure_cb);
 
     Log(1).stream() << "Registered debug service" << endl;
 }

@@ -62,6 +62,10 @@ public:
         util::callback<void(Caliper*, int)>              query_evt;
         util::callback<void(Caliper*, int)>              try_query_evt;
 
+        util::callback<void(cali_context_scope_t, 
+                            ContextBuffer*)>             create_context_evt;
+        util::callback<void(ContextBuffer*)>             destroy_context_evt;
+
         util::callback<void(Caliper*)>                   finish_evt;
 
         util::callback<void(int, WriteRecordFn)>         measure;
@@ -78,7 +82,7 @@ public:
     ContextBuffer* default_contextbuffer(cali_context_scope_t context) const;
     ContextBuffer* current_contextbuffer(cali_context_scope_t context);
 
-    ContextBuffer* create_contextbuffer();
+    ContextBuffer* create_contextbuffer(cali_context_scope_t context);
     void      release_contextbuffer(ContextBuffer*);
 
     void      set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);

@@ -35,6 +35,7 @@ const ConfigSet::Entry configdata[] = {
     ConfigSet::Terminator
 };
 
+volatile bool                    finished    { false };
 bool                             enable_ompt { false };
 Attribute                        thread_attr { Attribute::invalid };
 Attribute                        state_attr  { Attribute::invalid };
@@ -90,7 +91,7 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         if (type == ompt_thread_initial)
             ctx = c->default_contextbuffer(CALI_SCOPE_THREAD);
         else
-            ctx = c->create_contextbuffer();
+            ctx = c->create_contextbuffer(CALI_SCOPE_THREAD);
 
         thread_env_lock.wlock();
         thread_env.insert(make_pair(thread_id, ctx));
@@ -105,9 +106,23 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 // ompt_event_thread_end
 
 void
-cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t id)
+cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 {
-    // Oops, Caliper::close_environment() is not implemented yet. Nothing to do here.
+    if (finished || config.get("environment_mapping").to_bool() == false)
+        return;
+
+    ContextBuffer* ctx { nullptr };
+
+    thread_env_lock.wlock();
+    auto it = thread_env.find(thread_id);
+    if (it != thread_env.end()) {
+        ctx = it->second;
+        thread_env.erase(it);
+    }
+    thread_env_lock.unlock();
+
+    if (ctx)
+        Caliper::instance()->release_contextbuffer(ctx);
 }
 
 // ompt_event_control
@@ -131,6 +146,12 @@ cb_event_runtime_shutdown(void)
 //
 // -- Caliper callbacks
 //
+
+void
+finish_cb(Caliper*)
+{
+    finished = true;
+}
 
 ContextBuffer*
 get_thread_contextbuffer() 
@@ -228,6 +249,8 @@ omptservice_initialize(Caliper* c)
 
     if (config.get("environment_mapping").to_bool() == true)
         c->set_contextbuffer_callback(CALI_SCOPE_THREAD, &get_thread_contextbuffer);
+
+    c->events().finish_evt.connect(&finish_cb);
 
     Log(1).stream() << "Registered OMPT service" << endl;
 }
