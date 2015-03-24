@@ -7,6 +7,7 @@
 
 #include "CaliperService.h"
 
+#include <Log.h>
 #include <RuntimeConfig.h>
 #include <util/split.hpp>
 
@@ -47,9 +48,17 @@ struct Services::ServicesImpl
 
         // register caliper services
 
-        for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
-            if (find(services.begin(), services.end(), string(s->name)) != services.end())
+        for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s) {
+            auto it = find(services.begin(), services.end(), string(s->name));
+
+            if (it != services.end()) {
                 (s->register_fn)(c);
+                services.erase(it);
+            }
+        }
+
+        for ( const string& s : services )
+            Log(0).stream() << "Warning: service \"" << s << "\" not found" << endl;
     }
 
     ServicesImpl()
