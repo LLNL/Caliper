@@ -60,7 +60,8 @@ namespace
             { CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK,  "scope_process"  },
             { CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK,  "scope_task"     },
             { CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK,  "scope_thread"   },
-            { CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS, "skip_events"    }
+            { CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS, "skip_events"    },
+            { CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN,      "hidden"         }
         };
 
         int    count = 0;

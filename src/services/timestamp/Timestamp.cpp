@@ -21,7 +21,7 @@ namespace
 Attribute attribute { Attribute::invalid } ;
 chrono::time_point<chrono::high_resolution_clock> tstart;
 
-void push_time(int scope, WriteRecordFn fn) {
+void push_time(Caliper* c, int scope, WriteRecordFn fn) {
     if (scope & CALI_SCOPE_PROCESS) {
         auto now = chrono::high_resolution_clock::now();
         uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();

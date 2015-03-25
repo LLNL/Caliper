@@ -43,7 +43,8 @@ typedef enum {
   CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */ 
   CALI_ATTR_SCOPE_THREAD  = 20, 
   CALI_ATTR_SCOPE_TASK    = 24,
-  CALI_ATTR_SKIP_EVENTS   = 64
+  CALI_ATTR_SKIP_EVENTS   = 64,
+  CALI_ATTR_HIDDEN        = 128
 } cali_attr_properties;
 
 #define CALI_ATTR_SCOPE_MASK 60

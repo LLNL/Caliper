@@ -447,7 +447,7 @@ struct Caliper::CaliperImpl
 
     Attribute 
     get_attribute(cali_id_t id) const {
-        return make_attribute(get(id));
+        return make_attribute(get_node(id));
     }
 
     size_t
@@ -513,7 +513,7 @@ struct Caliper::CaliperImpl
             }
         };
 
-        m_events.measure(scope, coalesce_rec);
+        m_events.measure(s_caliper.get(), scope, coalesce_rec);
 
         for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
             if (scope & s)
@@ -645,7 +645,7 @@ struct Caliper::CaliperImpl
     // --- Retrieval
 
     const Node* 
-    get(cali_id_t id) const {
+    get_node(cali_id_t id) const {
         const Node* ret = nullptr;
 
         m_nodelock.rlock();
@@ -668,9 +668,6 @@ struct Caliper::CaliperImpl
 
         return ret;
     }
-
-
-    // --- Serialization API
 
     void 
     foreach_node(std::function<void(const Node&)> proc) {
@@ -791,6 +788,10 @@ Caliper::set(const Attribute& attr, const Variant& data)
     return mP->set(attr, data);
 }
 
+Variant
+Caliper::get(const Attribute& attr) {
+    return mP->current_contextbuffer(mP->get_scope(attr))->get(attr);
+}
 
 // --- Attribute API
 

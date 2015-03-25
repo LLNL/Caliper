@@ -68,7 +68,9 @@ public:
 
         util::callback<void(Caliper*)>                   finish_evt;
 
-        util::callback<void(int, WriteRecordFn)>         measure;
+        util::callback<void(Caliper*, 
+                            int, 
+                            WriteRecordFn)>              measure;
 
         util::callback<void(const RecordDescriptor&,
                             const int*,
@@ -101,6 +103,7 @@ public:
     cali_err  end(const Attribute& attr);
     cali_err  set(const Attribute& attr, const Variant& data);
 
+    Variant   get(const Attribute& attr);
 
     // --- Attribute API
 

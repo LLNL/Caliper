@@ -9,9 +9,12 @@
 #include <ContextRecord.h>
 #include <Node.h>
 
+#include <algorithm>
 #include <cassert>
 #include <vector>
 
+#include <iterator>
+#include <iostream>
 
 using namespace cali;
 using namespace std;
@@ -23,22 +26,29 @@ struct ContextBuffer::ContextBufferImpl
 
     mutable SigsafeRWLock  m_lock;
 
-    vector<Variant> m_node;
+    // m_attr array stores attribute ids for context nodes, hidden entries, and immediate entries
+    // m_data array stores context node ids, hidden values, and immediate data
+    // boundaries within the arrays are defined by m_num_nodes and m_num_hidden
+    // attr/data array layout: [ <node attr/ids> ... <hidden attr/values> ... <data attr/values> ]
+    // m_nodes array stores pointers of context nodes
+
     vector<Variant> m_attr;
     vector<Variant> m_data;
-    vector<Node*>   m_nptr;
 
-    vector< pair<cali_id_t, int> > m_indices;
+    vector<Node*>   m_nodes;
+
+    vector<Variant>::size_type m_num_nodes;
+    vector<Variant>::size_type m_num_hidden;
 
     // --- constructor
 
-    ContextBufferImpl() { 
-        m_node.reserve(32);
-        m_attr.reserve(32);
-        m_data.reserve(32);
-        m_nptr.reserve(32);
+    ContextBufferImpl() 
+        : m_num_nodes { 0 },
+        m_num_hidden  { 0 } { 
+        m_attr.reserve(64);
+        m_data.reserve(64);
 
-        m_indices.reserve(64);
+        m_nodes.reserve(32);
     }
 
     // --- interface
@@ -48,10 +58,10 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));        
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
 
-        if (index_it != m_indices.end() && index_it->first == attr.id())
-            ret = (attr.store_as_value() ? m_data[index_it->second] : m_node[index_it->second]);
+        if (it != m_attr.end())
+            ret = m_data[it-m_attr.begin()];
 
         m_lock.unlock();
 
@@ -63,10 +73,13 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));        
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
 
-        if (!attr.store_as_value() && index_it != m_indices.end() && index_it->first == attr.id())
-            ret = m_nptr[index_it->second];
+        if (it != m_attr.end()) {
+            vector<Variant>::size_type n = it - m_attr.begin();
+            assert(n < m_nodes.size());
+            ret = m_nodes[n];
+        }
 
         m_lock.unlock();
 
@@ -76,34 +89,40 @@ struct ContextBuffer::ContextBufferImpl
     cali_err set(const Attribute& attr, const Variant& value) {
         m_lock.wlock();
 
-        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
 
-        if (index_it == m_indices.end() || index_it->first != attr.id()) {
-            int index = 0;
+        if (it != m_attr.end()) {
+            // Update entry
 
-            if (attr.store_as_value()) {
-                assert(m_attr.size() == m_data.size());
-
-                // add new "explicit" context entry
-                index = m_attr.size();
-                m_attr.push_back(Variant(attr.id()));
-                m_data.push_back(value);
-            } else {
-                // add new "implicit" context entry ("value" is a node ID)
-                index = m_node.size();
-                m_node.push_back(value);
-                m_nptr.push_back(nullptr);
-            }
-
-            m_indices.insert(index_it, make_pair(attr.id(), index));
+            m_data[it - m_attr.begin()] = value;
         } else {
-            if (attr.store_as_value())
-                // replace existing "explicit" context entry
-                m_data[index_it->second] = value;
-            else {
-                // replace existing "implicit" context (value is a node ID)
-                m_node[index_it->second] = value;
-                m_nptr[index_it->second] = nullptr;
+            // Add new entry
+
+            m_attr.push_back(Variant(attr.id()));
+            m_data.push_back(value);
+
+            if (!attr.store_as_value()) {
+                // this is a node, move it up front
+
+                m_nodes.push_back(nullptr);
+
+                if (m_num_nodes < m_attr.size()-1) {
+                    std::swap(m_attr.back(), m_attr[m_num_nodes]);
+                    std::swap(m_data.back(), m_data[m_num_nodes]);
+                }
+
+                ++m_num_nodes;
+            } else if (attr.is_hidden()) {
+                // move "hidden" entry to the middle
+                
+                auto n = m_num_nodes + m_num_hidden;
+
+                if (n < m_attr.size()-1) {
+                    std::swap(m_attr.back(), m_attr[n]);
+                    std::swap(m_data.back(), m_data[n]);
+                }
+
+                ++m_num_hidden;
             }
         }
 
@@ -118,21 +137,37 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.wlock();
 
-        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
 
-        if (index_it == m_indices.end() || index_it->first != attr.id()) {
-            int index = 0;
+        if (it != m_attr.end()) {
+            // Update entry
 
-            // add new "implicit" context entry ("value" is a node ID)
-            index = m_node.size();
-            m_node.emplace_back(node->id());
-            m_nptr.push_back(node);
+            vector<Variant>::size_type n = it - m_attr.begin();
 
-            m_indices.insert(index_it, make_pair(attr.id(), index));
+            assert(n < m_nodes.size());
+
+            m_data[n]  = Variant(node->id());
+            m_nodes[n] = node;
         } else {
-            // replace existing "implicit" context (value is a node ID)
-            m_node[index_it->second] = Variant(node->id());
-            m_nptr[index_it->second] = node;
+            // Add new entry
+
+            m_attr.emplace_back(attr.id());
+            m_data.emplace_back(node->id());
+
+            m_nodes.push_back(node);
+
+            // this is a node, move entry in attr/data array up front
+
+            if (m_num_nodes < m_attr.size()-1) {
+                std::swap(m_attr.back(), m_attr[m_num_nodes]);
+                std::swap(m_data.back(), m_data[m_num_nodes]);
+            }
+            if (m_num_hidden > 0) {
+                std::swap(m_attr.back(), m_attr[m_num_nodes+m_num_hidden-1]);
+                std::swap(m_data.back(), m_data[m_num_nodes+m_num_hidden-1]);
+            }
+
+            ++m_num_nodes;
         }
 
         m_lock.unlock();
@@ -145,19 +180,22 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.wlock();
 
-        auto index_it = lower_bound(m_indices.begin(), m_indices.end(), make_pair(attr.id(), 0));
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
 
-        if (index_it != m_indices.end() && index_it->first == attr.id()) {
-            if (attr.store_as_value()) {
-                m_attr.erase(m_attr.begin() + index_it->second);
-                m_data.erase(m_data.begin() + index_it->second);
-            } else {
-                m_node.erase(m_node.begin() + index_it->second);
-                m_nptr.erase(m_nptr.begin() + index_it->second);
-            }
-            m_indices.erase(index_it);
-        } else 
-            ret = CALI_EINV;
+        if (it != m_attr.end()) {
+            vector<Variant>::size_type n = it - m_attr.begin();
+
+            m_attr.erase(it);
+            m_data.erase(m_data.begin() + n);
+
+            if (n < m_nodes.size())
+                m_nodes.erase(m_nodes.begin() + n);
+
+            if (n < m_num_nodes)
+                --m_num_nodes;
+            else if (n < m_num_nodes + m_num_hidden)
+                --m_num_hidden;
+        }
 
         m_lock.unlock();
 
@@ -169,13 +207,15 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        for (auto it = m_node.begin(); it != m_node.end() && bufidx < size; ++it)
-            buf[bufidx++] = it->to_id();
-        for (unsigned i = 0; i < m_attr.size() && i < m_data.size() && bufidx < size; ++i) {
-            buf[bufidx++] = m_attr[i].to_id();
+        std::vector<Variant>::size_type n = 0;
+
+        for (n = 0; n < m_num_nodes && bufidx < size; ++n)
+            buf[bufidx++] = m_attr[n].to_id();
+        for (n = m_num_nodes + m_num_hidden; n < m_attr.size() && bufidx < size; ++n) {
+            buf[bufidx++] = m_attr[n].to_id();
 
             uint64_t data = 0;
-            memcpy(&data, m_data[i].data(), std::min(sizeof(uint64_t), m_data[i].size()));
+            memcpy(&data, m_data[n].data(), std::min(sizeof(uint64_t), m_data[n].size()));
 
             buf[bufidx++] = data;
         }
@@ -188,10 +228,12 @@ struct ContextBuffer::ContextBufferImpl
     void push_record(WriteRecordFn fn) {
         m_lock.rlock();
 
-        int               n[3] = { static_cast<int>(m_node.size()), 
-                                   static_cast<int>(m_attr.size()),
-                                   static_cast<int>(m_data.size()) };
-        const Variant* data[3] = { m_node.data(), m_attr.data(), m_data.data() };
+        int               n[3] = { static_cast<int>(m_num_nodes), 
+                                   static_cast<int>(m_attr.size()-m_num_hidden-m_num_nodes),
+                                   static_cast<int>(m_data.size()-m_num_hidden-m_num_nodes) };
+        const Variant* data[3] = { m_data.data(), 
+                                   m_attr.data() + m_num_nodes + m_num_hidden, 
+                                   m_data.data() + m_num_nodes + m_num_hidden };
 
         fn(ContextRecord::record_descriptor(), n, data);
 

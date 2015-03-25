@@ -91,7 +91,7 @@ void try_query_cb(Caliper* c, int scope)
         << ")" << endl;
 }
 
-void measure_cb(int scope, WriteRecordFn)
+void measure_cb(Caliper* c, int scope, WriteRecordFn)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: measure (scope = " << scope2string(scope) << ")" << endl;

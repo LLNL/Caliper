@@ -50,6 +50,9 @@ public:
     bool skip_events() const {
         return m_properties & CALI_ATTR_SKIP_EVENTS;
     }
+    bool is_hidden() const {
+        return m_properties & CALI_ATTR_HIDDEN;
+    }
 
     RecordMap record() const;
 
