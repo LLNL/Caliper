@@ -13,9 +13,6 @@
 #include <cassert>
 #include <vector>
 
-#include <iterator>
-#include <iostream>
-
 using namespace cali;
 using namespace std;
 
@@ -77,6 +74,7 @@ struct ContextBuffer::ContextBufferImpl
 
         if (it != m_attr.end()) {
             vector<Variant>::size_type n = it - m_attr.begin();
+
             assert(n < m_nodes.size());
             ret = m_nodes[n];
         }
@@ -163,8 +161,8 @@ struct ContextBuffer::ContextBufferImpl
                 std::swap(m_data.back(), m_data[m_num_nodes]);
             }
             if (m_num_hidden > 0) {
-                std::swap(m_attr.back(), m_attr[m_num_nodes+m_num_hidden-1]);
-                std::swap(m_data.back(), m_data[m_num_nodes+m_num_hidden-1]);
+                std::swap(m_attr.back(), m_attr[m_num_nodes+m_num_hidden]);
+                std::swap(m_data.back(), m_data[m_num_nodes+m_num_hidden]);
             }
 
             ++m_num_nodes;
