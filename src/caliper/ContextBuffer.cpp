@@ -73,9 +73,10 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        auto end = m_attr.begin() + m_num_nodes;
+        auto it  = std::find(m_attr.begin(), end, Variant(attr.id()));
 
-        if (it != m_attr.end()) {
+        if (it != end) {
             vector<Variant>::size_type n = it - m_attr.begin();
 
             assert(n < m_nodes.size());
@@ -159,9 +160,10 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.wlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        auto end = m_attr.begin() + m_num_nodes;
+        auto it  = std::find(m_attr.begin(), end, Variant(attr.id()));
 
-        if (it != m_attr.end()) {
+        if (it != end) {
             // Update entry
 
             vector<Variant>::size_type n = it - m_attr.begin();
