@@ -68,6 +68,9 @@ struct ContextBuffer::ContextBufferImpl
     Node* get_node(const Attribute& attr) const {
         Node* ret = nullptr;
 
+        if (m_num_nodes == 0)
+            return ret;
+
         m_lock.rlock();
 
         auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
@@ -87,9 +90,10 @@ struct ContextBuffer::ContextBufferImpl
     Variant exchange(const Attribute& attr, const Variant& value) {
         Variant ret;
 
-        m_lock.rlock();
+        m_lock.wlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        // Only handle immediate or hidden entries for now
+        auto it = std::find(m_attr.begin() + m_num_nodes, m_attr.end(), Variant(attr.id()));
 
         if (it != m_attr.end()) {
             ret = m_data[it-m_attr.begin()];
