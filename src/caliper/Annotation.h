@@ -1,6 +1,9 @@
 /// @file Annotation.h
 /// Caliper C++ annotation interface
 
+#ifndef CALI_ANNOTATION_H
+#define CALI_ANNOTATION_H
+
 #include <Attribute.h>
 
 #include <cali_types.h>
@@ -88,3 +91,5 @@ public:
 };
 
 };
+
+#endif

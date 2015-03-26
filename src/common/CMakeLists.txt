@@ -13,6 +13,7 @@ set(CALIPER_COMMON_HEADERS
     cali_types.h)
 set(CALIPER_UTIL_HEADERS
     util/callback.hpp
+    util/list.hpp
     util/split.hpp
     util/tree.hpp)
 
