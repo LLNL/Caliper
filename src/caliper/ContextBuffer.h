@@ -32,6 +32,8 @@ public:
     Variant  get(const Attribute&) const;
     Node*    get_node(const Attribute&) const;
 
+    Variant  exchange(const Attribute&, const Variant&);
+
     cali_err set_node(const Attribute&, Node*);
     cali_err set(const Attribute&, const Variant&);
     cali_err unset(const Attribute&);

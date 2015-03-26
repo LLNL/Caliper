@@ -84,6 +84,26 @@ struct ContextBuffer::ContextBufferImpl
         return ret;
     }
 
+    Variant exchange(const Attribute& attr, const Variant& value) {
+        Variant ret;
+
+        m_lock.rlock();
+
+        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+
+        if (it != m_attr.end()) {
+            ret = m_data[it-m_attr.begin()];
+            m_data[it-m_attr.begin()] = value;
+        }
+
+        m_lock.unlock();
+
+        if (ret.empty())
+            set(attr, value);
+
+        return ret;
+    }
+
     cali_err set(const Attribute& attr, const Variant& value) {
         m_lock.wlock();
 
@@ -261,6 +281,11 @@ Variant ContextBuffer::get(const Attribute& attr) const
 Node* ContextBuffer::get_node(const Attribute& attr) const
 {
     return mP->get_node(attr);
+}
+
+Variant ContextBuffer::exchange(const Attribute& attr, const Variant& data)
+{
+    return mP->exchange(attr, data);
 }
 
 cali_err ContextBuffer::set_node(const Attribute& attr, Node* node)

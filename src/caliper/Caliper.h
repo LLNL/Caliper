@@ -104,6 +104,7 @@ public:
     cali_err  set(const Attribute& attr, const Variant& data);
 
     Variant   get(const Attribute& attr);
+    Variant   exchange(const Attribute& attr, const Variant& data);
 
     // --- Attribute API
 

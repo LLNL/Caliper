@@ -793,6 +793,11 @@ Caliper::get(const Attribute& attr) {
     return mP->current_contextbuffer(mP->get_scope(attr))->get(attr);
 }
 
+Variant
+Caliper::exchange(const Attribute& attr, const Variant& data) {
+    return mP->current_contextbuffer(mP->get_scope(attr))->exchange(attr, data);
+}
+
 // --- Attribute API
 
 size_t
