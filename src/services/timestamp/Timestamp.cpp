@@ -59,7 +59,7 @@ void push_time(Caliper* c, int scope, WriteRecordFn fn) {
         uint64_t  usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
         Variant v_offs = c->exchange(timeoffs_attr, Variant(usec));
 
-        if (!v_offs.empty()) {
+        if (record_duration && !v_offs.empty()) {
             uint64_t duration = usec - v_offs.to_uint();
 
             v_attr[count] = Variant(duration_attr.id());

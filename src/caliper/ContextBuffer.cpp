@@ -68,9 +68,6 @@ struct ContextBuffer::ContextBufferImpl
     Node* get_node(const Attribute& attr) const {
         Node* ret = nullptr;
 
-        if (m_num_nodes == 0)
-            return ret;
-
         m_lock.rlock();
 
         auto end = m_attr.begin() + m_num_nodes;
