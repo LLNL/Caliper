@@ -4,6 +4,7 @@ include_directories ("../../services/csv")
 
 set(CALIPER_QUERY_SOURCES
     Args.cpp
+    Expand.cpp
     RecordSelector.cpp
     cali-query.cpp)
 

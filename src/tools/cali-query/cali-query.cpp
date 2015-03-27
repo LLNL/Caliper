@@ -2,6 +2,7 @@
 /// A basic tool for Caliper metadata queries
 
 #include "Args.h"
+#include "Expand.h"
 #include "RecordProcessor.h"
 #include "RecordSelector.h"
 
@@ -29,29 +30,17 @@ namespace
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
         { "select", "select", 's', true,  
-          "Select context records: [-]attribute[(<|>|=)value][:...]", "QUERY_STRING" 
+          "Select context records: [-]attribute[(<|>|=)value][:...]", 
+          "QUERY_STRING" 
         },
-        { "expand", "expand", 'e', false, "Expand context records",   nullptr },
+        { "expand", "expand", 'e', true,  
+          "Expand context records and print the selected fields, or all fields (default)", 
+          "FIELDS" 
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
     };
-
-    void write_keyval(CaliperMetadataDB& db, const RecordMap& rec) {
-        int nentry = 0;
-
-        for (auto const &entry : ContextRecord::unpack(rec, std::bind(&CaliperMetadataDB::node, &db, std::placeholders::_1)))
-            if (!entry.second.empty()) {
-                cout << (nentry++ ? "," : "") << entry.first << "=";
-
-                int nelem = 0;
-                for (const Variant &elem : entry.second)
-                    cout << (nelem++ ? "/" : "") << elem.to_string();
-            }
-
-        if (nentry > 0)
-            cout << endl;
-    }
 
     void write_record(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
         cout << rec << endl;
@@ -149,7 +138,7 @@ int main(int argc, const char* argv[])
     RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
 
     if (args.is_set("expand"))
-        processor = ::write_keyval;
+        processor = Expand(cout, args.get("expand"));
     else 
         processor = ::write_record;
 
@@ -157,6 +146,8 @@ int main(int argc, const char* argv[])
 
     if (!select.empty())
         processor = ::FilterStep(RecordSelector(select), processor);
+    else if (args.is_set("select"))
+        cerr << "cali-query: Arguments required for --select" << endl;
 
     processor = ::FilterStep(::FilterDuplicateNodes(), processor);
 
