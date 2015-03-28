@@ -35,9 +35,6 @@ struct Expand::ExpandImpl
         for (const string& s : fields) {
             if (s.size() == 0)
                 continue;
-            
-            string::size_type spos   = 0;
-            bool              negate = false;
 
             if (s[0] == '-')
                 m_deselected.emplace(s, 1, string::npos);
