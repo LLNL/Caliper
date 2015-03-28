@@ -1,10 +1,8 @@
 ///@file Expand.h
-///RecordProcessor declarations
+/// Expand output formatter declarations
 
-#ifndef CALI_FIELDSELECTOR_H
-#define CALI_FIELDSELECTOR_H
-
-#include "RecordProcessor.h"
+#ifndef CALI_EXPAND_H
+#define CALI_EXPAND_H
 
 #include <iostream>
 #include <memory>
