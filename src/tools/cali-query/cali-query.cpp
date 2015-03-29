@@ -34,9 +34,13 @@ namespace
           "Select context records: [-]attribute[(<|>|=)value][:...]", 
           "QUERY_STRING" 
         },
-        { "expand", "expand", 'e', true,  
-          "Expand context records and print the selected fields, or all fields (default)", 
-          "FIELDS" 
+        { "expand", "expand", 'e', false,  
+          "Expand context records and print the selected attributes (default: all)", 
+          nullptr 
+        },
+        { "attributes", "print-attributes", 0, true,
+          "Select attributes to print, or hide: [-]attribute[:...]",
+          "ATTRIBUTES"
         },
         { "aggregate", "aggregate", 'a', true,
           "Aggregate the given attributes",

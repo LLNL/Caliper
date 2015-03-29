@@ -181,12 +181,12 @@ struct Args::ArgsImpl
             os.write(whitespace, pad);
 
             if (opt.shortopt)
-                os << m_shortopt_prefix << opt.shortopt;
+                os << m_shortopt_prefix << opt.shortopt << opt_sep;
             else 
-                os.write(whitespace, min(m_shortopt_prefix.size()+1, maxwhitespace));
+                os.write(whitespace, min(m_shortopt_prefix.size()+1+opt_sep.size(), maxwhitespace));
 
             if (opt.longopt) {
-                os << opt_sep << m_longopt_prefix << opt.longopt;
+                os << m_longopt_prefix << opt.longopt;
 
                 string::size_type s = m_longopt_prefix.size() + strlen(opt.longopt);
 
