@@ -136,14 +136,20 @@ struct Aggregator::AggregatorImpl
             assert(arec_data_it != aggr_db_it->second.end());
             assert(arec_data_it->second.size() == arec_attr_it->second.size());
 
+            // shortcuts
+            vector<Variant>& arec_attr_vec { arec_attr_it->second };
+            vector<Variant>& arec_data_vec { arec_data_it->second };
+            const vector<Variant>& attr_vec { attr_it->second };
+            const vector<Variant>& data_vec { data_it->second };
+
             for (int i : idx_vec) {
-                auto it = find(arec_attr_it->second.begin(), arec_attr_it->second.end(), attr_it->second[i]);
+                auto it = find(arec_attr_vec.begin(), arec_attr_vec.end(), attr_vec[i]);
 
-                if (it != arec_attr_it->second.end()) {
-                    auto arec_i = (it - arec_attr_it->second.begin());
+                if (it != arec_attr_vec.end()) {
+                    auto arec_i = (it - arec_attr_vec.begin());
 
-                    arec_data_it->second[arec_i] = 
-                        aggregate(db.attribute(attr_it->second[i].to_id()), arec_data_it->second[arec_i], data_it->second[i]);
+                    arec_data_vec[arec_i] = 
+                        aggregate(db.attribute(attr_vec[i].to_id()), arec_data_vec[arec_i], data_vec[i]);
                 }
             }
         }
