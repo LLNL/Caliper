@@ -147,7 +147,7 @@ int main(int argc, const char* argv[])
     RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
 
     if (args.is_set("expand"))
-        processor = Expand(cout, args.get("expand"));
+        processor = Expand(cout, args.get("attributes"));
     else 
         processor = ::write_record;
 
