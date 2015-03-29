@@ -3,6 +3,7 @@ include_directories ("../../reader")
 include_directories ("../../services/csv")
 
 set(CALIPER_QUERY_SOURCES
+    Aggregator.cpp
     Args.cpp
     Expand.cpp
     RecordSelector.cpp

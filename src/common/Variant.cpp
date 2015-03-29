@@ -154,17 +154,18 @@ Variant::to_bool(bool* okptr)
 }
 
 int
-Variant::to_int(bool* okptr)  
+Variant::to_int(bool* okptr) const
 {
+    int               i = m_value.v_int;
+    cali_attr_type type = m_type;
+
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
-        is >> m_value.v_int;
+        is >> i;
 
-        if (is) {
-            m_type = CALI_TYPE_INT;
-            m_size = sizeof(int64_t);
-        }
+        if (is)
+            type = CALI_TYPE_INT;
     }
 
     bool ok = (m_type == CALI_TYPE_INT);
@@ -172,7 +173,25 @@ Variant::to_int(bool* okptr)
     if (okptr)
         *okptr = ok;
 
-    return ok ? m_value.v_int : 0;
+    return ok ? i : 0;
+}
+
+int
+Variant::to_int(bool* okptr) 
+{
+    bool ok = false;
+    int   i = const_cast<const Variant*>(this)->to_int(&ok);
+
+    if (m_type == CALI_TYPE_INV && ok) {
+        m_type        = CALI_TYPE_INT;
+        m_size        = sizeof(int64_t);
+        m_value.v_int = i;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return i;
 }
 
 unsigned
@@ -217,27 +236,28 @@ Variant::to_uint(bool* okptr)
 }
 
 double
-Variant::to_double(bool* okptr)  
+Variant::to_double(bool* okptr) const
 {
-    if (m_type == CALI_TYPE_INV && !m_string.empty()) {
+    double            d = m_value.v_double;
+    cali_attr_type type = m_type;
+
+    if (type == CALI_TYPE_INV && !m_string.empty()) {
         istringstream is(m_string);
 
-        is >> m_value.v_double;
+        is >> d;
 
-        if (is) {
-            m_type = CALI_TYPE_DOUBLE;
-            m_size = sizeof(double);
-        }
+        if (is)
+            type = CALI_TYPE_DOUBLE;
     }
 
-    bool ok = (m_type == CALI_TYPE_DOUBLE || m_type == CALI_TYPE_INT || m_type == CALI_TYPE_UINT);
+    bool ok = (type == CALI_TYPE_DOUBLE || type == CALI_TYPE_INT || type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
 
-    switch (m_type) {
+    switch (type) {
     case CALI_TYPE_DOUBLE:
-        return m_value.v_double;
+        return d;
     case CALI_TYPE_INT:
         return m_value.v_int;
     case CALI_TYPE_UINT:
@@ -245,6 +265,24 @@ Variant::to_double(bool* okptr)
     default:
         return 0;
     }
+}
+
+double
+Variant::to_double(bool* okptr) 
+{
+    bool  ok = false;
+    double d = const_cast<const Variant*>(this)->to_double(&ok);
+
+    if (m_type == CALI_TYPE_INV && ok) {
+        m_type           = CALI_TYPE_DOUBLE;
+        m_size           = sizeof(double);
+        m_value.v_double = d;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return d;
 }
 
 cali_attr_type

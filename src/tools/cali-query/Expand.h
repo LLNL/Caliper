@@ -4,6 +4,8 @@
 #ifndef CALI_EXPAND_H
 #define CALI_EXPAND_H
 
+#include <RecordMap.h>
+
 #include <iostream>
 #include <memory>
 

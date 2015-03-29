@@ -1,6 +1,7 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
+#include "Aggregator.h"
 #include "Args.h"
 #include "Expand.h"
 #include "RecordProcessor.h"
@@ -36,6 +37,10 @@ namespace
         { "expand", "expand", 'e', true,  
           "Expand context records and print the selected fields, or all fields (default)", 
           "FIELDS" 
+        },
+        { "aggregate", "aggregate", 'a', true,
+          "Aggregate the given attributes",
+          "ATTRIBUTES"
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
@@ -142,6 +147,9 @@ int main(int argc, const char* argv[])
     else 
         processor = ::write_record;
 
+    Aggregator aggregate { args.get("aggregate"), processor };
+    processor = aggregate;
+
     string select = args.get("select");
 
     if (!select.empty())
@@ -165,4 +173,6 @@ int main(int argc, const char* argv[])
         if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
             cerr << "Could not read file " << file << endl;
     }
+
+    aggregate.flush(metadb);
 }
