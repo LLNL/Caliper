@@ -151,8 +151,11 @@ int main(int argc, const char* argv[])
     else 
         processor = ::write_record;
 
-    Aggregator aggregate { args.get("aggregate"), processor };
-    processor = aggregate;
+    RecordProcessFn output_processor = processor; 
+    Aggregator      aggregate(args.get("aggregate"));
+
+    if (args.is_set("aggregate"))
+        processor = ::FilterStep(aggregate, processor);
 
     string select = args.get("select");
 
@@ -178,5 +181,5 @@ int main(int argc, const char* argv[])
             cerr << "Could not read file " << file << endl;
     }
 
-    aggregate.flush(metadb);
+    aggregate.flush(metadb, output_processor);
 }

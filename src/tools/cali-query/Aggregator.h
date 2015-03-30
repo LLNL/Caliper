@@ -21,13 +21,13 @@ class Aggregator
 
 public:
 
-    Aggregator(const std::string& aggr_config, RecordProcessFn push_fn);
+    Aggregator(const std::string& aggr_config);
 
     ~Aggregator();
 
-    void operator()(CaliperMetadataDB&, const RecordMap&);
+    void operator()(CaliperMetadataDB&, const RecordMap&, RecordProcessFn push);
 
-    void flush(CaliperMetadataDB&);
+    void flush(CaliperMetadataDB&, RecordProcessFn push);
 };
 
 } // namespace cali

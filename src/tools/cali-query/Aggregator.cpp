@@ -21,19 +21,11 @@ struct Aggregator::AggregatorImpl
 {
     // --- data
 
-    RecordProcessFn   m_push_fn;
-
     vector<string>    m_aggr_attribute_strings;
     vector<cali_id_t> m_aggr_attribute_ids;
 
     map< vector<string>, RecordMap > m_aggr_db;
 
-
-    // --- constructor
-
-    AggregatorImpl(RecordProcessFn push_fn) 
-        : m_push_fn { push_fn } 
-        { }
 
     // --- interface
 
@@ -121,7 +113,7 @@ struct Aggregator::AggregatorImpl
         sort(key_vec.begin(), key_vec.begin() + num_id_entries);
         sort(key_vec.begin() + num_id_entries, key_vec.end());
 
-        // --- aggregate and enter into db
+        // --- aggregate context records and enter into db
 
         auto aggr_db_it = m_aggr_db.find(key_vec);
 
@@ -134,14 +126,17 @@ struct Aggregator::AggregatorImpl
             // there must be immediate data entries in aggregation record, otherwise it shouldn't be in db
             assert(arec_attr_it != aggr_db_it->second.end());
             assert(arec_data_it != aggr_db_it->second.end());
-            assert(arec_data_it->second.size() == arec_attr_it->second.size());
 
             // shortcuts
-            vector<Variant>& arec_attr_vec { arec_attr_it->second };
-            vector<Variant>& arec_data_vec { arec_data_it->second };
-            const vector<Variant>& attr_vec { attr_it->second };
-            const vector<Variant>& data_vec { data_it->second };
+            vector<Variant>&       arec_attr_vec  { arec_attr_it->second };
+            vector<Variant>&       arec_data_vec  { arec_data_it->second };
+            const vector<Variant>& attr_vec       { attr_it->second };
+            const vector<Variant>& data_vec       { data_it->second };
 
+            assert(arec_attr_vec.size() == arec_data_vec.size());
+            assert(attr_vec.size()      == data_vec.size()     );
+
+            // aggregate values
             for (int i : idx_vec) {
                 auto it = find(arec_attr_vec.begin(), arec_attr_vec.end(), attr_vec[i]);
 
@@ -157,14 +152,14 @@ struct Aggregator::AggregatorImpl
         return true;
     }
 
-    void flush(CaliperMetadataDB& db) {
+    void flush(CaliperMetadataDB& db, RecordProcessFn push) {
         for (const auto &p : m_aggr_db)
-            m_push_fn(db, p.second);
+            push(db, p.second);
     }
 };
 
-Aggregator::Aggregator(const string& aggr_config, RecordProcessFn push_fn)
-    : mP { new AggregatorImpl(push_fn) }
+Aggregator::Aggregator(const string& aggr_config)
+    : mP { new AggregatorImpl() }
 {
     mP->parse(aggr_config);
 }
@@ -175,14 +170,14 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataDB& db)
+Aggregator::flush(CaliperMetadataDB& db, RecordProcessFn push)
 {
-    mP->flush(db);
+    mP->flush(db, push);
 }
 
 void
-Aggregator::operator()(CaliperMetadataDB& db, const RecordMap& rec)
+Aggregator::operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push)
 {
     if (!mP->process(db, rec))
-        mP->m_push_fn(db, rec);
+        push(db, rec);
 }
