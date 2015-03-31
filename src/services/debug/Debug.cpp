@@ -73,24 +73,6 @@ void destroy_context_cb(ContextBuffer* ctx)
     Log(2).stream() << "Event: destroy_context" << endl;
 }
 
-void query_cb(Caliper* c, int scope)
-{
-    lock_guard<mutex> lock(dbg_mutex);
-
-    Log(2).stream() 
-        << "Event: query_evt (scope = " << scope2string(scope) 
-        << ")" << endl;
-}
-
-void try_query_cb(Caliper* c, int scope)
-{
-    lock_guard<mutex> lock(dbg_mutex);
-
-    Log(2).stream() 
-        << "Event: try_query_evt (scope = " << scope2string(scope)
-        << ")" << endl;
-}
-
 void measure_cb(Caliper* c, int scope, WriteRecordFn)
 {
     lock_guard<mutex> lock(dbg_mutex);
@@ -109,8 +91,6 @@ void debug_register(Caliper* c)
     c->events().pre_begin_evt.connect(&begin_cb);
     c->events().pre_end_evt.connect(&end_cb);
     c->events().pre_set_evt.connect(&set_cb);
-    c->events().query_evt.connect(&query_cb);
-    c->events().try_query_evt.connect(&try_query_cb);
     c->events().finish_evt.connect(&finish_cb);
     c->events().create_context_evt.connect(&create_context_cb);
     c->events().destroy_context_evt.connect(&destroy_context_cb);

@@ -463,9 +463,6 @@ struct Caliper::CaliperImpl
 
     std::size_t 
     pull_context(int scope, uint64_t buf[], std::size_t len) {
-        // Trigger query event: allows services to update context information
-
-        m_events.query_evt(s_caliper.get(), scope);
 
         // TODO: run measure() to receive explicit measurements from services
 
@@ -491,10 +488,6 @@ struct Caliper::CaliperImpl
 
     void
     push_context(int scope) {
-        // Trigger query event: allows services to update context information
-
-        m_events.query_evt(s_caliper.get(), scope);
-
         const int MAX_DATA  = 40;
 
         int        all_n[3] = { 0, 0, 0 };

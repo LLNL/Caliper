@@ -59,9 +59,6 @@ public:
         util::callback<void(Caliper*, const Attribute&)> pre_set_evt;
         util::callback<void(Caliper*, const Attribute&)> post_set_evt;
 
-        util::callback<void(Caliper*, int)>              query_evt;
-        util::callback<void(Caliper*, int)>              try_query_evt;
-
         util::callback<void(cali_context_scope_t, 
                             ContextBuffer*)>             create_context_evt;
         util::callback<void(ContextBuffer*)>             destroy_context_evt;

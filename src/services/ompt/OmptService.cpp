@@ -173,7 +173,7 @@ get_thread_contextbuffer()
 }
 
 void
-query_cb(Caliper* c, int scope)
+measure_cb(Caliper* c, int scope, WriteRecordFn)
 {
     if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;
@@ -288,7 +288,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     if (::config.get("capture_state").to_bool() == true) {
         register_ompt_states();
-        c->events().query_evt.connect(&query_cb);
+        c->events().measure.connect(&measure_cb);
     }
 
     // set default thread ID
