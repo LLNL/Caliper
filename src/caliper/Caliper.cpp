@@ -265,6 +265,38 @@ struct Caliper::CaliperImpl
         return node;
     }
 
+    /// @brief Get a new node under @param parent that is a copy of @param node
+    /// This may create a new node entry, but does not deep-copy its data
+
+    Node*
+    get_or_copy_node(Node* from, Node* parent = nullptr) {
+        Node* node = parent ? parent : &m_root;
+
+        m_nodelock.rlock();
+        for (node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
+            ;
+        m_nodelock.unlock();
+
+        if (!node) {
+            char* ptr = static_cast<char*>(m_mempool.allocate(sizeof(Node)));
+
+            node = new(ptr) 
+                Node(m_node_id.fetch_add(1), from->attribute(), from->data());
+
+            m_nodelock.wlock();
+
+            if (parent)
+                parent->append(node);
+
+            m_last_written_node->list().insert(node);
+            m_last_written_node = node;
+
+            m_nodelock.unlock();
+        }
+
+        return node;
+    }
+
     /// @brief Retreive the given node hierarchy under @param parent
     /// Creates new nodes if necessery
 
@@ -291,6 +323,37 @@ struct Caliper::CaliperImpl
             node = create_path(n-base, attr+base, data+base, parent);
 
         return node;
+    }
+
+    Node*
+    find_hierarchy_parent(const Attribute& attr, Node* node) {
+        // parent info is fixed, no need to lock
+        for (Node* tmp = node ; tmp && tmp != &m_root; tmp = tmp->parent())
+            if (tmp->attribute() == attr.id())
+                node = tmp;
+
+        return node ? node->parent() : &m_root;
+    }
+
+    Node*
+    find_parent_with_attribute(const Attribute& attr, Node* node) {
+        while (node && node->attribute() != attr.id())
+            node = node->parent();
+
+        return node;
+    }
+
+    Node*
+    copy_path_without_attribute(const Attribute& attr, Node* node, Node* root) {
+        if (!node || node == root)
+            return root;
+
+        Node* tmp = copy_path_without_attribute(attr, node->parent(), root);
+
+        if (attr.id() != node->attribute())
+            tmp = get_or_copy_node(node, tmp);
+
+        return tmp;
     }
 
     // --- Environment interface
@@ -574,27 +637,18 @@ struct Caliper::CaliperImpl
         else {
             Node* node = ctx->get_node(attr);
 
-            if (!node)
-                return CALI_EINV;
+            if (node) {
+                Node* parent = find_parent_with_attribute(attr, node);
+                node = copy_path_without_attribute(attr, node, parent ? parent->parent() : nullptr);
 
-            m_nodelock.rlock();
-
-            if (node->attribute() != attr.id()) {
-                // For now, just continue before first node with this attribute
-                while (node && node->attribute() != attr.id())
-                    node = node->parent();
-
-                if (!node)
-                    return CALI_EINV;
+                if (node == &m_root)
+                    ret = ctx->unset(attr);
+                else if (node)
+                    ret = ctx->set_node(attr, node);
             }
 
-            node = node->parent();
-            m_nodelock.unlock();
-
-            if (node == &m_root)
-                ret = ctx->unset(attr);
-            else if (node)
-                ret = ctx->set_node(attr, node);
+            if (!node)
+                Log(0).stream() << "error: trying to end inactive attribute " << attr.name() << endl;
         }
 
         // invoke callbacks
