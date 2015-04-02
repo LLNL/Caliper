@@ -22,22 +22,31 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
-
-void print_context()
+void make_hierarchy_1()
 {
-    cali::Caliper* c   { cali::Caliper::instance() };
+    cali::Attribute attr = cali::Caliper::instance()->create_attribute("misc.hierarchy", CALI_TYPE_STRING);
 
-    vector<uint64_t> ctx(2 * c->num_attributes(), 0);
+    cali::Variant   data[3] = {
+        { CALI_TYPE_STRING, "h1_l0", 5 },
+        { CALI_TYPE_STRING, "h1_l1", 5 },
+        { CALI_TYPE_STRING, "h1_l2", 5 }
+    };
 
-    // retrieve current context record
-    const size_t ctxsize = c->pull_context(CALI_SCOPE_THREAD, ctx.data(), ctx.size());
-
-    // for (auto const &q : c->unpack(ctx.data(), ctxsize))
-    //     cout << q << "\n";
-
-    cout << endl;
+    cali::Caliper::instance()->set_path(attr, 3, data);
 }
 
+void make_hierarchy_2()
+{
+    cali::Attribute attr = cali::Caliper::instance()->create_attribute("misc.hierarchy", CALI_TYPE_STRING);
+
+    cali::Variant   data[3] = {
+        { CALI_TYPE_STRING, "h2_l0", 5 },
+        { CALI_TYPE_STRING, "h2_l1", 5 },
+        { CALI_TYPE_STRING, "h2_l2", 5 }
+    };
+
+    cali::Caliper::instance()->set_path(attr, 3, data);
+}
 
 int main(int argc, char* argv[])
 {
@@ -58,6 +67,9 @@ int main(int argc, char* argv[])
     } my_weird_elem;
 
     auto a2 = cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
+
+    // A hierarchy to test the Caliper::set_path() API call
+    make_hierarchy_1();
 
     {
         // Add new scope phase->"loop" under phase->"main" 
@@ -80,6 +92,15 @@ int main(int argc, char* argv[])
         iteration.end();
 
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
+    }
+
+    {
+        phase.begin("finalize");
+
+        // A different hierarchy to test the Caliper::set_path() API call
+        make_hierarchy_2();
+
+        phase.end();
     }
 
     // implicitly end phase->"main"

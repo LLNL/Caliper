@@ -217,20 +217,18 @@ struct Caliper::CaliperImpl
     /// @brief Creates @param n new nodes hierarchically under @param parent 
 
     Node*
-    create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+    create_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
         // Calculate and allocate required memory
 
         const size_t align = 8;
         const size_t pad   = align - sizeof(Node)%align;
+        size_t total_size  = n * (sizeof(Node) + pad);
 
-        size_t total_size  = 0;
+        bool   copy        = (attr.type() == CALI_TYPE_USR || attr.type() == CALI_TYPE_STRING);
 
-        for (size_t i = 0; i < n; ++i) {
-            total_size += sizeof(Node) + pad;
-
-            if (attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING)
+        if (copy)
+            for (size_t i = 0; i < n; ++i)
                 total_size += data[i].size() + (align - data[i].size()%align);
-        }
 
         char* ptr  = static_cast<char*>(m_mempool.allocate(total_size));
         Node* node = nullptr;
@@ -238,15 +236,14 @@ struct Caliper::CaliperImpl
         // Create nodes
 
         for (size_t i = 0; i < n; ++i) {
-            bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
             const void* dptr { data[i].data() };
-            size_t size { data[i].size() }; 
+            size_t size      { data[i].size() }; 
 
             if (copy)
                 dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
 
             node = new(ptr) 
-                Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
+                Node(m_node_id.fetch_add(1), attr.id(), Variant(attr.type(), dptr, size));
 
             m_nodelock.wlock();
 
@@ -261,6 +258,34 @@ struct Caliper::CaliperImpl
             ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
         }
+
+        return node;
+    }
+
+    /// @brief Retreive the given node hierarchy under @param parent
+    /// Creates new nodes if necessery
+
+    Node*
+    get_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
+        Node*  node = parent ? parent : &m_root;
+        size_t base = 0;
+
+        for (size_t i = 0; i < n; ++i) {
+            parent = node;
+
+            m_nodelock.rlock();
+            for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
+                ;
+            m_nodelock.unlock();
+
+            if (!node)
+                break;
+
+            ++base;
+        }
+
+        if (!node)
+            node = create_path(attr, n-base, data+base, parent);
 
         return node;
     }
@@ -297,7 +322,59 @@ struct Caliper::CaliperImpl
         return node;
     }
 
-    /// @brief Retreive the given node hierarchy under @param parent
+    /// @brief Creates @param n new nodes (with different attributes) hierarchically under @param parent
+
+    Node*
+    create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+        // Calculate and allocate required memory
+
+        const size_t align = 8;
+        const size_t pad   = align - sizeof(Node)%align;
+
+        size_t total_size  = 0;
+
+        for (size_t i = 0; i < n; ++i) {
+            total_size += n * (sizeof(Node) + pad);
+
+            if (attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING)
+                total_size += data[i].size() + (align - data[i].size()%align);
+        }
+
+        char* ptr  = static_cast<char*>(m_mempool.allocate(total_size));
+        Node* node = nullptr;
+
+        // Create nodes
+
+        for (size_t i = 0; i < n; ++i) {
+            bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
+
+            const void* dptr { data[i].data() };
+            size_t size      { data[i].size() }; 
+
+            if (copy)
+                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
+
+            node = new(ptr) 
+                Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
+
+            m_nodelock.wlock();
+
+            if (parent)
+                parent->append(node);
+
+            m_last_written_node->list().insert(node);
+            m_last_written_node = node;
+
+            m_nodelock.unlock();
+
+            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
+            parent = node;
+        }
+
+        return node;
+    }
+
+    /// @brief Retreive the given node hierarchy (with different attributes) under @param parent
     /// Creates new nodes if necessery
 
     Node*
@@ -689,6 +766,39 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
+
+    cali_err 
+    set_path(const Attribute& attr, size_t n, const Variant* data) {
+        cali_err ret = CALI_EINV;
+
+        if (attr == Attribute::invalid)
+            return CALI_EINV;
+
+        ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
+
+        // invoke callbacks
+        if (!attr.skip_events())
+            m_events.pre_set_evt(s_caliper.get(), attr);
+
+        if (attr.store_as_value()) {
+            Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
+            ret = CALI_EINV;
+        } else {
+            Node* node = ctx->get_node(attr);
+
+            if (node)
+                node = copy_path_without_attribute(attr, node, find_hierarchy_parent(attr, node));
+
+            ret = ctx->set_node(attr, get_path(attr, n, data, node));
+        }
+
+        // invoke callbacks
+        if (!attr.skip_events())
+            m_events.post_set_evt(s_caliper.get(), attr);
+
+        return ret;
+    }
+
     // --- Retrieval
 
     const Node* 
@@ -833,6 +943,12 @@ cali_err
 Caliper::set(const Attribute& attr, const Variant& data)
 {
     return mP->set(attr, data);
+}
+
+cali_err 
+Caliper::set_path(const Attribute& attr, size_t n, const Variant* data)
+{
+    return mP->set_path(attr, n, data);
 }
 
 Variant

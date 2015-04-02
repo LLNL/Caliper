@@ -99,6 +99,7 @@ public:
     cali_err  begin(const Attribute& attr, const Variant& data);
     cali_err  end(const Attribute& attr);
     cali_err  set(const Attribute& attr, const Variant& data);
+    cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
 
     Variant   get(const Attribute& attr);
     Variant   exchange(const Attribute& attr, const Variant& data);
