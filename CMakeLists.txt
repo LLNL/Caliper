@@ -5,6 +5,14 @@
 project (caliper)
 cmake_minimum_required(VERSION 2.8)
 
+# Add our module directory to the include path.
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
+include(FindLibunwind)
+
+if (LIBUNWIND_FOUND)
+  set(CALIPER_HAVE_LIBUNWIND TRUE)
+endif()
+
 find_package(Threads)
 
 # Find OMPT header

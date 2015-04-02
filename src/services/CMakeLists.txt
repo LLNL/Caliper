@@ -5,6 +5,9 @@ set(CALIPER_SERVICES_SOURCES
 
 add_library(caliper-services ${CALIPER_SERVICES_SOURCES})
 
+if (LIBUNWIND_FOUND)
+  target_link_libraries(caliper-services caliper-callpath)
+endif()
 target_link_libraries(caliper-services caliper-debug)
 target_link_libraries(caliper-services caliper-pthread)
 target_link_libraries(caliper-services caliper-recorder)
@@ -16,6 +19,9 @@ target_link_libraries(caliper-services caliper-common)
 
 install(TARGETS caliper-services DESTINATION lib)
 
+if (LIBUNWIND_FOUND)
+  add_subdirectory(callpath)
+endif()
 add_subdirectory(csv)
 add_subdirectory(debug)
 add_subdirectory(pthread)

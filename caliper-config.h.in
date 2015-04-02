@@ -2,5 +2,6 @@
 #define CALIPER_CONFIG_H
 
 #cmakedefine CALIPER_HAVE_OMPT 
+#cmakedefine CALIPER_HAVE_LIBUNWIND
 
 #endif // CALIPER_CONFIG_H

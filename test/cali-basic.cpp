@@ -73,10 +73,10 @@ int main(int argc, char* argv[])
 
     {
         // Add new scope phase->"loop" under phase->"main" 
-        auto a3 = phase.begin("loop");
+        cali::Annotation::Scope a3 = phase.begin("loop");
 
         // Set "loopcount" annotation to 'count' in current C++ scope
-        auto a4 = cali::Annotation("loopcount").set(count);
+        cali::Annotation::Scope a4 = cali::Annotation("loopcount").set(count);
 
         // Declare "iteration" annotation, store entries explicitly as values
         cali::Annotation iteration("iteration", cali::Annotation::StoreAsValue);
