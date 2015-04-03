@@ -73,7 +73,11 @@ struct Caliper::CaliperImpl
     Attribute              m_name_attr;
     Attribute              m_type_attr;
     Attribute              m_prop_attr;
- 
+
+    // Key attribute: one attribute stands in as key for all auto-merged attributes
+    Attribute              m_key_attr;
+    bool                   m_automerge;
+
     Events                 m_events;
 
     // --- constructor
@@ -88,8 +92,11 @@ struct Caliper::CaliperImpl
         m_node_id { 0 },
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
-        m_prop_attr { Attribute::invalid }
+        m_prop_attr { Attribute::invalid },
+        m_key_attr  { Attribute::invalid },
+        m_automerge { false }
     { 
+        m_automerge = m_config.get("automerge").to_bool();
     }
 
     ~CaliperImpl() {
@@ -137,6 +144,7 @@ struct Caliper::CaliperImpl
             {  8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 19 } },
             {  9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 19 } },
             { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 19 } },
+            { 11, 8, { CALI_TYPE_STRING, "cali.key.attribute",  18 } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
@@ -160,7 +168,8 @@ struct Caliper::CaliperImpl
         } attr_nodes[] = { 
             { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
             { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
-            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    } 
+            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    },
+            { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    }
         };
 
         for ( attr_node_t p : attr_nodes ) {
@@ -213,6 +222,13 @@ struct Caliper::CaliperImpl
         return Attribute(id, name.to_string(), type.to_attr_type(), p);
     }
 
+    const Attribute&
+    get_key(const Attribute& attr) {
+        if (!m_automerge || attr.store_as_value() || !attr.is_autocombineable())
+            return attr;
+
+        return m_key_attr;
+    }
 
     /// @brief Creates @param n new nodes hierarchically under @param parent 
 
@@ -422,6 +438,8 @@ struct Caliper::CaliperImpl
 
     Node*
     copy_path_without_attribute(const Attribute& attr, Node* node, Node* root) {
+        if (!root)
+            root = &m_root;
         if (!node || node == root)
             return root;
 
@@ -688,7 +706,7 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value())
             ret = ctx->set(attr, data);
         else
-            ret = ctx->set_node(attr, get_path(1, &attr, &data, ctx->get_node(attr)));
+            ret = ctx->set_node(get_key(attr), get_path(1, &attr, &data, ctx->get_node(get_key(attr))));
 
         // invoke callbacks
         if (!attr.skip_events())
@@ -712,16 +730,20 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value())
             ret = ctx->unset(attr);
         else {
-            Node* node = ctx->get_node(attr);
+            Node* node = ctx->get_node(get_key(attr));
 
             if (node) {
                 Node* parent = find_parent_with_attribute(attr, node);
-                node = copy_path_without_attribute(attr, node, parent ? parent->parent() : nullptr);
+
+                if (parent)
+                    parent = parent->parent();
+
+                node = copy_path_without_attribute(attr, node, parent);
 
                 if (node == &m_root)
-                    ret = ctx->unset(attr);
+                    ret = ctx->unset(get_key(attr));
                 else if (node)
-                    ret = ctx->set_node(attr, node);
+                    ret = ctx->set_node(get_key(attr), node);
             }
 
             if (!node)
@@ -751,12 +773,18 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value()) {
             ret = ctx->set(attr, data);
         } else {
-            Node* parent = ctx->get_node(attr);
+            Node* node = ctx->get_node(get_key(attr));
 
-            if (parent)
-                parent = parent->parent();
+            if (node) {
+                Node* parent = find_parent_with_attribute(attr, node);
 
-            ret = ctx->set_node(attr, get_path(1, &attr, &data, parent));
+                if (parent)
+                    parent = parent->parent();
+
+                node = copy_path_without_attribute(attr, node, parent);
+            }
+
+            ret = ctx->set_node(get_key(attr), get_path(1, &attr, &data, node));
         }
 
         // invoke callbacks
@@ -784,12 +812,12 @@ struct Caliper::CaliperImpl
             Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
             ret = CALI_EINV;
         } else {
-            Node* node = ctx->get_node(attr);
+            Node* node = ctx->get_node(get_key(attr));
 
             if (node)
                 node = copy_path_without_attribute(attr, node, find_hierarchy_parent(attr, node));
 
-            ret = ctx->set_node(attr, get_path(attr, n, data, node));
+            ret = ctx->set_node(get_key(attr), get_path(attr, n, data, node));
         }
 
         // invoke callbacks
@@ -845,6 +873,12 @@ unique_ptr<Caliper>    Caliper::CaliperImpl::s_caliper;
 
 const ConfigSet::Entry Caliper::CaliperImpl::s_configdata[] = {
     // key, type, value, short description, long description
+    { "automerge", CALI_TYPE_BOOL, "true",
+      "Automatically merge attributes into a common context tree", 
+      "Automatically merge attributes into a common context tree.\n"
+      "Decreases the size of context records, but may increase\n"
+      "the amount of metadata and reduce performance." 
+    },
     ConfigSet::Terminator 
 };
 
