@@ -13,12 +13,12 @@ using namespace std;
 using namespace cali;
 
 
-// --- Scope subclass
+// --- AutoScope subclass
 
-Annotation::Scope::~Scope()
+Annotation::AutoScope::~AutoScope()
 {
-    if (m_destruct)
-        Caliper::instance()->end(m_attr);
+    if (m_scope_info.m_destruct)
+        Caliper::instance()->end(m_scope_info.m_attr);
 }
 
 
@@ -33,7 +33,7 @@ Annotation::Annotation(const string& name, int opt)
 
 // --- begin() overloads
 
-Annotation::Scope Annotation::begin(int data)
+Annotation::ScopeObj Annotation::begin(int data)
 {
     // special case: allow assignment of int values to 'double' or 'uint' attributes
     if (m_attr.type() == CALI_TYPE_DOUBLE)
@@ -44,44 +44,44 @@ Annotation::Scope Annotation::begin(int data)
     return begin(Variant(data));
 }
 
-Annotation::Scope Annotation::begin(double data)
+Annotation::ScopeObj Annotation::begin(double data)
 {
     return begin(Variant(data));
 }
 
-Annotation::Scope Annotation::begin(const string& data)
+Annotation::ScopeObj Annotation::begin(const string& data)
 {
     return begin(Variant(CALI_TYPE_STRING, data.data(), data.size()));
 }
 
-Annotation::Scope Annotation::begin(const char* data)
+Annotation::ScopeObj Annotation::begin(const char* data)
 {
     return begin(Variant(CALI_TYPE_STRING, data, strlen(data)));
 }
 
-Annotation::Scope Annotation::begin(cali_attr_type type, const void* data, size_t size)
+Annotation::ScopeObj Annotation::begin(cali_attr_type type, const void* data, size_t size)
 {
     return begin(Variant(type, data, size));
 }
 
 // --- begin() workhorse
 
-Annotation::Scope Annotation::begin(const Variant& data)
+Annotation::ScopeObj Annotation::begin(const Variant& data)
 {
     if (m_attr == Attribute::invalid)
         create_attribute(data.type());
 
     if (!(m_attr.type() == data.type()) || m_attr.type() == CALI_TYPE_INV)
-        return Scope(Attribute::invalid);
+        return ScopeObj(Attribute::invalid, false);
 
     Caliper::instance()->begin(m_attr, data);
 
-    return Scope(m_attr);
+    return ScopeObj(m_attr, !(m_opt & KeepAlive));
 }
 
 // --- set() overloads
 
-Annotation::Scope Annotation::set(int data)
+Annotation::ScopeObj Annotation::set(int data)
 {
     // special case: allow assignment of int values to 'double' or 'uint' attributes
     if (m_attr.type() == CALI_TYPE_DOUBLE)
@@ -92,39 +92,39 @@ Annotation::Scope Annotation::set(int data)
     return set(Variant(data));
 }
 
-Annotation::Scope Annotation::set(double data)
+Annotation::ScopeObj Annotation::set(double data)
 {
     return set(Variant(data));
 }
 
-Annotation::Scope Annotation::set(const string& data)
+Annotation::ScopeObj Annotation::set(const string& data)
 {
     return set(Variant(CALI_TYPE_STRING, data.data(), data.size()));
 }
 
-Annotation::Scope Annotation::set(const char* data)
+Annotation::ScopeObj Annotation::set(const char* data)
 {
     return set(Variant(CALI_TYPE_STRING, data, strlen(data)));
 }
 
-Annotation::Scope Annotation::set(cali_attr_type type, const void* data, size_t size)
+Annotation::ScopeObj Annotation::set(cali_attr_type type, const void* data, size_t size)
 {
     return set(Variant(type, data, size));
 }
 
 // --- set() workhorse
 
-Annotation::Scope Annotation::set(const Variant& data)
+Annotation::ScopeObj Annotation::set(const Variant& data)
 {
     if (m_attr == Attribute::invalid)
         create_attribute(data.type());
 
     if (!(m_attr.type() == data.type()) || m_attr.type() == CALI_TYPE_INV)
-        return Scope(Attribute::invalid);
+        return ScopeObj(Attribute::invalid, false);
 
     Caliper::instance()->set(m_attr, data);
 
-    return Scope(m_attr);
+    return ScopeObj(m_attr, !(m_opt & KeepAlive));
 }
 
 // --- end()

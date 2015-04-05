@@ -24,47 +24,32 @@ class Annotation
 
     void create_attribute(cali_attr_type type);
 
+    struct ScopeObj {
+        cali::Attribute m_attr;
+        bool            m_destruct;
+
+        ScopeObj(const Attribute& attr, bool destruct = true)
+            : m_attr { attr }, m_destruct { destruct } { }
+    };
+
 public:
 
     enum Option { Default = 0, StoreAsValue = 1, NoMerge = 2, KeepAlive = 128 };
 
-    class Scope {
-        Attribute m_attr;
-        bool      m_destruct;
-
-        Scope(const Attribute& a) 
-            : m_attr { a }, m_destruct { false } { }
+    class AutoScope {
+        ScopeObj m_scope_info;
 
     public:
 
-        Scope(Scope&& s) 
-            : m_attr { s.m_attr }, m_destruct { true } 
-            { 
-                s.m_attr     = Attribute::invalid;
-                s.m_destruct = false;
-            }
+        AutoScope(const ScopeObj& s) 
+            : m_scope_info { s }
+            { }
 
-        Scope(const Scope& s) = delete;
+        AutoScope(const AutoScope& s) = delete;
 
-        Scope& operator = (const Scope&) = delete;
+        AutoScope& operator = (const AutoScope&) = delete;
 
-        Scope& operator = (Scope&& s) {
-            m_attr       = s.m_attr;
-            m_destruct   = true;
-
-            s.m_attr     = Attribute::invalid;
-            s.m_destruct = false;
-
-            return *this;
-        }
-
-        operator bool() const {
-            return !(m_attr == Attribute::invalid);
-        }
-
-        ~Scope();
-
-        friend class Annotation;
+        ~AutoScope();
     };
 
     Annotation(const std::string& name, int opt = Default);
@@ -73,21 +58,21 @@ public:
 
     Annotation& operator = (const Annotation&) = default;
 
-    Scope begin(int data);
-    Scope begin(double data);
-    Scope begin(const std::string& data);
-    Scope begin(const char* data);
-    Scope begin(cali_attr_type type, const void* data, std::size_t size);
-    Scope begin(const Variant& data);
+    ScopeObj begin(int data);
+    ScopeObj begin(double data);
+    ScopeObj begin(const std::string& data);
+    ScopeObj begin(const char* data);
+    ScopeObj begin(cali_attr_type type, const void* data, std::size_t size);
+    ScopeObj begin(const Variant& data);
 
-    Scope set(int data);
-    Scope set(double data);
-    Scope set(const std::string& data);
-    Scope set(const char* data);
-    Scope set(cali_attr_type type, const void* data, std::size_t size);
-    Scope set(const Variant& data);
+    ScopeObj set(int data);
+    ScopeObj set(double data);
+    ScopeObj set(const std::string& data);
+    ScopeObj set(const char* data);
+    ScopeObj set(cali_attr_type type, const void* data, std::size_t size);
+    ScopeObj set(const Variant& data);
 
-    void  end();
+    void     end();
 };
 
 };

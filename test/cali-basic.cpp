@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     cali::Annotation phase("phase");
 
     // Begin scope of phase->"main"
-    auto a1 = phase.begin("main");
+    cali::Annotation::AutoScope ann_main( phase.begin("main") );
 
     int count = argc > 1 ? atoi(argv[1]) : 4;
 
@@ -66,17 +66,17 @@ int main(int argc, char* argv[])
         float    f = 42.42;
     } my_weird_elem;
 
-    auto a2 = cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem));
+    cali::Annotation::AutoScope ann_mydata( cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem)) );
 
     // A hierarchy to test the Caliper::set_path() API call
     make_hierarchy_1();
 
     {
         // Add new scope phase->"loop" under phase->"main" 
-        cali::Annotation::Scope a3 = phase.begin("loop");
+        cali::Annotation::AutoScope ann_loop( phase.begin("loop") );
 
         // Set "loopcount" annotation to 'count' in current C++ scope
-        cali::Annotation::Scope a4 = cali::Annotation("loopcount").set(count);
+        cali::Annotation::AutoScope ann_loopcount( cali::Annotation("loopcount").set(count) );
 
         // Declare "iteration" annotation, store entries explicitly as values
         cali::Annotation iteration("iteration", cali::Annotation::StoreAsValue);
