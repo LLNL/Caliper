@@ -13,7 +13,7 @@ using namespace std;
 void begin_foo_op()
 {
     // Begin "foo"->"fooing" and keep it alive past the end of the current C++ scope
-    cali::Annotation("foo", cali::Annotation::KeepAlive).begin("fooing");
+    cali::Annotation("foo").begin("fooing");
 }
 
 void end_foo_op()
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
         cali::Annotation::AutoScope ann_loopcount( cali::Annotation("loopcount").set(count) );
 
         // Declare "iteration" annotation, store entries explicitly as values
-        cali::Annotation iteration("iteration", cali::Annotation::StoreAsValue);
+        cali::Annotation iteration("iteration", CALI_ATTR_ASVALUE);
 
         for (int i = 0; i < count; ++i) {
             // Set "iteration" annotation to current value of 'i'

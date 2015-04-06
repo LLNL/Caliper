@@ -76,7 +76,7 @@ Annotation::ScopeObj Annotation::begin(const Variant& data)
 
     Caliper::instance()->begin(m_attr, data);
 
-    return ScopeObj(m_attr, !(m_opt & KeepAlive));
+    return ScopeObj(m_attr);
 }
 
 // --- set() overloads
@@ -124,7 +124,7 @@ Annotation::ScopeObj Annotation::set(const Variant& data)
 
     Caliper::instance()->set(m_attr, data);
 
-    return ScopeObj(m_attr, !(m_opt & KeepAlive));
+    return ScopeObj(m_attr);
 }
 
 // --- end()
@@ -139,15 +139,7 @@ void Annotation::end()
 
 void Annotation::create_attribute(cali_attr_type type)
 {
-    // Option -> cali_attr_properties map
-    const int prop[] = {
-        CALI_ATTR_DEFAULT,                   // Default      = 0
-        CALI_ATTR_ASVALUE,                   // StoreAsValue = 1
-        CALI_ATTR_NOMERGE,                   // NoMerge      = 2
-        CALI_ATTR_ASVALUE | CALI_ATTR_NOMERGE // StoreAsValue | NoMerge = 3
-    };
-
-    m_attr = Caliper::instance()->create_attribute(m_name, type, prop[m_opt & 0x03]);
+    m_attr = Caliper::instance()->create_attribute(m_name, type, m_opt);
 
     if (m_attr == Attribute::invalid)
         Log(0).stream() << "Could not create attribute " << m_name << endl;

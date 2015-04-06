@@ -34,8 +34,6 @@ class Annotation
 
 public:
 
-    enum Option { Default = 0, StoreAsValue = 1, NoMerge = 2, KeepAlive = 128 };
-
     class AutoScope {
         ScopeObj m_scope_info;
 
@@ -52,7 +50,7 @@ public:
         ~AutoScope();
     };
 
-    Annotation(const std::string& name, int opt = Default);
+    Annotation(const std::string& name, int opt = 0);
 
     Annotation(const Annotation&) = default;
 
