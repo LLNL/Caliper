@@ -46,7 +46,7 @@ the Caliper library.
 
 Here is a simple source-code annotation example:
 
-```
+```C++
 #include <Annotation.h>
 
 int main(int argc, char* argv[])
@@ -81,35 +81,113 @@ A `cali::Annotation` object creates and stores an annotation attribute.
 An annotation attribute should have a unique name. 
 The example above creates two annotation attributes, "phase" and "iteration".
 
-The _Caliper context_ is the set of all active attribute/value pairs. 
-Use the `begin()`, `end()` and `set()` methods to set, unset and modify context values.
-The `begin()` and `set()` methods are overloaded for common data types (strings, integers, and floating point).
+The _Caliper context_ is the set of all active attribute/value pairs.
+Use the `begin()`, `end()` and `set()` methods of an annotation object
+to set, unset and modify context values.  The `begin()` and `set()`
+methods are overloaded for common data types (strings, integers, and
+floating point).
 
-* `cali::Annotation::begin(value)` puts `value` into the context for the given annotation attribute.
-The value is appended to the current values of the attribute, which allows you to create hierarchies (as in the "phase" annotation in the example).
+* `cali::Annotation::begin(value)` puts `value` into the context for
+the given annotation attribute.  The value is appended to the current
+values of the attribute, which allows you to create hierarchies (as in
+the "phase" annotation in the example).
 
-* `cali::Annotation::set(value)` sets the value of the annotation attribute to `value`.
-It overwrites the current value of the annotation attribute on the same hierarchy level.
+* `cali::Annotation::set(value)` sets the value of the annotation
+attribute to `value`.  It overwrites the current value of the
+annotation attribute on the same hierarchy level.
 
-* `cali::Annotation::end()` removes the innermost value of the given annotation attribute from the context. It is the user's responsibility to nest `begin()`/`set()` and `end()` calls correctly.
+* `cali::Annotation::end()` removes the innermost value of the given
+  annotation attribute from the context. It is the user's
+  responsibility to nest `begin()`/`set()` and `end()` calls
+  correctly.
 
 ### Build and link annotated programs
 
-To build a program with Caliper annotations, link it with the Caliper libraries.
-At this point, the Caliper libraries are built statically.
-Therefore, all Caliper modules must be explicitly linked to the annotated program.
+To build a program with Caliper annotations, link it with the Caliper
+libraries.
+
+Currently, the Caliper libraries are built statically.
+Therefore, all Caliper modules must be explicitly linked to the
+annotated program.
 The full list and order of the libraries is the following:
 
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \ -lcaliper-callpath -lcaliper-csv -lcaliper-debug -lcaliper-recorder -lcaliper-ompt -lcaliper-pthread -lcaliper-timestamp -lcaliper -lcaliper-common
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \
+        -lcaliper-callpath -lcaliper-csv -lcaliper-debug -lcaliper-recorder \
+        -lcaliper-ompt -lcaliper-pthread -lcaliper-timestamp \
+        -lcaliper -lcaliper-common
 
-Depending on the configuration, you might need to omit the OMPT (`-lcaliper-ompt`) or the callpath module (`-lcaliper-callpath`).
+Depending on the configuration, you might need to omit the OMPT
+(`-lcaliper-ompt`) or the callpath module (`-lcaliper-callpath`).
+You may also need to add the `libunwind` and `pthread` libraries to
+the link line.
 
-Also, because Caliper is written in C++11, all source files with Caliper annotations must be compiled in C++11 mode (typically by using the `-std=c++11` compiler flag).
+Note that because Caliper is written in C++11, all source files with
+Caliper annotations must be compiled in C++11 mode (typically by using
+the `-std=c++11` compiler flag).
 
 ### Run the program
 
+Running an annotated program generates the Caliper context, which can
+be queried by third-party tools at runtime.
+Additional functionality is provided through Caliper _services_
+(modules).
+Importantly, Caliper provides a `recorder` service that records the
+Caliper context at certain events.
 
+By default, Caliper does not enable any optional services.
+Use the `CALI_SERVICES_ENABLE` environment variable to activate them.
+For example, enable the `recorder` and `timestamp` services to create
+a simple time-series trace for the example program above:
+
+    $ export CALI_SERVICES_ENABLE=recorder:timestamp
+    $ ./cali-basic
+    == CALIPER: Registered recorder service
+    == CALIPER: Registered timestamp service
+    == CALIPER: Initialized
+    == CALIPER: Wrote 36 records.
+    == CALIPER: Finished
+
+The recorder service will write the time-series trace to a `.cali`
+file in the current working directory. Use the `cali-query` tool to
+filter, aggregate, or print traces:
+
+    $ ls *.cali
+    150407-092621_96557_aGxI5Q9Zh2uU.cali
+    $ cali-query -e 150407-092621_96557_aGxI5Q9Zh2uU.cali
+    time.duration=57
+    phase=main,time.duration=33
+    phase=init/main,time.duration=7
+    phase=main,time.duration=6
+    phase=loop/main,time.duration=9
+    iteration=0,phase=loop/main,time.duration=9
+    iteration=1,phase=loop/main,time.duration=4
+    iteration=2,phase=loop/main,time.duration=4
+    iteration=3,phase=loop/main,time.duration=4
+    phase=loop/main,time.duration=5
+    phase=main,time.duration=6
 
 ### Runtime configuration
+
+The Caliper library is configured through environment variables.
+Here is a list of commonly used variables:
+
+* `CALI_CALIPER_AUTOMERGE=(true|false)` Automatically merge attributes
+  into a common context tree. This will usually reduce the size of
+  context records, but may reduce performance and increase metadata
+  size. Default `true`.
+
+* `CALI_LOG_LOGFILE=(stdout|stderr|filename)` File name for Caliper information messages. May
+  be set to `stdout` or `stderr` to print the standard output or error
+  streams, respectively. Default `stderr`.
+
+* `CALI_LOG_VERBOSITY=(0|1|2)` Verbosity level for log messages. Set to 1 for
+  informational output, 2 for more verbose output, or 0 to disable
+  output except for critical error messages. Default 1.
+
+* `CALI_SERVICES_ENABLE=(service1:service2:...)` List of Caliper service modules to enable,
+  separated by `:`. Default: not set, no service modules enabled. See
+  below for a list of Caliper services.
+
+### List of Caliper services
 
 
