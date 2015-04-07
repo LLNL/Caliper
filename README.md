@@ -32,9 +32,56 @@ Compiler. Unpack the source distribution and proceed as follows:
      make 
      make install
 
+The OMPT header file and libunwind are required to build the OMPT (OpenMP tools
+interface) and callpath modules, respectively. Both modules are optional.
+
 
 Getting started
 ------------------------------------------
 
 To use Caliper, add annotation statements to your program and link it against
 the Caliper library.
+
+### Source-code annotation example
+
+Here is a simple source-code annotation example:
+
+```
+#include <Annotation.h>
+
+int main(int argc, char* argv[])
+{
+    cali::Annotation phase_ann("phase");
+
+    phase_ann.begin("main");                   // Context is "phase=main"
+
+    phase_ann.begin("init");                   // Context is "phase=main/init" 
+    int count = 4;
+    phase_ann.end();                           // Context is "phase=main"
+
+    if (count > 0) {
+        cali::Annotation::AutoScope 
+            loop_s( phase_ann.begin("loop") ); // Context is "phase=main/loop"
+        
+        cali::Annotation 
+            iteration_ann("iteration", CALI_ATTR_ASVALUE);
+        
+        for (int i = 0; i < count; ++i) {
+            iteration_ann.set(i);              // Context is "phase=main/loop,iteration=i"
+        }
+
+        iteration_ann.end();                   // Context is "phase=main/loop"
+    }                                          // Context is "phase=main"
+
+    phase_ann.end();                           // Context is ""
+}
+```
+
+A `cali::Annotation` object creates and stores an annotation attribute. 
+An annotation attribute should have a unique name. 
+The example above creates two annotation attributes, "phase" and "iteration".
+
+The _Caliper context_ is the set of all active attribute/value pairs. 
+Use the `begin()`, `end()` and `set()` methods to set, unset and modify context values.
+
+### Build and link annotated programs
