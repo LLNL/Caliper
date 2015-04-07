@@ -1,9 +1,6 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
-#include <Caliper.h>
-
-using namespace std;
 
 int main(int argc, char* argv[])
 {

@@ -223,7 +223,7 @@ struct Caliper::CaliperImpl
     }
 
     const Attribute&
-    get_key(const Attribute& attr) {
+    get_key(const Attribute& attr) const {
         if (!m_automerge || attr.store_as_value() || !attr.is_autocombineable())
             return attr;
 
@@ -473,7 +473,6 @@ struct Caliper::CaliperImpl
     current_contextbuffer(cali_context_scope_t scope) {
         switch (scope) {
         case CALI_SCOPE_PROCESS:
-            // Currently, there is only one process environment which always gets ID 0
             return m_default_process_context;
         case CALI_SCOPE_THREAD:
             if (m_get_thread_contextbuffer_cb)
