@@ -10,10 +10,10 @@ the ability to provide arbitrary program context information to
 Documentation
 ------------------------------------------
 
-For now, the code and API is evidently self-documenting.
-
 A usage example of the C++ annotation interface is provided in 
 `test/cali-basic.cpp`
+
+See the "Getting started" section below for a brief tutorial.
 
 License
 ------------------------------------------
@@ -42,7 +42,7 @@ Getting started
 To use Caliper, add annotation statements to your program and link it against
 the Caliper library.
 
-### Source-code annotation example
+### Source-code annotation
 
 Here is a simple source-code annotation example:
 
@@ -83,5 +83,33 @@ The example above creates two annotation attributes, "phase" and "iteration".
 
 The _Caliper context_ is the set of all active attribute/value pairs. 
 Use the `begin()`, `end()` and `set()` methods to set, unset and modify context values.
+The `begin()` and `set()` methods are overloaded for common data types (strings, integers, and floating point).
+
+* `cali::Annotation::begin(value)` puts `value` into the context for the given annotation attribute.
+The value is appended to the current values of the attribute, which allows you to create hierarchies (as in the "phase" annotation in the example).
+
+* `cali::Annotation::set(value)` sets the value of the annotation attribute to `value`.
+It overwrites the current value of the annotation attribute on the same hierarchy level.
+
+* `cali::Annotation::end()` removes the innermost value of the given annotation attribute from the context. It is the user's responsibility to nest `begin()`/`set()` and `end()` calls correctly.
 
 ### Build and link annotated programs
+
+To build a program with Caliper annotations, link it with the Caliper libraries.
+At this point, the Caliper libraries are built statically.
+Therefore, all Caliper modules must be explicitly linked to the annotated program.
+The full list and order of the libraries is the following:
+
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \ -lcaliper-callpath -lcaliper-csv -lcaliper-debug -lcaliper-recorder -lcaliper-ompt -lcaliper-pthread -lcaliper-timestamp -lcaliper -lcaliper-common
+
+Depending on the configuration, you might need to omit the OMPT (`-lcaliper-ompt`) or the callpath module (`-lcaliper-callpath`).
+
+Also, because Caliper is written in C++11, all source files with Caliper annotations must be compiled in C++11 mode (typically by using the `-std=c++11` compiler flag).
+
+### Run the program
+
+
+
+### Runtime configuration
+
+
