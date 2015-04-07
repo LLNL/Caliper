@@ -190,4 +190,74 @@ Here is a list of commonly used variables:
 
 ### List of Caliper services
 
+This is a list of Caliper service modules and their configuration
+options.
+Note that each service has to be enabled via `CALI_SERVICES_ENABLE` to
+take effect.
 
+* `callpath` Add a call path to the caliper context
+  * `CALI_CALLPATH_USE_NAME=(true|false)` Use region names for call path.
+  Incurs higher overhead.
+  Default: false.
+  * `CALI_CALLPATH_USE_ADDRESS=(true|false)` Use stack-frame
+  addresses.
+  Default: true.
+  * `CALI_CALLPATH_SKIP_FRAMES=(number of frames)` Skip this many
+  frames from the call path.
+  This is used to remove call paths within the Caliper library from
+  the context.
+  Default: 10.
+  
+* `debug` Print annotation and measurement events.
+  Useful to debug source-code annotations.
+
+* `ompt` The OpenMP tools interface service.
+  Connects to the OpenMP tools interface to retrieve OpenMP status
+  information.
+  Requires an ompt-enabled OpenMP runtime.
+  * `CALI_OMPT_ENVIRONMENT_MAPPING=(true|false)` Manage
+  thread environment in the ompt module.
+  Incurs higher overhead than the `pthread` service.
+  Default: false.
+  * `CALI_OMPT_CAPTURE_STATE=(true|false)` Add the OpenMP runtime
+  state to context records.
+  Default: true.
+
+* `pthread` Manages thread environments for any pthread-based
+  multi-threading runtime system.
+  A thread environment manager such as the `pthread` service creates
+  separate per-thread contexts in a multi-threaded program.
+
+* `recorder` Writes context trace data.
+  * `CALI_RECORDER_FILENAME=(stdout|stderr|filename)` File name for
+  context trace. 
+  May be set to `stdout` or `stderr` to print the standard output or
+  error streams, respectively.
+  Default: not set, auto-generates a unique file name.
+  * `CALI_RECORDER_DIRECTORY=(directory name)` Directory to write
+  context trace files to.
+  The directory must exist, Caliper does not create it.
+  Default: not set, uses current working directory.
+  * `CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)` Initial number of records
+  that can be stored in the in-memory record buffer.
+  Default: 8000.
+  * `CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)` Initial number of
+  data elements that can be stored in the in-memory record buffer.
+  Default: 60000.
+  * `CALI_RECORDER_BUFFER_CAN_GROW=(true|false)` Allow record and data
+  buffers to grow if necessary.
+  If false, buffer content will be flushed to disk when either buffer
+  is full.
+  Default: true.
+* `timestamp` The timestamp service adds a time offset, timestamp,
+  or duration to context records.
+  Note that timestamps are _not_ synchronized between machines in a
+  distributed-memory program.
+  * `CALI_TIMER_DURATION=(true|false)` Include duration (in
+  microsecond) of context epoch with context records.
+  Default: true.
+  * `CALI_TIMER_OFFSET=(true|false)` Include time offset (time
+  since program start, in microseconds) with each context record.
+  Default: false.
+  * `CALI_TIMER_TIMESTAMP=(true|false)` Include absolute timestamp
+  (time since UNIX epoch, in seconds) with each context record.
