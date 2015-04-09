@@ -112,9 +112,9 @@ annotated program.
 The full list and order of the libraries is the following:
 
     CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \
-        -lcaliper-callpath -lcaliper-csv -lcaliper-debug -lcaliper-recorder \
+        -lcaliper-callpath -lcaliper-debug -lcaliper-recorder \
         -lcaliper-ompt -lcaliper-pthread -lcaliper-timestamp \
-        -lcaliper -lcaliper-common
+        -lcaliper -lcaliper-csv -lcaliper-common
 
 Depending on the configuration, you might need to omit the OMPT
 (`-lcaliper-ompt`) or the callpath module (`-lcaliper-callpath`).
