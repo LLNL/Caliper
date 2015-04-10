@@ -5,4 +5,6 @@
 #cmakedefine CALIPER_HAVE_MITOS 
 #cmakedefine CALIPER_HAVE_LIBUNWIND
 
+#cmakedefine TEST_USE_OMP
+
 #endif // CALIPER_CONFIG_H

@@ -15,6 +15,11 @@ endif()
 
 find_package(Threads)
 
+find_package(OpenMP)
+if (OpenMP_FOUND)
+  set(TEST_USE_OMP TRUE)
+endif()
+
 # Find OMPT header
 find_path(OMPT_INCLUDE_DIR ompt.h
   PATH_SUFFIXES include
@@ -29,7 +34,7 @@ else()
 endif()
 
 # Find Mitos
-find_package(Mitos COMPONENTS mitos REQUIRED)
+find_package(Mitos)
 if(Mitos_FOUND)
   set(CALIPER_HAVE_MITOS TRUE)
   message(STATUS "Mitos sampling library found")

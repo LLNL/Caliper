@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#if TEST_USE_OMP
+#include <omp.h>
+#endif
+
 using namespace std;
 
 void begin_foo_op()
@@ -81,6 +85,9 @@ int main(int argc, char* argv[])
         // Declare "iteration" annotation, store entries explicitly as values
         cali::Annotation iteration("iteration", CALI_ATTR_ASVALUE);
 
+#if TEST_USE_OMP
+#pragma omp parallel for
+#endif
         for (int i = 0; i < count; ++i) {
             // Set "iteration" annotation to current value of 'i'
             iteration.set(i);
