@@ -21,14 +21,14 @@ using namespace std;
 namespace 
 {
 
-Attribute load_address_attr        { Attribute::invalid } ;
+Attribute address_attr        { Attribute::invalid } ;
 
 ConfigSet config;
 
-bool      record_load_address;
+bool      record_address { false };
 
 static const ConfigSet::Entry s_configdata[] = {
-    { "load_address", CALI_TYPE_BOOL, "false",
+    { "mitos", CALI_TYPE_BOOL, "false",
       "Include sampled load addresses",
       "Include sampled load addresses"
     },
@@ -42,10 +42,10 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
 /// Initialization handler
 void mitos_register(Caliper* c)
 {
-    record_load_address = config.get("load_address").to_bool();
+    record_address = config.get("address").to_bool();
 
-    load_address_attr = 
-        c->create_attribute("mitos.load_address", CALI_TYPE_ADDR, 
+    address_attr = 
+        c->create_attribute("mitos.address", CALI_TYPE_ADDR, 
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
     // add callback for Caliper::get_context() event
