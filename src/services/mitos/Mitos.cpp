@@ -16,7 +16,7 @@
 using namespace cali;
 using namespace std;
 
-#include <Mitos/Mitos.h>
+#include <Mitos.h>
 
 namespace 
 {

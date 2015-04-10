@@ -1,7 +1,8 @@
 include_directories("../../common")
 include_directories("../../caliper")
 
-include_directories($ENV{HOME}/testprefix/include)
+message(STATUS "Mitos include directory: ${Mitos_INCLUDE_DIRS}")
+include_directories(${Mitos_INCLUDE_DIRS})
 
 set(CALIPER_MITOS_SOURCES
     Mitos.cpp)

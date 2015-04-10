@@ -29,7 +29,7 @@ else()
 endif()
 
 # Find Mitos
-find_package(Mitos)
+find_package(Mitos COMPONENTS mitos REQUIRED)
 if(Mitos_FOUND)
   set(CALIPER_HAVE_MITOS TRUE)
   message(STATUS "Mitos sampling library found")
