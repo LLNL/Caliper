@@ -28,6 +28,35 @@ else()
   message(STATUS "OpenMP tools interface header ompt.h not found")
 endif()
 
+# Find Mitos
+find_path(MITOS_INCLUDE_DIR Mitos/Mitos.h
+  PATH_SUFFIXES include
+  HINTS /g/g22/gimenez1/testprefix/) # cheating
+find_library(MITOS_LIBRARY libmitos.so
+  PATH_SUFFIXES lib
+  HINTS /g/g22/gimenez1/testprefix/) # cheating
+
+if (MITOS_INCLUDE_DIR)
+  message(STATUS "Mitos header Mitos.h found in " ${MITOS_INCLUDE_DIR})
+else()
+  message(STATUS "Mitos header Mitos.h not found")
+endif()
+
+if (MITOS_LIBRARY)
+  message(STATUS "Mitos library libmitos.so found in " ${MITOS_LIBRARY})
+else()
+  message(STATUS "Mitos libmitos.so not found")
+endif()
+
+if (MITOS_INCLUDE_DIR AND MITOS_LIBRARY)
+  set(MITOS_FOUND TRUE)  
+  set(CALIPER_HAVE_MITOS TRUE)
+  set(MITOS_FOUND TRUE)  
+  set(CALIPER_HAVE_MITOS TRUE)
+else()
+  message(STATUS "Mitos will not be available")
+endif()
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in

@@ -12,6 +12,9 @@ extern const CaliperService DebugService;
 extern const CaliperService PthreadService;
 extern const CaliperService RecorderService;
 extern const CaliperService TimestampService;
+#ifdef CALIPER_HAVE_MITOS
+extern const CaliperService MitosService;
+#endif
 #ifdef CALIPER_HAVE_OMPT
 extern const CaliperService OmptService;
 #endif
@@ -24,6 +27,9 @@ const CaliperService caliper_services[] = {
     PthreadService,
     RecorderService,
     TimestampService,
+#ifdef CALIPER_HAVE_MITOS
+    MitosService,
+#endif
 #ifdef CALIPER_HAVE_OMPT
     OmptService,
 #endif
