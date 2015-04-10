@@ -75,6 +75,7 @@ void mitos_register(Caliper* c)
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
     // add callback for Caliper::get_context() event
+    c->events().measure.connect(&push_load_sample);
     c->events().finish_evt.connect(&mitos_finish);
 
     // initialize mitos
