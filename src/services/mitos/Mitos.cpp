@@ -10,6 +10,7 @@
 #include <ContextRecord.h>
 #include <Log.h>
 
+#include <pthread.h>
 #include <omp.h>
 
 using namespace cali;
@@ -34,9 +35,23 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
+static pthread_key_t key;
+static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+
+void make_sample_key()
+{
+    pthread_key_create(&key, NULL);
+    pthread_setspecific(key, NULL); 
+}
+
 void sample_handler(perf_event_sample *sample, void *args) {
     if (SigsafeRWLock::is_thread_locked())
         return;
+
+    // copy sample to thread-specific data
+    perf_event_sample *smp = new perf_event_sample;
+    memcpy(smp,sample,sizeof(perf_event_sample));
+    pthread_setspecific(key,smp);
 
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
@@ -46,8 +61,13 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
     Variant v_attr[1];
     Variant v_data[1];
 
+    // get sample from thread-specific key
+    perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
+    if(!sample)
+        return;
+
     v_attr[0] = address_attr.id();
-    v_data[0] = 0xdeadbeef;
+    v_data[0] = sample->addr;
 
     int               n[3] = { 0,       1,  1  };
     const Variant* data[3] = { nullptr, v_attr, v_data };
@@ -81,6 +101,9 @@ void mitos_register(Caliper* c)
     // add callback for Caliper::get_context() event
     c->events().measure.connect(&push_load_sample);
     c->events().finish_evt.connect(&mitos_finish);
+
+    // create thread-specific key
+    pthread_once(&key_once, make_sample_key);
 
     // initialize mitos
     mitos_init(c);
