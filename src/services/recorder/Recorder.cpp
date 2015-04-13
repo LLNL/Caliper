@@ -4,6 +4,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <SigsafeRWLock.h>
 
 #include <CsvSpec.h>
 
@@ -48,7 +49,7 @@ class Recorder
     vector<RecordDescriptor>::size_type m_record_buffer_size;
     vector<Variant>::size_type m_data_buffer_size; 
 
-    mutex     m_stream_mutex;
+    SigsafeRWLock m_lock;
     Stream    m_stream;
     ofstream  m_ofstream;
 
@@ -185,13 +186,15 @@ class Recorder
 
     void register_callbacks(Caliper* c) {
         auto recfn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
-            lock_guard<mutex> lock(m_stream_mutex);
+            m_lock.wlock();
             CsvSpec::write_record(get_stream(), rec, count, data);
+            m_lock.unlock();
         };
 
         auto buffn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
-            lock_guard<mutex> lock(m_stream_mutex);
+            m_lock.wlock();
             buffer_record(rec, count, data);
+            m_lock.unlock();
         };        
 
         if (!m_buffer_can_grow && m_record_buffer_size == 0)

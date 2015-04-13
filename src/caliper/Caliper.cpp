@@ -96,6 +96,7 @@ struct Caliper::CaliperImpl
         m_key_attr  { Attribute::invalid },
         m_automerge { false }
     { 
+        SigsafeRWLock::init();
         m_automerge = m_config.get("automerge").to_bool();
     }
 

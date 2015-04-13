@@ -4,6 +4,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <SigsafeRWLock.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -34,6 +35,9 @@ static const ConfigSet::Entry s_configdata[] = {
 };
 
 void sample_handler(perf_event_sample *sample, void *args) {
+    if (SigsafeRWLock::is_thread_locked())
+        return;
+
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
 }
