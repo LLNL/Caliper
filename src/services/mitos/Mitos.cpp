@@ -40,31 +40,49 @@ static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
 void make_sample_key()
 {
+    perf_event_sample *sample = new perf_event_sample;
+    memset(sample,0,sizeof(perf_event_sample));
+
     pthread_key_create(&key, NULL);
-    pthread_setspecific(key, NULL); 
+    pthread_setspecific(key, sample); 
 }
 
 void sample_handler(perf_event_sample *sample, void *args) {
+    //std::cerr << "Checking lock!\n";
+
     if (SigsafeRWLock::is_thread_locked())
         return;
 
-    // copy sample to thread-specific data
-    perf_event_sample *smp = new perf_event_sample;
+    perf_event_sample *smp = (perf_event_sample*)pthread_getspecific(key);
     memcpy(smp,sample,sizeof(perf_event_sample));
-    pthread_setspecific(key,smp);
+
+    //std::cerr << "Copied over!\n";
 
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
+
+    //std::cerr << "Context pushed!\n";
 }
 
 void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
+    perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
+    //std::cerr << "pushing load sample!\n";
+
+    if(!sample)
+    {
+        //std::cerr << "NULL from key!\n";
+        return;
+    }
+    if(sample->addr == 0)
+    {
+        //std::cerr << "Not set!\n";
+        return;
+    }
+
+    //std::cerr << "GOT ONE\n";
+
     Variant v_attr[1];
     Variant v_data[1];
-
-    // get sample from thread-specific key
-    perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
-    if(!sample)
-        return;
 
     v_attr[0] = address_attr.id();
     v_data[0] = sample->addr;
