@@ -5,8 +5,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 
 if (TEST_USE_OMP)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DTEST_USE_OMP ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTEST_USE_OMP ${OpenMP_CXX_FLAGS}")
 endif()
 
 add_executable(cali-basic cali-basic.cpp)

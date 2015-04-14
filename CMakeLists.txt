@@ -16,7 +16,7 @@ endif()
 find_package(Threads)
 
 find_package(OpenMP)
-if (OpenMP_FOUND)
+if (OpenMP_FLAG_DETECTED)
   set(TEST_USE_OMP TRUE)
 endif()
 

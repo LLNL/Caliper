@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#if TEST_USE_OMP
+#ifdef TEST_USE_OMP
 #include <omp.h>
 #endif
 
@@ -32,7 +32,7 @@ void matmul()
         for(j=0; j<N; ++j)
             c[i*N+j] = 0;
 
-#if TEST_USE_OMP
+#ifdef TEST_USE_OMP
 #pragma omp parallel for private(i,j,k) shared(a,b,c)
 #endif
     for(i=0; i<N; ++i)

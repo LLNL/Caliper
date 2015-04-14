@@ -95,8 +95,6 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
-    std::cerr << "thread init!\n";
-
     // check if allocated
     void *thread_data = pthread_getspecific(key); 
     if(thread_data)
