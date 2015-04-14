@@ -36,9 +36,13 @@ void matmul()
 #pragma omp parallel for private(i,j,k) shared(a,b,c)
 #endif
     for(i=0; i<N; ++i)
+    {
+        cali::Annotation("matmul").begin("matmulling");
         for(j=0; j<N; ++j)
             for(k=0; k<N; ++k)
                 c[i*N+j] += a[i*N+k] * b[k*N+j];
+        cali::Annotation("matmul").end();
+    }
 
 }
 
