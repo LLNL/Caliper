@@ -39,18 +39,7 @@ static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
 void make_sample_key() {
-    // check if already initialized
-    void *thread_data = pthread_getspecific(key); 
-    if(thread_data)
-        return;
-
-    // allocate sample
-    perf_event_sample *sample = new perf_event_sample;
-    memset(sample,0,sizeof(perf_event_sample));
-
-    // point key to allocated sample
     pthread_key_create(&key, NULL);
-    pthread_setspecific(key, sample); 
 }
 
 void sample_handler(perf_event_sample *sample, void *args) {
@@ -106,7 +95,20 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
-    pthread_once(&key_once, make_sample_key);
+    std::cerr << "thread init!\n";
+
+    // check if allocated
+    void *thread_data = pthread_getspecific(key); 
+    if(thread_data)
+        return;
+
+    // allocate sample
+    perf_event_sample *sample = new perf_event_sample;
+    memset(sample,0,sizeof(perf_event_sample));
+
+    // point key
+    pthread_setspecific(key,sample);
+
 }
 
 void mitos_init(Caliper* c) {
@@ -136,7 +138,7 @@ void mitos_register(Caliper* c) {
     c->events().create_context_evt.connect(&thread_data_init);
 
     // initialize per-thread data
-    thread_data_init((cali_context_scope_t)0,NULL);
+    pthread_once(&key_once, make_sample_key);
 
     // initialize mitos
     mitos_init(c);
