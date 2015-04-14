@@ -14,6 +14,8 @@
 
 using namespace std;
 
+#define ROW_MAJOR(x,y,width) y*width+x
+
 void matmul()
 {
     int N = 1024;
@@ -29,21 +31,34 @@ void matmul()
     c = new double[N*N];
 
     for(i=0; i<N; ++i)
+    {
         for(j=0; j<N; ++j)
-            c[i*N+j] = 0;
+        {
+            a[ROW_MAJOR(i,j,N)] = rand();
+            b[ROW_MAJOR(i,j,N)] = rand();
+            c[ROW_MAJOR(i,j,N)] = 0;
+        }
+    }
 
 #ifdef TEST_USE_OMP
-#pragma omp parallel for private(i,j,k) shared(a,b,c)
+#pragma omp parallel for
 #endif
     for(i=0; i<N; ++i)
     {
         cali::Annotation("matmul").begin("matmulling");
         for(j=0; j<N; ++j)
+        {
             for(k=0; k<N; ++k)
-                c[i*N+j] += a[i*N+k] * b[k*N+j];
+            {
+                c[ROW_MAJOR(i,j,N)] += a[ROW_MAJOR(i,k,N)] * b[ROW_MAJOR(k,j,N)];
+            }
+        }
         cali::Annotation("matmul").end();
     }
 
+    int randx = N*((float)rand() / (float)RAND_MAX);
+    int randy = N*((float)rand() / (float)RAND_MAX);
+    std::cout << "Validate! " << c[ROW_MAJOR(randx,randy,N)] << std::endl;
 }
 
 void begin_foo_op()

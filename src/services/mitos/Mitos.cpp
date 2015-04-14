@@ -43,8 +43,7 @@ void make_sample_key() {
 }
 
 void sample_handler(perf_event_sample *sample, void *args) {
-    //std::cerr << "Checking lock!\n";
-
+    return;
     if (SigsafeRWLock::is_thread_locked())
         return;
     
@@ -95,6 +94,8 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
+    std::cerr << "thread init!\n";
+
     // check if allocated
     void *thread_data = pthread_getspecific(key); 
     if(thread_data)
@@ -106,7 +107,6 @@ void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
 
     // point key
     pthread_setspecific(key,sample);
-
 }
 
 void mitos_init(Caliper* c) {
@@ -134,6 +134,9 @@ void mitos_register(Caliper* c) {
     c->events().measure.connect(&push_load_sample);
     c->events().finish_evt.connect(&mitos_finish);
     c->events().create_context_evt.connect(&thread_data_init);
+
+    // initialize master thread
+    thread_data_init((cali_context_scope_t)0,NULL);
 
     // initialize per-thread data
     pthread_once(&key_once, make_sample_key);
