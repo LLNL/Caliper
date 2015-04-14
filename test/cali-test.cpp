@@ -14,6 +14,34 @@
 
 using namespace std;
 
+void matmul()
+{
+    int N = 1024;
+
+    double *a;
+    double *b;
+    double *c;
+
+    int i,j,k;
+
+    a = new double[N*N];
+    b = new double[N*N];
+    c = new double[N*N];
+
+    for(i=0; i<N; ++i)
+        for(j=0; j<N; ++j)
+            c[i*N+j] = 0;
+
+#if TEST_USE_OMP
+#pragma omp parallel for private(i,j,k) shared(a,b,c)
+#endif
+    for(i=0; i<N; ++i)
+        for(j=0; j<N; ++j)
+            for(k=0; k<N; ++k)
+                c[i*N+j] += a[i*N+k] * b[k*N+j];
+
+}
+
 void begin_foo_op()
 {
     // Begin "foo"->"fooing" and keep it alive past the end of the current C++ scope
@@ -85,9 +113,6 @@ int main(int argc, char* argv[])
         // Declare "iteration" annotation, store entries explicitly as values
         cali::Annotation iteration("iteration", CALI_ATTR_ASVALUE);
 
-#if TEST_USE_OMP
-#pragma omp parallel for
-#endif
         for (int i = 0; i < count; ++i) {
             // Set "iteration" annotation to current value of 'i'
             iteration.set(i);
@@ -97,6 +122,8 @@ int main(int argc, char* argv[])
         }
 
         iteration.end();
+
+        matmul();
 
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }

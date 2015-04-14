@@ -38,11 +38,17 @@ static const ConfigSet::Entry s_configdata[] = {
 static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
-void make_sample_key()
-{
+void make_sample_key() {
+    // check if already initialized
+    void *thread_data = pthread_getspecific(key); 
+    if(thread_data)
+        return;
+
+    // allocate sample
     perf_event_sample *sample = new perf_event_sample;
     memset(sample,0,sizeof(perf_event_sample));
 
+    // point key to allocated sample
     pthread_key_create(&key, NULL);
     pthread_setspecific(key, sample); 
 }
@@ -52,11 +58,17 @@ void sample_handler(perf_event_sample *sample, void *args) {
 
     if (SigsafeRWLock::is_thread_locked())
         return;
+    
+    std::cerr << "Lock acquired!\n";
 
     perf_event_sample *smp = (perf_event_sample*)pthread_getspecific(key);
+
+    if(!smp)
+        return;
+
     memcpy(smp,sample,sizeof(perf_event_sample));
 
-    //std::cerr << "Copied over!\n";
+    std::cerr << "Copied over!\n";
 
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
@@ -65,8 +77,8 @@ void sample_handler(perf_event_sample *sample, void *args) {
 }
 
 void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
-    perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
     //std::cerr << "pushing load sample!\n";
+    perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
 
     if(!sample)
     {
@@ -79,7 +91,7 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
         return;
     }
 
-    //std::cerr << "GOT ONE\n";
+    std::cerr << "GOT ONE!\n";
 
     Variant v_attr[1];
     Variant v_data[1];
@@ -93,8 +105,12 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
     fn(ContextRecord::record_descriptor(), n, data);
 }
 
+void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
+    pthread_once(&key_once, make_sample_key);
+}
+
 void mitos_init(Caliper* c) {
-    Mitos_set_sample_threshold(7);
+    Mitos_set_sample_threshold(3);
     Mitos_set_sample_period(1000);
     Mitos_set_sample_mode(SMPL_MEMORY);
     Mitos_set_handler_fn(&sample_handler,c);
@@ -102,26 +118,25 @@ void mitos_init(Caliper* c) {
     Mitos_begin_sampler();
 }
 
-void mitos_finish(Caliper* c)
-{
+void mitos_finish(Caliper* c) {
     Mitos_end_sampler();
 }
 
 /// Initialization handler
-void mitos_register(Caliper* c)
-{
+void mitos_register(Caliper* c) {
     record_address = config.get("address").to_bool();
 
     address_attr = 
         c->create_attribute("mitos.address", CALI_TYPE_ADDR, 
-                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
+                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
     // add callback for Caliper::get_context() event
     c->events().measure.connect(&push_load_sample);
     c->events().finish_evt.connect(&mitos_finish);
+    c->events().create_context_evt.connect(&thread_data_init);
 
-    // create thread-specific key
-    pthread_once(&key_once, make_sample_key);
+    // initialize per-thread data
+    thread_data_init((cali_context_scope_t)0,NULL);
 
     // initialize mitos
     mitos_init(c);
@@ -132,7 +147,7 @@ void mitos_register(Caliper* c)
 } // namespace
 
 
-namespace cali
+namespace cali 
 {
     CaliperService MitosService = { "mitos", { ::mitos_register } };
 } // namespace cali
