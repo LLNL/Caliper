@@ -43,7 +43,6 @@ void make_sample_key() {
 }
 
 void sample_handler(perf_event_sample *sample, void *args) {
-    return;
     if (SigsafeRWLock::is_thread_locked())
         return;
     

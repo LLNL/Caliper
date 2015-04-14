@@ -45,6 +45,7 @@ void matmul()
 #endif
     for(i=0; i<N; ++i)
     {
+        std::cerr << "omp thread " << omp_get_thread_num() << std::endl;
         cali::Annotation("matmul").begin("matmulling");
         for(j=0; j<N; ++j)
         {
@@ -109,6 +110,8 @@ int main(int argc, char* argv[])
 
     int count = argc > 1 ? atoi(argv[1]) : 4;
 
+    matmul();
+
     // An annotation with a user-defined datatype
 
     struct my_weird_type {
@@ -142,7 +145,6 @@ int main(int argc, char* argv[])
 
         iteration.end();
 
-        matmul();
 
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
