@@ -45,7 +45,6 @@ void matmul()
 #endif
     for(i=0; i<N; ++i)
     {
-        std::cerr << "omp thread " << omp_get_thread_num() << std::endl;
         cali::Annotation("matmul").begin("matmulling");
         for(j=0; j<N; ++j)
         {
