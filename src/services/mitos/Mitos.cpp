@@ -58,8 +58,8 @@ static void sample_handler(perf_event_sample *sample, void *args) {
     if(c == NULL)
     {
         std::cerr << "Null Caliper instance!\n";
-    }
-    c->push_context(CALI_SCOPE_THREAD);
+    } else
+        c->push_context(CALI_SCOPE_THREAD);
 }
 
 void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
