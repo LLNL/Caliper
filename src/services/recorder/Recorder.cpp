@@ -62,7 +62,7 @@ class Recorder
             "abcdefghiyklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXZY";
 
-        std::uniform_int_distribution<> random(0, sizeof(characters)-1);
+        std::uniform_int_distribution<> random(0, sizeof(characters)-2);
 
         string s(len, '-');
 
@@ -210,7 +210,7 @@ class Recorder
         c->events().pre_end_evt.connect(f);
         c->events().pre_set_evt.connect(f);
 
-        c->events().finish_evt.connect([&](Caliper*){ flush_buffer(); });
+        c->events().finish_evt.connect([&](Caliper*){ m_lock.wlock(); flush_buffer(); m_lock.unlock(); });
     }
 
     Recorder(Caliper* c)
