@@ -58,7 +58,11 @@ static void sample_handler(perf_event_sample *sample, void *args) {
 
 void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
     // get context of sample thread
-    ContextBuffer *thread_context = thread_context_map[static_sample.tid];
+    auto find_context = thread_context_map.find(static_sample.tid);
+    if(find_context == thread_context_map.end())
+        return; // not found
+
+    ContextBuffer *thread_context = find_context->second;
 
     Variant v_attr[1];
     Variant v_data[1];
