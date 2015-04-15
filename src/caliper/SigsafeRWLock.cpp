@@ -3,6 +3,8 @@
 
 #include "SigsafeRWLock.h"
 
+#include <iostream>
+
 pthread_key_t cali::SigsafeRWLock::s_sig_key;
 
 using namespace cali;
@@ -26,7 +28,7 @@ bool SigsafeRWLock::is_thread_locked()
 {
     volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
 
-    return (flagptr == nullptr) || (*flagptr > 0);
+    return (flagptr == nullptr) || (*flagptr) > 0;
 }
 
 void SigsafeRWLock::rlock()
@@ -34,11 +36,12 @@ void SigsafeRWLock::rlock()
     sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
 
     if (flagptr == nullptr) {
-        flagptr = new sig_atomic_t;
+        flagptr  = new sig_atomic_t;
+        *flagptr = 0;
         pthread_setspecific(s_sig_key, flagptr);
     }
 
-    (*flagptr) = 1;
+    ++(*flagptr);
 
     pthread_rwlock_rdlock(&m_rwlock);
 }
@@ -48,19 +51,20 @@ void SigsafeRWLock::wlock()
     sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
 
     if (!flagptr) {
-        flagptr = new sig_atomic_t;
+        flagptr  = new sig_atomic_t;
+        *flagptr = 0;
         pthread_setspecific(s_sig_key, flagptr);
     }
 
-    (*flagptr) = 1;
+    ++(*flagptr);
 
     pthread_rwlock_wrlock(&m_rwlock);
 }
 
 void SigsafeRWLock::unlock()
 {
-    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
-    (*flagptr) = 0;
-
     pthread_rwlock_unlock(&m_rwlock);
+
+    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
+    --(*flagptr);
 }

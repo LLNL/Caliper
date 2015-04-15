@@ -45,8 +45,8 @@ void make_sample_key() {
 void sample_handler(perf_event_sample *sample, void *args) {
     if (SigsafeRWLock::is_thread_locked())
         return;
-    
-    std::cerr << "Lock acquired!\n";
+
+    // std::cerr << "Lock acquired!\n";
 
     perf_event_sample *smp = (perf_event_sample*)pthread_getspecific(key);
 
@@ -55,7 +55,7 @@ void sample_handler(perf_event_sample *sample, void *args) {
 
     memcpy(smp,sample,sizeof(perf_event_sample));
 
-    std::cerr << "Copied over!\n";
+    // std::cerr << "Copied over!\n";
 
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
@@ -115,6 +115,8 @@ void mitos_init(Caliper* c) {
     Mitos_set_handler_fn(&sample_handler,c);
     Mitos_prepare(0);
     Mitos_begin_sampler();
+
+    Log(1).stream() << "Mitos sampling handler initialized" << endl;
 }
 
 void mitos_finish(Caliper* c) {
@@ -131,17 +133,15 @@ void mitos_register(Caliper* c) {
 
     // add callback for Caliper::get_context() event
     c->events().measure.connect(&push_load_sample);
+    c->events().post_init_evt.connect(&mitos_init);
     c->events().finish_evt.connect(&mitos_finish);
     c->events().create_context_evt.connect(&thread_data_init);
-
-    // initialize master thread
-    thread_data_init((cali_context_scope_t)0,NULL);
 
     // initialize per-thread data
     pthread_once(&key_once, make_sample_key);
 
-    // initialize mitos
-    mitos_init(c);
+    // initialize master thread
+    thread_data_init((cali_context_scope_t)0,NULL);
 
     Log(1).stream() << "Registered mitos service" << endl;
 }
