@@ -12,7 +12,7 @@
 
 void init_matrices(int N, double **a, double **b, double **c)
 {
-    cali::Annotation("matrix").begin("initialize");
+    cali::Annotation::AutoScope si( cali::Annotation("matrix").begin("initialize") );
 
     *a = new double[N*N];
     *b = new double[N*N];
@@ -31,21 +31,29 @@ void init_matrices(int N, double **a, double **b, double **c)
 
 void matmul(int N, double *a, double *b, double *c)
 {
-    cali::Annotation("matrix").begin("multiply");
+    cali::Annotation::AutoScope so( cali::Annotation("matrix").begin("multiply") );
 #ifdef TEST_USE_OMP
-#pragma omp parallel for
-#endif
-    for(int i=0; i<N; ++i)
+#pragma omp parallel 
     {
-        cali::Annotation("matrix").begin("thread_multiply");
-        for(int j=0; j<N; ++j)
+        cali::Annotation("omp.thread").set(omp_get_thread_num());
+
+        cali::Annotation::AutoScope 
+            st( cali::Annotation("matrix").begin("thread_multiply") );
+#pragma omp for    
+#endif
+        for(int i=0; i<N; ++i)
         {
-            for(int k=0; k<N; ++k)
+            for(int j=0; j<N; ++j)
             {
-                c[ROW_MAJOR(i,j,N)] += a[ROW_MAJOR(i,k,N)]*b[ROW_MAJOR(k,j,N)];
+                for(int k=0; k<N; ++k)
+                {
+                    c[ROW_MAJOR(i,j,N)] += a[ROW_MAJOR(i,k,N)]*b[ROW_MAJOR(k,j,N)];
+                }
             }
         }
+#ifdef TEST_USE_OMP
     }
+#endif
 }
 
 int main(int argc, char **argv)
@@ -54,7 +62,7 @@ int main(int argc, char **argv)
     double *a,*b,*c;
 
     cali::Annotation phase_annotation("phase");
-    phase_annotation.begin("main");
+    cali::Annotation::AutoScope sp( phase_annotation.begin("main") );
 
     init_matrices(N,&a,&b,&c);
     matmul(N,a,b,c);

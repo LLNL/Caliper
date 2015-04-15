@@ -90,7 +90,7 @@ void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void mitos_init(Caliper* c) {
-    Mitos_set_sample_threshold(3);
+    Mitos_set_sample_threshold(7);
     Mitos_set_sample_period(1000);
     Mitos_set_sample_mode(SMPL_MEMORY);
     Mitos_set_handler_fn(&sample_handler,c);
