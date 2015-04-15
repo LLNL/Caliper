@@ -46,8 +46,6 @@ void sample_handler(perf_event_sample *sample, void *args) {
     if (SigsafeRWLock::is_thread_locked())
         return;
     
-    std::cerr << "Lock acquired!\n";
-
     perf_event_sample *smp = (perf_event_sample*)pthread_getspecific(key);
 
     if(!smp)
@@ -55,16 +53,11 @@ void sample_handler(perf_event_sample *sample, void *args) {
 
     memcpy(smp,sample,sizeof(perf_event_sample));
 
-    std::cerr << "Copied over!\n";
-
     Caliper *c = (Caliper*)args;
     c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
-
-    //std::cerr << "Context pushed!\n";
 }
 
 void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
-    //std::cerr << "pushing load sample!\n";
     perf_event_sample *sample = (perf_event_sample*)pthread_getspecific(key);
 
     if(!sample)
@@ -77,8 +70,6 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
         //std::cerr << "Not set!\n";
         return;
     }
-
-    std::cerr << "GOT ONE!\n";
 
     Variant v_attr[1];
     Variant v_data[1];
@@ -93,8 +84,6 @@ void push_load_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void thread_data_init(cali_context_scope_t cscope, ContextBuffer* cbuf) {
-    std::cerr << "thread init!\n";
-
     // check if allocated
     void *thread_data = pthread_getspecific(key); 
     if(thread_data)
