@@ -38,6 +38,7 @@ bool      record_address { false };
 perf_event_sample static_sample;
 
 map<pid_t,ContextBuffer*> thread_context_map;
+SigsafeRWLock thread_context_lock;
 
 static const ConfigSet::Entry s_configdata[] = {
     { "mitos", CALI_TYPE_BOOL, "false",
@@ -52,15 +53,25 @@ static void sample_handler(perf_event_sample *sample, void *args) {
     memcpy(&static_sample,sample,sizeof(perf_event_sample));
 
     // push context to invoke push_sample
-    Caliper *c = (Caliper*)args;
+    Caliper *c = Caliper::instance();
+
+    if(c == NULL)
+    {
+        std::cerr << "Null Caliper instance!\n";
+    }
     c->push_context(CALI_SCOPE_THREAD);
 }
 
 void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
     // get context of sample thread
+    thread_context_lock.rlock();
     auto find_context = thread_context_map.find(static_sample.tid);
     if(find_context == thread_context_map.end())
+    {
+        thread_context_lock.unlock();
         return; // not found
+    }
+    thread_context_lock.unlock();
 
     ContextBuffer *thread_context = find_context->second;
 
@@ -96,7 +107,9 @@ void mitos_finish(Caliper* c) {
 void map_thread_context(cali_context_scope_t cscope,
                         ContextBuffer *cbuf)
 {
+    thread_context_lock.wlock();
     thread_context_map[gettid()] = cbuf;
+    thread_context_lock.unlock();
 }
 
 /// Initialization handler
@@ -112,6 +125,9 @@ void mitos_register(Caliper* c) {
     c->events().finish_evt.connect(&mitos_finish);
     c->events().create_context_evt.connect(&map_thread_context);
     c->events().measure.connect(&push_sample);
+
+    // thread context map lock
+    thread_context_lock.init();
 
     // map master thread's contextbuffer
     map_thread_context((cali_context_scope_t)0,c->current_contextbuffer(CALI_SCOPE_THREAD));
