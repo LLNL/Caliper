@@ -69,7 +69,7 @@ void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
     int               n[3] = { 0,       1,  1  };
     const Variant* data[3] = { nullptr, v_attr, v_data };
 
-    // how does fn know about n and data?
+    fn(ContextRecord::record_descriptor(), n, data);
 
     thread_context->push_record(fn);
 }
