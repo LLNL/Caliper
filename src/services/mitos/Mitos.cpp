@@ -42,6 +42,7 @@ bool      record_address { false };
 
 perf_event_sample static_sample;
 
+int recorded;
 map<pid_t,ContextBuffer*> thread_context_map;
 SigsafeRWLock thread_context_lock;
 
@@ -57,6 +58,11 @@ static void sample_handler(perf_event_sample *sample, void *args) {
     // copy to global static sample
     memcpy(&static_sample,sample,sizeof(perf_event_sample));
 
+    thread_context_lock.wlock();
+    recorded = false;
+    thread_context_lock.unlock();
+
+
     // push context to invoke push_sample
     Caliper *c = Caliper::instance();
 
@@ -71,11 +77,12 @@ void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
     // get context of sample thread
     thread_context_lock.rlock();
     auto find_context = thread_context_map.find(static_sample.tid);
-    if(find_context == thread_context_map.end())
+    if(recorded || find_context == thread_context_map.end())
     {
         thread_context_lock.unlock();
         return; // not found
     }
+    recorded = true;
     thread_context_lock.unlock();
 
     ContextBuffer *thread_context = find_context->second;
@@ -105,8 +112,8 @@ void push_sample(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 void mitos_init(Caliper* c) {
-    Mitos_set_sample_threshold(7);
-    Mitos_set_sample_period(1000);
+    Mitos_set_sample_threshold(10);
+    Mitos_set_sample_period(2000);
     Mitos_set_sample_mode(SMPL_MEMORY);
     Mitos_set_handler_fn(&sample_handler,c);
     Mitos_prepare(0);
@@ -123,6 +130,7 @@ void map_thread_context(cali_context_scope_t cscope,
                         ContextBuffer *cbuf)
 {
     thread_context_lock.wlock();
+    recorded = false;
     thread_context_map[gettid()] = cbuf;
     thread_context_lock.unlock();
 }
