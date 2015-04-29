@@ -15,6 +15,11 @@ endif()
 
 find_package(Threads)
 
+find_package(OpenMP)
+if (OpenMP_FLAG_DETECTED)
+  set(TEST_USE_OMP TRUE)
+endif()
+
 # Find OMPT header
 find_path(OMPT_INCLUDE_DIR ompt.h
   PATH_SUFFIXES include
@@ -26,6 +31,13 @@ if (OMPT_INCLUDE_DIR)
   message(STATUS "OpenMP tools interface header ompt.h found in " ${OMPT_INCLUDE_DIR})
 else()
   message(STATUS "OpenMP tools interface header ompt.h not found")
+endif()
+
+# Find Mitos
+find_package(Mitos)
+if(Mitos_FOUND)
+  set(CALIPER_HAVE_MITOS TRUE)
+  message(STATUS "Mitos sampling library found")
 endif()
 
 # Create a config header file

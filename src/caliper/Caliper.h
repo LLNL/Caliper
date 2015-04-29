@@ -63,6 +63,7 @@ public:
                             ContextBuffer*)>             create_context_evt;
         util::callback<void(ContextBuffer*)>             destroy_context_evt;
 
+        util::callback<void(Caliper*)>                   post_init_evt;
         util::callback<void(Caliper*)>                   finish_evt;
 
         util::callback<void(Caliper*, 

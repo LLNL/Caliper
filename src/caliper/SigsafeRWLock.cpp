@@ -3,12 +3,13 @@
 
 #include "SigsafeRWLock.h"
 
+#include <iostream>
+
+pthread_key_t cali::SigsafeRWLock::s_sig_key;
+
 using namespace cali;
 
-volatile sig_atomic_t SigsafeRWLock::s_global_signal_flag { 0 };
-
 SigsafeRWLock::SigsafeRWLock()
-    : m_sigwlock { 0 }, m_sigrlock { 0 }, m_sig_wflag { 0 }, m_sig_rflag { 0 }
 {
     pthread_rwlock_init(&m_rwlock, NULL);
 }
@@ -18,60 +19,52 @@ SigsafeRWLock::~SigsafeRWLock()
     pthread_rwlock_destroy(&m_rwlock);
 }
 
+void SigsafeRWLock::init()
+{
+    pthread_key_create(&s_sig_key, NULL);
+}
+
+bool SigsafeRWLock::is_thread_locked()
+{
+    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
+
+    return (flagptr == nullptr) || (*flagptr) > 0;
+}
+
 void SigsafeRWLock::rlock()
 {
-    pthread_rwlock_rdlock(&m_rwlock);
-    ++m_sigrlock;
+    sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
 
-    // Spin while signal handler wlocked this mutex
-    while ( m_sig_wflag != 0 )
-        ;
+    if (flagptr == nullptr) {
+        flagptr  = new sig_atomic_t;
+        *flagptr = 0;
+        pthread_setspecific(s_sig_key, flagptr);
+    }
+
+    ++(*flagptr);
+
+    pthread_rwlock_rdlock(&m_rwlock);
 }
 
 void SigsafeRWLock::wlock()
 {
+    sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
+
+    if (!flagptr) {
+        flagptr  = new sig_atomic_t;
+        *flagptr = 0;
+        pthread_setspecific(s_sig_key, flagptr);
+    }
+
+    ++(*flagptr);
+
     pthread_rwlock_wrlock(&m_rwlock);
-    ++m_sigwlock;
-
-    // Spin while signal handler rlocked or wlocked this mutex
-    while ( m_sig_rflag != 0 )
-        ;
-    while ( m_sig_wflag != 0 )
-        ;
-}
-
-bool SigsafeRWLock::sig_try_rlock()
-{
-    if (m_sigwlock != 0)
-        return false;
-
-    m_sig_rflag = 1;
-
-    return true;
-}
-
-bool SigsafeRWLock::sig_try_wlock()
-{
-    if (m_sigwlock != 0 || m_sigrlock != 0)
-        return false;
-
-    m_sig_wflag = 1;
-
-    return true;
 }
 
 void SigsafeRWLock::unlock()
 {
-    if (m_sigwlock)
-        --m_sigrlock;
-    if (m_sigrlock)
-        --m_sigwlock;
-
     pthread_rwlock_unlock(&m_rwlock);
-}
 
-void SigsafeRWLock::sig_unlock()
-{
-    m_sig_wflag = 0;
-    m_sig_rflag = 0;
+    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
+    --(*flagptr);
 }

@@ -95,13 +95,11 @@ struct Caliper::CaliperImpl
         m_prop_attr { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
         m_automerge { false }
-    { 
+    {
         m_automerge = m_config.get("automerge").to_bool();
     }
 
     ~CaliperImpl() {
-        m_events.finish_evt(s_caliper.get());
-
         Log(1).stream() << "Finished" << endl;
 
         for ( auto &n : m_root )
@@ -120,6 +118,8 @@ struct Caliper::CaliperImpl
         Services::register_services(s_caliper.get());
 
         Log(1).stream() << "Initialized" << endl;
+
+        m_events.post_init_evt(s_caliper.get());
 
         if (Log::verbosity() >= 2)
             RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
@@ -893,6 +893,7 @@ Caliper::Caliper()
 
 Caliper::~Caliper()
 {
+    mP->m_events.finish_evt(this);
     mP.reset(nullptr);
 }
 
@@ -1035,6 +1036,8 @@ Caliper::foreach_node(std::function<void(const Node&)> proc)
 Caliper* Caliper::instance()
 {
     if (CaliperImpl::s_siglock != 0) {
+        SigsafeRWLock::init();
+
         if (CaliperImpl::s_siglock == 2)
             // Caliper had been initialized previously; we're past the static destructor
             return nullptr;
