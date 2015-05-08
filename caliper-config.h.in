@@ -5,6 +5,12 @@
 #cmakedefine CALIPER_HAVE_MITOS 
 #cmakedefine CALIPER_HAVE_LIBUNWIND
 
+// Version information -- numerical and a version string
+#define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@
+#define CALIPER_MINOR_VERSION @CALIPER_MINOR_VERSION@
+#define CALIPER_PATCH_VERSION @CALIPER_PATCH_VERSION@
+#define CALIPER_VERSION       "@CALIPER_VERSION@"
+
 #cmakedefine TEST_USE_OMP
 
 #endif // CALIPER_CONFIG_H
