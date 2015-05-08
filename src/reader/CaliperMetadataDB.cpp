@@ -149,7 +149,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     RecordMap merge_ctx_record(const RecordMap& rec, IdMap& idmap) {
         RecordMap record(rec);
 
-        for (const string& entry : { "implicit", "explicit" }) {
+        for (const string& entry : { "ref", "attr" }) {
             auto entry_it = record.find(entry);
 
             if (entry_it != record.end())

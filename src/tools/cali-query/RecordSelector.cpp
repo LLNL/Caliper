@@ -131,8 +131,8 @@ struct RecordSelector::RecordSelectorImpl
 
         // implicit entries
 
-        auto impl_entry_it = rec.find("implicit");
-        auto expl_entry_it = rec.find("explicit");
+        auto impl_entry_it = rec.find("ref");
+        auto expl_entry_it = rec.find("attr");
         auto data_entry_it = rec.find("data");
 
         bool check_implicit = impl_entry_it != rec.end() && impl_entry_it->second.size() > 0;
