@@ -77,7 +77,7 @@ struct Aggregator::AggregatorImpl
         if (get_record_type(rec) != "ctx")
             return false;
 
-        auto attr_it = rec.find("explicit");
+        auto attr_it = rec.find("attr");
 
         // --- get indices in attribute/data array of the values we want to aggregate
 
@@ -86,7 +86,7 @@ struct Aggregator::AggregatorImpl
         if (idx_vec.empty())
             return false;
 
-        auto ctxt_it = rec.find("implicit");
+        auto ctxt_it = rec.find("ref");
         auto data_it = rec.find("data");
 
         // --- build key vec
@@ -120,7 +120,7 @@ struct Aggregator::AggregatorImpl
         if (aggr_db_it == m_aggr_db.end())
             m_aggr_db.emplace(std::move(key_vec), rec);
         else {
-            auto arec_attr_it = aggr_db_it->second.find("explicit");
+            auto arec_attr_it = aggr_db_it->second.find("attr");
             auto arec_data_it = aggr_db_it->second.find("data");
 
             // there must be immediate data entries in aggregation record, otherwise it shouldn't be in db

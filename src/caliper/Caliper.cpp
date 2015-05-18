@@ -2,6 +2,8 @@
 /// Caliper main class
 ///
 
+#include "caliper-config.h"
+
 #include "Caliper.h"
 #include "ContextBuffer.h"
 #include "MemoryPool.h"
@@ -74,6 +76,8 @@ struct Caliper::CaliperImpl
     Attribute              m_type_attr;
     Attribute              m_prop_attr;
 
+    // Caliper version attribute
+    Attribute              m_ver_attr;
     // Key attribute: one attribute stands in as key for all auto-merged attributes
     Attribute              m_key_attr;
     bool                   m_automerge;
@@ -93,6 +97,7 @@ struct Caliper::CaliperImpl
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
         m_prop_attr { Attribute::invalid },
+        m_ver_attr  { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
         m_automerge { false }
     {
@@ -141,10 +146,12 @@ struct Caliper::CaliperImpl
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
         static Node bootstrap_attr_nodes[] = {
-            {  8, 8, { CALI_TYPE_STRING, "cali.attribute.name", 19 } },
-            {  9, 8, { CALI_TYPE_STRING, "cali.attribute.type", 19 } },
-            { 10, 8, { CALI_TYPE_STRING, "cali.attribute.prop", 19 } },
-            { 11, 8, { CALI_TYPE_STRING, "cali.key.attribute",  18 } },
+            {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 } },
+            {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 } },
+            { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 } },
+            { 11, 8,  { CALI_TYPE_STRING, "cali.key.attribute",   18 } },
+            { 12, 8,  { CALI_TYPE_STRING, "cali.caliper.version", 20 } },
+            { 13, 12, { CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION) } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
@@ -169,7 +176,8 @@ struct Caliper::CaliperImpl
             { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
             { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
             { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    },
-            { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    }
+            { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    },
+            { &bootstrap_attr_nodes[4], &m_ver_attr, CALI_TYPE_STRING  }
         };
 
         for ( attr_node_t p : attr_nodes ) {

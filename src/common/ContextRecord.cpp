@@ -10,7 +10,7 @@ using namespace std;
 
 namespace 
 {
-    const char* RecordElements[] = { "implicit", "explicit", "data" };
+    const char* RecordElements[] = { "ref", "attr", "data" };
 }
 
 const RecordDescriptor ContextRecord::s_record { 0x101, "ctx", 3, ::RecordElements };
@@ -28,7 +28,7 @@ ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)
 
     // implicit entries: 
 
-    entry_it = rec.find("implicit");
+    entry_it = rec.find("ref");
 
     if (entry_it != rec.end())
         for (const Variant& elem : entry_it->second) {
@@ -42,7 +42,7 @@ ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)
             }
         }
 
-    auto expl_entry_it = rec.find("explicit");
+    auto expl_entry_it = rec.find("attr");
     auto data_entry_it = rec.find("data");
 
     if (expl_entry_it == rec.end() || data_entry_it == rec.end() || expl_entry_it->second.empty())

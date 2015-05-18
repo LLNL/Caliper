@@ -5,6 +5,12 @@
 project (caliper)
 cmake_minimum_required(VERSION 2.8)
 
+# Version information
+set(CALIPER_MAJOR_VERSION 1)
+set(CALIPER_MINOR_VERSION 0)
+set(CALIPER_PATCH_VERSION 0)
+set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}")
+
 # Add our module directory to the include path.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
