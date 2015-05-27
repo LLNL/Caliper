@@ -4,101 +4,136 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <ContextBuffer.h>
-#include <SigsafeRWLock.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
 #include <Log.h>
 
-#include <unistd.h>
-#include <sys/syscall.h>
+#include <util/split.hpp>
 
-#include <map>
+#include <pthread.h>
 
 using namespace cali;
 using namespace std;
 
 #include <papi.h>
 
-#define NUM_COUNTERS 1
+#define MAX_COUNTERS 16
 
 namespace 
 {
 
-Attribute ins_attr        { Attribute::invalid } ;
+Variant   counter_attrbs[MAX_COUNTERS];
 
-ConfigSet config;
+int       counter_events[MAX_COUNTERS];
+long long counter_values[MAX_COUNTERS];
 
-bool      record_instructions { false };
+int       num_counters { 0 };
 
-int counter_events[NUM_COUNTERS] = {PAPI_TOT_INS};
-long long counter_values[NUM_COUNTERS];
 
 static const ConfigSet::Entry s_configdata[] = {
-    { "papi", CALI_TYPE_BOOL, "false",
-      "Include PAPI counters",
-      "Include PAPI counters"
+    { "counters", CALI_TYPE_STRING, "",
+      "List of PAPI events to record",
+      "List of PAPI events to record, separated by ':'" 
     },
     ConfigSet::Terminator
 };
 
 void push_counter(Caliper* c, int scope, WriteRecordFn fn) {
-    Variant v_attr[1];
-    Variant v_data[1];
+    if (num_counters < 1)
+        return;
 
-    if(PAPI_accum_counters(counter_values, NUM_COUNTERS) != PAPI_OK)
-    {
+    Variant v_data[MAX_COUNTERS];
+
+    if (PAPI_accum_counters(counter_values, num_counters) != PAPI_OK) {
         Log(1).stream() << "PAPI failed to accumulate counters!" << endl;
         return;
     }
 
-    v_attr[0] = ins_attr.id();
-    v_data[0] = (uint64_t)counter_values[0];
+    for (int i = 0; i < num_counters; ++i)
+        v_data[i] = static_cast<uint64_t>(counter_values[i]);
 
-    int               n[3] = {       0,      1,      1 };
-    const Variant* data[3] = { nullptr, v_attr, v_data };
+    int               n[3] = {       0, num_counters,   num_counters };
+    const Variant* data[3] = { nullptr, counter_attrbs, v_data       };
 
     fn(ContextRecord::record_descriptor(), n, data);
 }
 
 void papi_init(Caliper* c) {
-    if(PAPI_start_counters(counter_events,NUM_COUNTERS) != PAPI_OK)
-    {
+    if (PAPI_start_counters(counter_events, num_counters) != PAPI_OK)
         Log(1).stream() << "PAPI counters failed to initialize!" << endl;
-    }
     else
-    {
         Log(1).stream() << "PAPI counters initialized successfully" << endl;
-    }
 }
 
 void papi_finish(Caliper* c) {
-    if(PAPI_stop_counters(counter_values,NUM_COUNTERS) != PAPI_OK)
-    {
+    if (PAPI_stop_counters(counter_values, num_counters) != PAPI_OK)
         Log(1).stream() << "PAPI counters failed to stop!" << endl;
-    }
     else
-    {
         Log(1).stream() << "PAPI counters stopped successfully" << endl;
+}
+
+void setup_events(Caliper* c, const string& eventstring)
+{
+    vector<string> events;
+
+    util::split(eventstring, ':', back_inserter(events));
+
+    num_counters = 0;
+
+    for (string& event : events) {
+        int code;
+
+        if (PAPI_event_name_to_code(const_cast<char*>(event.c_str()), &code) != PAPI_OK) {
+            Log(0).stream() << "Unable to register PAPI counter \"" << event << '"' << endl;
+            continue;
+        }
+
+        if (num_counters < MAX_COUNTERS) {
+            Attribute attr =
+                c->create_attribute(string("papi.")+event, CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+
+            counter_events[num_counters] = code;
+            counter_attrbs[num_counters] = attr.id();
+
+            ++num_counters;
+        } else
+            Log(0).stream() << "Maximum number of PAPI counters exceeded; dropping \"" 
+                            << event << '"' << endl;
     }
 }
 
 // Initialization handler
 void papi_register(Caliper* c) {
-    record_instructions = config.get("instructions").to_bool();
+    int ret = PAPI_library_init(PAPI_VER_CURRENT);
+    
+    if (ret != PAPI_VER_CURRENT && ret > 0) {
+        Log(0).stream() << "PAPI version mismatch: found " 
+                        << ret << ", expected " << PAPI_VER_CURRENT << endl;
+        return;
+    }        
 
-    ins_attr = c->create_attribute("papi.instructions", CALI_TYPE_UINT, 
-                                       CALI_ATTR_ASVALUE 
-                                       | CALI_ATTR_SCOPE_THREAD 
-                                       | CALI_ATTR_SKIP_EVENTS);
+    // PAPI_thread_init(pthread_self);
+    
+    if (PAPI_is_initialized() == PAPI_NOT_INITED) {
+        Log(0).stream() << "PAPI library is not initialized" << endl;
+        return;
+    }
+
+    setup_events(c, RuntimeConfig::init("papi", s_configdata).get("counters").to_string());
+
+    if (num_counters < 1) {
+        Log(1).stream() << "No PAPI counters registered, dropping PAPI service" << endl;
+        return;
+    }
 
     // add callback for Caliper::get_context() event
     c->events().post_init_evt.connect(&papi_init);
     c->events().finish_evt.connect(&papi_finish);
     c->events().measure.connect(&push_counter);
 
-    Log(1).stream() << "Registered papi service" << endl;
+    Log(1).stream() << "Registered PAPI service" << endl;
 }
 
 } // namespace
