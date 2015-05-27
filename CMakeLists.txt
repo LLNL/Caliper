@@ -14,13 +14,21 @@ set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER
 # Add our module directory to the include path.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
+include(FindPAPI)
 
+# Find libunwind
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
 endif()
 
+# Find PAPI
+if (PAPI_FOUND)
+  set(CALIPER_HAVE_PAPI TRUE)
+endif()
+
 find_package(Threads)
 
+# Find OpenMP
 find_package(OpenMP)
 if (OpenMP_FLAG_DETECTED)
   set(TEST_USE_OMP TRUE)

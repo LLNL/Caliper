@@ -4,6 +4,7 @@
 #cmakedefine CALIPER_HAVE_OMPT 
 #cmakedefine CALIPER_HAVE_MITOS 
 #cmakedefine CALIPER_HAVE_LIBUNWIND
+#cmakedefine CALIPER_HAVE_PAPI
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@

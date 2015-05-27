@@ -8,6 +8,9 @@ namespace cali
 #ifdef CALIPER_HAVE_LIBUNWIND
 extern const CaliperService CallpathService;
 #endif
+#ifdef CALIPER_HAVE_PAPI
+extern const CaliperService PapiService;
+#endif
 extern const CaliperService DebugService;
 extern const CaliperService PthreadService;
 extern const CaliperService RecorderService;
@@ -22,6 +25,9 @@ extern const CaliperService OmptService;
 const CaliperService caliper_services[] = {
 #ifdef CALIPER_HAVE_LIBUNWIND
     CallpathService,
+#endif
+#ifdef CALIPER_HAVE_PAPI
+    PapiService,
 #endif
     DebugService,
     PthreadService,
