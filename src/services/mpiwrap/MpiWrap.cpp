@@ -1,5 +1,5 @@
-///@file  Papi.cpp
-///@brief PAPI provider for caliper records
+///@file  MpiWrap.cpp
+///@brief Caliper MPI service
 
 #include "../CaliperService.h"
 
