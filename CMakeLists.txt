@@ -47,6 +47,14 @@ else()
   message(STATUS "OpenMP tools interface header ompt.h not found")
 endif()
 
+# Find MPI
+
+find_package(MPI)
+
+if (MPI_C_FOUND)
+  set(CALIPER_HAVE_MPI TRUE)
+endif()
+
 # Find Mitos
 find_package(Mitos)
 if(Mitos_FOUND)
