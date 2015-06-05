@@ -13,20 +13,7 @@ namespace cali
 
 using namespace cali;
 
-{{fn func MPI_Init}}{
-    // Make sure Caliper is initialized
-    Caliper* c = Caliper::instance();    
-
-    {{callfn}}
-
-    if (mpi_enabled) {
-        int rank = 0;
-        PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        c->set(mpirank_attr, Variant(rank));
-    }
-}{{endfn}}
-
-{{fn func MPI_Init_thread}}{
+{{fn func MPI_Init MPI_Init_thread}}{
     // Make sure Caliper is initialized
     Caliper* c = Caliper::instance();    
 
