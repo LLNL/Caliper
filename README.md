@@ -113,13 +113,15 @@ The full list and order of the libraries is the following:
 
     CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \
         -lcaliper-callpath -lcaliper-debug -lcaliper-recorder \
-        -lcaliper-ompt -lcaliper-pthread -lcaliper-timestamp \
+        -lcaliper-ompt -lcaliper-mitos -lcaliper-mpi -lcaliper-papi \
+        -lcaliper-pthread -lcaliper-timestamp \ 
         -lcaliper -lcaliper-csv -lcaliper-common
 
 Depending on the configuration, you might need to omit the OMPT
-(`-lcaliper-ompt`) or the callpath module (`-lcaliper-callpath`).
-You may also need to add the `libunwind` and `pthread` libraries to
-the link line.
+(`-lcaliper-ompt`), MPI (`-lcaliper-mpi`), PAPI (`-lcaliper-papi`),
+or callpath module (`-lcaliper-callpath`).
+You may also need to add the `libunwind`, `papi`, and `pthread` 
+libraries to the link line.
 
 Note that because Caliper is written in C++11, all source files with
 Caliper annotations must be compiled in C++11 mode (typically by using
@@ -211,6 +213,11 @@ take effect.
 * `debug` Print annotation and measurement events.
   Useful to debug source-code annotations.
 
+* `mpi` Record MPI operations and the MPI rank.
+  Note that `libcaliper-mpiwrap` library has to be linked with the 
+  application in addition to the regular Caliper libraries to
+  obtain MPI information. See "MPI programs" below.
+
 * `ompt` The OpenMP tools interface service.
     Connects to the OpenMP tools interface to retrieve OpenMP status
     information.
@@ -227,6 +234,10 @@ take effect.
   multi-threading runtime system.
   A thread environment manager such as the `pthread` service creates
   separate per-thread contexts in a multi-threaded program.
+
+* `papi` Records PAPI hardware counters.
+  * `CALI_PAPI_COUNTERS` List of PAPI counters to record, separated by 
+    colon (`:`).
 
 * `recorder` Writes context trace data.
   * `CALI_RECORDER_FILENAME=(stdout|stderr|filename)` File name for
@@ -262,3 +273,17 @@ take effect.
     Default: false.
   * `CALI_TIMER_TIMESTAMP=(true|false)` Include absolute timestamp
     (time since UNIX epoch, in seconds) with each context record.
+
+### MPI programs
+
+Each process in an MPI program (or any other distributed-memory
+programming model) produces an independent Caliper dataset. Therefore,
+the recorder service writes one Caliper file per process. Users can
+merge / aggregate the separate datasets in post-processing. 
+
+Caliper provides an MPI service module to record MPI information
+via the PMPI interface. To enable the MPI service, the 
+`libcaliper-mpiwrap` wrapper library needs to be linked to the
+program, AND the mpi service needs to be activated by adding
+`mpi` to the list of services with the `CALI_SERVICES_ENABLE` 
+environment variable.
