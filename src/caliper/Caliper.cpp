@@ -112,6 +112,11 @@ struct Caliper::CaliperImpl
 
         // prevent re-initialization
         s_siglock = 2;
+
+	//freeing up context buffers
+	free(m_default_process_context);
+        free(m_default_thread_context); 
+        free(m_default_task_context); 
     }
 
     // deferred initialization: called when it's safe to use the public Caliper interface
