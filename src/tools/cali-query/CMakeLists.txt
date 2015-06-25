@@ -2,10 +2,7 @@ include_directories ("../../common")
 include_directories ("../../reader")
 
 set(CALIPER_QUERY_SOURCES
-    Aggregator.cpp
     Args.cpp
-    Expand.cpp
-    RecordSelector.cpp
     cali-query.cpp)
 
 add_executable(cali-query ${CALIPER_QUERY_SOURCES})

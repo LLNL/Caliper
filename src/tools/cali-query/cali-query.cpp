@@ -1,13 +1,13 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
-#include "Aggregator.h"
 #include "Args.h"
-#include "Expand.h"
-#include "RecordProcessor.h"
-#include "RecordSelector.h"
 
+#include <Aggregator.h>
 #include <CaliperMetadataDB.h>
+#include <Expand.h>
+#include <RecordProcessor.h>
+#include <RecordSelector.h>
 
 #include <ContextRecord.h>
 #include <Node.h>

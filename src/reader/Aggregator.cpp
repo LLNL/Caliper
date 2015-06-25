@@ -3,9 +3,13 @@
 
 #include "Aggregator.h"
 
+#include "CaliperMetadataDB.h"
+
 #include <Attribute.h>
+#include <Log.h>
 #include <Node.h>
-#include <CaliperMetadataDB.h>
+
+#include <cali_types.h>
 
 #include <util/split.hpp>
 
@@ -68,6 +72,11 @@ struct Aggregator::AggregatorImpl
             return Variant(l.to_uint() + r.to_uint());
         case CALI_TYPE_DOUBLE:
             return Variant(l.to_double() + r.to_double());
+        default:
+            Log(0).stream() << "Cannot aggregate attribute " << attr.name() 
+                            << " with non-aggregatable type " 
+                            << cali_type2string(attr.type()) 
+                            << endl;
         }
 
         return Variant();

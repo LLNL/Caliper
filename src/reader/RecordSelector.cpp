@@ -3,9 +3,10 @@
 
 #include "RecordSelector.h"
 
+#include "CaliperMetadataDB.h"
+
 #include <Attribute.h>
 #include <Node.h>
-#include <CaliperMetadataDB.h>
 
 #include <util/split.hpp>
 

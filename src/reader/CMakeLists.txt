@@ -1,10 +1,17 @@
 include_directories ("../common")
 
 set(CALIPER_READER_HEADERS
-    CaliperMetadataDB.h)
+    Aggregator.h
+    CaliperMetadataDB.h
+    Expand.h
+    RecordProcessor.h
+    RecordSelector.h)
 
 set(CALIPER_READER_SOURCES
-    CaliperMetadataDB.cpp)
+    Aggregator.cpp
+    Expand.cpp
+    CaliperMetadataDB.cpp
+    RecordSelector.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
 

@@ -3,8 +3,9 @@
 
 #include "Expand.h"
 
+#include "CaliperMetadataDB.h"
+
 #include <ContextRecord.h>
-#include <CaliperMetadataDB.h>
 
 #include <util/split.hpp>
 
