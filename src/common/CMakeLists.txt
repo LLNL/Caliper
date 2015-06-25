@@ -28,7 +28,9 @@ set(CALIPER_COMMON_SOURCES
     Variant.cpp
     cali_types.c)
 
-add_library(caliper-common ${CALIPER_COMMON_SOURCES})
+add_subdirectory(csv)
+
+add_library(caliper-common $<TARGET_OBJECTS:caliper-csv> ${CALIPER_COMMON_SOURCES})
 
 install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include)
 install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/util)

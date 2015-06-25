@@ -9,10 +9,10 @@
 
 #include <CaliperMetadataDB.h>
 
-#include <CsvReader.h>
-
 #include <ContextRecord.h>
 #include <Node.h>
+
+#include <csv/CsvReader.h>
 
 #include <util/split.hpp>
 

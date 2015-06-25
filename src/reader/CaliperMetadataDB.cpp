@@ -3,7 +3,7 @@
 
 #include "CaliperMetadataDB.h"
 
-#include <CsvReader.h>
+#include <csv/CsvReader.h>
 
 #include <Log.h>
 #include <Node.h>

@@ -6,7 +6,7 @@
 #include <Caliper.h>
 #include <SigsafeRWLock.h>
 
-#include <CsvSpec.h>
+#include <csv/CsvSpec.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
