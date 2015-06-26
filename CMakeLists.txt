@@ -49,14 +49,14 @@ endif()
 
 # Find MPI
 
-find_package(MPI)
+find_package(MPI QUIET)
 
 if (MPI_C_FOUND)
   set(CALIPER_HAVE_MPI TRUE)
 endif()
 
 # Find Mitos
-find_package(Mitos)
+find_package(Mitos QUIET)
 if(Mitos_FOUND)
   set(CALIPER_HAVE_MITOS TRUE)
   message(STATUS "Mitos sampling library found")
@@ -66,8 +66,11 @@ endif()
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
   ${PROJECT_BINARY_DIR}/caliper-config.h)
+
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
 
 add_subdirectory(src)
 add_subdirectory(test)
 
+# Install exports
+install(EXPORT caliper DESTINATION lib/cmake)

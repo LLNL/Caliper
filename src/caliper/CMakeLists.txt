@@ -15,12 +15,14 @@ set(CALIPER_SOURCES
     SigsafeRWLock.cpp
     cali.cpp)
 
-add_library(caliper ${CALIPER_SOURCES})
+add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services>)
 
-target_link_libraries(caliper caliper-services)
 target_link_libraries(caliper caliper-common)
-
 target_link_libraries(caliper ${CMAKE_THREAD_LIBS_INIT})
 
 install(FILES ${CALIPER_HEADERS} DESTINATION include)
-install(TARGETS caliper DESTINATION lib)
+
+install(TARGETS caliper 
+  EXPORT caliper 
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)

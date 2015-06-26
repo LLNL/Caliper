@@ -1,4 +1,4 @@
-include_directories("../../common/caliper")
+include_directories("../../common")
 include_directories("../../caliper")
 
 include_directories(${MPI_C_INCLUDE_PATH})
@@ -13,16 +13,19 @@ set(CALIPER_MPI_SOURCES
 set(CALIPER_MPIWRAP_SOURCES
     Wrapper.cpp)
 
-add_library(caliper-mpi ${CALIPER_MPI_SOURCES})
+add_service_sources(${CALIPER_MPI_SOURCES})
+
 add_library(caliper-mpiwrap ${CALIPER_MPIWRAP_SOURCES})
 
-target_link_libraries(caliper-mpi caliper-common)
-target_link_libraries(caliper-mpi caliper)
+# add_library(caliper-mpi ${CALIPER_MPI_SOURCES})
+# target_link_libraries(caliper-mpi caliper-common)
+# target_link_libraries(caliper-mpi caliper)
 
-target_link_libraries(caliper-mpiwrap caliper-mpi)
 target_link_libraries(caliper-mpiwrap caliper-common)
 target_link_libraries(caliper-mpiwrap caliper)
 target_link_libraries(caliper-mpiwrap ${MPI_C_LIBRARIES})
 
-install(TARGETS caliper-mpiwrap DESTINATION lib)
-install(TARGETS caliper-mpi DESTINATION lib)
+install(TARGETS caliper-mpiwrap
+  EXPORT caliper
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)

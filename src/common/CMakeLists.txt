@@ -35,4 +35,7 @@ add_library(caliper-common $<TARGET_OBJECTS:caliper-csv> ${CALIPER_COMMON_SOURCE
 install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include)
 install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/util)
 
-install(TARGETS caliper-common DESTINATION lib)
+install(TARGETS caliper-common 
+  EXPORT caliper
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib)
