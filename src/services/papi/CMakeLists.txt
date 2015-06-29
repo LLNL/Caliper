@@ -11,6 +11,8 @@ set(CALIPER_PAPI_SOURCES
 
 # install(TARGETS caliper-papi DESTINATION lib)
 
-add_service_sources(${CALIPER_PAPI_SOURCES})
+add_library(caliper-papi OBJECT ${CALIPER_PAPI_SOURCES})
+
+add_service_objlib("$<TARGET_OBJECTS:caliper-papi>")
 
 # target_link_libraries(caliper ${PAPI_LIBRARIES})

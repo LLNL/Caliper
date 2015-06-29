@@ -10,4 +10,6 @@ set(CALIPER_OMPT_SOURCES
 
 # install(TARGETS caliper-ompt DESTINATION lib)
 
-add_service_sources(${CALIPER_OMPT_SOURCES})
+add_library(caliper-ompt OBJECT ${CALIPER_OMPT_SOURCES})
+
+add_service_objlib("$<TARGET_OBJECTS:caliper-ompt>")

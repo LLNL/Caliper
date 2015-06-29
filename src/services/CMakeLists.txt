@@ -1,7 +1,7 @@
 include_directories("../common")
 include_directories("../caliper")
 
-# A macro to include our service module sources in a static lib
+# A macro to include service module source files in the caliper runtime lib
 
 macro(add_service_sources)
   file(RELATIVE_PATH _relpath "${CMAKE_SOURCE_DIR}/src/services" "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -17,14 +17,22 @@ macro(add_service_sources)
   endif()
 endmacro()
 
-add_service_sources(Services.cpp)
+# A macro to include service modules as object libs in the caliper runtime lib.
+# Used when service subdirectories needs additional includes etc. 
 
-# if (LIBUNWIND_FOUND)
-#   add_subdirectory(callpath)
-# endif()
-# if (PAPI_FOUND)
-#   add_subdirectory(papi)
-# endif()
+macro(add_service_objlib)
+  list(APPEND CALIPER_SERVICES_LIBS ${ARGN})
+  set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
+endmacro()
+
+# Service subdirectories
+
+if (LIBUNWIND_FOUND)
+  add_subdirectory(callpath)
+endif()
+if (PAPI_FOUND)
+  add_subdirectory(papi)
+endif()
 add_subdirectory(debug)
 add_subdirectory(pthread)
 add_subdirectory(recorder)
@@ -32,11 +40,19 @@ add_subdirectory(timestamp)
 if (MPI_C_FOUND)
   add_subdirectory(mpiwrap)
 endif()
-# if (Mitos_FOUND)
-#   add_subdirectory(mitos)
-# endif()
+if (Mitos_FOUND)
+  add_subdirectory(mitos)
+endif()
 if (OMPT_FOUND)
   add_subdirectory(ompt)
 endif()
 
+# Build service management classes 
+
+add_service_sources(Services.cpp)
+
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
+
+# Export service object libs to parent scope
+
+set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)

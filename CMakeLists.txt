@@ -19,11 +19,13 @@ include(FindPAPI)
 # Find libunwind
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
 endif()
 
 # Find PAPI
 if (PAPI_FOUND)
   set(CALIPER_HAVE_PAPI TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
 endif()
 
 find_package(Threads)
@@ -59,6 +61,7 @@ endif()
 find_package(Mitos QUIET)
 if(Mitos_FOUND)
   set(CALIPER_HAVE_MITOS TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS mitos)
   message(STATUS "Mitos sampling library found")
 endif()
 
