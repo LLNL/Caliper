@@ -104,24 +104,12 @@ annotation attribute on the same hierarchy level.
 ### Build and link annotated programs
 
 To build a program with Caliper annotations, link it with the Caliper
-libraries.
+runtime (libcaliper) and infrastructure library (libcaliper-common).
 
-Currently, the Caliper libraries are built statically.
-Therefore, all Caliper modules must be explicitly linked to the
-annotated program.
-The full list and order of the libraries is the following:
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-common
 
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-services \
-        -lcaliper-callpath -lcaliper-debug -lcaliper-recorder \
-        -lcaliper-ompt -lcaliper-mitos -lcaliper-mpi -lcaliper-papi \
-        -lcaliper-pthread -lcaliper-timestamp \ 
-        -lcaliper -lcaliper-csv -lcaliper-common
-
-Depending on the configuration, you might need to omit the OMPT
-(`-lcaliper-ompt`), MPI (`-lcaliper-mpi`), PAPI (`-lcaliper-papi`),
-or callpath module (`-lcaliper-callpath`).
-You may also need to add the `libunwind`, `papi`, and `pthread` 
-libraries to the link line.
+Depending on the configuration, you may also need to add the 
+`libunwind`, `papi`, and `pthread` libraries to the link line.
 
 Note that because Caliper is written in C++11, all source files with
 Caliper annotations must be compiled in C++11 mode (typically by using
