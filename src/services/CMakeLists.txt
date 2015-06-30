@@ -56,8 +56,6 @@ endif()
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 
-message(STATUS "services sources: " ${CALIPER_SERVICES_SOURCES})
-
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
