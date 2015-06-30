@@ -21,9 +21,14 @@ endmacro()
 # Used when service subdirectories needs additional includes etc. 
 
 macro(add_service_objlib)
-  list(APPEND CALIPER_SERVICES_LIBS ${ARGN})
+  if(${BUILD_SHARED_LIBS})
+    set_property(TARGET "${ARGN}" PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+  endif()
+  list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
+
+add_service_sources(Services.cpp)
 
 # Service subdirectories
 
@@ -49,9 +54,13 @@ endif()
 
 # Build service management classes 
 
-add_service_sources(Services.cpp)
-
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
+
+message(STATUS "services sources: " ${CALIPER_SERVICES_SOURCES})
+
+if (${BUILD_SHARED_LIBS})
+  set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endif()
 
 # Export service object libs to parent scope
 

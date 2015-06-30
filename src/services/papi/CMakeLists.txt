@@ -13,6 +13,6 @@ set(CALIPER_PAPI_SOURCES
 
 add_library(caliper-papi OBJECT ${CALIPER_PAPI_SOURCES})
 
-add_service_objlib("$<TARGET_OBJECTS:caliper-papi>")
+add_service_objlib("caliper-papi")
 
 # target_link_libraries(caliper ${PAPI_LIBRARIES})

@@ -11,6 +11,6 @@ add_library(caliper-mitos OBJECT ${CALIPER_MITOS_SOURCES})
 
 # install(TARGETS caliper-mitos DESTINATION lib)
 
-add_service_objlib("$<TARGET_OBJECTS:caliper-mitos>")
+add_service_objlib("caliper-mitos")
 
 add_service_sources(${CALIPER_MITOS_SOURCES})

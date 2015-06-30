@@ -7,6 +7,6 @@ set(CALIPER_CALLPATH_SOURCES
 
 add_library(caliper-callpath OBJECT ${CALIPER_CALLPATH_SOURCES})
 
-add_service_objlib("$<TARGET_OBJECTS:caliper-callpath>")
+add_service_objlib("caliper-callpath")
 
 # target_link_libraries(caliper ${LIBUNWIND_LIBRARY})

@@ -12,4 +12,4 @@ set(CALIPER_OMPT_SOURCES
 
 add_library(caliper-ompt OBJECT ${CALIPER_OMPT_SOURCES})
 
-add_service_objlib("$<TARGET_OBJECTS:caliper-ompt>")
+add_service_objlib("caliper-ompt")

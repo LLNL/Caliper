@@ -16,6 +16,9 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
 include(FindPAPI)
 
+# Shared libs option
+option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
+
 # Find libunwind
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
