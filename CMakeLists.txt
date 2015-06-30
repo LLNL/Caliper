@@ -19,6 +19,15 @@ include(FindPAPI)
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 
+# RPATH setup. By default, rpath everything.
+option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
+
+# the RPATH to be used when installing, but only if it's not a system directory
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
+
 # Find libunwind
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
