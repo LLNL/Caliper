@@ -1,7 +1,11 @@
 
 #include <Caliper.h>
 
+#include <Variant.h>
+
 #include <mpi.h>
+
+#include <cstring>
 
 namespace cali
 {

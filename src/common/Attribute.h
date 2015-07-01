@@ -9,7 +9,7 @@
 #include "cali_types.h"
 
 #include "IdType.h"
-#include "RecordMap.h"
+// #include "RecordMap.h"
 
 #include <string>
 
@@ -27,14 +27,9 @@ class Attribute : public IdType
 public:
 
     Attribute(cali_id_t id, const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT)
-        : IdType { id },
-        m_name { name }, m_properties { prop }, m_type { type }
+        : IdType(id),
+          m_name(name), m_properties(prop), m_type(type)
         { }
-
-    Attribute(const Attribute&) = default;
-    Attribute(Attribute&&) = default;
-
-    Attribute& operator = (const Attribute&) = default;
 
     std::string    name() const { return m_name; }
     cali_attr_type type() const { return m_type; }        
@@ -54,7 +49,7 @@ public:
         return m_properties & CALI_ATTR_HIDDEN;
     }
 
-    RecordMap record() const;
+    // RecordMap record() const;
 
     static const Attribute invalid;
 };

@@ -3,6 +3,7 @@
 
 #include "Attribute.h"
 
+#include <map>
 #include <vector>
 
 using namespace cali;
@@ -75,18 +76,18 @@ namespace
     }
 }
 
-RecordMap Attribute::record() const
-{
-    RecordMap recmap = { 
-        { "id",         { { id()   } }      },
-        { "name",       { Variant(m_name) } },
-        { "type",       { { m_type } }      },
-        { "properties", { }                 } };
+// RecordMap Attribute::record() const
+// {
+//     RecordMap recmap = { 
+//         { "id",         { { id()   } }      },
+//         { "name",       { Variant(m_name) } },
+//         { "type",       { { m_type } }      },
+//         { "properties", { }                 } };
 
-    if (m_properties != CALI_ATTR_DEFAULT)
-        recmap["properties"].push_back(Variant(::write_properties(m_properties)));
+//     if (m_properties != CALI_ATTR_DEFAULT)
+//         recmap["properties"].push_back(Variant(::write_properties(m_properties)));
 
-    return recmap;
-}
+//     return recmap;
+// }
 
 const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };

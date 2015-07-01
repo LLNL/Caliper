@@ -5,6 +5,8 @@
 
 #include "Caliper.h"
 
+#include <Variant.h>
+
 using namespace cali;
 
 //

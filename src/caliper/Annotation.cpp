@@ -6,6 +6,7 @@
 #include "Caliper.h"
 
 #include <Log.h>
+#include <Variant.h>
 
 #include <cstring>
 
@@ -59,7 +60,7 @@ Annotation::ScopeObj Annotation::begin(const char* data)
     return begin(Variant(CALI_TYPE_STRING, data, strlen(data)));
 }
 
-Annotation::ScopeObj Annotation::begin(cali_attr_type type, const void* data, size_t size)
+Annotation::ScopeObj Annotation::begin(cali_attr_type type, const void* data, uint64_t size)
 {
     return begin(Variant(type, data, size));
 }
@@ -107,7 +108,7 @@ Annotation::ScopeObj Annotation::set(const char* data)
     return set(Variant(CALI_TYPE_STRING, data, strlen(data)));
 }
 
-Annotation::ScopeObj Annotation::set(cali_attr_type type, const void* data, size_t size)
+Annotation::ScopeObj Annotation::set(cali_attr_type type, const void* data, uint64_t size)
 {
     return set(Variant(type, data, size));
 }

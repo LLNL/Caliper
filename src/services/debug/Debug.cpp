@@ -20,7 +20,7 @@ mutex dbg_mutex;
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_attribute (attr = " << attr.record() << ")" << endl;
+    Log(2).stream() << "Event: create_attribute (attr = " << attr.name() << ")" << endl;
 }
 
 void begin_cb(Caliper* c, const Attribute& attr)
