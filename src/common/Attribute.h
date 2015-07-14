@@ -16,8 +16,6 @@
 namespace cali
 {
 
-class Node;
-
 class Attribute : public IdType 
 {
     std::string    m_name;
