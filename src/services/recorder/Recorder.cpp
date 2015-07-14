@@ -148,7 +148,7 @@ class Recorder
 
             for (unsigned n = 0; n < rec.num_entries; ++n)
                 count[n] = m_data_buffer[dptr++].to_int();
-            for (unsigned n = 0; n < rec.num_entries; ++n) {
+            for (unsigned n = 0; n < rec.num_entries && count[n] > 0; ++n) {
                 data[n]  = &m_data_buffer[dptr];
                 dptr    += count[n];
             }
