@@ -18,7 +18,7 @@ See the "Getting started" section below for a brief tutorial.
 License
 ------------------------------------------
 
-TBD
+See LICENSE file in this directory.
 
 Building and installing
 ------------------------------------------
@@ -26,9 +26,12 @@ Building and installing
 Building and installing Caliper requires cmake and a current C++11-compatible
 Compiler. Unpack the source distribution and proceed as follows:
 
-     cd caliper/src/dir
+     cd <path to caliper source directory>
      mkdir build && cd build
-     cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/location ..
+     cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
+         -DCMAKE_C_COMPILER=<path to c-compiler> \
+         -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
+         ..
      make 
      make install
 
@@ -110,10 +113,6 @@ runtime (libcaliper) and infrastructure library (libcaliper-common).
 
 Depending on the configuration, you may also need to add the 
 `libunwind`, `papi`, and `pthread` libraries to the link line.
-
-Note that because Caliper is written in C++11, all source files with
-Caliper annotations must be compiled in C++11 mode (typically by using
-the `-std=c++11` compiler flag).
 
 ### Run the program
 
