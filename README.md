@@ -204,6 +204,14 @@ take effect.
   Note that `libcaliper-mpiwrap` library has to be linked with the 
   application in addition to the regular Caliper libraries to
   obtain MPI information. See "MPI programs" below.
+  * `CALI_MPI_WHITELIST`=(MPI_Fn_1:MPI_Fn_2:...) List of MPI functions 
+    to instrument.
+    If set, only whitelisted functions will be instrumented.
+  * `CALI_MPI_BLACKLIST`=(MPI_Fn_1:MPI_Fn_2:...) List of MPI functions 
+    that will be filtered. Note: if both whitelist and blacklist
+    are set, only whitelisted functions will be instrumented, and
+    the blacklist will be applied to the whitelisted
+    functions.
 
 * `ompt` The OpenMP tools interface service.
     Connects to the OpenMP tools interface to retrieve OpenMP status

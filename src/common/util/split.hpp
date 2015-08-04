@@ -21,7 +21,8 @@ void split(String input, Char sep, OutputIterator out)
         }
     }
 
-    *out++ = str;
+    if (!str.empty())
+        *out++ = str;
 }
 
 } // namespace util
