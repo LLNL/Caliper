@@ -46,9 +46,18 @@ namespace
         if (!have_whitelist && !have_blacklist)
             return;
 
-        {{forallfn foo}}
-        {
-            std::string fnstr("{{foo}}");
+        const struct fntable_elem {
+            const char* name;
+            bool*       enableptr; 
+        } table[] = {
+            {{forallfn foo}}
+            { "{{foo}}", &enable_{{foo}} },
+            {{endforallfn}}
+            { 0, 0 }
+        };
+
+        for (const fntable_elem* e = table; e->name && e->enableptr; ++e) {
+            std::string fnstr(e->name);
 
             if (have_whitelist) {
                 vector<string>::iterator it = std::find(whitelist.begin(), whitelist.end(), fnstr);
@@ -56,18 +65,17 @@ namespace
                 if (it != whitelist.end())
                     whitelist.erase(it);
                 else
-                    enable_{{foo}} = false;
+                    *(e->enableptr) = false;
             }
             if (have_blacklist) {
-                vector<string>::iterator it = std::find(blacklist.begin(), blacklist.end(), "{{foo}}");
+                vector<string>::iterator it = std::find(blacklist.begin(), blacklist.end(), fnstr);
 
                 if (it != blacklist.end()) {
                     blacklist.erase(it);
-                    enable_{{foo}} = false;
+                    *(e->enableptr) = false;
                 }
             }
         }
-        {{endforallfn}}
 
         for (vector<string>::const_iterator it = whitelist.begin(); it != whitelist.end(); ++it)
             Log(1).stream() << "Unknown MPI function " << *it << " in MPI function whitelist" << endl;
