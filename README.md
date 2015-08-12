@@ -125,10 +125,10 @@ Caliper context at certain events.
 
 By default, Caliper does not enable any optional services.
 Use the `CALI_SERVICES_ENABLE` environment variable to activate them.
-For example, enable the `recorder` and `timestamp` services to create
-a simple time-series trace for the example program above:
+For example, enable the `event`, `recorder` and `timestamp` services 
+to create a simple time-series trace for the example program above:
 
-    $ export CALI_SERVICES_ENABLE=recorder:timestamp
+    $ export CALI_SERVICES_ENABLE=event:recorder:timestamp
     $ ./cali-basic
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
@@ -196,6 +196,12 @@ take effect.
     This is used to remove call paths within the Caliper library from
     the context.
     Default: 10.
+
+* `event` The event trigger service. This service will trigger a 
+  context/measurement snapshot when attributes are updated.
+  * `CALI_EVENT_TRIGGER`=(attr1:attr2:...) List of attributes where
+    snapshots are triggered. If empty, snapshots are triggered on
+    every attribute update.
   
 * `debug` Print annotation and measurement events.
   Useful to debug source-code annotations.
