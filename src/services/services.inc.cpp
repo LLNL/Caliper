@@ -12,6 +12,7 @@ extern const CaliperService CallpathService;
 extern const CaliperService PapiService;
 #endif
 extern const CaliperService DebugService;
+extern const CaliperService EventTriggerService;
 extern const CaliperService PthreadService;
 extern const CaliperService RecorderService;
 extern const CaliperService TimestampService;
@@ -33,6 +34,7 @@ const CaliperService caliper_services[] = {
     PapiService,
 #endif
     DebugService,
+    EventTriggerService,
     PthreadService,
     RecorderService,
     TimestampService,

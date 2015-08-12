@@ -202,14 +202,6 @@ class Recorder
         else
             c->events().write_record.connect(buffn);
 
-        auto f = [&](Caliper* c, const Attribute&){ 
-            c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS); 
-        };
-
-        c->events().pre_begin_evt.connect(f);
-        c->events().pre_end_evt.connect(f);
-        c->events().pre_set_evt.connect(f);
-
         c->events().finish_evt.connect([&](Caliper*){ m_lock.wlock(); flush_buffer(); m_lock.unlock(); });
     }
 
