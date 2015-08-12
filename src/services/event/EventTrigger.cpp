@@ -38,19 +38,19 @@ ConfigSet                config;
 std::set<cali_id_t>      trigger_attr_ids;
 std::vector<std::string> trigger_attr_names;
 
-SigsafeRWLock            trigger_lock;
+SigsafeRWLock            trigger_list_lock;
 
 
 void create_attribute_cb(Caliper* c, const Attribute& attr)
 {
-    trigger_lock.wlock();
-
     std::vector<std::string>::iterator it = find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
+
+    trigger_list_lock.wlock();
 
     if (it != trigger_attr_names.end())
         trigger_attr_ids.insert(attr.id());
 
-    trigger_lock.unlock();
+    trigger_list_lock.unlock();
 }
 
 void event_cb(Caliper* c, const Attribute& attr)
@@ -58,9 +58,9 @@ void event_cb(Caliper* c, const Attribute& attr)
     if (!trigger_attr_names.empty()) {
         bool trigger = false;
 
-        trigger_lock.rlock();
+        trigger_list_lock.rlock();
         trigger = trigger_attr_ids.count(attr.id()) > 0;
-        trigger_lock.unlock();
+        trigger_list_lock.unlock();
 
         if (!trigger)
             return;
