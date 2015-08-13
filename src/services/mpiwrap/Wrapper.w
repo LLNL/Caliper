@@ -12,6 +12,7 @@
 #include <cstring>
 #include <iterator>
 #include <string>
+#include <sstream>
 
 namespace cali
 {
@@ -85,16 +86,26 @@ namespace
 }
 
 {{fn func MPI_Init MPI_Init_thread}}{
+    {{callfn}}
+
+    int rank = 0;
+    PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Disable (most) logging on non-0 ranks by default
+    std::ostringstream logprefix;
+    logprefix << "(" << rank << "): ";
+
+    Log::add_prefix(logprefix.str());
+
+    if (rank > 0)
+        Log::set_verbosity(0);
+
     // Make sure Caliper is initialized
     Caliper* c = Caliper::instance();    
-
-    {{callfn}}
 
     if (mpi_enabled) {
         ::setup_filter();
 
-        int rank = 0;
-        PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
         c->set(mpirank_attr, Variant(rank));
     }
 }{{endfn}}
