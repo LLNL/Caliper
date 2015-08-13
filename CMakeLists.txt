@@ -84,6 +84,7 @@ configure_file(
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
 
+add_subdirectory(doc)
 add_subdirectory(src)
 add_subdirectory(test)
 
