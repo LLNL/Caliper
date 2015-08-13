@@ -10,6 +10,8 @@ the ability to provide arbitrary program context information to
 Documentation
 ------------------------------------------
 
+Extensive documentation can be found in the `doc/` directory.
+
 A usage example of the C++ annotation interface is provided in 
 `test/cali-basic.cpp`
 
