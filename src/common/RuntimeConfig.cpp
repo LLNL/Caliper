@@ -13,6 +13,7 @@
 #include <iterator>
 #include <map>
 #include <unordered_map>
+#include <vector>
 
 using namespace cali;
 using namespace std;
