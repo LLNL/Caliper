@@ -28,8 +28,6 @@ macro(add_service_objlib)
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
 
-add_service_sources(Services.cpp)
-
 # Service subdirectories
 
 if (LIBUNWIND_FOUND)
@@ -52,6 +50,8 @@ endif()
 if (OMPT_FOUND)
   add_subdirectory(ompt)
 endif()
+
+add_service_sources(Services.cpp)
 
 # Build service management classes 
 

@@ -28,6 +28,8 @@ struct LogImpl
     std::ofstream m_ofstream;
     unsigned      m_verbosity;
 
+    std::string   m_prefix;
+
     // --- helpers
 
     void init_stream() {
@@ -54,7 +56,8 @@ struct LogImpl
     // --- interface
 
     LogImpl() 
-        : m_config { RuntimeConfig::init("log", s_configdata) } 
+        : m_config { RuntimeConfig::init("log", s_configdata) },
+          m_prefix { s_prefix }
     {
         m_verbosity = m_config.get("verbosity").to_uint();
         init_stream();
@@ -110,11 +113,23 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
 ostream& 
 Log::get_stream()
 {
-    return (LogImpl::instance()->get_stream() << LogImpl::s_prefix);
+    return (LogImpl::instance()->get_stream() << LogImpl::instance()->m_prefix);
 }
 
 unsigned 
 Log::verbosity()
 {
     return LogImpl::instance()->m_verbosity;
+}
+
+void 
+Log::set_verbosity(unsigned v)
+{
+    LogImpl::instance()->m_verbosity = v;
+}
+
+void 
+Log::add_prefix(const std::string& prefix)
+{
+    LogImpl::instance()->m_prefix += prefix;
 }

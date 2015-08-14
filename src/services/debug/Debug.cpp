@@ -85,7 +85,7 @@ void finish_cb(Caliper* c)
     Log(2).stream() << "Event: finish" << endl;
 }
 
-void debug_register(Caliper* c)
+void debug_service_register(Caliper* c)
 {
     c->events().create_attr_evt.connect(&create_attr_cb);
     c->events().pre_begin_evt.connect(&begin_cb);
@@ -103,5 +103,5 @@ void debug_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService DebugService = { "debug", ::debug_register };
+    CaliperService DebugService = { "debug", ::debug_service_register };
 }

@@ -141,5 +141,5 @@ void papi_register(Caliper* c) {
 
 namespace cali 
 {
-    CaliperService PapiService = { "papi", { ::papi_register } };
+    CaliperService PapiService = { "papi", ::papi_register };
 } // namespace cali
