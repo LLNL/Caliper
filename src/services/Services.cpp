@@ -9,12 +9,11 @@
 
 #include <Log.h>
 #include <RuntimeConfig.h>
+
 #include <util/split.hpp>
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
-#include <map>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -51,7 +50,7 @@ struct Services::ServicesImpl
             for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
                 sstr << ' ' << s->name;
 
-            Log(2).stream() << "Available services:" << sstr.str() << std::endl;
+            Log(2).stream() << "Available services:" << sstr.str() << endl;
         }
 
         vector<string> services;
