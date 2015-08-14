@@ -3,9 +3,14 @@
 
 #include "RuntimeConfig.h"
 
+#include "util/split.hpp"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <iterator>
 #include <map>
 #include <unordered_map>
 
@@ -51,14 +56,23 @@ struct ConfigSetImpl
         return (it == m_dict.end() ? Variant() : Variant(string(it->second.value)));
     }
 
-    void init(const char* name, const ConfigSet::Entry* list) {
+    void init(const char* name, const ConfigSet::Entry* list, const map<string, string>& profile) {
         for (const ConfigSet::Entry* e = list; e && e->key; ++e) {
             ConfigSet::Entry newent = *e;
 
-            // See if there is a config variable set
-            char* val = getenv(::config_var_name(name, e->key).c_str());
+            string varname = ::config_var_name(name, e->key);
 
-            newent.value = val ? val : e->value;
+            // See if there is an entry in the config profile
+
+            auto it = profile.find(varname);
+            if (it != profile.end())
+                newent.value = it->second.c_str();
+
+            // See if there is a config variable set
+
+            char* val = getenv(::config_var_name(name, e->key).c_str());
+            if (val)
+                newent.value = val;
 
             m_dict.emplace(make_pair(string(e->key), newent));
         }
@@ -75,8 +89,70 @@ struct RuntimeConfigImpl
     // --- data
 
     static unique_ptr<RuntimeConfigImpl>     s_instance;
+    static const ConfigSet::Entry            s_configdata[];
+
+    ConfigSet                                m_config;
+
+    string                                   m_profile_name;
 
     map< string, shared_ptr<ConfigSetImpl> > m_database;
+    map< string, map<string, string> >       m_config_profiles;
+
+    // --- helpers
+
+    void read_config_profiles(istream& in) {
+        //
+        // Parse config file line-by-line
+        // * '#' as the first character is a comment, or start of a new 
+        //   group if a string enclosed in square brackets ("[group]") exists 
+        // * Other lines are parsed as NAME=VALUE, or ignored if no '=' is found
+        //
+
+        map<string, string> current_profile;
+        string              current_profile_name { "default" };
+
+        for (string line; std::getline(in, line); ) {
+            if (line.length() < 1)
+                continue;
+
+            if (line[0] == '#') {
+                // is it a new profile?
+                string::size_type b = line.find_first_of('[');
+                string::size_type e = line.find_first_of(']');
+
+                if (b != string::npos && e != string::npos && b+1 < e) {
+                    if (current_profile.size() > 0) 
+                        m_config_profiles[current_profile_name].insert(current_profile.begin(), current_profile.end());
+
+                    current_profile.clear();
+                    current_profile_name = line.substr(b+1, e-b-1);
+                } else {
+                    continue;
+                }
+            }
+
+            string::size_type s = line.find_first_of('=');
+
+            if (s > 0 && s < line.size())
+                current_profile[line.substr(0, s)] = line.substr(s+1);
+        }
+
+        if (current_profile.size() > 0) 
+            m_config_profiles[current_profile_name] = current_profile;
+    }
+
+    void read_config_files(const std::string& filenames) {
+        vector<string> files;
+
+        util::split(filenames, ':', back_inserter(files));
+
+        for (const auto &s : files) {
+            ifstream fs(s.c_str());
+
+            if (fs)
+                read_config_profiles(fs);
+        }
+    }
 
 
     // --- interface
@@ -94,7 +170,7 @@ struct RuntimeConfigImpl
 
         shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
 
-        ret->init(name, list);
+        ret->init(name, list, m_config_profiles[m_profile_name]);
         m_database.insert(it, make_pair(string(name), ret));
 
         return ret;
@@ -107,15 +183,43 @@ struct RuntimeConfigImpl
                    << ::config_var_name(set.first, entry.first) << '=' << entry.second.value << endl;
     }
 
+    RuntimeConfigImpl() 
+        : m_profile_name { "default" } {
+        // read pre-init config set to get config file name from env var
+        ConfigSetImpl pre_init_config;
+
+        pre_init_config.init("config", s_configdata, map<string, string>());
+
+        // read config files
+        read_config_files(pre_init_config.get("file").to_string());
+    }
+
     static RuntimeConfigImpl* instance() {
-        if (!s_instance)
+        if (!s_instance) {
             s_instance.reset(new RuntimeConfigImpl);
+
+            // read "config" config set again (profile may have been set in file)
+            s_instance->m_config = RuntimeConfig::init("config", s_configdata);
+            s_instance->m_profile_name = s_instance->m_config.get("profile").to_string();
+        }
 
         return s_instance.get();
     }
 };
 
 unique_ptr<RuntimeConfigImpl> RuntimeConfigImpl::s_instance { nullptr };
+
+const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
+    { "profile", CALI_TYPE_STRING, "default",
+      "Configuration profile",
+      "Configuration profile" 
+    },
+    { "file", CALI_TYPE_STRING, "caliper.config",
+      "List of configuration files",
+      "Colon-serparated list of configuration files" 
+    },
+    ConfigSet::Terminator
+};
 
 } // namespace cali
 
