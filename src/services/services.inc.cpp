@@ -6,23 +6,23 @@ namespace cali
 {
 
 #ifdef CALIPER_HAVE_LIBUNWIND
-extern const CaliperService CallpathService;
+extern CaliperService CallpathService;
 #endif
 #ifdef CALIPER_HAVE_PAPI
-extern const CaliperService PapiService;
+extern CaliperService PapiService;
 #endif
-extern const CaliperService DebugService;
-extern const CaliperService PthreadService;
-extern const CaliperService RecorderService;
-extern const CaliperService TimestampService;
+extern CaliperService DebugService;
+extern CaliperService PthreadService;
+extern CaliperService RecorderService;
+extern CaliperService TimestampService;
 #ifdef CALIPER_HAVE_MITOS
-extern const CaliperService MitosService;
+extern CaliperService MitosService;
 #endif
 #ifdef CALIPER_HAVE_MPI
-extern const CaliperService MpiService;
+extern CaliperService MpiService;
 #endif
 #ifdef CALIPER_HAVE_OMPT
-extern const CaliperService OmptService;
+extern CaliperService OmptService;
 #endif
 
 const CaliperService caliper_services[] = {
@@ -45,7 +45,7 @@ const CaliperService caliper_services[] = {
 #ifdef CALIPER_HAVE_OMPT
     OmptService,
 #endif
-    { nullptr, { nullptr } }
+    { nullptr, nullptr }
 };
 
 }

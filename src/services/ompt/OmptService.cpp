@@ -304,5 +304,5 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
 namespace cali
 {
-    CaliperService OmptService = { "ompt", { &::omptservice_initialize } };
+    CaliperService OmptService = { "ompt", ::omptservice_initialize };
 }

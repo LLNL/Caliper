@@ -48,11 +48,18 @@ struct Services::ServicesImpl
 
         // register caliper services
 
+        for (const CaliperService* s = caliper_services; s->name; ++s)
+            if (!s->register_fn)
+                Log(2).stream() << "service module " << s->name << " not initialized!" << endl;
+
+
         for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s) {
+            Log(2).stream() << "checking service module " << s->name << endl;
+
             auto it = find(services.begin(), services.end(), string(s->name));
 
             if (it != services.end()) {
-                (s->register_fn)(c);
+                (*s->register_fn)(c);
                 services.erase(it);
             }
         }

@@ -64,5 +64,5 @@ void mpi_register(Caliper* c)
 
 namespace cali 
 {
-    CaliperService MpiService = { "mpi", { ::mpi_register } };
+    CaliperService MpiService = { "mpi", ::mpi_register };
 } // namespace cali
