@@ -12,6 +12,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
@@ -22,6 +23,14 @@ using namespace std;
 namespace 
 {
     const string prefix { "cali" };
+
+    const char*  builtin_profiles =
+        "# [serial-trace]\n"
+        "CALI_SERVICES_ENABLE=recorder:timestamp\n"
+        "# [thread-trace]\n"
+        "CALI_SERVICES_ENABLE=pthread:recorder:timestamp\n"
+        "# [mpi-trace]\n"
+        "CALI_SERVICES_ENABLE=mpi:pthread:recorder:timestamp\n";
 
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string
@@ -143,6 +152,12 @@ struct RuntimeConfigImpl
     }
 
     void read_config_files(const std::string& filenames) {
+        // read builtin profiles
+
+        istringstream is(::builtin_profiles);
+        read_config_profiles(is);
+        
+        // read config files
         vector<string> files;
 
         util::split(filenames, ':', back_inserter(files));
