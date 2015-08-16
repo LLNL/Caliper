@@ -9,13 +9,13 @@
 
 #include <Log.h>
 #include <RuntimeConfig.h>
+
 #include <util/split.hpp>
 
 #include <algorithm>
-#include <functional>
 #include <iterator>
-#include <map>
 #include <string>
+#include <sstream>
 #include <vector>
 
 using namespace cali;
@@ -42,20 +42,24 @@ struct Services::ServicesImpl
     // --- interface
 
     void register_services(Caliper* c) {
+        // list services
+
+        if (Log::verbosity() >= 2) {
+            ostringstream sstr;
+
+            for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
+                sstr << ' ' << s->name;
+
+            Log(2).stream() << "Available services:" << sstr.str() << endl;
+        }
+
         vector<string> services;
 
         util::split(m_config.get("enable").to_string(), ':', back_inserter(services));
 
         // register caliper services
 
-        for (const CaliperService* s = caliper_services; s->name; ++s)
-            if (!s->register_fn)
-                Log(2).stream() << "service module " << s->name << " not initialized!" << endl;
-
-
         for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s) {
-            Log(2).stream() << "checking service module " << s->name << endl;
-
             auto it = find(services.begin(), services.end(), string(s->name));
 
             if (it != services.end()) {
