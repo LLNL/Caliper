@@ -116,19 +116,29 @@ Depending on the configuration, you may also need to add the
 
 ### Run the program
 
-Running an annotated program generates the Caliper context, which can
-be queried by third-party tools at runtime.
-Additional functionality is provided through Caliper _services_
-(modules).
-Importantly, Caliper provides a `recorder` service that records the
-Caliper context at certain events.
+An annotated program generates a Caliper context at runtime. Caliper
+service modules or external tools can trigger snapshots of the current
+program context combined with measurement data. When snapshots are
+taken, what is included in them, and how they are processed depends on
+the Caliper runtime configuration. It is thus important to configure
+the runtime correctly when running a Caliper-instrumented program.
 
-By default, Caliper does not enable any optional services.
-Use the `CALI_SERVICES_ENABLE` environment variable to activate them.
-For example, enable the `recorder` and `timestamp` services to create
-a simple time-series trace for the example program above:
+Much of Caliper's functionality is provided by optional service
+modules. By default, Caliper does not enable any optional services
+(and therefore doesn't do much). Use the `CALI_SERVICES_ENABLE`
+variable to select services. For example, enable the `recorder` and
+`timestamp` services to create a simple time-series trace for the
+example program above:
 
     $ export CALI_SERVICES_ENABLE=recorder:timestamp
+
+You can achieve the same effect by selecting the `serial-trace`
+built-in profile:
+
+    $ export CALI_CONFIG_PROFILE=serial-trace
+
+Then run the program:
+
     $ ./cali-basic
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
@@ -157,8 +167,19 @@ filter, aggregate, or print traces:
 
 ### Runtime configuration
 
-The Caliper library is configured through environment variables.
+The Caliper library is configured through configuration variables. You
+can provide configuration variables as environment variables or in a
+text file `caliper.config` in the current working directory.
+
 Here is a list of commonly used variables:
+
+* `CALI_CONFIG_PROFILE`=(serial-trace|thread-trace|mpi-trace|...)
+  Select a built-in or self-defined configuration
+  profile. Configuration profiles allow you to select a pre-defined
+  configuration. The `serial-trace`, `thread-trace` and `mpi-trace`
+  built-in profiles create event-triggered context traces of serial,
+  multi-threaded, or MPI programs, respectively. See the documentation
+  on how to create your own configuration profiles.
 
 * `CALI_CALIPER_AUTOMERGE=(true|false)` Automatically merge attributes
   into a common context tree. This will usually reduce the size of
