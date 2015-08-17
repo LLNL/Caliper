@@ -3,7 +3,7 @@
 # 
 
 project (caliper)
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)

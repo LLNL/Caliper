@@ -64,5 +64,5 @@ void pthreadservice_initialize(Caliper* c)
 
 namespace cali
 {
-    CaliperService PthreadService { "pthread", { &::pthreadservice_initialize } };
+    CaliperService PthreadService { "pthread", ::pthreadservice_initialize };
 }

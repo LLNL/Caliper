@@ -20,6 +20,8 @@ class Log
 public:
 
     static unsigned verbosity();
+    static void set_verbosity(unsigned v);
+    static void add_prefix(const std::string& prefix);
 
     inline std::ostream& stream() {
         if (verbosity() < m_level)

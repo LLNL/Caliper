@@ -85,7 +85,7 @@ void push_time(Caliper* c, int scope, WriteRecordFn fn) {
 }
 
 /// Initialization handler
-void timestamp_register(Caliper* c)
+void timestamp_service_register(Caliper* c)
 {
     // set start time and create time attribute
     tstart = chrono::high_resolution_clock::now();
@@ -121,5 +121,5 @@ void timestamp_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService TimestampService = { "timestamp", { ::timestamp_register } };
+    CaliperService TimestampService = { "timestamp", ::timestamp_service_register };
 } // namespace cali

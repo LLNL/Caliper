@@ -24,6 +24,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstring>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -906,7 +907,6 @@ Caliper::Caliper()
 
 Caliper::~Caliper()
 {
-    mP->m_events.finish_evt(this);
     mP.reset(nullptr);
 }
 
@@ -1044,11 +1044,25 @@ Caliper::foreach_node(std::function<void(const Node&)> proc)
     mP->foreach_node(proc);
 }
 
+namespace
+{
+    // --- Exit handler
+
+    void
+    exit_handler(void) {
+        Caliper* c = Caliper::instance();
+        c->events().finish_evt(c);
+    }
+}
+
 // --- Caliper singleton API
 
 Caliper* Caliper::instance()
 {
     if (CaliperImpl::s_siglock != 0) {
+        if (atexit(::exit_handler) != 0)
+            Log(0).stream() << "Unable to register exit handler";
+
         SigsafeRWLock::init();
 
         if (CaliperImpl::s_siglock == 2)

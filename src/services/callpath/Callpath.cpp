@@ -110,7 +110,13 @@ void measure_cb(Caliper* c, int scope, WriteRecordFn)
     }
 }
 
-void callpath_register(Caliper* c)
+} // namespace 
+
+
+namespace cali
+{
+
+void callpath_service_register(Caliper* c)
 {
     config = RuntimeConfig::init("callpath", s_configdata);
 
@@ -128,10 +134,6 @@ void callpath_register(Caliper* c)
     Log(1).stream() << "Registered callpath service" << endl;
 }
 
-} // namespace 
+CaliperService CallpathService = { "callpath", callpath_service_register };
 
-
-namespace cali
-{
-    CaliperService CallpathService = { "callpath", { ::callpath_register } };
 } // namespace cali
