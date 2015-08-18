@@ -14,11 +14,13 @@ as a stand-alone performance profile or trace data collector.
 
 
 Contents:
-------------------------------------------------
+--------------------------------
 .. toctree::
    :maxdepth: 2
 
    build
+   usage
+   configuration
 
 
 Indices and tables
