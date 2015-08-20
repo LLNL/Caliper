@@ -183,15 +183,6 @@ Here is a list of commonly used variables:
   multi-threaded, or MPI programs, respectively. See the documentation
   on how to create your own configuration profiles.
 
-* `CALI_CALIPER_AUTOMERGE=(true|false)` Automatically merge attributes
-  into a common context tree. This will usually reduce the size of
-  context records, but may reduce performance and increase metadata
-  size. Default `true`.
-
-* `CALI_LOG_LOGFILE=(stdout|stderr|filename)` File name for Caliper information messages. May
-  be set to `stdout` or `stderr` to print the standard output or error
-  streams, respectively. Default `stderr`.
-
 * `CALI_LOG_VERBOSITY=(0|1|2)` Verbosity level for log messages. Set to 1 for
   informational output, 2 for more verbose output, or 0 to disable
   output except for critical error messages. Default 1.
@@ -202,101 +193,35 @@ Here is a list of commonly used variables:
 
 ### List of Caliper services
 
-This is a list of Caliper service modules and their configuration
-options.
-Note that each service has to be enabled via `CALI_SERVICES_ENABLE` to
-take effect.
+Caliper comes with a number of optional modules (*services*) that
+provide measurement data or processing and data recording
+capabilities. The flexible combination and configuration of these
+services allows you to quickly assemble recording solutions for a wide
+range of usage scenarios.
+
+You can enable the services required for your measurement with the
+`CALI_SERVICES_ENABLE` configuration variable
+
+The following services are available:
 
 * `callpath` Add a call path to the caliper context
-  * `CALI_CALLPATH_USE_NAME=(true|false)` Use region names for call path.
-    Incurs higher overhead.
-    Default: false.
-  * `CALI_CALLPATH_USE_ADDRESS=(true|false)` Use stack-frame
-    addresses.
-    Default: true.
-  * `CALI_CALLPATH_SKIP_FRAMES=(number of frames)` Skip this many
-    frames from the call path.
-    This is used to remove call paths within the Caliper library from
-    the context.
-    Default: 10.
-
-* `event` The event trigger service. This service will trigger a 
-  context/measurement snapshot when attributes are updated.
-  * `CALI_EVENT_TRIGGER`=(attr1:attr2:...) List of attributes where
-    snapshots are triggered. If empty, snapshots are triggered on
-    every attribute update.
-  
+* `event` The event trigger service. Trigger a 
+  measurement snapshot when attributes are updated.
 * `debug` Print annotation and measurement events.
   Useful to debug source-code annotations.
-
 * `mpi` Record MPI operations and the MPI rank.
-  Note that `libcaliper-mpiwrap` library has to be linked with the 
-  application in addition to the regular Caliper libraries to
-  obtain MPI information. See "MPI programs" below.
-  * `CALI_MPI_WHITELIST`=(MPI_Fn_1:MPI_Fn_2:...) List of MPI functions 
-    to instrument.
-    If set, only whitelisted functions will be instrumented.
-  * `CALI_MPI_BLACKLIST`=(MPI_Fn_1:MPI_Fn_2:...) List of MPI functions 
-    that will be filtered. Note: if both whitelist and blacklist
-    are set, only whitelisted functions will be instrumented, and
-    the blacklist will be applied to the whitelisted
-    functions.
-
 * `ompt` The OpenMP tools interface service.
-    Connects to the OpenMP tools interface to retrieve OpenMP status
-    information.
-    Requires an ompt-enabled OpenMP runtime.
-  * `CALI_OMPT_ENVIRONMENT_MAPPING=(true|false)` Manage
-    thread environment in the ompt module.
-    Incurs higher overhead than the `pthread` service.
-    Default: false.
-  * `CALI_OMPT_CAPTURE_STATE=(true|false)` Add the OpenMP runtime
-    state to context records.
-    Default: true.
-
+  Connects to the OpenMP tools interface to retrieve OpenMP status
+  information.
+  Requires an ompt-enabled OpenMP runtime.
 * `pthread` Manages thread environments for any pthread-based
   multi-threading runtime system.
   A thread environment manager such as the `pthread` service creates
   separate per-thread contexts in a multi-threaded program.
-
 * `papi` Records PAPI hardware counters.
-  * `CALI_PAPI_COUNTERS` List of PAPI counters to record, separated by 
-    colon (`:`).
-
 * `recorder` Writes context trace data.
-  * `CALI_RECORDER_FILENAME=(stdout|stderr|filename)` File name for
-    context trace. 
-    May be set to `stdout` or `stderr` to print the standard output or
-    error streams, respectively.
-    Default: not set, auto-generates a unique file name.
-  * `CALI_RECORDER_DIRECTORY=(directory name)` Directory to write
-    context trace files to.
-    The directory must exist, Caliper does not create it.
-    Default: not set, uses current working directory.
-  * `CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)` Initial number of records
-    that can be stored in the in-memory record buffer.
-    Default: 8000.
-  * `CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)` Initial number of
-    data elements that can be stored in the in-memory record buffer.
-    Default: 60000.
-  * `CALI_RECORDER_BUFFER_CAN_GROW=(true|false)` Allow record and data
-    buffers to grow if necessary.
-    If false, buffer content will be flushed to disk when either buffer
-    is full.
-    Default: true.
-    
 * `timestamp` The timestamp service adds a time offset, timestamp,
   or duration to context records.
-  Note that timestamps are _not_ synchronized between machines in a
-  distributed-memory program.
-  * `CALI_TIMER_DURATION=(true|false)` Include duration (in
-    microsecond) of context epoch with context records.
-    Default: true.
-  * `CALI_TIMER_OFFSET=(true|false)` Include time offset (time
-    since program start, in microseconds) with each context record.
-    Default: false.
-  * `CALI_TIMER_TIMESTAMP=(true|false)` Include absolute timestamp
-    (time since UNIX epoch, in seconds) with each context record.
 
 ### MPI programs
 
