@@ -56,8 +56,8 @@ struct Expand::ExpandImpl
             m_os << (nentry++ ? "," : "") << entry.first << "=";
 
             int nelem = 0;
-            for (const Variant &elem : entry.second)
-                m_os << (nelem++ ? "/" : "") << elem.to_string();
+            for (auto it = entry.second.rbegin(); it != entry.second.rend(); ++it)
+                m_os << (nelem++ ? "/" : "") << (*it).to_string();
         }
 
         if (nentry > 0)
