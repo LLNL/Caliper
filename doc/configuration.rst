@@ -1,14 +1,23 @@
 Configuration
 ================================
 
-The Caliper run time system can be configured through environment
-variables and/or configuration files. In addition, Caliper comes with
-some built-in configuration profiles. However, the default
-configuration does not activate any measurement or output/processing
-services, so unless you run with third-party tool that uses the
-Caliper API you will at least need to select a configuration profile
-to record Caliper data.
+This section describes the general configuration of the Caliper
+runtime system and lists the core system's configuration
+variables. See next section for the list of measurement services and
+their configuration.
 
+**Note**: by default, Caliper does not activate any measurement or
+output/processing services. Unless you run with third-party tool
+that uses the Caliper API to retrieve data you will at least need to
+select a configuration profile to obtain output.
+
+----------------------------------------
+Configuring the Caliper runtime system
+----------------------------------------
+
+The Caliper runtime system can be configured through environment
+variables and/or configuration files. In addition, Caliper comes with
+some built-in configuration profiles.
 
 Configuration variables
 --------------------------------
@@ -23,6 +32,15 @@ Values can be strings, lists, numbers, or boolean values, depending on
 the variable. List elements are typically separated by the colon (':')
 character. Boolean values can be given as '1', 'true', or '0', 'false'
 for *true* and *false*, respectively.
+
+Set caliper configuration variables through environment variables,
+e.g.
+
+.. code-block:: sh
+
+                $ export CALI_LOG_VERBOSITY=2
+
+or configuration files (see below).   
 
 
 Configuration files
@@ -58,7 +76,7 @@ switch. You can declare a profile in a configuration file with ``#
 declaration then belong to this profile. Entries that do not belong to
 any specific profile are inserted into the default profile. Caliper
 will use the profile given by the `CALI_CONFIG_PROFILE` variable, or
-the default profile if it is not set.
+the default profile if none is set.
 
 Example::
 
@@ -103,4 +121,40 @@ extended. For example, the following configuration file ::
 
 adds the ``CALI_MPI_WHITELIST`` entry to the built-in `mpi-trace`
 profile.
+
+----------------------------------------
+Configuration variables reference
+----------------------------------------
+
+This section describes the configuration variables of the Caliper
+runtime system.
+
+CALI_CONFIG_PROFILE=<profile name>
+  Configuration profile name. 
+
+CALI_CONFIG_FILE=<list of config files>
+  Colon-separated list of configuration files. The provided
+  configuration files are read in order. Note: this variable can only
+  be set as an environment variable. Default: ``caliper.config``
+
+CALI_LOG_VERBOSITY=(0|1|2)
+  | Verbosity level. Default: 1
+  |   0: no output
+  |   1: basic informational runtime output
+  |   2: debug output
+
+CALI_LOG_LOGFILE=(stdout|stderr|<filename>)
+  Log file name, or 'stdout'/'stderr' for streaming to standard out or
+  standard error, respectively. Default: stderr
+
+CALI_CALIPER_AUTOMERGE=(true|false)
+  Automatically merge attributes into a common context tree.
+  Decreases the size of context records, but may increase the amount
+  of metadata and reduce performance. Default: true
+
+CALI_SERVICES_ENABLE=(service1:service2:...)
+  List of Caliper service modules to enable. Default: not set.
+
+See next chapter for a list of Caliper services and their
+configuration.
 

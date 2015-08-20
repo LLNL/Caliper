@@ -21,6 +21,7 @@ Contents:
    build
    usage
    configuration
+   services
 
 
 Indices and tables
