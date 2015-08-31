@@ -57,17 +57,23 @@ struct BenchmarkInfo {
 
 void iteration_throughput_thread(int num, const BenchmarkInfo& info)
 {
-    const std::string ctxval { "abcdefghijklmnopqrstuvwxyz0123456789" };
+
+    cali::Annotation::AutoScope 
+        scope(cali::Annotation("benchmark.threadrun").begin("Thread-local loop"));
+
+    cali::Annotation thread_ann("benchmark.thread.id");
 
     if (info.set_thread_id)
-        cali::Annotation("benchmark.thread.id").set(num);
+        thread_ann.set(num);
 
     cali::Annotation iter_ann("benchmark.loop.iteration");
+
+    const std::string chars { "abcdefghijklmnopqrstuvwxyz0123456789" };
 
     for (int i = 0; i < info.iterations; ++i) {
         iter_ann.set(i);
 
-        std::string sval = ctxval.substr((num+i)%(ctxval.length()/2));
+        std::string sval = chars.substr((num+i)%(chars.length()/2));
         int64_t     ival = num+i;
 
         for (auto it = info.extra_tree_attr.begin(); it != info.extra_tree_attr.end(); ++it)
@@ -81,6 +87,11 @@ void iteration_throughput_thread(int num, const BenchmarkInfo& info)
         for (auto it = info.extra_tree_attr.rbegin(); it != info.extra_tree_attr.rend(); ++it)
             cali::Caliper::instance()->end(*it);
     }
+
+    iter_ann.end();
+
+    if (info.set_thread_id)
+        thread_ann.end();
 }
 
 
@@ -105,7 +116,7 @@ int main(int argc, const char* argv[])
           "Number of iterations",
           "20" },
         { "sleep",           "sleep",           's', true,
-          "Sleep time per iteratrion (in microseconds)",
+          "Sleep time per iteration (in microseconds)",
           "0" },
 
         util::Args::Table::Terminator
@@ -180,9 +191,9 @@ int main(int argc, const char* argv[])
     benchmark_annotation.end();
 
     std::cout << "Threads: "     << num_threads 
-              << " Runs: "       << num_runs 
-              << " Iterations: " << info.iterations
-              << " Time: " 
+              << "  Runs: "       << num_runs 
+              << "  Iterations: " << info.iterations
+              << "  Time: " 
               << std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count() 
               << "msec" << std::endl;
 }
