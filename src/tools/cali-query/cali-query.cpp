@@ -1,7 +1,7 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
-#include "Args.h"
+#include <Args.h>
 
 #include <Aggregator.h>
 #include <CaliperMetadataDB.h>
