@@ -9,6 +9,8 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#include <map>
+
 #include <ompt.h>
 
 
