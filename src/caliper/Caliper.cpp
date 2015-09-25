@@ -76,6 +76,7 @@ struct Caliper::CaliperImpl
     Attribute              m_name_attr;
     Attribute              m_type_attr;
     Attribute              m_prop_attr;
+    Attribute              m_evt_attr;
 
     // Caliper version attribute
     Attribute              m_ver_attr;
@@ -98,6 +99,7 @@ struct Caliper::CaliperImpl
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
         m_prop_attr { Attribute::invalid },
+        m_evt_attr  { Attribute::invalid }, 
         m_ver_attr  { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
         m_automerge { false }
@@ -158,6 +160,7 @@ struct Caliper::CaliperImpl
             { 11, 8,  { CALI_TYPE_STRING, "cali.key.attribute",   18 } },
             { 12, 8,  { CALI_TYPE_STRING, "cali.caliper.version", 20 } },
             { 13, 12, { CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION) } },
+            { 14, 8,  { CALI_TYPE_STRING, "cali.snapshot.event",  19 } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
@@ -183,7 +186,8 @@ struct Caliper::CaliperImpl
             { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
             { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    },
             { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    },
-            { &bootstrap_attr_nodes[4], &m_ver_attr, CALI_TYPE_STRING  }
+            { &bootstrap_attr_nodes[4], &m_ver_attr,  CALI_TYPE_STRING },
+            { &bootstrap_attr_nodes[6], &m_evt_attr,  CALI_TYPE_STRING }
         };
 
         for ( attr_node_t p : attr_nodes ) {
