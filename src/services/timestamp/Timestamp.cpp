@@ -4,6 +4,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <Snapshot.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -47,41 +48,34 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_time(Caliper* c, int scope, WriteRecordFn fn) {
+void push_time(Caliper* c, int scope, Snapshot& sbuf) {
+    Snapshot::Sizes     sizes = sbuf.capacity();
+    Snapshot::Addresses addr  = sbuf.addresses();
+
     auto now = chrono::high_resolution_clock::now();
 
-    Variant v_attr[2];
-    Variant v_data[2];
+    int capacity = std::min(sizes.n_attr, sizes.n_data);
 
-    int count = 0;
+    sizes = { 0, 0, 0 };
 
     if ((record_duration || record_offset) && scope & CALI_SCOPE_THREAD) {
         uint64_t  usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
         Variant v_offs = c->exchange(timeoffs_attr, Variant(usec));
 
-        if (record_duration && !v_offs.empty()) {
+        if (capacity-- > 0 && record_duration && !v_offs.empty()) {
             uint64_t duration = usec - v_offs.to_uint();
 
-            v_attr[count] = Variant(duration_attr.id());
-            v_data[count] = Variant(duration);
-
-            ++count;
+            addr.immediate_attr[sizes.n_attr++] = duration_attr.id();
+            addr.immediate_data[sizes.n_data++] = Variant(duration);
         }
     }
 
-    if (record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
-        v_attr[count] = Variant(timestamp_attr.id());
-        v_data[count] = Variant(static_cast<int>(chrono::system_clock::to_time_t(chrono::system_clock::now())));
-
-        ++count;
+    if (capacity-- > 0 && record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
+        addr.immediate_attr[sizes.n_attr++] = timestamp_attr.id();
+        addr.immediate_data[sizes.n_data++] = Variant(static_cast<int>(chrono::system_clock::to_time_t(chrono::system_clock::now())));
     }
 
-    if (count) {
-        int               n[3] = { 0,       count,  count  };
-        const Variant* data[3] = { nullptr, v_attr, v_data };
-
-        fn(ContextRecord::record_descriptor(), n, data);
-    }
+    sbuf.commit(sizes);
 }
 
 /// Initialization handler
@@ -111,7 +105,7 @@ void timestamp_service_register(Caliper* c)
     c->set(timeoffs_attr, Variant(static_cast<uint64_t>(0)));
 
     // add callback for Caliper::get_context() event
-    c->events().measure.connect(&push_time);
+    c->events().snapshot.connect(&push_time);
 
     Log(1).stream() << "Registered timestamp service" << endl;
 }

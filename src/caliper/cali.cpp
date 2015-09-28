@@ -31,22 +31,10 @@ cali_find_attribute(const char* name)
 // --- Context interface
 //
 
-size_t
-cali_get_context_size(cali_context_scope_t scope)
-{
-    return Caliper::instance()->context_size(scope);
-}
-
-size_t
-cali_pull_context(int scope, uint64_t* buf, size_t bufsize)
-{
-    return Caliper::instance()->pull_context(scope, buf, bufsize);
-}
-
 void
 cali_push_context(int scope)
 {
-    return Caliper::instance()->push_context(scope);
+    return Caliper::instance()->snapshot(scope);
 }
 
 //

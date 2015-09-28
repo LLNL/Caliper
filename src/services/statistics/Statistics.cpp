@@ -35,7 +35,7 @@ void create_context_cb(cali_context_scope_t, ContextBuffer*)
     ++num_contexts;
 }
 
-void measure_cb(Caliper*, int, WriteRecordFn)
+void snapshot_cb(Caliper*, int, Snapshot&)
 {
     ++num_snapshots;
 }
@@ -62,7 +62,7 @@ void statistics_service_register(Caliper* c)
     c->events().pre_set_evt.connect(&update_cb);
     c->events().finish_evt.connect(&finish_cb);
     c->events().create_context_evt.connect(&create_context_cb);
-    c->events().measure.connect(&measure_cb);
+    c->events().snapshot.connect(&snapshot_cb);
 
     Log(1).stream() << "Registered debug service" << endl;
 }

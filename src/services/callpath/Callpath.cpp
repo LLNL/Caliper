@@ -52,7 +52,7 @@ static const ConfigSet::Entry s_configdata[] = {
 };
 
 
-void measure_cb(Caliper* c, int scope, WriteRecordFn)
+void snapshot_cb(Caliper* c, int scope, Snapshot&)
 {
     Variant v_addr[MAX_PATH];
     Variant v_name[MAX_PATH];
@@ -129,7 +129,7 @@ void callpath_service_register(Caliper* c)
     callpath_name_attr = 
         c->create_attribute("callpath.regname", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);    
 
-    c->events().measure.connect(&measure_cb);
+    c->events().snapshot.connect(&snapshot_cb);
 
     Log(1).stream() << "Registered callpath service" << endl;
 }
