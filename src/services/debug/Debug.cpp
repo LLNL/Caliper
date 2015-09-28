@@ -4,7 +4,9 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <Snapshot.h>
 
+#include <csv/CsvSpec.h>
 #include <Log.h>
 
 #include <mutex>
@@ -73,16 +75,21 @@ void destroy_context_cb(ContextBuffer* ctx)
     Log(2).stream() << "Event: destroy_context" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, Snapshot&)
+void snapshot_cb(Caliper* c, int scope, Snapshot*)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: snapshot (scope = " << scope2string(scope) << ")" << endl;
 }
 
-void process_snapshot_cb(Caliper* c, const Snapshot&)
+void process_snapshot_cb(Caliper* c, const Snapshot* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: process_snapshot " << endl;
+
+    auto write_rec_fn = [](const RecordDescriptor& rec, const int count[], const Variant* data[]) {
+        CsvSpec::write_record(Log(2).stream() << "Event: process_snapshot: ", rec, count, data);
+    };
+
+    sbuf->push_record(write_rec_fn);
 }
 
 void finish_cb(Caliper* c)

@@ -52,7 +52,7 @@ static const ConfigSet::Entry s_configdata[] = {
 };
 
 
-void snapshot_cb(Caliper* c, int scope, Snapshot&)
+void snapshot_cb(Caliper* c, int scope, Snapshot*)
 {
     Variant v_addr[MAX_PATH];
     Variant v_name[MAX_PATH];

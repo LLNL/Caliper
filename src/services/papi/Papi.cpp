@@ -40,7 +40,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_counter(Caliper* c, int scope, Snapshot& sbuf) {
+void push_counter(Caliper* c, int scope, Snapshot* sbuf) {
     if (num_counters < 1)
         return;
 
@@ -49,8 +49,8 @@ void push_counter(Caliper* c, int scope, Snapshot& sbuf) {
         return;
     }
 
-    Snapshot::Sizes     sizes = sbuf.capacity();
-    Snapshot::Addresses addr  = sbuf.addresses(); 
+    Snapshot::Sizes     sizes = sbuf->capacity();
+    Snapshot::Addresses addr  = sbuf->addresses(); 
 
     int m = std::min(num_counters, sizes.n_data);
 
@@ -63,7 +63,7 @@ void push_counter(Caliper* c, int scope, Snapshot& sbuf) {
     sizes.n_data  = m;
     sizes.n_attr  = m;
 
-    sbuf.commit(sizes);
+    sbuf->commit(sizes);
 }
 
 void papi_init(Caliper* c) {

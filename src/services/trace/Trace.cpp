@@ -15,9 +15,9 @@ using namespace std;
 namespace 
 {    
 
-void process_snapshot_cb(Caliper* c, const Snapshot& sbuf)
+void process_snapshot_cb(Caliper* c, const Snapshot* sbuf)
 {
-    sbuf.push_record(c->events().write_record);
+    sbuf->push_record(c->events().write_record);
 }
 
 void trace_register(Caliper* c)

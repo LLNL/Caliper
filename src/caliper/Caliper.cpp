@@ -634,7 +634,7 @@ struct Caliper::CaliperImpl
     // --- Snapshot interface
 
     void
-    pull_snapshot(int scope, Snapshot& sbuf) {
+    pull_snapshot(int scope, Snapshot* sbuf) {
         // Invoke callbacks and get contextbuffer data
 
         m_events.snapshot(s_caliper.get(), scope, sbuf);
@@ -650,7 +650,7 @@ struct Caliper::CaliperImpl
 
         Snapshot sbuf;
 
-        pull_snapshot(scope, sbuf);
+        pull_snapshot(scope, &sbuf);
 
         // Write any nodes that haven't been written 
 
@@ -665,7 +665,7 @@ struct Caliper::CaliperImpl
 
         // Process
 
-        m_events.process_snapshot(s_caliper.get(), sbuf);
+        m_events.process_snapshot(s_caliper.get(), &sbuf);
     }
 
     // --- Annotation interface
@@ -927,7 +927,7 @@ Caliper::push_snapshot(int scopes)
 }
 
 void 
-Caliper::pull_snapshot(int scopes, Snapshot& sbuf) 
+Caliper::pull_snapshot(int scopes, Snapshot* sbuf) 
 {
     mP->pull_snapshot(scopes, sbuf);
 }

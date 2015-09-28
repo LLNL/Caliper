@@ -48,9 +48,9 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_time(Caliper* c, int scope, Snapshot& sbuf) {
-    Snapshot::Sizes     sizes = sbuf.capacity();
-    Snapshot::Addresses addr  = sbuf.addresses();
+void push_time(Caliper* c, int scope, Snapshot* sbuf) {
+    Snapshot::Sizes     sizes = sbuf->capacity();
+    Snapshot::Addresses addr  = sbuf->addresses();
 
     auto now = chrono::high_resolution_clock::now();
 
@@ -75,7 +75,7 @@ void push_time(Caliper* c, int scope, Snapshot& sbuf) {
         addr.immediate_data[sizes.n_data++] = Variant(static_cast<int>(chrono::system_clock::to_time_t(chrono::system_clock::now())));
     }
 
-    sbuf.commit(sizes);
+    sbuf->commit(sizes);
 }
 
 /// Initialization handler

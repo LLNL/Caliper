@@ -235,9 +235,9 @@ struct ContextBuffer::ContextBufferImpl
         return ret;
     }
 
-    void snapshot(Snapshot& sbuf) const {
-        Snapshot::Sizes     sizes = sbuf.capacity();
-        Snapshot::Addresses addr  = sbuf.addresses();
+    void snapshot(Snapshot* sbuf) const {
+        Snapshot::Sizes     sizes = sbuf->capacity();
+        Snapshot::Addresses addr  = sbuf->addresses();
 
         m_lock.rlock();
 
@@ -254,12 +254,12 @@ struct ContextBuffer::ContextBufferImpl
         std::copy_n(m_keys.begin()+n, m, addr.immediate_attr);
         std::copy_n(m_data.begin()+n, m, addr.immediate_data);
 
+        m_lock.unlock();
+
         sizes.n_attr = m;
         sizes.n_data = m;
 
-        sbuf.commit(sizes);
-
-        m_lock.unlock();
+        sbuf->commit(sizes);
     }
 
     void push_record(WriteRecordFn fn) {
@@ -322,7 +322,7 @@ cali_err ContextBuffer::unset(const Attribute& attr)
     return mP->unset(attr);
 }
 
-void ContextBuffer::snapshot(Snapshot& sbuf) const
+void ContextBuffer::snapshot(Snapshot* sbuf) const
 {
     mP->snapshot(sbuf);
 }

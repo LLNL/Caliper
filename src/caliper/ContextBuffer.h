@@ -45,7 +45,7 @@ public:
     /// @name get context
     /// @{
 
-    void     snapshot(Snapshot& sbuf) const;
+    void     snapshot(Snapshot* sbuf) const;
 
     /// @}
     /// @name Serialization API
