@@ -2,6 +2,7 @@
 ///@ Context snapshot definition
 
 #include <ContextRecord.h>
+#include <Node.h>
 
 #include <algorithm>
 
@@ -53,11 +54,11 @@ public:
     }
 
     void commit(const Sizes& sizes) {
-        m_num_nodes      += sizes.n_nodes;
+        m_num_nodes     += sizes.n_nodes;
         m_num_immediate += sizes.n_attr;
     }
 
-    void push_record(WriteRecordFn fn) {
+    void push_record(WriteRecordFn fn) const {
         Variant attr[N];
         Variant node[N];
 

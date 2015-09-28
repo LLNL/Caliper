@@ -26,11 +26,11 @@ namespace
 
     const char*  builtin_profiles =
         "# [serial-trace]\n"
-        "CALI_SERVICES_ENABLE=event:recorder:timestamp\n"
+        "CALI_SERVICES_ENABLE=event:recorder:timestamp:trace\n"
         "# [thread-trace]\n"
-        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp\n"
+        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
         "# [mpi-trace]\n"
-        "CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp\n";
+        "CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace\n";
 
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string

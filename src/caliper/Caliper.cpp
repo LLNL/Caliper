@@ -631,10 +631,10 @@ struct Caliper::CaliperImpl
         return size;
     }
 
-    // --- Context interface
+    // --- Snapshot interface
 
     void
-    snapshot(int scope, Snapshot& sbuf) {
+    pull_snapshot(int scope, Snapshot& sbuf) {
         // Invoke callbacks and get contextbuffer data
 
         m_events.snapshot(s_caliper.get(), scope, sbuf);
@@ -642,6 +642,15 @@ struct Caliper::CaliperImpl
         for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
             if (scope & s)
                 current_contextbuffer(s)->snapshot(sbuf);
+    }
+
+    void 
+    push_snapshot(int scope) {
+        // Create & pull snapshot
+
+        Snapshot sbuf;
+
+        pull_snapshot(scope, sbuf);
 
         // Write any nodes that haven't been written 
 
@@ -657,10 +666,6 @@ struct Caliper::CaliperImpl
         // Process
 
         m_events.process_snapshot(s_caliper.get(), sbuf);
-
-        // Write context record
-
-        sbuf.push_record(m_events.write_record);
     }
 
     // --- Annotation interface
@@ -916,16 +921,15 @@ Caliper::set_contextbuffer_callback(cali_context_scope_t scope, std::function<Co
 // --- Snapshot API
 
 void 
-Caliper::snapshot(int scopes) 
+Caliper::push_snapshot(int scopes) 
 {
-    Snapshot sbuf;
-    mP->snapshot(scopes, sbuf);
+    mP->push_snapshot(scopes);
 }
 
 void 
-Caliper::snapshot(int scopes, Snapshot& sbuf) 
+Caliper::pull_snapshot(int scopes, Snapshot& sbuf) 
 {
-    mP->snapshot(scopes, sbuf);
+    mP->pull_snapshot(scopes, sbuf);
 }
 
 // --- Annotation interface

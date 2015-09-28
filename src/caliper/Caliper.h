@@ -94,8 +94,8 @@ public:
 
     // --- Snapshot API
 
-    void      snapshot(int scopes);
-    void      snapshot(int scopes, Snapshot& snapshot);
+    void      push_snapshot(int scopes);
+    void      pull_snapshot(int scopes, Snapshot& snapshot);
 
     // --- Annotation API
 
