@@ -15,6 +15,9 @@ namespace cali
 class Attribute;
 class Node;
 
+template<int> class FixedSnapshot;
+typedef FixedSnapshot<64> Snapshot;
+
 class ContextBuffer
 {
     struct ContextBufferImpl;
@@ -42,7 +45,7 @@ public:
     /// @name get context
     /// @{
 
-    size_t   pull_context(uint64_t* buf, size_t size) const;
+    void     snapshot(Snapshot* sbuf) const;
 
     /// @}
     /// @name Serialization API

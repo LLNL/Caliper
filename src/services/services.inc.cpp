@@ -17,6 +17,7 @@ extern CaliperService PthreadService;
 extern CaliperService RecorderService;
 extern CaliperService TimestampService;
 extern CaliperService StatisticsService;
+extern CaliperService TraceService;
 #ifdef CALIPER_HAVE_MITOS
 extern CaliperService MitosService;
 #endif
@@ -40,6 +41,7 @@ const CaliperService caliper_services[] = {
     RecorderService,
     TimestampService,
     StatisticsService,
+    TraceService,
 #ifdef CALIPER_HAVE_MITOS
     MitosService,
 #endif

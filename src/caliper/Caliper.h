@@ -24,8 +24,10 @@ namespace cali
 // Forward declarations
 
 class ContextBuffer;
-class Node;
+class Node;    
 
+template<int> class FixedSnapshot;
+typedef FixedSnapshot<64> Snapshot;
 
 /// @class Caliper
 
@@ -68,7 +70,9 @@ public:
 
         util::callback<void(Caliper*, 
                             int, 
-                            WriteRecordFn)>              measure;
+                            Snapshot*)>                  snapshot;
+        util::callback<void(Caliper*,
+                            const Snapshot*)>            process_snapshot;
 
         util::callback<void(const RecordDescriptor&,
                             const int*,
@@ -83,17 +87,15 @@ public:
     ContextBuffer* current_contextbuffer(cali_context_scope_t context);
 
     ContextBuffer* create_contextbuffer(cali_context_scope_t context);
-    void      release_contextbuffer(ContextBuffer*);
+    void           release_contextbuffer(ContextBuffer*);
 
-    void      set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);
+    void           set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);
 
 
-    // --- Context API
+    // --- Snapshot API
 
-    std::size_t context_size(int scope) const;
-
-    std::size_t pull_context(int scope, uint64_t buf[], std::size_t len);
-    void        push_context(int scope);
+    void      push_snapshot(int scopes);
+    void      pull_snapshot(int scopes, Snapshot* snapshot);
 
     // --- Annotation API
 

@@ -4,6 +4,7 @@
 #include "ContextBuffer.h"
 
 #include "SigsafeRWLock.h"
+#include "Snapshot.h"
 
 #include <Attribute.h>
 #include <ContextRecord.h>
@@ -29,10 +30,12 @@ struct ContextBuffer::ContextBufferImpl
     // attr/data array layout: [ <node attr/ids> ... <hidden attr/values> ... <data attr/values> ]
     // m_nodes array stores pointers of context nodes
 
-    vector<Variant> m_attr;
-    vector<Variant> m_data;
+    vector<cali_id_t> m_keys;
 
-    vector<Node*>   m_nodes;
+    vector<Variant>   m_attr;
+    vector<Variant>   m_data;
+
+    vector<Node*>     m_nodes;
 
     vector<Variant>::size_type m_num_nodes;
     vector<Variant>::size_type m_num_hidden;
@@ -41,12 +44,14 @@ struct ContextBuffer::ContextBufferImpl
 
     ContextBufferImpl() 
         : m_num_nodes { 0 },
-        m_num_hidden  { 0 } { 
-        m_attr.reserve(64);
-        m_data.reserve(64);
+          m_num_hidden  { 0 } 
+        {
+            m_keys.reserve(64);
+            m_attr.reserve(64);
+            m_data.reserve(64);
 
-        m_nodes.reserve(32);
-    }
+            m_nodes.reserve(32);
+        }
 
     // --- interface
 
@@ -55,10 +60,10 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
-        if (it != m_attr.end())
-            ret = m_data[it-m_attr.begin()];
+        if (it != m_keys.end())
+            ret = m_data[it-m_keys.begin()];
 
         m_lock.unlock();
 
@@ -70,11 +75,11 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.rlock();
 
-        auto end = m_attr.begin() + m_num_nodes;
-        auto it  = std::find(m_attr.begin(), end, Variant(attr.id()));
+        auto end = m_keys.begin() + m_num_nodes;
+        auto it  = std::find(m_keys.begin(), end, attr.id());
 
         if (it != end) {
-            vector<Variant>::size_type n = it - m_attr.begin();
+            vector<Variant>::size_type n = it - m_keys.begin();
 
             assert(n < m_nodes.size());
             ret = m_nodes[n];
@@ -91,11 +96,11 @@ struct ContextBuffer::ContextBufferImpl
         m_lock.wlock();
 
         // Only handle immediate or hidden entries for now
-        auto it = std::find(m_attr.begin() + m_num_nodes, m_attr.end(), Variant(attr.id()));
+        auto it = std::find(m_keys.begin() + m_num_nodes, m_keys.end(), attr.id());
 
-        if (it != m_attr.end()) {
-            ret = m_data[it-m_attr.begin()];
-            m_data[it-m_attr.begin()] = value;
+        if (it != m_keys.end()) {
+            ret = m_data[it-m_keys.begin()];
+            m_data[it-m_keys.begin()] = value;
         }
 
         m_lock.unlock();
@@ -109,15 +114,16 @@ struct ContextBuffer::ContextBufferImpl
     cali_err set(const Attribute& attr, const Variant& value) {
         m_lock.wlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
-        if (it != m_attr.end()) {
+        if (it != m_keys.end()) {
             // Update entry
 
-            m_data[it - m_attr.begin()] = value;
+            m_data[it - m_keys.begin()] = value;
         } else {
             // Add new entry
 
+            m_keys.push_back(attr.id());
             m_attr.push_back(Variant(attr.id()));
             m_data.push_back(value);
 
@@ -126,7 +132,8 @@ struct ContextBuffer::ContextBufferImpl
 
                 m_nodes.push_back(nullptr);
 
-                if (m_num_nodes < m_attr.size()-1) {
+                if (m_num_nodes < m_keys.size()-1) {
+                    std::swap(m_keys.back(), m_keys[m_num_nodes]);
                     std::swap(m_attr.back(), m_attr[m_num_nodes]);
                     std::swap(m_data.back(), m_data[m_num_nodes]);
                 }
@@ -137,7 +144,8 @@ struct ContextBuffer::ContextBufferImpl
                 
                 auto n = m_num_nodes + m_num_hidden;
 
-                if (n < m_attr.size()-1) {
+                if (n < m_keys.size()-1) {
+                    std::swap(m_keys.back(), m_keys[n]);
                     std::swap(m_attr.back(), m_attr[n]);
                     std::swap(m_data.back(), m_data[n]);
                 }
@@ -157,13 +165,13 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.wlock();
 
-        auto end = m_attr.begin() + m_num_nodes;
-        auto it  = std::find(m_attr.begin(), end, Variant(attr.id()));
+        auto end = m_keys.begin() + m_num_nodes;
+        auto it  = std::find(m_keys.begin(), end, attr.id());
 
         if (it != end) {
             // Update entry
 
-            vector<Variant>::size_type n = it - m_attr.begin();
+            vector<Variant>::size_type n = it - m_keys.begin();
 
             assert(n < m_nodes.size());
 
@@ -172,18 +180,21 @@ struct ContextBuffer::ContextBufferImpl
         } else {
             // Add new entry
 
-            m_attr.emplace_back(attr.id());
+            m_keys.emplace_back(attr.id());
+            m_attr.emplace_back(Variant(attr.id()));
             m_data.emplace_back(node->id());
 
             m_nodes.push_back(node);
 
             // this is a node, move entry in attr/data array up front
 
-            if (m_num_nodes < m_attr.size()-1) {
+            if (m_num_nodes < m_keys.size()-1) {
+                std::swap(m_keys.back(), m_keys[m_num_nodes]);
                 std::swap(m_attr.back(), m_attr[m_num_nodes]);
                 std::swap(m_data.back(), m_data[m_num_nodes]);
             }
             if (m_num_hidden > 0) {
+                std::swap(m_keys.back(), m_keys[m_num_nodes+m_num_hidden]);
                 std::swap(m_attr.back(), m_attr[m_num_nodes+m_num_hidden]);
                 std::swap(m_data.back(), m_data[m_num_nodes+m_num_hidden]);
             }
@@ -201,12 +212,13 @@ struct ContextBuffer::ContextBufferImpl
 
         m_lock.wlock();
 
-        auto it = std::find(m_attr.begin(), m_attr.end(), Variant(attr.id()));
+        auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
-        if (it != m_attr.end()) {
-            vector<Variant>::size_type n = it - m_attr.begin();
+        if (it != m_keys.end()) {
+            vector<Variant>::size_type n = it - m_keys.begin();
 
-            m_attr.erase(it);
+            m_keys.erase(it);
+            m_attr.erase(m_attr.begin() + n);
             m_data.erase(m_data.begin() + n);
 
             if (n < m_nodes.size())
@@ -223,27 +235,31 @@ struct ContextBuffer::ContextBufferImpl
         return ret;
     }
 
-    size_t pull_context(uint64_t* buf, size_t size) const {
-        unsigned bufidx = 0;
+    void snapshot(Snapshot* sbuf) const {
+        Snapshot::Sizes     sizes = sbuf->capacity();
+        Snapshot::Addresses addr  = sbuf->addresses();
 
         m_lock.rlock();
 
-        std::vector<Variant>::size_type n = 0;
+        // Copy nodes entries
+        int m = std::min(sizes.n_nodes, static_cast<int>(m_nodes.size()));
 
-        for (n = 0; n < m_num_nodes && bufidx < size; ++n)
-            buf[bufidx++] = m_attr[n].to_id();
-        for (n = m_num_nodes + m_num_hidden; n < m_attr.size() && bufidx < size; ++n) {
-            buf[bufidx++] = m_attr[n].to_id();
+        std::copy_n(m_nodes.begin(), m, addr.node_entries);
+        sizes.n_nodes = m;
 
-            uint64_t data = 0;
-            memcpy(&data, m_data[n].data(), std::min(sizeof(uint64_t), m_data[n].size()));
+        // Copy immediate entries
+        std::vector<Variant>::size_type n = m_num_nodes + m_num_hidden;
+        m = std::min(sizes.n_data, static_cast<int>(m_data.size()-n));
 
-            buf[bufidx++] = data;
-        }
+        std::copy_n(m_keys.begin()+n, m, addr.immediate_attr);
+        std::copy_n(m_data.begin()+n, m, addr.immediate_data);
 
         m_lock.unlock();
 
-        return bufidx;
+        sizes.n_attr = m;
+        sizes.n_data = m;
+
+        sbuf->commit(sizes);
     }
 
     void push_record(WriteRecordFn fn) {
@@ -306,9 +322,9 @@ cali_err ContextBuffer::unset(const Attribute& attr)
     return mP->unset(attr);
 }
 
-size_t ContextBuffer::pull_context(uint64_t* buf, size_t size) const
+void ContextBuffer::snapshot(Snapshot* sbuf) const
 {
-    return mP->pull_context(buf, size);
+    mP->snapshot(sbuf);
 }
 
 void ContextBuffer::push_record(WriteRecordFn fn) const

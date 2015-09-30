@@ -8,6 +8,7 @@
 #include "ContextBuffer.h"
 #include "MemoryPool.h"
 #include "SigsafeRWLock.h"
+#include "Snapshot.h"
 
 #include <Services.h>
 
@@ -634,60 +635,26 @@ struct Caliper::CaliperImpl
         return size;
     }
 
-    // --- Context interface
-
-    std::size_t 
-    pull_context(int scope, uint64_t buf[], std::size_t len) {
-
-        // TODO: run measure() to receive explicit measurements from services
-
-        // Pull context from current TASK/THREAD/PROCESS environments
-
-        ContextBuffer* ctxbuf[3] { nullptr, nullptr, nullptr };
-        int            n         { 0 };
-
-        if (scope & CALI_SCOPE_TASK)
-            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_TASK);
-        if (scope & CALI_SCOPE_THREAD)
-            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_THREAD);
-        if (scope & CALI_SCOPE_PROCESS)
-            ctxbuf[n++] = current_contextbuffer(CALI_SCOPE_PROCESS);
-
-        size_t clen = 0;
-
-        for (int e = 0; e < n && ctxbuf[e]; ++e)
-            clen += ctxbuf[e]->pull_context(buf+clen, len - std::min(clen, len));
-
-        return clen;
-    }
+    // --- Snapshot interface
 
     void
-    push_context(int scope) {
-        const int MAX_DATA  = 40;
+    pull_snapshot(int scope, Snapshot* sbuf) {
+        // Invoke callbacks and get contextbuffer data
 
-        int        all_n[3] = { 0, 0, 0 };
-        Variant all_data[3][MAX_DATA];
-
-        // Coalesce selected context buffer and measurement records into a single record
-
-        auto coalesce_rec = [&](const RecordDescriptor& rec, const int* n, const Variant** data){
-            assert(rec.id == ContextRecord::record_descriptor().id && rec.num_entries == 3);
-
-            for (int i : { 0, 1, 2 }) {
-                for (int v = 0; v < n[i] && all_n[i]+v < MAX_DATA; ++v)
-                    all_data[i][all_n[i]+v] = data[i][v];
-
-                all_n[i] = min(all_n[i]+n[i], MAX_DATA);
-            }
-        };
-
-        m_events.measure(s_caliper.get(), scope, coalesce_rec);
+        m_events.snapshot(s_caliper.get(), scope, sbuf);
 
         for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
             if (scope & s)
-                current_contextbuffer(s)->push_record(coalesce_rec);
+                current_contextbuffer(s)->snapshot(sbuf);
+    }
 
-        const Variant* all_data_p[3] = { all_data[0], all_data[1], all_data[2] };
+    void 
+    push_snapshot(int scope) {
+        // Create & pull snapshot
+
+        Snapshot sbuf;
+
+        pull_snapshot(scope, &sbuf);
 
         // Write any nodes that haven't been written 
 
@@ -700,9 +667,9 @@ struct Caliper::CaliperImpl
 
         m_nodelock.unlock();
 
-        // Write context record
+        // Process
 
-        m_events.write_record(ContextRecord::record_descriptor(), all_n, all_data_p);
+        m_events.process_snapshot(s_caliper.get(), &sbuf);
     }
 
     // --- Annotation interface
@@ -955,25 +922,18 @@ Caliper::set_contextbuffer_callback(cali_context_scope_t scope, std::function<Co
     mP->set_contextbuffer_callback(scope, cb);
 }
 
-// --- Context API
+// --- Snapshot API
 
-std::size_t 
-Caliper::context_size(int scope) const
+void 
+Caliper::push_snapshot(int scopes) 
 {
-    // return mP->m_context.context_size(env);
-    return 2 * num_attributes();
-}
-
-std::size_t 
-Caliper::pull_context(int scope, uint64_t buf[], std::size_t len) 
-{
-    return mP->pull_context(scope, buf, len);
+    mP->push_snapshot(scopes);
 }
 
 void 
-Caliper::push_context(int scope) 
+Caliper::pull_snapshot(int scopes, Snapshot* sbuf) 
 {
-    return mP->push_context(scope);
+    mP->pull_snapshot(scopes, sbuf);
 }
 
 // --- Annotation interface

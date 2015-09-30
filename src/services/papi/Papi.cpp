@@ -4,6 +4,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <Snapshot.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -23,7 +24,7 @@ using namespace std;
 namespace 
 {
 
-Variant   counter_attrbs[MAX_COUNTERS];
+cali_id_t counter_attrbs[MAX_COUNTERS];
 
 int       counter_events[MAX_COUNTERS];
 long long counter_values[MAX_COUNTERS];
@@ -39,24 +40,30 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_counter(Caliper* c, int scope, WriteRecordFn fn) {
+void push_counter(Caliper* c, int scope, Snapshot* sbuf) {
     if (num_counters < 1)
         return;
-
-    Variant v_data[MAX_COUNTERS];
 
     if (PAPI_accum_counters(counter_values, num_counters) != PAPI_OK) {
         Log(1).stream() << "PAPI failed to accumulate counters!" << endl;
         return;
     }
 
-    for (int i = 0; i < num_counters; ++i)
-        v_data[i] = static_cast<uint64_t>(counter_values[i]);
+    Snapshot::Sizes     sizes = sbuf->capacity();
+    Snapshot::Addresses addr  = sbuf->addresses(); 
 
-    int               n[3] = {       0, num_counters,   num_counters };
-    const Variant* data[3] = { nullptr, counter_attrbs, v_data       };
+    int m = std::min(num_counters, sizes.n_data);
 
-    fn(ContextRecord::record_descriptor(), n, data);
+    for (int i = 0; i < m; ++i)
+        addr.immediate_data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
+
+    copy_n(counter_attrbs, m, addr.immediate_attr);
+
+    sizes.n_nodes = 0;
+    sizes.n_data  = m;
+    sizes.n_attr  = m;
+
+    sbuf->commit(sizes);
 }
 
 void papi_init(Caliper* c) {
@@ -131,7 +138,7 @@ void papi_register(Caliper* c) {
     // add callback for Caliper::get_context() event
     c->events().post_init_evt.connect(&papi_init);
     c->events().finish_evt.connect(&papi_finish);
-    c->events().measure.connect(&push_counter);
+    c->events().snapshot.connect(&push_counter);
 
     Log(1).stream() << "Registered PAPI service" << endl;
 }

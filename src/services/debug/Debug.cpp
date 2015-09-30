@@ -4,7 +4,9 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <Snapshot.h>
 
+#include <csv/CsvSpec.h>
 #include <Log.h>
 
 #include <mutex>
@@ -73,10 +75,21 @@ void destroy_context_cb(ContextBuffer* ctx)
     Log(2).stream() << "Event: destroy_context" << endl;
 }
 
-void measure_cb(Caliper* c, int scope, WriteRecordFn)
+void snapshot_cb(Caliper* c, int scope, Snapshot*)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: measure (scope = " << scope2string(scope) << ")" << endl;
+    Log(2).stream() << "Event: snapshot (scope = " << scope2string(scope) << ")" << endl;
+}
+
+void process_snapshot_cb(Caliper* c, const Snapshot* sbuf)
+{
+    lock_guard<mutex> lock(dbg_mutex);
+
+    auto write_rec_fn = [](const RecordDescriptor& rec, const int count[], const Variant* data[]) {
+        CsvSpec::write_record(Log(2).stream() << "Event: process_snapshot: ", rec, count, data);
+    };
+
+    sbuf->push_record(write_rec_fn);
 }
 
 void finish_cb(Caliper* c)
@@ -94,7 +107,8 @@ void debug_service_register(Caliper* c)
     c->events().finish_evt.connect(&finish_cb);
     c->events().create_context_evt.connect(&create_context_cb);
     c->events().destroy_context_evt.connect(&destroy_context_cb);
-    c->events().measure.connect(&measure_cb);
+    c->events().snapshot.connect(&snapshot_cb);
+    c->events().process_snapshot.connect(&process_snapshot_cb);
 
     Log(1).stream() << "Registered debug service" << endl;
 }

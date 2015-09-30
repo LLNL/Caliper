@@ -66,7 +66,7 @@ void event_cb(Caliper* c, const Attribute& attr)
             return;
     }
 
-    c->push_context(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
+    c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS);
 }
 
 void event_trigger_register(Caliper* c) {
