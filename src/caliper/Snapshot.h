@@ -47,10 +47,6 @@ public:
             std::fill_n(m_data,  N, Variant());
         }
 
-    FixedSnapshot(const FixedSnapshot<N>& f) = delete;
-
-    FixedSnapshot<N> operator = (const FixedSnapshot<N>& f) = delete;
-
     Sizes capacity() const { 
         return { N - m_num_nodes, N-m_num_immediate, N-m_num_immediate }; 
     }
