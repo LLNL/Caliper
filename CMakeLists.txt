@@ -42,12 +42,6 @@ endif()
 
 find_package(Threads)
 
-# Find OpenMP
-find_package(OpenMP)
-if (OpenMP_FLAG_DETECTED)
-  set(TEST_USE_OMP TRUE)
-endif()
-
 # Find OMPT header
 find_path(OMPT_INCLUDE_DIR ompt.h
   PATH_SUFFIXES include
@@ -67,14 +61,6 @@ find_package(MPI QUIET)
 
 if (MPI_C_FOUND)
   set(CALIPER_HAVE_MPI TRUE)
-endif()
-
-# Find Mitos
-find_package(Mitos QUIET)
-if(Mitos_FOUND)
-  set(CALIPER_HAVE_MITOS TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS mitos)
-  message(STATUS "Mitos sampling library found")
 endif()
 
 # Create a config header file

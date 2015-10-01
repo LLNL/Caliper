@@ -18,9 +18,6 @@ extern CaliperService RecorderService;
 extern CaliperService TimestampService;
 extern CaliperService StatisticsService;
 extern CaliperService TraceService;
-#ifdef CALIPER_HAVE_MITOS
-extern CaliperService MitosService;
-#endif
 #ifdef CALIPER_HAVE_MPI
 extern CaliperService MpiService;
 #endif
@@ -42,9 +39,6 @@ const CaliperService caliper_services[] = {
     TimestampService,
     StatisticsService,
     TraceService,
-#ifdef CALIPER_HAVE_MITOS
-    MitosService,
-#endif
 #ifdef CALIPER_HAVE_MPI
     MpiService,
 #endif
