@@ -140,8 +140,8 @@ public:
 
     // --- Serialization / data access API
 
-    cali_id_t get_entry_attribute_id(const Entry&) const;
-    Variant   extract(const Attribute&, const Entry&) const;
+    cali_id_t get_entry_attribute_id(const Entry*) const;
+    Variant   extract(const Attribute&, const Entry*) const;
 
     void      foreach_node(std::function<void(const Node&)>);
     void      foreach_attribute(std::function<void(const Attribute&)>);

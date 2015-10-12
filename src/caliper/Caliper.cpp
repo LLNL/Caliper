@@ -858,21 +858,24 @@ struct Caliper::CaliperImpl
     // --- Retrieval
 
     cali_id_t
-    get_entry_attribute_id(const Entry& entry) const {
-        if (!entry.m_ref)
+    get_entry_attribute_id(const Entry* entry) const {
+        if (!entry || !entry->m_ref)
             return CALI_INV_ID;
 
-        cali_id_t attr = entry.m_ref->attribute();
+        cali_id_t attr = entry->m_ref->attribute();
 
-        return attr = m_name_attr.id() ? entry.m_ref->id() : attr;
+        return attr = m_name_attr.id() ? entry->m_ref->id() : attr;
     }
 
     Variant
-    extract(const Attribute& attr, const Entry& entry) const {
-        if (attr.store_as_value())
-            return entry.m_value;
+    extract(const Attribute& attr, const Entry* entry) const {
+        if (!entry)
+            return Variant();
 
-        for (const Node* node = entry.m_ref; node; node = node->parent())
+        if (attr.store_as_value())
+            return entry->m_value;
+
+        for (const Node* node = entry->m_ref; node; node = node->parent())
             if (node->attribute() == attr.id())
                 return node->data();
 
@@ -1086,13 +1089,13 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 // --- Serialization API
 
 cali_id_t
-Caliper::get_entry_attribute_id(const Entry& entry) const
+Caliper::get_entry_attribute_id(const Entry* entry) const
 {
     return mP->get_entry_attribute_id(entry);
 }
 
 Variant 
-Caliper::extract(const Attribute& attr, const Entry& entry) const
+Caliper::extract(const Attribute& attr, const Entry* entry) const
 {
     return mP->extract(attr, entry);
 }
