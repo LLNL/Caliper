@@ -10,7 +10,7 @@
 
 #include <Attribute.h>
 #include <Record.h>
-
+#include <Variant.h>
 #include <util/callback.hpp>
 
 #include <functional>
@@ -48,6 +48,27 @@ public:
 
     Caliper& operator = (const Caliper&) = delete;
 
+    // --- Class for unspecified node or immediate data element
+
+    class Entry {
+        Node*   m_ref;
+        Variant m_value;
+
+        Entry() : m_ref { nullptr } 
+            { }
+
+    public:
+
+        const Node* ref() { return m_ref; }
+
+        static const Entry empty;
+
+        friend class CaliperImpl;
+    };
+
+    Entry     make_entry(size_t n, const Attribute* attr, const Variant* value);
+    Entry     make_entry(const Attribute& attr, const Variant& value);
+
 
     // --- Events
 
@@ -70,8 +91,10 @@ public:
 
         util::callback<void(Caliper*, 
                             int, 
+                            const Entry*,
                             Snapshot*)>                  snapshot;
         util::callback<void(Caliper*,
+                            const Entry*,
                             const Snapshot*)>            process_snapshot;
 
         util::callback<void(const RecordDescriptor&,
@@ -89,13 +112,12 @@ public:
     ContextBuffer* create_contextbuffer(cali_context_scope_t context);
     void           release_contextbuffer(ContextBuffer*);
 
-    void           set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);
-
+    void           set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);    
 
     // --- Snapshot API
 
-    void      push_snapshot(int scopes);
-    void      pull_snapshot(int scopes, Snapshot* snapshot);
+    void      push_snapshot(int scopes, const Entry* trigger_info);
+    void      pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* snapshot);
 
     // --- Annotation API
 
@@ -116,8 +138,10 @@ public:
 
     Attribute create_attribute(const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT);
 
-
     // --- Serialization / data access API
+
+    cali_id_t get_entry_attribute_id(const Entry&) const;
+    Variant   extract(const Attribute&, const Entry&) const;
 
     void      foreach_node(std::function<void(const Node&)>);
     void      foreach_attribute(std::function<void(const Attribute&)>);

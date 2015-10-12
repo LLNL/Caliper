@@ -175,7 +175,7 @@ get_thread_contextbuffer()
 }
 
 void
-snapshot_cb(Caliper* c, int scope, Snapshot&)
+snapshot_cb(Caliper* c, int scope, const Caliper::Entry*, Snapshot&)
 {
     if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;

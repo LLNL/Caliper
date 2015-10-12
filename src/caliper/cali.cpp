@@ -34,7 +34,7 @@ cali_find_attribute(const char* name)
 void
 cali_push_context(int scope)
 {
-    Caliper::instance()->push_snapshot(scope);
+    Caliper::instance()->push_snapshot(scope, nullptr);
 }
 
 //

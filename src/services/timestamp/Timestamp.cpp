@@ -48,7 +48,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_time(Caliper* c, int scope, Snapshot* sbuf) {
+void push_time(Caliper* c, int scope, const Caliper::Entry*, Snapshot* sbuf) {
     Snapshot::Sizes     sizes = sbuf->capacity();
     Snapshot::Addresses addr  = sbuf->addresses();
 

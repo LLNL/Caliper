@@ -40,7 +40,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_counter(Caliper* c, int scope, Snapshot* sbuf) {
+void push_counter(Caliper* c, int scope, const Caliper::Entry*, Snapshot* sbuf) {
     if (num_counters < 1)
         return;
 

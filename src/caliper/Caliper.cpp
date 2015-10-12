@@ -161,7 +161,6 @@ struct Caliper::CaliperImpl
             { 11, 8,  { CALI_TYPE_STRING, "cali.key.attribute",   18 } },
             { 12, 8,  { CALI_TYPE_STRING, "cali.caliper.version", 20 } },
             { 13, 12, { CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION) } },
-            { 14, 8,  { CALI_TYPE_STRING, "cali.snapshot.event",  19 } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
@@ -638,10 +637,28 @@ struct Caliper::CaliperImpl
     // --- Snapshot interface
 
     void
-    pull_snapshot(int scope, Snapshot* sbuf) {
+    pull_snapshot(int scope, const Entry* trigger_info, Snapshot* sbuf) {
+        // Save trigger info in snapshot buf
+
+        if (trigger_info && trigger_info->m_ref) {
+            Snapshot::Sizes     sizes = { 0, 0, 0 };
+            Snapshot::Addresses addresses = sbuf->addresses();
+
+            if (trigger_info->m_ref->attribute() == m_name_attr.id()) {
+                // as-value entry
+                addresses.immediate_attr[sizes.n_attr++] = trigger_info->m_ref->id();
+                addresses.immediate_data[sizes.n_data++] = trigger_info->m_value;
+            } else {
+                // node entry
+                addresses.node_entries[sizes.n_nodes++]  = trigger_info->m_ref;
+            }
+
+            sbuf->commit(sizes);
+        }
+
         // Invoke callbacks and get contextbuffer data
 
-        m_events.snapshot(s_caliper.get(), scope, sbuf);
+        m_events.snapshot(s_caliper.get(), scope, trigger_info, sbuf);
 
         for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
             if (scope & s)
@@ -649,12 +666,12 @@ struct Caliper::CaliperImpl
     }
 
     void 
-    push_snapshot(int scope) {
+    push_snapshot(int scope, const Entry* trigger_info) {
         // Create & pull snapshot
 
         Snapshot sbuf;
 
-        pull_snapshot(scope, &sbuf);
+        pull_snapshot(scope, trigger_info, &sbuf);
 
         // Write any nodes that haven't been written 
 
@@ -669,7 +686,7 @@ struct Caliper::CaliperImpl
 
         // Process
 
-        m_events.process_snapshot(s_caliper.get(), &sbuf);
+        m_events.process_snapshot(s_caliper.get(), trigger_info, &sbuf);
     }
 
     // --- Annotation interface
@@ -811,7 +828,56 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
+    // --- Generic entries
+
+    Entry
+    make_entry(size_t n, const Attribute* attr, const Variant* value) {
+        Entry entry { Entry::empty };
+
+        entry.m_ref = get_path(n, attr, value);
+        // what if this is an attribute node?!
+
+        return entry;
+    }
+
+    Entry 
+    make_entry(const Attribute& attr, const Variant& value) {
+        Entry entry { Entry::empty };
+
+        if (attr.store_as_value()) {
+            // TODO: Make less ugly
+            entry.m_ref   = const_cast<Node*>(get_node(attr.id()));
+            entry.m_value = value;
+        } else {
+            entry.m_ref   = get_path(1, &attr, &value);
+        }
+
+        return entry;
+    }
+
     // --- Retrieval
+
+    cali_id_t
+    get_entry_attribute_id(const Entry& entry) const {
+        if (!entry.m_ref)
+            return CALI_INV_ID;
+
+        cali_id_t attr = entry.m_ref->attribute();
+
+        return attr = m_name_attr.id() ? entry.m_ref->id() : attr;
+    }
+
+    Variant
+    extract(const Attribute& attr, const Entry& entry) const {
+        if (attr.store_as_value())
+            return entry.m_value;
+
+        for (const Node* node = entry.m_ref; node; node = node->parent())
+            if (node->attribute() == attr.id())
+                return node->data();
+
+        return Variant();
+    }
 
     const Node* 
     get_node(cali_id_t id) const {
@@ -881,6 +947,23 @@ Caliper::~Caliper()
     mP.reset(nullptr);
 }
 
+// --- Entry class
+
+const Caliper::Entry Caliper::Entry::empty;
+
+Caliper::Entry 
+Caliper::make_entry(size_t n, const Attribute* attr, const Variant* value)
+{
+    return mP->make_entry(n, attr, value);
+}
+
+Caliper::Entry 
+Caliper::make_entry(const Attribute& attr, const Variant& value)
+{
+    return mP->make_entry(attr, value);
+}
+
+
 // --- Events interface
 
 Caliper::Events&
@@ -925,15 +1008,15 @@ Caliper::set_contextbuffer_callback(cali_context_scope_t scope, std::function<Co
 // --- Snapshot API
 
 void 
-Caliper::push_snapshot(int scopes) 
+Caliper::push_snapshot(int scopes, const Entry* trigger_info) 
 {
-    mP->push_snapshot(scopes);
+    mP->push_snapshot(scopes, trigger_info);
 }
 
 void 
-Caliper::pull_snapshot(int scopes, Snapshot* sbuf) 
+Caliper::pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* sbuf) 
 {
-    mP->pull_snapshot(scopes, sbuf);
+    mP->pull_snapshot(scopes, trigger_info, sbuf);
 }
 
 // --- Annotation interface
@@ -1001,6 +1084,18 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
 
 // --- Serialization API
+
+cali_id_t
+Caliper::get_entry_attribute_id(const Entry& entry) const
+{
+    return mP->get_entry_attribute_id(entry);
+}
+
+Variant 
+Caliper::extract(const Attribute& attr, const Entry& entry) const
+{
+    return mP->extract(attr, entry);
+}
 
 void
 Caliper::foreach_node(std::function<void(const Node&)> proc)

@@ -75,13 +75,13 @@ void destroy_context_cb(ContextBuffer* ctx)
     Log(2).stream() << "Event: destroy_context" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, Snapshot*)
+void snapshot_cb(Caliper* c, int scope, const Caliper::Entry*, Snapshot*)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: snapshot (scope = " << scope2string(scope) << ")" << endl;
 }
 
-void process_snapshot_cb(Caliper* c, const Snapshot* sbuf)
+    void process_snapshot_cb(Caliper* c, const Caliper::Entry*, const Snapshot* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);
 
