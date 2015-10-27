@@ -1,0 +1,6 @@
+set(CMAKE_SYSTEM_NAME BlueGeneQ-dynamic)
+
+set(CMAKE_C_COMPILER bgclang)
+set(CMAKE_CXX_COMPILER bgclang++)
+
+find_program(MPI_COMPILER NAMES mpiclang++ mpiclang)
