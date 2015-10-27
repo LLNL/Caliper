@@ -175,7 +175,7 @@ get_thread_contextbuffer()
 }
 
 void
-snapshot_cb(Caliper* c, int scope, const Caliper::Entry*, Snapshot&)
+snapshot_cb(Caliper* c, int scope, const Caliper::Entry*, Snapshot*)
 {
     if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;
@@ -290,7 +290,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     if (::config.get("capture_state").to_bool() == true) {
         register_ompt_states();
-        c->events().snapshot.connect(&measure_cb);
+        c->events().snapshot.connect(&snapshot_cb);
     }
 
     // set default thread ID
