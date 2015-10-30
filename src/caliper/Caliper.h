@@ -59,7 +59,7 @@ public:
 
     public:
 
-        const Node* ref() { return m_ref; }
+        const Node* ref() const { return m_ref; }
 
         static const Entry empty;
 

@@ -3,13 +3,12 @@
 
 #include "Attribute.h"
 
-#include <map>
-#include <vector>
+#include "Node.h"
 
 using namespace cali;
 using namespace std;
 
-
+/*
 namespace 
 {
     vector<string> split(const std::string& list, char sep)
@@ -75,19 +74,62 @@ namespace
         return str;
     }
 }
+*/
 
-// RecordMap Attribute::record() const
-// {
-//     RecordMap recmap = { 
-//         { "id",         { { id()   } }      },
-//         { "name",       { Variant(m_name) } },
-//         { "type",       { { m_type } }      },
-//         { "properties", { }                 } };
+Attribute 
+Attribute::make_attribute(const Node* node, const AttributeKeys& keys)
+{
+    // sanity check: make sure we have the necessary attributes (name and type)
 
-//     if (m_properties != CALI_ATTR_DEFAULT)
-//         recmap["properties"].push_back(Variant(::write_properties(m_properties)));
+    // Given node must be attribute name 
 
-//     return recmap;
-// }
+    if (!node || node->attribute() == CALI_INV_ID || node->attribute() != keys.name_attr_id)
+        return Attribute::invalid;
 
-const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };
+    // Find type attribute
+    for (const Node* p = node; p && p->attribute() != CALI_INV_ID; p = p->parent()) 
+        if (p->attribute() == keys.type_attr_id)
+            return Attribute(node, keys);
+
+    return Attribute::invalid;
+}
+
+cali_id_t
+Attribute::id() const
+{ 
+    return m_node ? m_node->id() : CALI_INV_ID;
+}
+
+std::string
+Attribute::name() const 
+{
+    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+        if (node->attribute() == m_keys.name_attr_id)
+            return node->data().to_string();
+
+    return std::string();
+}
+
+cali_attr_type
+Attribute::type() const 
+{
+    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+        if (node->attribute() == m_keys.type_attr_id)
+            return node->data().to_attr_type();
+
+    return CALI_TYPE_INV;
+}
+
+int
+Attribute::properties() const 
+{
+    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+        if (node->attribute() == m_keys.prop_attr_id)
+            return node->data().to_int();
+
+    return CALI_ATTR_DEFAULT;
+}
+
+const Attribute::AttributeKeys Attribute::AttributeKeys::invalid { CALI_INV_ID, CALI_INV_ID, CALI_INV_ID };
+
+const Attribute Attribute::invalid { 0, AttributeKeys::invalid };

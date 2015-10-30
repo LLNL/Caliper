@@ -3,8 +3,6 @@
 
 #include "Node.h"
 
-#include "Attribute.h"
-
 #include <cstring>
 
 using namespace cali;

@@ -8,49 +8,69 @@
 
 #include "cali_types.h"
 
-#include "IdType.h"
-// #include "RecordMap.h"
-
 #include <string>
 
 namespace cali
 {
 
-class Attribute : public IdType 
+class Node;
+
+class Attribute
 {
-    std::string    m_name;
-    int            m_properties;
-    cali_attr_type m_type;
 
 public:
 
-    Attribute(cali_id_t id, const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT)
-        : IdType(id),
-          m_name(name), m_properties(prop), m_type(type)
-        { }
+    struct AttributeKeys {
+        cali_id_t name_attr_id;
+        cali_id_t type_attr_id;
+        cali_id_t prop_attr_id;
 
-    std::string    name() const { return m_name; }
-    cali_attr_type type() const { return m_type; }        
+        static const AttributeKeys invalid;
+    };
 
-    int            properties() const { return m_properties; } 
+    cali_id_t      id() const;
+
+    std::string    name() const;
+    cali_attr_type type() const;
+
+    int            properties() const;
 
     bool store_as_value() const { 
-        return m_properties & CALI_ATTR_ASVALUE; 
+        return properties() & CALI_ATTR_ASVALUE; 
     }
     bool is_autocombineable() const   { 
-        return !store_as_value() && !(m_properties & CALI_ATTR_NOMERGE);
+        return !store_as_value() && !(properties() & CALI_ATTR_NOMERGE);
     }
     bool skip_events() const {
-        return m_properties & CALI_ATTR_SKIP_EVENTS;
+        return properties() & CALI_ATTR_SKIP_EVENTS;
     }
     bool is_hidden() const {
-        return m_properties & CALI_ATTR_HIDDEN;
+        return properties() & CALI_ATTR_HIDDEN;
     }
+
+    static Attribute make_attribute(const Node* node, const AttributeKeys& keys);
 
     // RecordMap record() const;
 
     static const Attribute invalid;
+
+private:
+
+    const Node*   m_node;
+    AttributeKeys m_keys;
+
+    Attribute(const Node* node, const AttributeKeys& keys)
+        : m_node(node), m_keys(keys)
+        { }
 };
+
+inline bool operator == (const cali::Attribute& a, const cali::Attribute& b) {
+    return a.id() == b.id();
+}
+
+inline bool operator != (const cali::Attribute& a, const cali::Attribute& b) {
+    return a.id() != b.id();
+}
 
 } // namespace cali
 

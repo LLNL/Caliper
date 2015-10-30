@@ -85,6 +85,8 @@ struct Caliper::CaliperImpl
     Attribute              m_key_attr;
     bool                   m_automerge;
 
+    Attribute::AttributeKeys m_attr_keys;
+
     Events                 m_events;
 
     // --- constructor
@@ -103,7 +105,8 @@ struct Caliper::CaliperImpl
         m_evt_attr  { Attribute::invalid }, 
         m_ver_attr  { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
-        m_automerge { false }
+        m_automerge { false },
+        m_attr_keys(Attribute::AttributeKeys::invalid)
     {
         m_automerge = m_config.get("automerge").to_bool();
     }
@@ -179,6 +182,9 @@ struct Caliper::CaliperImpl
 
         // Initialize bootstrap attributes
 
+        const Attribute::AttributeKeys keys = { 8, 9, 10 };
+        m_attr_keys = keys;
+
         struct attr_node_t { 
             Node* node; Attribute* attr; cali_attr_type type;
         } attr_nodes[] = { 
@@ -187,14 +193,15 @@ struct Caliper::CaliperImpl
             { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    },
             { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    },
             { &bootstrap_attr_nodes[4], &m_ver_attr,  CALI_TYPE_STRING },
-            { &bootstrap_attr_nodes[6], &m_evt_attr,  CALI_TYPE_STRING }
         };
 
         for ( attr_node_t p : attr_nodes ) {
-            // Create attribute 
-            *(p.attr) = Attribute(p.node->id(), p.node->data().to_string(), p.type);
             // Append to type node
             m_type_nodes[p.type]->append(p.node);
+        }
+        for ( attr_node_t p : attr_nodes ) {
+            // Create attribute 
+            *(p.attr) = Attribute::make_attribute(p.node, keys);
         }
     }
 
@@ -216,28 +223,6 @@ struct Caliper::CaliperImpl
 
         // make thread scope the default
         return CALI_SCOPE_THREAD;
-    }
-
-    Attribute 
-    make_attribute(const Node* node) const {
-        Variant   name, type, prop;
-        cali_id_t id = node ? node->id() : CALI_INV_ID;
-
-        for ( ; node ; node = node->parent() ) {
-            if      (node->attribute() == m_name_attr.id()) 
-                name = node->data();
-            else if (node->attribute() == m_prop_attr.id()) 
-                prop = node->data();
-            else if (node->attribute() == m_type_attr.id()) 
-                type = node->data();
-        }
-
-        if (!name || !type)
-            return Attribute::invalid;
-
-        int p = prop ? prop.to_int() : CALI_ATTR_DEFAULT;
-
-        return Attribute(id, name.to_string(), type.to_attr_type(), p);
     }
 
     const Attribute&
@@ -597,7 +582,7 @@ struct Caliper::CaliperImpl
 
         // Create attribute object
 
-        Attribute attr { make_attribute(node) };
+        Attribute attr = Attribute::make_attribute(node, m_attr_keys);
 
         m_events.create_attr_evt(s_caliper.get(), attr);
 
@@ -617,12 +602,12 @@ struct Caliper::CaliperImpl
 
         m_attribute_lock.unlock();
 
-        return make_attribute(node);
+        return Attribute::make_attribute(node, m_attr_keys);
     }
 
     Attribute 
     get_attribute(cali_id_t id) const {
-        return make_attribute(get_node(id));
+        return Attribute::make_attribute(get_node(id), m_attr_keys);
     }
 
     size_t
