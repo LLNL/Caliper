@@ -13,7 +13,8 @@
 
 #include <algorithm>
 #include <iterator>
-#include <set>
+#include <map>
+#include <string>
 #include <vector>
 
 using namespace cali;
@@ -41,63 +42,159 @@ ConfigSet                config;
 
 bool                     enable_snapshot_info;
 
-std::set<cali_id_t>      trigger_attr_ids;
-std::vector<std::string> trigger_attr_names;
+typedef std::map<cali_id_t, Attribute> AttributeMap;
 
-SigsafeRWLock            trigger_list_lock;
+SigsafeRWLock            level_attributes_lock;
+AttributeMap             level_attributes;
+
+std::vector<std::string> trigger_attr_names;
 
 Attribute                trigger_begin_attr { Attribute::invalid };
 Attribute                trigger_end_attr   { Attribute::invalid };
 Attribute                trigger_set_attr   { Attribute::invalid };
 
+Attribute                trigger_level_attr { Attribute::invalid };
+
 void create_attribute_cb(Caliper* c, const Attribute& attr)
 {
+    if (attr.skip_events())
+        return;
+
     std::vector<std::string>::iterator it = find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
 
-    trigger_list_lock.wlock();
+    if (it != trigger_attr_names.end() || trigger_attr_names.empty()) {
+        std::string name = "cali.lvl.";
+        name.append(std::to_string(attr.id()));
 
-    if (it != trigger_attr_names.end())
-        trigger_attr_ids.insert(attr.id());
+        Attribute lvl_attr = 
+            c->create_attribute(name, CALI_TYPE_INT, 
+                                CALI_ATTR_ASVALUE     | 
+                                CALI_ATTR_HIDDEN      | 
+                                CALI_ATTR_SKIP_EVENTS | 
+                                (attr.properties() & CALI_ATTR_SCOPE_MASK));
 
-    trigger_list_lock.unlock();
+        level_attributes_lock.wlock();
+        level_attributes.insert(std::make_pair(attr.id(), lvl_attr));
+        level_attributes_lock.unlock();
+    }
 }
 
-void event_snapshot(Caliper* c, const Attribute& attr, const Attribute& trigger_info_attr)
+Attribute get_level_attribute(const Attribute& attr)
 {
-    if (!trigger_attr_names.empty()) {
-        bool trigger = false;
+    Attribute lvl_attr(Attribute::invalid);
+    AttributeMap::const_iterator it;
 
-        trigger_list_lock.rlock();
-        trigger = trigger_attr_ids.count(attr.id()) > 0;
-        trigger_list_lock.unlock();
-        
-        if (!trigger)
-            return;
-    }
+    level_attributes_lock.rlock();
 
-    if (enable_snapshot_info) {
-        Variant        val(static_cast<uint64_t>(attr.id()));
+    it = level_attributes.find(attr.id());
+    if (it != level_attributes.end())
+        lvl_attr = it->second;
 
-        Caliper::Entry entry = c->make_entry(1, &trigger_info_attr, &val);
+    level_attributes_lock.unlock();
 
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &entry);
-    } else
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+    return lvl_attr;    
 }
 
 void event_begin_cb(Caliper* c, const Attribute& attr)
 {
-    event_snapshot(c, attr, trigger_begin_attr);
+    Attribute lvl_attr(get_level_attribute(attr));
+
+    if (lvl_attr == Attribute::invalid)
+        return;
+
+    if (enable_snapshot_info) {
+        int     lvl = 1;
+        Variant v_lvl(lvl), v_p_lvl;
+
+        // Use Caliper::exchange() to accelerate common-case of setting new hierarchy level to 1.
+        // If previous level was > 0, we need to increment it further
+
+        // FIXME: There may be a race condition between c->exchange() and c->set()
+        // when two threads update a process-scope attribute.
+        // Can fix that with a more general c->update(update_fn) function
+
+        v_p_lvl = c->exchange(lvl_attr, v_lvl);
+        lvl     = v_p_lvl.to_int();
+
+        if (lvl > 0) {
+            v_lvl = Variant(++lvl);
+            c->set(lvl_attr, v_lvl);
+        }
+
+        // Construct the trigger info entry
+
+        Attribute attrs[2] = { trigger_level_attr, trigger_begin_attr };
+        Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
+
+        Caliper::Entry 
+            trigger_info   = c->make_entry(2, attrs, vals);
+
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+    } else {
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+    }
 }
 
 void event_set_cb(Caliper* c, const Attribute& attr)
 {
-    event_snapshot(c, attr, trigger_set_attr);
+    Attribute lvl_attr(get_level_attribute(attr));
+
+    if (lvl_attr == Attribute::invalid)
+        return;
+
+    if (enable_snapshot_info) {
+        Variant v_lvl(static_cast<int>(1));
+
+        // The level for set() is always 1
+        // FIXME: ... except for set_path()??
+        c->set(lvl_attr, v_lvl);
+
+        // Construct the trigger info entry
+
+        Attribute attrs[2] = { trigger_level_attr, trigger_set_attr };
+        Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
+
+        Caliper::Entry 
+            trigger_info   = c->make_entry(2, attrs, vals);
+
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+    } else {
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+    }
 }
 
 void event_end_cb(Caliper* c, const Attribute& attr)
 {
-    event_snapshot(c, attr, trigger_end_attr);
+    Attribute lvl_attr(get_level_attribute(attr));
+
+    if (lvl_attr == Attribute::invalid)
+        return;
+
+    if (enable_snapshot_info) {
+        int     lvl = 0;
+        Variant v_lvl(lvl), v_p_lvl;
+
+        // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
+        // If previous level was > 1, we need to update it again
+
+        v_p_lvl = c->exchange(lvl_attr, v_lvl);
+        lvl     = v_p_lvl.to_int();
+
+        if (lvl > 1)
+            c->set(lvl_attr, Variant(--lvl));
+
+        // Construct the trigger info entry with previous level
+
+        Attribute attrs[2] = { trigger_level_attr, trigger_end_attr };
+        Variant   vals[2]  = { v_p_lvl, Variant(attr.id()) };
+
+        Caliper::Entry 
+            trigger_info   = c->make_entry(2, attrs, vals);
+
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+    } else {
+        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+    }
 }
 
 void event_trigger_register(Caliper* c) {
@@ -118,7 +215,10 @@ void event_trigger_register(Caliper* c) {
         trigger_set_attr = 
             c->create_attribute("cali.snapshot.event.set",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         trigger_end_attr = 
-            c->create_attribute("cali.snapshot.event.end",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);        
+            c->create_attribute("cali.snapshot.event.end",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        trigger_level_attr = 
+            c->create_attribute("cali.snapshot.event.attr.level", CALI_TYPE_UINT, 
+                                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
     }
 
     // register callbacks

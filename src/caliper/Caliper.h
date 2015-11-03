@@ -48,18 +48,37 @@ public:
 
     Caliper& operator = (const Caliper&) = delete;
 
-    // --- Class for unspecified node or immediate data element
+    // --- Class for either a node or immediate data element
 
     class Entry {
-        Node*   m_ref;
-        Variant m_value;
+        Node*     m_node;
+	cali_id_t m_attr_id;
+        Variant   m_value;
 
-        Entry() : m_ref { nullptr } 
+        Entry() : m_node { nullptr }, m_attr_id { CALI_INV_ID }
             { }
 
     public:
 
-        const Node* ref() const { return m_ref; }
+        /// @brief Return top-level attribute of this entry
+        cali_id_t attribute() const;
+
+        /// @brief Count instances of attribute @param attr_id in this entry
+        int       count(cali_id_t attr_id = CALI_INV_ID) const;
+        int       count(const Attribute& attr) const {
+            return count(attr.id());
+        }
+
+        /// @brief Return top-level data value of this entry
+        Variant   value() const;
+
+        /// @brief Extract data value for attribute @param attr_id from this entry
+        Variant   value(cali_id_t attr_id) const;
+        Variant   value(const Attribute& attr) const {
+            return value(attr.id());
+        }
+
+        // int       extract(cali_id_t attr, int n, Variant buf[]) const;
 
         static const Entry empty;
 
@@ -126,8 +145,11 @@ public:
     cali_err  set(const Attribute& attr, const Variant& data);
     cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
 
-    Variant   get(const Attribute& attr);
     Variant   exchange(const Attribute& attr, const Variant& data);
+
+    // --- Query API
+
+    Entry     get(const Attribute& attr) const;
 
     // --- Attribute API
 
@@ -139,9 +161,6 @@ public:
     Attribute create_attribute(const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT);
 
     // --- Serialization / data access API
-
-    cali_id_t get_entry_attribute_id(const Entry*) const;
-    Variant   extract(const Attribute&, const Entry*) const;
 
     void      foreach_node(std::function<void(const Node&)>);
     void      foreach_attribute(std::function<void(const Attribute&)>);

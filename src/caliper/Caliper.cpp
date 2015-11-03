@@ -432,7 +432,7 @@ struct Caliper::CaliperImpl
     }
 
     Node*
-    find_parent_with_attribute(const Attribute& attr, Node* node) {
+    find_node_with_attribute(const Attribute& attr, Node* node) const {
         while (node && node->attribute() != attr.id())
             node = node->parent();
 
@@ -473,7 +473,7 @@ struct Caliper::CaliperImpl
     }
 
     ContextBuffer*
-    current_contextbuffer(cali_context_scope_t scope) {
+    current_contextbuffer(cali_context_scope_t scope) const {
         switch (scope) {
         case CALI_SCOPE_PROCESS:
             return m_default_process_context;
@@ -625,17 +625,18 @@ struct Caliper::CaliperImpl
     pull_snapshot(int scope, const Entry* trigger_info, Snapshot* sbuf) {
         // Save trigger info in snapshot buf
 
-        if (trigger_info && trigger_info->m_ref) {
+        if (trigger_info) {
             Snapshot::Sizes     sizes = { 0, 0, 0 };
             Snapshot::Addresses addresses = sbuf->addresses();
 
-            if (trigger_info->m_ref->attribute() == m_name_attr.id()) {
+            if (trigger_info->m_attr_id != CALI_INV_ID) {
                 // as-value entry
-                addresses.immediate_attr[sizes.n_attr++] = trigger_info->m_ref->id();
+		// todo: what to do with hidden attribute? - trigger info shouldn't be hidden though
+                addresses.immediate_attr[sizes.n_attr++] = trigger_info->m_attr_id;
                 addresses.immediate_data[sizes.n_data++] = trigger_info->m_value;
-            } else {
+            } else if (trigger_info->m_node) {
                 // node entry
-                addresses.node_entries[sizes.n_nodes++]  = trigger_info->m_ref;
+                addresses.node_entries[sizes.n_nodes++]  = trigger_info->m_node;
             }
 
             sbuf->commit(sizes);
@@ -719,7 +720,7 @@ struct Caliper::CaliperImpl
             Node* node = ctx->get_node(get_key(attr));
 
             if (node) {
-                Node* parent = find_parent_with_attribute(attr, node);
+                Node* parent = find_node_with_attribute(attr, node);
 
                 if (parent)
                     parent = parent->parent();
@@ -762,7 +763,7 @@ struct Caliper::CaliperImpl
             Node* node = ctx->get_node(get_key(attr));
 
             if (node) {
-                Node* parent = find_parent_with_attribute(attr, node);
+                Node* parent = find_node_with_attribute(attr, node);
 
                 if (parent)
                     parent = parent->parent();
@@ -813,14 +814,35 @@ struct Caliper::CaliperImpl
         return ret;
     }
 
+    // --- Query
+
+    Entry
+    get(const Attribute& attr) const {
+        Entry e {  Entry::empty };
+
+        if (attr == Attribute::invalid)
+            return Entry::empty;
+
+        ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
+
+        if (attr.store_as_value()) {
+            e.m_attr_id = attr.id();
+            e.m_value   = ctx->get(attr);
+        } else {
+            e.m_node    = find_node_with_attribute(attr, ctx->get_node(get_key(attr)));
+        }
+
+        return e;
+    }
+
     // --- Generic entries
 
     Entry
     make_entry(size_t n, const Attribute* attr, const Variant* value) {
         Entry entry { Entry::empty };
 
-        entry.m_ref = get_path(n, attr, value);
-        // what if this is an attribute node?!
+        entry.m_node = get_path(n, attr, value);
+        // what if this is an as-value attribute?!
 
         return entry;
     }
@@ -831,41 +853,16 @@ struct Caliper::CaliperImpl
 
         if (attr.store_as_value()) {
             // TODO: Make less ugly
-            entry.m_ref   = const_cast<Node*>(get_node(attr.id()));
-            entry.m_value = value;
+            entry.m_attr_id = attr.id();
+            entry.m_value   = value;
         } else {
-            entry.m_ref   = get_path(1, &attr, &value);
+            entry.m_node    = get_path(1, &attr, &value);
         }
 
         return entry;
     }
 
     // --- Retrieval
-
-    cali_id_t
-    get_entry_attribute_id(const Entry* entry) const {
-        if (!entry || !entry->m_ref)
-            return CALI_INV_ID;
-
-        cali_id_t attr = entry->m_ref->attribute();
-
-        return attr = m_name_attr.id() ? entry->m_ref->id() : attr;
-    }
-
-    Variant
-    extract(const Attribute& attr, const Entry* entry) const {
-        if (!entry)
-            return Variant();
-
-        if (attr.store_as_value())
-            return entry->m_value;
-
-        for (const Node* node = entry->m_ref; node; node = node->parent())
-            if (node->attribute() == attr.id())
-                return node->data();
-
-        return Variant();
-    }
 
     const Node* 
     get_node(cali_id_t id) const {
@@ -1034,11 +1031,6 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data)
 }
 
 Variant
-Caliper::get(const Attribute& attr) {
-    return mP->current_contextbuffer(mP->get_scope(attr))->get(attr);
-}
-
-Variant
 Caliper::exchange(const Attribute& attr, const Variant& data) {
     return mP->current_contextbuffer(mP->get_scope(attr))->exchange(attr, data);
 }
@@ -1061,28 +1053,53 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
 // --- Caliper query API
 
-// std::vector<RecordMap>
-// Caliper::unpack(const uint64_t buf[], size_t size) const
-// {
-//     return ContextRecord::unpack(
-//         [this](cali_id_t id){ return mP->get_attribute(id); },
-//         [this](cali_id_t id){ return mP->get(id); },
-//         buf, size);                                 
-// }
-
+Caliper::Entry
+Caliper::get(const Attribute& attr) const {
+    return mP->get(attr);
+}
 
 // --- Serialization API
 
 cali_id_t
-Caliper::get_entry_attribute_id(const Entry* entry) const
+Caliper::Entry::attribute() const
 {
-    return mP->get_entry_attribute_id(entry);
+    return m_node ? m_node->attribute() : m_attr_id;
+}
+
+int 
+Caliper::Entry::count(cali_id_t attr_id) const 
+{
+    int res = 0;
+
+    if (m_node) {
+        for (const Node* node = m_node; node; ++node)
+            if (node->attribute() == attr_id)
+                ++res;
+    } else {
+        if (m_attr_id != CALI_INV_ID && m_attr_id == attr_id)
+            ++res;
+    }
+
+    return res;
 }
 
 Variant 
-Caliper::extract(const Attribute& attr, const Entry* entry) const
+Caliper::Entry::value() const
 {
-    return mP->extract(attr, entry);
+    return m_node ? m_node->data() : m_value;
+}
+
+Variant 
+Caliper::Entry::value(cali_id_t attr_id) const
+{
+    if (!m_node && attr_id == m_attr_id)
+	return m_value;
+
+    for (const Node* node = m_node; node; node = node->parent())
+	if (node->attribute() == attr_id)
+	    return node->data();
+
+    return Variant();
 }
 
 void
@@ -1107,14 +1124,14 @@ namespace
 Caliper* Caliper::instance()
 {
     if (CaliperImpl::s_siglock != 0) {
+        if (CaliperImpl::s_siglock == 2)
+            // Caliper had been initialized previously; we're past the static destructor
+            return nullptr;
+
         if (atexit(::exit_handler) != 0)
             Log(0).stream() << "Unable to register exit handler";
 
         SigsafeRWLock::init();
-
-        if (CaliperImpl::s_siglock == 2)
-            // Caliper had been initialized previously; we're past the static destructor
-            return nullptr;
 
         lock_guard<mutex> lock(CaliperImpl::s_mutex);
 
