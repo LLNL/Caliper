@@ -40,6 +40,23 @@ Compiler. Unpack the source distribution and proceed as follows:
 The OMPT header file and libunwind are required to build the OMPT (OpenMP tools
 interface) and callpath modules, respectively. Both modules are optional.
 
+### Building on BG/Q
+
+When building on a BlueGene/Q system, the libraries must be cross-compiled to
+work correctly on the compute nodes. Use the provided toolchain file to build
+with clang, like so:
+
+     cd <path to caliper root directory>
+     mkdir build && cd build
+     cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
+         -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/bgq-dynamic.toolchain \
+         -DCMAKE_CXX_FLAGS=-stdlib=libc++ \
+         ..
+     make 
+     make install
+
+When processing the created cali files, make sure to use a version of
+`cali-query` complied for the frontend node. 
 
 Getting started
 ------------------------------------------
