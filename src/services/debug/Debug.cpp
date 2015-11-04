@@ -22,25 +22,25 @@ mutex dbg_mutex;
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_attribute (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: create_attribute (attr=" << attr.name() << ")" << endl;
 }
 
 void begin_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_begin (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_begin (attr=" << attr.name() << ")" << endl;
 }
 
 void end_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_end (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_end (attr=" << attr.name() << ")" << endl;
 }
 
 void set_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_set (attr = " << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_set (attr=" << attr.name() << ")" << endl;
 }
 
 const char* scopestrings[] = { "", "process", "thread", "", "task" };
@@ -63,10 +63,22 @@ string scope2string(int scope)
     return out;
 }
 
+string format_triggerinfo(const Entry* entry)
+{
+    string out("trigger=");
+
+    if (entry)
+        out.append(std::to_string(static_cast<uint64_t>(entry->attribute())));
+    else
+        out.append("UNKNOWN");
+
+    return out;
+}
+
 void create_context_cb(cali_context_scope_t scope, ContextBuffer* ctx)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_context (scope = " << scope2string(scope) << ")" << endl;
+    Log(2).stream() << "Event: create_context (scope=" << scope2string(scope) << ")" << endl;
 }
 
 void destroy_context_cb(ContextBuffer* ctx)
@@ -75,13 +87,15 @@ void destroy_context_cb(ContextBuffer* ctx)
     Log(2).stream() << "Event: destroy_context" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, const Caliper::Entry*, Snapshot*)
+void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot*)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: snapshot (scope = " << scope2string(scope) << ")" << endl;
+    Log(2).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
+                    << format_triggerinfo(trigger_info) 
+                    << ")" << endl;
 }
 
-    void process_snapshot_cb(Caliper* c, const Caliper::Entry*, const Snapshot* sbuf)
+void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);
 

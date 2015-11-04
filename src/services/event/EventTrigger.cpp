@@ -125,8 +125,7 @@ void event_begin_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_begin_attr };
         Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
 
-        Caliper::Entry 
-            trigger_info   = c->make_entry(2, attrs, vals);
+        Entry trigger_info = c->make_entry(2, attrs, vals);
 
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
@@ -154,8 +153,7 @@ void event_set_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_set_attr };
         Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
 
-        Caliper::Entry 
-            trigger_info   = c->make_entry(2, attrs, vals);
+        Entry trigger_info = c->make_entry(2, attrs, vals);
 
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
@@ -188,8 +186,7 @@ void event_end_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_end_attr };
         Variant   vals[2]  = { v_p_lvl, Variant(attr.id()) };
 
-        Caliper::Entry 
-            trigger_info   = c->make_entry(2, attrs, vals);
+        Entry trigger_info = c->make_entry(2, attrs, vals);
 
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {

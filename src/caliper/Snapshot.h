@@ -4,7 +4,9 @@
 #ifndef CALI_SNAPSHOT_H
 #define CALI_SNAPSHOT_H
 
+#include <Attribute.h>
 #include <ContextRecord.h>
+#include <Entry.h>
 #include <Node.h>
 
 #include <algorithm>
@@ -59,6 +61,24 @@ public:
     void commit(const Sizes& sizes) {
         m_num_nodes     += sizes.n_nodes;
         m_num_immediate += sizes.n_attr;
+    }
+
+    Entry get(const Attribute& attr) const {
+        if (attr == Attribute::invalid)
+            return Entry::empty;
+
+        if (attr.store_as_value()) {
+            for (int i = 0; i < m_num_immediate; ++i)
+                if (m_attr[i] == attr.id())
+                    return Entry(m_attr[i], m_data[i]);
+        } else {
+            for (int i = 0; i < m_nodes; ++i)
+                for (Node* node = m_nodes[i]; node; node = node->parent())
+                    if (node->attribute() == attr.id())
+                        return Entry(node);
+        }
+
+        return Entry::empty;
     }
 
     void push_record(WriteRecordFn fn) const {

@@ -391,3 +391,4 @@ ostream& cali::operator << (ostream& os, const Variant& v)
     os << v.to_string();
     return os;
 }
+

@@ -9,6 +9,7 @@
 #include "cali_definitions.h"
 
 #include <Attribute.h>
+#include <Entry.h>
 #include <Record.h>
 #include <Variant.h>
 #include <util/callback.hpp>
@@ -47,46 +48,6 @@ public:
     Caliper(const Caliper&) = delete;
 
     Caliper& operator = (const Caliper&) = delete;
-
-    // --- Class for either a node or immediate data element
-
-    class Entry {
-        Node*     m_node;
-	cali_id_t m_attr_id;
-        Variant   m_value;
-
-        Entry() : m_node { nullptr }, m_attr_id { CALI_INV_ID }
-            { }
-
-    public:
-
-        /// @brief Return top-level attribute of this entry
-        cali_id_t attribute() const;
-
-        /// @brief Count instances of attribute @param attr_id in this entry
-        int       count(cali_id_t attr_id = CALI_INV_ID) const;
-        int       count(const Attribute& attr) const {
-            return count(attr.id());
-        }
-
-        /// @brief Return top-level data value of this entry
-        Variant   value() const;
-
-        /// @brief Extract data value for attribute @param attr_id from this entry
-        Variant   value(cali_id_t attr_id) const;
-        Variant   value(const Attribute& attr) const {
-            return value(attr.id());
-        }
-
-        // int       extract(cali_id_t attr, int n, Variant buf[]) const;
-
-        static const Entry empty;
-
-        friend class CaliperImpl;
-    };
-
-    Entry     make_entry(size_t n, const Attribute* attr, const Variant* value);
-    Entry     make_entry(const Attribute& attr, const Variant& value);
 
 
     // --- Events
@@ -146,6 +107,11 @@ public:
     cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
 
     Variant   exchange(const Attribute& attr, const Variant& data);
+
+    // --- Direct metadata API
+
+    Entry     make_entry(size_t n, const Attribute* attr, const Variant* value);
+    Entry     make_entry(const Attribute& attr, const Variant& value);
 
     // --- Query API
 

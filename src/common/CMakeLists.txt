@@ -1,6 +1,7 @@
 set(CALIPER_COMMON_HEADERS
     Attribute.h
     ContextRecord.h
+    Entry.h
     IdType.h
     Log.h
     MetadataWriter.h
@@ -19,6 +20,7 @@ set(CALIPER_UTIL_HEADERS
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
     ContextRecord.cpp
+    Entry.cpp
     Log.cpp
     Node.cpp
     RecordMap.cpp

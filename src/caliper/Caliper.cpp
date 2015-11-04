@@ -629,14 +629,14 @@ struct Caliper::CaliperImpl
             Snapshot::Sizes     sizes = { 0, 0, 0 };
             Snapshot::Addresses addresses = sbuf->addresses();
 
-            if (trigger_info->m_attr_id != CALI_INV_ID) {
+            if (trigger_info->node()) {
+                // node entry
+                addresses.node_entries[sizes.n_nodes++]  = trigger_info->node();
+            } else {
                 // as-value entry
 		// todo: what to do with hidden attribute? - trigger info shouldn't be hidden though
-                addresses.immediate_attr[sizes.n_attr++] = trigger_info->m_attr_id;
-                addresses.immediate_data[sizes.n_data++] = trigger_info->m_value;
-            } else if (trigger_info->m_node) {
-                // node entry
-                addresses.node_entries[sizes.n_nodes++]  = trigger_info->m_node;
+                addresses.immediate_attr[sizes.n_attr++] = trigger_info->attribute();
+                addresses.immediate_data[sizes.n_data++] = trigger_info->value();
             }
 
             sbuf->commit(sizes);
@@ -825,41 +825,12 @@ struct Caliper::CaliperImpl
 
         ContextBuffer* ctx = current_contextbuffer(get_scope(attr));
 
-        if (attr.store_as_value()) {
-            e.m_attr_id = attr.id();
-            e.m_value   = ctx->get(attr);
-        } else {
-            e.m_node    = find_node_with_attribute(attr, ctx->get_node(get_key(attr)));
-        }
+        if (attr.store_as_value())
+            return Entry(attr, ctx->get(attr));
+        else
+            return Entry(find_node_with_attribute(attr, ctx->get_node(get_key(attr))));
 
         return e;
-    }
-
-    // --- Generic entries
-
-    Entry
-    make_entry(size_t n, const Attribute* attr, const Variant* value) {
-        Entry entry { Entry::empty };
-
-        entry.m_node = get_path(n, attr, value);
-        // what if this is an as-value attribute?!
-
-        return entry;
-    }
-
-    Entry 
-    make_entry(const Attribute& attr, const Variant& value) {
-        Entry entry { Entry::empty };
-
-        if (attr.store_as_value()) {
-            // TODO: Make less ugly
-            entry.m_attr_id = attr.id();
-            entry.m_value   = value;
-        } else {
-            entry.m_node    = get_path(1, &attr, &value);
-        }
-
-        return entry;
     }
 
     // --- Retrieval
@@ -932,20 +903,25 @@ Caliper::~Caliper()
     mP.reset(nullptr);
 }
 
-// --- Entry class
+// --- Generic entry API
 
-const Caliper::Entry Caliper::Entry::empty;
-
-Caliper::Entry 
-Caliper::make_entry(size_t n, const Attribute* attr, const Variant* value)
+Entry
+Caliper::make_entry(size_t n, const Attribute* attr, const Variant* value) 
 {
-    return mP->make_entry(n, attr, value);
+    return Entry(mP->get_path(n, attr, value));
 }
 
-Caliper::Entry 
-Caliper::make_entry(const Attribute& attr, const Variant& value)
+Entry 
+Caliper::make_entry(const Attribute& attr, const Variant& value) 
 {
-    return mP->make_entry(attr, value);
+    Entry entry { Entry::empty };
+
+    if (attr.store_as_value())
+        return Entry(attr, value);
+    else
+        return Entry(mP->get_path(1, &attr, &value));
+
+    return entry;
 }
 
 
@@ -1053,54 +1029,12 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
 // --- Caliper query API
 
-Caliper::Entry
+Entry
 Caliper::get(const Attribute& attr) const {
     return mP->get(attr);
 }
 
 // --- Serialization API
-
-cali_id_t
-Caliper::Entry::attribute() const
-{
-    return m_node ? m_node->attribute() : m_attr_id;
-}
-
-int 
-Caliper::Entry::count(cali_id_t attr_id) const 
-{
-    int res = 0;
-
-    if (m_node) {
-        for (const Node* node = m_node; node; node = node->parent())
-            if (node->attribute() == attr_id)
-                ++res;
-    } else {
-        if (m_attr_id != CALI_INV_ID && m_attr_id == attr_id)
-            ++res;
-    }
-
-    return res;
-}
-
-Variant 
-Caliper::Entry::value() const
-{
-    return m_node ? m_node->data() : m_value;
-}
-
-Variant 
-Caliper::Entry::value(cali_id_t attr_id) const
-{
-    if (!m_node && attr_id == m_attr_id)
-	return m_value;
-
-    for (const Node* node = m_node; node; node = node->parent())
-	if (node->attribute() == attr_id)
-	    return node->data();
-
-    return Variant();
-}
 
 void
 Caliper::foreach_node(std::function<void(const Node&)> proc)

@@ -132,7 +132,7 @@ Attribute find_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
     return Attribute::invalid;
 }
 
-void snapshot_cb(Caliper* c, int scope, const Caliper::Entry* trigger_info, Snapshot* sbuf) {
+void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot* sbuf) {
     Snapshot::Sizes     sizes = sbuf->capacity();
     Snapshot::Addresses addr  = sbuf->addresses();
 
@@ -164,8 +164,7 @@ void snapshot_cb(Caliper* c, int scope, const Caliper::Entry* trigger_info, Snap
                 if (evt_attr_id == CALI_INV_ID || v_level.empty())
                     goto record_phases_exit;
 
-                if (!v_level.empty())
-                    c->set(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
+                c->set(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
             } else if (trigger_info->attribute() == end_evt_attr.id())   {
                 // end event: get saved time for current entry and calculate duration
 

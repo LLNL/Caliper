@@ -35,7 +35,7 @@ void create_context_cb(cali_context_scope_t, ContextBuffer*)
     ++num_contexts;
 }
 
-void snapshot_cb(Caliper*, int, const Caliper::Entry*, Snapshot*)
+void snapshot_cb(Caliper*, int, const Entry*, Snapshot*)
 {
     ++num_snapshots;
 }
