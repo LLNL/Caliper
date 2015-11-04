@@ -217,8 +217,7 @@ void event_trigger_register(Caliper* c) {
         trigger_end_attr = 
             c->create_attribute("cali.snapshot.event.end",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         trigger_level_attr = 
-            c->create_attribute("cali.snapshot.event.attr.level", CALI_TYPE_UINT, 
-                                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+            c->create_attribute("cali.snapshot.event.attr.level", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
     }
 
     // register callbacks

@@ -92,7 +92,7 @@ Attribute make_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
     
         if (it != offset_attributes.end())
             return it->second;
-    }    
+    }
 
     // Not found -> create new entry
 
@@ -114,7 +114,7 @@ Attribute make_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
     return offs_attr;
 }
 
-// Get a hidden offset attribute for the given attribute and its
+// Get existing hidden offset attribute for the given attribute and its
 // current hierarchy level
 
 Attribute find_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
