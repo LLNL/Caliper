@@ -1115,7 +1115,9 @@ namespace
     void
     exit_handler(void) {
         Caliper* c = Caliper::instance();
-        c->events().finish_evt(c);
+
+        if (c)
+            c->events().finish_evt(c);
     }
 }
 

@@ -16,6 +16,8 @@ add_executable(cali-basic-c cali-basic-c.c)
 add_executable(cali-throughput-pthread cali-throughput-pthread.cpp)
 add_executable(matmul matmul.cpp)
 
+set_target_properties(cali-basic-c PROPERTIES LINKER_LANGUAGE CXX)
+
 target_link_libraries(cali-test caliper)
 target_link_libraries(cali-basic caliper)
 target_link_libraries(cali-basic-c caliper)

@@ -14,7 +14,7 @@ using namespace cali;
 //
 
 cali_id_t 
-cali_create_attribute(const char* name, cali_attr_type type, cali_attr_properties properties)
+cali_create_attribute(const char* name, cali_attr_type type, int properties)
 {
     Attribute a = Caliper::instance()->create_attribute(name, type, properties);
     return a.id();
