@@ -1072,7 +1072,7 @@ Caliper::Entry::count(cali_id_t attr_id) const
     int res = 0;
 
     if (m_node) {
-        for (const Node* node = m_node; node; ++node)
+        for (const Node* node = m_node; node; node = node->parent())
             if (node->attribute() == attr_id)
                 ++res;
     } else {

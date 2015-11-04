@@ -156,7 +156,7 @@ Variant::to_bool(bool* okptr)
 int
 Variant::to_int(bool* okptr) const
 {
-    int               i = m_value.v_int;
+    int               i = static_cast<int>(m_value.v_int);
     cali_attr_type type = m_type;
 
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
@@ -168,7 +168,7 @@ Variant::to_int(bool* okptr) const
             type = CALI_TYPE_INT;
     }
 
-    bool ok = (m_type == CALI_TYPE_INT);
+    bool ok = (type == CALI_TYPE_INT);
 
     if (okptr)
         *okptr = ok;
@@ -197,7 +197,7 @@ Variant::to_int(bool* okptr)
 unsigned
 Variant::to_uint(bool* okptr) const
 {
-    unsigned       uint = m_value.v_uint;
+    unsigned       uint = static_cast<unsigned>(m_value.v_uint);
     cali_attr_type type = m_type;
 
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {

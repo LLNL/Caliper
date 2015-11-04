@@ -82,11 +82,10 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
 Attribute get_level_attribute(const Attribute& attr)
 {
     Attribute lvl_attr(Attribute::invalid);
-    AttributeMap::const_iterator it;
 
     level_attributes_lock.rlock();
 
-    it = level_attributes.find(attr.id());
+    AttributeMap::const_iterator it = level_attributes.find(attr.id());
     if (it != level_attributes.end())
         lvl_attr = it->second;
 
@@ -103,7 +102,7 @@ void event_begin_cb(Caliper* c, const Attribute& attr)
         return;
 
     if (enable_snapshot_info) {
-        int     lvl = 1;
+        unsigned  lvl = 1;
         Variant v_lvl(lvl), v_p_lvl;
 
         // Use Caliper::exchange() to accelerate common-case of setting new hierarchy level to 1.
@@ -114,7 +113,7 @@ void event_begin_cb(Caliper* c, const Attribute& attr)
         // Can fix that with a more general c->update(update_fn) function
 
         v_p_lvl = c->exchange(lvl_attr, v_lvl);
-        lvl     = v_p_lvl.to_int();
+        lvl     = v_p_lvl.to_uint();
 
         if (lvl > 0) {
             v_lvl = Variant(++lvl);
@@ -143,7 +142,8 @@ void event_set_cb(Caliper* c, const Attribute& attr)
         return;
 
     if (enable_snapshot_info) {
-        Variant v_lvl(static_cast<int>(1));
+        unsigned  lvl(1);
+        Variant v_lvl(lvl);
 
         // The level for set() is always 1
         // FIXME: ... except for set_path()??
@@ -171,14 +171,14 @@ void event_end_cb(Caliper* c, const Attribute& attr)
         return;
 
     if (enable_snapshot_info) {
-        int     lvl = 0;
+        unsigned  lvl = 0;
         Variant v_lvl(lvl), v_p_lvl;
 
         // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
         // If previous level was > 1, we need to update it again
 
         v_p_lvl = c->exchange(lvl_attr, v_lvl);
-        lvl     = v_p_lvl.to_int();
+        lvl     = v_p_lvl.to_uint();
 
         if (lvl > 1)
             c->set(lvl_attr, Variant(--lvl));
