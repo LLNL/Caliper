@@ -70,9 +70,9 @@ public:
         if (attr.store_as_value()) {
             for (int i = 0; i < m_num_immediate; ++i)
                 if (m_attr[i] == attr.id())
-                    return Entry(m_attr[i], m_data[i]);
+                    return Entry(attr, m_data[i]);
         } else {
-            for (int i = 0; i < m_nodes; ++i)
+            for (int i = 0; i < m_num_nodes; ++i)
                 for (Node* node = m_nodes[i]; node; node = node->parent())
                     if (node->attribute() == attr.id())
                         return Entry(node);

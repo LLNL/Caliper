@@ -64,6 +64,10 @@ private:
         { }
 };
 
+inline bool operator < (const cali::Attribute& a, const cali::Attribute& b) {
+    return a.id() < b.id();
+}
+
 inline bool operator == (const cali::Attribute& a, const cali::Attribute& b) {
     return a.id() == b.id();
 }
