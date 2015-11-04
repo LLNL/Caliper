@@ -237,13 +237,13 @@ void timestamp_service_register(Caliper* c)
     int hide_offset  = (record_duration && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
     timestamp_attr = 
-        c->create_attribute("time.timestamp", CALI_TYPE_UINT, 
+        c->create_attribute("time.timestamp",   CALI_TYPE_UINT, 
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
     timeoffs_attr = 
-        c->create_attribute("time.end.offset", CALI_TYPE_UINT, 
+        c->create_attribute("time.offset",      CALI_TYPE_UINT, 
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS | hide_offset);
     snapshot_duration_attr = 
-        c->create_attribute("time.duration", CALI_TYPE_UINT, 
+        c->create_attribute("time.duration",    CALI_TYPE_UINT, 
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS);
     phase_duration_attr = 
         c->create_attribute("time.phase.duration", CALI_TYPE_UINT, 

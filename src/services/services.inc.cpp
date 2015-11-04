@@ -13,11 +13,11 @@ extern CaliperService PapiService;
 #endif
 extern CaliperService DebugService;
 extern CaliperService EventTriggerService;
-extern CaliperService ProgressLogService;
 extern CaliperService PthreadService;
 extern CaliperService RecorderService;
-extern CaliperService TimestampService;
 extern CaliperService StatisticsService;
+extern CaliperService TextLogService;
+extern CaliperService TimestampService;
 extern CaliperService TraceService;
 #ifdef CALIPER_HAVE_MITOS
 extern CaliperService MitosService;
@@ -38,11 +38,11 @@ const CaliperService caliper_services[] = {
 #endif
     DebugService,
     EventTriggerService,
-    ProgressLogService,
     PthreadService,
     RecorderService,
-    TimestampService,
     StatisticsService,
+    TimestampService,
+    TextLogService,
     TraceService,
 #ifdef CALIPER_HAVE_MITOS
     MitosService,

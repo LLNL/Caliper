@@ -1,6 +1,5 @@
-/// @file  ProgressLog.cpp
-/// @brief Caliper progress log service
-
+/// @file  TextLog.cpp
+/// @brief Caliper text log service
 
 #include "../CaliperService.h"
 
@@ -29,8 +28,8 @@ namespace
 
 const ConfigSet::Entry   configdata[] = {
     { "trigger", CALI_TYPE_STRING, "",
-      "List of attributes for which to write progress log entries",
-      "Colon-separated list of attributes for which to write progress log entries."
+      "List of attributes for which to write text log entries",
+      "Colon-separated list of attributes for which to write text log entries."
     },
     ConfigSet::Terminator
 };
@@ -85,6 +84,20 @@ void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* 
     Entry time_entry = snapshot->get(phase_duration_attr);
     Entry attr_entry = snapshot->get(trigger_attr);
 
+    // add hierarchy entries if this is a node, make string in reverse order
+
+    std::vector<Variant> attr_v;
+    attr_v.push_back(attr_entry.value());
+
+    if (attr_entry.node())
+        for (const Node* node = attr_entry.node()->parent(); node; node = node->parent())
+            if (node->attribute() == trigger_attr.id())
+                attr_v.push_back(node->data());
+
+    std::string attr_s;
+
+    for (auto it = attr_v.rbegin(); it != attr_v.rend(); ++it)
+        attr_s.append(attr_s.size() ? "/" : "").append(it->to_string());
 
     // make 22:48:10 attribute:value:time entries for now
 
@@ -93,7 +106,7 @@ void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* 
         std::string::size_type width;
     } message_fields[] = {
         { trigger_attr.name(),            22 },
-        { attr_entry.value().to_string(), 48 },
+        { attr_s,                         48 },
         { time_entry.value().to_string(), 10 }
     };
 
@@ -116,7 +129,7 @@ void post_init_cb(Caliper* c)
         phase_duration_attr == Attribute::invalid) 
         Log(1).stream() << "Warning: \"event\" service with snapshot info\n"
             "    and \"timestamp\" service with phase duration recording\n"
-            "    is required for progress log." << std::endl;
+            "    is required for text log." << std::endl;
 
     std::cout << "Phase                 " 
               << "Value                                           "
@@ -124,9 +137,9 @@ void post_init_cb(Caliper* c)
               << std::endl;
 }
 
-void progress_log_register(Caliper* c)
+void textlog_register(Caliper* c)
 {
-    config = RuntimeConfig::init("progresslog", configdata);
+    config = RuntimeConfig::init("textlog", configdata);
 
     util::split(config.get("trigger").to_string(), ':', 
                 std::back_inserter(trigger_attr_names));
@@ -135,12 +148,12 @@ void progress_log_register(Caliper* c)
     c->events().post_init_evt.connect(&post_init_cb);
     c->events().process_snapshot.connect(&process_snapshot_cb);
 
-    Log(1).stream() << "Registered progress log service" << std::endl;
+    Log(1).stream() << "Registered text log service" << std::endl;
 }
 
 } // namespace
 
 namespace cali
 {
-    CaliperService ProgressLogService = { "progresslog", ::progress_log_register };
+    CaliperService TextLogService = { "textlog", ::textlog_register };
 } // namespace cali
