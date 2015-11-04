@@ -31,7 +31,7 @@ extern "C" {
 cali_id_t 
 cali_create_attribute(const char*          name,
                       cali_attr_type       type,
-                      cali_attr_properties properties);
+                      int                  properties);
 
 /**
  * Find attribute by name 

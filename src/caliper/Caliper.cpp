@@ -1011,7 +1011,9 @@ namespace
     void
     exit_handler(void) {
         Caliper* c = Caliper::instance();
-        c->events().finish_evt(c);
+
+        if (c)
+            c->events().finish_evt(c);
     }
 }
 
@@ -1020,14 +1022,14 @@ namespace
 Caliper* Caliper::instance()
 {
     if (CaliperImpl::s_siglock != 0) {
+        if (CaliperImpl::s_siglock == 2)
+            // Caliper had been initialized previously; we're past the static destructor
+            return nullptr;
+
         if (atexit(::exit_handler) != 0)
             Log(0).stream() << "Unable to register exit handler";
 
         SigsafeRWLock::init();
-
-        if (CaliperImpl::s_siglock == 2)
-            // Caliper had been initialized previously; we're past the static destructor
-            return nullptr;
 
         lock_guard<mutex> lock(CaliperImpl::s_mutex);
 
