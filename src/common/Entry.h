@@ -53,6 +53,10 @@ public:
         return value(attr.id());
     }
 
+    bool      is_empty() const {
+        return m_node == 0 && m_attr_id == CALI_INV_ID;
+    }
+
     // int       extract(cali_id_t attr, int n, Variant buf[]) const;
 
     static const Entry empty;

@@ -42,6 +42,7 @@ TriggerAttributeMap         trigger_attr_map;
 
 std::vector<std::string>    trigger_attr_names;
 
+Attribute set_event_attr      { Attribute::invalid };
 Attribute end_event_attr      { Attribute::invalid };
 Attribute phase_duration_attr { Attribute::invalid };
 
@@ -63,7 +64,8 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
 void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* snapshot)
 {
     // operate only on cali.snapshot.event.end attributes for now
-    if (!trigger_info || trigger_info->attribute() != end_event_attr.id())
+    if (!trigger_info && 
+        !(trigger_info->attribute() == end_event_attr.id() || trigger_info->attribute() == set_event_attr.id()))
         return;
 
     Attribute trigger_attr { Attribute::invalid };
@@ -83,6 +85,9 @@ void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* 
 
     Entry time_entry = snapshot->get(phase_duration_attr);
     Entry attr_entry = snapshot->get(trigger_attr);
+
+    if (time_entry.is_empty())
+        return;
 
     // add hierarchy entries if this is a node, make string in reverse order
 
@@ -122,10 +127,12 @@ void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* 
 
 void post_init_cb(Caliper* c) 
 {
+    set_event_attr      = c->get_attribute("cali.snapshot.event.set");
     end_event_attr      = c->get_attribute("cali.snapshot.event.end");
     phase_duration_attr = c->get_attribute("time.phase.duration");
 
     if (end_event_attr      == Attribute::invalid ||
+        set_event_attr      == Attribute::invalid ||
         phase_duration_attr == Attribute::invalid) 
         Log(1).stream() << "Warning: \"event\" service with snapshot info\n"
             "    and \"timestamp\" service with phase duration recording\n"

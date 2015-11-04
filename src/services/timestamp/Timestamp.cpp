@@ -40,6 +40,7 @@ bool      record_duration;
 bool      record_phases;
 
 Attribute begin_evt_attr { Attribute::invalid };
+Attribute set_evt_attr   { Attribute::invalid };
 Attribute end_evt_attr   { Attribute::invalid };
 Attribute lvl_attr       { Attribute::invalid };
 
@@ -155,24 +156,28 @@ void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot* sbu
         }
 
         if (record_phases && trigger_info) {
+            cali_id_t evt_attr_id = trigger_info->value().to_id();
+            Variant   v_level     = trigger_info->value(lvl_attr);
+
+            if (evt_attr_id == CALI_INV_ID || v_level.empty())
+                goto record_phases_exit;
+
             if (trigger_info->attribute() == begin_evt_attr.id()) {
                 // begin/set event: save time for current entry
 
-                cali_id_t evt_attr_id = trigger_info->value().to_id();
-                Variant   v_level     = trigger_info->value(lvl_attr);
-
-                if (evt_attr_id == CALI_INV_ID || v_level.empty())
-                    goto record_phases_exit;
-
                 c->set(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
+            } else if (trigger_info->attribute() == set_evt_attr.id())   {
+                // set event: get saved time for current entry and calculate duration
+
+                Variant v_p_usec    = 
+                    c->exchange(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
+
+                if (!v_p_usec.empty()) {
+                    addr.immediate_attr[sizes.n_attr++] = phase_duration_attr.id();
+                    addr.immediate_data[sizes.n_data++] = usec - v_p_usec.to_uint();
+                }
             } else if (trigger_info->attribute() == end_evt_attr.id())   {
                 // end event: get saved time for current entry and calculate duration
-
-                cali_id_t evt_attr_id = trigger_info->value().to_id();
-                Variant   v_level     = trigger_info->value(lvl_attr);
-
-                if (evt_attr_id == CALI_INV_ID || v_level.empty())
-                    goto record_phases_exit;
 
                 Attribute offs_attr = 
                     find_offset_attribute(c, evt_attr_id, v_level.to_uint());
@@ -206,10 +211,12 @@ void post_init_cb(Caliper* c)
     // Find begin/end event snapshot event info attributes
 
     begin_evt_attr = c->get_attribute("cali.snapshot.event.begin");
+    set_evt_attr   = c->get_attribute("cali.snapshot.event.set");
     end_evt_attr   = c->get_attribute("cali.snapshot.event.end");
     lvl_attr       = c->get_attribute("cali.snapshot.event.attr.level");
 
     if (begin_evt_attr == Attribute::invalid || 
+        set_evt_attr   == Attribute::invalid ||
         end_evt_attr   == Attribute::invalid ||
         lvl_attr       == Attribute::invalid) {
         if (record_phases)
