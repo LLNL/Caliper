@@ -1,0 +1,47 @@
+# - caliper: (David's TO DO)
+#
+#=============================================================================
+# caliper is ....  (David's TO DO)
+#
+#=== Usage ===================================================================
+# This file allows caliper to be automatically detected by other libraries
+# using CMake.  To build with caliper, you can do one of two things:
+#
+#   1. Set the caliper_DIR environment variable to the root of the Caliper
+#      installation.  If you loaded caliper through a dotkit, this may already
+#      be set, and caliper will be autodetected by CMake.
+#
+#   2. Configure your proeject with this option:
+#      -D caliper_DIR=/path/to/dir/containing/this/file
+#
+# If you have done either of these things, then CMake should automatically find
+# and include this file when you call find_package(caliper) from your
+# CMakeLists.txt file.
+#
+#=== Components ==============================================================
+# (David's TO DO)
+#
+# To link against these, just do, for example:
+#
+#   find_package(caliper REQUIRED)
+#   add_executable(foo foo.c)
+#   target_link_libraries(foo caliper-component)
+#
+# That's all!
+#
+if (NOT caliper_CONFIG_LOADED)
+  set(caliper_CONFIG_LOADED TRUE)
+
+  # Install layout
+  set(caliper_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
+  set(caliper_INCLUDE_DIR    ${caliper_INSTALL_PREFIX}/include)
+  set(caliper_LIB_DIR        ${caliper_INSTALL_PREFIX}/lib)
+  set(caliper_CMAKE_DIR      ${caliper_INSTALL_PREFIX}/share/cmake/caliper)
+
+  # Includes needed to use caliper
+  set(caliper_INCLUDE_PATH ${caliper_INCLUDE_DIR})
+  set(caliper_LIB_PATH     ${caliper_LIB_DIR})
+
+  # Library targets imported from file
+  include(${caliper_CMAKE_DIR}/caliper.cmake)
+endif()
