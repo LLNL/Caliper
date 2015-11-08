@@ -1,5 +1,5 @@
 /** 
- * @file caliper.h 
+ * @file Caliper.h 
  * Initialization function and global data declaration
  */
 

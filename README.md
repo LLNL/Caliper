@@ -141,18 +141,10 @@ program context combined with measurement data. When snapshots are
 taken, what is included in them, and how they are processed depends on
 the Caliper runtime configuration. It is thus important to configure
 the runtime correctly when running a Caliper-instrumented program.
-
-Much of Caliper's functionality is provided by optional service
-modules. By default, Caliper does not enable any optional services
-(and therefore doesn't do much). Use the `CALI_SERVICES_ENABLE`
-variable to select services. For example, enable the `event`,
-`recorder` and `timestamp` services to create a simple time-series
-trace for the example program above:
-
-    $ export CALI_SERVICES_ENABLE=event:recorder:timestamp
-
-You can achieve the same effect by selecting the `serial-trace`
-built-in profile:
+For common use cases, Caliper provides built-in configuration profiles
+as starting points. For example, the `serial-trace` profile will 
+record a time-stamped event trace. You can select a profile with the 
+`CALI_CONFIG_PROFILE` environment variable:
 
     $ export CALI_CONFIG_PROFILE=serial-trace
 
@@ -165,7 +157,7 @@ Then run the program:
     == CALIPER: Wrote 36 records.
     == CALIPER: Finished
 
-The recorder service will write the time-series trace to a `.cali`
+With this profile, Caliper will write a time-series trace to a `.cali`
 file in the current working directory. Use the `cali-query` tool to
 filter, aggregate, or print traces:
 
@@ -204,9 +196,9 @@ Here is a list of commonly used variables:
   informational output, 2 for more verbose output, or 0 to disable
   output except for critical error messages. Default 1.
 
-* `CALI_SERVICES_ENABLE=(service1:service2:...)` List of Caliper service modules to enable,
-  separated by `:`. Default: not set, no service modules enabled. See
-  below for a list of Caliper services.
+* `CALI_SERVICES_ENABLE=(service1:service2:...)` List of Caliper service 
+  modules to enable, separated by `:`. Default: not set, no service modules 
+  enabled. See below for a list of Caliper services.
 
 ### List of Caliper services
 
@@ -215,6 +207,9 @@ provide measurement data or processing and data recording
 capabilities. The flexible combination and configuration of these
 services allows you to quickly assemble recording solutions for a wide
 range of usage scenarios.
+
+Many of the services provide additional configuration options. Refer to 
+the service documentation to learn more.
 
 You can enable the services required for your measurement with the
 `CALI_SERVICES_ENABLE` configuration variable
@@ -236,7 +231,8 @@ The following services are available:
   A thread environment manager such as the `pthread` service creates
   separate per-thread contexts in a multi-threaded program.
 * `papi` Records PAPI hardware counters.
-* `recorder` Writes context trace data.
+* `recorder` Writes data to disk
+* `trace` Creates a trace of snapshots
 * `timestamp` The timestamp service adds a time offset, timestamp,
   or duration to context records.
 

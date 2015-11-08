@@ -180,9 +180,9 @@ recommended to enable the `pthread` service.
 Recorder
 --------------------------------
 
-The recorder service writes context snapshots into a context trace file.
+The recorder service writes Caliper I/O records into a file.
 
-By default, the recorder service stores context records in an
+By default, the recorder service stores records in an
 in-memory buffer to avoid application performance perturbance because
 of I/O. You can configure the buffer sizes and determine whether they
 are allowed to grow. You can also set the directory and filename that
@@ -226,8 +226,8 @@ Configuration
 ................................
 
 CALI_TIMER_DURATION=(true|false)
-  Include duration (in microseconds) of the context epoch in context
-  snapshots. Default: true
+  Measure duration (in microseconds) of the context epoch (i.e., the time
+  between two consecutive context snapshots). Default: true
 
 CALI_TIMER_OFFSET=(true|false)
   Include the time offset (time since program start, in microseconds)
@@ -236,4 +236,15 @@ CALI_TIMER_OFFSET=(true|false)
 CALI_TIMER_TIMESTAMP=(true|false)
   Include absolute timestamp (time since UNIX epoch, in seconds) with each
   context snapshot.
+
+CALI_TIMER_PHASE_DURATION
+  Measure the duration of begin/end, set/set, or set/end phases. The 
+  event service with event trigger information generation needs to be 
+  enabled for this feature.
   
+Trace
+--------------------------------
+
+The trace service creates an I/O record for each snapshot. With the
+`recorder` sercice enabled, this will create a snapshot trace file.
+
