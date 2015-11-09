@@ -1,6 +1,6 @@
 #
 # Caliper
-# 
+#
 
 project (caliper)
 cmake_minimum_required(VERSION 3.0)
@@ -54,7 +54,7 @@ find_path(OMPT_INCLUDE_DIR ompt.h
   HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
 
 if (OMPT_INCLUDE_DIR)
-  set(OMPT_FOUND TRUE)  
+  set(OMPT_FOUND TRUE)
   set(CALIPER_HAVE_OMPT TRUE)
   message(STATUS "OpenMP tools interface header ompt.h found in " ${OMPT_INCLUDE_DIR})
 else()
@@ -82,6 +82,15 @@ configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
   ${PROJECT_BINARY_DIR}/caliper-config.h)
 
+# Make caliper findable
+configure_file(
+  ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
+  ${PROJECT_BINARY_DIR}/caliper-config.cmake
+  @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake DESTINATION share/cmake/caliper)
+install(EXPORT caliper                                   DESTINATION share/cmake/caliper)
+
+
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
 
 add_subdirectory(doc)
@@ -89,4 +98,4 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 # Install exports
-install(EXPORT caliper DESTINATION lib/cmake)
+#install(EXPORT caliper DESTINATION lib/cmake)
