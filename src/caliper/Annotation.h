@@ -1,4 +1,4 @@
-/// @file Annotation.h
+/// \file Annotation.h
 /// Caliper C++ annotation interface
 
 //
@@ -8,9 +8,7 @@
 #ifndef CALI_ANNOTATION_H
 #define CALI_ANNOTATION_H
 
-#include <Attribute.h>
-
-#include <cali_types.h>
+#include "cali_types.h"
 
 #include <string>
 
@@ -21,56 +19,48 @@ class Variant;
 
 class Annotation 
 {
-    Attribute   m_attr;
-    std::string m_name;
-    int         m_opt;
+    struct Impl;
+    Impl*  pI;
 
-    void create_attribute(cali_attr_type type);
-
-    struct ScopeObj {
-        cali::Attribute m_attr;
-        bool            m_destruct;
-
-        ScopeObj(const Attribute& attr, bool destruct = true)
-            : m_attr(attr), m_destruct(destruct) { }
-    };
+    Annotation(const Annotation&);
+    Annotation& operator = (const Annotation&);
 
 public:
 
-    class AutoScope {
-        ScopeObj m_scope_info;
+    Annotation(const std::string& name, int opt = 0);
 
-        AutoScope(const AutoScope& s);
-        AutoScope& operator = (const AutoScope&);
+    ~Annotation();
+
+    class Guard {
+        Impl* pI;
+
+        Guard(const Guard&);
+        Guard& operator = (const Guard&);
 
     public:
 
-        AutoScope(const ScopeObj& s) 
-            : m_scope_info(s)
-            { }
+        Guard(Annotation& a);
 
-        ~AutoScope();
+        ~Guard();
     };
 
-    Annotation(const std::string& name, int opt = 0);
+    Annotation& begin(int data);
+    Annotation& begin(double data);
+    Annotation& begin(const std::string& data);
+    Annotation& begin(const char* data);
+    Annotation& begin(cali_attr_type type, void* data, uint64_t size);
+    Annotation& begin(const Variant& data);
 
-    ScopeObj begin(int data);
-    ScopeObj begin(double data);
-    ScopeObj begin(const std::string& data);
-    ScopeObj begin(const char* data);
-    ScopeObj begin(cali_attr_type type, const void* data, uint64_t size);
-    ScopeObj begin(const Variant& data);
+    Annotation& set(int data);
+    Annotation& set(double data);
+    Annotation& set(const std::string& data);
+    Annotation& set(const char* data);
+    Annotation& set(cali_attr_type type, void* data, uint64_t size);
+    Annotation& set(const Variant& data);
 
-    ScopeObj set(int data);
-    ScopeObj set(double data);
-    ScopeObj set(const std::string& data);
-    ScopeObj set(const char* data);
-    ScopeObj set(cali_attr_type type, const void* data, uint64_t size);
-    ScopeObj set(const Variant& data);
-
-    void     end();
+    void end();
 };
 
-};
+} // namespace cali
 
 #endif

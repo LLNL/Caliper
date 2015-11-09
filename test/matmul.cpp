@@ -12,7 +12,7 @@
 
 void init_matrices(int N, double **a, double **b, double **c)
 {
-    cali::Annotation::AutoScope si( cali::Annotation("matrix").begin("initialize") );
+    cali::Annotation::Guard si( cali::Annotation("matrix").begin("initialize") );
 
     *a = new double[N*N];
     *b = new double[N*N];
@@ -31,13 +31,13 @@ void init_matrices(int N, double **a, double **b, double **c)
 
 void matmul(int N, double *a, double *b, double *c)
 {
-    cali::Annotation::AutoScope so( cali::Annotation("matrix").begin("multiply") );
+    cali::Annotation::Guard so( cali::Annotation("matrix").begin("multiply") );
 #ifdef TEST_USE_OMP
 #pragma omp parallel 
     {
         cali::Annotation("omp.thread").set(omp_get_thread_num());
 
-        cali::Annotation::AutoScope 
+        cali::Annotation::Guard 
             st( cali::Annotation("matrix").begin("thread_multiply") );
 #pragma omp for    
 #endif
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     double *a,*b,*c;
 
     cali::Annotation phase_annotation("phase");
-    cali::Annotation::AutoScope sp( phase_annotation.begin("main") );
+    cali::Annotation::Guard sp( phase_annotation.begin("main") );
 
     init_matrices(N,&a,&b,&c);
     matmul(N,a,b,c);

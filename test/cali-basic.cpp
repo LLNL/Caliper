@@ -18,9 +18,9 @@ int main(int argc, char* argv[])
 
     if (count > 0) {
         // Declare begin of phase "loop" under "main". Thus, phase is now set to "main/loop".
-        // The AutoScope object automatically closes this annotation level at the end
+        // The Guard object automatically closes this annotation level at the end
         // of the current C++ scope.
-        cali::Annotation::AutoScope ann_loop( phase_annotation.begin("loop") );
+        cali::Annotation::Guard ann_loop( phase_annotation.begin("loop") );
 
         // Create iteration annotation object
         // The CALI_ATTR_ASVALUE option indicates that iteration values should be stored 
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         // from context records from here on. 
         iteration_annotation.end();
 
-        // The ann_loop AutoScope object implicitly closes the "loop" annotation level here, 
+        // The ann_loop Guard object implicitly closes the "loop" annotation level here, 
         // thus phase is now back to "main"
     }
 

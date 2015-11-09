@@ -1,12 +1,12 @@
 /** 
- * @file cali_types.h 
+ * \file cali_types.h 
  * Context annotation library typedefs
  */
 
 #ifndef CALI_CALI_TYPES_H
 #define CALI_CALI_TYPES_H
 
-#include "stdint.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
