@@ -88,6 +88,9 @@ struct Aggregator::AggregatorImpl
 
         auto attr_it = rec.find("attr");
 
+        if (attr_it == rec.end())
+            return false;
+
         // --- get indices in attribute/data array of the values we want to aggregate
 
         vector<int> idx_vec = find_aggr_attribute_indices(db, attr_it->second);
