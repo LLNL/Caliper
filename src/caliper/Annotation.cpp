@@ -21,7 +21,6 @@ struct Annotation::Impl {
     Attribute   m_attr;
     std::string m_name;
     int         m_opt;
-    int         m_count;
     int         m_refcount;
 
     Impl(const std::string& name, int opt)
@@ -29,7 +28,6 @@ struct Annotation::Impl {
           m_attr(Attribute::invalid), 
           m_name(name), 
           m_opt(opt),
-          m_count(0),
           m_refcount(1)
         { 
             m_attr = m_cI->get_attribute(name);
@@ -40,8 +38,7 @@ struct Annotation::Impl {
             create_attribute(data.type());
 
         if ((m_attr.type() == data.type()) && m_attr.type() != CALI_TYPE_INV)
-            if (m_cI->begin(m_attr, data) == CALI_SUCCESS)
-                ++m_count;
+            m_cI->begin(m_attr, data);
     }
 
     void set(const Variant& data) {
@@ -49,14 +46,11 @@ struct Annotation::Impl {
             create_attribute(data.type());
 
         if ((m_attr.type() == data.type()) && m_attr.type() != CALI_TYPE_INV)
-            if (m_cI->set(m_attr, data) == CALI_SUCCESS)
-                ++m_count;
+            m_cI->set(m_attr, data);
     }
 
     void end() {
-        if (m_count > 0)
-            if (m_cI->end(m_attr) == CALI_SUCCESS)
-                --m_count;
+        m_cI->end(m_attr);
     }
 
     void create_attribute(cali_attr_type type) {
@@ -88,9 +82,7 @@ Annotation::Guard::Guard(Annotation& a)
 
 Annotation::Guard::~Guard()
 {
-    if (pI->m_count > 0)
-        pI->end();
-
+    pI->end();
     pI->detach();
 }
 
