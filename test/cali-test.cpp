@@ -75,8 +75,9 @@ int main(int argc, char* argv[])
     make_hierarchy_1();
 
     {
-        // Add new scope phase->"loop" under phase->"main" 
-        cali::Annotation::Guard 
+        // Add new scope phase->"loop" under phase->"main"
+        // Annotation::Guard used to be AutoScope: keep backward compatibility
+        cali::Annotation::AutoScope
             g_loop( phase.begin("loop") );
 
         // Set "loopcount" annotation to 'count' in current C++ scope

@@ -1,7 +1,6 @@
 /// \file Annotation.cpp
 /// Annotation interface
 
-
 #include "Annotation.h"
 #include "Caliper.h"
 
@@ -87,13 +86,28 @@ Annotation::Guard::~Guard()
 }
 
 
+/// \class Annotation
+///
+/// \brief Instrumentation interface to add and manipulate context attributes
+///
+/// The Annotation class is the primary source-code instrumentation interface
+/// for Caliper. Annotation objects provide access to named Caliper context 
+/// attributes. If the referenced attribute does not exist yet will be 
+/// created automatically.
+///
+/// Note that the access to a named context attribute through Annotation 
+/// objects is not exclusive: two different Annotation objects can reference and
+/// update the same context attribute.
+///
+/// The Annotation class is \em not threadsafe; however, threads can safely
+/// access the same context attribute simultaneously through different 
+/// Annotation objects.
+
 // --- Constructors / destructor
 
 Annotation::Annotation(const string& name, int opt)
     : pI(new Impl(name, opt))
-{
-
-}
+{ }
 
 Annotation::~Annotation()
 {

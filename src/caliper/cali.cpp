@@ -1,4 +1,4 @@
-/// @cali.cpp
+/// \file cali.cpp
 /// Caliper C interface implementation
 
 #include "cali.h"
