@@ -95,6 +95,18 @@ Annotation::Guard::~Guard()
 /// attributes. If the referenced attribute does not exist yet, it will be 
 /// created automatically.
 ///
+/// Example:
+/// \code
+/// cali::Annotation phase_ann("myprogram.phase");
+///
+/// phase_ann.begin("Initialization");
+///   // ...
+/// phase_ann.end();
+/// \endcode
+/// This example creates an annotation object for the \c myprogram.phase 
+/// attribute, and uses the \c begin()/end() methods to mark a section 
+/// of code where that attribute is set to "Initialization".
+///
 /// Note that the access to a named context attribute through Annotation 
 /// objects is not exclusive: two different Annotation objects can reference and
 /// update the same context attribute.
@@ -104,6 +116,9 @@ Annotation::Guard::~Guard()
 /// Annotation objects.
 
 // --- Constructors / destructor
+
+/// Construct an annotation object for context attribute \c name. 
+/// 
 
 Annotation::Annotation(const string& name, int opt)
     : pI(new Impl(name, opt))
