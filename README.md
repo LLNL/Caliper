@@ -1,11 +1,13 @@
 Caliper: Context Annotation Library (for Performance)
 ==========================================
 
-by David Boehme, boehme3@llnl.gov
-
 Caliper is a generic context annotation system. It gives programmers
 the ability to provide arbitrary program context information to 
 (performance) tools at runtime.
+
+Released under a BSD license, `LLNL-CODE-678900`. 
+See `LICENSE` file for details.
+
 
 Documentation
 ------------------------------------------
