@@ -92,7 +92,7 @@ Annotation::Guard::~Guard()
 ///
 /// The Annotation class is the primary source-code instrumentation interface
 /// for Caliper. Annotation objects provide access to named Caliper context 
-/// attributes. If the referenced attribute does not exist yet will be 
+/// attributes. If the referenced attribute does not exist yet, it will be 
 /// created automatically.
 ///
 /// Note that the access to a named context attribute through Annotation 
