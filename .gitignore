@@ -2,3 +2,4 @@
 build-*
 TAGS
 .DS_Store
+.emacs.desktop*

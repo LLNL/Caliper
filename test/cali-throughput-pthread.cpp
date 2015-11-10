@@ -58,7 +58,7 @@ struct BenchmarkInfo {
 void iteration_throughput_thread(int num, const BenchmarkInfo& info)
 {
 
-    cali::Annotation::AutoScope 
+    cali::Annotation::Guard 
         scope(cali::Annotation("benchmark.threadrun").begin("Thread-local loop"));
 
     cali::Annotation thread_ann("benchmark.thread.id");
@@ -175,7 +175,7 @@ int main(int argc, const char* argv[])
     auto stime = std::chrono::system_clock::now();
 
     for (int run = 0; run < num_runs; ++run) {
-        cali::Annotation::AutoScope benchmark_run_scope(benchmark_run.set(run));
+        cali::Annotation::Guard benchmark_run_scope(benchmark_run.set(run));
 
         for (int i = 0; i < num_threads; ++i)
             threads.push_back(std::thread(&iteration_throughput_thread, i, info));

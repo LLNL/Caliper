@@ -1,4 +1,4 @@
-/// @file Annotation.h
+/// \file Annotation.h
 /// Caliper C++ annotation interface
 
 //
@@ -8,9 +8,7 @@
 #ifndef CALI_ANNOTATION_H
 #define CALI_ANNOTATION_H
 
-#include <Attribute.h>
-
-#include <cali_types.h>
+#include "cali_types.h"
 
 #include <string>
 
@@ -19,58 +17,75 @@ namespace cali
 
 class Variant;
 
+/// \brief Instrumentation interface to add and manipulate context attributes
+
 class Annotation 
 {
-    Attribute   m_attr;
-    std::string m_name;
-    int         m_opt;
+    struct Impl;
+    Impl*  pI;
 
-    void create_attribute(cali_attr_type type);
-
-    struct ScopeObj {
-        cali::Attribute m_attr;
-        bool            m_destruct;
-
-        ScopeObj(const Attribute& attr, bool destruct = true)
-            : m_attr(attr), m_destruct(destruct) { }
-    };
+    Annotation(const Annotation&);
+    Annotation& operator = (const Annotation&);
 
 public:
 
-    class AutoScope {
-        ScopeObj m_scope_info;
-
-        AutoScope(const AutoScope& s);
-        AutoScope& operator = (const AutoScope&);
-
-    public:
-
-        AutoScope(const ScopeObj& s) 
-            : m_scope_info(s)
-            { }
-
-        ~AutoScope();
-    };
+    /// \brief Constructor. Creates an annotation object to manipulate 
+    ///    the context attribute \c name. 
 
     Annotation(const std::string& name, int opt = 0);
 
-    ScopeObj begin(int data);
-    ScopeObj begin(double data);
-    ScopeObj begin(const std::string& data);
-    ScopeObj begin(const char* data);
-    ScopeObj begin(cali_attr_type type, const void* data, uint64_t size);
-    ScopeObj begin(const Variant& data);
+    ~Annotation();
 
-    ScopeObj set(int data);
-    ScopeObj set(double data);
-    ScopeObj set(const std::string& data);
-    ScopeObj set(const char* data);
-    ScopeObj set(cali_attr_type type, const void* data, uint64_t size);
-    ScopeObj set(const Variant& data);
 
-    void     end();
+    /// \brief Scope guard to automatically \c end() an annotation at the end of
+    ///   the C++ scope.
+
+    class Guard {
+        Impl* pI;
+
+        Guard(const Guard&);
+        Guard& operator = (const Guard&);
+
+    public:
+
+        Guard(Annotation& a);
+
+        ~Guard();
+    };
+
+    // Keep AutoScope name for backward compatibility
+    typedef Guard AutoScope;
+
+    /// \name \c begin() overloads
+    /// \{
+
+    Annotation& begin(int data);
+    Annotation& begin(double data);
+    Annotation& begin(const std::string& data);
+    Annotation& begin(const char* data);
+    Annotation& begin(cali_attr_type type, void* data, uint64_t size);
+    Annotation& begin(const Variant& data);
+
+    /// \}
+    /// \name \c set() overloads
+    /// \{
+
+    Annotation& set(int data);
+    Annotation& set(double data);
+    Annotation& set(const std::string& data);
+    Annotation& set(const char* data);
+    Annotation& set(cali_attr_type type, void* data, uint64_t size);
+    Annotation& set(const Variant& data);
+
+    /// \}
+    /// \name \c end()
+    /// \{
+
+    void end();
+
+    /// \}
 };
 
-};
+} // namespace cali
 
 #endif
