@@ -42,8 +42,6 @@
 
 #include "cali_types.h"
 
-#include <string>
-
 namespace cali
 {
 
@@ -64,7 +62,7 @@ public:
     /// \brief Constructor. Creates an annotation object to manipulate 
     ///    the context attribute \c name. 
 
-    Annotation(const std::string& name, int opt = 0);
+    Annotation(const char* name, int opt = 0);
 
     ~Annotation();
 
@@ -93,7 +91,6 @@ public:
 
     Annotation& begin(int data);
     Annotation& begin(double data);
-    Annotation& begin(const std::string& data);
     Annotation& begin(const char* data);
     Annotation& begin(cali_attr_type type, void* data, uint64_t size);
     Annotation& begin(const Variant& data);
@@ -104,7 +101,6 @@ public:
 
     Annotation& set(int data);
     Annotation& set(double data);
-    Annotation& set(const std::string& data);
     Annotation& set(const char* data);
     Annotation& set(cali_attr_type type, void* data, uint64_t size);
     Annotation& set(const Variant& data);

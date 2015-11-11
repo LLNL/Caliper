@@ -42,7 +42,7 @@ The `cali::Annotation` class provides the C++ instrumentation interface.
    access the same context attribute simultaneously through different 
    Annotation objects.
 
-   .. cpp:function:: cali::Annotation::Annotation(const string& name, \
+   .. cpp:function:: cali::Annotation::Annotation(const char* name, \
         int properties = 0)
 
       Constructor. Constructs an annotation object to manipulate the Caliper 

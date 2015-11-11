@@ -34,12 +34,14 @@
 /// Annotation interface
 
 #include "Annotation.h"
+
 #include "Caliper.h"
 
 #include <Log.h>
 #include <Variant.h>
 
 #include <cstring>
+#include <string>
 
 using namespace std;
 using namespace cali;
@@ -152,7 +154,7 @@ Annotation::Guard::~Guard()
 /// Construct an annotation object for context attribute \c name. 
 /// 
 
-Annotation::Annotation(const string& name, int opt)
+Annotation::Annotation(const char* name, int opt)
     : pI(new Impl(name, opt))
 { }
 
@@ -178,11 +180,6 @@ Annotation& Annotation::begin(int data)
 Annotation& Annotation::begin(double data)
 {
     return begin(Variant(data));
-}
-
-Annotation& Annotation::begin(const string& data)
-{
-    return begin(Variant(CALI_TYPE_STRING, data.data(), data.size()));
 }
 
 Annotation& Annotation::begin(const char* data)
@@ -217,11 +214,6 @@ Annotation& Annotation::set(int data)
 Annotation& Annotation::set(double data)
 {
     return set(Variant(data));
-}
-
-Annotation& Annotation::set(const string& data)
-{
-    return set(Variant(CALI_TYPE_STRING, data.data(), data.size()));
 }
 
 Annotation& Annotation::set(const char* data)
