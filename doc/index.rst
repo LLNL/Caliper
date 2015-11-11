@@ -22,7 +22,7 @@ Contents:
    usage
    configuration
    services
-
+   api
 
 Indices and tables
 ==================

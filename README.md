@@ -1,11 +1,13 @@
 Caliper: Context Annotation Library (for Performance)
 ==========================================
 
-by David Boehme, boehme3@llnl.gov
-
 Caliper is a generic context annotation system. It gives programmers
 the ability to provide arbitrary program context information to 
 (performance) tools at runtime.
+
+Released under a BSD license, `LLNL-CODE-678900`. 
+See `LICENSE` file for details.
+
 
 Documentation
 ------------------------------------------
@@ -40,6 +42,23 @@ Compiler. Unpack the source distribution and proceed as follows:
 The OMPT header file and libunwind are required to build the OMPT (OpenMP tools
 interface) and callpath modules, respectively. Both modules are optional.
 
+### Building on BG/Q
+
+When building on a BlueGene/Q system, the libraries must be cross-compiled to
+work correctly on the compute nodes. Use the provided toolchain file to build
+with clang, like so:
+
+     cd <path to caliper root directory>
+     mkdir build && cd build
+     cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
+         -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/bgq-dynamic.toolchain \
+         -DCMAKE_CXX_FLAGS=-stdlib=libc++ \
+         ..
+     make 
+     make install
+
+When processing the created cali files, make sure to use a version of
+`cali-query` complied for the frontend node. 
 
 Getting started
 ------------------------------------------
@@ -65,26 +84,28 @@ int main(int argc, char* argv[])
     phase_ann.end();                           // Context is "phase=main"
 
     if (count > 0) {
-        cali::Annotation::AutoScope 
-            loop_s( phase_ann.begin("loop") ); // Context is "phase=main/loop"
+        cali::Annotation::Guard 
+            g_loop( phase_ann.begin("loop") ); // Context is "phase=main/loop"
         
         cali::Annotation 
             iteration_ann("iteration", CALI_ATTR_ASVALUE);
+        cali::Annotation::Guard
+            g_iteration( iteration_ann );
         
         for (int i = 0; i < count; ++i) {
             iteration_ann.set(i);              // Context is "phase=main/loop,iteration=i"
         }
-
-        iteration_ann.end();                   // Context is "phase=main/loop"
     }                                          // Context is "phase=main"
 
     phase_ann.end();                           // Context is ""
 }
 ```
 
-A `cali::Annotation` object creates and stores an annotation attribute. 
-An annotation attribute should have a unique name. 
-The example above creates two annotation attributes, "phase" and "iteration".
+The `cali::Annotation` class is the primary source-code instrumentation 
+interface for Caliper. Annotation objects provide access to named Caliper 
+context attributes. If a referenced attribute does not exist yet, it will
+be created automatically. The example above creates two context attributes, 
+"phase" and "iteration".
 
 The _Caliper context_ is the set of all active attribute/value pairs.
 Use the `begin()`, `end()` and `set()` methods of an annotation object
@@ -93,18 +114,22 @@ methods are overloaded for common data types (strings, integers, and
 floating point).
 
 * `cali::Annotation::begin(value)` puts `value` into the context for
-the given annotation attribute.  The value is appended to the current
-values of the attribute, which allows you to create hierarchies (as in
+the given context attribute. The value is appended to the current
+values of the attribute to enable the creation of hierarchies. (as in
 the "phase" annotation in the example).
 
-* `cali::Annotation::set(value)` sets the value of the annotation
-attribute to `value`.  It overwrites the current value of the
-annotation attribute on the same hierarchy level.
+* `cali::Annotation::set(value)` sets the value of the referenced context
+attribute to `value`.  In contrast to `begin()`, it overwrites the current 
+value of the context attribute.
 
-* `cali::Annotation::end()` removes the innermost value of the given
-  annotation attribute from the context. It is the user's
+* `cali::Annotation::end()` removes the innermost value of the referenced
+  context attribute from the context. It is the user's
   responsibility to nest `begin()`/`set()` and `end()` calls
   correctly.
+
+* A `cali::Annotation::Guard` object automatically invokes the `end()` 
+  method of the referenced Annotation object when the surrounding C++ 
+  scope is left.
 
 ### Build and link annotated programs
 
