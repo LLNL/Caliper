@@ -57,7 +57,7 @@ struct Expand::ExpandImpl
     ostream&    m_os;
 
     ExpandImpl(ostream& os)
-        : m_os { os }
+        : m_os(os)
         { }
 
     void parse(const string& field_string) {

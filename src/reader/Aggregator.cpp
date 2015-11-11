@@ -172,10 +172,10 @@ struct Aggregator::AggregatorImpl
             assert(arec_data_it != aggr_db_it->second.end());
 
             // shortcuts
-            vector<Variant>&       arec_attr_vec  { arec_attr_it->second };
-            vector<Variant>&       arec_data_vec  { arec_data_it->second };
-            const vector<Variant>& attr_vec       { attr_it->second };
-            const vector<Variant>& data_vec       { data_it->second };
+            vector<Variant>&       arec_attr_vec(arec_attr_it->second);
+            vector<Variant>&       arec_data_vec(arec_data_it->second);
+            const vector<Variant>& attr_vec(attr_it->second);
+            const vector<Variant>& data_vec(data_it->second);
 
             assert(arec_attr_vec.size() == arec_data_vec.size());
             assert(attr_vec.size()      == data_vec.size()     );
