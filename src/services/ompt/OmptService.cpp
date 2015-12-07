@@ -161,6 +161,28 @@ cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         Caliper().release_scope(ctx);
 }
 
+// ompt_event_parallel_begin
+
+void
+cb_event_parallel_begin(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper* c = Caliper::instance();
+		c->begin(region_attr, Variant(CALI_TYPE_STRING, "parallel", 8));
+	}	
+}
+
+// ompt_event_parallel_end
+
+void
+cb_event_parallel_end(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper* c = Caliper::instance();
+		c->end(region_attr);
+	}
+}
+
 // ompt_event_idle_begin
 
 void
@@ -310,7 +332,9 @@ register_ompt_callbacks()
 	{ ompt_event_idle_begin,       (ompt_callback_t) &cb_event_idle_begin       },
 	{ ompt_event_idle_end,         (ompt_callback_t) &cb_event_idle_end         },
 	{ ompt_event_wait_barrier_begin,  (ompt_callback_t) &cb_event_wait_barrier_begin },
-	{ ompt_event_wait_barrier_end,    (ompt_callback_t) &cb_event_wait_barrier_end   }
+	{ ompt_event_wait_barrier_end,    (ompt_callback_t) &cb_event_wait_barrier_end   },
+	{ ompt_event_parallel_begin,      (ompt_callback_t) &cb_event_parallel_begin     },
+	{ ompt_event_parallel_end,        (ompt_callback_t) &cb_event_parallel_end       }
 //        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
     };
 
