@@ -180,9 +180,8 @@ class TextLogService
 
         if (end_event_attr      == Attribute::invalid ||
             set_event_attr      == Attribute::invalid)
-            Log(1).stream() << "Warning: \"event\" service with snapshot info\n"
-                "    and \"timestamp\" service with phase duration recording\n"
-                "    is required for text log." << std::endl;
+            Log(1).stream() << "TextLog: Note: \"event\" trigger attributes not registered\n"
+                "    disabling text log.\n" << std::endl;
     }
 
     // static callbacks

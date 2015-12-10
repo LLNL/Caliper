@@ -220,8 +220,8 @@ void post_init_cb(Caliper* c)
         end_evt_attr   == Attribute::invalid ||
         lvl_attr       == Attribute::invalid) {
         if (record_phases)
-            Log(1).stream() << "Warning: \"event\" service with snapshot info\n"
-                "    is required for phase timers." << std::endl;
+            Log(1).stream() << "Timestamp: Note: event trigger attributes not registered,\n"
+                "    disabling phase timers." << std::endl;
 
         record_phases = false;
     }
