@@ -99,7 +99,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             }
     }
 
-    void print(std::ostream& os, const Snapshot* s) const {
+    std::ostream& print(std::ostream& os, const Snapshot* s) const {
         for (const Field& f : m_fields) {
             Entry e = Entry::empty;
 
@@ -124,6 +124,8 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
             os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
         }
+
+        return os;
     }
 };
 
@@ -148,8 +150,8 @@ SnapshotTextFormatter::update_attribute(const Attribute& attr)
     mP->update_attribute(attr);
 }
 
-void 
+std::ostream& 
 SnapshotTextFormatter::print(std::ostream& os, const Snapshot* s) const
 {
-    mP->print(os, s);
+    return mP->print(os, s);
 }

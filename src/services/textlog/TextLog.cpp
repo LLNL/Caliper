@@ -161,8 +161,7 @@ class TextLogService
         if (trigger_attr == Attribute::invalid)
             return;
 
-        formatter.print(get_stream(), snapshot);
-        get_stream() << std::endl;
+        formatter.print(get_stream(), snapshot) << std::endl;
     }
 
     void post_init_cb(Caliper* c) {
