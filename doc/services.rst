@@ -68,7 +68,7 @@ All attributes trigger context snapshots:
 
 .. code-block:: sh
 
-                $ export CALI_SERVICES_ENABLE=event:recorder
+                $ export CALI_SERVICES_ENABLE=event:recorder:trace
                 $ ./test/cali-basic
                 $ cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
                 phase=main
@@ -86,7 +86,7 @@ Only "iteration" attribute updates trigger context snapshots:
 
 .. code-block:: sh
                 
-                $ export CALI_SERVICES_ENABLE=event:recorder
+                $ export CALI_SERVICES_ENABLE=event:recorder:trace
                 $ export CALI_EVENT_TRIGGER=iteration
                 $ ./test/cali-basic
                 $ cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
@@ -214,6 +214,64 @@ CALI_RECORDER_BUFFER_CAN_GROW=(true|false)
   Allow record and data buffers to grow if necessary. If false, buffer content
   will be flushed to disk when either buffer is full.
   Default: true
+
+Textlog
+--------------------------------
+
+The textlog service prints a text representation of snapshots to a configurable
+output stream. This can be used to print out a log of the program's
+progress at runtime.
+
+Currently, text log output can only be triggered by attribute update events.
+Therefore, the `event` service must be active as well.
+You can select which attribute updates trigger a text log output, define the
+output format, and set the output stream (stdout, stderr, or a file name).
+
+The following example prints a text log for the `phase` attribute of the
+test application with Caliper's auto-generated format string:
+
+.. code-block:: sh
+
+                $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
+                $ export CALI_TEXTLOG_TRIGGER=phase
+                $ ./test/cali-basic
+                == CALIPER: Registered event trigger service
+                == CALIPER: Registered timestamp service
+                == CALIPER: Registered text log service
+                == CALIPER: Initialized
+                phase=main/init                                                       21      
+                phase=main/loop                                                       84      
+                phase=main                                                            219     
+                == CALIPER: Finished
+                
+
+Configuration
+................................
+
+CALI_TEXTLOG_TRIGGER=attr1:attr2:...
+  Select attributes which trigger a text log output. Note that the `event`
+  service must be active in order to trigger snapshots in the first place,
+  and the attributes selected here must be in the list of attributes that
+  trigger snapshots (defined by `CALI_EVENT_TRIGGER`).
+
+CALI_TEXTLOG_FORMATSTRING=(formatstring)
+  Define what to print. The formatstring can contain fields, denoted by
+  ``%attribute_name%``, which prints the value of an attribute. Optionally,
+  a field can contain a width specification, denoted by ``[width]``, to set
+  the minimum width of a field. Any other text is printed verbatim.
+  For example, ``Phase: %[32]app.phase% %[6]time.phase.duration%`` writes
+  log strings with two fields: the value of the `app.phase` attribute with
+  a minimum width of 40 characters, and the value of  `time.phase.duration`
+  attribute with a minimum width of 6 characters, respectively. A resulting
+  log entry might look like this:
+  ``Phase: main/loop                       7018``
+  Default: empty; Caliper will automatically create a format string based on
+  the selected trigger attributes.
+  
+CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)
+  File name for the text log. May be set to ``stdout`` or ``stderr``
+  to print to the standard output or error streams, respectively.
+  Default: stdout
 
 Timestamp
 --------------------------------
