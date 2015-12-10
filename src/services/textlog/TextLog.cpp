@@ -1,7 +1,9 @@
-/// @file  TextLog.cpp
-/// @brief Caliper text log service
+/// \file  TextLog.cpp
+/// \brief Caliper text log service
 
 #include "../CaliperService.h"
+
+#include "SnapshotTextFormatter.h"
 
 #include <Caliper.h>
 #include <SigsafeRWLock.h>
@@ -13,11 +15,13 @@
 #include <util/split.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <iostream>
 #include <map>
 #include <mutex>
 #include <string>
+#include <sstream>
 #include <vector>
 
 using namespace cali;
@@ -31,6 +35,10 @@ const ConfigSet::Entry   configdata[] = {
       "List of attributes for which to write text log entries",
       "Colon-separated list of attributes for which to write text log entries."
     },
+    { "formatstring", CALI_TYPE_STRING, "",
+      "Format of the text log output",
+      "Description of the text log format output. If empty, a default one will be created."
+    },
     ConfigSet::Terminator
 };
 
@@ -42,13 +50,35 @@ TriggerAttributeMap         trigger_attr_map;
 
 std::vector<std::string>    trigger_attr_names;
 
+SnapshotTextFormatter*      formatter;
+
 Attribute set_event_attr      { Attribute::invalid };
 Attribute end_event_attr      { Attribute::invalid };
-Attribute phase_duration_attr { Attribute::invalid };
 
+
+std::string create_default_formatstring(const std::vector<std::string>& attr_names)
+{
+    int name_sizes = 0;
+
+    for (const std::string& s : attr_names)
+        name_sizes += s.size();
+
+    int w = max<int>(0, (80-10-name_sizes-2*attr_names.size()) / attr_names.size());
+
+    std::ostringstream os;
+
+    for (const std::string& s : attr_names)
+        os << s << "=%[" << w << "]" << s << "% ";
+
+    os << "%[8r]time.phase.duration%";
+
+    return os.str();
+}
 
 void create_attribute_cb(Caliper* c, const Attribute& attr)
 {
+    formatter->update_attribute(attr);
+
     if (attr.skip_events())
         return;
 
@@ -64,7 +94,7 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
 void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* snapshot)
 {
     // operate only on cali.snapshot.event.end attributes for now
-    if (!trigger_info && 
+    if (!trigger_info || 
         !(trigger_info->attribute() == end_event_attr.id() || trigger_info->attribute() == set_event_attr.id()))
         return;
 
@@ -83,65 +113,31 @@ void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* 
     if (trigger_attr == Attribute::invalid)
         return;
 
-    Entry time_entry = snapshot->get(phase_duration_attr);
-    Entry attr_entry = snapshot->get(trigger_attr);
-
-    if (time_entry.is_empty())
-        return;
-
-    // add hierarchy entries if this is a node, make string in reverse order
-
-    std::vector<Variant> attr_v;
-    attr_v.push_back(attr_entry.value());
-
-    if (attr_entry.node())
-        for (const Node* node = attr_entry.node()->parent(); node; node = node->parent())
-            if (node->attribute() == trigger_attr.id())
-                attr_v.push_back(node->data());
-
-    std::string attr_s;
-
-    for (auto it = attr_v.rbegin(); it != attr_v.rend(); ++it)
-        attr_s.append(attr_s.size() ? "/" : "").append(it->to_string());
-
-    // make 22:48:10 attribute:value:time entries for now
-
-    struct message_field_t {
-        std::string            str;
-        std::string::size_type width;
-    } message_fields[] = {
-        { trigger_attr.name(),            22 },
-        { attr_s,                         48 },
-        { time_entry.value().to_string(), 10 }
-    };
-
-    static const char whitespace[80+1] = 
-        "                                        "
-        "                                        ";
-
-    for (const message_field_t& f : message_fields)
-        std::cout << f.str << (f.str.size() < f.width ? whitespace+(80-f.width+f.str.size()) : "");
+    formatter->print(std::cout, snapshot);
 
     std::cout << std::endl;
 }
 
 void post_init_cb(Caliper* c) 
 {
+    std::string formatstr = config.get("formatstring").to_string();
+
+    if (formatstr.size() == 0)
+        formatstr = create_default_formatstring(trigger_attr_names);
+
+    using std::placeholders::_1;
+
+    formatter = new SnapshotTextFormatter;
+    formatter->parse(formatstr, c);
+
     set_event_attr      = c->get_attribute("cali.snapshot.event.set");
     end_event_attr      = c->get_attribute("cali.snapshot.event.end");
-    phase_duration_attr = c->get_attribute("time.phase.duration");
 
     if (end_event_attr      == Attribute::invalid ||
-        set_event_attr      == Attribute::invalid ||
-        phase_duration_attr == Attribute::invalid) 
+        set_event_attr      == Attribute::invalid)
         Log(1).stream() << "Warning: \"event\" service with snapshot info\n"
             "    and \"timestamp\" service with phase duration recording\n"
             "    is required for text log." << std::endl;
-
-    std::cout << "Phase                 " 
-              << "Value                                           "
-              << "Time      "
-              << std::endl;
 }
 
 void textlog_register(Caliper* c)
