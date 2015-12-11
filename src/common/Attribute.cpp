@@ -35,6 +35,9 @@
 
 #include "Attribute.h"
 
+#include "util/split.hpp"
+
+#include <iterator>
 #include <map>
 #include <vector>
 
@@ -44,24 +47,6 @@ using namespace std;
 
 namespace 
 {
-    vector<string> split(const std::string& list, char sep)
-    {
-        vector<string> vec;
-        string str;
-
-        for (auto it = list.begin(); it != list.end(); ++it) {
-            if (*it == sep) {
-                vec.push_back(str);
-                str.clear();
-            } else if (!isspace(*it))
-                str.push_back(*it);
-        }
-
-        vec.push_back(str);
-
-        return vec;
-    }
-
     int read_properties(const std::string& str)
     {
         const map<string, cali_attr_properties> propmap = { 
@@ -73,7 +58,10 @@ namespace
 
         int prop = CALI_ATTR_DEFAULT;
 
-        for (const string &s : split(str, ':')) { 
+        vector<string> props;
+        util::split(str, ':', back_inserter(props));
+
+        for (const string &s : props) { 
             auto it = propmap.find(s);
 
             if (it != propmap.end())
@@ -107,19 +95,5 @@ namespace
         return str;
     }
 }
-
-// RecordMap Attribute::record() const
-// {
-//     RecordMap recmap = { 
-//         { "id",         { { id()   } }      },
-//         { "name",       { Variant(m_name) } },
-//         { "type",       { { m_type } }      },
-//         { "properties", { }                 } };
-
-//     if (m_properties != CALI_ATTR_DEFAULT)
-//         recmap["properties"].push_back(Variant(::write_properties(m_properties)));
-
-//     return recmap;
-// }
 
 const Attribute Attribute::invalid { CALI_INV_ID, "", CALI_TYPE_INV, CALI_ATTR_DEFAULT };
