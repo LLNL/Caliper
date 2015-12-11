@@ -1,6 +1,6 @@
 #
 # Caliper
-# 
+#
 
 project (caliper)
 cmake_minimum_required(VERSION 3.0)
@@ -42,19 +42,13 @@ endif()
 
 find_package(Threads)
 
-# Find OpenMP
-find_package(OpenMP)
-if (OpenMP_FLAG_DETECTED)
-  set(TEST_USE_OMP TRUE)
-endif()
-
 # Find OMPT header
 find_path(OMPT_INCLUDE_DIR ompt.h
   PATH_SUFFIXES include
   HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
 
 if (OMPT_INCLUDE_DIR)
-  set(OMPT_FOUND TRUE)  
+  set(OMPT_FOUND TRUE)
   set(CALIPER_HAVE_OMPT TRUE)
   message(STATUS "OpenMP tools interface header ompt.h found in " ${OMPT_INCLUDE_DIR})
 else()
@@ -69,18 +63,19 @@ if (MPI_C_FOUND)
   set(CALIPER_HAVE_MPI TRUE)
 endif()
 
-# Find Mitos
-find_package(Mitos QUIET)
-if(Mitos_FOUND)
-  set(CALIPER_HAVE_MITOS TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS mitos)
-  message(STATUS "Mitos sampling library found")
-endif()
-
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
   ${PROJECT_BINARY_DIR}/caliper-config.h)
+
+# Make caliper findable
+configure_file(
+  ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
+  ${PROJECT_BINARY_DIR}/caliper-config.cmake
+  @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake DESTINATION share/cmake/caliper)
+install(EXPORT caliper                                   DESTINATION share/cmake/caliper)
+
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
 
@@ -89,4 +84,4 @@ add_subdirectory(src)
 add_subdirectory(test)
 
 # Install exports
-install(EXPORT caliper DESTINATION lib/cmake)
+#install(EXPORT caliper DESTINATION lib/cmake)

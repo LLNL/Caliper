@@ -1,9 +1,12 @@
 Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 Produced at the Lawrence Livermore National Laboratory.
 
-This file is part of Caliper.
 Written by David Boehme, boehme3@llnl.gov.
+LLNL-CODE-678900
 All rights reserved.  
+
+This file is part of Caliper.
+For details, see https://github.com/scalability-llnl/Caliper.
 
 Redistribution and use in source and binary forms, with or without modification, are
 permitted provided that the following conditions are met:

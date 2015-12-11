@@ -4,7 +4,6 @@ set(CALIPER_COMMON_HEADERS
     Entry.h
     IdType.h
     Log.h
-    MetadataWriter.h
     Node.h
     Record.h
     RecordMap.h
