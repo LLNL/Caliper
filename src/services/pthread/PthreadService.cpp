@@ -55,10 +55,8 @@ void release_contextbuffer(void* ctx)
 {
     Caliper* c = Caliper::instance();
 
-    if (c) {
+    if (c)
         c->release_contextbuffer(static_cast<ContextBuffer*>(ctx));
-        Log(2).stream() << "Released context buffer" << endl;
-    }
 }
 
 void save_contextbuffer(ContextBuffer* ctxbuf)
