@@ -35,6 +35,8 @@
 
 #include <Args.h>
 
+#include <Annotation.h>
+
 #include <Aggregator.h>
 #include <CaliperMetadataDB.h>
 #include <Expand.h>
@@ -143,8 +145,13 @@ namespace
 
 int main(int argc, const char* argv[])
 {
-    Args args(::option_table);
+    Annotation a_phase("cali-query.phase", CALI_ATTR_SCOPE_PROCESS);
 
+    Annotation::Guard g_p(a_phase);
+
+    a_phase.set("init");
+
+    Args args(::option_table);
 
     //
     // --- Parse command line arguments
@@ -203,15 +210,22 @@ int main(int argc, const char* argv[])
     // --- Process inputs
     //
 
+    a_phase.set("process");
+
     CaliperMetadataDB metadb;
 
     for (const string& file : args.arguments()) {
+        Annotation::Guard 
+            g_s(Annotation("cali-query.stream").set(file.c_str()));
+            
         CsvReader reader(file);
         IdMap     idmap;
 
         if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
             cerr << "Could not read file " << file << endl;
     }
+
+    a_phase.set("flush");
 
     aggregate.flush(metadb, output_processor);
 }
