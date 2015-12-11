@@ -177,12 +177,17 @@ int main(int argc, const char* argv[])
     info.iterations = std::stoi(args.get("iterations", "20"));
     info.sleeptime  = std::stoi(args.get("sleep",      "0"));
 
+#ifdef __GNUC__
+    cali::Annotation("benchmark.build.compiler", CALI_ATTR_SCOPE_PROCESS).set("gnu-" __VERSION__);
+#endif
+    cali::Annotation("benchmark.build.datetime", CALI_ATTR_SCOPE_PROCESS).set(__DATE__ " " __TIME__);
+
     cali::Annotation("benchmark.threads").set(num_threads);
     cali::Annotation("benchmark.iterations").set(info.iterations);
     cali::Annotation("benchmark.sleeptime").set(info.sleeptime);
 
-    cali::Annotation benchmark_annotation("benchmark");
-    cali::Annotation benchmark_run("benchmark.run");
+    cali::Annotation benchmark_annotation("benchmark", CALI_ATTR_SCOPE_PROCESS);
+    cali::Annotation benchmark_run("benchmark.run", CALI_ATTR_SCOPE_PROCESS);
 
 
     //
