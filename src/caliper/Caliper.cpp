@@ -44,9 +44,7 @@
 
 #include <Services.h>
 
-#include <AttributeStore.h>
 #include <ContextRecord.h>
-#include <MetadataWriter.h>
 #include <Node.h>
 #include <Log.h>
 #include <RecordMap.h>
@@ -1014,19 +1012,6 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 {
     return mP->create_attribute(name, type, prop);
 }
-
-
-// --- Caliper query API
-
-// std::vector<RecordMap>
-// Caliper::unpack(const uint64_t buf[], size_t size) const
-// {
-//     return ContextRecord::unpack(
-//         [this](cali_id_t id){ return mP->get_attribute(id); },
-//         [this](cali_id_t id){ return mP->get(id); },
-//         buf, size);                                 
-// }
-
 
 // --- Serialization API
 
