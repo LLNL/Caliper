@@ -50,6 +50,7 @@
 
 #include <util/split.hpp>
 
+#include <fstream>
 #include <iostream>
 #include <iterator>
 
@@ -85,10 +86,18 @@ namespace
         Args::Table::Terminator
     };
 
-    void write_record(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
-        cout << rec << endl;
-    }
+    class WriteRecord {
+        ostream& m_os;
 
+    public:
+        
+        WriteRecord(ostream& os)
+            : m_os(os) { }
+
+        void operator()(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
+            m_os << rec << endl;
+        }
+    };
 
     /// A node record filter that filters redundant identical node records.
     /// Redundant node records can occur when merging/unifying two streams.
@@ -178,17 +187,35 @@ int main(int argc, const char* argv[])
         }
     }
 
+    //
+    // --- Create output stream (if requested)
+    //
+
+    ofstream fs;
+
+    if (args.is_set("output")) {
+        string filename = args.get("output");
+
+        fs.open(filename.c_str());
+
+        if (!fs) {
+            cerr << "cali-query: error: could not open output file " 
+                 << filename << endl;
+
+            return -2;
+        } 
+    }
 
     //
     // --- Build up processing chain (from back to front)
     //
 
-    RecordProcessFn   processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
+    RecordProcessFn processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
 
     if (args.is_set("expand"))
-        processor = Expand(cout, args.get("attributes"));
+        processor = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
     else 
-        processor = ::write_record;
+        processor = WriteRecord(fs.is_open() ? fs : cout);
 
     RecordProcessFn output_processor = processor; 
     Aggregator      aggregate(args.get("aggregate"));
