@@ -54,6 +54,18 @@ CALI_CALLPATH_SKIP_FRAMES=<number of frames>
   Skip a number of stack frames. This avoids recording stack frames
   within the Caliper library. Default: 10
 
+Environment Information
+--------------------------------
+
+The environment information (`env`) service collects runtime environment 
+information at process startup and adds it to the Caliper context.
+
+Specifically, it collects
+
+ * The process' command line (program name and arguments)
+ * Machine type and hostname, and operating system type, release, and version
+ * Date and time of program start in text form
+
 Event
 --------------------------------
 

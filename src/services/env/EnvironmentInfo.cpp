@@ -78,7 +78,7 @@ void read_uname(Caliper* c)
             const char* attr_name;
             const char* u_val;
         } uname_attr_info[] = {
-            { "env.sysname",    u.sysname },
+            { "env.os.sysname", u.sysname },
             { "env.os.release", u.release },
             { "env.os.version", u.version },
             { "env.machine",    u.machine }
