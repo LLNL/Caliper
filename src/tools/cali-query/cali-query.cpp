@@ -160,6 +160,12 @@ int main(int argc, const char* argv[])
 
     a_phase.set("init");
 
+    cali::Annotation("cali-query.build.date").set(__DATE__);
+    cali::Annotation("cali-query.build.time").set(__TIME__);
+#ifdef __GNUC__
+    cali::Annotation("cali-query.build.compiler").set("gnu-" __VERSION__);
+#endif 
+
     Args args(::option_table);
 
     //
