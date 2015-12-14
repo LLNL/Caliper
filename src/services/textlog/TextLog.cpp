@@ -76,6 +76,9 @@ class TextLogService
 
     std::string 
     create_default_formatstring(const std::vector<std::string>& attr_names) {
+        if (attr_names.size() < 1)
+            return "%time.phase.duration%";
+
         int name_sizes = 0;
 
         for (const std::string& s : attr_names)
@@ -169,8 +172,6 @@ class TextLogService
 
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
-
-        using std::placeholders::_1;
 
         formatter.parse(formatstr, c);
 
