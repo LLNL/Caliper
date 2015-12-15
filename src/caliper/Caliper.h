@@ -40,11 +40,11 @@
 
 #include "cali_definitions.h"
 
-#include <Attribute.h>
-#include <Entry.h>
-#include <Record.h>
-#include <Variant.h>
-#include <util/callback.hpp>
+#include "Attribute.h"
+#include "Entry.h"
+#include "Record.h"
+#include "Variant.h"
+#include "util/callback.hpp"
 
 #include <functional>
 #include <memory>

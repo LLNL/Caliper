@@ -42,7 +42,7 @@
 
 #include "cali_definitions.h"
 
-#include <cali_types.h>
+#include "cali_types.h"
 
 #include <stddef.h> /* size_t */
 

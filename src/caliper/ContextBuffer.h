@@ -36,8 +36,8 @@
 #ifndef CALI_CONTEXTBUFFER_H
 #define CALI_CONTEXTBUFFER_H
 
-#include <Record.h>
-#include <Variant.h>
+#include "Record.h"
+#include "Variant.h"
 
 #include <memory>
 
