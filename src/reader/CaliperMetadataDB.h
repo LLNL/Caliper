@@ -36,6 +36,8 @@
 #ifndef CALI_CALIPERMETADATADB_H
 #define CALI_CALIPERMETADATADB_H
 
+#include "RecordProcessor.h"
+
 #include <Attribute.h>
 #include <RecordMap.h>
 
@@ -67,7 +69,7 @@ public:
     bool        read(const char* filename);
 
     RecordMap   merge(const RecordMap& rec, IdMap& map);
-
+    void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn);
 
     //
     // --- Query API
