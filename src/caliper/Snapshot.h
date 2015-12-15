@@ -36,10 +36,10 @@
 #ifndef CALI_SNAPSHOT_H
 #define CALI_SNAPSHOT_H
 
-#include <Attribute.h>
-#include <ContextRecord.h>
-#include <Entry.h>
-#include <Node.h>
+#include "Attribute.h"
+#include "ContextRecord.h"
+#include "Entry.h"
+#include "Node.h"
 
 #include <algorithm>
 
@@ -52,19 +52,19 @@ namespace cali
 template<int N>
 class FixedSnapshot 
 {
-    Node*     m_nodes[N];
-    cali_id_t m_attr[N];
-    Variant   m_data[N];
+    cali::Node*   m_nodes[N];
+    cali_id_t     m_attr[N];
+    cali::Variant m_data[N];
 
-    int       m_num_nodes;
-    int       m_num_immediate;
+    int m_num_nodes;
+    int m_num_immediate;
 
 public:
 
     struct Addresses {
-        Node**     node_entries;
-        cali_id_t* immediate_attr;
-        Variant*   immediate_data;
+        cali::Node**   node_entries;
+        cali_id_t*     immediate_attr;
+        cali::Variant* immediate_data;
     };
 
     struct Sizes {
@@ -78,7 +78,7 @@ public:
         { 
             std::fill_n(m_nodes, N, nullptr);
             std::fill_n(m_attr,  N, CALI_INV_ID);
-            std::fill_n(m_data,  N, Variant());
+            std::fill_n(m_data,  N, cali::Variant());
         }
 
     Sizes capacity() const { 
@@ -105,7 +105,7 @@ public:
                     return Entry(attr, m_data[i]);
         } else {
             for (int i = 0; i < m_num_nodes; ++i)
-                for (Node* node = m_nodes[i]; node; node = node->parent())
+                for (cali::Node* node = m_nodes[i]; node; node = node->parent())
                     if (node->attribute() == attr.id())
                         return Entry(node);
         }
@@ -114,16 +114,16 @@ public:
     }
 
     void push_record(WriteRecordFn fn) const {
-        Variant attr[N];
-        Variant node[N];
+        cali::Variant attr[N];
+        cali::Variant node[N];
 
         for (int i = 0; i < m_num_nodes; ++i)
-            node[i] = Variant(m_nodes[i]->id());
+            node[i] = cali::Variant(m_nodes[i]->id());
         for (int i = 0; i < m_num_immediate; ++i)
-            attr[i] = Variant(m_attr[i]);
+            attr[i] = cali::Variant(m_attr[i]);
 
-        int               n[3] = { m_num_nodes, m_num_immediate, m_num_immediate };
-        const Variant* data[3] = { node, attr, m_data }; 
+        int                     n[3] = { m_num_nodes, m_num_immediate, m_num_immediate };
+        const cali::Variant* data[3] = { node, attr, m_data }; 
 
         fn(ContextRecord::record_descriptor(), n, data);
     }
