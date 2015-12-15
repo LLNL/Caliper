@@ -36,18 +36,27 @@
 #ifndef CALI_RECORDPROCESSOR_H
 #define CALI_RECORDPROCESSOR_H
 
+#include <Entry.h>
 #include <RecordMap.h>
 
 #include <functional>
+#include <vector>
 
 namespace cali
 {
 
 class CaliperMetadataDB;
 
+typedef std::vector<Entry> EntryList;
+
 typedef std::function<void(CaliperMetadataDB& db,const RecordMap& rec)> RecordProcessFn;
 typedef std::function<void(CaliperMetadataDB& db,const RecordMap& rec, RecordProcessFn)> RecordFilterFn;
 
+typedef std::function<void(const Node* node)> NodeProcessFn;
+typedef std::function<void(const Node* node,NodeProcessFn)> NodeFilterFn;
+
+typedef std::function<void(const EntryList& node)> SnapshotProcessFn;
+typedef std::function<void(const EntryList& node,SnapshotProcessFn)> SnapshotFilterFn;
 
 } // namespace cali
 
