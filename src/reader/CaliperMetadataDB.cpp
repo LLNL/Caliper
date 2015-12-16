@@ -54,7 +54,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 {
     Node                      m_root;         ///< (Artificial) root node
     vector<Node*>             m_nodes;        ///< Node list
-    map<cali_id_t, Attribute> m_attributes;   ///< Attribute cache
 
     Attribute::AttributeKeys  m_attr_keys = Attribute::AttributeKeys::invalid;
 
@@ -243,7 +242,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return rec;
     }
 
-    void merge(const RecordMap& rec, IdMap& idmap, NodeProcessFn node_fn, SnapshotProcessFn snap_fn) {
+    void merge(CaliperMetadataDB* db, const RecordMap& rec, IdMap& idmap, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn) {
         auto rec_name_it = rec.find("__rec");
 
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
@@ -253,28 +252,16 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             const Node* node = merge_node_record(rec, idmap);
 
             if (node)
-                node_fn(node);
+                node_fn(*db, node);
         } else if (rec_name_it->second.front().to_string() == "ctx" )
-            snap_fn(merge_ctx_record_to_list(rec, idmap));
+            snap_fn(*db, merge_ctx_record_to_list(rec, idmap));
     }
 
-    Attribute attribute(cali_id_t id) {
-        auto it = m_attributes.find(id);
-
-        if (it != m_attributes.end())
-            return it->second;
-
-        // Create the attribute from node
-
+    Attribute attribute(cali_id_t id) const {
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
-        Attribute attr { Attribute::make_attribute(m_nodes[id], m_attr_keys) };
-
-        if (attr == Attribute::invalid)
-            m_attributes.insert(make_pair(id, attr));
-
-        return attr;
+        return Attribute::make_attribute(m_nodes[id], m_attr_keys);
     }
 
     bool read(const char* filename) {
@@ -282,7 +269,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             delete n;
 
         m_nodes.clear();
-        m_attributes.clear();
 
         m_attr_keys = Attribute::AttributeKeys::invalid;
 
@@ -336,9 +322,9 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& idmap)
 }
 
 void 
-CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn)
+CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn)
 {
-    mP->merge(rec, map, node_fn, snap_fn);
+    mP->merge(this, rec, map, node_fn, snap_fn);
 }
 
 
@@ -349,7 +335,7 @@ CaliperMetadataDB::node(cali_id_t id) const
 }
 
 Attribute
-CaliperMetadataDB::attribute(cali_id_t id)
+CaliperMetadataDB::attribute(cali_id_t id) const
 {
     return mP->attribute(id);
 }
