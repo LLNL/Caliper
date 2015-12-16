@@ -36,7 +36,8 @@
 #ifndef CALI_EXPAND_H
 #define CALI_EXPAND_H
 
-#include <RecordMap.h>
+#include "RecordMap.h"
+#include "RecordProcessor.h"
 
 #include <iostream>
 #include <memory>
@@ -58,6 +59,7 @@ public:
     ~Expand();
 
     void operator()(CaliperMetadataDB&, const RecordMap&) const;
+    void operator()(CaliperMetadataDB&, const EntryList&) const;
 };
 
 } // namespace cali

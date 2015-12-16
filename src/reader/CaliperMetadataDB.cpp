@@ -242,7 +242,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return rec;
     }
 
-    void merge(const RecordMap& rec, IdMap& idmap, NodeProcessFn node_fn, SnapshotProcessFn snap_fn) {
+    void merge(CaliperMetadataDB* db, const RecordMap& rec, IdMap& idmap, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn) {
         auto rec_name_it = rec.find("__rec");
 
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
@@ -252,9 +252,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             const Node* node = merge_node_record(rec, idmap);
 
             if (node)
-                node_fn(node);
+                node_fn(*db, node);
         } else if (rec_name_it->second.front().to_string() == "ctx" )
-            snap_fn(merge_ctx_record_to_list(rec, idmap));
+            snap_fn(*db, merge_ctx_record_to_list(rec, idmap));
     }
 
     Attribute attribute(cali_id_t id) {
@@ -322,9 +322,9 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& idmap)
 }
 
 void 
-CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn)
+CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn)
 {
-    mP->merge(rec, map, node_fn, snap_fn);
+    mP->merge(this, rec, map, node_fn, snap_fn);
 }
 
 
