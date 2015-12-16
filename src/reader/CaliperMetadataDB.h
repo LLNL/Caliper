@@ -69,7 +69,7 @@ public:
     bool        read(const char* filename);
 
     RecordMap   merge(const RecordMap& rec, IdMap& map);
-    void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn);
+    void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn);
 
     //
     // --- Query API

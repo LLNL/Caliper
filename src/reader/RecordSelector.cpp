@@ -62,7 +62,6 @@ struct RecordSelector::RecordSelectorImpl
 
     std::vector<Clause> m_clauses;
 
-
     bool parse_clause(const string& str) {
         // parse "[-]attribute[(<>=)value]" string
 
@@ -128,8 +127,27 @@ struct RecordSelector::RecordSelectorImpl
 
         return false;
     }    
+    
+    bool match(const CaliperMetadataDB& db, const Entry& entry, Clause& clause) {
+        const Node* node = entry.node();
 
-    bool match_implicit(CaliperMetadataDB& db, const vector<Variant>& node_ids, Clause& clause) {
+        if (node) {
+            for ( ; node && node->id() != CALI_INV_ID; node = node->parent()) {
+                Attribute attr = db.attribute(node->attribute());
+
+                if (attr == Attribute::invalid)
+                    continue;
+                if (match(attr, node->data(), clause))
+                    return true;
+            }
+        } else if (entry.attribute() != CALI_INV_ID &&
+                   match(db.attribute(entry.attribute()), entry.value(), clause))
+            return true;
+
+        return false;
+    }
+
+    bool match_implicit(const CaliperMetadataDB& db, const vector<Variant>& node_ids, Clause& clause) {
         for (const Variant& elem : node_ids)
             for (const Node* node = db.node(elem.to_id()); node && node->id() != CALI_INV_ID; node = node->parent()) {
                 Attribute attr = db.attribute(node->attribute());
@@ -144,7 +162,7 @@ struct RecordSelector::RecordSelectorImpl
         return false;
     }
 
-    bool match_explicit(CaliperMetadataDB& db, const vector<Variant>& attr_ids, const vector<Variant>& data_entries, Clause& clause) {
+    bool match_explicit(const CaliperMetadataDB& db, const vector<Variant>& attr_ids, const vector<Variant>& data_entries, Clause& clause) {
         for (unsigned i = 0; i < attr_ids.size() && i < data_entries.size(); ++i) {
             Attribute attr = db.attribute(attr_ids[i].to_id());
 
@@ -158,7 +176,7 @@ struct RecordSelector::RecordSelectorImpl
         return false;
     }
 
-    bool pass(CaliperMetadataDB& db, const RecordMap& rec) {
+    bool pass(const CaliperMetadataDB& db, const RecordMap& rec) {
         if (get_record_type(rec) != "ctx")
             return true;
 
@@ -184,6 +202,21 @@ struct RecordSelector::RecordSelectorImpl
 
         return true;
     }
+
+    bool pass(const CaliperMetadataDB& db, const EntryList& list) {
+        for (Clause& clause : m_clauses) {
+            bool m = false;
+
+            for (const Entry& e : list)
+                if (m = (m || match(db, e, clause)))
+                    break;
+
+            if (m == clause.negate)
+                return false;
+        }
+
+        return true;
+    }
 }; // RecordSelectorImpl
 
 
@@ -203,4 +236,11 @@ RecordSelector::operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordPr
 {
     if (mP->pass(db, rec))
         push(db, rec);
+}
+
+void 
+RecordSelector::operator()(CaliperMetadataDB& db, const EntryList& list, SnapshotProcessFn push) const
+{
+    if (mP->pass(db, list))
+        push(db, list);
 }
