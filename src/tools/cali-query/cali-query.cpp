@@ -59,6 +59,7 @@ using namespace cali;
 using namespace std;
 using namespace util;
 
+
 namespace
 {
     const char* usage = "cali-query [OPTION]... [FILE]..."
@@ -191,8 +192,8 @@ namespace
     /// Basically the chain link in the processing chain.
     /// Passes result of @param m_filter_fn to @param m_push_fn
     struct SnapshotFilterStep {
-        SnapshotFilterFn  m_filter_fn; ///< This processing step
-        SnapshotProcessFn m_push_fn;   ///< Next processing step
+        SnapshotFilterFn  m_filter_fn;  ///< This processing step
+        SnapshotProcessFn m_push_fn;    ///< Next processing step
 
         SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn) 
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
@@ -300,6 +301,8 @@ int main(int argc, const char* argv[])
         snap_proc = writer;
         node_proc = writer;
     }
+
+    Annotation filter_ann("cali-query.filter");
 
     // RecordProcessFn output_processor = processor; 
     // Aggregator      aggregate(args.get("aggregate"));
