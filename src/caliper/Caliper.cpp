@@ -115,7 +115,7 @@ struct Caliper::CaliperImpl
     Attribute              m_key_attr;
     bool                   m_automerge;
 
-    Attribute::AttributeKeys m_attr_keys;
+    AttributeKeyIDs        m_attr_keys;
 
     Events                 m_events;
 
@@ -136,7 +136,7 @@ struct Caliper::CaliperImpl
         m_ver_attr  { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
         m_automerge { false },
-        m_attr_keys(Attribute::AttributeKeys::invalid)
+        m_attr_keys(AttributeKeyIDs::invalid)
     {
         m_automerge = m_config.get("automerge").to_bool();
     }
@@ -212,7 +212,7 @@ struct Caliper::CaliperImpl
 
         // Initialize bootstrap attributes
 
-        const Attribute::AttributeKeys keys = { 8, 9, 10 };
+        const AttributeKeyIDs keys = { 8, 9, 10 };
         m_attr_keys = keys;
 
         struct attr_node_t { 
@@ -231,7 +231,7 @@ struct Caliper::CaliperImpl
         }
         for ( attr_node_t p : attr_nodes ) {
             // Create attribute 
-            *(p.attr) = Attribute::make_attribute(p.node, keys);
+            *(p.attr) = Attribute::make_attribute(p.node, &m_attr_keys);
         }
     }
 
@@ -612,7 +612,7 @@ struct Caliper::CaliperImpl
 
         // Create attribute object
 
-        Attribute attr = Attribute::make_attribute(node, m_attr_keys);
+        Attribute attr = Attribute::make_attribute(node, &m_attr_keys);
 
         m_events.create_attr_evt(s_caliper.get(), attr);
 
@@ -632,12 +632,12 @@ struct Caliper::CaliperImpl
 
         m_attribute_lock.unlock();
 
-        return Attribute::make_attribute(node, m_attr_keys);
+        return Attribute::make_attribute(node, &m_attr_keys);
     }
 
     Attribute 
     get_attribute(cali_id_t id) const {
-        return Attribute::make_attribute(get_node(id), m_attr_keys);
+        return Attribute::make_attribute(get_node(id), &m_attr_keys);
     }
 
     size_t

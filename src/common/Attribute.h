@@ -31,7 +31,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /** 
- * @file Attribute.h 
+ * \file Attribute.h 
  * Attribute class declaration
  */
 
@@ -46,19 +46,19 @@ namespace cali
 {
 
 class Node;
+    
+struct AttributeKeyIDs {
+    cali_id_t name_attr_id;
+    cali_id_t type_attr_id;
+    cali_id_t prop_attr_id;
+
+    static const AttributeKeyIDs invalid;
+};    
 
 class Attribute
 {
 
 public:
-
-    struct AttributeKeys {
-        cali_id_t name_attr_id;
-        cali_id_t type_attr_id;
-        cali_id_t prop_attr_id;
-
-        static const AttributeKeys invalid;
-    };
 
     cali_id_t      id() const;
 
@@ -80,7 +80,7 @@ public:
         return properties() & CALI_ATTR_HIDDEN;
     }
 
-    static Attribute make_attribute(const Node* node, const AttributeKeys& keys);
+    static Attribute make_attribute(const Node* node, const AttributeKeyIDs* keys);
 
     // RecordMap record() const;
 
@@ -88,12 +88,16 @@ public:
 
 private:
 
-    const Node*   m_node;
-    AttributeKeys m_keys;
+    const Node*            m_node;
+    const AttributeKeyIDs* m_keys;
 
-    Attribute(const Node* node, const AttributeKeys& keys)
+    Attribute(const Node* node, const AttributeKeyIDs* keys)
         : m_node(node), m_keys(keys)
         { }
+
+    friend bool operator < (const cali::Attribute& a, const cali::Attribute& b);
+    friend bool operator == (const cali::Attribute& a, const cali::Attribute& b);
+    friend bool operator != (const cali::Attribute& a, const cali::Attribute& b);
 };
 
 inline bool operator < (const cali::Attribute& a, const cali::Attribute& b) {
@@ -101,11 +105,12 @@ inline bool operator < (const cali::Attribute& a, const cali::Attribute& b) {
 }
 
 inline bool operator == (const cali::Attribute& a, const cali::Attribute& b) {
-    return a.id() == b.id();
+    // we don't have copies of nodes, so the ptr should be unique
+    return a.m_node == b.m_node;
 }
 
 inline bool operator != (const cali::Attribute& a, const cali::Attribute& b) {
-    return a.id() != b.id();
+    return a.m_node != b.m_node;
 }
 
 } // namespace cali
