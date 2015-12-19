@@ -48,7 +48,6 @@
 #include <ContextRecord.h>
 #include <Node.h>
 #include <Log.h>
-#include <RecordMap.h>
 #include <RuntimeConfig.h>
 
 #include <signal.h>
@@ -172,7 +171,7 @@ struct Caliper::GlobalData
           type_attr { Attribute::invalid },  
           prop_attr { Attribute::invalid },
           key_attr  { Attribute::invalid },
-          automerge { false },
+          automerge { true },
           process_scope        { new Scope(CALI_SCOPE_PROCESS) },
           default_thread_scope { new Scope(CALI_SCOPE_THREAD)  },
           default_task_scope   { new Scope(CALI_SCOPE_TASK)    }
@@ -241,16 +240,19 @@ Caliper::scope(cali_context_scope_t st) {
         return mG->process_scope;
         
     case CALI_SCOPE_THREAD:
-        if (!m_thread_scope)
+        if (!m_thread_scope) {
             m_thread_scope =
-                mG->get_thread_scope_cb ? mG->get_thread_scope_cb() : mG->default_thread_scope;
+                mG->get_thread_scope_cb ? mG->get_thread_scope_cb(this) : mG->default_thread_scope;
 
+            assert(m_thread_scope != 0);
+        }
+        
         return m_thread_scope;
         
     case CALI_SCOPE_TASK:
         if (!m_task_scope)
             m_task_scope =
-                mG->get_task_scope_cb ? mG->get_task_scope_cb() : mG->default_task_scope;
+                mG->get_task_scope_cb ? mG->get_task_scope_cb(this) : mG->default_task_scope;
 
         return m_task_scope;
     }
@@ -284,14 +286,14 @@ Caliper::set_scope_callback(cali_context_scope_t scope, ScopeCallbackFn cb) {
     case CALI_SCOPE_THREAD:
         if (mG->get_thread_scope_cb)
             Log(0).stream() 
-                << "Caliper::set_context_callback(): error: callback already set" 
+                << "Caliper::set_context_callback(): error: thread callback already set" 
                 << endl;
         mG->get_thread_scope_cb = cb;
         break;
     case CALI_SCOPE_TASK:
         if (mG->get_task_scope_cb)
             Log(0).stream() 
-                << "Caliper::set_context_callback(): error: callback already set" 
+                << "Caliper::set_context_callback(): error: task callback already set" 
                 << endl;
         mG->get_task_scope_cb = cb;
         break;
@@ -306,8 +308,25 @@ Caliper::Scope*
 Caliper::create_scope(cali_context_scope_t st)
 {
     assert(mG != 0);
-    
+
     Scope* s = new Scope(st);
+    
+    switch (st) {
+    case CALI_SCOPE_THREAD:
+        m_thread_scope = s;
+        break;
+    case CALI_SCOPE_TASK:
+        m_task_scope   = s;
+        break;
+    case CALI_SCOPE_PROCESS:
+        Log(0).stream()
+            << "Caliper::create_scope(): error: attempt to create a process scope"
+            << endl;
+
+        delete s;        
+        return 0;
+    }
+
     mG->events.create_scope_evt(this, st);
 
     return s;
@@ -319,7 +338,7 @@ Caliper::release_scope(Caliper::Scope* s)
     assert(mG != 0);
     
     mG->events.release_scope_evt(this, s->scope);
-    // do NOT delete this because we still need the node data in the scope's memory pool
+    // do NOT delete this because we may still need the node data in the scope's memory pool
     // delete ctx;
 }
 

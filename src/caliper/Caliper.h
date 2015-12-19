@@ -43,7 +43,6 @@
 #include "Variant.h"
 #include "util/callback.hpp"
 
-#include <functional>
 #include <utility>
 
 
@@ -65,7 +64,7 @@ public:
 
     struct Scope;
 
-    typedef Scope* (*ScopeCallbackFn)(void);
+    typedef Scope* (*ScopeCallbackFn)(Caliper*);
 
     
 private:

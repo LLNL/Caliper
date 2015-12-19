@@ -65,14 +65,14 @@ void save_scope(Caliper::Scope* s)
 }
 
 Caliper::Scope*
-get_thread_scope()
+get_thread_scope(Caliper* c)
 {
     Caliper::Scope* ctxbuf = static_cast<Caliper::Scope*>(pthread_getspecific(thread_env_key));
 
     if (!ctxbuf) {
-        ctxbuf = Caliper().create_scope(CALI_SCOPE_THREAD);
+        ctxbuf = c->create_scope(CALI_SCOPE_THREAD);
         save_scope(ctxbuf);
-    } 
+    }
 
     return ctxbuf;
 }
