@@ -50,44 +50,44 @@ using namespace cali;
 // --- Annotation implementation object
 
 struct Annotation::Impl {
-    Caliper*    m_cI;   // We assume the Caliper instance object does not change
     Attribute   m_attr;
     std::string m_name;
     int         m_opt;
     int         m_refcount;
 
     Impl(const std::string& name, int opt)
-        : m_cI(Caliper::instance()), 
-          m_attr(Attribute::invalid), 
+        : m_attr(Attribute::invalid), 
           m_name(name), 
           m_opt(opt),
           m_refcount(1)
-        { 
-            m_attr = m_cI->get_attribute(name);
-        }
+        { }
 
     void begin(const Variant& data) {
+        Caliper c;
+        
         if (m_attr == Attribute::invalid)
-            create_attribute(data.type());
+            create_attribute(c, data.type());
 
         if ((m_attr.type() == data.type()) && m_attr.type() != CALI_TYPE_INV)
-            m_cI->begin(m_attr, data);
+            c.begin(m_attr, data);
     }
 
     void set(const Variant& data) {
+        Caliper c;
+                  
         if (m_attr == Attribute::invalid)
-            create_attribute(data.type());
+            create_attribute(c, data.type());
 
         if ((m_attr.type() == data.type()) && m_attr.type() != CALI_TYPE_INV)
-            m_cI->set(m_attr, data);
+            c.set(m_attr, data);
     }
 
     void end() {
-        m_cI->end(m_attr);
+        Caliper().end(m_attr);
     }
 
-    void create_attribute(cali_attr_type type) {
-        m_attr = m_cI->create_attribute(m_name, type, m_opt);
+    void create_attribute(Caliper& c, cali_attr_type type) {
+        m_attr = c.create_attribute(m_name, type, m_opt);
 
         if (m_attr == Attribute::invalid)
             Log(0).stream() << "Could not create attribute " << m_name << endl;

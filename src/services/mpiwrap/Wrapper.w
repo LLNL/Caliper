@@ -101,12 +101,12 @@ namespace
         Log::set_verbosity(0);
 
     // Make sure Caliper is initialized
-    Caliper* c = Caliper::instance();    
+    Caliper c;    
 
     if (mpi_enabled) {
         ::setup_filter();
 
-        c->set(mpirank_attr, Variant(rank));
+        c.set(mpirank_attr, Variant(rank));
     }
 }{{endfn}}
 
@@ -114,10 +114,10 @@ namespace
 
 {{fnall func MPI_Init MPI_Init_thread}}{
     if (mpi_enabled && ::enable_{{func}}) {
-        Caliper* c = Caliper::instance();
-        c->begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
         {{callfn}}
-        c->end(mpifn_attr);
+        c.end(mpifn_attr);
     } else {
         {{callfn}}
     }

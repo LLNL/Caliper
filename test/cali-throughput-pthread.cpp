@@ -56,24 +56,24 @@ struct BenchmarkInfo {
     std::vector<cali::Attribute> extra_value_attr;
 
     void create_extra_tree_attributes(int n) {
-        cali::Caliper* c = cali::Caliper::instance();
-
+        cali::Caliper c;
+        
         for (int i = 0; i < n; ++i) {
             std::stringstream s;
             s << "extra.tree." << i;
 
-            extra_tree_attr.push_back(c->create_attribute(s.str(), CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD));
+            extra_tree_attr.push_back(c.create_attribute(s.str(), CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD));
         }   
     }
 
     void create_extra_value_attributes(int n) {
-        cali::Caliper* c = cali::Caliper::instance();
-
+        cali::Caliper c;
+        
         for (int i = 0; i < n; ++i) {
             std::stringstream s;
             s << "extra.value." << i;
 
-            extra_value_attr.push_back(c->create_attribute(s.str(), CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD));
+            extra_value_attr.push_back(c.create_attribute(s.str(), CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD));
         }
     }
 
@@ -89,7 +89,6 @@ struct BenchmarkInfo {
 
 void iteration_throughput_thread(int num, const BenchmarkInfo& info)
 {
-
     cali::Annotation::Guard 
         scope(cali::Annotation("benchmark.threadrun").begin("Thread-local loop"));
 
@@ -102,6 +101,8 @@ void iteration_throughput_thread(int num, const BenchmarkInfo& info)
 
     const std::string chars { "abcdefghijklmnopqrstuvwxyz0123456789" };
 
+    cali::Caliper c;
+    
     for (int i = 0; i < info.iterations; ++i) {
         iter_ann.set(i);
 
@@ -109,15 +110,15 @@ void iteration_throughput_thread(int num, const BenchmarkInfo& info)
         int64_t     ival = num+i;
 
         for (auto it = info.extra_tree_attr.begin(); it != info.extra_tree_attr.end(); ++it)
-            cali::Caliper::instance()->begin(*it, cali::Variant(CALI_TYPE_STRING, sval.c_str(), sval.length()));
+            c.begin(*it, cali::Variant(CALI_TYPE_STRING, sval.c_str(), sval.length()));
         for (auto it = info.extra_value_attr.begin(); it != info.extra_value_attr.end(); ++it)
-            cali::Caliper::instance()->set(*it, cali::Variant(CALI_TYPE_INT, &ival, sizeof(ival)));
+            c.set(*it, cali::Variant(CALI_TYPE_INT, &ival, sizeof(ival)));
 
         if (info.sleeptime) 
             std::this_thread::sleep_for(std::chrono::microseconds(info.sleeptime));
 
         for (auto it = info.extra_tree_attr.rbegin(); it != info.extra_tree_attr.rend(); ++it)
-            cali::Caliper::instance()->end(*it);
+            c.end(*it);
     }
 
     iter_ann.end();

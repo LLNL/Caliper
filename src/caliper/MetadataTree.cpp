@@ -75,8 +75,10 @@ struct MetadataTree::MetadataTreeImpl
         }
 
     ~MetadataTreeImpl() {
-        for ( auto& n : m_root )
-            n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here
+        // Node mempools might have been removed already ... don't do anything here
+        
+        // for ( auto& n : m_root )
+        //     n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here
     }
 
     //
@@ -384,7 +386,7 @@ struct MetadataTree::MetadataTreeImpl
         if (path)
             path = remove_first_in_path(pool, path, attr);
 
-        return get_path(pool, 1, &attr, &data, path);
+        return get_path(pool, attr, 1, &data, path);
     }
 
     Node*
@@ -392,7 +394,7 @@ struct MetadataTree::MetadataTreeImpl
         if (path)
             path = copy_path_without_attribute(pool, attr, path, find_hierarchy_parent(attr, path));
 
-        return get_path(pool, attr, n, data, path);
+        return get_path(pool, attr, n, data,  path);
     }
     
     Node* 

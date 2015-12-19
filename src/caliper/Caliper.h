@@ -30,13 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/** 
- * @file Caliper.h 
- * Initialization function and global data declaration
- */
+/// \file Caliper.h 
+/// Initialization function and global data declaration
 
-#ifndef CALI_CALIPER_H
-#define CALI_CALIPER_H
+#pragma once
 
 #include "cali_definitions.h"
 
@@ -47,7 +44,6 @@
 #include "util/callback.hpp"
 
 #include <functional>
-#include <memory>
 #include <utility>
 
 
@@ -56,7 +52,6 @@ namespace cali
 
 // Forward declarations
 
-class ContextBuffer;
 class Node;    
 
 template<int> class FixedSnapshot;
@@ -66,22 +61,41 @@ typedef FixedSnapshot<64> Snapshot;
 
 class Caliper 
 {
-    struct CaliperImpl;
-
-    std::unique_ptr<CaliperImpl> mP;
-
-
-    Caliper();
-
 public:
 
-    ~Caliper();
+    struct Scope;
 
-    Caliper(const Caliper&) = delete;
+    typedef Scope* (*ScopeCallbackFn)(void);
 
-    Caliper& operator = (const Caliper&) = delete;
+    
+private:
+    
+    struct GlobalData;
+    
+    GlobalData* mG;
+    
+    Scope* m_thread_scope;
+    Scope* m_task_scope;
 
+    
+    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0)
+        : mG(g), m_thread_scope(thread), m_task_scope(task)
+        { }
 
+    Scope* scope(cali_context_scope_t scope);
+    
+
+public:
+    
+    Caliper();
+    
+    ~Caliper()
+        { }
+
+    Caliper(const Caliper&) = default;
+
+    Caliper& operator = (const Caliper&) = default;
+    
     // --- Events
 
     struct Events {
@@ -94,9 +108,10 @@ public:
         util::callback<void(Caliper*, const Attribute&)> pre_set_evt;
         util::callback<void(Caliper*, const Attribute&)> post_set_evt;
 
-        util::callback<void(cali_context_scope_t, 
-                            ContextBuffer*)>             create_context_evt;
-        util::callback<void(ContextBuffer*)>             destroy_context_evt;
+        util::callback<void(Caliper*,
+                            cali_context_scope_t)>       create_scope_evt;
+        util::callback<void(Caliper*,
+                            cali_context_scope_t)>       release_scope_evt;
 
         util::callback<void(Caliper*)>                   post_init_evt;
         util::callback<void(Caliper*)>                   finish_evt;
@@ -118,13 +133,12 @@ public:
 
     // --- Context environment API
 
-    ContextBuffer* default_contextbuffer(cali_context_scope_t context) const;
-    ContextBuffer* current_contextbuffer(cali_context_scope_t context);
+    Scope*    create_scope(cali_context_scope_t context);
+    Scope*    default_scope(cali_context_scope_t context);
 
-    ContextBuffer* create_contextbuffer(cali_context_scope_t context);
-    void           release_contextbuffer(ContextBuffer*);
+    void      release_scope(Scope*);
 
-    void           set_contextbuffer_callback(cali_context_scope_t context, std::function<ContextBuffer*()> cb);    
+    void      set_scope_callback(cali_context_scope_t context, ScopeCallbackFn cb);
 
     // --- Snapshot API
 
@@ -147,7 +161,7 @@ public:
 
     // --- Query API
 
-    Entry     get(const Attribute& attr) const;
+    Entry     get(const Attribute& attr);
 
     // --- Attribute API
 
@@ -158,18 +172,18 @@ public:
 
     Attribute create_attribute(const std::string& name, cali_attr_type type, int prop = CALI_ATTR_DEFAULT);
 
-    // --- Serialization / data access API
 
-    void      foreach_node(std::function<void(const Node&)>);
-    void      foreach_attribute(std::function<void(const Attribute&)>);
+    // --- Caliper API access
 
+    operator bool () const {
+        return mG != 0;
+    }
 
-    // --- Caliper singleton API
-
-    static Caliper* instance();
-    static Caliper* try_instance();
+    static Caliper instance();
+    static void    release();
+    
+    // static Caliper try_instance();
 };
 
 } // namespace cali
 
-#endif // CALI_CALIPER_H

@@ -87,11 +87,11 @@ cali_find_attribute  (const char* name);
  * \return Environment handle
  */
 
-void*
-cali_current_contextbuffer(cali_context_scope_t scope);
+/* void* */
+/* cali_current_contextbuffer(cali_context_scope_t scope); */
 
-cali_err
-cali_create_contextbuffer(cali_context_scope_t scope, void **new_env);
+/* cali_err */
+/* cali_create_contextbuffer(cali_context_scope_t scope, void **new_env); */
 
 
 /*

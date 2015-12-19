@@ -50,7 +50,7 @@ namespace
 atomic<unsigned> num_attributes;
 atomic<unsigned> num_snapshots;
 atomic<unsigned> num_updates;
-atomic<unsigned> num_contexts;
+atomic<unsigned> num_scopes;
 
 void create_attr_cb(Caliper*, const Attribute&)
 {
@@ -62,9 +62,9 @@ void update_cb(Caliper*, const Attribute&)
     ++num_updates;
 }
 
-void create_context_cb(cali_context_scope_t, ContextBuffer*)
+void create_scope_cb(Caliper*, cali_context_scope_t)
 {
-    ++num_contexts;
+    ++num_scopes;
 }
 
 void snapshot_cb(Caliper*, int, const Entry*, Snapshot*)
@@ -75,7 +75,7 @@ void snapshot_cb(Caliper*, int, const Entry*, Snapshot*)
 void finish_cb(Caliper* c)
 {
     Log(1).stream() << "Statistics:"
-                    << "\n     Number of additional contexts: " << num_contexts.load() 
+                    << "\n     Number of additional scopes  : " << num_scopes.load() 
                     << "\n     Number of user attributes:     " << num_attributes.load()
                     << "\n     Number of context updates:     " << num_updates.load()
                     << "\n     Number of context snapshots:   " << num_snapshots.load() << endl;
@@ -86,14 +86,14 @@ void statistics_service_register(Caliper* c)
     num_attributes = 0;
     num_snapshots  = 0;
     num_updates    = 0;
-    num_contexts   = 0;
+    num_scopes     = 0;
 
     c->events().create_attr_evt.connect(&create_attr_cb);
     c->events().pre_begin_evt.connect(&update_cb);
     c->events().pre_end_evt.connect(&update_cb);
     c->events().pre_set_evt.connect(&update_cb);
     c->events().finish_evt.connect(&finish_cb);
-    c->events().create_context_evt.connect(&create_context_cb);
+    c->events().create_scope_evt.connect(&create_scope_cb);
     c->events().snapshot.connect(&snapshot_cb);
 
     Log(1).stream() << "Registered debug service" << endl;

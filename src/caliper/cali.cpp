@@ -91,7 +91,7 @@ namespace
 cali_id_t 
 cali_create_attribute(const char* name, cali_attr_type type, int properties)
 {
-    Attribute a = Caliper::instance()->create_attribute(name, type, properties);
+    Attribute a = Caliper::instance().create_attribute(name, type, properties);
     ::store_attribute(a);
 
     return a.id();
@@ -100,7 +100,7 @@ cali_create_attribute(const char* name, cali_attr_type type, int properties)
 cali_id_t
 cali_find_attribute(const char* name)
 {
-    Attribute a = Caliper::instance()->get_attribute(name);
+    Attribute a = Caliper::instance().get_attribute(name);
     ::store_attribute(a);
 
     return a.id();
@@ -114,55 +114,55 @@ cali_find_attribute(const char* name)
 void
 cali_push_context(int scope)
 {
-    Caliper::instance()->push_snapshot(scope, nullptr);
+    Caliper::instance().push_snapshot(scope, nullptr);
 }
 
 //
 // --- Environment interface
 //
 
-void*
-cali_current_contextbuffer(cali_context_scope_t scope)
-{
-    return Caliper::instance()->current_contextbuffer(scope);
-}
+// void*
+// cali_current_contextbuffer(cali_context_scope_t st)
+// {
+//     return Caliper::instance().scope(scope);
+// }
 
-cali_err
-cali_create_contextbuffer(cali_context_scope_t scope, void **new_env)
-{
-    *new_env = Caliper::instance()->create_contextbuffer(scope);
-    return CALI_SUCCESS;
-}
+// cali_err
+// cali_create_contextbuffer(cali_context_scope_t scope, void **new_env)
+// {
+//     *new_env = Caliper::instance()->create_contextbuffer(scope);
+//     return CALI_SUCCESS;
+// }
 
 
 //
-// --- Annotation interface
+// --- Annotationc interface
 //
 
 cali_err
 cali_begin(cali_id_t attr_id, const void* value, size_t size)
 {
-    Caliper*     c = Caliper::instance();
-    Attribute attr = ::lookup_attribute(c, attr_id);
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(&c, attr_id);
 
-    return c->begin(attr, Variant(attr.type(), value, size));
+    return c.begin(attr, Variant(attr.type(), value, size));
 }
 
 cali_err
 cali_end(cali_id_t attr_id)
 {
-    Caliper*     c = Caliper::instance();
-    Attribute attr = ::lookup_attribute(c, attr_id);
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(&c, attr_id);
 
-    return c->end(attr);
+    return c.end(attr);
 }
 
 cali_err  
 cali_set(cali_id_t attr_id, const void* value, size_t size)
 {
-    Caliper*     c = Caliper::instance();
-    Attribute attr = ::lookup_attribute(c, attr_id);
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(&c, attr_id);
 
-    return c->set(attr, Variant(attr.type(), value, size));
+    return c.set(attr, Variant(attr.type(), value, size));
 }
 

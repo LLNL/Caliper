@@ -58,7 +58,8 @@ void end_foo_op()
 
 void make_hierarchy_1()
 {
-    cali::Attribute attr = cali::Caliper::instance()->create_attribute("misc.hierarchy", CALI_TYPE_STRING);
+    cali::Caliper   c;    
+    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
 
     cali::Variant   data[3] = {
         { CALI_TYPE_STRING, "h1_l0", 5 },
@@ -66,12 +67,13 @@ void make_hierarchy_1()
         { CALI_TYPE_STRING, "h1_l2", 5 }
     };
 
-    cali::Caliper::instance()->set_path(attr, 3, data);
+    c.set_path(attr, 3, data);
 }
 
 void make_hierarchy_2()
 {
-    cali::Attribute attr = cali::Caliper::instance()->create_attribute("misc.hierarchy", CALI_TYPE_STRING);
+    cali::Caliper   c;
+    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
 
     cali::Variant   data[3] = {
         { CALI_TYPE_STRING, "h2_l0", 5 },
@@ -79,7 +81,7 @@ void make_hierarchy_2()
         { CALI_TYPE_STRING, "h2_l2", 5 }
     };
 
-    cali::Caliper::instance()->set_path(attr, 3, data);
+    c.set_path(attr, 3, data);
 }
 
 int main(int argc, char* argv[])

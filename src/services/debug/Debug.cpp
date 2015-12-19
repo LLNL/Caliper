@@ -107,16 +107,16 @@ string format_triggerinfo(const Entry* entry)
     return out;
 }
 
-void create_context_cb(cali_context_scope_t scope, ContextBuffer* ctx)
+void create_scope_cb(Caliper* c, cali_context_scope_t scope)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_context (scope=" << scope2string(scope) << ")" << endl;
+    Log(2).stream() << "Event: create_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
-void destroy_context_cb(ContextBuffer* ctx)
+void release_scope_cb(Caliper* c, cali_context_scope_t scope)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: destroy_context" << endl;
+    Log(2).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
 void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot*)
@@ -151,8 +151,8 @@ void debug_service_register(Caliper* c)
     c->events().pre_end_evt.connect(&end_cb);
     c->events().pre_set_evt.connect(&set_cb);
     c->events().finish_evt.connect(&finish_cb);
-    c->events().create_context_evt.connect(&create_context_cb);
-    c->events().destroy_context_evt.connect(&destroy_context_cb);
+    c->events().create_scope_evt.connect(&create_scope_cb);
+    c->events().release_scope_evt.connect(&release_scope_cb);
     c->events().snapshot.connect(&snapshot_cb);
     c->events().process_snapshot.connect(&process_snapshot_cb);
 

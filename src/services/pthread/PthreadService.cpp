@@ -51,27 +51,27 @@ namespace
 
 pthread_key_t thread_env_key;
 
-void release_contextbuffer(void* ctx)
+void release_scope(void* ctx)
 {
-    Caliper* c = Caliper::instance();
+    Caliper c = Caliper::instance();
 
     if (c)
-        c->release_contextbuffer(static_cast<ContextBuffer*>(ctx));
+        c.release_scope(static_cast<Caliper::Scope*>(ctx));
 }
 
-void save_contextbuffer(ContextBuffer* ctxbuf)
+void save_scope(Caliper::Scope* s)
 {
-    pthread_setspecific(thread_env_key, ctxbuf);
+    pthread_setspecific(thread_env_key, s);
 }
 
-ContextBuffer*
-get_thread_contextbuffer()
+Caliper::Scope*
+get_thread_scope()
 {
-    ContextBuffer* ctxbuf = static_cast<ContextBuffer*>(pthread_getspecific(thread_env_key));
+    Caliper::Scope* ctxbuf = static_cast<Caliper::Scope*>(pthread_getspecific(thread_env_key));
 
     if (!ctxbuf) {
-        ctxbuf = Caliper::instance()->create_contextbuffer(CALI_SCOPE_THREAD);
-        save_contextbuffer(ctxbuf);
+        ctxbuf = Caliper().create_scope(CALI_SCOPE_THREAD);
+        save_scope(ctxbuf);
     } 
 
     return ctxbuf;
@@ -82,10 +82,10 @@ get_thread_contextbuffer()
 /// map current (initialization) thread to default environment
 void pthreadservice_initialize(Caliper* c)
 {
-    pthread_key_create(&thread_env_key, &release_contextbuffer);
-    save_contextbuffer(c->default_contextbuffer(CALI_SCOPE_THREAD));
+    pthread_key_create(&thread_env_key, &release_scope);
+    save_scope(c->default_scope(CALI_SCOPE_THREAD));
 
-    c->set_contextbuffer_callback(CALI_SCOPE_THREAD, &get_thread_contextbuffer);
+    c->set_scope_callback(CALI_SCOPE_THREAD, &get_thread_scope);
 
     Log(1).stream() << "Registered pthread service" << endl;
 }
