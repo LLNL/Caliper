@@ -13,6 +13,7 @@ set(CALIPER_SOURCES
     Caliper.cpp
     ContextBuffer.cpp
     MemoryPool.cpp
+    MetadataTree.cpp
     SigsafeRWLock.cpp
     cali.cpp)
 

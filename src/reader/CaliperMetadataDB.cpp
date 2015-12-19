@@ -56,7 +56,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     vector<Node*>             m_nodes;        ///< Node list
     map<cali_id_t, Attribute> m_attributes;   ///< Attribute cache
 
-    AttributeKeyIDs           m_attr_keys = AttributeKeyIDs::invalid;
+    MetaAttributeIDs           m_attr_keys = MetaAttributeIDs::invalid;
 
     
     void setup_attribute_nodes(cali_id_t id, const std::string& name) {
@@ -233,7 +233,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         m_nodes.clear();
         m_attributes.clear();
 
-        m_attr_keys = AttributeKeyIDs::invalid;
+        m_attr_keys = MetaAttributeIDs::invalid;
 
         CsvReader reader(filename);
 

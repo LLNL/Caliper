@@ -94,7 +94,7 @@ namespace
 */
 
 Attribute 
-Attribute::make_attribute(const Node* node, const AttributeKeyIDs* keys)
+Attribute::make_attribute(const Node* node, const MetaAttributeIDs* keys)
 {
     // sanity check: make sure we have the necessary attributes (name and type)
 
@@ -147,6 +147,6 @@ Attribute::properties() const
     return CALI_ATTR_DEFAULT;
 }
 
-const AttributeKeyIDs AttributeKeyIDs::invalid { CALI_INV_ID, CALI_INV_ID, CALI_INV_ID };
+const MetaAttributeIDs MetaAttributeIDs::invalid { CALI_INV_ID, CALI_INV_ID, CALI_INV_ID };
 
 const Attribute Attribute::invalid { 0, 0 };

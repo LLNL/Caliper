@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file Caliper.cpp
+/// \file Caliper.cpp
 /// Caliper main class
 ///
 
@@ -38,6 +38,7 @@
 
 #include "Caliper.h"
 #include "ContextBuffer.h"
+#include "MetadataTree.h"
 #include "MemoryPool.h"
 #include "SigsafeRWLock.h"
 #include "Snapshot.h"
@@ -95,28 +96,21 @@ struct Caliper::CaliperImpl
     
     MemoryPool             m_mempool;
 
-    mutable SigsafeRWLock  m_nodelock;
-    Node                   m_root;
-    Node*                  m_last_written_node;
-    atomic<unsigned>       m_node_id;
-
+    MetadataTree           m_tree;
+    
     mutable SigsafeRWLock  m_attribute_lock;
     map<string, Node*>     m_attribute_nodes;
-    Node*                  m_type_nodes[CALI_MAXTYPE+1];
 
     Attribute              m_name_attr;
     Attribute              m_type_attr;
     Attribute              m_prop_attr;
-    Attribute              m_evt_attr;
 
     // Caliper version attribute
     Attribute              m_ver_attr;
     // Key attribute: one attribute stands in as key for all auto-merged attributes
     Attribute              m_key_attr;
     bool                   m_automerge;
-
-    AttributeKeyIDs        m_attr_keys;
-
+    
     Events                 m_events;
 
     // --- constructor
@@ -126,26 +120,18 @@ struct Caliper::CaliperImpl
         m_default_process_context { new ContextBuffer },
         m_default_thread_context  { new ContextBuffer },
         m_default_task_context    { new ContextBuffer },
-        m_root { CALI_INV_ID, CALI_INV_ID, { } }, 
-        m_last_written_node { &m_root },
-        m_node_id { 0 },
         m_name_attr { Attribute::invalid }, 
         m_type_attr { Attribute::invalid },  
         m_prop_attr { Attribute::invalid },
-        m_evt_attr  { Attribute::invalid }, 
         m_ver_attr  { Attribute::invalid },
         m_key_attr  { Attribute::invalid },
-        m_automerge { false },
-        m_attr_keys(AttributeKeyIDs::invalid)
+        m_automerge { false }
     {
         m_automerge = m_config.get("automerge").to_bool();
     }
 
     ~CaliperImpl() {
         Log(1).stream() << "Finished" << endl;
-
-        for ( auto &n : m_root )
-            n.~Node();
 
         // prevent re-initialization
         s_siglock = 2;
@@ -161,7 +147,7 @@ struct Caliper::CaliperImpl
     void 
     init() {
         bootstrap();
-
+        
         Services::register_services(s_caliper.get());
 
         Log(1).stream() << "Initialized" << endl;
@@ -173,66 +159,19 @@ struct Caliper::CaliperImpl
     }
 
     void  
-    bootstrap() {
-        // Create initial nodes
+    bootstrap() {                
+        const MetaAttributeIDs* m = m_tree.meta_attribute_ids();
+        
+        m_name_attr = Attribute::make_attribute(m_tree.node(m->name_attr_id), m);
+        m_type_attr = Attribute::make_attribute(m_tree.node(m->type_attr_id), m);
+        m_prop_attr = Attribute::make_attribute(m_tree.node(m->prop_attr_id), m);
 
-        static Node bootstrap_type_nodes[] = {
-            {  0, 9, { CALI_TYPE_USR    },  },
-            {  1, 9, { CALI_TYPE_INT    },  },
-            {  2, 9, { CALI_TYPE_UINT   },  },
-            {  3, 9, { CALI_TYPE_STRING },  },
-            {  4, 9, { CALI_TYPE_ADDR   },  },
-            {  5, 9, { CALI_TYPE_DOUBLE },  },
-            {  6, 9, { CALI_TYPE_BOOL   },  },
-            {  7, 9, { CALI_TYPE_TYPE   },  },
-            { CALI_INV_ID, CALI_INV_ID, { } } 
-        };
-        static Node bootstrap_attr_nodes[] = {
-            {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 } },
-            {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 } },
-            { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 } },
-            { 11, 8,  { CALI_TYPE_STRING, "cali.key.attribute",   18 } },
-            { 12, 8,  { CALI_TYPE_STRING, "cali.caliper.version", 20 } },
-            { 13, 12, { CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION) } },
-            { CALI_INV_ID, CALI_INV_ID, { } } 
-        };
+        m_key_attr  = create_attribute("cali.key.attribute", CALI_TYPE_USR, 0);
 
-        for ( Node* nodes : { bootstrap_type_nodes, bootstrap_attr_nodes } )
-            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node) {
-                m_node_id.store(static_cast<unsigned>(node->id() + 1));
-
-                m_last_written_node->list().insert(node);
-                m_last_written_node = node;
-            }
-
-        // Fill type map
-
-        for (Node* node = bootstrap_type_nodes ; node->id() != CALI_INV_ID; ++node)
-            m_type_nodes[node->data().to_attr_type()] = node;
-
-        // Initialize bootstrap attributes
-
-        const AttributeKeyIDs keys = { 8, 9, 10 };
-        m_attr_keys = keys;
-
-        struct attr_node_t { 
-            Node* node; Attribute* attr; cali_attr_type type;
-        } attr_nodes[] = { 
-            { &bootstrap_attr_nodes[0], &m_name_attr, CALI_TYPE_STRING },
-            { &bootstrap_attr_nodes[1], &m_type_attr, CALI_TYPE_TYPE   },
-            { &bootstrap_attr_nodes[2], &m_prop_attr, CALI_TYPE_INT    },
-            { &bootstrap_attr_nodes[3], &m_key_attr,  CALI_TYPE_USR    },
-            { &bootstrap_attr_nodes[4], &m_ver_attr,  CALI_TYPE_STRING },
-        };
-
-        for ( attr_node_t p : attr_nodes ) {
-            // Append to type node
-            m_type_nodes[p.type]->append(p.node);
-        }
-        for ( attr_node_t p : attr_nodes ) {
-            // Create attribute 
-            *(p.attr) = Attribute::make_attribute(p.node, &m_attr_keys);
-        }
+        assert(m_name_attr != Attribute::invalid);
+        assert(m_type_attr != Attribute::invalid);
+        assert(m_prop_attr != Attribute::invalid);
+        assert(m_key_attr  != Attribute::invalid);
     }
 
     // --- helpers
@@ -263,226 +202,6 @@ struct Caliper::CaliperImpl
         return m_key_attr;
     }
 
-    /// @brief Creates @param n new nodes hierarchically under @param parent 
-
-    Node*
-    create_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
-        // Calculate and allocate required memory
-
-        const size_t align = 8;
-        const size_t pad   = align - sizeof(Node)%align;
-        size_t total_size  = n * (sizeof(Node) + pad);
-
-        bool   copy        = (attr.type() == CALI_TYPE_USR || attr.type() == CALI_TYPE_STRING);
-
-        if (copy)
-            for (size_t i = 0; i < n; ++i)
-                total_size += data[i].size() + (align - data[i].size()%align);
-
-        char* ptr  = static_cast<char*>(m_mempool.allocate(total_size));
-        Node* node = nullptr;
-
-        // Create nodes
-
-        for (size_t i = 0; i < n; ++i) {
-            const void* dptr { data[i].data() };
-            size_t size      { data[i].size() }; 
-
-            if (copy)
-                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
-
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), attr.id(), Variant(attr.type(), dptr, size));
-
-            m_nodelock.wlock();
-
-            if (parent)
-                parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
-
-            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
-            parent = node;
-        }
-
-        return node;
-    }
-
-    /// @brief Retreive the given node hierarchy under @param parent
-    /// Creates new nodes if necessery
-
-    Node*
-    get_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
-        Node*  node = parent ? parent : &m_root;
-        size_t base = 0;
-
-        for (size_t i = 0; i < n; ++i) {
-            parent = node;
-
-            m_nodelock.rlock();
-            for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
-                ;
-            m_nodelock.unlock();
-
-            if (!node)
-                break;
-
-            ++base;
-        }
-
-        if (!node)
-            node = create_path(attr, n-base, data+base, parent);
-
-        return node;
-    }
-
-    /// @brief Get a new node under @param parent that is a copy of @param node
-    /// This may create a new node entry, but does not deep-copy its data
-
-    Node*
-    get_or_copy_node(Node* from, Node* parent = nullptr) {
-        Node* node = parent ? parent : &m_root;
-
-        m_nodelock.rlock();
-        for (node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
-            ;
-        m_nodelock.unlock();
-
-        if (!node) {
-            char* ptr = static_cast<char*>(m_mempool.allocate(sizeof(Node)));
-
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), from->attribute(), from->data());
-
-            m_nodelock.wlock();
-
-            if (parent)
-                parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
-        }
-
-        return node;
-    }
-
-    /// @brief Creates @param n new nodes (with different attributes) hierarchically under @param parent
-
-    Node*
-    create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
-        // Calculate and allocate required memory
-
-        const size_t align = 8;
-        const size_t pad   = align - sizeof(Node)%align;
-
-        size_t total_size  = 0;
-
-        for (size_t i = 0; i < n; ++i) {
-            total_size += n * (sizeof(Node) + pad);
-
-            if (attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING)
-                total_size += data[i].size() + (align - data[i].size()%align);
-        }
-
-        char* ptr  = static_cast<char*>(m_mempool.allocate(total_size));
-        Node* node = nullptr;
-
-        // Create nodes
-
-        for (size_t i = 0; i < n; ++i) {
-            bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
-
-            const void* dptr { data[i].data() };
-            size_t size      { data[i].size() }; 
-
-            if (copy)
-                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
-
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
-
-            m_nodelock.wlock();
-
-            if (parent)
-                parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
-
-            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
-            parent = node;
-        }
-
-        return node;
-    }
-
-    /// @brief Retreive the given node hierarchy (with different attributes) under @param parent
-    /// Creates new nodes if necessery
-
-    Node*
-    get_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
-        Node*  node = parent ? parent : &m_root;
-        size_t base = 0;
-
-        for (size_t i = 0; i < n; ++i) {
-            parent = node;
-
-            m_nodelock.rlock();
-            for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
-                ;
-            m_nodelock.unlock();
-
-            if (!node)
-                break;
-
-            ++base;
-        }
-
-        if (!node)
-            node = create_path(n-base, attr+base, data+base, parent);
-
-        return node;
-    }
-
-    Node*
-    find_hierarchy_parent(const Attribute& attr, Node* node) {
-        // parent info is fixed, no need to lock
-        for (Node* tmp = node ; tmp && tmp != &m_root; tmp = tmp->parent())
-            if (tmp->attribute() == attr.id())
-                node = tmp;
-
-        return node ? node->parent() : &m_root;
-    }
-
-    Node*
-    find_node_with_attribute(const Attribute& attr, Node* node) const {
-        while (node && node->attribute() != attr.id())
-            node = node->parent();
-
-        return node;
-    }
-
-    Node*
-    copy_path_without_attribute(const Attribute& attr, Node* node, Node* root) {
-        if (!root)
-            root = &m_root;
-        if (!node || node == root)
-            return root;
-
-        Node* tmp = copy_path_without_attribute(attr, node->parent(), root);
-
-        if (attr.id() != node->attribute())
-            tmp = get_or_copy_node(node, tmp);
-
-        return tmp;
-    }
 
     // --- Environment interface
 
@@ -582,16 +301,16 @@ struct Caliper::CaliperImpl
 
         if (!node) {
             assert(type >= 0 && type <= CALI_MAXTYPE);
-            Node*     type_node = m_type_nodes[type];
+            Node* type_node = m_tree.type_node(type);
             assert(type_node);
 
             Attribute attr[2] { m_prop_attr, m_name_attr };
             Variant   data[2] { { prop }, { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
             if (prop == CALI_ATTR_DEFAULT)
-                node = get_path(1, &attr[1], &data[1], type_node);
+                node = m_tree.get_path(1, &attr[1], &data[1], type_node, &m_mempool);
             else
-                node = get_path(2, &attr[0], &data[0], type_node);
+                node = m_tree.get_path(2, &attr[0], &data[0], type_node, &m_mempool);
 
             if (node) {
                 // Check again if attribute already exists; might have been created by 
@@ -612,7 +331,7 @@ struct Caliper::CaliperImpl
 
         // Create attribute object
 
-        Attribute attr = Attribute::make_attribute(node, &m_attr_keys);
+        Attribute attr = Attribute::make_attribute(node, m_tree.meta_attribute_ids());
 
         m_events.create_attr_evt(s_caliper.get(), attr);
 
@@ -632,12 +351,12 @@ struct Caliper::CaliperImpl
 
         m_attribute_lock.unlock();
 
-        return Attribute::make_attribute(node, &m_attr_keys);
+        return Attribute::make_attribute(node, m_tree.meta_attribute_ids());
     }
 
     Attribute 
     get_attribute(cali_id_t id) const {
-        return Attribute::make_attribute(get_node(id), &m_attr_keys);
+        return Attribute::make_attribute(m_tree.node(id), m_tree.meta_attribute_ids());
     }
 
     size_t
@@ -691,14 +410,7 @@ struct Caliper::CaliperImpl
 
         // Write any nodes that haven't been written 
 
-        m_nodelock.wlock();
-
-        for (Node* node; (node = m_root.list().next()) != 0; node->list().unlink())
-            node->push_record(m_events.write_record);
-
-        m_last_written_node = &m_root;
-
-        m_nodelock.unlock();
+        m_tree.write_new_nodes(m_events.write_record);        
 
         // Process
 
@@ -723,7 +435,8 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value())
             ret = ctx->set(attr, data);
         else
-            ret = ctx->set_node(get_key(attr), get_path(1, &attr, &data, ctx->get_node(get_key(attr))));
+            ret = ctx->set_node(get_key(attr),
+                                m_tree.get_path(1, &attr, &data, ctx->get_node(get_key(attr)), &m_mempool));
 
         // invoke callbacks
         if (!attr.skip_events())
@@ -750,14 +463,9 @@ struct Caliper::CaliperImpl
             Node* node = ctx->get_node(get_key(attr));
 
             if (node) {
-                Node* parent = find_node_with_attribute(attr, node);
-
-                if (parent)
-                    parent = parent->parent();
-
-                node = copy_path_without_attribute(attr, node, parent);
-
-                if (node == &m_root)
+                node = m_tree.remove_first_in_path(node, attr, &m_mempool);
+                
+                if (node == m_tree.root())
                     ret = ctx->unset(get_key(attr));
                 else if (node)
                     ret = ctx->set_node(get_key(attr), node);
@@ -787,22 +495,11 @@ struct Caliper::CaliperImpl
         if (!attr.skip_events())
             m_events.pre_set_evt(s_caliper.get(), attr);
 
-        if (attr.store_as_value()) {
+        if (attr.store_as_value())
             ret = ctx->set(attr, data);
-        } else {
-            Node* node = ctx->get_node(get_key(attr));
-
-            if (node) {
-                Node* parent = find_node_with_attribute(attr, node);
-
-                if (parent)
-                    parent = parent->parent();
-
-                node = copy_path_without_attribute(attr, node, parent);
-            }
-
-            ret = ctx->set_node(get_key(attr), get_path(1, &attr, &data, node));
-        }
+        else
+            ret = ctx->set_node(get_key(attr),
+                                m_tree.replace_first_in_path(ctx->get_node(get_key(attr)), attr, data, &m_mempool));
 
         // invoke callbacks
         if (!attr.skip_events())
@@ -828,14 +525,9 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value()) {
             Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
             ret = CALI_EINV;
-        } else {
-            Node* node = ctx->get_node(get_key(attr));
-
-            if (node)
-                node = copy_path_without_attribute(attr, node, find_hierarchy_parent(attr, node));
-
-            ret = ctx->set_node(get_key(attr), get_path(attr, n, data, node));
-        }
+        } else
+            ret = ctx->set_node(get_key(attr),
+                                m_tree.replace_all_in_path(ctx->get_node(get_key(attr)), attr, n, data, &m_mempool));
 
         // invoke callbacks
         if (!attr.skip_events())
@@ -858,44 +550,9 @@ struct Caliper::CaliperImpl
         if (attr.store_as_value())
             return Entry(attr, ctx->get(attr));
         else
-            return Entry(find_node_with_attribute(attr, ctx->get_node(get_key(attr))));
+            return Entry(m_tree.find_node_with_attribute(attr, ctx->get_node(get_key(attr))));
 
         return e;
-    }
-
-    // --- Retrieval
-
-    const Node* 
-    get_node(cali_id_t id) const {
-        const Node* ret = nullptr;
-
-        m_nodelock.rlock();
-
-        for (const Node* typenode : m_type_nodes)
-            for (auto &n : *typenode)
-                if (n.id() == id) {
-                    ret = &n;
-                    break;
-                }
-
-        if (!ret)
-            for (auto &n : m_root)
-                if (n.id() == id) {
-                    ret = &n;
-                    break;
-                }
-
-        m_nodelock.unlock();
-
-        return ret;
-    }
-
-    void 
-    foreach_node(std::function<void(const Node&)> proc) {
-        // Need locking?
-        for (auto &n : m_root)
-            if (n.id() != CALI_INV_ID)
-                proc(n);
     }
 };
 
@@ -938,7 +595,8 @@ Caliper::~Caliper()
 Entry
 Caliper::make_entry(size_t n, const Attribute* attr, const Variant* value) 
 {
-    return Entry(mP->get_path(n, attr, value));
+    // what do we do with as-value attributes here?!
+    return Entry(mP->m_tree.get_path(n, attr, value, nullptr, &(mP->m_mempool)));
 }
 
 Entry 
@@ -949,7 +607,7 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
     if (attr.store_as_value())
         return Entry(attr, value);
     else
-        return Entry(mP->get_path(1, &attr, &value));
+        return Entry(mP->m_tree.get_path(1, &attr, &value, nullptr, &(mP->m_mempool)));
 
     return entry;
 }
@@ -1061,14 +719,6 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 Entry
 Caliper::get(const Attribute& attr) const {
     return mP->get(attr);
-}
-
-// --- Serialization API
-
-void
-Caliper::foreach_node(std::function<void(const Node&)> proc)
-{
-    mP->foreach_node(proc);
 }
 
 namespace

@@ -30,89 +30,71 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/** 
- * \file Attribute.h 
- * Attribute class declaration
- */
+#pragma once
 
-#ifndef CALI_ATTRIBUTE_H
-#define CALI_ATTRIBUTE_H
-
+#include "Record.h"
 #include "cali_types.h"
 
-#include <string>
+#include <memory>
 
 namespace cali
 {
-
-class Node;
+    class  Attribute;
+    class  MemoryPool;
+    struct MetaAttributeIDs;
+    class  Node;
+    class  Variant;
     
-struct MetaAttributeIDs {
-    cali_id_t name_attr_id;
-    cali_id_t type_attr_id;
-    cali_id_t prop_attr_id;
+    class MetadataTree
+    {
+        struct MetadataTreeImpl;
+        
+        std::unique_ptr<MetadataTreeImpl> mP;
+        
+    public:
+        
+        MetadataTree();
 
-    static const MetaAttributeIDs invalid;
-};    
+        ~MetadataTree();
 
-class Attribute
-{
+        MetadataTree(const MetadataTree&) = delete;
+        MetadataTree& operator = (const MetadataTree&) = delete;
+        
+        // --- Modifying tree operations ---
 
-public:
+        Node*
+        get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent, MemoryPool* pool);
 
-    cali_id_t      id() const;
+        Node*
+        remove_first_in_path(Node* path, const Attribute& attr, MemoryPool* pool);
+        
+        Node*
+        replace_first_in_path(Node* path, const Attribute& attr, const Variant& data, MemoryPool* pool);
+        Node*
+        replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[], MemoryPool* pool);
 
-    std::string    name() const;
-    cali_attr_type type() const;
+        // --- Non-modifying tree operations
 
-    int            properties() const;
+        Node*
+        find_node_with_attribute(const Attribute& attr, Node* path) const;
+        
+        // --- Data access ---
+        
+        Node*
+        node(cali_id_t) const;
+        Node*
+        root() const;
 
-    bool store_as_value() const { 
-        return properties() & CALI_ATTR_ASVALUE; 
-    }
-    bool is_autocombineable() const   { 
-        return !store_as_value() && !(properties() & CALI_ATTR_NOMERGE);
-    }
-    bool skip_events() const {
-        return properties() & CALI_ATTR_SKIP_EVENTS;
-    }
-    bool is_hidden() const {
-        return properties() & CALI_ATTR_HIDDEN;
-    }
+        Node*
+        type_node(cali_attr_type type) const;
 
-    static Attribute make_attribute(const Node* node, const MetaAttributeIDs* keys);
+        const MetaAttributeIDs*
+        meta_attribute_ids() const;
 
-    // RecordMap record() const;
+        // --- I/O ---
 
-    static const Attribute invalid;
-
-private:
-
-    const Node*            m_node;
-    const MetaAttributeIDs* m_keys;
-
-    Attribute(const Node* node, const MetaAttributeIDs* keys)
-        : m_node(node), m_keys(keys)
-        { }
-
-    friend bool operator < (const cali::Attribute& a, const cali::Attribute& b);
-    friend bool operator == (const cali::Attribute& a, const cali::Attribute& b);
-    friend bool operator != (const cali::Attribute& a, const cali::Attribute& b);
-};
-
-inline bool operator < (const cali::Attribute& a, const cali::Attribute& b) {
-    return a.id() < b.id();
-}
-
-inline bool operator == (const cali::Attribute& a, const cali::Attribute& b) {
-    // we don't have copies of nodes, so the ptr should be unique
-    return a.m_node == b.m_node;
-}
-
-inline bool operator != (const cali::Attribute& a, const cali::Attribute& b) {
-    return a.m_node != b.m_node;
-}
+        void
+        write_new_nodes(WriteRecordFn fn);
+    };
 
 } // namespace cali
-
-#endif // CALI_ATTRIBUTE_H
