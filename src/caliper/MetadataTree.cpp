@@ -104,8 +104,6 @@ struct MetadataTree::MetadataTreeImpl
             {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 } },
             {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 } },
             { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 } },
-            { 11, 8,  { CALI_TYPE_STRING, "cali.caliper.version", 20 } },
-            { 12, 11, { CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION) } },
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
@@ -132,8 +130,7 @@ struct MetadataTree::MetadataTreeImpl
         } attr_nodes[] = { 
             { &bootstrap_attr_nodes[0], CALI_TYPE_STRING },
             { &bootstrap_attr_nodes[1], CALI_TYPE_TYPE   },
-            { &bootstrap_attr_nodes[2], CALI_TYPE_INT    },
-            { &bootstrap_attr_nodes[3], CALI_TYPE_STRING },
+            { &bootstrap_attr_nodes[2], CALI_TYPE_INT    }
         };
 
         for ( attr_node_t p : attr_nodes ) {
