@@ -208,6 +208,10 @@ void event_end_cb(Caliper* c, const Attribute& attr)
         // If previous level was > 1, we need to update it again
 
         v_p_lvl = c->exchange(lvl_attr, v_lvl);
+
+        if (v_p_lvl.empty())
+            return;
+        
         lvl     = v_p_lvl.to_uint();
 
         if (lvl > 1)
