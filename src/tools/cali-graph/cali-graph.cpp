@@ -99,7 +99,7 @@ namespace
             Attribute attr = db.attribute(node->attribute());
 
             m_os << "  " << node->id()
-                 << " label=[\"" << attr.name() << ":" << node->data().to_string() << "\"];"
+                 << " [label=\"" << attr.name() << ":" << node->data().to_string() << "\"];"
                  << endl;
 
             if (node->parent())
