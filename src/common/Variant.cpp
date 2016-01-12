@@ -363,7 +363,15 @@ Variant::to_string() const
         ret = std::to_string(m_value.v_uint);
         break;
     case CALI_TYPE_STRING:
-        ret.assign(static_cast<const char*>(m_value.ptr), m_size);
+    {
+        const char* str = static_cast<const char*>(m_value.ptr);
+        std::size_t len = m_size;
+
+        if (len && str[len-1] == 0)
+            --len;
+        
+        ret.assign(str, len);
+    }    
         break;
     case CALI_TYPE_ADDR:
     {
