@@ -65,9 +65,12 @@ namespace
 
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
-        { "max", "max", 'm', true,  
+        { "max", "max-nodes", 'n', true,  
           "Export at most this many nodes", 
           "NUMBER_OF_NODES" 
+        },
+        { "skip-attribute-prefixes", "skip-attribute-prefixes", 0, false,
+          "Skip attribute prefixes in nodes", nullptr 
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
@@ -76,13 +79,38 @@ namespace
 
     class DotPrinter {
         ostream& m_os;
+        Args     m_args;
+        
         int      m_max;
+        bool     m_skip_attr_prefixes;
+        
+        void parse_args(const Args& args) {
+            if (args.is_set("max"))
+                m_max = stoi(args.get("max"));
+            if (args.is_set("skip-attribute-prefixes"))
+                m_skip_attr_prefixes = true;
+        }
+
+        string format_attr_name(const Attribute& attr) {
+            string name = attr.name();
+
+            if (m_skip_attr_prefixes) {
+                string::size_type n = name.rfind('.');
+
+                if (n != string::npos)
+                    name.erase(0, n+1);
+            }
+
+            return name;
+        }
         
     public:
 
-        DotPrinter(ostream& os, int max = -1)
-            : m_os(os), m_max(max)
-            { }
+        DotPrinter(ostream& os, const Args& args)
+            : m_os(os), m_args(args), m_max(-1), m_skip_attr_prefixes(false)
+            {
+                parse_args(args);
+            }
 
         void print_prefix() {
             m_os << "graph {" << endl;
@@ -93,16 +121,16 @@ namespace
         }
 
         void print_node(CaliperMetadataDB& db, const Node* node) {
-            if (!node || (m_max >= 0 && node->id() > static_cast<cali_id_t>(m_max)))
+            if (!node || (m_max >= 0 && node->id() >= static_cast<cali_id_t>(m_max)))
                 return;
 
             Attribute attr = db.attribute(node->attribute());
 
             m_os << "  " << node->id()
-                 << " [label=\"" << attr.name() << ":" << node->data().to_string() << "\"];"
+                 << " [label=\"" << format_attr_name(attr) << ":" << node->data().to_string() << "\"];"
                  << endl;
 
-            if (node->parent())
+            if (node->parent() && node->parent()->id() != CALI_INV_ID)
                 m_os << "  " << node->parent()->id() << " -- " << node->id() << ";"
                      << endl;
         }
@@ -184,8 +212,6 @@ int main(int argc, const char* argv[])
     //
     // --- Parse command line arguments
     //
-
-    int max = -1;
     
     {
         int i = args.parse(argc, argv);
@@ -206,9 +232,6 @@ int main(int argc, const char* argv[])
 
             return 0;
         }
-
-        if (args.is_set("max"))
-            max = stoi(args.get("max"));
     }
 
     //
@@ -234,7 +257,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    DotPrinter      dotprint(fs.is_open() ? fs : cout, max);
+    DotPrinter      dotprint(fs.is_open() ? fs : cout, args);
     RecordProcessFn processor = dotprint;
 
     processor = ::FilterStep(::FilterDuplicateNodes(), processor);
