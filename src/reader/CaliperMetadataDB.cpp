@@ -54,9 +54,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 {
     Node                      m_root;         ///< (Artificial) root node
     vector<Node*>             m_nodes;        ///< Node list
-    map<cali_id_t, Attribute> m_attributes;   ///< Attribute cache
 
-    MetaAttributeIDs           m_attr_keys = MetaAttributeIDs::invalid;
+    MetaAttributeIDs          m_attr_keys = MetaAttributeIDs::invalid;
 
     
     void setup_attribute_nodes(cali_id_t id, const std::string& name) {
@@ -208,22 +207,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     Attribute attribute(cali_id_t id) {
-        auto it = m_attributes.find(id);
-
-        if (it != m_attributes.end())
-            return it->second;
-
-        // Create the attribute from node
-
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
-        Attribute attr { Attribute::make_attribute(m_nodes[id], &m_attr_keys) };
-
-        if (attr == Attribute::invalid)
-            m_attributes.insert(make_pair(id, attr));
-
-        return attr;
+        return Attribute::make_attribute(m_nodes[id], &m_attr_keys);
     }
 
     bool read(const char* filename) {
@@ -231,7 +218,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             delete n;
 
         m_nodes.clear();
-        m_attributes.clear();
 
         m_attr_keys = MetaAttributeIDs::invalid;
 
