@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file cali-graph.cpp
-/// A tool to print Caliper generalized context trees as graphviz files
+/// @file cali-stat.cpp
+/// A tool that quantifies Caliper stream contents
 
 #include <Args.h>
 
@@ -41,6 +41,7 @@
 #include <CaliperMetadataDB.h>
 #include <RecordProcessor.h>
 
+#include <ContextRecord.h>
 #include <Node.h>
 
 #include <csv/CsvReader.h>
@@ -49,7 +50,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 #include <iterator>
+#include <limits>
 
 using namespace cali;
 using namespace std;
@@ -57,88 +60,86 @@ using namespace util;
 
 namespace
 {
-    const char* usage = "cali-query [OPTION]... [FILE]..."
-        "\n  Export generalized context tree as graphiz (.dot) file";
+    const char* usage = "cali-stat [OPTION]... [FILE]..."
+        "\n  Collect and print statistics about data elements in Caliper streams";
 
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
-        { "max", "max-nodes", 'n', true,  
-          "Export at most this many nodes", 
-          "NUMBER_OF_NODES" 
-        },
-        { "skip-attribute-prefixes", "skip-attribute-prefixes", 0, false,
-          "Skip attribute prefixes in nodes", nullptr 
-        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
     };
 
-    class DotPrinter {
-        ostream& m_os;
-        Args     m_args;
-        
-        int      m_max;
-        bool     m_skip_attr_prefixes;
-        
-        void parse_args(const Args& args) {
-            if (args.is_set("max"))
-                m_max = stoi(args.get("max"));
-            if (args.is_set("skip-attribute-prefixes"))
-                m_skip_attr_prefixes = true;
-        }
+    class CaliStreamStat {
+        struct S {
+            int n_snapshots;
+            int n_nodes;
 
-        string format_attr_name(const Attribute& attr) {
-            string name = attr.name();
+            int n_max_snapshot; // max number of elements in snapshot record
+            int n_min_snapshot; // min number of elements in snapshot record
+            
+            int n_ref;          // number of tree reference elements
+            int n_val;          // number of immediate data elements
+            int n_tot;          // number of total data elements in ctx records
+        };
 
-            if (m_skip_attr_prefixes) {
-                string::size_type n = name.rfind('.');
-
-                if (n != string::npos)
-                    name.erase(0, n+1);
-            }
-
-            return name;
-        }
+        std::shared_ptr<S> mS;
         
     public:
 
-        DotPrinter(ostream& os, const Args& args)
-            : m_os(os), m_args(args), m_max(-1), m_skip_attr_prefixes(false)
-            {
-                parse_args(args);
-            }
+        CaliStreamStat()
+            : mS(new S { 0, 0, 0, std::numeric_limits<int>::max(), 0, 0 } )
+            { }
 
-        void print_prefix() {
-            m_os << "graph {" << endl;
+        void print_results(ostream& os) {
+            os << "Number of records\n"
+               << "Total          Nodes          Snapshots\n"
+               << std::left
+               << std::setw(15) << mS->n_snapshots + mS->n_nodes
+               << std::setw(15) << mS->n_nodes
+               << std::setw(15) << mS->n_snapshots
+               << endl;
+
+            os << "\nSnapshot record size\n"
+               << "Min            Max            Average\n"
+               << std::setw(15) << mS->n_min_snapshot
+               << std::setw(15) << mS->n_max_snapshot
+               << std::setw(15) << static_cast<double>(mS->n_tot) / mS->n_snapshots
+               << endl;
+
+            os << "\nData elements\n"
+               << "Total          Nodes          Tree refs      Direct values\n"
+               << std::setw(15) << mS->n_tot + 4 * mS->n_nodes
+               << std::setw(15) << 4 * mS->n_nodes
+               << std::setw(15) << mS->n_ref
+               << std::setw(15) << 2 * mS->n_val
+               << endl;
         }
 
-        void print_postfix() {
-            m_os << "}" << endl;
-        }
+        void process_snapshot(const RecordMap& rec) {
+            ++mS->n_snapshots;
+            
+            auto ref_entry_it = rec.find("ref");
+            auto val_entry_it = rec.find("attr");
 
-        void print_node(CaliperMetadataDB& db, const Node* node) {
-            if (!node || (m_max >= 0 && node->id() >= static_cast<cali_id_t>(m_max)))
-                return;
+            int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
+            int val = val_entry_it == rec.end() ? 0 : static_cast<int>(val_entry_it->second.size());
+            
+            mS->n_ref += ref;
+            mS->n_val += val;
+            mS->n_tot += ref + 2*val;
 
-            Attribute attr = db.attribute(node->attribute());
+            mS->n_min_snapshot = std::min(mS->n_min_snapshot, ref + 2*val);
+            mS->n_max_snapshot = std::max(mS->n_max_snapshot, ref + 2*val);
+        }        
 
-            m_os << "  " << node->id()
-                 << " [label=\"" << format_attr_name(attr) << ":" << node->data().to_string() << "\"];"
-                 << endl;
-
-            if (node->parent() && node->parent()->id() != CALI_INV_ID)
-                m_os << "  " << node->parent()->id() << " -- " << node->id() << ";"
-                     << endl;
-        }
-
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
-
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    print_node(db, db.node(id_entry_it->second.front().to_id()));
-            }
+        void operator()(CaliperMetadataDB&, const RecordMap& rec) {
+            string type = get_record_type(rec);
+            
+            if      (type == "node")
+                ++mS->n_nodes;
+            else if (type == "ctx")
+                process_snapshot(rec);
         }
     };
     
@@ -198,7 +199,7 @@ namespace
 
 int main(int argc, const char* argv[])
 {
-    Annotation a_phase("cali-graph.phase", CALI_ATTR_SCOPE_PROCESS);
+    Annotation a_phase("cali-stat.phase", CALI_ATTR_SCOPE_PROCESS);
 
     Annotation::Guard g_p(a_phase);
 
@@ -214,7 +215,7 @@ int main(int argc, const char* argv[])
         int i = args.parse(argc, argv);
 
         if (i < argc) {
-            cerr << "cali-graph: error: unknown option: " << argv[i] << '\n'
+            cerr << "cali-stat: error: unknown option: " << argv[i] << '\n'
                  << "  Available options: ";
 
             args.print_available_options(cerr);
@@ -243,7 +244,7 @@ int main(int argc, const char* argv[])
         fs.open(filename.c_str());
 
         if (!fs) {
-            cerr << "cali-graph: error: could not open output file " 
+            cerr << "cali-stat: error: could not open output file " 
                  << filename << endl;
 
             return -2;
@@ -254,8 +255,8 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    DotPrinter      dotprint(fs.is_open() ? fs : cout, args);
-    RecordProcessFn processor = dotprint;
+    ::CaliStreamStat stat;
+    RecordProcessFn  processor = stat;
 
     processor = ::FilterStep(::FilterDuplicateNodes(), processor);
 
@@ -265,13 +266,11 @@ int main(int argc, const char* argv[])
 
     a_phase.set("process");
 
-    dotprint.print_prefix();
-    
     CaliperMetadataDB metadb;
 
     for (const string& file : args.arguments()) {
         Annotation::Guard 
-            g_s(Annotation("cali-graph.stream").set(file.c_str()));
+            g_s(Annotation("cali-stat.stream").set(file.c_str()));
             
         CsvReader reader(file);
         IdMap     idmap;
@@ -280,5 +279,5 @@ int main(int argc, const char* argv[])
             cerr << "Could not read file " << file << endl;
     }
 
-    dotprint.print_postfix();
+    stat.print_results(fs.is_open() ? fs : cout);
 }
