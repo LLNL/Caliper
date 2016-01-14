@@ -49,7 +49,7 @@ const RecordDescriptor Node::s_record { 0x100, "node", 4, ::NodeRecordElements }
 
 Node::~Node()
 {
-    unlink();
+    // unlink();
 }
 
 bool Node::equals(cali_id_t attr, const void* data, size_t size) const
@@ -73,6 +73,17 @@ void Node::push_record(WriteRecordFn fn) const
     const Variant* data[] = { &v_id, &v_attr, &m_data, &v_parent };
 
     fn(s_record, n, data);
+}
+
+// temporary - will go away
+void Node::write_path(WriteRecordFn fn)
+{
+    if (!check_written()) {
+        if (parent() && parent()->id() != CALI_INV_ID)
+            parent()->write_path(fn);
+            
+        push_record(fn);
+    }
 }
 
 RecordMap Node::record() const

@@ -45,9 +45,9 @@
 #include "RecordMap.h"
 #include "Variant.h"
 
-#include "util/list.hpp"
-#include "util/tree.hpp"
+#include "util/atomic-tree.hpp"
 
+#include <atomic>
 
 namespace cali 
 {
@@ -56,15 +56,14 @@ namespace cali
 // --- Node base class 
 //
 
-class Node : public IdType, public util::IntrusiveTree<Node> 
+class Node : public IdType, public util::AtomicIntrusiveTree<Node> 
 {
-    util::IntrusiveTree<Node>::Node m_treenode;
-    util::IntrusiveList<Node>::Node m_listnode;
+    util::AtomicIntrusiveTree<Node>::Node m_treenode;
 
-    util::IntrusiveList<Node> m_list;
+    cali_id_t         m_attribute;
+    Variant           m_data;
 
-    cali_id_t m_attribute;
-    Variant   m_data;
+    std::atomic<bool> m_written; // temporary implementation - will go away
 
     static const RecordDescriptor s_record;
 
@@ -72,11 +71,9 @@ public:
 
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
         : IdType(id),
-          util::IntrusiveTree<Node>(this, &Node::m_treenode), 
-          m_list { this, &Node::m_listnode },
-          m_attribute { attr }, m_data { data }
+          util::AtomicIntrusiveTree<Node>(this, &Node::m_treenode), 
+        m_attribute { attr }, m_data { data }, m_written { false }
         { }
-
 
     Node(const Node&) = delete;
 
@@ -93,22 +90,19 @@ public:
     cali_id_t attribute() const { return m_attribute; }
     Variant   data() const      { return m_data;      }    
 
+    // Temporary implementation - will go away
+    bool      written() const   { return m_written.load(); }
+    bool      check_written()   { return m_written.exchange(true); }
+    void      write_path(WriteRecordFn recfn);
+    
     /// @name Serialization API
     /// @{
 
     void      push_record(WriteRecordFn recfn) const;
+    
     static const RecordDescriptor& record_descriptor() { return s_record; }
 
     RecordMap record() const;
-
-    /// @}
-    /// @name List access
-    /// @{
-
-    util::IntrusiveList<Node>& list() { return m_list; }
-    const util::IntrusiveList<Node>& list() const { return m_list; }
-
-    /// @}
 };
 
 } // namespace cali

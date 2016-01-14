@@ -92,9 +92,6 @@ namespace cali
         meta_attribute_ids() const;
 
         // --- I/O ---
-
-        void
-        write_new_nodes(WriteRecordFn fn);
     };
 
 } // namespace cali

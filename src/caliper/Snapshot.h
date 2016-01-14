@@ -58,7 +58,7 @@ class FixedSnapshot
 
     int m_num_nodes;
     int m_num_immediate;
-
+    
 public:
 
     struct Addresses {
@@ -112,8 +112,13 @@ public:
 
         return Entry::empty;
     }
-
+    
     void push_record(WriteRecordFn fn) const {
+        // Push unwritten nodes. Temporary - will go away
+
+        for (int i = 0; i < m_num_nodes; ++i)
+            m_nodes[i]->write_path(fn);
+        
         cali::Variant attr[N];
         cali::Variant node[N];
 

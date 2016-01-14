@@ -147,6 +147,9 @@ struct Caliper::GlobalData
     mutable SigsafeRWLock  attribute_lock;
     map<string, Node*>     attribute_nodes;
 
+    // are there new attributes since last snapshot recording? - temporary, will go away
+    std::atomic<bool>      new_attributes;
+
     Attribute              name_attr;
     Attribute              type_attr;
     Attribute              prop_attr;
@@ -167,6 +170,7 @@ struct Caliper::GlobalData
         : config { RuntimeConfig::init("caliper", s_configdata) },
           get_thread_scope_cb { nullptr },
           get_task_scope_cb   { nullptr },
+          new_attributes { true },
           name_attr { Attribute::invalid }, 
           type_attr { Attribute::invalid },  
           prop_attr { Attribute::invalid },
@@ -184,6 +188,10 @@ struct Caliper::GlobalData
         type_attr = Attribute::make_attribute(tree.node(m->type_attr_id), m);
         prop_attr = Attribute::make_attribute(tree.node(m->prop_attr_id), m);
 
+        attribute_nodes.insert(make_pair(name_attr.name(), tree.node(name_attr.id())));
+        attribute_nodes.insert(make_pair(type_attr.name(), tree.node(type_attr.id())));
+        attribute_nodes.insert(make_pair(prop_attr.name(), tree.node(prop_attr.id())));
+        
         assert(name_attr != Attribute::invalid);
         assert(type_attr != Attribute::invalid);
         assert(prop_attr != Attribute::invalid);
@@ -207,6 +215,19 @@ struct Caliper::GlobalData
             return attr;
 
         return key_attr;
+    }
+
+    // temporary - will go away
+    void
+    write_new_attribute_nodes(WriteRecordFn write_rec) {
+        if (new_attributes.exchange(false)) {
+            attribute_lock.rlock();
+            
+            for (auto &p : attribute_nodes)
+                p.second->write_path(write_rec);
+            
+            attribute_lock.unlock();
+        }
     }
 };
 
@@ -389,9 +410,10 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
             auto it = mG->attribute_nodes.lower_bound(name);
 
-            if (it == mG->attribute_nodes.end() || it->first != name)
+            if (it == mG->attribute_nodes.end() || it->first != name) {
                 mG->attribute_nodes.emplace_hint(it, name, node);
-            else
+                mG->new_attributes.store(true);
+            } else
                 node = it->second;
 
             mG->attribute_lock.unlock();
@@ -479,7 +501,7 @@ Caliper::push_snapshot(int scopes, const Entry* trigger_info)
 
     pull_snapshot(scopes, trigger_info, &sbuf);
 
-    mG->tree.write_new_nodes(mG->events.write_record);        
+    mG->write_new_attribute_nodes(mG->events.write_record);
 
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }

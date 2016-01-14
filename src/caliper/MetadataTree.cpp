@@ -38,7 +38,6 @@
 #include "MetadataTree.h"
 
 #include "MemoryPool.h"
-#include "SigsafeRWLock.h"
 
 #include "Attribute.h"
 #include "Node.h"
@@ -51,10 +50,7 @@ using namespace cali;
 
 struct MetadataTree::MetadataTreeImpl
 {
-    mutable SigsafeRWLock  m_nodelock;
-    
     Node                   m_root;
-    Node*                  m_last_written_node;
     std::atomic<unsigned>  m_node_id;
 
     Node*                  m_type_nodes[CALI_MAXTYPE+1];
@@ -67,7 +63,6 @@ struct MetadataTree::MetadataTreeImpl
 
     MetadataTreeImpl()
         : m_root(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_last_written_node(&m_root),
           m_node_id(0),
           m_meta_attributes(MetaAttributeIDs::invalid)
         {
@@ -108,12 +103,8 @@ struct MetadataTree::MetadataTreeImpl
         };
 
         for ( Node* nodes : { bootstrap_type_nodes, bootstrap_attr_nodes } )
-            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node) {
+            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node)
                 m_node_id.store(static_cast<unsigned>(node->id() + 1));
-
-                m_last_written_node->list().insert(node);
-                m_last_written_node = node;
-            }
 
         // Fill type map
 
@@ -174,15 +165,8 @@ struct MetadataTree::MetadataTreeImpl
             node = new(ptr) 
                 Node(m_node_id.fetch_add(1), attr.id(), Variant(attr.type(), dptr, size));
 
-            m_nodelock.wlock();
-
             if (parent)
                 parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
 
             ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
@@ -226,15 +210,8 @@ struct MetadataTree::MetadataTreeImpl
             node = new(ptr) 
                 Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
 
-            m_nodelock.wlock();
-
             if (parent)
                 parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
 
             ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
@@ -254,10 +231,8 @@ struct MetadataTree::MetadataTreeImpl
         for (size_t i = 0; i < n; ++i) {
             parent = node;
 
-            m_nodelock.rlock();
             for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
                 ;
-            m_nodelock.unlock();
 
             if (!node)
                 break;
@@ -282,10 +257,8 @@ struct MetadataTree::MetadataTreeImpl
         for (size_t i = 0; i < n; ++i) {
             parent = node;
 
-            m_nodelock.rlock();
             for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
                 ;
-            m_nodelock.unlock();
 
             if (!node)
                 break;
@@ -306,10 +279,8 @@ struct MetadataTree::MetadataTreeImpl
     get_or_copy_node(MemoryPool* pool, Node* from, Node* parent = nullptr) {
         Node* node = parent ? parent : &m_root;
 
-        m_nodelock.rlock();
         for (node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
             ;
-        m_nodelock.unlock();
 
         if (!node) {
             char* ptr = static_cast<char*>(pool->allocate(sizeof(Node)));
@@ -317,15 +288,8 @@ struct MetadataTree::MetadataTreeImpl
             node = new(ptr) 
                 Node(m_node_id.fetch_add(1), from->attribute(), from->data());
 
-            m_nodelock.wlock();
-
             if (parent)
                 parent->append(node);
-
-            m_last_written_node->list().insert(node);
-            m_last_written_node = node;
-
-            m_nodelock.unlock();
         }
 
         return node;
@@ -342,7 +306,7 @@ struct MetadataTree::MetadataTreeImpl
     }
 
     Node*
-        find_node_with_attribute(const Attribute& attr, Node* node) const {
+    find_node_with_attribute(const Attribute& attr, Node* node) const {
         while (node && node->attribute() != attr.id())
             node = node->parent();
 
@@ -398,8 +362,6 @@ struct MetadataTree::MetadataTreeImpl
     node(cali_id_t id) {
         Node* ret = nullptr;
 
-        m_nodelock.rlock();
-
         for (Node* typenode : m_type_nodes)
             for (auto &n : *typenode)
                 if (n.id() == id) {
@@ -414,25 +376,12 @@ struct MetadataTree::MetadataTreeImpl
                     break;
                 }
 
-        m_nodelock.unlock();
-
         return ret;
     }
 
     //
     // --- I/O
     //
-
-    void write_new_nodes(WriteRecordFn fn) {
-        m_nodelock.wlock();
-
-        for (Node* node; (node = m_root.list().next()) != 0; node->list().unlink())
-            node->push_record(fn);
-
-        m_last_written_node = &m_root;
-
-        m_nodelock.unlock();
-    }
 };
 
 
@@ -519,9 +468,3 @@ MetadataTree::meta_attribute_ids() const
 //
 // --- I/O ---
 //
-
-void
-MetadataTree::write_new_nodes(WriteRecordFn fn)
-{
-    mP->write_new_nodes(fn);
-}
