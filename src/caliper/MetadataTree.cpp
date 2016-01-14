@@ -102,9 +102,7 @@ struct MetadataTree::MetadataTreeImpl
             { CALI_INV_ID, CALI_INV_ID, { } } 
         };
 
-        for ( Node* nodes : { bootstrap_type_nodes, bootstrap_attr_nodes } )
-            for (Node* node = nodes ; node->id() != CALI_INV_ID; ++node)
-                m_node_id.store(static_cast<unsigned>(node->id() + 1));
+        m_node_id.store(11);
 
         // Fill type map
 

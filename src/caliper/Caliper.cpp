@@ -149,6 +149,7 @@ struct Caliper::GlobalData
 
     // are there new attributes since last snapshot recording? - temporary, will go away
     std::atomic<bool>      new_attributes;
+    std::atomic<bool>      bootstrap_nodes_written;
 
     Attribute              name_attr;
     Attribute              type_attr;
@@ -171,6 +172,7 @@ struct Caliper::GlobalData
           get_thread_scope_cb { nullptr },
           get_task_scope_cb   { nullptr },
           new_attributes { true },
+          bootstrap_nodes_written { false },
           name_attr { Attribute::invalid }, 
           type_attr { Attribute::invalid },  
           prop_attr { Attribute::invalid },
@@ -222,6 +224,15 @@ struct Caliper::GlobalData
     write_new_attribute_nodes(WriteRecordFn write_rec) {
         if (new_attributes.exchange(false)) {
             attribute_lock.rlock();
+
+            // special handling for bootstrap nodes: write all nodes in-order
+            if (!bootstrap_nodes_written.exchange(true))
+                for (cali_id_t id = 0; id <= type_attr.id(); ++id) {
+                    Node* node = tree.node(id);
+
+                    if (node && !node->check_written())
+                        node->push_record(write_rec);
+                }
             
             for (auto &p : attribute_nodes)
                 p.second->write_path(write_rec);
