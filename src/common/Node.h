@@ -45,7 +45,7 @@
 #include "RecordMap.h"
 #include "Variant.h"
 
-#include "util/atomic-tree.hpp"
+#include "util/lockfree-tree.hpp"
 
 #include <atomic>
 
@@ -56,9 +56,9 @@ namespace cali
 // --- Node base class 
 //
 
-class Node : public IdType, public util::AtomicIntrusiveTree<Node> 
+class Node : public IdType, public util::LockfreeIntrusiveTree<Node> 
 {
-    util::AtomicIntrusiveTree<Node>::Node m_treenode;
+    util::LockfreeIntrusiveTree<Node>::Node m_treenode;
 
     cali_id_t         m_attribute;
     Variant           m_data;
@@ -71,7 +71,7 @@ public:
 
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
         : IdType(id),
-          util::AtomicIntrusiveTree<Node>(this, &Node::m_treenode), 
+          util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode), 
         m_attribute { attr }, m_data { data }, m_written { false }
         { }
 

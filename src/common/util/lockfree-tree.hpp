@@ -8,7 +8,7 @@ namespace util
 {
 
 template<typename T> 
-class AtomicIntrusiveTree {
+class LockfreeIntrusiveTree {
 public:
 
     struct Node {
@@ -26,19 +26,19 @@ private:
     // --- private data 
 
     T* m_me;
-    AtomicIntrusiveTree<T>::Node T::*m_node;
+    LockfreeIntrusiveTree<T>::Node T::*m_node;
 
     // --- private methods
 
-    static AtomicIntrusiveTree<T>::Node& node(T* t, AtomicIntrusiveTree<T>::Node T::*node) { return (t->*node); }
+    static LockfreeIntrusiveTree<T>::Node& node(T* t, LockfreeIntrusiveTree<T>::Node T::*node) { return (t->*node); }
 
-    AtomicIntrusiveTree<T>        tree(T* t) const { return AtomicIntrusiveTree<T>(t, m_node); }
-    AtomicIntrusiveTree<T>::Node& node(T* t) const { return node(t, m_node); }
+    LockfreeIntrusiveTree<T>        tree(T* t) const { return LockfreeIntrusiveTree<T>(t, m_node); }
+    LockfreeIntrusiveTree<T>::Node& node(T* t) const { return node(t, m_node); }
 
 public:
 
 
-    AtomicIntrusiveTree(T* me, AtomicIntrusiveTree<T>::Node T::*nodeptr) 
+    LockfreeIntrusiveTree(T* me, LockfreeIntrusiveTree<T>::Node T::*nodeptr) 
         : m_me(me), m_node(nodeptr)
     { }
 
@@ -47,7 +47,7 @@ public:
     T* next_sibling() const { return node(m_me).next;       }
 
     void append(T* sub) {
-        AtomicIntrusiveTree<T>::Node& n = node(m_me);
+        LockfreeIntrusiveTree<T>::Node& n = node(m_me);
         
         node(sub).parent = m_me;
 
@@ -74,11 +74,11 @@ public:
 
     class depthfirst_iterator : public std::iterator<std::input_iterator_tag, T> {
         T* m_t;
-        AtomicIntrusiveTree<T>::Node T::*m_n;
+        LockfreeIntrusiveTree<T>::Node T::*m_n;
 
     public:
 
-        depthfirst_iterator(T* t, AtomicIntrusiveTree<T>::Node T::*n)
+        depthfirst_iterator(T* t, LockfreeIntrusiveTree<T>::Node T::*n)
             : m_t(t), m_n(n) { }
 
         depthfirst_iterator& operator++() {
@@ -106,12 +106,12 @@ public:
         T&   operator * () { return *m_t; } 
     };
 
-    AtomicIntrusiveTree<T>::depthfirst_iterator begin() {
+    LockfreeIntrusiveTree<T>::depthfirst_iterator begin() {
         return depthfirst_iterator(m_me, m_node);
     }
 
-    AtomicIntrusiveTree<T>::depthfirst_iterator end() {
-        return AtomicIntrusiveTree<T>::depthfirst_iterator(0, m_node);
+    LockfreeIntrusiveTree<T>::depthfirst_iterator end() {
+        return LockfreeIntrusiveTree<T>::depthfirst_iterator(0, m_node);
     }
 };
 
