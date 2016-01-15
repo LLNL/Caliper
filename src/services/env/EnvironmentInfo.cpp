@@ -38,7 +38,10 @@
 #include <Caliper.h>
 
 #include <Log.h>
+#include <RuntimeConfig.h>
 #include <Variant.h>
+
+#include <util/split.hpp>
 
 #include <sys/utsname.h>
 #include <time.h>
@@ -46,13 +49,26 @@
 
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
+#include <vector>
 
 using namespace cali;
 using namespace std;
 
 namespace
 {
+
+static const ConfigSet::Entry s_configdata[] = {
+    { "extra", CALI_TYPE_STRING, "",
+      "List of environment variables to add to the Caliper blackboard",
+      "List of environment variables to add to the Caliper blackboard"
+    },
+    ConfigSet::Terminator
+};
+
+ConfigSet config;
+
 
 void read_cmdline(Caliper* c)
 {
@@ -121,17 +137,42 @@ void read_hostname(Caliper* c)
         c->set(hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
 }
 
+void read_extra(Caliper* c)
+{
+    string extra = config.get("extra").to_string();
+
+    vector<string> extra_list;
+
+    util::split(extra, ':', back_inserter(extra_list));
+
+    for (string& env : extra_list) {
+        if (env.empty())
+            continue;
+        
+        Attribute attr =
+            c->create_attribute("env."+env, CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+        
+        char* val = getenv(env.c_str());
+
+        if (val)
+            c->set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+    }
+}
+  
 void environment_service_register(Caliper* c)
 {
     Log(1).stream() << "Registered env service" << endl;
     Log(1).stream() << "Collecting environment information" << endl;
 
+    config = RuntimeConfig::init("env", s_configdata);
+
     read_cmdline(c);
     read_uname(c);
     read_time(c);
     read_hostname(c);
+    read_extra(c);
 }
-    
+  
 }
 
 namespace cali
