@@ -78,11 +78,12 @@ void Node::push_record(WriteRecordFn fn) const
 // temporary - will go away
 void Node::write_path(WriteRecordFn fn)
 {
-    if (!check_written()) {
+    if (!written()) {
         if (parent() && parent()->id() != CALI_INV_ID)
             parent()->write_path(fn);
             
         push_record(fn);
+        m_written.store(true);
     }
 }
 
