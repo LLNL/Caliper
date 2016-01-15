@@ -93,7 +93,7 @@ typedef enum {
   CALI_SUCCESS = 0,
   CALI_EBUSY,
   CALI_ELOCKED,
-  CALI_EINV
+  CALI_EINV,
 } cali_err;
 
 #ifdef __cplusplus
