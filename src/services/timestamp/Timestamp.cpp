@@ -273,7 +273,7 @@ void timestamp_service_register(Caliper* c)
     record_timestamp = config.get("timestamp").to_bool();
     record_phases    = config.get("phase_duration").to_bool();
 
-    int hide_offset  = (record_duration && !record_offset ? CALI_ATTR_HIDDEN : 0);
+    int hide_offset  = ((record_duration || record_phases) && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
     timestamp_attr = 
         c->create_attribute("time.timestamp",   CALI_TYPE_UINT, 
