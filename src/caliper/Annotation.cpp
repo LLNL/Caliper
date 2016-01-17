@@ -83,6 +83,9 @@ struct Annotation::Impl {
     }
 
     void end() {
+        if (m_attr == Attribute::invalid)
+            m_attr = Caliper().get_attribute(m_name);
+        
         Caliper().end(m_attr);
     }
 
