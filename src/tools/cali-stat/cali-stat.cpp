@@ -65,11 +65,100 @@ namespace
 
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
+        { "reuse",  "reuse-statistics", 'r', false,
+          "Print tree data reuse statistics", nullptr
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
     };
 
+    class ReuseStat {
+        struct S {
+            struct ReuseInfo {
+                int              nodes; // number of nodes with this attribute
+                map<string, int> data;  // different data elements 
+            };
+            
+            std::map< cali_id_t, ReuseInfo > reuse;
+        };
+
+        std::shared_ptr<S> mS;
+
+    public:
+
+        ReuseStat()
+            : mS(new S)
+            { }
+
+        void print_results(CaliperMetadataDB& db, ostream& os) {
+            os << "\nReuse statistics:\n"
+               << "Attribute                       #nodes      #elem       #uses       #uses/elem  #uses/node\n";
+
+            for (auto &p : mS->reuse) {
+                int nelem = static_cast<int>(p.second.data.size());
+                
+                os << std::setw(32) << db.attribute(p.first).name()
+                   << std::setw(12) << p.second.nodes
+                   << std::setw(12) << nelem;
+
+                double total_uses = 0.0;
+
+                for ( auto &dp : p.second.data )
+                    total_uses += dp.second;
+
+                os << std::setw(12) << total_uses
+                   << std::setw(12) << (nelem > 0 ? total_uses / nelem : 0.0)
+                   << std::setw(12) << (total_uses / p.second.nodes)
+                   << endl;
+            }
+                
+        }
+
+        void process_node(CaliperMetadataDB& db, const Node* node) {
+            auto it = mS->reuse.find(node->attribute());
+
+            if (it == mS->reuse.end()) {
+                S::ReuseInfo info;
+
+                info.nodes = 1;
+                info.data[node->data().to_string()] = 1;
+
+                mS->reuse.insert(make_pair(node->attribute(), info));
+            } else {
+                ++(it->second.nodes);
+                ++(it->second.data[node->data().to_string()]);
+            }
+        }
+        
+        void process_snapshot(const CaliperMetadataDB& db, const RecordMap& rec) {
+            auto ref_entry_it = rec.find("ref");
+
+            int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
+
+            if (ref_entry_it != rec.end())
+                for ( const Variant& ref_node_id : ref_entry_it->second )
+                    for (const Node* node = db.node(ref_node_id.to_id()); node; node = node->parent()) {
+                        auto it = mS->reuse.find(node->attribute());
+
+                        if (it != mS->reuse.end())
+                            ++(it->second.data[node->data().to_string()]);
+                    }   
+        }
+
+        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+            string type = get_record_type(rec);
+            
+            if      (type == "node") {
+                auto id_entry_it = rec.find("id");
+
+                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
+                    process_node(db, db.node(id_entry_it->second.front().to_id()));
+            } else if (type == "ctx")
+                process_snapshot(db, rec);
+        }
+    };
+    
     class CaliStreamStat {
         struct S {
             int n_snapshots;
@@ -214,6 +303,19 @@ namespace
             m_filter_fn(db, rec, m_push_fn);
         }
     };
+
+    struct MultiProcessor {
+        vector<RecordProcessFn> m_processors;
+
+        void add(RecordProcessFn fn) {
+            m_processors.push_back(fn);
+        }
+
+        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+            for (auto &f : m_processors)
+                f(db, rec);
+        }
+    };
 }
 
 
@@ -279,10 +381,17 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    ::CaliStreamStat stat;
-    RecordProcessFn  processor = stat;
+    ::ReuseStat      reuse_stat;
+    ::CaliStreamStat stream_stat;
+    
+    MultiProcessor   stats;
+    
+    if (args.is_set("reuse"))
+        stats.add(reuse_stat);
 
-    processor = ::FilterStep(::FilterDuplicateNodes(), processor);
+    stats.add(stream_stat);
+
+    RecordProcessFn  processor = ::FilterStep(::FilterDuplicateNodes(), stats);
 
     //
     // --- Process inputs
@@ -303,5 +412,8 @@ int main(int argc, const char* argv[])
             cerr << "Could not read file " << file << endl;
     }
 
-    stat.print_results(fs.is_open() ? fs : cout);
+    stream_stat.print_results(fs.is_open() ? fs : cout);
+
+    if (args.is_set("reuse"))
+        reuse_stat.print_results(metadb, fs.is_open() ? fs : cout);
 }
