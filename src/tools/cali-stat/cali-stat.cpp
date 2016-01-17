@@ -53,6 +53,7 @@
 #include <iomanip>
 #include <iterator>
 #include <limits>
+#include <sstream>
 
 using namespace cali;
 using namespace std;
@@ -172,14 +173,31 @@ namespace
             int n_tot;          // number of total data elements in ctx records
 
             int n_attr_refs;    // number of attributes in snapshot records
+
+            int size_nodes;     // (est.) size of all node records
+            int size_snapshots; // (est.) size of all snapshot records
         };
 
         std::shared_ptr<S> mS;
+
+        string format_size(double size) {
+            ostringstream os;
+
+            const char* postfix[] = { "", "KiB", "MiB", "GiB" };
+            int p = 0;
+            
+            for ( ; size > 1024 && p < 3; ++p)
+                size /= 1024;
+
+            os << size << postfix[p];
+
+            return os.str();
+        }
         
     public:
 
         CaliStreamStat()
-            : mS(new S { 0, 0, 0, std::numeric_limits<int>::max(), 0, 0, 0 } )
+            : mS(new S { 0, 0, 0, std::numeric_limits<int>::max(), 0, 0, 0, 0, 0, 0 } )
             { }
 
         void print_results(ostream& os) {
@@ -191,18 +209,25 @@ namespace
                << std::setw(15) << mS->n_snapshots
                << endl;
 
-            os << "\nData elements\n"
-               << "Total          Nodes          Tree refs      Direct values\n"
+            os << "\nNumber of elements\n"
+               << "Total          Nodes          Tree refs      Direct val\n"
                << std::setw(15) << mS->n_tot + 4 * mS->n_nodes
                << std::setw(15) << 4 * mS->n_nodes
                << std::setw(15) << mS->n_ref
                << std::setw(15) << 2 * mS->n_val
                << endl;
 
+            os << "\nData size (est.)\n"
+               << "Total          Nodes          Snapshots\n"
+               << std::setw(15) << format_size(mS->size_nodes + mS->size_snapshots)
+               << std::setw(15) << format_size(mS->size_nodes)
+               << std::setw(15) << format_size(mS->size_snapshots)
+               << endl;
+            
             if (mS->n_snapshots < 1)
                 return;
             
-            os << "\nSnapshot record size\n"
+            os << "\nElements/snapshot\n"
                << "Min            Max            Average\n"
                << std::setw(15) << mS->n_min_snapshot
                << std::setw(15) << mS->n_max_snapshot
@@ -210,19 +235,30 @@ namespace
                << endl;
             
             os << "\nAttributes referenced in snapshot records\n"
-               << "Total          Average        Attr/Elem\n"
+               << "Total          Average        Refs/Elem\n"
                << std::setw(15) << mS->n_attr_refs
                << std::setw(15) << static_cast<double>(mS->n_attr_refs) / mS->n_snapshots
                << std::setw(15) << static_cast<double>(mS->n_attr_refs) / (mS->n_tot + 4 * mS->n_nodes)
                << endl;
         }
 
+        void process_node(CaliperMetadataDB& db, const Node* node) {
+            ++mS->n_nodes;
+
+            // Get string size for usr and string nodes, otherwise assume 8 bytes
+            cali_attr_type type = db.attribute(node->attribute()).type();
+            
+            mS->size_nodes += 3 * 8 +
+                (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? node->data().to_string().size() : 8);
+        }
+
         void process_snapshot(const CaliperMetadataDB& db, const RecordMap& rec) {
             ++mS->n_snapshots;
             
-            auto ref_entry_it = rec.find("ref");
-            auto val_entry_it = rec.find("attr");
-
+            auto ref_entry_it  = rec.find("ref");
+            auto attr_entry_it = rec.find("attr");
+            auto val_entry_it  = rec.find("data");
+            
             int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
             int val = val_entry_it == rec.end() ? 0 : static_cast<int>(val_entry_it->second.size());
 
@@ -230,11 +266,8 @@ namespace
             
             if (ref_entry_it != rec.end())
                 for ( const Variant& ref_node_id : ref_entry_it->second )
-                    for (const Node* node = db.node(ref_node_id.to_id()); node; node = node->parent())
+                    for (const Node* node = db.node(ref_node_id.to_id()); node && node->id() != CALI_INV_ID; node = node->parent())
                         ++ref_attr;
-
-            if (ref_attr)
-                --ref_attr; // don't count hidden root node
                     
             mS->n_ref += ref;
             mS->n_val += val;
@@ -244,14 +277,26 @@ namespace
             mS->n_max_snapshot = std::max(mS->n_max_snapshot, ref + 2*val);
 
             mS->n_attr_refs += ref_attr + val;
+
+            mS->size_snapshots += ref * 8;
+            
+            for (int i = 0; i < val; ++i) {
+                cali_attr_type type = db.attribute(attr_entry_it->second[i].to_id()).type();
+
+                mS->size_snapshots +=
+                    (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? val_entry_it->second[i].to_string().size() : 8);
+            }
         }        
 
         void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
             string type = get_record_type(rec);
             
-            if      (type == "node")
-                ++mS->n_nodes;
-            else if (type == "ctx")
+            if      (type == "node") {
+                auto id_entry_it = rec.find("id");
+
+                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
+                    process_node(db, db.node(id_entry_it->second.front().to_id()));
+            } else if (type == "ctx")
                 process_snapshot(db, rec);
         }
     };

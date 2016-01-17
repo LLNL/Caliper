@@ -74,7 +74,7 @@ public:
     //
 
     const Node* node(cali_id_t id) const;
-    Attribute   attribute(cali_id_t id);
+    Attribute   attribute(cali_id_t id) const;
 };
 
 }

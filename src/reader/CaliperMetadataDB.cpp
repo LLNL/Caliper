@@ -206,7 +206,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return rec;
     }
 
-    Attribute attribute(cali_id_t id) {
+    Attribute attribute(cali_id_t id) const {
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
@@ -277,7 +277,7 @@ CaliperMetadataDB::node(cali_id_t id) const
 }
 
 Attribute
-CaliperMetadataDB::attribute(cali_id_t id)
+CaliperMetadataDB::attribute(cali_id_t id) const
 {
     return mP->attribute(id);
 }
