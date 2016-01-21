@@ -234,26 +234,27 @@ void
 cb_event_control(uint64_t command, uint64_t modifier)
 {
     // Should react to enable / disable measurement commands.
-    if ( command == 1 ) // Start or restart monitoring
+    switch (command)
     {
-	if ( perm_off == false && enable_ompt == false) {
-		enable_ompt = true;
-	}
-    }
-    else if ( command == 2 ) // Pause monitoring
-    {
-	if ( enable_ompt == true ) {
+	    case 1 : // Start or restart monitoring
+		if ( perm_off == false && enable_ompt == false) {
+			enable_ompt = true;
+		}
+		break;
+	    case 2 : // Pause monitoring
+		if ( enable_ompt == true ) {
+			enable_ompt = false;
+		}
+		break;
+	    case 3 : // Flush buffers and continue monitoring
+		// To be iplemented if a case arises where we would want to do this.
+		break;
+	    case 4 : // Permanently turn off monitoring
+	    	perm_off = true;
 		enable_ompt = false;
-	}
-    }
-    else if ( command == 3 ) // Flush buffers and continue monitoring
-    {
-
-    }
-    else if ( command == 4 ) // Permanently turn off monitoring
-    {
-    	perm_off = true;
-	enable_ompt = false;
+		break;
+	    default :
+		break;
     }
 		    
 }
