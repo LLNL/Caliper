@@ -42,7 +42,6 @@ endif(LIBCURL_FOUND)
 if (Mitos_FOUND)
   add_subdirectory(mitos)
 endif()
-
 add_subdirectory(debug)
 add_subdirectory(env)
 add_subdirectory(git)
