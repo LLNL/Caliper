@@ -79,16 +79,16 @@ static void sample_handler(perf_event_sample *sample, void *args) {
     fresh_sample = true;
 
     // Cush context to invoke push_sample
-    Caliper *c = Caliper::instance();
+    Caliper c = Caliper::instance();
 
     if (c == NULL) {
         std::cerr << "Null Caliper instance!\n";
     } else {
-        c->push_snapshot(CALI_SCOPE_THREAD);
+        c->push_snapshot(CALI_SCOPE_THREAD, nullptr);
     }
 }
 
-void push_sample(Caliper* c, int scope, Snapshot* sbuf) {
+void push_sample(Caliper* c, int scope, Entry *entry, Snapshot* sbuf) {
     if (!fresh_sample) {
         return;
     }
