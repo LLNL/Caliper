@@ -44,6 +44,8 @@
 
 using namespace std;
 
+
+
 void begin_foo_op()
 {
     // Begin "foo"->"fooing" and keep it alive past the end of the current C++ scope
@@ -82,6 +84,27 @@ void make_hierarchy_2()
     };
 
     c.set_path(attr, 3, data);
+}
+
+void test_annotation_copy()
+{
+    cali::Annotation ann("copy_ann_1");
+
+    ann.begin("outer");
+
+    {
+        std::vector<cali::Annotation> vec;
+        
+        vec.push_back(ann);
+        vec.push_back(cali::Annotation("copy_ann_2"));
+
+        for (cali::Annotation& a : vec) {
+            a.begin("inner");
+            a.end();
+        }
+    }
+    
+    ann.end();    
 }
 
 int main(int argc, char* argv[])
@@ -135,6 +158,13 @@ int main(int argc, char* argv[])
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
 
+    {
+        cali::Annotation::Guard
+            g_misc( phase.begin("misc") );
+
+        test_annotation_copy();
+    }
+    
     {
         phase.begin("finalize");
 
