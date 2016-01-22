@@ -39,7 +39,7 @@ endif()
 if (LIBCURL_FOUND)
   add_subdirectory(netout)
 endif(LIBCURL_FOUND)
-if (MITOS_FOUND)
+if (Mitos_FOUND)
   add_subdirectory(mitos)
 endif()
 
