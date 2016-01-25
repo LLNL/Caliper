@@ -62,7 +62,10 @@ namespace
         "# [thread-trace]\n"
         "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
         "# [mpi-trace]\n"
-        "CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace\n";
+        "CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace\n"
+        "# [load-sampling]\n"
+        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:mitos\n"
+        "CALI_LOG_VERBOSITY=2\n";
 
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string
