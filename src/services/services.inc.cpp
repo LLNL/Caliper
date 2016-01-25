@@ -43,6 +43,9 @@ extern CaliperService CallpathService;
 #ifdef CALIPER_HAVE_PAPI
 extern CaliperService PapiService;
 #endif
+#ifdef CALIPER_HAVE_MITOS
+extern CaliperService MitosService;
+#endif
 extern CaliperService DebugService;
 extern CaliperService EnvironmentInfoService;
 extern CaliperService EventTriggerService;
@@ -65,6 +68,9 @@ const CaliperService caliper_services[] = {
 #endif
 #ifdef CALIPER_HAVE_PAPI
     PapiService,
+#endif
+#ifdef CALIPER_HAVE_MITOS
+    MitosService,
 #endif
     DebugService,
     EnvironmentInfoService,
