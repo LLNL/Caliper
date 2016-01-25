@@ -76,19 +76,18 @@ static void sample_handler(perf_event_sample *sample, void *args) {
     // Copy to global static sample
     memcpy(&static_sample,sample,sizeof(perf_event_sample));
 
+    // TODO: handle the case where push_sample happens right after this line
+    // e.g.
+    // fresh_sample = true; // thread 1, from here
+    // fresh_sample = false; // thread 2, from push_sample
     fresh_sample = true;
 
-    // Cush context to invoke push_sample
-    Caliper c = Caliper::instance();
-
-    if (c == NULL) {
-        std::cerr << "Null Caliper instance!\n";
-    } else {
-        c->push_snapshot(CALI_SCOPE_THREAD, nullptr);
-    }
+    // Push context to invoke push_sample
+    Caliper c;
+    c.push_snapshot(CALI_SCOPE_THREAD, nullptr);
 }
 
-void push_sample(Caliper* c, int scope, Entry *entry, Snapshot* sbuf) {
+void push_sample(Caliper* c, int scope, const Entry *entry, Snapshot* sbuf) {
     if (!fresh_sample) {
         return;
     }
