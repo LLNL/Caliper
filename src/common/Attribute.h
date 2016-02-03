@@ -62,6 +62,10 @@ class Attribute
 
 public:
 
+    constexpr Attribute()
+        : m_node(0), m_keys(0)
+        { }
+
     cali_id_t      id() const;
 
     std::string    name() const;

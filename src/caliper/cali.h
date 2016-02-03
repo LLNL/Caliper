@@ -68,6 +68,29 @@ cali_create_attribute(const char*     name,
                       int             properties);
 
 /**
+ * Create an attribute with additional metadata. 
+ * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
+ * the \param meta_attr_list, \param meta_val_list, and \param meta_size_list.
+ * \param name Name of the attribute
+ * \param type Type of the attribute
+ * \param properties Attribute properties
+ * \param n Number of metadata entries
+ * \param meta_attr_list Attribute IDs of the metadata entries
+ * \param meta_val_list  Pointers to values of the metadata entries
+ * \param meta_size_list Sizes (in bytes) of the metadata values
+ * \return Attribute id
+ */
+
+cali_id_t
+cali_create_attribute_with_metadata(const char*     name,
+                                    cali_attr_type  type,
+                                    int             properties,
+                                    int             n,
+                                    const cali_id_t meta_attr_list[],
+                                    const void*     meta_val_list[],
+                                    const size_t    meta_size_list[]);
+  
+/**
  * Find attribute by name 
  * \param name Name of attribute
  * \return Attribute ID, or CALI_INV_ID if attribute was not found

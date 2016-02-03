@@ -83,11 +83,38 @@ void test_mismatch()
   cali_end_attr("cali-test-c.experiment");
 }
 
+void test_metadata()
+{
+  cali_begin_attr_str("cali-test-c.experiment", "metadata");
+
+  cali_id_t meta_str_attr =
+    cali_create_attribute("meta-string-attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+  cali_id_t meta_int_attr =
+    cali_create_attribute("meta-int-attr",    CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
+
+  int64_t     meta_i = 77;
+  const char* meta_s = "metastring";
+    
+  cali_id_t   meta_attr[2] = { meta_str_attr,  meta_int_attr   };
+  const void* meta_vals[2] = { meta_s,         &meta_i         };
+  size_t      meta_size[2] = { strlen(meta_s), sizeof(int64_t) };
+
+  cali_id_t attr =
+    cali_create_attribute_with_metadata("metatest.attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                                        2, meta_attr, meta_vals, meta_size);
+
+  cali_set_str(attr, "testing");
+  cali_end(attr);
+  
+  cali_end_attr("cali-test-c.experiment");
+}
+
 int main(int argc, char* argv[])
 {
   test_attr_by_name();
   test_attr();
   test_mismatch();
+  test_metadata();
   
   return 0;
 }
