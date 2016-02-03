@@ -66,20 +66,97 @@ cali_push_context(int scope)
 //
 
 cali_err
-cali_begin(cali_id_t attr_id, const void* value, size_t size)
+cali_begin(cali_id_t, const void*, size_t)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_end(cali_id_t attr_id)
+cali_end(cali_id_t)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set(cali_id_t attr_id, const void* value, size_t size)
+cali_set(cali_id_t, const void*, size_t)
 {
     return CALI_SUCCESS;
 }
 
+cali_err  
+cali_begin_dbl(cali_id_t, double)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err  
+cali_begin_int(cali_id_t, int)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err  
+cali_begin_str(cali_id_t, const char*)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err  
+cali_set_dbl(cali_id_t, double)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err  
+cali_set_int(cali_id_t, int)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err  
+cali_set_str(cali_id_t, const char*)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_begin_attr_dbl(const char*, double)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_begin_attr_int(const char*, int)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_begin_attr_str(const char*, const char*)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_set_attr_dbl(const char*, double)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_set_attr_int(const char*, int)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_set_attr_str(const char*, const char*)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_end_attr(const char* )
+{
+    return CALI_SUCCESS;
+}
