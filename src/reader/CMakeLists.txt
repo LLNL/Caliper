@@ -17,7 +17,7 @@ add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
 target_link_libraries(caliper-reader caliper-common)
 
-install(FILES ${CALIPER_READER_HEADERS} DESTINATION include)
+install(FILES ${CALIPER_READER_HEADERS} DESTINATION include/caliper)
 
 install(TARGETS caliper-reader 
   EXPORT caliper

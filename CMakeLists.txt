@@ -77,7 +77,7 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake DESTINATION share/cmake
 install(EXPORT caliper                                   DESTINATION share/cmake/caliper)
 
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper)
 
 add_subdirectory(doc)
 add_subdirectory(src)

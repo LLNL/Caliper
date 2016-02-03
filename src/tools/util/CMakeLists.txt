@@ -5,7 +5,7 @@ set(CALIPER_TOOLS_UTIL_HEADERS
 
 add_library(caliper-tools-util ${CALIPER_TOOLS_UTIL_SOURCES})
 
-install(FILES ${CALIPER_TOOLS_UTIL_HEADERS} DESTINATION include)
+install(FILES ${CALIPER_TOOLS_UTIL_HEADERS} DESTINATION include/caliper)
 
 install(TARGETS caliper-tools-util 
   EXPORT caliper
