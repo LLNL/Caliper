@@ -271,13 +271,13 @@ void timestamp_service_register(Caliper* c)
     record_duration  = config.get("snapshot_duration").to_bool();
     record_offset    = config.get("offset").to_bool();
     record_timestamp = config.get("timestamp").to_bool();
-    record_inclusive = config.get("inclusive_duration").to_bool();
+    record_phases    = config.get("inclusive_duration").to_bool();
 
     Attribute unit_attr = c->create_attribute("time.unit", CALI_TYPE_STRING);
     Variant   usec_val  = Variant(CALI_TYPE_STRING, "usec", 4);
     Variant   sec_val   = Variant(CALI_TYPE_STRING, "sec",  3);
     
-    int hide_offset  = ((record_duration || record_inclusive) && !record_offset ? CALI_ATTR_HIDDEN : 0);
+    int hide_offset  = ((record_duration || record_phases) && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
     timestamp_attr = 
         c->create_attribute("time.timestamp",   CALI_TYPE_UINT, 
