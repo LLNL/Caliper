@@ -378,7 +378,8 @@ Caliper::release_scope(Caliper::Scope* s)
 // --- Attribute interface
 
 Attribute 
-Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop)
+Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
+                          int meta, const Attribute* meta_attr, const Variant* meta_val)
 {
     assert(mG != 0);
     
@@ -402,16 +403,19 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     if (!node) {
         assert(type >= 0 && type <= CALI_MAXTYPE);
-        Node* type_node = mG->tree.type_node(type);
-        assert(type_node);
+        node = mG->tree.type_node(type);
+        assert(node);
+
+        if (meta > 0)
+            node = mG->tree.get_path(meta, meta_attr, meta_val, node, &mG->process_scope->mempool);
 
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
-        Variant   data[2] { { prop }, { CALI_TYPE_STRING, name.c_str(), name.size() } };
+        Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
         if (prop == CALI_ATTR_DEFAULT)
-            node = mG->tree.get_path(1, &attr[1], &data[1], type_node, &mG->process_scope->mempool);
+            node = mG->tree.get_path(1, &attr[1], &data[1], node, &mG->process_scope->mempool);
         else
-            node = mG->tree.get_path(2, &attr[0], &data[0], type_node, &mG->process_scope->mempool);
+            node = mG->tree.get_path(2, &attr[0], &data[0], node, &mG->process_scope->mempool);
 
         if (node) {
             // Check again if attribute already exists; might have been created by 

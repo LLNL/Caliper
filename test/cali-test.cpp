@@ -86,8 +86,28 @@ void make_hierarchy_2()
     c.set_path(attr, 3, data);
 }
 
+void test_blob()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("binary-blob-test") );
+
+    // An annotation with a user-defined datatype
+
+    struct my_weird_type {
+        unsigned u = 42;
+        char     c = 'c';
+        float    f = 42.42;
+    } my_weird_elem;
+
+    cali::Annotation::Guard 
+        g_mydata( cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem)) );
+}
+
 void test_annotation_copy()
 {
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("annotation-copy") );
+
     cali::Annotation ann("copy_ann_1");
 
     ann.begin("outer");
@@ -107,6 +127,34 @@ void test_annotation_copy()
     ann.end();    
 }
 
+void test_attribute_metadata()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("attribute-metadata") );
+
+    cali::Caliper   c;
+
+    cali::Attribute meta_attr[2] = {
+        c.create_attribute("meta-string", CALI_TYPE_STRING),
+        c.create_attribute("meta-int",    CALI_TYPE_INT)
+    };
+    cali::Variant   meta_data[2] = {
+        cali::Variant(CALI_TYPE_STRING, "metatest", 8),
+        cali::Variant(42)
+    };
+
+    cali::Attribute attr =
+        c.create_attribute("metadata-test-attr", CALI_TYPE_INT, CALI_ATTR_DEFAULT,
+                           2, meta_attr, meta_data);
+
+    c.set(attr, cali::Variant(1337));
+
+    if (attr.get(c.get_attribute("meta-int")).to_int() != 42)
+        std::cout << "Attribute metadata mismatch";
+    
+    c.end(attr);
+}
+
 int main(int argc, char* argv[])
 {
     // Declare "phase" annotation
@@ -117,17 +165,8 @@ int main(int argc, char* argv[])
 
     int count = argc > 1 ? atoi(argv[1]) : 4;
 
-    // An annotation with a user-defined datatype
-
-    struct my_weird_type {
-        unsigned u = 42;
-        char     c = 'c';
-        float    f = 42.42;
-    } my_weird_elem;
-
-    cali::Annotation::Guard 
-        g_mydata( cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem)) );
-
+    test_blob();
+    
     // A hierarchy to test the Caliper::set_path() API call
     make_hierarchy_1();
 
@@ -158,12 +197,8 @@ int main(int argc, char* argv[])
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
 
-    {
-        cali::Annotation::Guard
-            g_misc( phase.begin("misc") );
-
-        test_annotation_copy();
-    }
+    test_annotation_copy();
+    test_attribute_metadata();
     
     {
         phase.begin("finalize");
