@@ -82,7 +82,7 @@ std::mutex         offset_attributes_mutex;
 OffsetAttributeMap offset_attributes;
 
 static const ConfigSet::Entry s_configdata[] = {
-    { "snapshot_duration", CALI_TYPE_BOOL, "true",
+    { "snapshot_duration", CALI_TYPE_BOOL, "false",
       "Include duration of snapshot epoch with each context record",
       "Include duration of snapshot epoch with each context record"
     },
@@ -94,9 +94,9 @@ static const ConfigSet::Entry s_configdata[] = {
       "Include absolute timestamp (POSIX time) with each context record",
       "Include absolute timestamp (POSIX time) with each context record"
     },
-    { "phase_duration", CALI_TYPE_BOOL, "true",
-      "Record begin/end phase durations.",
-      "Record begin/end phase durations."
+    { "inclusive_duration", CALI_TYPE_BOOL, "true",
+      "Record inclusive duration of begin/end phases.",
+      "Record inclusive duration of begin/end phases."
     },
     ConfigSet::Terminator
 };
@@ -271,22 +271,30 @@ void timestamp_service_register(Caliper* c)
     record_duration  = config.get("snapshot_duration").to_bool();
     record_offset    = config.get("offset").to_bool();
     record_timestamp = config.get("timestamp").to_bool();
-    record_phases    = config.get("phase_duration").to_bool();
+    record_inclusive = config.get("inclusive_duration").to_bool();
 
-    int hide_offset  = ((record_duration || record_phases) && !record_offset ? CALI_ATTR_HIDDEN : 0);
+    Attribute unit_attr = c->create_attribute("time.unit", CALI_TYPE_STRING);
+    Variant   usec_val  = Variant(CALI_TYPE_STRING, "usec", 4);
+    Variant   sec_val   = Variant(CALI_TYPE_STRING, "sec",  3);
+    
+    int hide_offset  = ((record_duration || record_inclusive) && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
     timestamp_attr = 
         c->create_attribute("time.timestamp",   CALI_TYPE_UINT, 
-                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
+                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS,
+                            1, &unit_attr, &sec_val);
     timeoffs_attr = 
         c->create_attribute("time.offset",      CALI_TYPE_UINT, 
-                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS | hide_offset);
+                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS | hide_offset,
+                            1, &unit_attr, &usec_val);
     snapshot_duration_attr = 
         c->create_attribute("time.duration",    CALI_TYPE_UINT, 
-                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS);
+                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS,
+                            1, &unit_attr, &usec_val);
     phase_duration_attr = 
-        c->create_attribute("time.phase.duration", CALI_TYPE_UINT, 
-                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS);
+        c->create_attribute("time.inclusive.duration", CALI_TYPE_UINT, 
+                            CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS,
+                            1, &unit_attr, &usec_val);
 
     c->set(timeoffs_attr, Variant(static_cast<unsigned>(0)));
 
