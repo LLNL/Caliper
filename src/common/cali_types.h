@@ -94,6 +94,7 @@ typedef enum {
   CALI_EBUSY,
   CALI_ELOCKED,
   CALI_EINV,
+  CALI_ETYPE
 } cali_err;
 
 #ifdef __cplusplus

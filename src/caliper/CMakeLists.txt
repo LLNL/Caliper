@@ -26,7 +26,7 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper ${_extlib})
 endforeach()
 
-install(FILES ${CALIPER_HEADERS} DESTINATION include)
+install(FILES ${CALIPER_HEADERS} DESTINATION include/caliper)
 
 install(TARGETS caliper 
   EXPORT caliper 

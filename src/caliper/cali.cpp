@@ -39,6 +39,7 @@
 
 #include <Variant.h>
 
+#include <cstring>
 #include <unordered_map>
 #include <mutex>
 
@@ -64,7 +65,7 @@ namespace
     }
 
     Attribute 
-    lookup_attribute(Caliper* c, cali_id_t attr_id) {
+    lookup_attribute(Caliper& c, cali_id_t attr_id) {
         Attribute attr { Attribute::invalid };
 
         std::lock_guard<std::mutex> lock(attr_map_mutex);
@@ -73,7 +74,7 @@ namespace
         if (f != attr_map.end()) { 
             attr = f->second;
         } else {
-            attr = c->get_attribute(attr_id);
+            attr = c.get_attribute(attr_id);
 
             if (!(attr == Attribute::invalid))
                 attr_map.insert(std::make_pair(attr_id, attr));
@@ -98,6 +99,41 @@ cali_create_attribute(const char* name, cali_attr_type type, int properties)
 }
 
 cali_id_t
+cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int properties,
+                                    int n,
+                                    const cali_id_t meta_attr_list[],
+                                    const void* meta_val_list[],
+                                    const size_t meta_size_list[])
+{
+    if (n < 1)
+        return cali_create_attribute(name, type, properties);
+
+    Caliper    c;
+
+    Attribute* meta_attr = new Attribute[n];
+    Variant*   meta_data = new Variant[n];
+
+    for (int i = 0; i < n; ++i) {
+        meta_attr[i] = ::lookup_attribute(c, meta_attr_list[i]);
+
+        if (meta_attr[i] == Attribute::invalid)
+            continue;
+
+        meta_data[i] = Variant(meta_attr[i].type(), meta_val_list[i], meta_size_list[i]);
+    }
+
+    Attribute attr =
+        c.create_attribute(name, type, properties, n, meta_attr, meta_data);
+    
+    ::store_attribute(attr);
+
+    delete[] meta_data;
+    delete[] meta_attr;
+
+    return attr.id();
+}
+
+cali_id_t
 cali_find_attribute(const char* name)
 {
     Attribute a = Caliper::instance().get_attribute(name);
@@ -118,32 +154,14 @@ cali_push_context(int scope)
 }
 
 //
-// --- Environment interface
-//
-
-// void*
-// cali_current_contextbuffer(cali_context_scope_t st)
-// {
-//     return Caliper::instance().scope(scope);
-// }
-
-// cali_err
-// cali_create_contextbuffer(cali_context_scope_t scope, void **new_env)
-// {
-//     *new_env = Caliper::instance()->create_contextbuffer(scope);
-//     return CALI_SUCCESS;
-// }
-
-
-//
-// --- Annotationc interface
+// --- Annotation interface
 //
 
 cali_err
 cali_begin(cali_id_t attr_id, const void* value, size_t size)
 {
     Caliper   c;
-    Attribute attr = ::lookup_attribute(&c, attr_id);
+    Attribute attr = ::lookup_attribute(c, attr_id);
 
     return c.begin(attr, Variant(attr.type(), value, size));
 }
@@ -152,7 +170,7 @@ cali_err
 cali_end(cali_id_t attr_id)
 {
     Caliper   c;
-    Attribute attr = ::lookup_attribute(&c, attr_id);
+    Attribute attr = ::lookup_attribute(c, attr_id);
 
     return c.end(attr);
 }
@@ -161,8 +179,170 @@ cali_err
 cali_set(cali_id_t attr_id, const void* value, size_t size)
 {
     Caliper   c;
-    Attribute attr = ::lookup_attribute(&c, attr_id);
+    Attribute attr = ::lookup_attribute(c, attr_id);
 
     return c.set(attr, Variant(attr.type(), value, size));
 }
 
+cali_err
+cali_begin_dbl(cali_id_t attr_id, double val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_DOUBLE)
+        return CALI_ETYPE;
+
+    return c.begin(attr, Variant(val));
+}
+
+cali_err
+cali_begin_int(cali_id_t attr_id, int val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_INT)
+        return CALI_ETYPE;
+
+    return c.begin(attr, Variant(val));
+}
+
+cali_err
+cali_begin_str(cali_id_t attr_id, const char* val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_STRING)
+        return CALI_ETYPE;
+
+    return c.begin(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+}
+
+cali_err
+cali_set_dbl(cali_id_t attr_id, double val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_DOUBLE)
+        return CALI_ETYPE;
+
+    return c.set(attr, Variant(val));
+}
+
+cali_err
+cali_set_int(cali_id_t attr_id, int val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_INT)
+        return CALI_ETYPE;
+
+    return c.set(attr, Variant(val));
+}
+
+cali_err
+cali_set_str(cali_id_t attr_id, const char* val)
+{
+    Caliper   c;
+    Attribute attr = ::lookup_attribute(c, attr_id);
+
+    if (attr.type() != CALI_TYPE_STRING)
+        return CALI_ETYPE;
+
+    return c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+}
+
+//
+// --- By-name annotation interface 
+//
+
+cali_err
+cali_begin_attr_dbl(const char* attr_name, double val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_DOUBLE)
+        return CALI_EINV;
+
+    return c.begin(attr, Variant(val));
+}
+
+cali_err
+cali_begin_attr_int(const char* attr_name, int val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_INT)
+        return CALI_EINV;
+
+    return c.begin(attr, Variant(val));
+}
+
+cali_err
+cali_begin_attr_str(const char* attr_name, const char* val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_STRING)
+        return CALI_EINV;
+
+    return c.begin(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+}
+
+cali_err
+cali_set_attr_dbl(const char* attr_name, double val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_DOUBLE)
+        return CALI_EINV;
+
+    return c.set(attr, Variant(val));
+}
+
+cali_err
+cali_set_attr_int(const char* attr_name, int val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_INT)
+        return CALI_EINV;
+
+    return c.set(attr, Variant(val));
+}
+
+cali_err
+cali_set_attr_str(const char* attr_name, const char* val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid || attr.type() != CALI_TYPE_STRING)
+        return CALI_EINV;
+
+    return c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+}
+
+cali_err
+cali_end_attr(const char* attr_name)
+{
+    Caliper   c;
+    Attribute attr = c.get_attribute(attr_name);
+
+    return c.end(attr);
+}

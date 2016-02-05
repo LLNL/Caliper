@@ -54,8 +54,6 @@ class Annotation
     struct Impl;
     Impl*  pI;
 
-    Annotation(const Annotation&);
-    Annotation& operator = (const Annotation&);
 
 public:
 
@@ -64,9 +62,13 @@ public:
 
     Annotation(const char* name, int opt = 0);
 
+    Annotation(const Annotation&);
+
     ~Annotation();
 
+    Annotation& operator = (const Annotation&);
 
+    
     /// \brief Scope guard to automatically \c end() an annotation at the end of
     ///   the C++ scope.
 

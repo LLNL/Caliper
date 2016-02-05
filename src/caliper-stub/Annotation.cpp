@@ -59,10 +59,18 @@ Annotation::Annotation(const char* name, int opt)
     : pI(0)
 { }
 
+Annotation::Annotation(const Annotation&)
+    : pI(0)
+{ }
+
 Annotation::~Annotation()
 {
 }
 
+Annotation& Annotation::operator = (const Annotation&)
+{
+    return *this;
+}
 
 // --- begin() overloads
 

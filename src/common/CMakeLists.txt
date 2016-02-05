@@ -14,7 +14,7 @@ set(CALIPER_UTIL_HEADERS
     util/callback.hpp
     util/list.hpp
     util/split.hpp
-    util/tree.hpp)
+    util/lockfree-tree.hpp)
 
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
@@ -31,8 +31,8 @@ add_subdirectory(csv)
 
 add_library(caliper-common $<TARGET_OBJECTS:caliper-csv> ${CALIPER_COMMON_SOURCES})
 
-install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include)
-install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/util)
+install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include/caliper)
+install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/caliper/util)
 
 install(TARGETS caliper-common 
   EXPORT caliper

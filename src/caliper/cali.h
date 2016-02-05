@@ -68,6 +68,29 @@ cali_create_attribute(const char*     name,
                       int             properties);
 
 /**
+ * Create an attribute with additional metadata. 
+ * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
+ * the \param meta_attr_list, \param meta_val_list, and \param meta_size_list.
+ * \param name Name of the attribute
+ * \param type Type of the attribute
+ * \param properties Attribute properties
+ * \param n Number of metadata entries
+ * \param meta_attr_list Attribute IDs of the metadata entries
+ * \param meta_val_list  Pointers to values of the metadata entries
+ * \param meta_size_list Sizes (in bytes) of the metadata values
+ * \return Attribute id
+ */
+
+cali_id_t
+cali_create_attribute_with_metadata(const char*     name,
+                                    cali_attr_type  type,
+                                    int             properties,
+                                    int             n,
+                                    const cali_id_t meta_attr_list[],
+                                    const void*     meta_val_list[],
+                                    const size_t    meta_size_list[]);
+  
+/**
  * Find attribute by name 
  * \param name Name of attribute
  * \return Attribute ID, or CALI_INV_ID if attribute was not found
@@ -78,24 +101,7 @@ cali_find_attribute  (const char* name);
 
 
 /*
- * --- Environment -----------------------------------------------------
- */
-
-/**
- * Get the environment handle of the execution scope \param scope in which
- * this function is called
- * \return Environment handle
- */
-
-/* void* */
-/* cali_current_contextbuffer(cali_context_scope_t scope); */
-
-/* cali_err */
-/* cali_create_contextbuffer(cali_context_scope_t scope, void **new_env); */
-
-
-/*
- * --- Context ---------------------------------------------------------
+ * --- Snapshot ---------------------------------------------------------
  */
 
 /**
@@ -108,35 +114,80 @@ void
 cali_push_snapshot(int scope);
 
 /*
- * --- Low-level instrumentation API -----------------------------------
+ * --- Instrumentation API -----------------------------------
  */
 
 /**
- * Begins scope of value \param value of size \param size for 
- * attribute \param attr.
- * The new value is nested under the current open scopes of \param attr. 
+ * Add \param value of size \param size for attribute \param attr to the 
+ * blackboard.
+ * The new value is nested under the current value of \param attr. 
  */
 cali_err
-cali_begin    (cali_id_t   attr, 
-               const void* value,
-               size_t      size);
+cali_begin(cali_id_t   attr, 
+           const void* value,
+           size_t      size);
+
+cali_err  
+cali_begin_dbl(cali_id_t attr, double val);
+cali_err  
+cali_begin_int(cali_id_t attr, int val);
+cali_err  
+cali_begin_str(cali_id_t attr, const char* val);
 
 /**
- * Ends scope of the innermost value for attribute \param attr.
+ * Remove innermost value for attribute \param attr from the blackboard.
  */
 
 cali_err
-cali_end      (cali_id_t   attr);
+cali_end  (cali_id_t   attr);
 
 /**
- * Ends scope of the current innermost value and begins scope of \param value 
- * of size \param size for attribute \param attr.
+ * Change current innermost value on the blackboard for attribute \param attr 
+ * to \param value with size \param size
  */
 
 cali_err  
-cali_set      (cali_id_t   attr, 
-               const void* value,
-               size_t      size);
+cali_set  (cali_id_t   attr, 
+           const void* value,
+           size_t      size);
+
+cali_err  
+cali_set_dbl(cali_id_t attr, double val);
+cali_err  
+cali_set_int(cali_id_t attr, int val);
+cali_err  
+cali_set_str(cali_id_t attr, const char* val);
+
+/**
+ * Add \param value for the attribute with the name \param attr_name to the 
+ * blackboard.
+ */
+
+cali_err
+cali_begin_attr_dbl(const char* attr_name, double val);
+cali_err
+cali_begin_attr_int(const char* attr_name, int val);
+cali_err
+cali_begin_attr_str(const char* attr_name, const char* val);
+
+/**
+ * Change the value of attribute with the name \param attr_name to \param value 
+ * on the blackboard.
+ */
+
+cali_err
+cali_set_attr_dbl(const char* attr_name, double val);
+cali_err
+cali_set_attr_int(const char* attr_name, int val);
+cali_err
+cali_set_attr_str(const char* attr_name, const char* val);
+
+/**
+ * Remove innermost value for attribute \param attr from the blackboard.
+ */
+
+cali_err
+cali_end_attr(const char* attr_name);
 
 #ifdef __cplusplus
 } // extern "C"

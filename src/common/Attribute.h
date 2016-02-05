@@ -40,6 +40,8 @@
 
 #include "cali_types.h"
 
+#include "Variant.h"
+
 #include <string>
 
 namespace cali
@@ -60,12 +62,20 @@ class Attribute
 
 public:
 
+    constexpr Attribute()
+        : m_node(0), m_keys(0)
+        { }
+
     cali_id_t      id() const;
 
     std::string    name() const;
     cali_attr_type type() const;
 
     int            properties() const;
+
+    const Node*    node() const {
+        return m_node;
+    }
 
     bool store_as_value() const { 
         return properties() & CALI_ATTR_ASVALUE; 
@@ -80,6 +90,8 @@ public:
         return properties() & CALI_ATTR_HIDDEN;
     }
 
+    Variant        get(const Attribute& attr) const;
+    
     static Attribute make_attribute(const Node* node, const MetaAttributeIDs* keys);
 
     // RecordMap record() const;

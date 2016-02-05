@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.0)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)
-set(CALIPER_MINOR_VERSION 2)
+set(CALIPER_MINOR_VERSION 3)
 set(CALIPER_PATCH_VERSION 0)
 set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}")
 
@@ -85,7 +85,7 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake DESTINATION share/cmake
 install(EXPORT caliper                                   DESTINATION share/cmake/caliper)
 
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper)
 
 add_subdirectory(doc)
 add_subdirectory(src)

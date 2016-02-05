@@ -147,6 +147,16 @@ Attribute::properties() const
     return CALI_ATTR_DEFAULT;
 }
 
+Variant
+Attribute::get(const Attribute& attr) const
+{
+    for (const Node* node = m_node; node; node = node->parent())
+        if (node->attribute() == attr.id())
+            return node->data();
+
+    return Variant();
+}
+
 const MetaAttributeIDs MetaAttributeIDs::invalid { CALI_INV_ID, CALI_INV_ID, CALI_INV_ID };
 
 const Attribute Attribute::invalid { 0, 0 };

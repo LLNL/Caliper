@@ -44,6 +44,8 @@
 
 using namespace std;
 
+
+
 void begin_foo_op()
 {
     // Begin "foo"->"fooing" and keep it alive past the end of the current C++ scope
@@ -84,15 +86,10 @@ void make_hierarchy_2()
     c.set_path(attr, 3, data);
 }
 
-int main(int argc, char* argv[])
+void test_blob()
 {
-    // Declare "phase" annotation
-    cali::Annotation phase("phase");
-
-    // Begin scope of phase->"main"
-    cali::Annotation::Guard ann_main( phase.begin("main") );
-
-    int count = argc > 1 ? atoi(argv[1]) : 4;
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("binary-blob-test") );
 
     // An annotation with a user-defined datatype
 
@@ -104,7 +101,72 @@ int main(int argc, char* argv[])
 
     cali::Annotation::Guard 
         g_mydata( cali::Annotation("mydata").set(CALI_TYPE_USR, &my_weird_elem, sizeof(my_weird_elem)) );
+}
 
+void test_annotation_copy()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("annotation-copy") );
+
+    cali::Annotation ann("copy_ann_1");
+
+    ann.begin("outer");
+
+    {
+        std::vector<cali::Annotation> vec;
+        
+        vec.push_back(ann);
+        vec.push_back(cali::Annotation("copy_ann_2"));
+
+        for (cali::Annotation& a : vec) {
+            a.begin("inner");
+            a.end();
+        }
+    }
+    
+    ann.end();    
+}
+
+void test_attribute_metadata()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("attribute-metadata") );
+
+    cali::Caliper   c;
+
+    cali::Attribute meta_attr[2] = {
+        c.create_attribute("meta-string", CALI_TYPE_STRING),
+        c.create_attribute("meta-int",    CALI_TYPE_INT)
+    };
+    cali::Variant   meta_data[2] = {
+        cali::Variant(CALI_TYPE_STRING, "metatest", 8),
+        cali::Variant(42)
+    };
+
+    cali::Attribute attr =
+        c.create_attribute("metadata-test-attr", CALI_TYPE_INT, CALI_ATTR_DEFAULT,
+                           2, meta_attr, meta_data);
+
+    c.set(attr, cali::Variant(1337));
+
+    if (attr.get(c.get_attribute("meta-int")).to_int() != 42)
+        std::cout << "Attribute metadata mismatch";
+    
+    c.end(attr);
+}
+
+int main(int argc, char* argv[])
+{
+    // Declare "phase" annotation
+    cali::Annotation phase("phase");
+
+    // Begin scope of phase->"main"
+    cali::Annotation::Guard ann_main( phase.begin("main") );
+
+    int count = argc > 1 ? atoi(argv[1]) : 4;
+
+    test_blob();
+    
     // A hierarchy to test the Caliper::set_path() API call
     make_hierarchy_1();
 
@@ -135,6 +197,9 @@ int main(int argc, char* argv[])
         // "loop", "loopcount" and "iteration" annotations implicitly end here 
     }
 
+    test_annotation_copy();
+    test_attribute_metadata();
+    
     {
         phase.begin("finalize");
 

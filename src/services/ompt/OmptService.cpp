@@ -71,8 +71,10 @@ const ConfigSet::Entry configdata[] = {
 
 volatile bool                    finished    { false };
 bool                             enable_ompt { false };
+bool				 perm_off    { false };
 Attribute                        thread_attr { Attribute::invalid };
 Attribute                        state_attr  { Attribute::invalid };
+Attribute			 region_attr { Attribute::invalid };
 
 SigsafeRWLock                    thread_env_lock;
 map<ompt_thread_id_t, Caliper::Scope*> thread_env; ///< Thread ID -> Environment
@@ -159,12 +161,102 @@ cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         Caliper().release_scope(ctx);
 }
 
+// ompt_event_parallel_begin
+
+void
+cb_event_parallel_begin(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper c;
+		c.begin(region_attr, Variant(CALI_TYPE_STRING, "parallel", 8));
+	}	
+}
+
+// ompt_event_parallel_end
+
+void
+cb_event_parallel_end(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper c;
+		c.end(region_attr);
+	}
+}
+
+// ompt_event_idle_begin
+
+void
+cb_event_idle_begin(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper c;
+		c.begin(region_attr, Variant(CALI_TYPE_STRING, "idle", 4));
+	}	
+}
+
+// ompt_event_idle_end
+
+void
+cb_event_idle_end(ompt_thread_type_t type)
+{
+	if ( enable_ompt == true && !finished ) {
+		Caliper c;
+		c.end(region_attr);
+	}
+}
+
+
+// ompt_event_wait_barrier_begin
+
+void
+cb_event_wait_barrier_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
+{
+	if ( enable_ompt == true && !finished) {
+		Caliper c;
+		c.begin(region_attr, Variant(CALI_TYPE_STRING,"barrier",7));
+	}	
+}
+
+// ompt_event_wait_barrier_end
+
+void
+cb_event_wait_barrier_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
+{
+	if ( enable_ompt == true && !finished) {
+		Caliper c;
+		c.end(region_attr);
+	}
+}
+
 // ompt_event_control
 
 void
 cb_event_control(uint64_t command, uint64_t modifier)
 {
     // Should react to enable / disable measurement commands.
+    switch (command)
+    {
+	    case 1 : // Start or restart monitoring
+		if ( perm_off == false && enable_ompt == false) {
+			enable_ompt = true;
+		}
+		break;
+	    case 2 : // Pause monitoring
+		if ( enable_ompt == true ) {
+			enable_ompt = false;
+		}
+		break;
+	    case 3 : // Flush buffers and continue monitoring
+		// To be iplemented if a case arises where we would want to do this.
+		break;
+	    case 4 : // Permanently turn off monitoring
+	    	perm_off = true;
+		enable_ompt = false;
+		break;
+	    default :
+		break;
+    }
+		    
 }
 
 // ompt_event_runtime_shutdown
@@ -237,7 +329,13 @@ register_ompt_callbacks()
     } callbacks[] = {
         { ompt_event_thread_begin,     (ompt_callback_t) &cb_event_thread_begin     },
         { ompt_event_thread_end,       (ompt_callback_t) &cb_event_thread_end       },
-        { ompt_event_control,          (ompt_callback_t) &cb_event_control          }
+        { ompt_event_control,          (ompt_callback_t) &cb_event_control          },
+	{ ompt_event_idle_begin,       (ompt_callback_t) &cb_event_idle_begin       },
+	{ ompt_event_idle_end,         (ompt_callback_t) &cb_event_idle_end         },
+	{ ompt_event_wait_barrier_begin,  (ompt_callback_t) &cb_event_wait_barrier_begin },
+	{ ompt_event_wait_barrier_end,    (ompt_callback_t) &cb_event_wait_barrier_end   },
+	{ ompt_event_parallel_begin,      (ompt_callback_t) &cb_event_parallel_begin     },
+	{ ompt_event_parallel_end,        (ompt_callback_t) &cb_event_parallel_end       }
 //        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
     };
 
@@ -280,6 +378,9 @@ omptservice_initialize(Caliper* c)
     state_attr  =
         c->create_attribute("ompt.state",     CALI_TYPE_STRING, 
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+    region_attr =
+	c->create_attribute("ompt.region",    CALI_TYPE_STRING,
+			    CALI_ATTR_SCOPE_THREAD);
 
     if (config.get("environment_mapping").to_bool() == true)
         c->set_scope_callback(CALI_SCOPE_THREAD, &get_thread_scope);

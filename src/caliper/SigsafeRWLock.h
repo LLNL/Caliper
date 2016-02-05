@@ -39,6 +39,10 @@
 #include <pthread.h>
 #include <signal.h>
 
+//
+// NOTE: Unlike the name suggests, this isn't actually sigsafe!
+//
+
 namespace cali
 {
 

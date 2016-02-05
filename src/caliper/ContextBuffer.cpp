@@ -35,15 +35,17 @@
 
 #include "ContextBuffer.h"
 
-#include "SigsafeRWLock.h"
 #include "Snapshot.h"
 
 #include <Attribute.h>
 #include <ContextRecord.h>
 #include <Node.h>
 
+#include <util/spinlock.hpp>
+
 #include <algorithm>
 #include <cassert>
+#include <mutex>
 #include <vector>
 
 using namespace cali;
@@ -54,7 +56,7 @@ struct ContextBuffer::ContextBufferImpl
 {
     // --- data
 
-    mutable SigsafeRWLock  m_lock;
+    mutable util::spinlock m_lock;
 
     // m_attr array stores attribute ids for context nodes, hidden entries, and immediate entries
     // m_data array stores context node ids, hidden values, and immediate data
@@ -90,14 +92,12 @@ struct ContextBuffer::ContextBufferImpl
     Variant get(const Attribute& attr) const {
         Variant ret;
 
-        m_lock.rlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
         if (it != m_keys.end())
             ret = m_data[it-m_keys.begin()];
-
-        m_lock.unlock();
 
         return ret;
     }
@@ -105,7 +105,7 @@ struct ContextBuffer::ContextBufferImpl
     Node* get_node(const Attribute& attr) const {
         Node* ret = nullptr;
 
-        m_lock.rlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         auto end = m_keys.begin() + m_num_nodes;
         auto it  = std::find(m_keys.begin(), end, attr.id());
@@ -117,26 +117,24 @@ struct ContextBuffer::ContextBufferImpl
             ret = m_nodes[n];
         }
 
-        m_lock.unlock();
-
         return ret;
     }
 
     Variant exchange(const Attribute& attr, const Variant& value) {
         Variant ret;
 
-        m_lock.wlock();
+        {
+            std::lock_guard<util::spinlock> lock(m_lock);
 
-        // Only handle immediate or hidden entries for now
-        auto it = std::find(m_keys.begin() + m_num_nodes, m_keys.end(), attr.id());
+            // Only handle immediate or hidden entries for now
+            auto it = std::find(m_keys.begin() + m_num_nodes, m_keys.end(), attr.id());
 
-        if (it != m_keys.end()) {
-            ret = m_data[it-m_keys.begin()];
-            m_data[it-m_keys.begin()] = value;
+            if (it != m_keys.end()) {
+                ret = m_data[it-m_keys.begin()];
+                m_data[it-m_keys.begin()] = value;
+            }
         }
-
-        m_lock.unlock();
-
+        
         if (ret.empty())
             set(attr, value);
 
@@ -144,7 +142,7 @@ struct ContextBuffer::ContextBufferImpl
     }
 
     cali_err set(const Attribute& attr, const Variant& value) {
-        m_lock.wlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
@@ -186,8 +184,6 @@ struct ContextBuffer::ContextBufferImpl
             }
         }
 
-        m_lock.unlock();
-
         return CALI_SUCCESS;
     }
 
@@ -195,7 +191,7 @@ struct ContextBuffer::ContextBufferImpl
         if (!node || attr.store_as_value())
             return CALI_EINV;
 
-        m_lock.wlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         auto end = m_keys.begin() + m_num_nodes;
         auto it  = std::find(m_keys.begin(), end, attr.id());
@@ -234,15 +230,13 @@ struct ContextBuffer::ContextBufferImpl
             ++m_num_nodes;
         }
 
-        m_lock.unlock();
-
         return CALI_SUCCESS;
     }
 
     cali_err unset(const Attribute& attr) {
         cali_err ret = CALI_SUCCESS;
 
-        m_lock.wlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         auto it = std::find(m_keys.begin(), m_keys.end(), attr.id());
 
@@ -262,8 +256,6 @@ struct ContextBuffer::ContextBufferImpl
                 --m_num_hidden;
         }
 
-        m_lock.unlock();
-
         return ret;
     }
 
@@ -271,7 +263,7 @@ struct ContextBuffer::ContextBufferImpl
         Snapshot::Sizes     sizes = sbuf->capacity();
         Snapshot::Addresses addr  = sbuf->addresses();
 
-        m_lock.rlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         // Copy nodes entries
         int m = std::min(sizes.n_nodes, static_cast<int>(m_nodes.size()));
@@ -286,8 +278,6 @@ struct ContextBuffer::ContextBufferImpl
         std::copy_n(m_keys.begin()+n, m, addr.immediate_attr);
         std::copy_n(m_data.begin()+n, m, addr.immediate_data);
 
-        m_lock.unlock();
-
         sizes.n_attr = m;
         sizes.n_data = m;
 
@@ -295,7 +285,7 @@ struct ContextBuffer::ContextBufferImpl
     }
 
     void push_record(WriteRecordFn fn) {
-        m_lock.rlock();
+        std::lock_guard<util::spinlock> lock(m_lock);
 
         int               n[3] = { static_cast<int>(m_num_nodes), 
                                    static_cast<int>(m_attr.size()-m_num_hidden-m_num_nodes),
@@ -305,8 +295,6 @@ struct ContextBuffer::ContextBufferImpl
                                    m_data.data() + m_num_nodes + m_num_hidden };
 
         fn(ContextRecord::record_descriptor(), n, data);
-
-        m_lock.unlock();
     }
 };
 
