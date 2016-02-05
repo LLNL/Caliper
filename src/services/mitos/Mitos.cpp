@@ -62,7 +62,7 @@ ConfigSet config;
 bool      record_address { true  };
 bool      fresh_sample   { false };
 
-perf_event_sample static_sample;
+static __thread perf_event_sample static_sample;
 
 static const ConfigSet::Entry s_configdata[] = {
     { "mitos", CALI_TYPE_BOOL, "false",
