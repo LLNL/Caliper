@@ -34,12 +34,13 @@
 /// Memory pool class definition
 
 #include "MemoryPool.h"
-#include "SigsafeRWLock.h"
 
 #include <RuntimeConfig.h>
+#include <util/spinlock.hpp>
 
 #include <algorithm>
 #include <cstring>
+#include <mutex>
 #include <vector>
 
 
@@ -64,7 +65,7 @@ struct MemoryPool::MemoryPoolImpl
 
     ConfigSet                 m_config;
 
-    SigsafeRWLock             m_lock;
+    util::spinlock            m_lock;
         
     vector< Chunk<uint64_t> > m_chunks;
     size_t                    m_index;
@@ -83,6 +84,8 @@ struct MemoryPool::MemoryPoolImpl
     void* allocate(size_t bytes, bool can_expand) {
         size_t n = (bytes+sizeof(uint64_t)-1)/sizeof(uint64_t);
 
+        std::lock_guard<util::spinlock> lock(m_lock);
+        
         if (m_index == m_chunks.size() || m_chunks[m_index].wmark + n > m_chunks[m_index].size) {
             if (can_expand)
                 expand(bytes);
@@ -148,9 +151,5 @@ MemoryPool::~MemoryPool()
 
 void* MemoryPool::allocate(size_t bytes)
 {
-    mP->m_lock.wlock();
-    void* ptr = mP->allocate(bytes, mP->m_can_expand);
-    mP->m_lock.unlock();
-
-    return ptr;
+    return mP->allocate(bytes, mP->m_can_expand);
 }
