@@ -43,6 +43,7 @@
 #include <iterator>
 #include <map>
 #include <sstream>
+#include <vector>
 
 using namespace cali;
 using namespace std;
