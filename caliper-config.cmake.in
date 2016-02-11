@@ -25,7 +25,7 @@
 #
 #   find_package(caliper REQUIRED)
 #   add_executable(foo foo.c)
-#   target_link_libraries(foo caliper-component)
+#   target_link_libraries(foo caliper)
 #
 # That's all!
 #
