@@ -46,6 +46,16 @@ cali_create_attribute(const char* name, cali_attr_type type, int properties)
 }
 
 cali_id_t
+cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int properties,
+                                    int n,
+                                    const cali_id_t meta_attr_list[],
+                                    const void* meta_val_list[],
+                                    const size_t meta_size_list[])
+{
+    return CALI_INV_ID;
+}
+
+cali_id_t
 cali_find_attribute(const char* name)
 {
     return CALI_INV_ID;
