@@ -34,44 +34,57 @@
 
 #include <Annotation.h>
 
+
+void foo(int count)
+{
+    // Set phase to "foo". When called from main(), it is now 'phase:main/foo'
+    // Scope guard automatically ends 'foo' on function exit
+    
+    cali::Annotation::Guard
+        g_phase( cali::Annotation("phase").begin("foo") );
+
+    { 
+        // Create "iteration" annotation for iteration counter.
+        // To avoid adding nodes for each iteration to the context tree,
+        // we use the CALI_ATTR_ASVALUE flag to store explicit 'key:value' pairs
+        // for iteration attributes on the blackboard
+
+        cali::Annotation
+            iter_ann("iteration", CALI_ATTR_ASVALUE);
+
+        // Guard for iter_ann will automatically clear 'iteration' when leaving the scope
+
+        cali::Annotation::Guard
+            g_iter( iter_ann );
+
+        for (int i = 0; i < count; ++i)
+            // set 'iteration:<i>'
+            // Unlike begin(), set() overwrites the attribute's current value
+            // rather than appending a new one
+            iter_ann.set(i); 
+    }
+}
+
 int main(int argc, char* argv[])
 {
     // Create an annotation object for the "phase" annotation
-    cali::Annotation phase_annotation("phase");
+    cali::Annotation phase_ann("phase");
 
     // Declare begin of phase "main" 
-    phase_annotation.begin("main");
+    phase_ann.begin("main");
 
-    // Declare begin of phase "init" under "main". Thus, "phase" is now set to "main/init"
-    phase_annotation.begin("init");
+    // We can create hierarchical attribute:
+    //   here, we set 'phase:main/init'
+    phase_ann.begin("init");
+
     int count = 4;
-    // End innermost level of the phase annotation. Thus, "phase" is now set to "main"
-    phase_annotation.end();
 
-    if (count > 0) {
-        // Declare begin of phase "loop" under "main". Thus, phase is now set to "main/loop".
-        // The Guard object automatically closes this annotation level at the end
-        // of the current C++ scope.
-        cali::Annotation::Guard ann_loop( phase_annotation.begin("loop") );
+    // End 'phase:init'. Thus, 'phase' is now back at "main"
+    phase_ann.end();
 
-        // Create iteration annotation object
-        // The CALI_ATTR_ASVALUE option indicates that iteration values should be stored 
-        // explicitly in each context record. 
-        cali::Annotation iteration_annotation("iteration", CALI_ATTR_ASVALUE);
-        
-        for (int i = 0; i < count; ++i) {
-            // Set "iteration" annotation to current value of 'i'
-            iteration_annotation.set(i);
-        }
+    // Call kernel
+    foo(count);
 
-        // Explicitly end the iteration annotation. This removes the iteration values 
-        // from context records from here on. 
-        iteration_annotation.end();
-
-        // The ann_loop Guard object implicitly closes the "loop" annotation level here, 
-        // thus phase is now back to "main"
-    }
-
-    // Close level "main" of the phase annotation, thus phase is now removed from context records
-    phase_annotation.end();
+    // Close level "phase:main". The phase annotation is now removed from the blackboard
+    phase_ann.end();
 }
