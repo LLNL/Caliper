@@ -5,33 +5,25 @@
 
 #include <cali.h>
 
-#include <inttypes.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-enum phases { PHASE_MAIN = 0, PHASE_LOOP = 1 };
-const char* phase_string[] = { "main", "loop" };
-
 
 int main(int argc, char* argv[])
 {
-  cali_id_t attr_phase = cali_create_attribute("phase", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-
-  cali_begin(attr_phase, phase_string[PHASE_MAIN], strlen(phase_string[PHASE_MAIN]));
+  cali_begin_attr_str("phase", "main");
 
   int count = argc > 1 ? atoi(argv[1]) : 4;
 
-  cali_id_t attr_iter = cali_create_attribute("iter", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+  cali_id_t attr_iter =
+    cali_create_attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
-  cali_begin(attr_phase, phase_string[PHASE_LOOP], strlen(phase_string[PHASE_LOOP]));
+  cali_begin_attr_str("phase", "loop");
 
-  for (int64_t i = 0; i < count; ++i) {
-    cali_set(attr_iter, &i, sizeof(int64_t));
+  for (int i = 0; i < count; ++i) {
+    cali_set_int(attr_iter, i);
   }
 
-  cali_end(attr_iter); /* unset "iter" */
-  cali_end(attr_phase); /* end "loop" */
+  cali_end(attr_iter);      /* clear 'iteration'     */
 
-  cali_end(attr_phase); /* end "main" */
+  cali_end_attr("phase");   /* end 'phase:main/loop' */
+  cali_end_attr("phase");   /* end 'phase:main'      */
 }

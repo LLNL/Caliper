@@ -77,7 +77,7 @@ class TextLogService
     std::string 
     create_default_formatstring(const std::vector<std::string>& attr_names) {
         if (attr_names.size() < 1)
-            return "%time.phase.duration%";
+            return "%time.inclusive.duration%";
 
         int name_sizes = 0;
 
@@ -91,7 +91,7 @@ class TextLogService
         for (const std::string& s : attr_names)
             os << s << "=%[" << w << "]" << s << "% ";
 
-        os << "%[8r]time.phase.duration%";
+        os << "%[8r]time.inclusive.duration%";
 
         return os.str();
     }
