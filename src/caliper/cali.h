@@ -128,11 +128,11 @@ cali_begin(cali_id_t   attr,
            size_t      size);
 
 cali_err  
-cali_begin_dbl(cali_id_t attr, double val);
+cali_begin_double(cali_id_t attr, double val);
 cali_err  
 cali_begin_int(cali_id_t attr, int val);
 cali_err  
-cali_begin_str(cali_id_t attr, const char* val);
+cali_begin_string(cali_id_t attr, const char* val);
 
 /**
  * Remove innermost value for attribute \param attr from the blackboard.
@@ -152,11 +152,11 @@ cali_set  (cali_id_t   attr,
            size_t      size);
 
 cali_err  
-cali_set_dbl(cali_id_t attr, double val);
+cali_set_double(cali_id_t attr, double val);
 cali_err  
 cali_set_int(cali_id_t attr, int val);
 cali_err  
-cali_set_str(cali_id_t attr, const char* val);
+cali_set_string(cali_id_t attr, const char* val);
 
 /**
  * Add \param value for the attribute with the name \param attr_name to the 
@@ -164,11 +164,11 @@ cali_set_str(cali_id_t attr, const char* val);
  */
 
 cali_err
-cali_begin_attr_dbl(const char* attr_name, double val);
+cali_begin_double_attr(const char* attr_name, double val);
 cali_err
-cali_begin_attr_int(const char* attr_name, int val);
+cali_begin_int_attr(const char* attr_name, int val);
 cali_err
-cali_begin_attr_str(const char* attr_name, const char* val);
+cali_begin_string_attr(const char* attr_name, const char* val);
 
 /**
  * Change the value of attribute with the name \param attr_name to \param value 
@@ -176,11 +176,11 @@ cali_begin_attr_str(const char* attr_name, const char* val);
  */
 
 cali_err
-cali_set_attr_dbl(const char* attr_name, double val);
+cali_set_double_attr(const char* attr_name, double val);
 cali_err
-cali_set_attr_int(const char* attr_name, int val);
+cali_set_int_attr(const char* attr_name, int val);
 cali_err
-cali_set_attr_str(const char* attr_name, const char* val);
+cali_set_string_attr(const char* attr_name, const char* val);
 
 /**
  * Remove innermost value for attribute \param attr from the blackboard.

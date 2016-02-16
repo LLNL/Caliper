@@ -185,7 +185,7 @@ cali_set(cali_id_t attr_id, const void* value, size_t size)
 }
 
 cali_err
-cali_begin_dbl(cali_id_t attr_id, double val)
+cali_begin_double(cali_id_t attr_id, double val)
 {
     Caliper   c;
     Attribute attr = ::lookup_attribute(c, attr_id);
@@ -209,7 +209,7 @@ cali_begin_int(cali_id_t attr_id, int val)
 }
 
 cali_err
-cali_begin_str(cali_id_t attr_id, const char* val)
+cali_begin_string(cali_id_t attr_id, const char* val)
 {
     Caliper   c;
     Attribute attr = ::lookup_attribute(c, attr_id);
@@ -221,7 +221,7 @@ cali_begin_str(cali_id_t attr_id, const char* val)
 }
 
 cali_err
-cali_set_dbl(cali_id_t attr_id, double val)
+cali_set_double(cali_id_t attr_id, double val)
 {
     Caliper   c;
     Attribute attr = ::lookup_attribute(c, attr_id);
@@ -245,7 +245,7 @@ cali_set_int(cali_id_t attr_id, int val)
 }
 
 cali_err
-cali_set_str(cali_id_t attr_id, const char* val)
+cali_set_string(cali_id_t attr_id, const char* val)
 {
     Caliper   c;
     Attribute attr = ::lookup_attribute(c, attr_id);
@@ -261,7 +261,7 @@ cali_set_str(cali_id_t attr_id, const char* val)
 //
 
 cali_err
-cali_begin_attr_dbl(const char* attr_name, double val)
+cali_begin_double_attr(const char* attr_name, double val)
 {
     Caliper   c;
     Attribute attr =
@@ -274,7 +274,7 @@ cali_begin_attr_dbl(const char* attr_name, double val)
 }
 
 cali_err
-cali_begin_attr_int(const char* attr_name, int val)
+cali_begin_int_attr(const char* attr_name, int val)
 {
     Caliper   c;
     Attribute attr =
@@ -287,7 +287,7 @@ cali_begin_attr_int(const char* attr_name, int val)
 }
 
 cali_err
-cali_begin_attr_str(const char* attr_name, const char* val)
+cali_begin_string_attr(const char* attr_name, const char* val)
 {
     Caliper   c;
     Attribute attr =
@@ -300,7 +300,7 @@ cali_begin_attr_str(const char* attr_name, const char* val)
 }
 
 cali_err
-cali_set_attr_dbl(const char* attr_name, double val)
+cali_set_double_attr(const char* attr_name, double val)
 {
     Caliper   c;
     Attribute attr =
@@ -313,7 +313,7 @@ cali_set_attr_dbl(const char* attr_name, double val)
 }
 
 cali_err
-cali_set_attr_int(const char* attr_name, int val)
+cali_set_int_attr(const char* attr_name, int val)
 {
     Caliper   c;
     Attribute attr =
@@ -326,7 +326,7 @@ cali_set_attr_int(const char* attr_name, int val)
 }
 
 cali_err
-cali_set_attr_str(const char* attr_name, const char* val)
+cali_set_string_attr(const char* attr_name, const char* val)
 {
     Caliper   c;
     Attribute attr =
