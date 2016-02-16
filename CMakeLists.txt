@@ -16,6 +16,9 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
 include(FindPAPI)
 
+# Optional Fortran
+option(WITH_FORTRAN "Install Fortran interface and build test programs")
+
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 
@@ -82,6 +85,9 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper
 add_subdirectory(doc)
 add_subdirectory(src)
 add_subdirectory(test)
+if (WITH_FORTRAN)
+  add_subdirectory(fortran)
+endif()
 
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)
