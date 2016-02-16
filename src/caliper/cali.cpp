@@ -158,12 +158,15 @@ cali_push_context(int scope)
 //
 
 cali_err
-cali_begin(cali_id_t attr_id, const void* value, size_t size)
+cali_begin(cali_id_t attr_id)
 {
     Caliper   c;
     Attribute attr = ::lookup_attribute(c, attr_id);
-
-    return c.begin(attr, Variant(attr.type(), value, size));
+    
+    if (attr.type() == CALI_TYPE_BOOL)
+        return c.begin(attr, Variant(true));
+    else
+        return CALI_ETYPE;
 }
 
 cali_err
@@ -261,7 +264,22 @@ cali_set_string(cali_id_t attr_id, const char* val)
 //
 
 cali_err
-cali_begin_double_attr(const char* attr_name, double val)
+cali_begin_byname(const char* attr_name)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(attr_name, CALI_TYPE_BOOL, CALI_ATTR_DEFAULT);
+
+    if (attr == Attribute::invalid)
+        return CALI_EINV;
+    if (attr.type() != CALI_TYPE_BOOL)
+        return CALI_ETYPE;
+
+    return c.begin(attr, Variant(true));
+}
+
+cali_err
+cali_begin_double_byname(const char* attr_name, double val)
 {
     Caliper   c;
     Attribute attr =
@@ -274,7 +292,7 @@ cali_begin_double_attr(const char* attr_name, double val)
 }
 
 cali_err
-cali_begin_int_attr(const char* attr_name, int val)
+cali_begin_int_byname(const char* attr_name, int val)
 {
     Caliper   c;
     Attribute attr =
@@ -287,7 +305,7 @@ cali_begin_int_attr(const char* attr_name, int val)
 }
 
 cali_err
-cali_begin_string_attr(const char* attr_name, const char* val)
+cali_begin_string_byname(const char* attr_name, const char* val)
 {
     Caliper   c;
     Attribute attr =
@@ -300,7 +318,7 @@ cali_begin_string_attr(const char* attr_name, const char* val)
 }
 
 cali_err
-cali_set_double_attr(const char* attr_name, double val)
+cali_set_double_byname(const char* attr_name, double val)
 {
     Caliper   c;
     Attribute attr =
@@ -313,7 +331,7 @@ cali_set_double_attr(const char* attr_name, double val)
 }
 
 cali_err
-cali_set_int_attr(const char* attr_name, int val)
+cali_set_int_byname(const char* attr_name, int val)
 {
     Caliper   c;
     Attribute attr =
@@ -326,7 +344,7 @@ cali_set_int_attr(const char* attr_name, int val)
 }
 
 cali_err
-cali_set_string_attr(const char* attr_name, const char* val)
+cali_set_string_byname(const char* attr_name, const char* val)
 {
     Caliper   c;
     Attribute attr =
@@ -339,7 +357,7 @@ cali_set_string_attr(const char* attr_name, const char* val)
 }
 
 cali_err
-cali_end_attr(const char* attr_name)
+cali_end_byname(const char* attr_name)
 {
     Caliper   c;
     Attribute attr = c.get_attribute(attr_name);

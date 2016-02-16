@@ -74,6 +74,11 @@ Annotation& Annotation::operator = (const Annotation&)
 
 // --- begin() overloads
 
+Annotation& Annotation::begin()
+{
+    return *this;
+}
+
 Annotation& Annotation::begin(int data)
 {
     return *this;

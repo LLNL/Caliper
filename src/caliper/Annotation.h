@@ -91,6 +91,8 @@ public:
     /// \name \c begin() overloads
     /// \{
 
+    Annotation& begin();
+
     Annotation& begin(int data);
     Annotation& begin(double data);
     Annotation& begin(const char* data);

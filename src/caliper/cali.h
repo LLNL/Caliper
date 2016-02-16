@@ -118,14 +118,18 @@ cali_push_snapshot(int scope);
  */
 
 /**
- * Add \param value of size \param size for attribute \param attr to the 
- * blackboard.
+ * Put attribute attr on the blackboard. 
+ * Parameters:
+ * \param attr An attribute of type CALI_TYPE_BOOL
+ */
+
+cali_err
+cali_begin(cali_id_t   attr);
+
+/**
+ * Add \param val for attribute \param attr to the blackboard.
  * The new value is nested under the current value of \param attr. 
  */
-cali_err
-cali_begin(cali_id_t   attr, 
-           const void* value,
-           size_t      size);
 
 cali_err  
 cali_begin_double(cali_id_t attr, double val);
@@ -159,16 +163,23 @@ cali_err
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
+ * Put attribute with name \param attr_name on the blackboard.
+ */
+
+cali_err
+cali_begin_byname(const char* attr_name);
+  
+/**
  * Add \param value for the attribute with the name \param attr_name to the 
  * blackboard.
  */
 
 cali_err
-cali_begin_double_attr(const char* attr_name, double val);
+cali_begin_double_byname(const char* attr_name, double val);
 cali_err
-cali_begin_int_attr(const char* attr_name, int val);
+cali_begin_int_byname(const char* attr_name, int val);
 cali_err
-cali_begin_string_attr(const char* attr_name, const char* val);
+cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
  * Change the value of attribute with the name \param attr_name to \param value 
@@ -176,18 +187,18 @@ cali_begin_string_attr(const char* attr_name, const char* val);
  */
 
 cali_err
-cali_set_double_attr(const char* attr_name, double val);
+cali_set_double_byname(const char* attr_name, double val);
 cali_err
-cali_set_int_attr(const char* attr_name, int val);
+cali_set_int_byname(const char* attr_name, int val);
 cali_err
-cali_set_string_attr(const char* attr_name, const char* val);
+cali_set_string_byname(const char* attr_name, const char* val);
 
 /**
  * Remove innermost value for attribute \param attr from the blackboard.
  */
 
 cali_err
-cali_end_attr(const char* attr_name);
+cali_end_byname(const char* attr_name);
 
 #ifdef __cplusplus
 } // extern "C"

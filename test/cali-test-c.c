@@ -11,20 +11,20 @@
 
 void test_attr_by_name()
 {
-  cali_begin_string_attr("cali-test-c.experiment", "test_attr_by_name");
+  cali_begin_string_byname("cali-test-c.experiment", "test_attr_by_name");
 
-  cali_set_double_attr("implicit.double", 42.0);
-  cali_end_attr("implicit.double");
+  cali_set_double_byname("implicit.double", 42.0);
+  cali_end_byname("implicit.double");
 
-  cali_set_int_attr("implicit.int", 42);
-  cali_end_attr("implicit.int");
+  cali_set_int_byname("implicit.int", 42);
+  cali_end_byname("implicit.int");
   
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 }
 
 void test_attr()
 {
-  cali_begin_string_attr("cali-test-c.experiment", "test_attr");
+  cali_begin_string_byname("cali-test-c.experiment", "test_attr");
 
   // --- int
   
@@ -46,20 +46,20 @@ void test_attr()
   cali_begin_string(s_attr, "first");
 
   const char* s = "second";
-  cali_begin(s_attr, s, strlen(s));
+  cali_set(s_attr, s, strlen(s));
   cali_end(s_attr);
   cali_end(s_attr);
 
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 }
 
 void test_mismatch()
 {
-  cali_begin_string_attr("cali-test-c.experiment", "mismatch");
+  cali_begin_string_byname("cali-test-c.experiment", "mismatch");
 
   // --- int vs. string
 
-  cali_begin_string_attr("cali-test-c.experiment", "int_vs_str");
+  cali_begin_string_byname("cali-test-c.experiment", "int_vs_str");
 
   cali_id_t s_attr =
     cali_create_attribute("mismatch.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
@@ -67,25 +67,25 @@ void test_mismatch()
   if (cali_set_int(s_attr, 141) == CALI_SUCCESS)
     puts("Undetected mismatch");
   
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 
   // --- int vs. string by name
 
-  cali_begin_string_attr("cali-test-c.experiment", "int_vs_str_by_name");
+  cali_begin_string_byname("cali-test-c.experiment", "int_vs_str_by_name");
 
-  if (cali_set_int_attr("mismatch.str", 242) == CALI_SUCCESS)
+  if (cali_set_int_byname("mismatch.str", 242) == CALI_SUCCESS)
     puts("Undetected mismatch");
   
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 
   // ---
   
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 }
 
 void test_metadata()
 {
-  cali_begin_string_attr("cali-test-c.experiment", "metadata");
+  cali_begin_string_byname("cali-test-c.experiment", "metadata");
 
   cali_id_t meta_str_attr =
     cali_create_attribute("meta-string-attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
@@ -106,7 +106,7 @@ void test_metadata()
   cali_set_string(attr, "testing");
   cali_end(attr);
   
-  cali_end_attr("cali-test-c.experiment");
+  cali_end_byname("cali-test-c.experiment");
 }
 
 int main(int argc, char* argv[])

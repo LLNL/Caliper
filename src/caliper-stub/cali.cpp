@@ -76,7 +76,7 @@ cali_push_context(int scope)
 //
 
 cali_err
-cali_begin(cali_id_t, const void*, size_t)
+cali_begin(cali_id_t)
 {
     return CALI_SUCCESS;
 }
@@ -94,7 +94,7 @@ cali_set(cali_id_t, const void*, size_t)
 }
 
 cali_err  
-cali_begin_dbl(cali_id_t, double)
+cali_begin_double(cali_id_t, double)
 {
     return CALI_SUCCESS;
 }
@@ -106,13 +106,13 @@ cali_begin_int(cali_id_t, int)
 }
 
 cali_err  
-cali_begin_str(cali_id_t, const char*)
+cali_begin_string(cali_id_t, const char*)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set_dbl(cali_id_t, double)
+cali_set_double(cali_id_t, double)
 {
     return CALI_SUCCESS;
 }
@@ -124,49 +124,55 @@ cali_set_int(cali_id_t, int)
 }
 
 cali_err  
-cali_set_str(cali_id_t, const char*)
+cali_set_string(cali_id_t, const char*)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_attr_dbl(const char*, double)
+cali_begin_double_byname(const char*, double)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_attr_int(const char*, int)
+cali_begin_int_byname(const char*, int)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_attr_str(const char*, const char*)
+cali_begin_byname(const char*)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_attr_dbl(const char*, double)
+cali_begin_string_byname(const char*, const char*)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_attr_int(const char*, int)
+cali_set_double_byname(const char*, double)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_attr_str(const char*, const char*)
+cali_set_int_byname(const char*, int)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_end_attr(const char* )
+cali_set_string_byname(const char*, const char*)
+{
+    return CALI_SUCCESS;
+}
+
+cali_err
+cali_end_byname(const char* )
 {
     return CALI_SUCCESS;
 }

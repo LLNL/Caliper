@@ -196,6 +196,11 @@ Annotation& Annotation::operator = (const Annotation& a)
 
 // --- begin() overloads
 
+Annotation& Annotation::begin()
+{
+    return begin(Variant(true));
+}
+
 Annotation& Annotation::begin(int data)
 {
     Attribute* attr = pI->m_attr.load();
