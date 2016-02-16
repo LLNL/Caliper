@@ -37,11 +37,10 @@
 
 void foo(int count)
 {
-    // Set phase to "foo". When called from main(), it is now 'phase:main/foo'
-    // Scope guard automatically ends 'foo' on function exit
+    // Mark "foo" kernel. Scope guard automatically clears 'foo' on function exit
     
     cali::Annotation::Guard
-        g_phase( cali::Annotation("phase").begin("foo") );
+        g_phase( cali::Annotation("cali-demo.foo").begin() );
 
     { 
         // Create "iteration" annotation for iteration counter.
@@ -52,7 +51,8 @@ void foo(int count)
         cali::Annotation
             iter_ann("iteration", CALI_ATTR_ASVALUE);
 
-        // Guard for iter_ann will automatically clear 'iteration' when leaving the scope
+        // Guard for iter_ann will automatically clear the last 'iteration' when
+        // leaving the scope
 
         cali::Annotation::Guard
             g_iter( iter_ann );
@@ -67,24 +67,21 @@ void foo(int count)
 
 int main(int argc, char* argv[])
 {
-    // Create an annotation object for the "phase" annotation
-    cali::Annotation phase_ann("phase");
+    // Mark main program. The scope guard will automatically clear it
+    // on function exit
+    
+    cali::Annotation::Guard
+        g_main( cali::Annotation("cali-demo.main").begin() );
 
-    // Declare begin of phase "main" 
-    phase_ann.begin("main");
+    // Mark initialization phase
 
-    // We can create hierarchical attribute:
-    //   here, we set 'phase:main/init'
-    phase_ann.begin("init");
-
+    cali::Annotation init_ann( cali::Annotation("cali-demo.init").begin() );
     int count = 4;
-
-    // End 'phase:init'. Thus, 'phase' is now back at "main"
-    phase_ann.end();
-
+    init_ann.end();
+    
     // Call kernel
     foo(count);
 
-    // Close level "phase:main". The phase annotation is now removed from the blackboard
-    phase_ann.end();
+    // Implicitly clear main program annotation
+    return 0;
 }
