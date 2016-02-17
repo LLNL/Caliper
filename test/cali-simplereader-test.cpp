@@ -53,9 +53,12 @@ int main(int argc, char *argv[])
     sr.open(filename);
 
     RecordMap rec;
-    while (sr.next(rec)) {
+    while (sr.nextSnapshot(rec)) {
         for (auto attr : rec) {
-            cout << attr.first << ",";
+            cout << attr.first << "=";
+            for (auto val : attr.second) {
+                cout << val.to_string() << ",";
+            }
         }
         cout << endl;
     }

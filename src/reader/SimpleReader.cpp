@@ -35,10 +35,6 @@
 
 #include <ContextRecord.h>
 
-#include <fstream>
-#include <iostream>
-#include <iterator>
-
 #include "SimpleReader.h"
 
 using namespace cali;
@@ -50,16 +46,24 @@ SimpleReader::SimpleReader()
 
 void SimpleReader::open(const string &filename)
 {
-    reader = new CsvReader(filename);
+    califile.open(filename, ifstream::in);
 }
 
-bool SimpleReader::next(RecordMap &rec)
+bool SimpleReader::nextSnapshot(RecordMap &rec)
 {
-    bool err = reader->read( [&](const RecordMap& rec) { record = metadb.merge(rec, idmap); } );
-    
-    if(!err) {
-        rec = ContextRecord::unpack(rec, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
-    }
+    string line;
+    RecordMap record;
 
-    return !err;
+    while (true) {
+        if (!getline(califile, line)) {
+            return false;
+        }
+
+        record = metadb.merge(CsvSpec::read_record(line), idmap);
+
+        if (record["__rec"].at(0).to_string() == "ctx") {
+            rec = ContextRecord::unpack(record, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
+            return true;
+        }
+    }
 }

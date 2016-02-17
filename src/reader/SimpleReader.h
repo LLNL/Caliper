@@ -36,27 +36,31 @@
 #ifndef CALI_SIMPLEREADER_H
 #define CALI_SIMPLEREADER_H
 
-#include <csv/CsvReader.h>
+#include <csv/CsvSpec.h>
 
 #include "CaliperMetadataDB.h"
 #include <RecordMap.h>
 
+#include <fstream>
+
 namespace cali
 {
 
-class CsvReader;
+class CaliperMetadataDB;
+class CsvSpec;
 
 class SimpleReader
 {
     private:
+        std::ifstream       califile;
+
         CaliperMetadataDB   metadb;
-        CsvReader           *reader;
         IdMap               idmap;
-        RecordMap           record;
 
     public:
         SimpleReader();
         void open(const std::string &filename);
+        bool nextSnapshot(RecordMap &rec);
         bool next(RecordMap &rec);
 };
 
