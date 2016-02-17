@@ -139,7 +139,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         }
 
         if (!v_id || !v_attr || !v_data || v_id.to_id() == CALI_INV_ID || v_attr.to_id() == CALI_INV_ID) {
-            Log(1).stream() << "Invalid node record format" << endl;
+            Log(1).stream() << "Invalid node record format: " << rec << endl;
             return rec;
         }
 
