@@ -5,13 +5,15 @@ set(CALIPER_READER_HEADERS
     CaliperMetadataDB.h
     Expand.h
     RecordProcessor.h
-    RecordSelector.h)
+    RecordSelector.h
+    SimpleReader.h)
 
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
     Expand.cpp
     CaliperMetadataDB.cpp
-    RecordSelector.cpp)
+    RecordSelector.cpp
+    SimpleReader.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
