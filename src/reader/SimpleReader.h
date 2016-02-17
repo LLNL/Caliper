@@ -38,9 +38,13 @@
 
 #include <csv/CsvSpec.h>
 
-#include "CaliperMetadataDB.h"
 #include <RecordMap.h>
+#include <Variant.h>
 
+#include "CaliperMetadataDB.h"
+
+#include <map>
+#include <string>
 #include <fstream>
 
 namespace cali
@@ -48,6 +52,8 @@ namespace cali
 
 class CaliperMetadataDB;
 class CsvSpec;
+
+typedef std::map<std::string, Variant> ExpandedRecordMap;
 
 class SimpleReader
 {
@@ -60,7 +66,7 @@ class SimpleReader
     public:
         SimpleReader();
         void open(const std::string &filename);
-        bool nextSnapshot(RecordMap &rec);
+        bool nextSnapshot(ExpandedRecordMap &rec);
         bool next(RecordMap &rec);
 };
 

@@ -49,7 +49,7 @@ void SimpleReader::open(const string &filename)
     califile.open(filename, ifstream::in);
 }
 
-bool SimpleReader::nextSnapshot(RecordMap &rec)
+bool SimpleReader::nextSnapshot(ExpandedRecordMap &rec)
 {
     string line;
     RecordMap record;
@@ -62,7 +62,13 @@ bool SimpleReader::nextSnapshot(RecordMap &rec)
         record = metadb.merge(CsvSpec::read_record(line), idmap);
 
         if (record["__rec"].at(0).to_string() == "ctx") {
-            rec = ContextRecord::unpack(record, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
+
+            record = ContextRecord::unpack(record, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
+            
+            for (auto attr : record) {
+                rec[attr.first] = attr.second.at(0);
+            }
+
             return true;
         }
     }
