@@ -44,7 +44,6 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
 class CsvReader;
 
 class SimpleReader
@@ -53,6 +52,7 @@ class SimpleReader
         CaliperMetadataDB   metadb;
         CsvReader           *reader;
         IdMap               idmap;
+        RecordMap           record;
 
     public:
         SimpleReader();

@@ -44,18 +44,8 @@
 using namespace cali;
 using namespace std;
 
-CaliperMetadataDB *p_metadb;
-
-void read_expanded(const RecordMap& rec)
-{
-    // Expand the record
-    RecordMap expanded_rec = ContextRecord::unpack(rec, std::bind(&CaliperMetadataDB::node, p_metadb, std::placeholders::_1));
-    memcpy((void*)&rec, (void*)&expanded_rec, sizeof(expanded_rec));
-}
-
 SimpleReader::SimpleReader()
 {
-    p_metadb = &metadb;
 }
 
 void SimpleReader::open(const string &filename)
@@ -65,11 +55,11 @@ void SimpleReader::open(const string &filename)
 
 bool SimpleReader::next(RecordMap &rec)
 {
-    bool err = reader->read(read_expanded);
-
-    if(err) {
-        metadb.merge(rec, idmap);
+    bool err = reader->read( [&](const RecordMap& rec) { record = metadb.merge(rec, idmap); } );
+    
+    if(!err) {
+        rec = ContextRecord::unpack(rec, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
     }
 
-    return err;
+    return !err;
 }
