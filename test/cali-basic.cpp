@@ -34,54 +34,40 @@
 
 #include <Annotation.h>
 
-
-void foo(int count)
-{
-    // Mark "foo" kernel. Scope guard automatically clears 'foo' on function exit
-    
-    cali::Annotation::Guard
-        g_phase( cali::Annotation("cali-demo.foo").begin() );
-
-    { 
-        // Create "iteration" annotation for iteration counter.
-        // To avoid adding nodes for each iteration to the context tree,
-        // we use the CALI_ATTR_ASVALUE flag to store explicit 'key:value' pairs
-        // for iteration attributes on the blackboard
-
-        cali::Annotation
-            iter_ann("iteration", CALI_ATTR_ASVALUE);
-
-        // Guard for iter_ann will automatically clear the last 'iteration' when
-        // leaving the scope
-
-        cali::Annotation::Guard
-            g_iter( iter_ann );
-
-        for (int i = 0; i < count; ++i)
-            // set 'iteration:<i>'
-            // Unlike begin(), set() overwrites the attribute's current value
-            // rather than appending a new one
-            iter_ann.set(i); 
-    }
-}
-
 int main(int argc, char* argv[])
 {
-    // Mark main program. The scope guard will automatically clear it
-    // on function exit
-    
-    cali::Annotation::Guard
-        g_main( cali::Annotation("cali-demo.main").begin() );
-
-    // Mark initialization phase
-
-    cali::Annotation init_ann( cali::Annotation("cali-demo.init").begin() );
+    // Mark begin of "initialization" phase
+    cali::Annotation
+        init_ann = cali::Annotation("initialization").begin();
+    // perform initialization tasks
     int count = 4;
+    // Mark end of "initialization" phase
     init_ann.end();
-    
-    // Call kernel
-    foo(count);
 
-    // Implicitly clear main program annotation
-    return 0;
+    if (count > 0) {
+        // Mark begin of "loop" phase. The scope guard will
+        // automatically end it at the end of the C++ scope
+        cali::Annotation::Guard 
+            g_loop( cali::Annotation("loop").begin() );
+
+        double t = 0.0, delta_t = 1e-6;
+
+        // Create "iteration" attribute to export the iteration count
+        cali::Annotation iteration_ann("iteration");
+        
+        for (int i = 0; i < count; ++i) {
+            // Export current iteration count under "iteration"
+            iteration_ann.set(i);
+
+            // A Caliper snapshot taken at this point will contain
+            // { "loop", "iteration"=<i> }
+
+            // perform computation
+            t += delta_t;
+        }
+
+        // Clear the "iteration" attribute (otherwise, snapshots taken
+        // after the loop will still contain the "iteration" attribute)
+        iteration_ann.end();
+    }
 }

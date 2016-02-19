@@ -14,8 +14,8 @@ Documentation
 
 Extensive documentation can be found in the `doc/` directory.
 
-A usage example of the C++ annotation interface is provided in 
-`test/cali-basic.cpp`
+Usage examples of the C++ and C annotation interfaces are provided in 
+`test/cali-basic.cpp` and `test/cali-basic-c.c`, respectively.
 
 See the "Getting started" section below for a brief tutorial.
 
@@ -39,221 +39,142 @@ Compiler. Unpack the source distribution and proceed as follows:
      make 
      make install
 
-The OMPT header file and libunwind are required to build the OMPT (OpenMP tools
-interface) and callpath modules, respectively. Both modules are optional.
-
-### Building on BG/Q
-
-When building on a BlueGene/Q system, the libraries must be cross-compiled to
-work correctly on the compute nodes. Use the provided toolchain file to build
-with clang, like so:
-
-     cd <path to caliper root directory>
-     mkdir build && cd build
-     cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
-         -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/bgq-dynamic.toolchain \
-         -DCMAKE_CXX_FLAGS=-stdlib=libc++ \
-         ..
-     make 
-     make install
-
-When processing the created cali files, make sure to use a version of
-`cali-query` complied for the frontend node. 
+See the "Build and install" section in the documentation for further
+information.
 
 Getting started
 ------------------------------------------
 
-To use Caliper, add annotation statements to your program and link it against
-the Caliper library.
+Caliper provides annotation APIs for marking source-code regions or
+exporting arbitrary data in the form of key:value attributes.
+
+Caliper can then be configured to take "snapshots" of the provided
+data at specified events. Optionally, measurement data,
+e.g. timestamps, can be added to the snapshots. Source-code
+annotations, measurement data providers, and snapshot configurations
+can be flexibly combined to support a wide range of performance
+analysis or monitoring use cases. 
+
+
+### Build and link annotated programs
+
+To use Caliper, add annotation statements to your program and link it
+against the Caliper library. Programs must be linked with the Caliper
+runtime (libcaliper) and infrastructure libraries (libcaliper-common).
+
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-common
+
+Depending on the configuration, it may be necessary to add the 
+`libunwind`, `papi`, and `pthread` libraries to the link line.
+
 
 ### Source-code annotation
 
-Here is a simple source-code annotation example:
+Adding Caliper source-code annotations is easy. 
+
+The following example marks "initialization" and "loop" phases in a
+C++ code, and exports the main loop's current iteration counter.
 
 ```C++
 #include <Annotation.h>
 
 int main(int argc, char* argv[])
 {
-    cali::Annotation phase_ann("phase");
-
-    phase_ann.begin("main");                   // Context is "phase=main"
-
-    phase_ann.begin("init");                   // Context is "phase=main/init" 
+    // Mark begin of "initialization" phase
+    cali::Annotation
+        init_ann = cali::Annotation("initialization").begin();
+    // perform initialization tasks
     int count = 4;
-    phase_ann.end();                           // Context is "phase=main"
+    // Mark end of "initialization" phase
+    init_ann.end();
 
     if (count > 0) {
+        // Mark begin of "loop" phase. The scope guard will
+        // automatically end it at the end of the C++ scope
         cali::Annotation::Guard 
-            g_loop( phase_ann.begin("loop") ); // Context is "phase=main/loop"
-        
-        cali::Annotation 
-            iteration_ann("iteration", CALI_ATTR_ASVALUE);
-        cali::Annotation::Guard
-            g_iteration( iteration_ann );
+            g_loop( cali::Annotation("loop").begin() );
+
+        double t = 0.0, delta_t = 1e-6;
+
+        // Create "iteration" attribute to export the iteration count
+        cali::Annotation iteration_ann("iteration");
         
         for (int i = 0; i < count; ++i) {
-            iteration_ann.set(i);              // Context is "phase=main/loop,iteration=i"
-        }
-    }                                          // Context is "phase=main"
+            // Export current iteration count under "iteration"
+            iteration_ann.set(i);
 
-    phase_ann.end();                           // Context is ""
+            // A Caliper snapshot taken at this point will contain
+            // { "loop", "iteration"=<i> }
+
+            // perform computation
+            t += delta_t;
+        }
+
+        // Clear the "iteration" attribute (otherwise, snapshots taken
+        // after the loop will still contain the last "iteration" value)
+        iteration_ann.end();
+    }
 }
 ```
 
-The `cali::Annotation` class is the primary source-code instrumentation 
-interface for Caliper. Annotation objects provide access to named Caliper 
-context attributes. If a referenced attribute does not exist yet, it will
-be created automatically. The example above creates two context attributes, 
-"phase" and "iteration".
-
-The _Caliper context_ is the set of all active attribute/value pairs.
-Use the `begin()`, `end()` and `set()` methods of an annotation object
-to set, unset and modify context values.  The `begin()` and `set()`
-methods are overloaded for common data types (strings, integers, and
-floating point).
-
-* `cali::Annotation::begin(value)` puts `value` into the context for
-the given context attribute. The value is appended to the current
-values of the attribute to enable the creation of hierarchies. (as in
-the "phase" annotation in the example).
-
-* `cali::Annotation::set(value)` sets the value of the referenced context
-attribute to `value`.  In contrast to `begin()`, it overwrites the current 
-value of the context attribute.
-
-* `cali::Annotation::end()` removes the innermost value of the referenced
-  context attribute from the context. It is the user's
-  responsibility to nest `begin()`/`set()` and `end()` calls
-  correctly.
-
-* A `cali::Annotation::Guard` object automatically invokes the `end()` 
-  method of the referenced Annotation object when the surrounding C++ 
-  scope is left.
-
-### Build and link annotated programs
-
-To build a program with Caliper annotations, link it with the Caliper
-runtime (libcaliper) and infrastructure library (libcaliper-common).
-
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-common
-
-Depending on the configuration, you may also need to add the 
-`libunwind`, `papi`, and `pthread` libraries to the link line.
-
 ### Run the program
 
-An annotated program generates a Caliper context at runtime. Caliper
-service modules or external tools can trigger snapshots of the current
-program context combined with measurement data. When snapshots are
-taken, what is included in them, and how they are processed depends on
-the Caliper runtime configuration. It is thus important to configure
-the runtime correctly when running a Caliper-instrumented program.
-For common use cases, Caliper provides built-in configuration profiles
-as starting points. For example, the `serial-trace` profile will 
-record a time-stamped event trace. You can select a profile with the 
-`CALI_CONFIG_PROFILE` environment variable:
+Caliper-enabled tools will now be able to take and process snapshots
+or access the information provided by the source-code annotations at
+runtime. The source-code annotations also provide hooks to enable
+various runtime actions, such as triggering snapshots or writing
+traces.
 
-    $ export CALI_CONFIG_PROFILE=serial-trace
+By default, the annotation commands perform no actions other than
+updating the blackboard. However, we can connect a Caliper-enabled
+third-party tool to the program, or enable built-in Caliper "service"
+modules to take measurements and collect data.
 
-Then run the program:
+As an example, Caliper's built-in `trace` configuration profiles
+trigger and write snapshots whenever any or specific attributes are
+updated, generating a snapshot trace. A configuration profile can be
+selected with the `CALI_CONFIG_PROFILE` environment variable:
 
-    $ ./cali-basic
+    $ CALI_CONFIG_PROFILE=thread-trace ./cali-basic
+    == CALIPER: Registered pthread service
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
     == CALIPER: Initialized
     == CALIPER: Wrote 36 records.
     == CALIPER: Finished
 
-With this profile, Caliper will write a time-series trace to a `.cali`
-file in the current working directory. Use the `cali-query` tool to
-filter, aggregate, or print traces:
+With this configuration, Caliper will write a take a snapshot for each
+attribute update performed by the annotation commands, calculate the
+time spent in each of the annotated phases, and write the results in
+form of a snapshot trace to a `.cali` file in the current working
+directory.
+
+### Analyze Data
+
+Use the `cali-query` tool to filter, aggregate, or print the recorded
+traces. For example, the following command will show us the time spent
+in the "initialization" phase, in the entire "loop" phase, and in each
+iteration of the example program: 
 
     $ ls *.cali
-    150407-092621_96557_aGxI5Q9Zh2uU.cali
-    $ cali-query -e 150407-092621_96557_aGxI5Q9Zh2uU.cali
-    time.duration=57
-    phase=main,time.duration=33
-    phase=init/main,time.duration=7
-    phase=main,time.duration=6
-    phase=loop/main,time.duration=9
-    iteration=0,phase=loop/main,time.duration=9
-    iteration=1,phase=loop/main,time.duration=4
-    iteration=2,phase=loop/main,time.duration=4
-    iteration=3,phase=loop/main,time.duration=4
-    phase=loop/main,time.duration=5
-    phase=main,time.duration=6
+    160219-095419_5623_LQfNQTNgpqdM.cali
+    $ cali-query -e \
+          --print-attributes=iteration:loop:initialization:time.inclusive.duration \
+          160219-095419_5623_LQfNQTNgpqdM.cali
+    initialization=true,time.inclusive.duration=202
+    iteration=0,loop=true,time.inclusive.duration=51
+    iteration=1,loop=true,time.inclusive.duration=24
+    iteration=2,loop=true,time.inclusive.duration=17
+    iteration=3,loop=true,time.inclusive.duration=24
+    loop=true,time.inclusive.duration=211
 
-### Runtime configuration
+### Where to go from here?
 
-The Caliper library is configured through configuration variables. You
-can provide configuration variables as environment variables or in a
-text file `caliper.config` in the current working directory.
-
-Here is a list of commonly used variables:
-
-* `CALI_CONFIG_PROFILE`=(serial-trace|thread-trace|mpi-trace|...)
-  Select a built-in or self-defined configuration
-  profile. Configuration profiles allow you to select a pre-defined
-  configuration. The `serial-trace`, `thread-trace` and `mpi-trace`
-  built-in profiles create event-triggered context traces of serial,
-  multi-threaded, or MPI programs, respectively. See the documentation
-  on how to create your own configuration profiles.
-
-* `CALI_LOG_VERBOSITY=(0|1|2)` Verbosity level for log messages. Set to 1 for
-  informational output, 2 for more verbose output, or 0 to disable
-  output except for critical error messages. Default 1.
-
-* `CALI_SERVICES_ENABLE=(service1:service2:...)` List of Caliper service 
-  modules to enable, separated by `:`. Default: not set, no service modules 
-  enabled. See below for a list of Caliper services.
-
-### List of Caliper services
-
-Caliper comes with a number of optional modules (*services*) that
-provide measurement data or processing and data recording
-capabilities. The flexible combination and configuration of these
-services allows you to quickly assemble recording solutions for a wide
-range of usage scenarios.
-
-Many of the services provide additional configuration options. Refer to 
-the service documentation to learn more.
-
-You can enable the services required for your measurement with the
-`CALI_SERVICES_ENABLE` configuration variable
-
-The following services are available:
-
-* `callpath` Add a call path to the caliper context
-* `event` The event trigger service. Trigger a 
-  measurement snapshot when attributes are updated.
-* `debug` Print annotation and measurement events.
-  Useful to debug source-code annotations.
-* `mpi` Record MPI operations and the MPI rank.
-* `ompt` The OpenMP tools interface service.
-  Connects to the OpenMP tools interface to retrieve OpenMP status
-  information.
-  Requires an ompt-enabled OpenMP runtime.
-* `pthread` Manages thread environments for any pthread-based
-  multi-threading runtime system.
-  A thread environment manager such as the `pthread` service creates
-  separate per-thread contexts in a multi-threaded program.
-* `papi` Records PAPI hardware counters.
-* `recorder` Writes data to disk
-* `trace` Creates a trace of snapshots
-* `timestamp` The timestamp service adds a time offset, timestamp,
-  or duration to context records.
-
-### MPI programs
-
-Each process in an MPI program (or any other distributed-memory
-programming model) produces an independent Caliper dataset. Therefore,
-the recorder service writes one Caliper file per process. Users can
-merge / aggregate the separate datasets in post-processing. 
-
-Caliper provides an MPI service module to record MPI information
-via the PMPI interface. To enable the MPI service, the 
-`libcaliper-mpiwrap` wrapper library needs to be linked to the
-program, AND the mpi service needs to be activated by adding
-`mpi` to the list of services with the `CALI_SERVICES_ENABLE` 
-environment variable.
+Caliper allows a great amount of flexibility and control in utilizing
+source-code annotations. The "Usage examples" section in the
+documentation demonstrates some of the many ways to use Caliper.  Much
+of Caliper's functionality is implemented by built-in "services",
+which can be enabled or disabled as needed. Refer to the "Caliper
+services" section to learn about functionality they provide.  Finally,
+the "Annotation API" section in the documentation provides reference
+documentation for Caliper's C, C++, and Fortran annotation APIs.
