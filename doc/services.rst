@@ -42,29 +42,51 @@ attributes in Caliper context records.
 Configuration
 ................................
 
-CALI_CALLPATH_USE_NAME=(true|false)
-  Provide region names for call paths. Incurs higher overhead. Note
-  that region names for C++ and Fortran functions are not demangled.
-  Default: false.
+.. envvar:: CALI_CALLPATH_USE_NAME=(true|false)
+            
+   Provide region names for call paths. Incurs higher overhead. Note
+   that region names for C++ and Fortran functions are not demangled.
+   
+   Default: false.
 
-CALI_CALLPATH_USE_ADDRESS=(true|false)
-  Record region addresses for call paths. Default: true.
+.. envvar:: CALI_CALLPATH_USE_ADDRESS=(true|false)
+            
+   Record region addresses for call paths.
 
-CALI_CALLPATH_SKIP_FRAMES=<number of frames>
-  Skip a number of stack frames. This avoids recording stack frames
-  within the Caliper library. Default: 10
+   Default: true.
+
+.. envvar:: CALI_CALLPATH_SKIP_FRAMES=<number of frames>
+
+   Skip a number of stack frames. This avoids recording stack frames
+   within the Caliper library.
+
+   Default: 10
 
 Environment Information
 --------------------------------
 
-The environment information (`env`) service collects runtime environment 
-information at process startup and adds it to the Caliper context.
+The environment information (``env``) service collects runtime
+environment information at process startup and adds it to the Caliper
+context.
 
 Specifically, it collects
 
  * The process' command line (program name and arguments)
- * Machine type and hostname, and operating system type, release, and version
+ * Machine type and hostname, and operating system type, release, and
+   version
  * Date and time of program start in text form
+
+Moreover, the environment information service can put any environment
+variable defined at program start on the Caliper blackboard.
+
+Configuration
+................................
+
+.. envvar:: CALI_ENV_EXTRA=(variable1:variable2:...)
+
+   List of extra environment variables to import.
+
+   Default: empty
 
 Event
 --------------------------------
@@ -111,9 +133,12 @@ Only "iteration" attribute updates trigger context snapshots:
 Configuration
 ................................
 
-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
-  List of attributes that trigger measurement snapshots.
-  If empty, all user attributes trigger snapshots. Default: empty
+.. envvar:: CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
+            
+   List of attributes that trigger measurement snapshots.
+   If empty, all user attributes trigger snapshots.
+
+   Default: empty
   
 Debug
 --------------------------------
@@ -168,15 +193,17 @@ information.
 Configuration
 ................................
 
-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
-  List of MPI functions to instrument. If set, only whitelisted
-  functions will be instrumented.
+.. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
+            
+   List of MPI functions to instrument. If set, only whitelisted
+   functions will be instrumented.
 
-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
-  List of MPI functions that fill be filtered. Note: if both
-  whitelist and blacklist are set, only whitelisted functions will
-  be instrumented, and the blacklist will be applied to the
-  whitelisted functions.
+.. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
+            
+   List of MPI functions that fill be filtered. Note: if both
+   whitelist and blacklist are set, only whitelisted functions will
+   be instrumented, and the blacklist will be applied to the
+   whitelisted functions.
 
 Pthread
 --------------------------------
@@ -204,28 +231,39 @@ file name.
 Configuration
 ................................
 
-CALI_RECORDER_FILENAME=(stdout|stderr|filename)
-  File name for context trace. May be set to ``stdout`` or ``stderr``
-  to print to the standard output or error streams, respectively.
-  Default: not set, auto-generates a unique file name.
+.. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename)
+            
+   File name for context trace. May be set to ``stdout`` or ``stderr``
+   to print to the standard output or error streams, respectively.
+   
+   Default: not set, auto-generates a unique file name.
 
-CALI_RECORDER_DIRECTORY=(directory name)
-  Directory to write context trace files to. The directory must exist,
-  Caliper does not create it. Default: not set, use current working
-  directory.
+.. envvar:: CALI_RECORDER_DIRECTORY=(directory name)
+            
+   Directory to write context trace files to. The directory must exist,
+   Caliper does not create it. Default: not set, use current working
+   directory.
 
-CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)
-  Initial number of records that can be stored in the in-memory record
-  buffer. Default: 8000
+.. envvar:: CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)
+            
+   Initial number of records that can be stored in the in-memory record
+   buffer.
 
-CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)
-  Initial number of data elements that can be stored in the in-memory record
-  buffer. Default: 60000
+   Default: 8000
 
-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)
-  Allow record and data buffers to grow if necessary. If false, buffer content
-  will be flushed to disk when either buffer is full.
-  Default: true
+.. envvar:: CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)
+            
+   Initial number of data elements that can be stored in the in-memory record
+   buffer.
+
+   Default: 60000
+
+.. envvar:: CALI_RECORDER_BUFFER_CAN_GROW=(true|false)
+            
+   Allow record and data buffers to grow if necessary. If false, buffer content
+   will be flushed to disk when either buffer is full.
+   
+   Default: true
 
 Textlog
 --------------------------------
@@ -260,30 +298,38 @@ test application with Caliper's auto-generated format string:
 Configuration
 ................................
 
-CALI_TEXTLOG_TRIGGER=attr1:attr2:...
-  Select attributes which trigger a text log output. Note that the `event`
-  service must be active in order to trigger snapshots in the first place,
-  and the attributes selected here must be in the list of attributes that
-  trigger snapshots (defined by `CALI_EVENT_TRIGGER`).
+.. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
+            
+   Select attributes which trigger a text log output. Note that the `event`
+   service must be active in order to trigger snapshots in the first place,
+   and the attributes selected here must be in the list of attributes that
+   trigger snapshots (defined by `CALI_EVENT_TRIGGER`).
 
-CALI_TEXTLOG_FORMATSTRING=(formatstring)
-  Define what to print. The formatstring can contain fields, denoted by
-  ``%attribute_name%``, which prints the value of an attribute. Optionally,
-  a field can contain a width specification, denoted by ``[width]``, to set
-  the minimum width of a field. Any other text is printed verbatim.
-  For example, ``Phase: %[32]app.phase% %[6]time.phase.duration%`` writes
-  log strings with two fields: the value of the `app.phase` attribute with
-  a minimum width of 40 characters, and the value of  `time.phase.duration`
-  attribute with a minimum width of 6 characters, respectively. A resulting
-  log entry might look like this:
-  ``Phase: main/loop                       7018``
-  Default: empty; Caliper will automatically create a format string based on
-  the selected trigger attributes.
+.. envvar:: CALI_TEXTLOG_FORMATSTRING=(formatstring)
+            
+   Define what to print. The formatstring can contain fields, denoted by
+   ``%attribute_name%``, which prints the value of an attribute. Optionally,
+   a field can contain a width specification, denoted by ``[width]``, to set
+   the minimum width of a field. Any other text is printed verbatim.
+   For example, ``Phase: %[32]app.phase% %[6]time.phase.duration%`` writes
+   log strings with two fields: the value of the `app.phase` attribute with
+   a minimum width of 40 characters, and the value of  `time.phase.duration`
+   attribute with a minimum width of 6 characters, respectively. A resulting
+   log entry might look like this:
+
+   .. code-block:: sh
+                   
+      Phase: main/loop                       7018
+   
+   Default: empty; Caliper will automatically create a format string based on
+   the selected trigger attributes.
   
-CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)
-  File name for the text log. May be set to ``stdout`` or ``stderr``
-  to print to the standard output or error streams, respectively.
-  Default: stdout
+.. envvar:: CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)
+            
+   File name for the text log. May be set to ``stdout`` or ``stderr``
+   to print to the standard output or error streams, respectively.
+   
+   Default: stdout
 
 Timestamp
 --------------------------------
@@ -295,26 +341,41 @@ nodes in a distributed-memory program.
 Configuration
 ................................
 
-CALI_TIMER_DURATION=(true|false)
-  Measure duration (in microseconds) of the context epoch (i.e., the time
-  between two consecutive context snapshots). Default: true
+.. envvar:: CALI_TIMER_SNAPSHOT_DURATION=(true|false)
+            
+   Measure duration (in microseconds) of the context epoch (i.e., the
+   time between two consecutive context snapshots). The value will be
+   saved in the snapshot record as attribute ``time.duration``.
 
-CALI_TIMER_OFFSET=(true|false)
-  Include the time offset (time since program start, in microseconds)
-  with each context snapshot. Default: false
+   Default: false
 
-CALI_TIMER_TIMESTAMP=(true|false)
-  Include absolute timestamp (time since UNIX epoch, in seconds) with each
-  context snapshot.
+.. envvar:: CALI_TIMER_OFFSET=(true|false)
+            
+   Include the time offset (time since program start, in microseconds)
+   with each context snapshot. The value will be saved in the snapshot
+   record as attribute ``time.offset``.
 
-CALI_TIMER_PHASE_DURATION
-  Measure the duration of begin/end, set/set, or set/end phases. The 
-  event service with event trigger information generation needs to be 
-  enabled for this feature.
+   Default: false
+
+.. envvar:: CALI_TIMER_TIMESTAMP=(true|false)
+            
+   Include absolute timestamp (time since UNIX epoch, in seconds) with
+   each context snapshot. The value will be saved in the snapshot record
+   as attribute ``time.timestamp``.
+
+.. envvar:: CALI_TIMER_INCLUSIVE_DURATION
+            
+   For snapshots triggered by ``set`` or ``end`` events, calculate the
+   duration of the corresponding ``begin-end``, ``set-set``, or
+   ``set-end`` phase. The value will be saved in the snapshot record
+   as attribute ``time.inclusive.duration``.
+
+   The event service with event trigger information generation needs
+   to be enabled for this feature.
   
 Trace
 --------------------------------
 
 The trace service creates an I/O record for each snapshot. With the
-`recorder` sercice enabled, this will create a snapshot trace file.
+``recorder`` sercice enabled, this will create a snapshot trace file.
 
