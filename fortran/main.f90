@@ -5,22 +5,41 @@ program testf03
 
   integer                    :: cali_ret
   integer(kind(CALI_INV_ID)) :: iter_attr
-  integer                    :: i
-  
-  call cali_begin_string_byname('testf03.phase', 'main')
+  integer                    :: i, count
 
-  call cali_create_attribute('testf03.iteration', CALI_TYPE_INT, &
-       CALI_ATTR_ASVALUE, iter_attr)
+  ! Mark "initialization" phase
+  call cali_begin_byname('initialization')
+  count = 4
+  call cali_end_byname('initialization')
 
-  do i = 1,4
-     call cali_set_int(iter_attr, i)
-  end do
+  if (count .gt. 0) then
+     ! Mark "loop" phase
+     call cali_begin_byname('loop')
 
-  call cali_end(iter_attr, cali_ret)
+     ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
+     call cali_create_attribute('iteration', CALI_TYPE_INT, &
+          CALI_ATTR_ASVALUE, iter_attr)
 
-  if (cali_ret .ne. CALI_SUCCESS) then
-     print *, "cali_end returned with", cali_ret
+     do i = 1,count
+        ! Update iteration counter attribute
+        call cali_set_int(iter_attr, i)
+
+        ! A Caliper snapshot taken at this point will contain
+        ! { "loop", "iteration"=<i> } 
+        
+        ! perform calculation
+     end do
+
+     ! Clear the iteration counter attribute (otherwise, snapshots taken
+     ! after the loop will still contain the last iteration value)
+     call cali_end(iter_attr, cali_ret)
+     
+     ! Checking return value (not required, but good style)
+     if (cali_ret .ne. CALI_SUCCESS) then
+        print *, "cali_end returned with", cali_ret
+     end if
+
+     ! End "loop" phase
+     call cali_end_byname('testf03.loop')
   end if
-  
-  call cali_end_byname('testf03.phase')
 end program testf03
