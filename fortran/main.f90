@@ -40,6 +40,6 @@ program testf03
      end if
 
      ! End "loop" phase
-     call cali_end_byname('testf03.loop')
+     call cali_end_byname('loop')
   end if
 end program testf03
