@@ -1,0 +1,447 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuration &mdash; Caliper 1.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="Caliper services" href="services.html"/>
+        <link rel="prev" title="Linking Caliper programs" href="link.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Caliper
+        
+
+        
+          
+          <img src="_static/caliper-logo-small.png" class="logo" />
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-variables">Configuration variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-files">Configuration files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-profiles">Configuration profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#built-in-configuration-profiles">Built-in configuration profiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-variables-reference">Configuration variables reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Caliper</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/configuration.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="configuration">
+<h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h1>
+<p>This section describes the general configuration of the Caliper
+runtime system and lists the core system&#8217;s configuration
+variables. See next section for the list of measurement services and
+their configuration.</p>
+<p><strong>Note</strong>: by default, Caliper does not activate any measurement or
+output/processing services. Unless you run with third-party tool
+that uses the Caliper API to retrieve data you will at least need to
+select a configuration profile to obtain output.</p>
+<div class="section" id="configuring-the-caliper-runtime-system">
+<h2>Configuring the Caliper runtime system<a class="headerlink" href="#configuring-the-caliper-runtime-system" title="Permalink to this headline">¶</a></h2>
+<p>The Caliper runtime system can be configured through environment
+variables and/or configuration files. In addition, Caliper comes with
+some built-in configuration profiles.</p>
+<div class="section" id="configuration-variables">
+<h3>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this headline">¶</a></h3>
+<p>In general, Caliper configuration variables have the form</p>
+<div class="highlight-sh"><div class="highlight"><pre>CALI_&lt;MODULE&gt;_&lt;KEY&gt;<span class="o">=</span>&lt;VALUE&gt;
+</pre></div>
+</div>
+<p>Values can be strings, lists, numbers, or boolean values, depending on
+the variable. List elements are typically separated by the colon (&#8216;:&#8217;)
+character. Boolean values can be given as &#8216;1&#8217;, &#8216;true&#8217;, or &#8216;0&#8217;, &#8216;false&#8217;
+for <em>true</em> and <em>false</em>, respectively.</p>
+<p>Set caliper configuration variables through environment variables,
+e.g.</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LOG_VERBOSITY</span><span class="o">=</span>2
+</pre></div>
+</div>
+<p>or configuration files (see below).</p>
+</div>
+<div class="section" id="configuration-files">
+<h3>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
+<p>Configuration variables can be put in configuration files. By default,
+Caliper reads the file <cite>caliper.config</cite> in the current working
+directory, if present. Alternatively, you can provide a list of
+configuration files with the <cite>CALI_CONFIG_FILE</cite> variable. Note that
+<cite>CALI_CONFIG_FILE</cite> can only be set through an environment variable.</p>
+<p>The configuration files use a simple <cite>&lt;VARIABLE&gt;=&lt;VALUE&gt;</cite>
+syntax. Lines starting with <cite>#</cite> are interpreted as comments.
+Example:</p>
+<div class="highlight-python"><div class="highlight"><pre># My configuration
+CALI_SERVICES_ENABLE=event:recorder:timestamp:mpi
+CALI_MPI_WHITELIST=MPI_Allreduce:MPI_Barrier
+CALI_TIMER_TIMESTAMP=true
+</pre></div>
+</div>
+<p>When multiple definitions of the same variable are given, the last
+definition is taken. When multiple configuration files are provided,
+they are processed in the order they are given. Values set through
+environment variables override values given in configuration files.</p>
+</div>
+<div class="section" id="configuration-profiles">
+<h3>Configuration profiles<a class="headerlink" href="#configuration-profiles" title="Permalink to this headline">¶</a></h3>
+<p>Configuration profiles allow you to put multiple Caliper
+configurations into a file and select one of them with a single
+switch. You can declare a profile in a configuration file with <code class="docutils literal"><span class="pre">#</span>
+<span class="pre">[profile</span> <span class="pre">name]</span></code>. The following lines up to the next profile
+declaration then belong to this profile. Entries that do not belong to
+any specific profile are inserted into the default profile. Caliper
+will use the profile given by the <cite>CALI_CONFIG_PROFILE</cite> variable, or
+the default profile if none is set.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>CALI_CONFIG_PROFILE=callstack-trace
+
+# [callstack-trace]
+# A trace with call-path info
+CALI_SERVICES_ENABLE=callpath:event:recorder:timestamp
+CALI_CALLPATH_USE_NAME=true
+
+# [hwc-trace]
+# A trace with PAPI hardware counters
+CALI_SERVICES_ENABLE=event:papi:recorder:timestamp
+CALI_PAPI_COUNTERS=PAPI_FP_OPS
+</pre></div>
+</div>
+<p>This file defines two configuration profiles, <em>callstack-trace</em> and
+<em>hwc-trace</em>, and selects the callstack-trace profile. You can override
+the profile selection by setting a different value in the
+<cite>CALI_CONFIG_PROFILE</cite> environment variable. Note that environment
+variables always override values set in a configuration file,
+regardless of the selected profile.</p>
+</div>
+<div class="section" id="built-in-configuration-profiles">
+<h3>Built-in configuration profiles<a class="headerlink" href="#built-in-configuration-profiles" title="Permalink to this headline">¶</a></h3>
+<p>Caliper provides built-in configuration profiles for common use
+cases. Currently, the following profiles are defined:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="84%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Profile name</th>
+<th class="head">Variables set</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>serial-trace</td>
+<td>CALI_SERVICES_ENABLE=event:recorder:timestamp:trace</td>
+</tr>
+<tr class="row-odd"><td>thread-trace</td>
+<td>CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace</td>
+</tr>
+<tr class="row-even"><td>mpi-trace</td>
+<td>CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace</td>
+</tr>
+</tbody>
+</table>
+<p>Configuration profiles, including built-in profiles, can be
+extended. For example, the following configuration file</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># [mpi-trace]</span>
+<span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span>
+</pre></div>
+</div>
+<p>adds the <code class="docutils literal"><span class="pre">CALI_MPI_WHITELIST</span></code> entry to the built-in <cite>mpi-trace</cite>
+profile.</p>
+</div>
+</div>
+<div class="section" id="configuration-variables-reference">
+<h2>Configuration variables reference<a class="headerlink" href="#configuration-variables-reference" title="Permalink to this headline">¶</a></h2>
+<p>This section describes the configuration variables of the Caliper
+runtime system.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_CONFIG_PROFILE=&lt;profilename&gt;">
+<code class="descname">CALI_CONFIG_PROFILE = &lt;profile name&gt;</code><a class="headerlink" href="#envvar-CALI_CONFIG_PROFILE=<profilename>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration profile name.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_CONFIG_FILE=&lt;listofconfigfiles&gt;">
+<code class="descname">CALI_CONFIG_FILE = &lt;list of config files&gt;</code><a class="headerlink" href="#envvar-CALI_CONFIG_FILE=<listofconfigfiles>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colon-separated list of configuration files. The provided
+configuration files are read in order. Note: this variable can only
+be set as an environment variable.</p>
+<p>Default: <code class="docutils literal"><span class="pre">caliper.config</span></code></p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LOG_VERBOSITY=(0|1|2)">
+<code class="descname">CALI_LOG_VERBOSITY = (0|1|2)</code><a class="headerlink" href="#envvar-CALI_LOG_VERBOSITY=(0|1|2)" title="Permalink to this definition">¶</a></dt>
+<dd><div class="line-block">
+<div class="line">Verbosity level. Default: 1</div>
+<div class="line-block">
+<div class="line">0: no output</div>
+<div class="line">1: basic informational runtime output</div>
+<div class="line">2: debug output</div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LOG_LOGFILE=(stdout|stderr|&lt;filename&gt;)">
+<code class="descname">CALI_LOG_LOGFILE = (stdout|stderr|&lt;filename&gt;)</code><a class="headerlink" href="#envvar-CALI_LOG_LOGFILE=(stdout|stderr|<filename>)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log file name, or &#8216;stdout&#8217;/&#8217;stderr&#8217; for streaming to standard out or
+standard error, respectively. Default: stderr</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_CALIPER_AUTOMERGE=(true|false)">
+<code class="descname">CALI_CALIPER_AUTOMERGE = (true|false)</code><a class="headerlink" href="#envvar-CALI_CALIPER_AUTOMERGE=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Automatically merge attributes into a common context tree.
+Decreases the size of context records, but may increase the amount
+of metadata and reduce performance.</p>
+<p>Default: true</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_SERVICES_ENABLE=(service1:service2:...)">
+<code class="descname">CALI_SERVICES_ENABLE = (service1:service2:...)</code><a class="headerlink" href="#envvar-CALI_SERVICES_ENABLE=(service1:service2:...)" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of Caliper service modules to enable.</p>
+<p>Default: not set.</p>
+</dd></dl>
+
+<p>Many Caliper services define additional configuration variables. See
+<a class="reference internal" href="services.html"><em>Caliper services</em></a> for a list of Caliper services and their
+configuration.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="services.html" class="btn btn-neutral float-right" title="Caliper services" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="link.html" class="btn btn-neutral" title="Linking Caliper programs" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,640 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Caliper services &mdash; Caliper 1.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
+        <link rel="prev" title="Configuration" href="configuration.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Caliper
+        
+
+        
+          
+          <img src="_static/caliper-logo-small.png" class="logo" />
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Caliper services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#callpath">Callpath</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-information">Environment Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#event">Event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#debug">Debug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mpi">MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pthread">Pthread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#recorder">Recorder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#textlog">Textlog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#timestamp">Timestamp</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Caliper</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Caliper services</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/services.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="caliper-services">
+<h1>Caliper services<a class="headerlink" href="#caliper-services" title="Permalink to this headline">¶</a></h1>
+<p>Caliper comes with a number of optional modules (<em>services</em>) that
+provide measurement data or processing and data recording
+capabilities. The flexible combination and configuration of these
+services allows you to quickly assemble recording solutions for a wide
+range of usage scenarios.</p>
+<p>You can enable the services required for your measurement with the
+<code class="docutils literal"><span class="pre">CALI_SERVICES_ENABLE</span></code> configuration variable, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre>export CALI_SERVICES_ENABLE=event:pthread:recorder
+</pre></div>
+</div>
+<p>to create event-triggered context traces for a multi-threaded application.</p>
+<p>The following sections describe the available service modules and
+their configuration.</p>
+<div class="section" id="callpath">
+<h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>callpath</cite> service uses libunwind to add callpaths to Caliper
+context snapshots. By default, the callpath service provides
+call-stack addresses. Set <code class="docutils literal"><span class="pre">CALI_CALLPATH_USE_NAMES=true</span></code> to retrieve
+function names on-line. Call-path addresses are provided in the
+<code class="docutils literal"><span class="pre">callpath.address</span></code> attribute, call-path region names in
+<code class="docutils literal"><span class="pre">callpath.regname</span></code>. Example:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>callpath:event:recorder
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_CALLPATH_USE_ADDRESS</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">$ </span>./test/cali-basic
+<span class="nv">$ </span>cali-query -e --print-attributes<span class="o">=</span>callpath.address:callpath.regname
+<span class="nv">$ </span>callpath.address<span class="o">=</span>401207/2aaaac052d5d/400fd9,callpath.regname<span class="o">=</span>main/__libc_start_main/_start
+</pre></div>
+</div>
+<p>The example shows the <code class="docutils literal"><span class="pre">callpath.address</span></code> and <code class="docutils literal"><span class="pre">callpath.regname</span></code>
+attributes in Caliper context records.</p>
+<div class="section" id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_CALLPATH_USE_NAME=(true|false)">
+<code class="descname">CALI_CALLPATH_USE_NAME=(true|false)</code><a class="headerlink" href="#envvar-CALI_CALLPATH_USE_NAME=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide region names for call paths. Incurs higher overhead. Note
+that region names for C++ and Fortran functions are not demangled.</p>
+<p>Default: false.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_CALLPATH_USE_ADDRESS=(true|false)">
+<code class="descname">CALI_CALLPATH_USE_ADDRESS=(true|false)</code><a class="headerlink" href="#envvar-CALI_CALLPATH_USE_ADDRESS=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record region addresses for call paths.</p>
+<p>Default: true.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_CALLPATH_SKIP_FRAMES=&lt;numberofframes&gt;">
+<code class="descname">CALI_CALLPATH_SKIP_FRAMES=&lt;number of frames&gt;</code><a class="headerlink" href="#envvar-CALI_CALLPATH_SKIP_FRAMES=<numberofframes>" title="Permalink to this definition">¶</a></dt>
+<dd><p>Skip a number of stack frames. This avoids recording stack frames
+within the Caliper library.</p>
+<p>Default: 10</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="environment-information">
+<h2>Environment Information<a class="headerlink" href="#environment-information" title="Permalink to this headline">¶</a></h2>
+<p>The environment information (<code class="docutils literal"><span class="pre">env</span></code>) service collects runtime
+environment information at process startup and adds it to the Caliper
+context.</p>
+<p>Specifically, it collects</p>
+<blockquote>
+<div><ul class="simple">
+<li>The process&#8217; command line (program name and arguments)</li>
+<li>Machine type and hostname, and operating system type, release, and
+version</li>
+<li>Date and time of program start in text form</li>
+</ul>
+</div></blockquote>
+<p>Moreover, the environment information service can put any environment
+variable defined at program start on the Caliper blackboard.</p>
+<div class="section" id="id1">
+<h3>Configuration<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_ENV_EXTRA=(variable1:variable2:...)">
+<code class="descname">CALI_ENV_EXTRA=(variable1:variable2:...)</code><a class="headerlink" href="#envvar-CALI_ENV_EXTRA=(variable1:variable2:...)" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of extra environment variables to import.</p>
+<p>Default: empty</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="event">
+<h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
+<p>The event trigger service triggers context snapshots when attributes
+are updated. You can select a list of triggering attributes, or have
+any attribute update trigger context snapshots.</p>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>All attributes trigger context snapshots:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:trace
+<span class="nv">$ </span>./test/cali-basic
+<span class="nv">$ </span>cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
+<span class="nv">phase</span><span class="o">=</span>main
+<span class="nv">phase</span><span class="o">=</span>init/main
+<span class="nv">phase</span><span class="o">=</span>main
+<span class="nv">phase</span><span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>0,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>1,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>2,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>3,phase<span class="o">=</span>loop/main
+<span class="nv">phase</span><span class="o">=</span>loop/main
+<span class="nv">phase</span><span class="o">=</span>main
+</pre></div>
+</div>
+<p>Only &#8220;iteration&#8221; attribute updates trigger context snapshots:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:trace
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span>iteration
+<span class="nv">$ </span>./test/cali-basic
+<span class="nv">$ </span>cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
+<span class="nv">phase</span><span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>0,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>1,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>2,phase<span class="o">=</span>loop/main
+<span class="nv">iteration</span><span class="o">=</span>3,phase<span class="o">=</span>loop/main
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>Configuration<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)">
+<code class="descname">CALI_EVENT_TRIGGER=(attribute1:attribute2:...)</code><a class="headerlink" href="#envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of attributes that trigger measurement snapshots.
+If empty, all user attributes trigger snapshots.</p>
+<p>Default: empty</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="debug">
+<h2>Debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h2>
+<p>The debug service prints an event log on the selected Caliper log
+stream. This is useful to debug source-code annotations. Note that you
+need to set Caliper&#8217;s verbosity level to at least 2 to see the log
+output.</p>
+<p>Example:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>debug
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LOG_VERBOSITY</span><span class="o">=</span>2
+<span class="nv">$ </span>./test/cali-basic
+<span class="o">==</span> CALIPER: Available services: callpath papi debug event pthread recorder timestamp <span class="nv">mpi</span>
+<span class="o">==</span> CALIPER: Registered debug <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Initialized
+...
+<span class="o">==</span> CALIPER: Event: create_attribute <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_begin <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: create_attribute <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_set <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> iteration<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: pre_end <span class="o">(</span><span class="nv">attr</span> <span class="o">=</span> phase<span class="o">)</span>
+<span class="o">==</span> CALIPER: Event: <span class="nv">finish</span>
+<span class="o">==</span> CALIPER: Finished
+</pre></div>
+</div>
+</div>
+<div class="section" id="mpi">
+<h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this headline">¶</a></h2>
+<p>The MPI service records MPI operations and the MPI rank. Use it to
+keep track of the program execution spent in MPI. You can select the
+MPI functions to track by setting <code class="docutils literal"><span class="pre">CALI_MPI_WHITELIST</span></code> or
+<code class="docutils literal"><span class="pre">CALI_MPI_BLACKLIST</span></code> filters.</p>
+<p>MPI function names are stored in the <code class="docutils literal"><span class="pre">mpi.function</span></code> attribute, and
+the MPI rank in the <code class="docutils literal"><span class="pre">mpi.rank</span></code> attribute.</p>
+<p>Note that you have to link the <cite>libcaliper-mpiwrap</cite> library with the
+application in addition to the regular Caliper libraries to obtain MPI
+information.</p>
+<div class="section" id="id3">
+<h3>Configuration<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)">
+<code class="descname">CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)</code><a class="headerlink" href="#envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of MPI functions to instrument. If set, only whitelisted
+functions will be instrumented.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)">
+<code class="descname">CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)</code><a class="headerlink" href="#envvar-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of MPI functions that fill be filtered. Note: if both
+whitelist and blacklist are set, only whitelisted functions will
+be instrumented, and the blacklist will be applied to the
+whitelisted functions.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="pthread">
+<h2>Pthread<a class="headerlink" href="#pthread" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>pthread</cite> service manages thread environments for any
+pthread-based multi-threading runtime system. A thread environment
+manager such as the <cite>pthread</cite> service is responsible for creating
+separate per-thread contexts in multithreaded programs.</p>
+<p>If you record attributes on multiple threads, it is strongly
+recommended to enable the <cite>pthread</cite> service.</p>
+</div>
+<div class="section" id="recorder">
+<h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
+<p>The recorder service writes Caliper I/O records into a file.</p>
+<p>By default, the recorder service stores records in an
+in-memory buffer to avoid application performance perturbance because
+of I/O. You can configure the buffer sizes and determine whether they
+are allowed to grow. You can also set the directory and filename that
+should be used; by default, the recorder service will auto-generate a
+file name.</p>
+<div class="section" id="id4">
+<h3>Configuration<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)">
+<code class="descname">CALI_RECORDER_FILENAME=(stdout|stderr|filename)</code><a class="headerlink" href="#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name for context trace. May be set to <code class="docutils literal"><span class="pre">stdout</span></code> or <code class="docutils literal"><span class="pre">stderr</span></code>
+to print to the standard output or error streams, respectively.</p>
+<p>Default: not set, auto-generates a unique file name.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_RECORDER_DIRECTORY=(directoryname)">
+<code class="descname">CALI_RECORDER_DIRECTORY=(directory name)</code><a class="headerlink" href="#envvar-CALI_RECORDER_DIRECTORY=(directoryname)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Directory to write context trace files to. The directory must exist,
+Caliper does not create it. Default: not set, use current working
+directory.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)">
+<code class="descname">CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)</code><a class="headerlink" href="#envvar-CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initial number of records that can be stored in the in-memory record
+buffer.</p>
+<p>Default: 8000</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)">
+<code class="descname">CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)</code><a class="headerlink" href="#envvar-CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initial number of data elements that can be stored in the in-memory record
+buffer.</p>
+<p>Default: 60000</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)">
+<code class="descname">CALI_RECORDER_BUFFER_CAN_GROW=(true|false)</code><a class="headerlink" href="#envvar-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allow record and data buffers to grow if necessary. If false, buffer content
+will be flushed to disk when either buffer is full.</p>
+<p>Default: true</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="textlog">
+<h2>Textlog<a class="headerlink" href="#textlog" title="Permalink to this headline">¶</a></h2>
+<p>The textlog service prints a text representation of snapshots to a configurable
+output stream. This can be used to print out a log of the program&#8217;s
+progress at runtime.</p>
+<p>Currently, text log output can only be triggered by attribute update events.
+Therefore, the <cite>event</cite> service must be active as well.
+You can select which attribute updates trigger a text log output, define the
+output format, and set the output stream (stdout, stderr, or a file name).</p>
+<p>The following example prints a text log for the <cite>phase</cite> attribute of the
+test application with Caliper&#8217;s auto-generated format string:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:textlog:timestamp
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_TEXTLOG_TRIGGER</span><span class="o">=</span>phase
+<span class="nv">$ </span>./test/cali-basic
+<span class="o">==</span> CALIPER: Registered event trigger <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered text log <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Initialized
+<span class="nv">phase</span><span class="o">=</span>main/init                                                       21
+<span class="nv">phase</span><span class="o">=</span>main/loop                                                       84
+<span class="nv">phase</span><span class="o">=</span>main                                                            <span class="nv">219</span>
+<span class="o">==</span> CALIPER: Finished
+</pre></div>
+</div>
+<div class="section" id="id5">
+<h3>Configuration<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:...">
+<code class="descname">CALI_TEXTLOG_TRIGGER=attr1:attr2:...</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:..." title="Permalink to this definition">¶</a></dt>
+<dd><p>Select attributes which trigger a text log output. Note that the <cite>event</cite>
+service must be active in order to trigger snapshots in the first place,
+and the attributes selected here must be in the list of attributes that
+trigger snapshots (defined by <cite>CALI_EVENT_TRIGGER</cite>).</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TEXTLOG_FORMATSTRING=(formatstring)">
+<code class="descname">CALI_TEXTLOG_FORMATSTRING=(formatstring)</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_FORMATSTRING=(formatstring)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Define what to print. The formatstring can contain fields, denoted by
+<code class="docutils literal"><span class="pre">%attribute_name%</span></code>, which prints the value of an attribute. Optionally,
+a field can contain a width specification, denoted by <code class="docutils literal"><span class="pre">[width]</span></code>, to set
+the minimum width of a field. Any other text is printed verbatim.
+For example, <code class="docutils literal"><span class="pre">Phase:</span> <span class="pre">%[32]app.phase%</span> <span class="pre">%[6]time.phase.duration%</span></code> writes
+log strings with two fields: the value of the <cite>app.phase</cite> attribute with
+a minimum width of 40 characters, and the value of  <cite>time.phase.duration</cite>
+attribute with a minimum width of 6 characters, respectively. A resulting
+log entry might look like this:</p>
+<div class="highlight-sh"><div class="highlight"><pre>Phase: main/loop                       7018
+</pre></div>
+</div>
+<p>Default: empty; Caliper will automatically create a format string based on
+the selected trigger attributes.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)">
+<code class="descname">CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name for the text log. May be set to <code class="docutils literal"><span class="pre">stdout</span></code> or <code class="docutils literal"><span class="pre">stderr</span></code>
+to print to the standard output or error streams, respectively.</p>
+<p>Default: stdout</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="timestamp">
+<h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
+<p>The timestamp service adds a time offset, timestamp, or duration to
+context records. Note that timestamps are <em>not</em> synchronized between
+nodes in a distributed-memory program.</p>
+<div class="section" id="id6">
+<h3>Configuration<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<dl class="envvar">
+<dt id="envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)">
+<code class="descname">CALI_TIMER_SNAPSHOT_DURATION=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measure duration (in microseconds) of the context epoch (i.e., the
+time between two consecutive context snapshots). The value will be
+saved in the snapshot record as attribute <code class="docutils literal"><span class="pre">time.duration</span></code>.</p>
+<p>Default: false</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TIMER_OFFSET=(true|false)">
+<code class="descname">CALI_TIMER_OFFSET=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_OFFSET=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include the time offset (time since program start, in microseconds)
+with each context snapshot. The value will be saved in the snapshot
+record as attribute <code class="docutils literal"><span class="pre">time.offset</span></code>.</p>
+<p>Default: false</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TIMER_TIMESTAMP=(true|false)">
+<code class="descname">CALI_TIMER_TIMESTAMP=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_TIMESTAMP=(true|false)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Include absolute timestamp (time since UNIX epoch, in seconds) with
+each context snapshot. The value will be saved in the snapshot record
+as attribute <code class="docutils literal"><span class="pre">time.timestamp</span></code>.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TIMER_INCLUSIVE_DURATION">
+<code class="descname">CALI_TIMER_INCLUSIVE_DURATION</code><a class="headerlink" href="#envvar-CALI_TIMER_INCLUSIVE_DURATION" title="Permalink to this definition">¶</a></dt>
+<dd><p>For snapshots triggered by <code class="docutils literal"><span class="pre">set</span></code> or <code class="docutils literal"><span class="pre">end</span></code> events, calculate the
+duration of the corresponding <code class="docutils literal"><span class="pre">begin-end</span></code>, <code class="docutils literal"><span class="pre">set-set</span></code>, or
+<code class="docutils literal"><span class="pre">set-end</span></code> phase. The value will be saved in the snapshot record
+as attribute <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code>.</p>
+<p>The event service with event trigger information generation needs
+to be enabled for this feature.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="trace">
+<h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
+<p>The trace service creates an I/O record for each snapshot. With the
+<code class="docutils literal"><span class="pre">recorder</span></code> sercice enabled, this will create a snapshot trace file.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="configuration.html" class="btn btn-neutral" title="Configuration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

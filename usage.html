@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Getting started &mdash; Caliper 1.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="Concepts" href="concepts.html"/>
+        <link rel="prev" title="Build and install" href="build.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Caliper
+        
+
+        
+          
+          <img src="_static/caliper-logo-small.png" class="logo" />
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-caliper-programs">Running Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#analyzing-data">Analyzing Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Caliper</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Getting started</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/usage.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="getting-started">
+<h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>Caliper provides annotation APIs for marking source-code regions or
+exporting arbitrary data in the form of key:value attributes. Caliper
+makes this data accessible to tools.</p>
+<p>Moreover, Caliper contains built-in <em>service</em> modules for basic
+measurement and recording tasks.  For example, Caliper can be
+configured to trigger <em>snapshots</em> of the provided
+information. Optionally, measurement data, e.g. timestamps, can be
+added to the snapshots. Source-code annotations and Caliper service
+modules can be flexibly combined to support a wide range of
+performance analysis or monitoring use cases.</p>
+<div class="section" id="source-code-annotations">
+<h2>Source-code annotations<a class="headerlink" href="#source-code-annotations" title="Permalink to this headline">¶</a></h2>
+<p>Adding Caliper source-code annotations is easy.</p>
+<p>The following example marks &#8220;initialization&#8221; and &#8220;loop&#8221; phases in a
+C++ code, and exports the main loop&#8217;s current iteration counter.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;Annotation.h&gt;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="c1">// Mark begin of &quot;initialization&quot; phase</span>
+    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span>
+        <span class="n">init_ann</span> <span class="o">=</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">();</span>
+    <span class="c1">// perform initialization tasks</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+    <span class="c1">// Mark end of &quot;initialization&quot; phase</span>
+    <span class="n">init_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Mark begin of &quot;loop&quot; phase. The scope guard will</span>
+        <span class="c1">// automatically end it at the end of the C++ scope</span>
+        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+            <span class="n">g_loop</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">()</span> <span class="p">);</span>
+
+        <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kt">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
+
+        <span class="c1">// Create &quot;iteration&quot; attribute to export the iteration count</span>
+        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">iteration_ann</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">);</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// Export current iteration count under &quot;iteration&quot;</span>
+            <span class="n">iteration_ann</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+
+            <span class="c1">// A Caliper snapshot taken at this point will contain</span>
+            <span class="c1">// { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }</span>
+
+            <span class="c1">// perform computation</span>
+            <span class="n">t</span> <span class="o">+=</span> <span class="kt">delta_t</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="c1">// Clear the &quot;iteration&quot; attribute (otherwise, snapshots taken</span>
+        <span class="c1">// after the loop will still contain the last &quot;iteration&quot; value)</span>
+        <span class="n">iteration_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="api.html"><em>Annotation API</em></a> for examples in C and Fortran.</p>
+<p>Caliper-enabled tools will now be able to access the information
+provided by the source-code annotations at runtime by taking
+snapshots. The source-code annotations also provide hooks to enable
+various runtime actions in built-in Caliper service modules, such as
+triggering snapshots or writing traces.</p>
+</div>
+<div class="section" id="build-and-link-caliper-programs">
+<h2>Build and link Caliper programs<a class="headerlink" href="#build-and-link-caliper-programs" title="Permalink to this headline">¶</a></h2>
+<p>To use Caliper, add annotation statements to your program and link it
+against the Caliper library. Programs must be linked with the Caliper
+runtime (libcaliper) and infrastructure libraries (libcaliper-common).</p>
+<div class="highlight-python"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="link.html"><em>Linking Caliper programs</em></a> for more information.</p>
+</div>
+<div class="section" id="running-caliper-programs">
+<h2>Running Caliper programs<a class="headerlink" href="#running-caliper-programs" title="Permalink to this headline">¶</a></h2>
+<p>By default, Caliper annotation commands perform no actions other than
+updating a Caliper-internal <em>blackboard buffer</em> . However, we can
+connect a Caliper-enabled third-party tool to the program, or enable
+built-in Caliper &#8220;service&#8221; modules to take measurements and collect
+data.</p>
+<p>As an example, Caliper&#8217;s built-in <cite>trace</cite> configuration profiles
+trigger and write snapshots whenever any or specific attributes are
+updated, generating a snapshot trace. A configuration profile can be
+selected with the <cite>CALI_CONFIG_PROFILE</cite> environment variable:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ CALI_CONFIG_PROFILE</span><span class="o">=</span>thread-trace ./cali-basic
+<span class="o">==</span> CALIPER: Registered pthread <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
+<span class="o">==</span> CALIPER: <span class="nv">Initialized</span>
+<span class="o">==</span> CALIPER: Wrote <span class="m">36</span> records.
+<span class="o">==</span> CALIPER: Finished
+</pre></div>
+</div>
+<p>With this configuration, Caliper will write a take a snapshot for each
+attribute update performed by the annotation commands, calculate the
+time spent in each of the annotated phases, and write the results in
+form of a snapshot trace to a <cite>.cali</cite> file in the current working
+directory.</p>
+</div>
+<div class="section" id="analyzing-data">
+<h2>Analyzing Data<a class="headerlink" href="#analyzing-data" title="Permalink to this headline">¶</a></h2>
+<p>Use the <cite>cali-query</cite> tool to filter, aggregate, or print the recorded
+traces. For example, the following command will show us the time spent
+in the &#8220;initialization&#8221; phase, in the entire &#8220;loop&#8221; phase, and in each
+iteration of the example program:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>ls *.cali
+160219-095419_5623_LQfNQTNgpqdM.cali
+<span class="nv">$ </span>cali-query -e <span class="se">\</span>
+      --print-attributes<span class="o">=</span>iteration:loop:initialization:time.inclusive.duration <span class="se">\</span>
+      160219-095419_5623_LQfNQTNgpqdM.cali
+<span class="nv">initialization</span><span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>202
+<span class="nv">iteration</span><span class="o">=</span>0,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>51
+<span class="nv">iteration</span><span class="o">=</span>1,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>24
+<span class="nv">iteration</span><span class="o">=</span>2,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>17
+<span class="nv">iteration</span><span class="o">=</span>3,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>24
+<span class="nv">loop</span><span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>211
+</pre></div>
+</div>
+</div>
+<div class="section" id="where-to-go-from-here">
+<h2>Where to go from here?<a class="headerlink" href="#where-to-go-from-here" title="Permalink to this headline">¶</a></h2>
+<p>Caliper allows a great amount of flexibility and control in utilizing
+source-code annotations. Much of Caliper&#8217;s functionality is
+implemented by built-in &#8220;services&#8221;, which can be enabled or disabled
+as needed. Refer to the <a class="reference internal" href="services.html"><em>Caliper services</em></a> section to learn about
+functionality they provide.  Finally, the <a class="reference internal" href="api.html"><em>Annotation API</em></a> section in the
+documentation provides reference documentation for Caliper&#8217;s C, C++,
+and Fortran annotation APIs.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="concepts.html" class="btn btn-neutral float-right" title="Concepts" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="build.html" class="btn btn-neutral" title="Build and install" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

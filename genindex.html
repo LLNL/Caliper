@@ -1,0 +1,589 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Index &mdash; Caliper 1.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Caliper
+        
+
+        
+          
+          <img src="_static/caliper-logo-small.png" class="logo" />
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Caliper</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li></li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#C"><strong>C</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ 
+</div>
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="api.html#_CPPv2N4cali10AnnotationE">cali::Annotation (C++ class)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#_CPPv2N4cali10Annotation10AnnotationEPKci">cali::Annotation::Annotation (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t">cali::Annotation::begin (C++ function)</a>, <a href="api.html#_CPPv2N4cali10Annotation5beginEPKc">[1]</a>, <a href="api.html#_CPPv2N4cali10Annotation5beginEd">[2]</a>, <a href="api.html#_CPPv2N4cali10Annotation5beginEi">[3]</a>, <a href="api.html#_CPPv2N4cali10Annotation5beginEv">[4]</a>
+  </dt>
+
+      
+  <dt><a href="api.html#_CPPv2N4cali10Annotation3endEv">cali::Annotation::end (C++ function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t">cali::Annotation::set (C++ function)</a>, <a href="api.html#_CPPv2N4cali10Annotation3setEPKc">[1]</a>, <a href="api.html#_CPPv2N4cali10Annotation3setEd">[2]</a>, <a href="api.html#_CPPv2N4cali10Annotation3setEi">[3]</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_ASVALUE">CALI_ATTR_ASVALUE (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_DEFAULT">CALI_ATTR_DEFAULT (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_HIDDEN">CALI_ATTR_HIDDEN (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_NOMERGE">CALI_ATTR_NOMERGE (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_attr_properties">cali_attr_properties (C type)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_SCOPE_PROCESS">CALI_ATTR_SCOPE_PROCESS (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_SCOPE_TASK">CALI_ATTR_SCOPE_TASK (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_SCOPE_THREAD">CALI_ATTR_SCOPE_THREAD (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ATTR_SKIP_EVENTS">CALI_ATTR_SKIP_EVENTS (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_attr_type">cali_attr_type (C type)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin">cali_begin (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_byname">cali_begin_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_double">cali_begin_double (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_double_byname">cali_begin_double_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_int">cali_begin_int (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_int_byname">cali_begin_int_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_string">cali_begin_string (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_begin_string_byname">cali_begin_string_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_create_attribute">cali_create_attribute (C function)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="api.html#c.CALI_EINV">CALI_EINV (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_end">cali_end (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_end_byname">cali_end_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_err">cali_err (C type)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_ETYPE">CALI_ETYPE (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_INV_ID">CALI_INV_ID (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set">cali_set (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_double">cali_set_double (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_double_byname">cali_set_double_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_int">cali_set_int (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_int_byname">cali_set_int_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_string">cali_set_string (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.cali_set_string_byname">cali_set_string_byname (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_SUCCESS">CALI_SUCCESS (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_ADDR">CALI_TYPE_ADDR (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_BOOL">CALI_TYPE_BOOL (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_DOUBLE">CALI_TYPE_DOUBLE (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_INT">CALI_TYPE_INT (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_INV">CALI_TYPE_INV (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_STRING">CALI_TYPE_STRING (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_TYPE">CALI_TYPE_TYPE (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_UINT">CALI_TYPE_UINT (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_TYPE_USR">CALI_TYPE_USR (C macro)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt>
+    environment variable
+  </dt>
+
+      <dd><dl>
+        
+  <dt><a href="configuration.html#envvar-CALI_CALIPER_AUTOMERGE=(true|false)">CALI_CALIPER_AUTOMERGE=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_CALLPATH_SKIP_FRAMES=<numberofframes>">CALI_CALLPATH_SKIP_FRAMES=&lt;numberofframes&gt;</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_CALLPATH_USE_ADDRESS=(true|false)">CALI_CALLPATH_USE_ADDRESS=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_CALLPATH_USE_NAME=(true|false)">CALI_CALLPATH_USE_NAME=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="configuration.html#envvar-CALI_CONFIG_FILE=<listofconfigfiles>">CALI_CONFIG_FILE=&lt;listofconfigfiles&gt;</a>
+  </dt>
+
+        
+  <dt><a href="configuration.html#envvar-CALI_CONFIG_PROFILE=<profilename>">CALI_CONFIG_PROFILE=&lt;profilename&gt;</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_ENV_EXTRA=(variable1:variable2:...)">CALI_ENV_EXTRA=(variable1:variable2:...)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)">CALI_EVENT_TRIGGER=(attribute1:attribute2:...)</a>
+  </dt>
+
+        
+  <dt><a href="configuration.html#envvar-CALI_LOG_LOGFILE=(stdout|stderr|<filename>)">CALI_LOG_LOGFILE=(stdout|stderr|&lt;filename&gt;)</a>
+  </dt>
+
+        
+  <dt><a href="configuration.html#envvar-CALI_LOG_VERBOSITY=(0|1|2)">CALI_LOG_VERBOSITY=(0|1|2)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)">CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)">CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)">CALI_RECORDER_BUFFER_CAN_GROW=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)">CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_RECORDER_DIRECTORY=(directoryname)">CALI_RECORDER_DIRECTORY=(directoryname)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)">CALI_RECORDER_FILENAME=(stdout|stderr|filename)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)">CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)</a>
+  </dt>
+
+        
+  <dt><a href="configuration.html#envvar-CALI_SERVICES_ENABLE=(service1:service2:...)">CALI_SERVICES_ENABLE=(service1:service2:...)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)">CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TEXTLOG_FORMATSTRING=(formatstring)">CALI_TEXTLOG_FORMATSTRING=(formatstring)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:...">CALI_TEXTLOG_TRIGGER=attr1:attr2:...</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TIMER_INCLUSIVE_DURATION">CALI_TIMER_INCLUSIVE_DURATION</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TIMER_OFFSET=(true|false)">CALI_TIMER_OFFSET=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)">CALI_TIMER_SNAPSHOT_DURATION=(true|false)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_TIMER_TIMESTAMP=(true|false)">CALI_TIMER_TIMESTAMP=(true|false)</a>
+  </dt>
+
+      </dl></dd>
+  </dl></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="api.html#c.type">type (C macro)</a>
+  </dt>
+
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="api.html#c.type.">type. (C macro)</a>
+  </dt>
+
+  </dl></td>
+</tr></table>
+
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

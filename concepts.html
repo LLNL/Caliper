@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Concepts &mdash; Caliper 1.3.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="Annotation API" href="api.html"/>
+        <link rel="prev" title="Getting started" href="usage.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> Caliper
+        
+
+        
+          
+          <img src="_static/caliper-logo-small.png" class="logo" />
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#attributes">Attributes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#datatypes">Datatypes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#properties">Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#blackboard">Blackboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#snapshots">Snapshots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Caliper</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Concepts</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/concepts.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="concepts">
+<h1>Concepts<a class="headerlink" href="#concepts" title="Permalink to this headline">¶</a></h1>
+<p>To utilize Caliper effectively, it is helpful to familiarize yourself
+with the following concepts:</p>
+<div class="section" id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h2>
+<p>Attributes are the basic element in Caliper&#8217;s data model. Essentially,
+attributes are <em>key:value</em> pairs.</p>
+<p><em>Attribute keys</em> have a unique name, which serves as identifier for
+attributes. The key also define the attributes&#8217; datatype, and carries
+additional property flags and optional metadata.</p>
+<p>Attributes are identified through their name. Therefore, it is
+important to choose unique names for attributes. Caliper is designed
+to let independent program components access any attribute only
+through its name, without introducing compile-time data
+dependencies. However, this makes inadvertent name conflicts difficult
+to detect.</p>
+<div class="section" id="datatypes">
+<h3>Datatypes<a class="headerlink" href="#datatypes" title="Permalink to this headline">¶</a></h3>
+<p>The attribute key defines the datatype of an attribute. Only matching
+values can be assigned; e.g. it is not possible to assign string
+values to integer-type attribute keys.</p>
+<p>Caliper supports integer (signed and unsigned), double-precision
+floating point, pointer/address, boolean/logical, and string
+datatypes. It is also possible to store raw binary data.</p>
+</div>
+<div class="section" id="hierarchical-stacked-values">
+<h3>Hierarchical/stacked values<a class="headerlink" href="#hierarchical-stacked-values" title="Permalink to this headline">¶</a></h3>
+<p>Values can be stacked to express hierarchical concepts. The
+<code class="docutils literal"><span class="pre">begin/end</span></code> function pairs in Caliper&#8217;s APIs behave like a stack
+interface: with <code class="docutils literal"><span class="pre">begin</span></code>, a new value will be added on top of the
+stack, while <code class="docutils literal"><span class="pre">end</span></code> removes the top-most value. For example, we can
+create an attribute to track the call stack:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">bar</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">,</span> <span class="s">&quot;bar&quot;</span><span class="p">);</span>
+  <span class="c1">// ...</span>
+  <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">foo</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">,</span> <span class="s">&quot;foo&quot;</span><span class="p">);</span>
+  <span class="n">bar</span><span class="p">();</span>
+  <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">,</span> <span class="s">&quot;main&quot;</span><span class="p">);</span>
+  <span class="n">bar</span><span class="p">();</span>
+  <span class="n">foo</span><span class="p">();</span>
+  <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Assuming we take a snapshot with each update of the <code class="docutils literal"><span class="pre">callstack</span></code>
+attribute, we will get the following sequence:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">bar</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span><span class="o">/</span><span class="n">bar</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span>
+<span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
+</pre></div>
+</div>
+<p>Stacks are <em>per-attribute</em>, i.e., each attribute key has its own,
+independent stack. (In fact, thread-scope attributes (see below) have
+a stack for each attribute on each thread).</p>
+<p>To avoid stacking, use the <code class="docutils literal"><span class="pre">set</span></code> functions; these will just
+overwrite the current (top-most) attribute value.</p>
+<p>Note that stacking is not possible for attributes with <code class="docutils literal"><span class="pre">ASVALUE</span></code>
+storage (see below).</p>
+</div>
+<div class="section" id="properties">
+<h3>Properties<a class="headerlink" href="#properties" title="Permalink to this headline">¶</a></h3>
+<p>Caliper defines properties that can be assigned to each attribute key.
+These properties define the way the attribute is processed or stored
+by Caliper.</p>
+<dl class="docutils">
+<dt>Scope</dt>
+<dd>The attribute scope defines whether the attribute should be
+process-wide or thread-local. By default, an attribute is
+thread-local.</dd>
+<dt>Storage representation</dt>
+<dd>By default, Caliper represents attributes on the blackboard and in
+snapshot records as a reference into a generalized context
+tree. With <code class="docutils literal"><span class="pre">ASVALUE</span></code> storage, the attribute will be explicitly
+stored as a key/value pair.</dd>
+<dt>Event processing</dt>
+<dd>By default, Caliper executes event callback functions on attribute
+updates. With the <code class="docutils literal"><span class="pre">SKIP_EVENTS</span></code> property, the event processing can
+be disabled for the attribute.</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="blackboard">
+<h2>Blackboard<a class="headerlink" href="#blackboard" title="Permalink to this headline">¶</a></h2>
+<p>The <em>blackboard</em> is a runtime buffer that combines all active
+attributes. Caliper data providers (e.g., annotated source-code
+components) and Caliper data users can create, update, delete or read
+attributes on the blackboard independently and in parallel. Thus, the
+blackboard enables a global view of all active attributes without
+creating explicit compile-time or link-time dependencies between
+different data providers, or data providers and data users.</p>
+</div>
+<div class="section" id="snapshots">
+<h2>Snapshots<a class="headerlink" href="#snapshots" title="Permalink to this headline">¶</a></h2>
+<p>A snapshot saves the blackboard contents at a specific point in the
+execution of a target program. Snapshots can be triggered via
+<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::push_snapshot()</span></code> or
+<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::pull_snapshot()</span></code> methods. Snapshots can be triggered
+asynchronously, independent of blackboard updates.</p>
+<p>In addition to blackboard contents, Caliper can add <em>transient</em>
+attributes to snapshots. This is done through the
+<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::Events::snapshot()</span></code> callback function, and is used
+to add measurements such as timestamps to a snapshot.</p>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="api.html" class="btn btn-neutral float-right" title="Annotation API" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="usage.html" class="btn btn-neutral" title="Getting started" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
