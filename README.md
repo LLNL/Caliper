@@ -61,12 +61,9 @@ analysis or monitoring use cases.
 
 To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
-runtime (libcaliper) and infrastructure libraries (libcaliper-common).
+runtime (libcaliper.so).
 
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-common
-
-Depending on the configuration, it may be necessary to add the 
-`libunwind`, `papi`, and `pthread` libraries to the link line.
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
 
 
 ### Source-code annotation
