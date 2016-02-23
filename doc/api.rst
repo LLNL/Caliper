@@ -185,9 +185,10 @@ C and Fortran annotation API
 
 Like the C++ :cpp:class:`Annotation` class, the C/Fortran API provides
 ``begin/set/end`` functions to add, overwrite, and remove attribute
-values from the blackboard. The Fortran API is a thin wrapper around
-the C API. Fortran subroutine names and semantics are identical to the
-respective C versions.
+values from the blackboard.
+
+The Fortran API is a thin wrapper around the C API. Fortran subroutine
+names and semantics are identical to the respective C versions.
 
 .. c:function:: cali_id_t cali_create_attribute(const char* name, \
      cali_attr_type type, int properties)
@@ -379,3 +380,101 @@ respective C versions.
      subroutine cali_end_byname
        character(len=*), intent(in) :: attr_name
        integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+Examples
+................................
+
+The following examples demonstrate basic Caliper source-code
+annotations in C and Fortran. Similar to the C++ example in
+:doc:`usage`, they mark *initialization* and *loop* phases in a
+program, and export the main loop's iteration counter in the
+*iteration* attribute.
+
+C:
+
+.. code-block:: c
+
+   #include <caliper/cali.h>
+   
+   int main() {
+     /* Mark "initialization" phase */
+     cali_begin_byname("initialization");
+     int count = 4;
+     cali_end_byname("initialization");
+
+     if (count > 0) {
+       /* Mark "loop" phase */
+       cali_begin_byname("loop");
+
+       /* Create iteration counter attribute with CALI_ATTR_ASVALUE property */ 
+       cali_id_t iter_attr =
+         cali_create_attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+       for (int i = 0; i < count; ++i) {
+         /* Update iteration counter attribute */
+         cali_set_int(iter_attr, loop);
+
+         /* A Caliper snapshot taken at this point will contain
+          * { "loop", "iteration"=<i> }
+          */
+
+         /* perform computation */
+       }
+
+       /* Clear the iteration counter attribute (otherwise, snapshots taken
+        * after the loop will still contain the last iteration value)
+        */
+       cali_end(iter_attr);
+       
+       /* End "loop" phase */
+       cali_end_byname("loop");
+     }
+   }
+
+Fortran: ::
+
+  program testf03
+    use Caliper
+
+    implicit none
+
+    integer                    :: cali_ret
+    integer(kind(CALI_INV_ID)) :: iter_attr
+    integer                    :: i, count
+
+    ! Mark "initialization" phase
+    call cali_begin_byname('initialization')
+    count = 4
+    call cali_end_byname('initialization')
+
+    if (count .gt. 0) then
+       ! Mark "loop" phase
+       call cali_begin_byname('loop')
+
+       ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
+       call cali_create_attribute('iteration', CALI_TYPE_INT, &
+            CALI_ATTR_ASVALUE, iter_attr)
+
+       do i = 1,count
+          ! Update iteration counter attribute
+          call cali_set_int(iter_attr, i)
+
+          ! A Caliper snapshot taken at this point will contain
+          ! { "loop", "iteration"=<i> } 
+
+          ! perform calculation
+       end do
+
+       ! Clear the iteration counter attribute (otherwise, snapshots taken
+       ! after the loop will still contain the last iteration value)
+       call cali_end(iter_attr, cali_ret)
+
+       ! Checking return value (not required, but good style)
+       if (cali_ret .ne. CALI_SUCCESS) then
+          print *, "cali_end returned with", cali_ret
+       end if
+
+       ! End "loop" phase
+       call cali_end_byname('testf03.loop')
+    end if
+  end program testf03

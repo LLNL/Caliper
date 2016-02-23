@@ -20,6 +20,7 @@ Contents:
 
    build
    usage
+   concepts
    configuration
    services
    api
