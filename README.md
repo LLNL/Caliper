@@ -12,7 +12,8 @@ See `LICENSE` file for details.
 Documentation
 ------------------------------------------
 
-Extensive documentation can be found in the `doc/` directory.
+Extensive documentation is available here:
+http://software.llnl.gov/Caliper/
 
 Usage examples of the C++ and C annotation interfaces are provided in 
 `test/cali-basic.cpp` and `test/cali-basic-c.c`, respectively.
