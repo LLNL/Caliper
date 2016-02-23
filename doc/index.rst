@@ -21,14 +21,14 @@ Contents:
    build
    usage
    concepts
+   api
+   link
    configuration
    services
-   api
+
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

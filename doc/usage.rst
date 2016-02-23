@@ -3,15 +3,15 @@ Getting started
 
 Caliper provides annotation APIs for marking source-code regions or
 exporting arbitrary data in the form of key:value attributes. Caliper
-automatically combines data across the software stack and makes it
-accessible to tools.
+makes this data accessible to tools.
 
-For example, Caliper can be configured to trigger *snapshots* of the
-provided information. Optionally, measurement data, e.g. timestamps,
-can be added to the snapshots. Source-code annotations, measurement
-data providers, and snapshot configurations can be flexibly combined
-to support a wide range of performance analysis or monitoring use
-cases.
+Moreover, Caliper contains built-in *service* modules for basic
+measurement and recording tasks.  For example, Caliper can be
+configured to trigger *snapshots* of the provided
+information. Optionally, measurement data, e.g. timestamps, can be
+added to the snapshots. Source-code annotations and Caliper service
+modules can be flexibly combined to support a wide range of
+performance analysis or monitoring use cases.
 
 Source-code annotations
 --------------------------------
@@ -63,6 +63,14 @@ C++ code, and exports the main loop's current iteration counter.
         }
     }
 
+See :doc:`api` for examples in C and Fortran.
+
+Caliper-enabled tools will now be able to access the information
+provided by the source-code annotations at runtime by taking
+snapshots. The source-code annotations also provide hooks to enable
+various runtime actions in built-in Caliper service modules, such as
+triggering snapshots or writing traces.
+
 Build and link Caliper programs
 --------------------------------
 
@@ -70,24 +78,18 @@ To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper) and infrastructure libraries (libcaliper-common). ::
   
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper -lcaliper-common
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
 
-Depending on the configuration, it may be necessary to add the 
-`libunwind`, `papi`, and `pthread` libraries to the link line.
+See :doc:`link` for more information.
 
 Running Caliper programs
 --------------------------------
 
-Caliper-enabled tools will now be able to take and process snapshots
-or access the information provided by the source-code annotations at
-runtime. The source-code annotations also provide hooks to enable
-various runtime actions, such as triggering snapshots or writing
-traces.
-
-By default, the annotation commands perform no actions other than
-updating the blackboard. However, we can connect a Caliper-enabled
-third-party tool to the program, or enable built-in Caliper "service"
-modules to take measurements and collect data.
+By default, Caliper annotation commands perform no actions other than
+updating a Caliper-internal *blackboard buffer* . However, we can
+connect a Caliper-enabled third-party tool to the program, or enable
+built-in Caliper "service" modules to take measurements and collect
+data.
 
 As an example, Caliper's built-in `trace` configuration profiles
 trigger and write snapshots whenever any or specific attributes are
@@ -136,11 +138,10 @@ Where to go from here?
 --------------------------------
 
 Caliper allows a great amount of flexibility and control in utilizing
-source-code annotations. The "Usage examples" section in the
-documentation demonstrates some of the many ways to use Caliper.  Much
-of Caliper's functionality is implemented by built-in "services",
-which can be enabled or disabled as needed. Refer to the "Caliper
-services" section to learn about functionality they provide.  Finally,
-the "Annotation API" section in the documentation provides reference
-documentation for Caliper's C, C++, and Fortran annotation APIs.
+source-code annotations. Much of Caliper's functionality is
+implemented by built-in "services", which can be enabled or disabled
+as needed. Refer to the :doc:`services` section to learn about
+functionality they provide.  Finally, the :doc:`api` section in the
+documentation provides reference documentation for Caliper's C, C++,
+and Fortran annotation APIs.
 

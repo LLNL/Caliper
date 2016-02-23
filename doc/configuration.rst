@@ -108,9 +108,9 @@ cases. Currently, the following profiles are defined:
 ============  =============
 Profile name  Variables set
 ============  =============
-serial-trace  CALI_SERVICES_ENABLE=event:recorder:timestamp
-thread-trace  CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp
-mpi-trace     CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp
+serial-trace  CALI_SERVICES_ENABLE=event:recorder:timestamp:trace
+thread-trace  CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace
+mpi-trace     CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace
 ============  =============
 
 Configuration profiles, including built-in profiles, can be
@@ -129,32 +129,45 @@ Configuration variables reference
 This section describes the configuration variables of the Caliper
 runtime system.
 
-CALI_CONFIG_PROFILE=<profile name>
-  Configuration profile name. 
+.. envvar:: CALI_CONFIG_PROFILE = <profile name>
+            
+   Configuration profile name. 
 
-CALI_CONFIG_FILE=<list of config files>
-  Colon-separated list of configuration files. The provided
-  configuration files are read in order. Note: this variable can only
-  be set as an environment variable. Default: ``caliper.config``
+.. envvar:: CALI_CONFIG_FILE = <list of config files>
+            
+   Colon-separated list of configuration files. The provided
+   configuration files are read in order. Note: this variable can only
+   be set as an environment variable.
 
-CALI_LOG_VERBOSITY=(0|1|2)
-  | Verbosity level. Default: 1
-  |   0: no output
-  |   1: basic informational runtime output
-  |   2: debug output
+   Default: ``caliper.config``
 
-CALI_LOG_LOGFILE=(stdout|stderr|<filename>)
-  Log file name, or 'stdout'/'stderr' for streaming to standard out or
-  standard error, respectively. Default: stderr
+.. envvar:: CALI_LOG_VERBOSITY = (0|1|2)
+            
+   | Verbosity level. Default: 1
+   |   0: no output
+   |   1: basic informational runtime output
+   |   2: debug output
 
-CALI_CALIPER_AUTOMERGE=(true|false)
-  Automatically merge attributes into a common context tree.
-  Decreases the size of context records, but may increase the amount
-  of metadata and reduce performance. Default: true
+.. envvar:: CALI_LOG_LOGFILE = (stdout|stderr|<filename>)
+            
+   Log file name, or 'stdout'/'stderr' for streaming to standard out or
+   standard error, respectively. Default: stderr
 
-CALI_SERVICES_ENABLE=(service1:service2:...)
-  List of Caliper service modules to enable. Default: not set.
+.. envvar:: CALI_CALIPER_AUTOMERGE = (true|false)
+            
+   Automatically merge attributes into a common context tree.
+   Decreases the size of context records, but may increase the amount
+   of metadata and reduce performance.
 
-See next chapter for a list of Caliper services and their
+   Default: true
+
+.. envvar:: CALI_SERVICES_ENABLE = (service1:service2:...)
+            
+   List of Caliper service modules to enable.
+
+   Default: not set.
+
+Many Caliper services define additional configuration variables. See
+:doc:`services` for a list of Caliper services and their
 configuration.
 
