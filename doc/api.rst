@@ -292,11 +292,13 @@ names and semantics are identical to the respective C versions.
 .. c:function:: cali_err cali_set(cali_id_t attr, \
      const void* ptr, size_t size)
 
-   Generic version.
-
+   Generic version. This function allows setting values for attributes
+   with data types other than integer, string, or double; in
+   particular user-defined raw data (`CALI_TPYE_USR`).
+   
    :param cali_id_t attr: Attribute ID
    :param void* ptr: Address of value
-   :param uint64_t size: Size of value in bytes.
+   :param size_t size: Size of value in bytes.
    :return: Error flag; ``CALI_SUCCESS`` if no error.
             
    This function is not yet implemented in Fortran. 
@@ -475,6 +477,6 @@ Fortran: ::
        end if
 
        ! End "loop" phase
-       call cali_end_byname('testf03.loop')
+       call cali_end_byname('loop')
     end if
   end program testf03

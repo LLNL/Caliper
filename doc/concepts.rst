@@ -11,10 +11,16 @@ Attributes
 Attributes are the basic element in Caliper's data model. Essentially,
 attributes are *key:value* pairs.
 
-*Attribute keys* serve as identifiers for attributes. Attribute keys
-have both a unique *name* and a unique numeric *ID*. Additionally, they
-define the attributes' datatype, carry additional property flags and
-optional metadata.
+*Attribute keys* have a unique name, which serves as identifier for
+attributes. The key also define the attributes' datatype, and carries
+additional property flags and optional metadata.
+
+Attributes are identified through their name. Therefore, it is
+important to choose unique names for attributes. Caliper is designed
+to let independent program components access any attribute only
+through its name, without introducing compile-time data
+dependencies. However, this makes inadvertent name conflicts difficult
+to detect.
 
 Datatypes
 ................................
@@ -75,9 +81,8 @@ Stacks are *per-attribute*, i.e., each attribute key has its own,
 independent stack. (In fact, thread-scope attributes (see below) have
 a stack for each attribute on each thread).
 
-In contrast to ``begin``, the ``set`` annotation functions to avoid
-stacking. These will just overwrite the current (top-most) attribute
-value.
+To avoid stacking, use the ``set`` functions; these will just
+overwrite the current (top-most) attribute value.
 
 Note that stacking is not possible for attributes with ``ASVALUE``
 storage (see below).
@@ -106,12 +111,30 @@ Event processing
   updates. With the ``SKIP_EVENTS`` property, the event processing can
   be disabled for the attribute.
 
-
 Blackboard
 --------------------------------
+
+The *blackboard* is a runtime buffer that combines all active
+attributes. Caliper data providers (e.g., annotated source-code
+components) and Caliper data users can create, update, delete or read
+attributes on the blackboard independently and in parallel. Thus, the
+blackboard enables a global view of all active attributes without
+creating explicit compile-time or link-time dependencies between
+different data providers, or data providers and data users.
 
 
 
 Snapshots
 --------------------------------
 
+A snapshot saves the blackboard contents at a specific point in the
+execution of a target program. Snapshots can be triggered via
+:cpp:func:`Caliper::push_snapshot` or
+:cpp:func:`Caliper::pull_snapshot` methods. Snapshots can be triggered
+asynchronously, independent of blackboard updates.
+
+In addition to blackboard contents, Caliper can add *transient*
+attributes to snapshots. This is done through the
+:cpp:func:`Caliper::Events::snapshot` callback function, and is used
+to add measurements such as timestamps to a snapshot. 
+          

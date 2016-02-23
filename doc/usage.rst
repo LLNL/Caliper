@@ -1,4 +1,4 @@
-Usage Overview
+Getting started
 ================================
 
 Caliper provides annotation APIs for marking source-code regions or
