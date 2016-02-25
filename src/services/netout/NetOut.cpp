@@ -49,6 +49,9 @@ const ConfigSet::Entry   configdata[] = {
       "   none:   No output,\n"
       " or a file name. The default is stdout\n"
     },
+    { "posturl" , CALI_TYPE_STRING, "https://lc.llnl.gov",
+      "URL to issue requests to"
+    },
     ConfigSet::Terminator
 };
 
@@ -70,7 +73,7 @@ class NetOutService
 
     Stream                      m_stream;
     ofstream                    m_ofstream;
-
+    std::string                 m_output_url;
     Attribute                   set_event_attr;   
     Attribute                   end_event_attr;
 
@@ -171,7 +174,7 @@ class NetOutService
         std::string outThis = string_output.str();
         std::cout<< "NETOUT OUTPUTS " << outThis;
         outThis = "FIELD=1";
-        curl_easy_setopt(m_curl,CURLOPT_URL,"http://lc.llnl.gov/store/dzpstore/");
+        curl_easy_setopt(m_curl,CURLOPT_URL,m_output_url.c_str());
         curl_easy_setopt(m_curl,CURLOPT_USERAGENT,"libcurl-agent/1.0");
         curl_easy_setopt(s_netout->getCurl(),CURLOPT_POSTFIELDS,outThis.c_str());
         curl_easy_setopt(s_netout->getCurl(),CURLOPT_POSTFIELDSIZE,outThis.length());
@@ -189,8 +192,7 @@ class NetOutService
     void post_init_cb(Caliper* c) {
         std::string formatstr = config.get("formatstring").to_string();
         curl_global_init(CURL_GLOBAL_ALL); 
-        curl_easy_setopt(m_curl,CURLOPT_URL,"http://lc.llnl.gov/store/user/:user");
-        curl_easy_setopt(m_curl,CURLOPT_USERAGENT,"libcurl-agent/1.0");
+        m_output_url = config.get("posturl").to_string();
         // DZPOLIA OPTIONS HERE
         m_curl = curl_easy_init();
         if (formatstr.size() == 0)

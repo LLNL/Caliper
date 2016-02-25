@@ -19,7 +19,6 @@ set(CALIPER_SOURCES
 
 
 add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services> ${CALIPER_SERVICES_LIBS})
-message ("_extlib_list is ${CALIPER_EXTERNAL_LIBS}")
 target_link_libraries(caliper caliper-common)
 target_link_libraries(caliper ${CMAKE_THREAD_LIBS_INIT})
 

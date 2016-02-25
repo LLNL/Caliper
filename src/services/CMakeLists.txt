@@ -37,10 +37,7 @@ if (PAPI_FOUND)
   add_subdirectory(papi)
 endif()
 if (LIBCURL_FOUND)
-  message("CURL LIBRARY FOUND")
   add_subdirectory(netout)
-else()
-  message("CURL LIBRARY NOT FOUND") #DZP DEBUG, remove this
 endif(LIBCURL_FOUND)
 
 add_subdirectory(debug)
@@ -69,6 +66,4 @@ if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-# Export service object libs to parent scope
-message ("FINAL SERVICE LIB LIST ${CALIPER_SERVICES_LIBS}")
 set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
