@@ -172,8 +172,6 @@ class NetOutService
         // DZPOLIA EDITING HERE
         formatter.print(string_output, snapshot) << std::endl;
         std::string outThis = string_output.str();
-        std::cout<< "NETOUT OUTPUTS " << outThis;
-        outThis = "FIELD=1";
         curl_easy_setopt(m_curl,CURLOPT_URL,m_output_url.c_str());
         curl_easy_setopt(m_curl,CURLOPT_USERAGENT,"libcurl-agent/1.0");
         curl_easy_setopt(s_netout->getCurl(),CURLOPT_POSTFIELDS,outThis.c_str());
