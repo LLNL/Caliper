@@ -58,7 +58,9 @@ extern CaliperService MpiService;
 #ifdef CALIPER_HAVE_OMPT
 extern CaliperService OmptService;
 #endif
-
+#ifdef CALIPER_HAVE_LIBCURL
+extern CaliperService NetOutService;
+#endif
 const CaliperService caliper_services[] = {
 #ifdef CALIPER_HAVE_LIBUNWIND
     CallpathService,
@@ -80,6 +82,10 @@ const CaliperService caliper_services[] = {
 #endif
 #ifdef CALIPER_HAVE_OMPT
     OmptService,
+#endif
+#ifdef CALIPER_HAVE_LIBCURL
+    NetOutService,
+#else
 #endif
     { nullptr, nullptr }
 };
