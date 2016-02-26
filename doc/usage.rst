@@ -106,7 +106,7 @@ selected with the `CALI_CONFIG_PROFILE` environment variable:
     == CALIPER: Wrote 36 records.
     == CALIPER: Finished
 
-With this configuration, Caliper will write a take a snapshot for each
+With this configuration, Caliper will take a snapshot for each
 attribute update performed by the annotation commands, calculate the
 time spent in each of the annotated phases, and write the results in
 form of a snapshot trace to a `.cali` file in the current working

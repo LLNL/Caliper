@@ -36,6 +36,10 @@ endif()
 if (PAPI_FOUND)
   add_subdirectory(papi)
 endif()
+if (LIBCURL_FOUND)
+  add_subdirectory(netout)
+endif(LIBCURL_FOUND)
+
 add_subdirectory(debug)
 add_subdirectory(env)
 add_subdirectory(event)
@@ -61,7 +65,5 @@ add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
-
-# Export service object libs to parent scope
 
 set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)

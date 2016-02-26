@@ -15,7 +15,7 @@ set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
 include(FindPAPI)
-
+include(FindLibcurl)
 # Optional Fortran
 option(WITH_FORTRAN "Install Fortran interface and build test programs")
 
@@ -35,6 +35,11 @@ endif("${isSystemDir}" STREQUAL "-1")
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
   list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
+endif()
+
+if (LIBCURL_FOUND)
+  set(CALIPER_HAVE_LIBCURL TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS ${LIBCURL_LIBRARY})
 endif()
 
 # Find PAPI
