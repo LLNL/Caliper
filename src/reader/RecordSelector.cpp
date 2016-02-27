@@ -123,6 +123,8 @@ struct RecordSelector::RecordSelectorImpl
                 return true;
             case Op::Equals:
                 return clause.value == data.to_string();
+            default:
+                break;
             }
 
         return false;

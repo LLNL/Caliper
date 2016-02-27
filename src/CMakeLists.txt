@@ -18,4 +18,5 @@ add_subdirectory(caliper)
 add_subdirectory(caliper-stub)
 add_subdirectory(reader)
 add_subdirectory(tools)
+add_subdirectory(python)
 

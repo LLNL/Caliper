@@ -11,8 +11,8 @@
 #      installation.  If you loaded caliper through a dotkit, this may already
 #      be set, and caliper will be autodetected by CMake.
 #
-#   2. Configure your proeject with this option:
-#      -D caliper_DIR=/path/to/dir/containing/this/file
+#   2. Configure your project with this option:
+#      -Dcaliper_DIR=<caliper install prefix>/share/
 #
 # If you have done either of these things, then CMake should automatically find
 # and include this file when you call find_package(caliper) from your
@@ -25,7 +25,7 @@
 #
 #   find_package(caliper REQUIRED)
 #   add_executable(foo foo.c)
-#   target_link_libraries(foo caliper-component)
+#   target_link_libraries(foo caliper)
 #
 # That's all!
 #
