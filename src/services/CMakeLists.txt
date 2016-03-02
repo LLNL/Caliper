@@ -42,6 +42,7 @@ endif(LIBCURL_FOUND)
 
 add_subdirectory(debug)
 add_subdirectory(env)
+add_subdirectory(git)
 add_subdirectory(event)
 add_subdirectory(textlog)
 add_subdirectory(pthread)
