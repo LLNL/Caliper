@@ -70,45 +70,7 @@ static const ConfigSet::Entry s_configdata[] = {
 ConfigSet config;
 
 
-void read_cmdline(Caliper* c)
-{
-    Attribute cmdline_attr = 
-        c->create_attribute("env.cmdline", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
-
-    // Attempt to open /proc/self/cmdline and read it
-
-    ifstream fs("/proc/self/cmdline");
-
-    std::vector<Variant> args;
-
-    for (std::string arg; std::getline(fs, arg, static_cast<char>(0)); )
-        c->begin(cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
-}
     
-void read_uname(Caliper* c)
-{
-    struct utsname u;
-
-    if (uname(&u) == 0) {
-        const struct uname_attr_info_t { 
-            const char* attr_name;
-            const char* u_val;
-        } uname_attr_info[] = {
-            { "env.os.sysname", u.sysname },
-            { "env.os.release", u.release },
-            { "env.os.version", u.version },
-            { "env.machine",    u.machine }
-        };
-
-        for (const uname_attr_info_t& uinfo : uname_attr_info) {
-            Attribute attr = 
-                c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
-
-            c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
-        }
-    }
-}
-
 void processCMakeListLine(Caliper* c, std::string arg){
     if( (arg.length()==0)||(arg[0]=='#') || arg[0]=='/') return;  
     std::vector<std::string> segment_list; 
@@ -127,28 +89,13 @@ void read_cmakelists(Caliper* c)
     string build_cache = build_directory + "/CMakeCache.txt";
     ifstream cml(build_cache.c_str());
 
-   // util::split(extra, ':', back_inserter(extra_list));
    for (std::string arg; std::getline(cml, arg); )
        processCMakeListLine(c,arg);
-/**
-    for (string& env : extra_list) {
-        if (env.empty())
-            continue;
-        
-        Attribute attr =
-            c->create_attribute("env."+env, CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
-        
-        char* val = getenv(env.c_str());
-
-        if (val)
-            c->set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
-    }
-*/
 }
   
 void cmake_service_register(Caliper* c)
 {
-    Log(1).stream() << "Registered env service" << endl;
+    Log(1).stream() << "Registered cmake service" << endl;
     Log(1).stream() << "Collecting cmake information" << endl;
 
     config = RuntimeConfig::init("cmake", s_configdata);
