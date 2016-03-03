@@ -37,10 +37,13 @@
 
 #include "CaliperMetadataDB.h"
 
-#include <ContextRecord.h>
+#include "Attribute.h"
+#include "ContextRecord.h"
+#include "Node.h"
 
-#include <util/split.hpp>
+#include "util/split.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <set>
@@ -95,6 +98,56 @@ struct Expand::ExpandImpl
         if (nentry > 0)
             m_os << endl;
     }
+
+    void print(CaliperMetadataDB& db, const EntryList& list) {
+        int nentry = 0;
+
+        for (const Entry& e : list) {
+            if (e.node()) {
+                // Unravel nodes, group them by attribute, and print in reverse order
+
+                std::vector<const Node*> nodes;
+
+                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                    string name = db.attribute(node->attribute()).name();
+
+                    if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                        continue;
+
+                    nodes.push_back(node);
+                }
+
+                if (nodes.empty())
+                    continue;
+
+                stable_sort(nodes.begin(), nodes.end(),
+                            [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+
+                cali_id_t prev_attr_id = CALI_INV_ID;
+
+                for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
+                    if ((*it)->attribute() != prev_attr_id) {
+                        m_os << (nentry++ ? "," : "") << db.attribute((*it)->attribute()).name() << '=';
+                        prev_attr_id = (*it)->attribute();
+                    } else {
+                        m_os << '/';
+                    }
+
+                    m_os << (*it)->data().to_string();
+                }
+            } else if (e.attribute() != CALI_INV_ID) {
+                string name = db.attribute(e.attribute()).name();
+
+                if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                    continue;
+
+                m_os << (nentry++ ? "," : "") << name << '=' << e.value();
+            }
+        }
+
+        if (nentry > 0)
+            m_os << endl;
+    }
 };
 
 
@@ -113,4 +166,10 @@ void
 Expand::operator()(CaliperMetadataDB& db, const RecordMap& rec) const
 {
     mP->print(db, rec);
+}
+
+void 
+Expand::operator()(CaliperMetadataDB& db, const EntryList& list) const
+{
+    mP->print(db, list);
 }

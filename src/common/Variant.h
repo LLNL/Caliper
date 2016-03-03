@@ -38,6 +38,8 @@
 
 #include "cali_types.h"
 
+#include "util/shared_obj.hpp"
+
 #include <cstring>
 #include <string>
 #include <iostream>
@@ -50,7 +52,7 @@ class Variant
     cali_attr_type m_type;
     std::size_t    m_size;
 
-    std::string    m_string;
+    util::shared_obj<std::string> m_string;
 
     // need some sort of "managed/copied" and "unmanaged" pointers
     union Value {
@@ -123,7 +125,6 @@ public:
     double         to_double(bool* okptr = nullptr) const;
     cali_attr_type to_attr_type(bool* okptr = nullptr);
 
-    std::string    to_string();
     std::string    to_string() const;
 
     // vector<unsigned char> data() const;

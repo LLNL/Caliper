@@ -47,6 +47,7 @@
 #include <Node.h>
 
 #include <csv/CsvReader.h>
+#include <csv/CsvSpec.h>
 
 #include <util/split.hpp>
 
@@ -57,6 +58,7 @@
 using namespace cali;
 using namespace std;
 using namespace util;
+
 
 namespace
 {
@@ -87,12 +89,39 @@ namespace
     };
 
     class WriteRecord {
-        ostream& m_os;
+        ostream&      m_os;
 
     public:
         
         WriteRecord(ostream& os)
             : m_os(os) { }
+
+        void operator()(CaliperMetadataDB&, const Node* node) {
+            node->push_record([this](const RecordDescriptor& r,const int* c,const Variant** d)
+                              { CsvSpec::write_record(m_os, r, c, d); });
+        }
+
+        void operator()(CaliperMetadataDB&, const EntryList& list) {
+            std::vector<Variant> attr;
+            std::vector<Variant> vals;
+            std::vector<Variant> refs;
+
+            for (const Entry& e : list) {
+                if (e.node()) {
+                    refs.push_back(Variant(e.node()->id()));
+                } else if (e.attribute() != CALI_INV_ID) {
+                    attr.push_back(Variant(e.attribute()));
+                    vals.push_back(e.value());
+                }
+            }
+
+            int           count[3] = { static_cast<int>(refs.size()),
+                                       static_cast<int>(attr.size()),
+                                       static_cast<int>(vals.size()) };
+            const Variant* data[3] = { &refs.front(), &attr.front(), &vals.front() };
+
+            CsvSpec::write_record(m_os, ContextRecord::record_descriptor(), count, data);
+        }
 
         void operator()(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
             m_os << rec << endl;
@@ -102,13 +131,26 @@ namespace
     /// A node record filter that filters redundant identical node records.
     /// Redundant node records can occur when merging/unifying two streams.
     class FilterDuplicateNodes {
-        cali_id_t       m_max_node;
+        cali_id_t m_max_node;
 
     public:
 
         FilterDuplicateNodes()
             : m_max_node { 0 }
             { } 
+
+        void operator()(CaliperMetadataDB& db, const Node* node, NodeProcessFn push) {
+            cali_id_t id = node->id();
+
+            if (id != CALI_INV_ID) {
+                if (id < m_max_node) {
+                    return;
+                } else 
+                    m_max_node = id;
+            }
+
+            push(db, node);
+        }
         
         void operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) {
             if (get_record_type(rec) == "node") {
@@ -145,6 +187,38 @@ namespace
             m_filter_fn(db, rec, m_push_fn);
         }
     };
+
+    /// SnapshotFilterStep helper struct
+    /// Basically the chain link in the processing chain.
+    /// Passes result of @param m_filter_fn to @param m_push_fn
+    struct SnapshotFilterStep {
+        SnapshotFilterFn  m_filter_fn;  ///< This processing step
+        SnapshotProcessFn m_push_fn;    ///< Next processing step
+
+        SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn) 
+            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
+            { }
+
+        void operator ()(CaliperMetadataDB& db, const EntryList& list) {
+            m_filter_fn(db, list, m_push_fn);
+        }
+    };
+
+    /// NodeFilterStep helper struct
+    /// Basically the chain link in the processing chain.
+    /// Passes result of @param m_filter_fn to @param m_push_fn
+    struct NodeFilterStep {
+        NodeFilterFn  m_filter_fn; ///< This processing step
+        NodeProcessFn m_push_fn;   ///< Next processing step
+
+        NodeFilterStep(NodeFilterFn filter_fn, NodeProcessFn push_fn) 
+            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
+            { }
+
+        void operator ()(CaliperMetadataDB& db, const Node* node) {
+            m_filter_fn(db, node, m_push_fn);
+        }
+    };
 }
 
 
@@ -159,6 +233,12 @@ int main(int argc, const char* argv[])
     Annotation::Guard g_p(a_phase);
 
     a_phase.set("init");
+
+    cali::Annotation("cali-query.build.date").set(__DATE__);
+    cali::Annotation("cali-query.build.time").set(__TIME__);
+#ifdef __GNUC__
+    cali::Annotation("cali-query.build.compiler").set("gnu-" __VERSION__);
+#endif 
 
     Args args(::option_table);
 
@@ -210,27 +290,34 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    RecordProcessFn processor = [](CaliperMetadataDB&,const RecordMap&){ return; };
+    NodeProcessFn     node_proc = [](CaliperMetadataDB&,const Node*) { return; };
+    SnapshotProcessFn snap_proc = [](CaliperMetadataDB&,const EntryList&){ return; };
 
     if (args.is_set("expand"))
-        processor = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
-    else 
-        processor = WriteRecord(fs.is_open() ? fs : cout);
+        snap_proc = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
+    else {
+        WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
 
-    RecordProcessFn output_processor = processor; 
-    Aggregator      aggregate(args.get("aggregate"));
+        snap_proc = writer;
+        node_proc = writer;
+    }
 
-    if (args.is_set("aggregate"))
-        processor = ::FilterStep(aggregate, processor);
+    Annotation filter_ann("cali-query.filter");
+
+    // RecordProcessFn output_processor = processor; 
+    // Aggregator      aggregate(args.get("aggregate"));
+
+    // if (args.is_set("aggregate"))
+    //     processor = ::FilterStep(aggregate, processor);
 
     string select = args.get("select");
 
     if (!select.empty())
-        processor = ::FilterStep(RecordSelector(select), processor);
+        snap_proc = ::SnapshotFilterStep(RecordSelector(select), snap_proc);
     else if (args.is_set("select"))
         cerr << "cali-query: Arguments required for --select" << endl;
 
-    processor = ::FilterStep(::FilterDuplicateNodes(), processor);
+    node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
 
     //
@@ -248,11 +335,11 @@ int main(int argc, const char* argv[])
         CsvReader reader(file);
         IdMap     idmap;
 
-        if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
+        if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
             cerr << "Could not read file " << file << endl;
     }
 
     a_phase.set("flush");
 
-    aggregate.flush(metadb, output_processor);
+    // aggregate.flush(metadb, output_processor);
 }

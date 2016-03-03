@@ -122,7 +122,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return node;
     }
 
-    RecordMap merge_node_record(const RecordMap& rec, IdMap& idmap) {
+    const Node* merge_node_record(const RecordMap& rec, IdMap& idmap) {
         Variant v_id, v_attr, v_parent, v_data;
 
         struct entry_t { 
@@ -140,7 +140,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         if (!v_id || !v_attr || !v_data || v_id.to_id() == CALI_INV_ID || v_attr.to_id() == CALI_INV_ID) {
             Log(1).stream() << "Invalid node record format: " << rec << endl;
-            return rec;
+            return nullptr;
         }
 
         auto attr_it   = idmap.find(v_attr.to_id());
@@ -172,7 +172,40 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (v_id.to_id() != node->id())
             idmap.insert(make_pair(v_id.to_id(), node->id()));
 
-        return node->record();
+        return node;
+    }
+
+    EntryList merge_ctx_record_to_list(const RecordMap& rec, IdMap& idmap) {
+        EntryList list;
+
+        auto r_it = rec.find("ref");
+
+        if (r_it != rec.end())
+            for (const Variant& v : r_it->second) {
+                cali_id_t id  = v.to_id();
+                auto idmap_it = idmap.find(id);
+
+                if (idmap_it != idmap.end())
+                    id = idmap_it->second;
+                if (id < m_nodes.size())
+                    list.push_back(Entry(m_nodes[id]));
+            }
+
+        auto a_it = rec.find("attr");
+        auto d_it = rec.find("data");
+
+        if (a_it != rec.end() && d_it != rec.end() && a_it->second.size() == d_it->second.size())
+            for (EntryList::size_type i = 0; i < a_it->second.size(); ++i) {
+                cali_id_t id  = a_it->second[i].to_id();
+                auto idmap_it = idmap.find(id);
+
+                if (idmap_it != idmap.end())
+                    id = idmap_it->second;
+
+                list.push_back(Entry(attribute(id), d_it->second[i]));
+            }
+
+        return list;
     }
 
     RecordMap merge_ctx_record(const RecordMap& rec, IdMap& idmap) {
@@ -198,15 +231,33 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
             return rec;
 
-        if      (rec_name_it->second.front().to_string() == "node")
-            return merge_node_record(rec, idmap);
-        else if (rec_name_it->second.front().to_string() == "ctx" )
+        if (rec_name_it->second.front().to_string() == "node") {
+            const Node* node = merge_node_record(rec, idmap);
+
+            if (node)
+                return node->record();
+        } else if (rec_name_it->second.front().to_string() == "ctx" )
             return merge_ctx_record (rec, idmap);
 
         return rec;
     }
 
-    Attribute attribute(cali_id_t id) const {
+    void merge(CaliperMetadataDB* db, const RecordMap& rec, IdMap& idmap, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn) {
+        auto rec_name_it = rec.find("__rec");
+
+        if (rec_name_it == rec.end() || rec_name_it->second.empty())
+            return;
+
+        if (rec_name_it->second.front().to_string() == "node") {
+            const Node* node = merge_node_record(rec, idmap);
+
+            if (node)
+                node_fn(*db, node);
+        } else if (rec_name_it->second.front().to_string() == "ctx" )
+            snap_fn(*db, merge_ctx_record_to_list(rec, idmap));
+    }
+
+    Attribute attribute(cali_id_t id) {
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
@@ -269,6 +320,13 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& idmap)
 {
     return mP->merge(rec, idmap);
 }
+
+void 
+CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn)
+{
+    mP->merge(this, rec, map, node_fn, snap_fn);
+}
+
 
 const Node* 
 CaliperMetadataDB::node(cali_id_t id) const 

@@ -132,6 +132,10 @@ namespace
                      << endl;
         }
 
+        void operator()(CaliperMetadataDB& db, const Node* node) {
+            print_node(db, node);
+        }
+        
         void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
             if (get_record_type(rec) == "node") {
                 auto id_entry_it = rec.find("id");
@@ -153,24 +157,18 @@ namespace
         FilterDuplicateNodes()
             : m_max_node { 0 }
             { } 
-        
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
 
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
-                    cali_id_t id = id_entry_it->second.front().to_id();
+        void operator()(CaliperMetadataDB& db, const Node* node, NodeProcessFn push) {
+            cali_id_t id = node->id();
 
-                    if (id != CALI_INV_ID) {
-                        if (id < m_max_node)
-                            return;
-                        else
-                            m_max_node = id;
-                    }
-                }                
+            if (id != CALI_INV_ID) {
+                if (id < m_max_node) {
+                    return;
+                } else 
+                    m_max_node = id;
             }
 
-            push(db, rec);
+            push(db, node);
         }
     };
 
@@ -187,6 +185,22 @@ namespace
 
         void operator ()(CaliperMetadataDB& db, const RecordMap& rec) {
             m_filter_fn(db, rec, m_push_fn);
+        }
+    };
+
+    /// NodeFilterStep helper struct
+    /// Basically the chain link in the processing chain.
+    /// Passes result of @param m_filter_fn to @param m_push_fn
+    struct NodeFilterStep {
+        NodeFilterFn  m_filter_fn; ///< This processing step
+        NodeProcessFn m_push_fn;   ///< Next processing step
+
+        NodeFilterStep(NodeFilterFn filter_fn, NodeProcessFn push_fn) 
+            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
+            { }
+
+        void operator ()(CaliperMetadataDB& db, const Node* node) {
+            m_filter_fn(db, node, m_push_fn);
         }
     };
 }
@@ -254,10 +268,13 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    DotPrinter      dotprint(fs.is_open() ? fs : cout, args);
-    RecordProcessFn processor = dotprint;
 
-    processor = ::FilterStep(::FilterDuplicateNodes(), processor);
+    DotPrinter        dotprint(fs.is_open() ? fs : cout, args);
+
+    NodeProcessFn     node_proc = dotprint;
+    SnapshotProcessFn snap_proc = [](CaliperMetadataDB&,const EntryList&){ return; };
+
+    node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
     //
     // --- Process inputs
@@ -276,7 +293,7 @@ int main(int argc, const char* argv[])
         CsvReader reader(file);
         IdMap     idmap;
 
-        if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
+        if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
             cerr << "Could not read file " << file << endl;
     }
 
