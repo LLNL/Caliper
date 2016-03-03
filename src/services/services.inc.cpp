@@ -46,6 +46,7 @@ extern CaliperService PapiService;
 extern CaliperService DebugService;
 extern CaliperService EnvironmentInfoService;
 extern CaliperService GitInfoService;
+extern CaliperService CMakeInfoService;
 extern CaliperService EventTriggerService;
 extern CaliperService PthreadService;
 extern CaliperService RecorderService;
@@ -72,6 +73,7 @@ const CaliperService caliper_services[] = {
     DebugService,
     EnvironmentInfoService,
     GitInfoService,
+    CMakeInfoService,
     EventTriggerService,
     PthreadService,
     RecorderService,
