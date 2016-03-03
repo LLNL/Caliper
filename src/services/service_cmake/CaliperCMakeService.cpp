@@ -30,68 +30,83 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file services.inc.cpp
-/// Static list of all available Caliper service modules.
+///@file  CMakeInfo.cpp
+///@brief A Caliper service that collects various cmake information
 
+#include "../CaliperService.h"
+
+#include <Caliper.h>
+
+#include <Log.h>
+#include <RuntimeConfig.h>
+#include <Variant.h>
+
+#include <util/split.hpp>
+
+#include <sys/utsname.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <vector>
+
+using namespace cali;
+using namespace std;
+
+namespace
+{
+
+static const ConfigSet::Entry s_configdata[] = {
+    { "build_directory", CALI_TYPE_STRING, "",
+      "Directory in which CMakeLists.txt can be found",
+      "Directory in which CMakeLists.txt can be found"
+    },
+    ConfigSet::Terminator
+};
+
+ConfigSet config;
+
+
+    
+void processCMakeListLine(Caliper* c, std::string arg){
+    if( (arg.length()==0)||(arg[0]=='#') || arg[0]=='/') return;  
+    std::vector<std::string> segment_list; 
+    util::split(arg, '=', back_inserter(segment_list));
+    Attribute attr = c->create_attribute(segment_list[0], CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+    for(auto curval = segment_list.begin()+1; curval != segment_list.end(); curval++){
+        c->set(attr, Variant(CALI_TYPE_STRING, curval->c_str(), curval->length()));
+    }
+    return;
+
+}
+
+void read_cmakelists(Caliper* c)
+{
+    string build_directory = config.get("build_directory").to_string();
+    string build_cache = build_directory + "/CMakeCache.txt";
+    ifstream cml(build_cache.c_str());
+
+   for (std::string arg; std::getline(cml, arg); )
+       processCMakeListLine(c,arg);
+}
+  
+void cmake_service_register(Caliper* c)
+{
+    Log(1).stream() << "Registered cmake service" << endl;
+    Log(1).stream() << "Collecting cmake information" << endl;
+
+    config = RuntimeConfig::init("cmake", s_configdata);
+
+    read_cmakelists(c);
+}
+  
+}
 
 namespace cali
 {
-
-#ifdef CALIPER_HAVE_LIBUNWIND
-extern CaliperService CallpathService;
-#endif
-#ifdef CALIPER_HAVE_PAPI
-extern CaliperService PapiService;
-#endif
-extern CaliperService DebugService;
-extern CaliperService EnvironmentInfoService;
-extern CaliperService GitInfoService;
-extern CaliperService CMakeInfoService;
-extern CaliperService EventTriggerService;
-extern CaliperService PthreadService;
-extern CaliperService RecorderService;
-extern CaliperService StatisticsService;
-extern CaliperService TextLogService;
-extern CaliperService TimestampService;
-extern CaliperService TraceService;
-#ifdef CALIPER_HAVE_MPI
-extern CaliperService MpiService;
-#endif
-#ifdef CALIPER_HAVE_OMPT
-extern CaliperService OmptService;
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-extern CaliperService NetOutService;
-#endif
-const CaliperService caliper_services[] = {
-#ifdef CALIPER_HAVE_LIBUNWIND
-    CallpathService,
-#endif
-#ifdef CALIPER_HAVE_PAPI
-    PapiService,
-#endif
-    DebugService,
-    EnvironmentInfoService,
-    GitInfoService,
-    CMakeInfoService,
-    EventTriggerService,
-    PthreadService,
-    RecorderService,
-    StatisticsService,
-    TimestampService,
-    TextLogService,
-    TraceService,
-#ifdef CALIPER_HAVE_MPI
-    MpiService,
-#endif
-#ifdef CALIPER_HAVE_OMPT
-    OmptService,
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-    NetOutService,
-#else
-#endif
-    { nullptr, nullptr }
-};
-
-}
+    CaliperService CMakeInfoService = { "cmake", ::cmake_service_register };
+} // namespace cali
+ 
