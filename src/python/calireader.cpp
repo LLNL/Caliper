@@ -3,7 +3,7 @@ using namespace cali;
 
 #include <string>
 
-#include <python2.6/Python.h>
+#include <Python.h>
 
 extern "C" {
 

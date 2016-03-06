@@ -71,6 +71,10 @@ if (MPI_C_FOUND)
   set(CALIPER_HAVE_MPI TRUE)
 endif()
 
+# Find Python
+
+find_package(PythonLibs)
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
@@ -90,9 +94,6 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper
 add_subdirectory(doc)
 add_subdirectory(src)
 add_subdirectory(test)
-if (WITH_FORTRAN)
-  add_subdirectory(fortran)
-endif()
 
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)
