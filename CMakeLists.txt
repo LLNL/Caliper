@@ -7,8 +7,8 @@ cmake_minimum_required(VERSION 3.0)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)
-set(CALIPER_MINOR_VERSION 3)
-set(CALIPER_PATCH_VERSION 0)
+set(CALIPER_MINOR_VERSION 4)
+set(CALIPER_PATCH_VERSION dev)
 set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}")
 
 # Add our module directory to the include path.
