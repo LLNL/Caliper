@@ -4,7 +4,21 @@
 #include "Entry.h"
 #include "Node.h"
 
+#include <functional>
+
 using namespace cali;
+
+size_t
+Entry::hash() const
+{
+    if (m_node)
+        return m_node->id();
+
+    size_t h1 = m_attr_id;
+    size_t h2 = std::hash<std::string>()(m_value.to_string());
+
+    return h1 ^ (h2 << 1);
+}
 
 cali_id_t
 Entry::attribute() const
@@ -48,4 +62,30 @@ Entry::value(cali_id_t attr_id) const
     return Variant();
 }
 
+bool cali::operator == (const Entry& lhs, const Entry& rhs)
+{
+    if (lhs.m_node)
+        return rhs.m_node ? (lhs.m_node->id() == rhs.m_node->id()) : false;
+    else if (rhs.m_node)
+        return false;
+    else if (lhs.m_attr_id == rhs.m_attr_id)
+        return lhs.m_value == rhs.m_value;
+
+    return false;
+}
+
+bool cali::operator <  (const Entry& lhs, const Entry& rhs)
+{
+    if (lhs.m_node)
+        return rhs.m_node ? (lhs.m_node->id() < rhs.m_node->id()) : true;
+    else if (rhs.m_node)
+        return false;
+
+    if (lhs.m_attr_id == rhs.m_attr_id)
+        // slow but universal
+        return lhs.m_value.to_string() < rhs.m_value.to_string();
+    
+    return lhs.m_attr_id < rhs.m_attr_id;
+}
+                  
 const Entry Entry::empty;

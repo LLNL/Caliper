@@ -2,7 +2,7 @@
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,38 +30,46 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Expand.h
-/// Expand output formatter declarations
+/// @file SimpleReader.cpp
+/// A high-level API for parsing cali files
 
-#ifndef CALI_EXPAND_H
-#define CALI_EXPAND_H
+#include <ContextRecord.h>
 
-#include "RecordMap.h"
-#include "RecordProcessor.h"
+#include "SimpleReader.h"
 
-#include <iostream>
-#include <memory>
+using namespace cali;
+using namespace std;
 
-namespace cali
+SimpleReader::SimpleReader()
 {
+}
 
-class CaliperMetadataDB;
-
-class Expand 
+void SimpleReader::open(const string &filename)
 {
-    struct ExpandImpl;
-    std::shared_ptr<ExpandImpl> mP;
+    califile.open(filename, ifstream::in);
+}
 
-public:
+bool SimpleReader::nextSnapshot(ExpandedRecordMap &rec)
+{
+    string line;
+    RecordMap record;
 
-    Expand(std::ostream& os, const std::string& filter_string);
+    while (true) {
+        if (!getline(califile, line)) {
+            return false;
+        }
 
-    ~Expand();
+        record = metadb.merge(CsvSpec::read_record(line), idmap);
 
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
-    void operator()(CaliperMetadataDB&, const EntryList&) const;
-};
+        if (record["__rec"].at(0).to_string() == "ctx") {
 
-} // namespace cali
+            record = ContextRecord::unpack(record, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
+            
+            for (auto attr : record) {
+                rec[attr.first] = attr.second.at(0);
+            }
 
-#endif
+            return true;
+        }
+    }
+}

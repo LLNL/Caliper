@@ -2,7 +2,7 @@
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,38 +30,35 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Expand.h
-/// Expand output formatter declarations
+///@file cali-simplereader-test.cpp
 
-#ifndef CALI_EXPAND_H
-#define CALI_EXPAND_H
+#include <SimpleReader.h>
+using namespace cali;
 
-#include "RecordMap.h"
-#include "RecordProcessor.h"
-
+#include <string>
 #include <iostream>
-#include <memory>
+using namespace std;
 
-namespace cali
+int main(int argc, char *argv[])
 {
+    SimpleReader sr;
 
-class CaliperMetadataDB;
+    if (argc != 2) {
+        cerr << "Usage: " << argv[0] << " <cali file>" << endl;
+        return 1;
+    }
 
-class Expand 
-{
-    struct ExpandImpl;
-    std::shared_ptr<ExpandImpl> mP;
+    string filename(argv[1]);
 
-public:
+    sr.open(filename);
 
-    Expand(std::ostream& os, const std::string& filter_string);
+    ExpandedRecordMap rec;
+    while (sr.nextSnapshot(rec)) {
+        for (auto attr : rec) {
+            cout << attr.first << "=" << attr.second << ",";
+        }
+        cout << endl;
+    }
 
-    ~Expand();
-
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
-    void operator()(CaliperMetadataDB&, const EntryList&) const;
-};
-
-} // namespace cali
-
-#endif
+    return 0;
+}

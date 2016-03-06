@@ -43,9 +43,34 @@
 #include <iterator>
 #include <map>
 #include <sstream>
+#include <vector>
 
 using namespace cali;
 using namespace std;
+
+namespace
+{
+    struct Histogram {
+        const int        nbins;
+        std::vector<int> bins;
+
+        void update(int i) {
+            int bin = 0;
+
+            for (bin = 0; bin < nbins-1 && i > 2*bin; ++bin)
+                ;
+
+            ++bins[bin];
+        }
+
+        void print() const {
+            int bound = 0;
+    
+            for (int val : bins)
+                std::cerr << 2*bound++ << ": " << val << ",  ";
+        }
+    };
+}
 
 Variant::Variant(cali_attr_type type, const void* data, std::size_t size)
     : m_type { type }, m_size { size }
@@ -141,7 +166,7 @@ Variant::to_bool(bool* okptr)
         {
             string lower;
 
-            std::transform(m_string.begin(), m_string.end(), back_inserter(lower), ::tolower);
+            std::transform(m_string.obj().begin(), m_string.obj().end(), back_inserter(lower), ::tolower);
 
             if (lower == "true" || lower == "t") {
                 ok = true;
@@ -154,7 +179,7 @@ Variant::to_bool(bool* okptr)
 
         // try numeral
         if (!ok) {
-            istringstream is(m_string);
+            istringstream is(m_string.obj());
 
             is >> m_value.v_bool;
             ok = !is.fail();
@@ -192,7 +217,7 @@ Variant::to_int(bool* okptr) const
     cali_attr_type type = m_type;
 
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
-        istringstream is(m_string);
+        istringstream is(m_string.obj());
 
         is >> i;
 
@@ -233,7 +258,7 @@ Variant::to_uint(bool* okptr) const
     cali_attr_type type = m_type;
 
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
-        istringstream is(m_string);
+        istringstream is(m_string.obj());
 
         is >> uint;
 
@@ -274,7 +299,7 @@ Variant::to_double(bool* okptr) const
     cali_attr_type type = m_type;
 
     if (type == CALI_TYPE_INV && !m_string.empty()) {
-        istringstream is(m_string);
+        istringstream is(m_string.obj());
 
         is >> d;
 
@@ -321,7 +346,7 @@ cali_attr_type
 Variant::to_attr_type(bool* okptr) 
 {
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
-        m_value.v_type = cali_string2type(m_string.c_str());
+        m_value.v_type = cali_string2type(m_string.obj().c_str());
 
         if (m_value.v_type != CALI_TYPE_INV)
             m_type = CALI_TYPE_TYPE;
@@ -339,7 +364,7 @@ std::string
 Variant::to_string() const
 {
     if (!m_string.empty())
-        return m_string;
+        return m_string.obj();
 
     string ret;
 
@@ -396,15 +421,10 @@ Variant::to_string() const
     return ret;
 }
 
-std::string
-Variant::to_string() 
-{
-    m_string = const_cast<const Variant*>(this)->to_string();
-    return m_string;
-}
-
 bool cali::operator == (const Variant& lhs, const Variant& rhs)
 {
+    if (lhs.m_type == CALI_TYPE_INV && rhs.m_type == CALI_TYPE_INV)
+        return lhs.m_string == rhs.m_string;
     if (lhs.m_type == CALI_TYPE_INV || rhs.m_type == CALI_TYPE_INV)
         return lhs.to_string() == rhs.to_string();
 
