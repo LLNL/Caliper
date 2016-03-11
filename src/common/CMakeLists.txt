@@ -14,7 +14,8 @@ set(CALIPER_UTIL_HEADERS
     util/callback.hpp
     util/list.hpp
     util/split.hpp
-    util/lockfree-tree.hpp)
+    util/lockfree-tree.hpp
+    util/shared_obj.hpp)
 
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
