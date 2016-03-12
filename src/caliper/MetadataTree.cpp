@@ -275,9 +275,9 @@ struct MetadataTree::MetadataTreeImpl
 
     Node*
     get_or_copy_node(MemoryPool* pool, Node* from, Node* parent = nullptr) {
-        Node* node = parent ? parent : &m_root;
-
-        for (node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
+        Node* node = parent ? parent->first_child() : m_root.first_child();
+        
+        for ( ; node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
             ;
 
         if (!node) {
