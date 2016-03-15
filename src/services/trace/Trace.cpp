@@ -42,11 +42,13 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#include <util/spinlock.hpp>
 #include <c-util/vlenc.h>
 
 #include <pthread.h>
 
 #include <cstring>
+#include <mutex>
 
 #define SNAP_MAX 64
 
@@ -206,10 +208,10 @@ namespace
     };
 
     const ConfigSet::Entry configdata[] = {
-        { "buffer_size",     CALI_TYPE_UINT, "2",
+        { "buffer_size",   CALI_TYPE_UINT, "2",
           "Size of initial per-thread trace buffer in MiB",
           "Size of initial per-thread trace buffer in MiB" },
-        { "overflow_policy", CALI_TYPE_STRING, "grow",
+        { "buffer_policy", CALI_TYPE_STRING, "grow",
           "What to do when trace buffer is full",
           "What to do when trace buffer is full:\n"
           "   flush:  Write out contents\n"
@@ -227,10 +229,27 @@ namespace
     
     pthread_key_t  trace_buf_key;
 
+    TraceBuffer*   global_tbuf_list;
+    util::spinlock global_tbuf_lock;
+
+    
     void save_tbuf(TraceBuffer* tb) {
         pthread_setspecific(trace_buf_key, tb);
     }
 
+    void destroy_tbuf(void* ctx) {
+        TraceBuffer* tbuf = static_cast<TraceBuffer*>(ctx);
+
+        if (!tbuf)
+            return;
+        else {
+            std::lock_guard<util::spinlock> g(global_tbuf_lock);
+            
+            tbuf->append(global_tbuf_list);
+            global_tbuf_list = tbuf;
+        }
+    }
+    
     TraceBuffer* acquire_tbuf() {
         TraceBuffer* tbuf = static_cast<TraceBuffer*>(pthread_getspecific(trace_buf_key));
 
@@ -277,8 +296,7 @@ namespace
         }
             
         case BufferPolicy::Flush:
-            Log(1).stream() << "Flushing snapshot trace buffer ..." << endl;
-            Log(1).stream() << "Flushed " << tbuf->flush(c) << " snapshots." << endl;
+            Log(1).stream() << "Trace buffer full: flushed " << tbuf->flush(c) << " snapshots." << endl;
             return tbuf;
         
         } // switch (policy)
@@ -301,12 +319,24 @@ namespace
     }        
 
     void flush_cb(Caliper* c, const Entry* trigger) {
+        TraceBuffer* gtbuf = nullptr;
+        
+        {
+            std::lock_guard<util::spinlock> g(global_tbuf_lock);
+            
+            gtbuf            = global_tbuf_list;
+            global_tbuf_list = nullptr;
+        }
+
+        if (gtbuf) {
+            Log(1).stream() << "Flushed " << gtbuf->flush(c) << " snapshots." << endl;
+            delete gtbuf;
+        }
+        
         TraceBuffer* tbuf = acquire_tbuf();
 
-        if (tbuf) {
-            Log(1).stream() << "Flushing snapshot trace buffer ..." << endl;
-            Log(1).stream() << "Flushed " << tbuf->flush(c) << " snapshots." << endl;
-        }
+        if (tbuf)
+            Log(1).stream() << "Flushed " << tbuf->flush(c)  << " snapshots." << endl;
     }
 
     void init_overflow_policy() {
@@ -325,13 +355,15 @@ namespace
     }
     
     void trace_register(Caliper* c) {
+        global_tbuf_lock.unlock();
+        
         config = RuntimeConfig::init("trace", configdata);
         
         init_overflow_policy();
         
         buffersize = config.get("buffer_size").to_uint() * 1024 * 1024;
         
-        if (pthread_key_create(&trace_buf_key, NULL) != 0) {
+        if (pthread_key_create(&trace_buf_key, destroy_tbuf) != 0) {
             Log(0).stream() << "trace: error: pthread_key_create() failed" << endl;
             return;
         }        

@@ -523,6 +523,11 @@ Caliper::push_snapshot(int scopes, const Entry* trigger_info)
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }
 
+void
+Caliper::flush(const Entry* entry)
+{
+    mG->events.flush(this, entry);
+}
 
 // --- Annotation interface
 
