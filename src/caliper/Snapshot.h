@@ -67,6 +67,12 @@ public:
         cali::Variant* immediate_data;
     };
 
+    struct Data {
+        const cali::Node* const*   node_entries;
+        const cali_id_t*     immediate_attr;
+        const cali::Variant* immediate_data;
+    };
+
     struct Sizes {
         int n_nodes;
         int n_attr;
@@ -90,6 +96,15 @@ public:
         return addr;
     }
 
+    Sizes size() const {
+        return { m_num_nodes, m_num_immediate, m_num_immediate };
+    }
+    
+    Data data() const {
+        Data addr = { m_nodes, m_attr, m_data };
+        return addr;
+    }
+    
     void commit(const Sizes& sizes) {
         m_num_nodes     += sizes.n_nodes;
         m_num_immediate += sizes.n_attr;

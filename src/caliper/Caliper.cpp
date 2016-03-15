@@ -94,9 +94,11 @@ namespace
     exit_handler(void) {
         Caliper c = Caliper::instance();
 
-        if (c)
+        if (c) {
+            c.events().flush(&c, nullptr);
             c.events().finish_evt(&c);
-
+        }
+        
         Caliper::release();
     }
 
@@ -698,6 +700,12 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
         return Entry(mG->tree.get_path(1, &attr, &value, nullptr, &(scope(attr2caliscope(attr))->mempool)));
 
     return entry;
+}
+
+Node*
+Caliper::node(cali_id_t id)
+{
+    return mG->tree.node(id);
 }
 
 // --- Events interface

@@ -35,6 +35,8 @@
 
 #include "Variant.h"
 
+#include "c-util/vlenc.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
@@ -419,6 +421,62 @@ Variant::to_string() const
     }
 
     return ret;
+}
+
+size_t
+Variant::pack(unsigned char* buf) const
+{
+    size_t nbytes = 0;
+
+    nbytes += vlenc_u64(static_cast<uint64_t>(m_type), buf);
+
+    switch (m_type) {
+    case CALI_TYPE_INV:
+        break;    
+
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
+        nbytes += vlenc_u64(m_size, buf+nbytes);
+    default:
+        nbytes += vlenc_u64(m_value.v_uint, buf+nbytes);
+        break;
+    }
+
+    return nbytes;
+}
+
+Variant
+Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
+{
+    size_t   p = 0;
+    Variant  v;
+    
+    uint64_t u_type = vldec_u64(buf, &p);
+
+    if (u_type > CALI_MAXTYPE) {
+        if (ok)
+            *ok = false;
+        
+        return v;
+    }
+
+    v.m_type = static_cast<cali_attr_type>(u_type);
+        
+    switch (v.m_type) {
+    case CALI_TYPE_INV:
+        break;
+
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
+        v.m_size         = static_cast<size_t>(vldec_u64(buf+p, &p));
+    default:
+        v.m_value.v_uint = vldec_u64(buf+p, &p);
+    }
+
+    if (inc)
+        *inc += p;
+
+    return v;
 }
 
 bool cali::operator == (const Variant& lhs, const Variant& rhs)

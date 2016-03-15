@@ -123,6 +123,9 @@ public:
                             const Entry*,
                             const Snapshot*)>            process_snapshot;
 
+        util::callback<void(Caliper*,
+                            const Entry*)>               flush;
+        
         util::callback<void(const RecordDescriptor&,
                             const int*,
                             const Variant**)>            write_record;
@@ -144,6 +147,8 @@ public:
     void      push_snapshot(int scopes, const Entry* trigger_info);
     void      pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* snapshot);
 
+    void      flush(const Entry* trigger_info);
+    
     // --- Annotation API
 
     cali_err  begin(const Attribute& attr, const Variant& data);
@@ -153,10 +158,12 @@ public:
 
     Variant   exchange(const Attribute& attr, const Variant& data);
 
-    // --- Direct metadata API
+    // --- Direct metadata / data access API
 
     Entry     make_entry(size_t n, const Attribute* attr, const Variant* value);
     Entry     make_entry(const Attribute& attr, const Variant& value);
+
+    Node*     node(cali_id_t id); // EXTREMELY SLOW, use with caution!
 
     // --- Query API
 

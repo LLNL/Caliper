@@ -38,27 +38,310 @@
 #include <Caliper.h>
 #include <Snapshot.h>
 
+#include <ContextRecord.h>
 #include <Log.h>
+#include <RuntimeConfig.h>
+
+#include <c-util/vlenc.h>
+
+#include <pthread.h>
+
+#include <cstring>
+
+#define SNAP_MAX 64
 
 using namespace cali;
 using namespace std;
 
-
 namespace 
 {
+    enum   BufferPolicy {
+        Flush, Grow, Stop
+    };
+    
+    class TraceBuffer {
+        size_t         m_size;
+        size_t         m_pos;
+        size_t         m_nrec;
 
-void process_snapshot_cb(Caliper* c, const Entry*, const Snapshot* sbuf)
-{
-    sbuf->push_record(c->events().write_record);
-}
+        bool           m_stop;
+        
+        unsigned char* m_data;
+        
+        TraceBuffer*   m_next;
+        
+    public:
+        
+        TraceBuffer(size_t s)
+            : m_size(s), m_pos(0), m_nrec(0), m_stop(false), m_data(new unsigned char[s]), m_next(0)
+            { }
+        
+        ~TraceBuffer() {
+            delete[] m_data;
 
-void trace_register(Caliper* c)
-{
-    c->events().process_snapshot.connect(&process_snapshot_cb);
+            if (m_next)
+                delete m_next;
+        }
 
-    Log(1).stream() << "Registered trace service" << endl;
-}
+        bool stopped() const { return m_stop; }
+        void stop() {
+            m_stop = true;
+        }
+        
+        void append(TraceBuffer* tbuf) {
+            m_next = tbuf;
+        }
 
+        void reset() {
+            m_pos  = 0;
+            m_nrec = 0;
+            
+            m_stop = false;
+
+            memset(m_data, 0, m_size);
+        }
+        
+        size_t flush(Caliper* c) {
+            size_t written = 0;
+
+            //
+            // local flush
+            //
+
+            size_t p = 0;
+
+            for (size_t r = 0; r < m_nrec; ++r) {
+                // decode snapshot record
+                
+                int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
+                int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
+
+                Variant node_vec[SNAP_MAX];
+                Variant attr_vec[SNAP_MAX];
+                Variant vals_vec[SNAP_MAX];
+
+                for (int i = 0; i < n_nodes; ++i)
+                    node_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
+                for (int i = 0; i < n_attr;  ++i)
+                    attr_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
+                for (int i = 0; i < n_attr;  ++i)
+                    vals_vec[i] = Variant::unpack(m_data + p, &p, nullptr);
+
+                // write nodes
+                // FIXME: EXTREMELY SLOW! debug only.
+
+                for (int i = 0; i < n_nodes; ++i) {
+                    Node* node = c->node(node_vec[i].to_id());
+                    
+                    if (node)
+                        node->write_path(c->events().write_record);   
+                }
+                for (int i = 0; i < n_attr; ++i) {
+                    Node* node = c->node(attr_vec[i].to_id());
+                    
+                    if (node)
+                        node->write_path(c->events().write_record);   
+                }
+
+                // write snapshot
+                
+                int               n[3] = {  n_nodes,   n_attr,   n_attr };
+                const Variant* data[3] = { node_vec, attr_vec, vals_vec };
+
+                c->events().write_record(ContextRecord::record_descriptor(), n, data);
+            }
+
+            written += m_nrec;            
+            reset();
+            
+            //
+            // flush subsequent buffers in list
+            // 
+            
+            if (m_next) {
+                written += m_next->flush(c);
+                delete m_next;
+                m_next = 0;
+            }
+            
+            return written;
+        }
+
+        void save_snapshot(const Snapshot* s) {
+            Snapshot::Sizes sizes = s->size();
+
+            if ((sizes.n_nodes + sizes.n_attr) == 0)
+                return;
+
+            sizes.n_nodes = std::min(sizes.n_nodes, SNAP_MAX);
+            sizes.n_attr  = std::min(sizes.n_attr,  SNAP_MAX);
+
+            m_pos += vlenc_u64(sizes.n_nodes, m_data + m_pos);
+            m_pos += vlenc_u64(sizes.n_attr,  m_data + m_pos);
+
+            Snapshot::Data addr = s->data();
+
+            for (int i = 0; i < sizes.n_nodes; ++i)
+                m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
+            for (int i = 0; i < sizes.n_attr;  ++i)
+                m_pos += vlenc_u64(addr.immediate_attr[i],     m_data + m_pos);
+            for (int i = 0; i < sizes.n_attr;  ++i)
+                m_pos += addr.immediate_data[i].pack(m_data + m_pos);
+
+            ++m_nrec;
+        }
+        
+        bool fits(const Snapshot* s) const {
+            Snapshot::Sizes sizes = s->size();
+
+            // get worst-case estimate of packed snapshot size:
+            //   20 bytes for size indicators
+            //   10 bytes per node id
+            //   10+22 bytes per immediate entry (10 for attr, 22 for variant)
+            
+            size_t max = 20 + 10 * sizes.n_nodes + 32 * sizes.n_attr;
+
+            return (m_pos + max) < m_size;
+        }
+    };
+
+    const ConfigSet::Entry configdata[] = {
+        { "buffer_size",     CALI_TYPE_UINT, "2",
+          "Size of initial per-thread trace buffer in MiB",
+          "Size of initial per-thread trace buffer in MiB" },
+        { "overflow_policy", CALI_TYPE_STRING, "grow",
+          "What to do when trace buffer is full",
+          "What to do when trace buffer is full:\n"
+          "   flush:  Write out contents\n"
+          "   grow:   Increase buffer size\n"
+          "   stop:   Stop recording.\n"
+          "Default: grow" },
+        
+        ConfigSet::Terminator
+    };
+    
+    ConfigSet      config;
+    
+    BufferPolicy   policy     = BufferPolicy::Flush;
+    size_t         buffersize = 2 * 1024 * 1024;
+    
+    pthread_key_t  trace_buf_key;
+
+    void save_tbuf(TraceBuffer* tb) {
+        pthread_setspecific(trace_buf_key, tb);
+    }
+
+    TraceBuffer* acquire_tbuf() {
+        TraceBuffer* tbuf = static_cast<TraceBuffer*>(pthread_getspecific(trace_buf_key));
+
+        if (!tbuf) {
+            tbuf = new TraceBuffer(buffersize);
+
+            if (!tbuf) {
+                Log(0).stream() << "trace: error: unable to  allocate trace buffer!" << endl;
+                return 0;
+            }
+
+            if (pthread_setspecific(trace_buf_key, tbuf) != 0) {
+                Log(0).stream() << "trace: error: unable to set thread trace buffer" << endl;
+                delete tbuf;
+                tbuf = 0;
+            }
+        }
+
+        return tbuf;
+    }
+
+    TraceBuffer* handle_overflow(Caliper* c, TraceBuffer* tbuf) {
+        switch (policy) {
+        case BufferPolicy::Stop:
+            tbuf->stop();
+            Log(1).stream() << "Trace buffer full: recording stopped." << endl;
+            return 0;
+                
+        case BufferPolicy::Grow:
+        {
+            TraceBuffer* newtbuf = new TraceBuffer(buffersize);
+
+            if (!newtbuf) {
+                Log(0).stream() << "trace: error: unable to allocate new trace buffer. Recording stopped." << endl;
+                tbuf->stop();
+                return 0;
+            }
+
+            newtbuf->append(tbuf);
+            tbuf = newtbuf;
+            save_tbuf(tbuf);
+
+            return tbuf;
+        }
+            
+        case BufferPolicy::Flush:
+            Log(1).stream() << "Flushing snapshot trace buffer ..." << endl;
+            Log(1).stream() << "Flushed " << tbuf->flush(c) << " snapshots." << endl;
+            return tbuf;
+        
+        } // switch (policy)
+
+        return 0;
+    }
+    
+    void process_snapshot_cb(Caliper* c, const Entry*, const Snapshot* sbuf) {
+        TraceBuffer* tbuf = acquire_tbuf();
+
+        if (!tbuf || tbuf->stopped()) // error messaging is done in acquire_tbuf()
+            return;
+        
+        if (!tbuf->fits(sbuf))
+            tbuf = handle_overflow(c, tbuf);
+        if (!tbuf)
+            return;
+
+        tbuf->save_snapshot(sbuf);
+    }        
+
+    void flush_cb(Caliper* c, const Entry* trigger) {
+        TraceBuffer* tbuf = acquire_tbuf();
+
+        if (tbuf) {
+            Log(1).stream() << "Flushing snapshot trace buffer ..." << endl;
+            Log(1).stream() << "Flushed " << tbuf->flush(c) << " snapshots." << endl;
+        }
+    }
+
+    void init_overflow_policy() {
+        const map<std::string, BufferPolicy> polmap {
+            { "grow",    BufferPolicy::Grow    },
+            { "flush",   BufferPolicy::Flush   },
+            { "stop",    BufferPolicy::Stop    } };
+
+        string polname = config.get("buffer_policy").to_string();
+        auto it = polmap.find(polname);
+
+        if (it != polmap.end())
+            policy = it->second;
+        else
+            Log(0).stream() << "trace: error: unknown buffer policy \"" << polname << "\"" << endl;
+    }
+    
+    void trace_register(Caliper* c) {
+        config = RuntimeConfig::init("trace", configdata);
+        
+        init_overflow_policy();
+        
+        buffersize = config.get("buffer_size").to_uint() * 1024 * 1024;
+        
+        if (pthread_key_create(&trace_buf_key, NULL) != 0) {
+            Log(0).stream() << "trace: error: pthread_key_create() failed" << endl;
+            return;
+        }        
+        
+        c->events().process_snapshot.connect(&process_snapshot_cb);
+        c->events().flush.connect(&flush_cb);
+
+        Log(1).stream() << "Registered trace service" << endl;
+    }
+    
 } // namespace
 
 namespace cali

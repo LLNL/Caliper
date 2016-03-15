@@ -127,6 +127,9 @@ public:
 
     std::string    to_string() const;
 
+    size_t         pack(unsigned char* buf) const;
+    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok);
+    
     // vector<unsigned char> data() const;
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);
