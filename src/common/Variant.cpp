@@ -499,8 +499,14 @@ bool cali::operator == (const Variant& lhs, const Variant& rhs)
                 return 0 == memcmp(lhs.m_value.ptr, rhs.m_value.ptr, lhs.m_size);
         }
         return false;
+    case CALI_TYPE_BOOL:
+        return lhs.m_value.v_bool   == rhs.m_value.v_bool;
+    case CALI_TYPE_TYPE:
+        return lhs.m_value.v_type   == rhs.m_value.v_type;
+    case CALI_TYPE_DOUBLE:
+        return lhs.m_value.v_double == rhs.m_value.v_double;
     default:
-        return lhs.m_value.v_uint == rhs.m_value.v_uint;
+        return lhs.m_value.v_uint   == rhs.m_value.v_uint;
     }
 }
 
