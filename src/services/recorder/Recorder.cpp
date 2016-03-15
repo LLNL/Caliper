@@ -47,11 +47,8 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <ctime>
 #include <iostream>
-#include <iterator>
 #include <mutex>
 #include <fstream>
 #include <random>
@@ -76,6 +73,8 @@ class Recorder
     ofstream   m_ofstream;
 
     std::mutex m_lock;
+
+    int        m_reccount;
     
     // --- helpers
 
@@ -152,18 +151,29 @@ class Recorder
         }
     }
 
-    void register_callbacks(Caliper* c) {
-        auto recfn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
-            std::lock_guard<std::mutex> g(m_lock);
-            
-            CsvSpec::write_record(get_stream(), rec, count, data);
-        };
+    static void write_record_cb(const RecordDescriptor& rec, const int* count, const Variant** data) {
+        if (!s_instance)
+            return;
 
-        c->events().write_record.connect(recfn);
+        std::lock_guard<std::mutex> g(s_instance->m_lock);
+        
+        CsvSpec::write_record(s_instance->get_stream(), rec, count, data);
+        ++s_instance->m_reccount;
+    }
+
+    static void finish_cb(Caliper* c) {
+        if (s_instance)
+            Log(1).stream() << "Wrote " << s_instance->m_reccount << " records." << endl;
+    }
+    
+    void register_callbacks(Caliper* c) {
+        c->events().write_record.connect(write_record_cb);
+        c->events().finish_evt.connect(finish_cb);
     }
 
     Recorder(Caliper* c)
-        : m_config { RuntimeConfig::init("recorder", s_configdata) }
+        : m_config   { RuntimeConfig::init("recorder", s_configdata) },
+          m_reccount { 0 }
     { 
         init_recorder();
 
