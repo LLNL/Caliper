@@ -36,7 +36,6 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 #include <Snapshot.h>
 
 #include <RuntimeConfig.h>

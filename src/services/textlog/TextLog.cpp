@@ -6,7 +6,6 @@
 #include "SnapshotTextFormatter.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 #include <Snapshot.h>
 
 #include <Log.h>

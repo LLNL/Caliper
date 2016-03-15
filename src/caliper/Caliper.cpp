@@ -40,7 +40,6 @@
 #include "ContextBuffer.h"
 #include "MetadataTree.h"
 #include "MemoryPool.h"
-#include "SigsafeRWLock.h"
 #include "Snapshot.h"
 
 #include <Services.h>
@@ -146,7 +145,7 @@ struct Caliper::GlobalData
 
     MetadataTree           tree;
     
-    mutable SigsafeRWLock  attribute_lock;
+    mutable std::mutex     attribute_lock;
     map<string, Node*>     attribute_nodes;
 
     // are there new attributes since last snapshot recording? - temporary, will go away
@@ -225,7 +224,8 @@ struct Caliper::GlobalData
     void
     write_new_attribute_nodes(WriteRecordFn write_rec) {
         if (new_attributes.exchange(false)) {
-            attribute_lock.rlock();
+            std::lock_guard<std::mutex>
+                g(attribute_lock);
 
             // special handling for bootstrap nodes: write all nodes in-order
             if (!bootstrap_nodes_written.exchange(true))
@@ -238,8 +238,6 @@ struct Caliper::GlobalData
             
             for (auto &p : attribute_nodes)
                 p.second->write_path(write_rec);
-            
-            attribute_lock.unlock();
         }
     }
 };
@@ -393,7 +391,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     // Check if an attribute with this name already exists
 
-    mG->attribute_lock.rlock();
+    mG->attribute_lock.lock();
 
     auto it = mG->attribute_nodes.find(name);
     if (it != mG->attribute_nodes.end())
@@ -423,7 +421,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
             // Check again if attribute already exists; might have been created by 
             // another thread in the meantime.
             // We've created some redundant nodes then, but that's fine
-            mG->attribute_lock.wlock();
+            mG->attribute_lock.lock();
 
             auto it = mG->attribute_nodes.lower_bound(name);
 
@@ -453,7 +451,7 @@ Caliper::get_attribute(const string& name) const
     
     Node* node = nullptr;
 
-    mG->attribute_lock.rlock();
+    mG->attribute_lock.lock();
 
     auto it = mG->attribute_nodes.find(name);
 
@@ -748,8 +746,6 @@ Caliper::instance()
 
         if (atexit(::exit_handler) != 0)
             Log(0).stream() << "Unable to register exit handler";
-
-        SigsafeRWLock::init();
 
         lock_guard<mutex> lock(GlobalData::s_mutex);
 

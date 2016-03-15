@@ -36,12 +36,12 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
 
 #include <map>
+#include <mutex>
 
 #include <ompt.h>
 
@@ -76,7 +76,7 @@ Attribute                        thread_attr { Attribute::invalid };
 Attribute                        state_attr  { Attribute::invalid };
 Attribute			 region_attr { Attribute::invalid };
 
-SigsafeRWLock                    thread_env_lock;
+std::mutex                       thread_env_lock;
 map<ompt_thread_id_t, Caliper::Scope*> thread_env; ///< Thread ID -> Environment
 
 map<ompt_state_t, string>        runtime_states;
@@ -129,9 +129,10 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         else
             ctx = c.create_scope(CALI_SCOPE_THREAD);
 
-        thread_env_lock.wlock();
+        std::lock_guard<std::mutex>
+            g(thread_env_lock);
+        
         thread_env.insert(make_pair(thread_id, ctx));
-        thread_env_lock.unlock();
     }
 
     // Set the thread id in the new environment
@@ -149,8 +150,9 @@ cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 
     Caliper::Scope* ctx { nullptr };
 
-    thread_env_lock.wlock();
+    thread_env_lock.lock();
     auto it = thread_env.find(thread_id);
+    
     if (it != thread_env.end()) {
         ctx = it->second;
         thread_env.erase(it);
@@ -289,7 +291,7 @@ get_thread_scope(Caliper* c)
 
     ompt_thread_id_t thread_id = (*api.get_thread_id)();
 
-    thread_env_lock.rlock();
+    thread_env_lock.lock();
     auto it = thread_env.find(thread_id);
     if (it != thread_env.end())
         ctx = it->second;

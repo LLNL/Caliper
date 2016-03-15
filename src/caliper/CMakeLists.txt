@@ -14,7 +14,6 @@ set(CALIPER_SOURCES
     ContextBuffer.cpp
     MemoryPool.cpp
     MetadataTree.cpp
-    SigsafeRWLock.cpp
     cali.cpp)
 
 

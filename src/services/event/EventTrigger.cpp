@@ -36,7 +36,6 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -46,6 +45,7 @@
 #include <algorithm>
 #include <iterator>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -76,7 +76,7 @@ bool                     enable_snapshot_info;
 
 typedef std::map<cali_id_t, Attribute> AttributeMap;
 
-SigsafeRWLock            level_attributes_lock;
+std::mutex               level_attributes_lock;
 AttributeMap             level_attributes;
 
 std::vector<std::string> trigger_attr_names;
@@ -105,25 +105,21 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
                                 CALI_ATTR_SKIP_EVENTS | 
                                 (attr.properties() & CALI_ATTR_SCOPE_MASK));
 
-        level_attributes_lock.wlock();
+        std::lock_guard<std::mutex>
+            g(level_attributes_lock);
+        
         level_attributes.insert(std::make_pair(attr.id(), lvl_attr));
-        level_attributes_lock.unlock();
     }
 }
 
 Attribute get_level_attribute(const Attribute& attr)
 {
-    Attribute lvl_attr(Attribute::invalid);
+    std::lock_guard<std::mutex>
+        g(level_attributes_lock);
 
-    level_attributes_lock.rlock();
+    auto it = level_attributes.find(attr.id());
 
-    AttributeMap::const_iterator it = level_attributes.find(attr.id());
-    if (it != level_attributes.end())
-        lvl_attr = it->second;
-
-    level_attributes_lock.unlock();
-
-    return lvl_attr;    
+    return (it == level_attributes.end()) ? Attribute::invalid : it->second;
 }
 
 void event_begin_cb(Caliper* c, const Attribute& attr)
@@ -230,7 +226,10 @@ void event_end_cb(Caliper* c, const Attribute& attr)
     }
 }
 
-void event_trigger_register(Caliper* c) {
+void event_trigger_register(Caliper* c)
+{
+    level_attributes_lock.unlock();
+    
     // parse the configuration & set up triggers
 
     config = RuntimeConfig::init("event", configdata);
