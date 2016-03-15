@@ -49,6 +49,7 @@
 
 #include <cstring>
 #include <mutex>
+#include <unordered_set>
 
 #define SNAP_MAX 64
 
@@ -103,7 +104,7 @@ namespace
             memset(m_data, 0, m_size);
         }
         
-        size_t flush(Caliper* c) {
+        size_t flush(Caliper* c, unordered_set<cali_id_t>& written_node_cache) {
             size_t written = 0;
 
             //
@@ -130,19 +131,35 @@ namespace
                     vals_vec[i] = Variant::unpack(m_data + p, &p, nullptr);
 
                 // write nodes
-                // FIXME: EXTREMELY SLOW! debug only.
+                // FIXME: this node cache is a terrible kludge, needs to go away
+                //   either make node-by-id lookup fast,
+                //   or fix node-before-snapshot I/O requirement
 
                 for (int i = 0; i < n_nodes; ++i) {
+                    cali_id_t node_id = node_vec[i].to_id();
+
+                    if (written_node_cache.count(node_id))
+                        continue;
+                    
                     Node* node = c->node(node_vec[i].to_id());
                     
                     if (node)
-                        node->write_path(c->events().write_record);   
+                        node->write_path(c->events().write_record);
+
+                    written_node_cache.insert(node_id);
                 }
                 for (int i = 0; i < n_attr; ++i) {
+                    cali_id_t node_id = attr_vec[i].to_id();
+
+                    if (written_node_cache.count(node_id))
+                        continue;
+
                     Node* node = c->node(attr_vec[i].to_id());
                     
                     if (node)
-                        node->write_path(c->events().write_record);   
+                        node->write_path(c->events().write_record);
+
+                    written_node_cache.insert(node_id);
                 }
 
                 // write snapshot
@@ -161,7 +178,7 @@ namespace
             // 
             
             if (m_next) {
-                written += m_next->flush(c);
+                written += m_next->flush(c, written_node_cache);
                 delete m_next;
                 m_next = 0;
             }
@@ -224,12 +241,12 @@ namespace
     
     ConfigSet      config;
     
-    BufferPolicy   policy     = BufferPolicy::Flush;
-    size_t         buffersize = 2 * 1024 * 1024;
+    BufferPolicy   policy           = BufferPolicy::Grow;
+    size_t         buffersize       = 2 * 1024 * 1024;
     
     pthread_key_t  trace_buf_key;
 
-    TraceBuffer*   global_tbuf_list;
+    TraceBuffer*   global_tbuf_list = nullptr;
     util::spinlock global_tbuf_lock;
 
     
@@ -296,8 +313,11 @@ namespace
         }
             
         case BufferPolicy::Flush:
-            Log(1).stream() << "Trace buffer full: flushed " << tbuf->flush(c) << " snapshots." << endl;
+        {
+            unordered_set<cali_id_t> written_node_cache;
+            Log(1).stream() << "Trace buffer full: flushed " << tbuf->flush(c, written_node_cache) << " snapshots." << endl;
             return tbuf;
+        }
         
         } // switch (policy)
 
@@ -328,15 +348,17 @@ namespace
             global_tbuf_list = nullptr;
         }
 
+        unordered_set<cali_id_t> written_node_cache;
+            
         if (gtbuf) {
-            Log(1).stream() << "Flushed " << gtbuf->flush(c) << " snapshots." << endl;
+            Log(1).stream() << "Flushed " << gtbuf->flush(c, written_node_cache) << " snapshots." << endl;
             delete gtbuf;
         }
         
         TraceBuffer* tbuf = acquire_tbuf();
 
         if (tbuf)
-            Log(1).stream() << "Flushed " << tbuf->flush(c)  << " snapshots." << endl;
+            Log(1).stream() << "Flushed " << tbuf->flush(c, written_node_cache)  << " snapshots." << endl;
     }
 
     void init_overflow_policy() {
