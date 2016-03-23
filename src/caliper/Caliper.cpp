@@ -101,6 +101,25 @@ namespace
         Caliper::release();
     }
 
+    // --- Siglock
+
+    class siglock {
+        volatile sig_atomic_t m_lock;
+
+    public:
+
+        siglock()
+            : m_lock(0)
+            { }
+
+        inline void lock()   { ++m_lock; }
+        inline void unlock() { --m_lock; }
+        
+        inline bool is_locked() const {
+            return (m_lock > 0);
+        }
+    };
+    
 } // namespace
 
 
@@ -114,6 +133,8 @@ struct Caliper::Scope
     ContextBuffer        statebuffer;
     
     cali_context_scope_t scope;
+
+    ::siglock            lock;
 
     Scope(cali_context_scope_t s)
         : scope(s) { }
@@ -416,6 +437,9 @@ void
 Caliper::release_scope(Caliper::Scope* s)
 {
     assert(mG != 0);
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
     
     mG->events.release_scope_evt(this, s->scope);
     // do NOT delete this because we may still need the node data in the scope's memory pool
@@ -430,6 +454,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
                           int meta, const Attribute* meta_attr, const Variant* meta_val)
 {
     assert(mG != 0);
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
     
     // Add default SCOPE_THREAD property if no other is set
     if (!(prop & CALI_ATTR_SCOPE_PROCESS) && !(prop & CALI_ATTR_SCOPE_TASK))
@@ -496,6 +523,9 @@ Attribute
 Caliper::get_attribute(const string& name) const
 {
     assert(mG != 0);
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
     
     Node* node = nullptr;
 
@@ -515,7 +545,8 @@ Attribute
 Caliper::get_attribute(cali_id_t id) const
 {
     assert(mG != 0);
-
+    // no signal lock necessary
+    
     return Attribute::make_attribute(mG->tree.node(id), mG->tree.meta_attribute_ids());
 }
 
@@ -526,6 +557,9 @@ void
 Caliper::pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* sbuf)
 {
     assert(mG != 0);
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
 
     // Save trigger info in snapshot buf
 
@@ -545,6 +579,9 @@ void
 Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 {
     assert(mG != 0);
+    
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
 
     EntryList::FixedEntryList<64> snapshot_data;
     EntryList sbuf(snapshot_data);
@@ -559,6 +596,9 @@ Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 void
 Caliper::flush(const EntryList* entry)
 {
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     mG->events.flush(this, entry);
 }
 
@@ -571,6 +611,9 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     if (!mG || attr == Attribute::invalid)
         return CALI_EINV;
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -606,6 +649,9 @@ Caliper::end(const Attribute& attr)
     ContextBuffer* sb = &s->statebuffer;
 
     Variant val;
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
 
     // invoke callbacks
     if (!attr.skip_events()) {
@@ -646,6 +692,9 @@ Caliper::set(const Attribute& attr, const Variant& data)
     if (!mG || attr == Attribute::invalid)
         return CALI_EINV;
 
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->statebuffer;
 
@@ -676,6 +725,9 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
         return CALI_SUCCESS;    
     if (!mG || attr == Attribute::invalid)
         return CALI_EINV;
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
 
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->statebuffer;
@@ -711,6 +763,9 @@ Caliper::get(const Attribute& attr)
     if (!mG || attr == Attribute::invalid)
         return Entry::empty;
 
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     ContextBuffer* sb = &(scope(attr2caliscope(attr))->statebuffer);
 
     if (attr.store_as_value())
@@ -726,6 +781,9 @@ Caliper::get(const Attribute& attr)
 void
 Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list) 
 {
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     Node* node = 0;
 
     for (size_t i = 0; i < n; ++i)
@@ -744,6 +802,9 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
     if (attr == Attribute::invalid)
         return Entry::empty;
     
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     Entry entry { Entry::empty };
 
     if (attr.store_as_value())
@@ -757,6 +818,7 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
 Node*
 Caliper::node(cali_id_t id)
 {
+    // no siglock necessary
     return mG->tree.node(id);
 }
 
@@ -771,6 +833,9 @@ Caliper::events()
 Variant
 Caliper::exchange(const Attribute& attr, const Variant& data)
 {
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
     return scope(attr2caliscope(attr))->statebuffer.exchange(attr, data);
 }
 
@@ -816,7 +881,7 @@ Caliper::sigsafe_instance()
     
     Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
 
-    if (!thread_scope)
+    if (!thread_scope || thread_scope->lock.is_locked())
         return Caliper(0);
 
     return Caliper(GlobalData::sG, thread_scope);
@@ -828,8 +893,3 @@ Caliper::release()
     delete GlobalData::sG;
     GlobalData::sG = 0;
 }
-
-// Caliper Caliper::try_instance()
-// {
-//     return CaliperImpl::s_init_lock == 0 ? Caliper(GlobalData::sG) : Caliper(0);
-// }
