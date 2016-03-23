@@ -268,10 +268,10 @@ namespace
         }
     }
     
-    TraceBuffer* acquire_tbuf() {
+    TraceBuffer* acquire_tbuf(bool alloc = true) {
         TraceBuffer* tbuf = static_cast<TraceBuffer*>(pthread_getspecific(trace_buf_key));
 
-        if (!tbuf) {
+        if (alloc && !tbuf) {
             tbuf = new TraceBuffer(buffersize);
 
             if (!tbuf) {
@@ -326,7 +326,7 @@ namespace
     }
     
     void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
-        TraceBuffer* tbuf = acquire_tbuf();
+        TraceBuffer* tbuf = acquire_tbuf(!c->is_signal());
 
         if (!tbuf || tbuf->stopped()) // error messaging is done in acquire_tbuf()
             return;

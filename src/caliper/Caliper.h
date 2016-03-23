@@ -74,9 +74,11 @@ private:
     Scope* m_thread_scope;
     Scope* m_task_scope;
 
+    bool   m_is_signal; // are we in a signal handler?
+
     
-    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0)
-        : mG(g), m_thread_scope(thread), m_task_scope(task)
+    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0, bool sig = false)
+        : mG(g), m_thread_scope(thread), m_task_scope(task), m_is_signal(sig)
         { }
 
     Scope* scope(cali_context_scope_t scope);
@@ -92,6 +94,8 @@ public:
     Caliper(const Caliper&) = default;
 
     Caliper& operator = (const Caliper&) = default;
+
+    bool is_signal() const { return m_is_signal; };
     
     // --- Events
 

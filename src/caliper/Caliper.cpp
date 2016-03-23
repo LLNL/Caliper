@@ -588,7 +588,8 @@ Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 
     pull_snapshot(scopes, trigger_info, &sbuf);
 
-    mG->write_new_attribute_nodes(mG->events.write_record);
+    if (!m_is_signal)
+        mG->write_new_attribute_nodes(mG->events.write_record);
 
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }
@@ -878,13 +879,14 @@ Caliper::sigsafe_instance()
 {
     if (GlobalData::s_init_lock != 0)
         return Caliper(0);
-    
+
+    Scope* task_scope   = 0; // FIXME: figure out task scope 
     Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
 
     if (!thread_scope || thread_scope->lock.is_locked())
         return Caliper(0);
 
-    return Caliper(GlobalData::sG, thread_scope);
+    return Caliper(GlobalData::sG, thread_scope, task_scope, true /* is signal */);
 }
 
 void
