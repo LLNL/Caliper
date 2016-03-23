@@ -195,9 +195,6 @@ namespace
 
             sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     SNAP_MAX);
             sizes.n_immediate = std::min<size_t>(sizes.n_immediate, SNAP_MAX);
-
-            std::cout << "save_snapshot(): got snapshot with "
-                      << sizes.n_nodes << " nodes, " << sizes.n_immediate << " immediates." << std::endl;
                 
             m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
             m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);

@@ -5,7 +5,6 @@ set(CALIPER_HEADERS
     Annotation.h
     Caliper.h
     EntryList.h
-    Snapshot.h
     cali.h
     cali_definitions.h)
 
