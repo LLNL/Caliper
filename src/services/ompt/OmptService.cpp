@@ -282,7 +282,7 @@ finish_cb(Caliper*)
 }
 
 Caliper::Scope*
-get_thread_scope(Caliper* c) 
+get_thread_scope(Caliper* c, bool alloc) 
 {
     Caliper::Scope* ctx = c->default_scope(CALI_SCOPE_THREAD);
 

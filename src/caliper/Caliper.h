@@ -62,7 +62,7 @@ public:
 
     struct Scope;
 
-    typedef Scope* (*ScopeCallbackFn)(Caliper*);
+    typedef Scope* (*ScopeCallbackFn)(Caliper*, bool can_create);
 
     
 private:
@@ -199,7 +199,9 @@ public:
     static Caliper instance();
     static void    release();
     
-    // static Caliper try_instance();
+    static Caliper sigsafe_instance();
+
+    friend struct GlobalData;
 };
 
 } // namespace cali

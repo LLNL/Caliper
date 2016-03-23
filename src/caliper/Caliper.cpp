@@ -128,14 +128,21 @@ struct Caliper::GlobalData
 {
     // --- static data
 
-    static volatile sig_atomic_t  s_siglock;
-    static std::mutex             s_mutex;
+    static volatile sig_atomic_t  s_init_lock;
+    static std::mutex             s_init_mutex;
     
     static const ConfigSet::Entry s_configdata[];
 
     static GlobalData*            sG;
-
     
+    // --- static functions
+
+    static void release_thread(void* ctx) {
+        Scope* scope = static_cast<Scope*>(ctx);
+        
+        Caliper(sG, scope, 0).release_scope(scope);
+    }
+
     // --- data
 
     ConfigSet              config;
@@ -166,13 +173,15 @@ struct Caliper::GlobalData
     Scope*                 default_thread_scope;
     Scope*                 default_task_scope;
 
+    pthread_key_t          thread_scope_key;
+
     // --- constructor
 
     GlobalData()
         : config { RuntimeConfig::init("caliper", s_configdata) },
           get_thread_scope_cb { nullptr },
           get_task_scope_cb   { nullptr },
-          new_attributes { true },
+          new_attributes          { true  },
           bootstrap_nodes_written { false },
           name_attr { Attribute::invalid }, 
           type_attr { Attribute::invalid },  
@@ -198,20 +207,59 @@ struct Caliper::GlobalData
         assert(name_attr != Attribute::invalid);
         assert(type_attr != Attribute::invalid);
         assert(prop_attr != Attribute::invalid);
+
+        pthread_key_create(&thread_scope_key, release_thread);
+        pthread_setspecific(thread_scope_key, default_thread_scope);
+            
+        // now it is safe to use the Caliper interface
+
+        init();
     }
 
     ~GlobalData() {
         Log(1).stream() << "Finished" << endl;
         
         // prevent re-initialization
-        s_siglock = 2;
+        s_init_lock = 2;
 
 	//freeing up context buffers
         delete process_scope;
         delete default_thread_scope; 
         delete default_task_scope;
     }
+    
+    Scope* acquire_thread_scope(bool create = true) {
+        Scope* scope = static_cast<Scope*>(pthread_getspecific(thread_scope_key));
 
+        if (create && !scope) {
+            scope = Caliper(this).create_scope(CALI_SCOPE_THREAD);
+            pthread_setspecific(thread_scope_key, scope);
+        }
+
+        return scope;
+    }
+    
+    void init() {
+        Caliper c(this, default_thread_scope, default_task_scope);
+
+        // Create and set key & version attributes
+
+        key_attr =
+            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
+            
+        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS),
+              Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
+            
+        Services::register_services(&c);
+
+        Log(1).stream() << "Initialized" << endl;
+
+        if (Log::verbosity() >= 2)
+            RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
+
+        c.events().post_init_evt(&c);        
+    }
+    
     const Attribute&
     get_key(const Attribute& attr) const {
         if (!automerge || attr.store_as_value() || !attr.is_autocombineable())
@@ -244,8 +292,8 @@ struct Caliper::GlobalData
 
 // --- static member initialization
 
-volatile sig_atomic_t  Caliper::GlobalData::s_siglock = 1;
-mutex                  Caliper::GlobalData::s_mutex;
+volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
+mutex                  Caliper::GlobalData::s_init_mutex;
 
 Caliper::GlobalData*   Caliper::GlobalData::sG = nullptr;
 
@@ -272,19 +320,19 @@ Caliper::scope(cali_context_scope_t st) {
         return mG->process_scope;
         
     case CALI_SCOPE_THREAD:
+#if 0
         if (!m_thread_scope) {
             m_thread_scope =
-                mG->get_thread_scope_cb ? mG->get_thread_scope_cb(this) : mG->default_thread_scope;
-
-            assert(m_thread_scope != 0);
+                mG->get_thread_scope_cb ? mG->get_thread_scope_cb(this, true) : mG->default_thread_scope;
         }
-        
+#endif
+        assert(m_thread_scope != 0);
         return m_thread_scope;
         
     case CALI_SCOPE_TASK:
         if (!m_task_scope)
             m_task_scope =
-                mG->get_task_scope_cb ? mG->get_task_scope_cb(this) : mG->default_task_scope;
+                mG->get_task_scope_cb ? mG->get_task_scope_cb(this, true) : mG->default_task_scope;
 
         return m_task_scope;
     }
@@ -740,45 +788,38 @@ Caliper::Caliper()
 Caliper
 Caliper::instance()
 {
-    if (GlobalData::s_siglock != 0) {
-        if (GlobalData::s_siglock == 2)
+    if (GlobalData::s_init_lock != 0) {
+        if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
             return Caliper(0);
 
-        if (atexit(::exit_handler) != 0)
-            Log(0).stream() << "Unable to register exit handler";
-
-        lock_guard<mutex> lock(GlobalData::s_mutex);
+        lock_guard<mutex> lock(GlobalData::s_init_mutex);
 
         if (!GlobalData::sG) {
-            GlobalData::sG = new Caliper::GlobalData; 
+            if (atexit(::exit_handler) != 0)
+                Log(0).stream() << "Unable to register exit handler";
 
-            // now it is safe to use the Caliper interface
-
-            Caliper c(GlobalData::sG);
-
-            // Create and set key & version attributes
-
-            GlobalData::sG->key_attr =
-                c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
+            GlobalData::sG = new Caliper::GlobalData;
             
-            c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS),
-                  Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-            
-            Services::register_services(&c);
-
-            Log(1).stream() << "Initialized" << endl;
-
-            if (Log::verbosity() >= 2)
-                RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
-
-            GlobalData::sG->events.post_init_evt(&c);
-            
-            GlobalData::s_siglock = 0;
+            GlobalData::s_init_lock = 0;
         }
     }
 
-    return Caliper(GlobalData::sG);
+    return Caliper(GlobalData::sG, GlobalData::sG->acquire_thread_scope());
+}
+
+Caliper
+Caliper::sigsafe_instance()
+{
+    if (GlobalData::s_init_lock != 0)
+        return Caliper(0);
+    
+    Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
+
+    if (!thread_scope)
+        return Caliper(0);
+
+    return Caliper(GlobalData::sG, thread_scope);
 }
 
 void
@@ -790,5 +831,5 @@ Caliper::release()
 
 // Caliper Caliper::try_instance()
 // {
-//     return CaliperImpl::s_siglock == 0 ? Caliper(GlobalData::sG) : Caliper(0);
+//     return CaliperImpl::s_init_lock == 0 ? Caliper(GlobalData::sG) : Caliper(0);
 // }
