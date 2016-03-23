@@ -35,7 +35,7 @@
 
 #include "ContextBuffer.h"
 
-#include "Snapshot.h"
+#include "EntryList.h"
 
 #include <Attribute.h>
 #include <ContextRecord.h>
@@ -47,6 +47,8 @@
 #include <cassert>
 #include <mutex>
 #include <vector>
+
+#include <iostream>
 
 using namespace cali;
 using namespace std;
@@ -259,29 +261,19 @@ struct ContextBuffer::ContextBufferImpl
         return ret;
     }
 
-    void snapshot(Snapshot* sbuf) const {
-        Snapshot::Sizes     sizes = sbuf->capacity();
-        Snapshot::Addresses addr  = sbuf->addresses();
-
+    void snapshot(EntryList* sbuf) const {
         std::lock_guard<util::spinlock> lock(m_lock);
 
-        // Copy nodes entries
-        int m = std::min(sizes.n_nodes, static_cast<int>(m_nodes.size()));
+        cali::Node* const*   nodeptr = m_num_nodes > 0 ? m_nodes.data() : nullptr;
 
-        std::copy_n(m_nodes.begin(), m, addr.node_entries);
-        sizes.n_nodes = m;
+        size_t p = m_num_nodes + m_num_hidden;
+        size_t n = m_data.size() - p;
 
-        // Copy immediate entries
-        std::vector<Variant>::size_type n = m_num_nodes + m_num_hidden;
-        m = std::min(sizes.n_data, static_cast<int>(m_data.size()-n));
+        const cali_id_t*     attrptr = n > 0 ? m_keys.data() + p : nullptr;
+        const cali::Variant* dataptr = n > 0 ? m_data.data() + p : nullptr;
 
-        std::copy_n(m_keys.begin()+n, m, addr.immediate_attr);
-        std::copy_n(m_data.begin()+n, m, addr.immediate_data);
-
-        sizes.n_attr = m;
-        sizes.n_data = m;
-
-        sbuf->commit(sizes);
+        if (m_num_nodes + n > 0)
+            sbuf->append(m_num_nodes, nodeptr, n, attrptr, dataptr);
     }
 
     void push_record(WriteRecordFn fn) {
@@ -342,7 +334,7 @@ cali_err ContextBuffer::unset(const Attribute& attr)
     return mP->unset(attr);
 }
 
-void ContextBuffer::snapshot(Snapshot* sbuf) const
+void ContextBuffer::snapshot(EntryList* sbuf) const
 {
     mP->snapshot(sbuf);
 }

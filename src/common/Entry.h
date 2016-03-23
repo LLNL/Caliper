@@ -17,11 +17,11 @@ class Entry
     cali_id_t m_attr_id;
     Variant   m_value;
 
+public:
+
     Entry()
         : m_node(0), m_attr_id(CALI_INV_ID)
         { }
-
-public:
 
     Entry(Node* node)
         : m_node(node), m_attr_id(CALI_INV_ID)

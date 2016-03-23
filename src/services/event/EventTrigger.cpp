@@ -36,6 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <EntryList.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -122,7 +123,7 @@ Attribute get_level_attribute(const Attribute& attr)
     return (it == level_attributes.end()) ? Attribute::invalid : it->second;
 }
 
-void event_begin_cb(Caliper* c, const Attribute& attr)
+void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     Attribute lvl_attr(get_level_attribute(attr));
 
@@ -153,15 +154,17 @@ void event_begin_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_begin_attr };
         Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
 
-        Entry trigger_info = c->make_entry(2, attrs, vals);
+        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList trigger_info(trigger_info_data);
 
+        c->make_entrylist(2, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
     }
 }
 
-void event_set_cb(Caliper* c, const Attribute& attr)
+void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     Attribute lvl_attr(get_level_attribute(attr));
 
@@ -181,15 +184,17 @@ void event_set_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_set_attr };
         Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
 
-        Entry trigger_info = c->make_entry(2, attrs, vals);
+        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList trigger_info(trigger_info_data);
 
+        c->make_entrylist(2, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
     }
 }
 
-void event_end_cb(Caliper* c, const Attribute& attr)
+void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     Attribute lvl_attr(get_level_attribute(attr));
 
@@ -218,8 +223,10 @@ void event_end_cb(Caliper* c, const Attribute& attr)
         Attribute attrs[2] = { trigger_level_attr, trigger_end_attr };
         Variant   vals[2]  = { v_p_lvl, Variant(attr.id()) };
 
-        Entry trigger_info = c->make_entry(2, attrs, vals);
+        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList trigger_info(trigger_info_data);
 
+        c->make_entrylist(2, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);

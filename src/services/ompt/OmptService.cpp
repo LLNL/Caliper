@@ -301,7 +301,7 @@ get_thread_scope(Caliper* c)
 }
 
 void
-snapshot_cb(Caliper* c, int scope, const Entry*, Snapshot*)
+snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList*)
 {
     if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;

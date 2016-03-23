@@ -31,7 +31,7 @@ public:
 
     void update_attribute(const Attribute& attr);
 
-    std::ostream& print(std::ostream& os, const Snapshot* s) const;
+    std::ostream& print(std::ostream& os, const EntryList* s) const;
 };
 
 }

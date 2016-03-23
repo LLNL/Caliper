@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -164,50 +164,52 @@ Attribute find_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
     return Attribute::invalid;
 }
 
-void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot* sbuf) {
-    Snapshot::Sizes     sizes = sbuf->capacity();
-    Snapshot::Addresses addr  = sbuf->addresses();
-
+void snapshot_cb(Caliper* c, int scope, const EntryList* trigger_info, EntryList* sbuf) {
     auto now = chrono::high_resolution_clock::now();
-
-    int capacity = std::min(sizes.n_attr, sizes.n_data);
-
-    sizes = { 0, 0, 0 };
 
     if ((record_duration || record_phases || record_offset) && scope & CALI_SCOPE_THREAD) {
         uint64_t  usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
         Variant v_usec = Variant(usec);
         Variant v_offs = c->exchange(timeoffs_attr, v_usec);
 
-        if (capacity-- > 0 && record_duration && !v_offs.empty()) {
+        if (record_duration && !v_offs.empty()) {
             uint64_t duration = usec - v_offs.to_uint();
 
-            addr.immediate_attr[sizes.n_attr++] = snapshot_duration_attr.id();
-            addr.immediate_data[sizes.n_data++] = Variant(duration);
+            sbuf->append(snapshot_duration_attr.id(), Variant(duration));
         }
 
         if (record_phases && trigger_info) {
-            cali_id_t evt_attr_id = trigger_info->value().to_id();
-            Variant   v_level     = trigger_info->value(lvl_attr);
+            Entry event = trigger_info->get(begin_evt_attr);
+
+            cali_id_t evt_attr_id;
+            Variant   v_level;
+
+            if (event.is_empty())
+                event = trigger_info->get(set_evt_attr);
+            if (event.is_empty())
+                event = trigger_info->get(end_evt_attr);
+            if (event.is_empty())
+                goto record_phases_exit;
+            
+            evt_attr_id = event.value().to_id();
+            v_level     = trigger_info->get(lvl_attr).value();
 
             if (evt_attr_id == CALI_INV_ID || v_level.empty())
                 goto record_phases_exit;
 
-            if (trigger_info->attribute() == begin_evt_attr.id()) {
+            if (event.attribute() == begin_evt_attr.id()) {
                 // begin/set event: save time for current entry
 
                 c->set(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
-            } else if (trigger_info->attribute() == set_evt_attr.id())   {
+            } else if (event.attribute() == set_evt_attr.id())   {
                 // set event: get saved time for current entry and calculate duration
 
                 Variant v_p_usec    = 
                     c->exchange(make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
 
-                if (!v_p_usec.empty()) {
-                    addr.immediate_attr[sizes.n_attr++] = phase_duration_attr.id();
-                    addr.immediate_data[sizes.n_data++] = usec - v_p_usec.to_uint();
-                }
-            } else if (trigger_info->attribute() == end_evt_attr.id())   {
+                if (!v_p_usec.empty())
+                    sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
+            } else if (event.attribute() == end_evt_attr.id())   {
                 // end event: get saved time for current entry and calculate duration
 
                 Attribute offs_attr = 
@@ -219,22 +221,17 @@ void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot* sbu
                 Variant v_p_usec    = 
                     c->exchange(offs_attr, Variant());
 
-                if (!v_p_usec.empty()) {
-                    addr.immediate_attr[sizes.n_attr++] = phase_duration_attr.id();
-                    addr.immediate_data[sizes.n_data++] = usec - v_p_usec.to_uint();
-                }
+                if (!v_p_usec.empty())
+                    sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
             }
 record_phases_exit:
             ;
         }
     }
 
-    if (capacity-- > 0 && record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
-        addr.immediate_attr[sizes.n_attr++] = timestamp_attr.id();
-        addr.immediate_data[sizes.n_data++] = Variant(static_cast<int>(chrono::system_clock::to_time_t(chrono::system_clock::now())));
-    }
-
-    sbuf->commit(sizes);
+    if (record_timestamp && (scope & CALI_SCOPE_PROCESS))
+        sbuf->append(timestamp_attr.id(),
+                     Variant(static_cast<int>(chrono::system_clock::to_time_t(chrono::system_clock::now()))));
 }
 
 void post_init_cb(Caliper* c)

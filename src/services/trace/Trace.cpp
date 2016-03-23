@@ -36,10 +36,11 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
+#include <Node.h>
 #include <RuntimeConfig.h>
 
 #include <util/spinlock.hpp>
@@ -186,39 +187,42 @@ namespace
             return written;
         }
 
-        void save_snapshot(const Snapshot* s) {
-            Snapshot::Sizes sizes = s->size();
+        void save_snapshot(const EntryList* s) {
+            EntryList::Sizes sizes = s->size();
 
-            if ((sizes.n_nodes + sizes.n_attr) == 0)
+            if ((sizes.n_nodes + sizes.n_immediate) == 0)
                 return;
 
-            sizes.n_nodes = std::min(sizes.n_nodes, SNAP_MAX);
-            sizes.n_attr  = std::min(sizes.n_attr,  SNAP_MAX);
+            sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     SNAP_MAX);
+            sizes.n_immediate = std::min<size_t>(sizes.n_immediate, SNAP_MAX);
 
-            m_pos += vlenc_u64(sizes.n_nodes, m_data + m_pos);
-            m_pos += vlenc_u64(sizes.n_attr,  m_data + m_pos);
+            std::cout << "save_snapshot(): got snapshot with "
+                      << sizes.n_nodes << " nodes, " << sizes.n_immediate << " immediates." << std::endl;
+                
+            m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
+            m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);
 
-            Snapshot::Data addr = s->data();
+            EntryList::Data addr = s->data();
 
             for (int i = 0; i < sizes.n_nodes; ++i)
                 m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
-            for (int i = 0; i < sizes.n_attr;  ++i)
+            for (int i = 0; i < sizes.n_immediate;  ++i)
                 m_pos += vlenc_u64(addr.immediate_attr[i],     m_data + m_pos);
-            for (int i = 0; i < sizes.n_attr;  ++i)
+            for (int i = 0; i < sizes.n_immediate;  ++i)
                 m_pos += addr.immediate_data[i].pack(m_data + m_pos);
 
             ++m_nrec;
         }
         
-        bool fits(const Snapshot* s) const {
-            Snapshot::Sizes sizes = s->size();
+        bool fits(const EntryList* s) const {
+            EntryList::Sizes sizes = s->size();
 
             // get worst-case estimate of packed snapshot size:
             //   20 bytes for size indicators
             //   10 bytes per node id
             //   10+22 bytes per immediate entry (10 for attr, 22 for variant)
             
-            size_t max = 20 + 10 * sizes.n_nodes + 32 * sizes.n_attr;
+            size_t max = 20 + 10 * sizes.n_nodes + 32 * sizes.n_immediate;
 
             return (m_pos + max) < m_size;
         }
@@ -324,7 +328,7 @@ namespace
         return 0;
     }
     
-    void process_snapshot_cb(Caliper* c, const Entry*, const Snapshot* sbuf) {
+    void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf();
 
         if (!tbuf || tbuf->stopped()) // error messaging is done in acquire_tbuf()
@@ -338,7 +342,7 @@ namespace
         tbuf->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, const Entry* trigger) {
+    void flush_cb(Caliper* c, const EntryList*) {
         TraceBuffer* gtbuf = nullptr;
         
         {

@@ -38,9 +38,9 @@
 
 #include "Caliper.h"
 #include "ContextBuffer.h"
+#include "EntryList.h"
 #include "MetadataTree.h"
 #include "MemoryPool.h"
-#include "Snapshot.h"
 
 #include <Services.h>
 
@@ -475,28 +475,14 @@ Caliper::get_attribute(cali_id_t id) const
 // --- Snapshot interface
 
 void
-Caliper::pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* sbuf)
+Caliper::pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* sbuf)
 {
     assert(mG != 0);
 
     // Save trigger info in snapshot buf
 
-    if (trigger_info) {
-        Snapshot::Sizes     sizes = { 0, 0, 0 };
-        Snapshot::Addresses addresses = sbuf->addresses();
-
-        if (trigger_info->node()) {
-            // node entry
-            addresses.node_entries[sizes.n_nodes++]  = trigger_info->node();
-        } else {
-            // as-value entry
-            // todo: what to do with hidden attribute? - trigger info shouldn't be hidden though
-            addresses.immediate_attr[sizes.n_attr++] = trigger_info->attribute();
-            addresses.immediate_data[sizes.n_data++] = trigger_info->value();
-        }
-
-        sbuf->commit(sizes);
-    }
+    if (trigger_info)
+        sbuf->append(*trigger_info);
 
     // Invoke callbacks and get contextbuffer data
 
@@ -508,11 +494,12 @@ Caliper::pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* sbuf)
 }
 
 void 
-Caliper::push_snapshot(int scopes, const Entry* trigger_info)
+Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 {
     assert(mG != 0);
 
-    Snapshot sbuf;
+    EntryList::FixedEntryList<64> snapshot_data;
+    EntryList sbuf(snapshot_data);
 
     pull_snapshot(scopes, trigger_info, &sbuf);
 
@@ -522,7 +509,7 @@ Caliper::push_snapshot(int scopes, const Entry* trigger_info)
 }
 
 void
-Caliper::flush(const Entry* entry)
+Caliper::flush(const EntryList* entry)
 {
     mG->events.flush(this, entry);
 }
@@ -539,7 +526,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_begin_evt(this, attr);
+        mG->events.pre_begin_evt(this, attr, data);
 
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->statebuffer;
@@ -554,7 +541,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_begin_evt(this, attr);
+        mG->events.post_begin_evt(this, attr, data);
 
     return ret;
 }
@@ -570,10 +557,14 @@ Caliper::end(const Attribute& attr)
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->statebuffer;
 
-    // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.pre_end_evt(this, attr);
+    Variant val;
 
+    // invoke callbacks
+    if (!attr.skip_events()) {
+        val = get(attr).value();
+        mG->events.pre_end_evt(this, attr, val);
+    }
+    
     if (attr.store_as_value())
         ret = sb->unset(attr);
     else {
@@ -594,7 +585,7 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_end_evt(this, attr);
+        mG->events.post_end_evt(this, attr, val);
 
     return ret;
 }
@@ -612,7 +603,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr);
+        mG->events.pre_set_evt(this, attr, data);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
@@ -624,7 +615,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
     
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr);
+        mG->events.post_set_evt(this, attr, data);
 
     return ret;
 }
@@ -633,6 +624,8 @@ cali_err
 Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
     cali_err ret = CALI_EINV;
 
+    if (n < 1)
+        return CALI_SUCCESS;    
     if (!mG || attr == Attribute::invalid)
         return CALI_EINV;
 
@@ -641,7 +634,7 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr);
+        mG->events.pre_set_evt(this, attr, data[n-1]);
 
     if (attr.store_as_value()) {
         Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
@@ -655,7 +648,7 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
     
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr);
+        mG->events.post_set_evt(this, attr, data[n-1]);
 
     return ret;
 }
@@ -682,11 +675,19 @@ Caliper::get(const Attribute& attr)
 
 // --- Generic entry API
 
-Entry
-Caliper::make_entry(size_t n, const Attribute* attr, const Variant* value) 
+void
+Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list) 
 {
-    // what do we do with as-value attributes here?!
-    return Entry(mG->tree.get_path(n, attr, value, nullptr, &mG->process_scope->mempool));
+    Node* node = 0;
+
+    for (size_t i = 0; i < n; ++i)
+        if (attr[i].store_as_value())
+            list.append(attr[i].id(), value[i]);
+        else
+            node = mG->tree.get_path(1, &attr[i], &value[i], node, &(scope(attr2caliscope(attr[i]))->mempool));
+
+    if (node)
+        list.append(node);
 }
 
 Entry 

@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -72,7 +72,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_counter(Caliper* c, int scope, const Entry*, Snapshot* sbuf) {
+void push_counter(Caliper* c, int scope, const EntryList*, EntryList* snapshot) {
     if (num_counters < 1)
         return;
 
@@ -81,21 +81,14 @@ void push_counter(Caliper* c, int scope, const Entry*, Snapshot* sbuf) {
         return;
     }
 
-    Snapshot::Sizes     sizes = sbuf->capacity();
-    Snapshot::Addresses addr  = sbuf->addresses(); 
+    Variant data[MAX_COUNTERS];
 
-    int m = std::min(num_counters, sizes.n_data);
-
+    int m = std::min(num_counters, MAX_COUNTERS);
+    
     for (int i = 0; i < m; ++i)
-        addr.immediate_data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
+        data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
 
-    copy_n(counter_attrbs, m, addr.immediate_attr);
-
-    sizes.n_nodes = 0;
-    sizes.n_data  = m;
-    sizes.n_attr  = m;
-
-    sbuf->commit(sizes);
+    snapshot->append(m, counter_attrbs, data);
 }
 
 void papi_init(Caliper* c) {
