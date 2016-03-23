@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -50,6 +50,8 @@ using namespace std;
 namespace 
 {
 
+#define MITOS_NUM_ATTR 6
+    
 Attribute address_attr        { Attribute::invalid } ;
 Attribute latency_attr        { Attribute::invalid } ;
 Attribute timestamp_attr      { Attribute::invalid } ;
@@ -57,85 +59,81 @@ Attribute ip_attr             { Attribute::invalid } ;
 Attribute datasource_attr     { Attribute::invalid } ;
 Attribute cpu_attr            { Attribute::invalid } ;
 
+int       num_samples;
+int       num_processed_samples;
+    
 ConfigSet config;
 
-bool      record_address { true  };
-bool      fresh_sample   { false };
+cali_id_t mitos_attributes[MITOS_NUM_ATTR] = { CALI_INV_ID };
 
-static __thread perf_event_sample static_sample;
-
-static const ConfigSet::Entry s_configdata[] = {
-    { "mitos", CALI_TYPE_BOOL, "false",
-      "Include memory access samples",
-      "Include memory access samples"
+    
+const ConfigSet::Entry configdata[] = {
+    { "latency_threshold", CALI_TYPE_UINT, "20",
+      "Threshold for triggering memory access samples",
+      "Threshold for triggering memory access samples"
+    },
+    { "time_frequency",    CALI_TYPE_UINT, "4000",
+      "Sample time frequency",
+      "Sample time frequency"
     },
     ConfigSet::Terminator
 };
 
-static void sample_handler(perf_event_sample *sample, void *args) {
-    // Copy to global static sample
-    memcpy(&static_sample,sample,sizeof(perf_event_sample));
+    
+void sample_handler(perf_event_sample *sample, void *args) {
+    ++num_samples;
 
-    // TODO: handle the case where push_sample happens right after this line
-    // e.g.
-    // fresh_sample = true; // thread 1, from here
-    // fresh_sample = false; // thread 2, from push_sample
-    fresh_sample = true;
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return;
 
     // Push context to invoke push_sample
-    Caliper c;
-    c.push_snapshot(CALI_SCOPE_THREAD, nullptr);
+    
+    Variant data[MITOS_NUM_ATTR] = {
+        Variant(static_cast<uint64_t>(sample->addr)),
+        Variant(static_cast<uint64_t>(sample->weight)),
+        Variant(static_cast<uint64_t>(sample->time)),
+        Variant(static_cast<uint64_t>(sample->ip)),
+        Variant(static_cast<uint64_t>(sample->data_src)),
+        Variant(static_cast<uint64_t>(sample->cpu))
+    };
+
+    EntryList trigger_info(MITOS_NUM_ATTR, mitos_attributes, data);
+
+    c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
+
+    ++num_processed_samples;
 }
 
-void push_sample(Caliper* c, int scope, const Entry *entry, Snapshot* sbuf) {
-    if (!fresh_sample) {
-        return;
-    }
-
-    Snapshot::Sizes     sizes = sbuf->capacity();
-    Snapshot::Addresses addr  = sbuf->addresses(); 
-
-    sizes.n_nodes = 0;
-    sizes.n_data  = 6;
-    sizes.n_attr  = 6;
-
-    // Attribute ids
-    addr.immediate_attr[0] = address_attr.id();
-    addr.immediate_attr[1] = latency_attr.id();
-    addr.immediate_attr[2] = timestamp_attr.id();
-    addr.immediate_attr[3] = ip_attr.id();
-    addr.immediate_attr[4] = datasource_attr.id();
-    addr.immediate_attr[5] = cpu_attr.id();
-
-    // Data
-    addr.immediate_data[0] = Variant(static_cast<uint64_t>(static_sample.addr));
-    addr.immediate_data[1] = Variant(static_cast<uint64_t>(static_sample.weight));
-    addr.immediate_data[2] = Variant(static_cast<uint64_t>(static_sample.time));
-    addr.immediate_data[3] = Variant(static_cast<uint64_t>(static_sample.ip));
-    addr.immediate_data[4] = Variant(static_cast<uint64_t>(static_sample.data_src));
-    addr.immediate_data[5] = Variant(static_cast<uint64_t>(static_sample.cpu));
-
-    sbuf->commit(sizes);
-
-    fresh_sample = false;
-}
-
-void mitos_init(Caliper* c) {
-    Mitos_set_sample_latency_threshold(20);
-    Mitos_set_sample_time_frequency(4000);
-    Mitos_set_handler_fn(&sample_handler,c);
+void mitos_init(Caliper* c)
+{
+    Mitos_set_sample_latency_threshold(config.get("latency_threshold").to_uint());
+    Mitos_set_sample_time_frequency(config.get("time_frequency").to_uint());
+    Mitos_set_handler_fn(&sample_handler, nullptr);
+    
     Mitos_begin_sampler();
 }
 
-void mitos_finish(Caliper* c) {
-    cerr << "ENDING" << endl;
+void mitos_finish(Caliper* c)
+{
     Mitos_end_sampler();
+    
+    Log(1).stream() << "Mitos: processed " << num_processed_samples
+                    << " samples ("  << num_samples
+                    << " total, "    << num_samples - num_processed_samples
+                    << " dropped)."  << std::endl;
 }
 
+    
 // Initialization handler
-void mitos_register(Caliper* c) {
-    record_address = config.get("address").to_bool();
+void mitos_register(Caliper* c)
+{
+    config = RuntimeConfig::init("mitos", configdata);
 
+    num_samples           = 0;
+    num_processed_samples = 0;
+    
     address_attr = c->create_attribute("mitos.address", CALI_TYPE_ADDR, 
                                        CALI_ATTR_ASVALUE 
                                        | CALI_ATTR_SCOPE_THREAD 
@@ -160,11 +158,20 @@ void mitos_register(Caliper* c) {
                                   CALI_ATTR_ASVALUE 
                                   | CALI_ATTR_SCOPE_THREAD 
                                   | CALI_ATTR_SKIP_EVENTS);
+    
+    // Attribute ids
+    
+    mitos_attributes[0] = address_attr.id();
+    mitos_attributes[1] = latency_attr.id();
+    mitos_attributes[2] = timestamp_attr.id();
+    mitos_attributes[3] = ip_attr.id();
+    mitos_attributes[4] = datasource_attr.id();
+    mitos_attributes[5] = cpu_attr.id();
 
-    // add callback for Caliper::get_context() event
+    // Add callback for Caliper::get_context() event
+    
     c->events().post_init_evt.connect(&mitos_init);
     c->events().finish_evt.connect(&mitos_finish);
-    c->events().snapshot.connect(&push_sample);
 
     Log(1).stream() << "Registered mitos service" << endl;
 }
