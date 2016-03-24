@@ -97,8 +97,9 @@ namespace
             c.events().flush(&c, nullptr);
             c.events().finish_evt(&c);
         }
-        
-        Caliper::release();
+
+        // Don't delete global data, some thread-specific finalization may occur after this point 
+        // Caliper::release();
     }
 
     // --- Siglock

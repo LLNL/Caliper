@@ -106,18 +106,31 @@ void sample_handler(perf_event_sample *sample, void *args) {
     ++num_processed_samples;
 }
 
+void mitos_init_thread(Caliper*, cali_context_scope_t scope)
+{
+    if (scope == CALI_SCOPE_THREAD) {
+        Mitos_set_sample_latency_threshold(config.get("latency_threshold").to_uint());
+        Mitos_set_sample_time_frequency(config.get("time_frequency").to_uint());
+        Mitos_set_handler_fn(&sample_handler, nullptr);
+        
+        Mitos_begin_sampler();
+    }
+}
+
+void mitos_end_thread(Caliper*, cali_context_scope_t scope)
+{
+    if (scope == CALI_SCOPE_THREAD)
+        Log(2).stream() << "Mitos: end thread" << std::endl;
+}
+
 void mitos_init(Caliper* c)
 {
-    Mitos_set_sample_latency_threshold(config.get("latency_threshold").to_uint());
-    Mitos_set_sample_time_frequency(config.get("time_frequency").to_uint());
-    Mitos_set_handler_fn(&sample_handler, nullptr);
-    
-    Mitos_begin_sampler();
+    mitos_init_thread(c, CALI_SCOPE_THREAD);
 }
 
 void mitos_finish(Caliper* c)
 {
-    Mitos_end_sampler();
+    mitos_end_thread(c, CALI_SCOPE_THREAD);
     
     Log(1).stream() << "Mitos: processed " << num_processed_samples
                     << " samples ("  << num_samples
@@ -172,6 +185,8 @@ void mitos_register(Caliper* c)
     
     c->events().post_init_evt.connect(&mitos_init);
     c->events().finish_evt.connect(&mitos_finish);
+    c->events().create_scope_evt.connect(&mitos_init_thread);
+    c->events().release_scope_evt.connect(&mitos_end_thread);
 
     Log(1).stream() << "Registered mitos service" << endl;
 }

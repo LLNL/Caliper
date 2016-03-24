@@ -242,8 +242,10 @@ namespace
     
     ConfigSet      config;
     
-    BufferPolicy   policy           = BufferPolicy::Grow;
-    size_t         buffersize       = 2 * 1024 * 1024;
+    BufferPolicy   policy            = BufferPolicy::Grow;
+    size_t         buffersize        = 2 * 1024 * 1024;
+
+    size_t         dropped_snapshots = 0;
     
     pthread_key_t  trace_buf_key;
 
@@ -328,8 +330,10 @@ namespace
     void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf(!c->is_signal());
 
-        if (!tbuf || tbuf->stopped()) // error messaging is done in acquire_tbuf()
+        if (!tbuf || tbuf->stopped()) { // error messaging is done in acquire_tbuf()
+            ++dropped_snapshots;
             return;
+        }
         
         if (!tbuf->fits(sbuf))
             tbuf = handle_overflow(c, tbuf);
@@ -377,10 +381,16 @@ namespace
             Log(0).stream() << "trace: error: unknown buffer policy \"" << polname << "\"" << endl;
     }
     
+    void finish_cb(Caliper* c) {
+        if (dropped_snapshots > 0)
+            Log(1).stream() << "Trace: dropped " << dropped_snapshots << " snapshots." << endl;
+    }
+    
     void trace_register(Caliper* c) {
         global_tbuf_lock.unlock();
         
         config = RuntimeConfig::init("trace", configdata);
+        dropped_snapshots = 0;
         
         init_overflow_policy();
         
@@ -393,6 +403,7 @@ namespace
         
         c->events().process_snapshot.connect(&process_snapshot_cb);
         c->events().flush.connect(&flush_cb);
+        c->events().finish_evt.connect(&finish_cb);
 
         Log(1).stream() << "Registered trace service" << endl;
     }
