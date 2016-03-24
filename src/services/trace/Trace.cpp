@@ -93,7 +93,10 @@ namespace
         }
         
         void append(TraceBuffer* tbuf) {
-            m_next = tbuf;
+            if (m_next)
+                m_next->append(tbuf);
+            else
+                m_next = tbuf;
         }
 
         void reset() {
