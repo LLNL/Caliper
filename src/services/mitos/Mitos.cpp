@@ -120,7 +120,7 @@ void mitos_init_thread(Caliper*, cali_context_scope_t scope)
 void mitos_end_thread(Caliper*, cali_context_scope_t scope)
 {
     if (scope == CALI_SCOPE_THREAD)
-        Log(2).stream() << "Mitos: end thread" << std::endl;
+        Mitos_end_sampler();
 }
 
 void mitos_init(Caliper* c)
