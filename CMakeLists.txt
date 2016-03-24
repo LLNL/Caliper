@@ -48,6 +48,16 @@ if (PAPI_FOUND)
   list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
 endif()
 
+# Find Mitos
+
+find_package(Mitos QUIET)
+if(Mitos_FOUND)
+  find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
+  set(CALIPER_HAVE_MITOS TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
+  message(STATUS "Mitos found")
+endif()
+
 find_package(Threads)
 
 # Find OMPT header
