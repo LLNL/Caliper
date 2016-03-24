@@ -66,6 +66,10 @@ const ConfigSet::Entry configdata[] = {
       "Capture the OpenMP runtime state on context queries",
       "Capture the OpenMP runtime state on context queries"
     },
+    { "capture_events", CALI_TYPE_BOOL, "false",
+      "Capture OpenMP events (enter/exit parallel regions, barriers, etc.)",
+      "Capture OpenMP events (enter/exit parallel regions, barriers, etc.)"
+    },
     ConfigSet::Terminator
 };
 
@@ -320,7 +324,7 @@ snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList*)
 /// Register our callbacks with the OpenMP runtime
 
 bool
-register_ompt_callbacks()
+register_ompt_callbacks(bool capture_events)
 {
     if (!api.set_callback)
         return false;
@@ -328,22 +332,28 @@ register_ompt_callbacks()
     struct callback_info_t { 
         ompt_event_t    event;
         ompt_callback_t cbptr;
-    } callbacks[] = {
-        { ompt_event_thread_begin,     (ompt_callback_t) &cb_event_thread_begin     },
-        { ompt_event_thread_end,       (ompt_callback_t) &cb_event_thread_end       },
-        { ompt_event_control,          (ompt_callback_t) &cb_event_control          },
-	{ ompt_event_idle_begin,       (ompt_callback_t) &cb_event_idle_begin       },
-	{ ompt_event_idle_end,         (ompt_callback_t) &cb_event_idle_end         },
-	{ ompt_event_wait_barrier_begin,  (ompt_callback_t) &cb_event_wait_barrier_begin },
-	{ ompt_event_wait_barrier_end,    (ompt_callback_t) &cb_event_wait_barrier_end   },
-	{ ompt_event_parallel_begin,      (ompt_callback_t) &cb_event_parallel_begin     },
-	{ ompt_event_parallel_end,        (ompt_callback_t) &cb_event_parallel_end       }
+    } basic_callbacks[] = {
+        { ompt_event_thread_begin,       (ompt_callback_t) &cb_event_thread_begin       },
+        { ompt_event_thread_end,         (ompt_callback_t) &cb_event_thread_end         },
+        { ompt_event_control,            (ompt_callback_t) &cb_event_control            }
 //        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
+    }, event_callbacks[] = {
+	{ ompt_event_idle_begin,         (ompt_callback_t) &cb_event_idle_begin         },
+	{ ompt_event_idle_end,           (ompt_callback_t) &cb_event_idle_end           },
+	{ ompt_event_wait_barrier_begin, (ompt_callback_t) &cb_event_wait_barrier_begin },
+	{ ompt_event_wait_barrier_end,   (ompt_callback_t) &cb_event_wait_barrier_end   },
+	{ ompt_event_parallel_begin,     (ompt_callback_t) &cb_event_parallel_begin     },
+	{ ompt_event_parallel_end,       (ompt_callback_t) &cb_event_parallel_end       }
     };
 
-    for ( auto cb : callbacks ) 
+    for ( auto cb : basic_callbacks ) 
         if ((*api.set_callback)(cb.event, cb.cbptr) == 0)
             return false;
+    
+    if (capture_events)
+        for ( auto cb : event_callbacks ) 
+            if ((*api.set_callback)(cb.event, cb.cbptr) == 0)
+                return false;
 
     return true;
 }
@@ -375,8 +385,8 @@ omptservice_initialize(Caliper* c)
     enable_ompt = true;
 
     thread_attr = 
-        c->create_attribute("ompt.thread.id", CALI_TYPE_INT,   
-                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+        c->create_attribute("ompt.thread.id", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD);
+    
     state_attr  =
         c->create_attribute("ompt.state",     CALI_TYPE_STRING, 
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
@@ -418,7 +428,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     // register callbacks
 
-    if (!::api.init(lookup) || !::register_ompt_callbacks()) {
+    if (!::api.init(lookup) || !::register_ompt_callbacks(::config.get("capture_events").to_bool())) {
         Log(0).stream() << "Callback registration error: OMPT interface disabled" << endl;
         return 0;
     }
