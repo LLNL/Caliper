@@ -38,8 +38,8 @@
 
 #include "csv/CsvSpec.h"
 
-#include <RecordMap.h>
-#include <Variant.h>
+#include "RecordMap.h"
+#include "Variant.h"
 
 #include "CaliperMetadataDB.h"
 

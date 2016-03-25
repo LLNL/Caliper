@@ -38,8 +38,8 @@
 
 #include "RecordProcessor.h"
 
-#include <Attribute.h>
-#include <RecordMap.h>
+#include "Attribute.h"
+#include "RecordMap.h"
 
 #include <map>
 #include <memory>

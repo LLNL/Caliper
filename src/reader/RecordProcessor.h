@@ -36,8 +36,8 @@
 #ifndef CALI_RECORDPROCESSOR_H
 #define CALI_RECORDPROCESSOR_H
 
-#include <Entry.h>
-#include <RecordMap.h>
+#include "Entry.h"
+#include "RecordMap.h"
 
 #include <functional>
 #include <vector>
