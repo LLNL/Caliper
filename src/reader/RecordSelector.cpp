@@ -210,7 +210,7 @@ struct RecordSelector::RecordSelectorImpl
             bool m = false;
 
             for (const Entry& e : list)
-                if (m = (m || match(db, e, clause)))
+                if ((m = (m || match(db, e, clause))))
                     break;
 
             if (m == clause.negate)

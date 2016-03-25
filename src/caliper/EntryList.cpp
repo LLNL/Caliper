@@ -120,8 +120,8 @@ EntryList::push_record(WriteRecordFn fn) const
     for (int i = 0; i < m_sizes.n_nodes; ++i)
         m_node_array[i]->write_path(fn);
         
-    cali::Variant attr[m_sizes.n_nodes];
-    cali::Variant node[m_sizes.n_immediate];
+    cali::Variant *attr = new cali::Variant[m_sizes.n_nodes];
+    cali::Variant *node = new cali::Variant[m_sizes.n_immediate];
 
     for (int i = 0; i < m_sizes.n_nodes; ++i)
         node[i] = cali::Variant(m_node_array[i]->id());
