@@ -36,9 +36,9 @@
 #ifndef CALI_CSVSPEC_H
 #define CALI_CSVSPEC_H
 
-#include <cali_types.h>
+#include "../cali_types.h"
 
-#include <RecordMap.h>
+#include "../RecordMap.h"
 
 #include <iostream>
 #include <string>
