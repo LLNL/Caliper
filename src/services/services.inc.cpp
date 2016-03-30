@@ -53,6 +53,7 @@ extern CaliperService CMakeInfoService;
 extern CaliperService EventTriggerService;
 extern CaliperService PthreadService;
 extern CaliperService RecorderService;
+extern CaliperService SamplerService;    
 extern CaliperService StatisticsService;
 extern CaliperService TextLogService;
 extern CaliperService TimestampService;
@@ -83,6 +84,7 @@ const CaliperService caliper_services[] = {
     EventTriggerService,
     PthreadService,
     RecorderService,
+    SamplerService,
     StatisticsService,
     TimestampService,
     TextLogService,

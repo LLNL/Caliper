@@ -36,11 +36,12 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <Log.h>
+#include <RuntimeConfig.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
@@ -48,105 +49,194 @@
 
 #include <unistd.h>
 
-#include <errno.h>
-
+#include <sys/syscall.h>
 #include <sys/types.h>
 #include <ucontext.h>
-
-
 
 using namespace cali;
 using namespace std;
 
-
 namespace 
 {
+    Attribute timer_attr    { Attribute::invalid };
+    Attribute pcsample_attr { Attribute::invalid };
 
-#define NUM_THREADS 1
+    cali_id_t pcsample_attr_id    = CALI_INV_ID;
+    
+    ConfigSet config;
 
-static timer_t timers[NUM_THREADS];
+    int       nsec_interval       = 0;
 
-static void on_prof(int sig, siginfo_t *info, void *context)
-{
-//   int id = myid;
-   int id=0;
-   unsigned long pc;
-   ucontext_t *ucontext = (ucontext_t *) context;
-   totals[id][cur_sec()]++;
+    int       n_samples           = 0;
+    int       n_processed_samples = 0;
 
-   pc = ucontext->uc_mcontext.gregs[REG_RIP];
-   pc_samples[id][cur_pc_sample[id]++] = pc;
+    static const ConfigSet::Entry s_configdata[] = {
+        { "frequency", CALI_TYPE_INT, "10",
+          "Sampling frequency (in Hz)",
+          "Sampling frequency (in Hz)"
+        },
+        ConfigSet::Terminator
+    };
 
-   if (nosigs) {
-      printf("Signal after stop\n");
-   }
-}
+    void on_prof(int sig, siginfo_t *info, void *context)
+    {
+        ++n_samples;
+        
+        Caliper c = Caliper::sigsafe_instance();
 
-static void setup_signal()
-{
-    struct sigaction act;
-    sigset_t sigset;
-    int sig = SIGPROF;
+        if (!c)
+            return;
+        
+        ucontext_t *ucontext = (ucontext_t *) context;
 
-    sigemptyset(&sigset);
-    sigaddset(&sigset, sig);
-    sigprocmask(SIG_UNBLOCK, &sigset, NULL);
+        uint64_t  pc = static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
+        Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
 
-    memset(&act, 0, sizeof(act));
-    act.sa_sigaction = on_prof;
-    act.saflags = SA_RESTART | SA_SIGINFO;
-    sigaction(sig, &act, NULL);
+        EntryList trigger_info(1, &pcsample_attr_id, &v_pc);
 
-}
+        c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
 
-static void clear_signal()
-{
-	signal(SIGPROF, SIG_IGN);
-}
+        ++n_processed_samples;
+    }
 
-static void setup_settimer(int id)
-{
-   int result;
-   struct sigevent sev;
-   struct itimerspec spec;
+    void setup_signal()
+    {
+        sigset_t sigset;
+
+        sigemptyset(&sigset);
+        sigaddset(&sigset, SIGPROF);
+        sigprocmask(SIG_UNBLOCK, &sigset, NULL);
+
+        struct sigaction act;
+        
+        memset(&act, 0, sizeof(act));
+
+        act.sa_sigaction = on_prof;
+        act.sa_flags     = SA_RESTART | SA_SIGINFO;
+
+        sigaction(SIGPROF, &act, NULL);
+    }
+
+    void clear_signal()
+    {
+        signal(SIGPROF, SIG_IGN);
+    }
+
+    void setup_settimer(Caliper* c)
+    {
+        struct sigevent sev;
    
-   std::memset(&sev, 0, sizeof(sev));
-   sev.sigev_notify = SIGEV_THREAD_ID;
-   sev._sigev_un._tid = gettid();
-   sev.sigev_signo = SIGPROF;
+        std::memset(&sev, 0, sizeof(sev));
+        
+        sev.sigev_notify   = SIGEV_THREAD_ID;     // Linux-specific!
+        sev._sigev_un._tid = syscall(SYS_gettid);
+        sev.sigev_signo    = SIGPROF;
+
+        timer_t timer;
    
-   result = timer_create(CLOCK_MONOTONIC, &sev, timers+id);
-   if (result == -1) {
-      perror("Could not timer_create");
-      exit(-1);
-   }
+        if (timer_create(CLOCK_MONOTONIC, &sev, &timer) == -1) {
+            Log(0).stream() << "pcsample: timer_create() failed" << std::endl;
+            return;
+        }
+        
+        struct itimerspec spec;
 
-   spec.it_interval.tv_sec = 0;
-   spec.it_interval.tv_nsec = 10000000;
-   spec.it_value.tv_sec = 0;
-   spec.it_value.tv_nsec = 10000000;
+        spec.it_interval.tv_sec  = 0;
+        spec.it_interval.tv_nsec = nsec_interval;
+        spec.it_value.tv_sec     = 0;
+        spec.it_value.tv_nsec    = nsec_interval;
 
-   result = timer_settime(timers[id], 0, &spec, NULL);
-   if (result == -1) {
-      perror("Could not settime");
-      exit(-1);
-   }
-}
+        if (timer_settime(timer, 0, &spec, NULL) == -1) {
+            Log(0).stream() << "pcsample: timer_settime() failed" << std::endl;
+            return;
+        }
 
-static void stop_settimer(int id)
-{
-   timer_delete(timers[id]);
-}
+        // FIXME: We make the assumption that timer_t is a 8-byte value
+        Variant v_timer(CALI_TYPE_ADDR, &timer, sizeof(void*));
+        
+        c->set(timer_attr, v_timer);
 
-void sampler_register(Caliper* c)
-{
-    Log(1).stream() << "Registered sampler service" << endl;
-    return;
-}
+        Log(2).stream() << "Registered timer " << v_timer << endl;
+    }
+
+    void clear_timer(Caliper* c) {
+        Entry e = c->get(timer_attr);
+
+        if (e.is_empty()) {
+            Log(2).stream() << "Timer attribute not found " << endl;
+            return;
+        }
+        
+        Variant v_timer = e.value();
+
+        if (v_timer.empty())
+            return;
+
+        timer_t timer;
+        memcpy(&timer, v_timer.data(), sizeof(void*));
+
+        Log(2).stream() << "Deleting timer " << v_timer << endl;
+
+        timer_delete(timer);
+    }
+    
+    void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
+        if (scope == CALI_SCOPE_THREAD)
+            setup_settimer(c);
+    }
+
+    void release_scope_cb(Caliper* c, cali_context_scope_t scope) {
+        if (scope == CALI_SCOPE_THREAD)
+            clear_timer(c);
+    }
+
+    void finish_cb(Caliper* c) {
+        clear_timer(c);
+        clear_signal();
+
+        Log(1).stream() << "PCSample: processed " << n_processed_samples << " samples ("
+                        << n_samples << " total, "
+                        << n_samples - n_processed_samples << " dropped)." << endl;
+    }
+    
+    void sampler_register(Caliper* c)
+    {
+        config = RuntimeConfig::init("pcsample", s_configdata);
+
+        timer_attr =
+            c->create_attribute("cali.pcsample.timer", CALI_TYPE_ADDR,
+                                CALI_ATTR_SCOPE_THREAD |
+                                CALI_ATTR_SKIP_EVENTS  |
+                                CALI_ATTR_ASVALUE      |
+                                CALI_ATTR_HIDDEN);
+        pcsample_attr =
+            c->create_attribute("cali.pcsample.pc", CALI_TYPE_ADDR,
+                                CALI_ATTR_SCOPE_THREAD |
+                                CALI_ATTR_SKIP_EVENTS  |
+                                CALI_ATTR_ASVALUE);
+
+        pcsample_attr_id = pcsample_attr.id();
+
+        int frequency = config.get("frequency").to_int();
+
+        // some sanity checking
+        frequency     = std::min(std::max(frequency, 1), 10000);
+        nsec_interval = 1000000000 / frequency;
+
+        c->events().create_scope_evt.connect(create_scope_cb);
+        c->events().release_scope_evt.connect(release_scope_cb);
+        c->events().finish_evt.connect(finish_cb);
+
+        setup_signal();
+        setup_settimer(c);
+        
+        Log(1).stream() << "Registered sampler service. Using "
+                        << frequency << "Hz sampling frequency." << endl;
+    }
 
 } // namespace
 
 namespace cali
 {
-    CaliperService SamplerService { "sampler", &::sampler_register };
+    CaliperService SamplerService { "pcsample", &::sampler_register };
 }
