@@ -59,9 +59,9 @@ using namespace std;
 namespace 
 {
     Attribute timer_attr    { Attribute::invalid };
-    Attribute pcsample_attr { Attribute::invalid };
+    Attribute sampler_attr { Attribute::invalid };
 
-    cali_id_t pcsample_attr_id    = CALI_INV_ID;
+    cali_id_t sampler_attr_id    = CALI_INV_ID;
     
     ConfigSet config;
 
@@ -92,7 +92,7 @@ namespace
         uint64_t  pc = static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
         Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
 
-        EntryList trigger_info(1, &pcsample_attr_id, &v_pc);
+        EntryList trigger_info(1, &sampler_attr_id, &v_pc);
 
         c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
 
@@ -135,7 +135,7 @@ namespace
         timer_t timer;
    
         if (timer_create(CLOCK_MONOTONIC, &sev, &timer) == -1) {
-            Log(0).stream() << "pcsample: timer_create() failed" << std::endl;
+            Log(0).stream() << "sampler: timer_create() failed" << std::endl;
             return;
         }
         
@@ -147,7 +147,7 @@ namespace
         spec.it_value.tv_nsec    = nsec_interval;
 
         if (timer_settime(timer, 0, &spec, NULL) == -1) {
-            Log(0).stream() << "pcsample: timer_settime() failed" << std::endl;
+            Log(0).stream() << "sampler: timer_settime() failed" << std::endl;
             return;
         }
 
@@ -194,28 +194,28 @@ namespace
         clear_timer(c);
         clear_signal();
 
-        Log(1).stream() << "PCSample: processed " << n_processed_samples << " samples ("
+        Log(1).stream() << "Sampler: processed " << n_processed_samples << " samples ("
                         << n_samples << " total, "
                         << n_samples - n_processed_samples << " dropped)." << endl;
     }
     
     void sampler_register(Caliper* c)
     {
-        config = RuntimeConfig::init("pcsample", s_configdata);
+        config = RuntimeConfig::init("sampler", s_configdata);
 
         timer_attr =
-            c->create_attribute("cali.pcsample.timer", CALI_TYPE_ADDR,
+            c->create_attribute("cali.sampler.timer", CALI_TYPE_ADDR,
                                 CALI_ATTR_SCOPE_THREAD |
                                 CALI_ATTR_SKIP_EVENTS  |
                                 CALI_ATTR_ASVALUE      |
                                 CALI_ATTR_HIDDEN);
-        pcsample_attr =
-            c->create_attribute("cali.pcsample.pc", CALI_TYPE_ADDR,
+        sampler_attr =
+            c->create_attribute("cali.sampler.pc", CALI_TYPE_ADDR,
                                 CALI_ATTR_SCOPE_THREAD |
                                 CALI_ATTR_SKIP_EVENTS  |
                                 CALI_ATTR_ASVALUE);
 
-        pcsample_attr_id = pcsample_attr.id();
+        sampler_attr_id = sampler_attr.id();
 
         int frequency = config.get("frequency").to_int();
 
@@ -238,5 +238,5 @@ namespace
 
 namespace cali
 {
-    CaliperService SamplerService { "pcsample", &::sampler_register };
+    CaliperService SamplerService { "sampler", &::sampler_register };
 }
