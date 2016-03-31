@@ -75,10 +75,17 @@ ConfigSet                config;
 
 bool                     enable_snapshot_info;
 
-typedef std::map<cali_id_t, Attribute> AttributeMap;
+struct EventAttributes {
+    Attribute begin_attr;
+    Attribute set_attr;
+    Attribute end_attr;
+    Attribute lvl_attr;
+};
 
-std::mutex               level_attributes_lock;
-AttributeMap             level_attributes;
+typedef std::map<cali_id_t, EventAttributes> AttributeMap;
+
+std::mutex               event_attributes_lock;
+AttributeMap             event_attributes_map;
 
 std::vector<std::string> trigger_attr_names;
 
@@ -96,10 +103,29 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
     std::vector<std::string>::iterator it = find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
 
     if (it != trigger_attr_names.end() || trigger_attr_names.empty()) {
+        EventAttributes event_attributes;
+
+        struct evt_attr_setup_t {
+            std::string prefix;
+            Attribute*  attr_ptr;
+        } evt_attr_setup[] = {
+            { "event.begin.", &(event_attributes.begin_attr) },
+            { "event.set.",   &(event_attributes.set_attr)   },
+            { "event.end.",   &(event_attributes.end_attr)   }
+        };
+
+        for ( evt_attr_setup_t setup : evt_attr_setup ) {
+            std::string name = setup.prefix;
+            name.append(attr.name());
+
+            *(setup.attr_ptr) =
+                c->create_attribute(name, attr.type(), attr.properties());
+        }
+        
         std::string name = "cali.lvl.";
         name.append(std::to_string(attr.id()));
 
-        Attribute lvl_attr = 
+        event_attributes.lvl_attr = 
             c->create_attribute(name, CALI_TYPE_INT, 
                                 CALI_ATTR_ASVALUE     | 
                                 CALI_ATTR_HIDDEN      | 
@@ -107,27 +133,32 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
                                 (attr.properties() & CALI_ATTR_SCOPE_MASK));
 
         std::lock_guard<std::mutex>
-            g(level_attributes_lock);
+            g(event_attributes_lock);
         
-        level_attributes.insert(std::make_pair(attr.id(), lvl_attr));
+        event_attributes_map.insert(std::make_pair(attr.id(), event_attributes));
     }
 }
 
-Attribute get_level_attribute(const Attribute& attr)
+bool get_event_attributes(const Attribute& attr, EventAttributes& evt_attr)
 {
     std::lock_guard<std::mutex>
-        g(level_attributes_lock);
+        g(event_attributes_lock);
 
-    auto it = level_attributes.find(attr.id());
+    auto it = event_attributes_map.find(attr.id());
 
-    return (it == level_attributes.end()) ? Attribute::invalid : it->second;
+    if (it != event_attributes_map.end()) {
+        evt_attr = it->second;
+        return true;
+    }
+
+    return false;
 }
 
 void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    Attribute lvl_attr(get_level_attribute(attr));
+    EventAttributes event_attr;
 
-    if (lvl_attr == Attribute::invalid)
+    if (!get_event_attributes(attr, event_attr))
         return;
 
     if (enable_snapshot_info) {
@@ -141,23 +172,23 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
         // when two threads update a process-scope attribute.
         // Can fix that with a more general c->update(update_fn) function
 
-        v_p_lvl = c->exchange(lvl_attr, v_lvl);
+        v_p_lvl = c->exchange(event_attr.lvl_attr, v_lvl);
         lvl     = v_p_lvl.to_uint();
 
         if (lvl > 0) {
             v_lvl = Variant(++lvl);
-            c->set(lvl_attr, v_lvl);
+            c->set(event_attr.lvl_attr, v_lvl);
         }
 
         // Construct the trigger info entry
 
-        Attribute attrs[2] = { trigger_level_attr, trigger_begin_attr };
-        Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
+        Attribute attrs[3] = { trigger_level_attr, trigger_begin_attr, event_attr.begin_attr };
+        Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList::FixedEntryList<3> trigger_info_data;
         EntryList trigger_info(trigger_info_data);
 
-        c->make_entrylist(2, attrs, vals, trigger_info);
+        c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -166,9 +197,9 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    Attribute lvl_attr(get_level_attribute(attr));
+    EventAttributes event_attr;
 
-    if (lvl_attr == Attribute::invalid)
+    if (!get_event_attributes(attr, event_attr))
         return;
 
     if (enable_snapshot_info) {
@@ -177,17 +208,17 @@ void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
         // The level for set() is always 1
         // FIXME: ... except for set_path()??
-        c->set(lvl_attr, v_lvl);
+        c->set(event_attr.lvl_attr, v_lvl);
 
         // Construct the trigger info entry
 
-        Attribute attrs[2] = { trigger_level_attr, trigger_set_attr };
-        Variant   vals[2]  = { v_lvl, Variant(attr.id()) };
+        Attribute attrs[3] = { trigger_level_attr, trigger_set_attr, event_attr.set_attr };
+        Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList::FixedEntryList<3> trigger_info_data;
         EntryList trigger_info(trigger_info_data);
 
-        c->make_entrylist(2, attrs, vals, trigger_info);
+        c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -196,9 +227,9 @@ void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    Attribute lvl_attr(get_level_attribute(attr));
+    EventAttributes event_attr;
 
-    if (lvl_attr == Attribute::invalid)
+    if (!get_event_attributes(attr, event_attr))
         return;
 
     if (enable_snapshot_info) {
@@ -208,7 +239,7 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
         // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
         // If previous level was > 1, we need to update it again
 
-        v_p_lvl = c->exchange(lvl_attr, v_lvl);
+        v_p_lvl = c->exchange(event_attr.lvl_attr, v_lvl);
 
         if (v_p_lvl.empty())
             return;
@@ -216,17 +247,17 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
         lvl     = v_p_lvl.to_uint();
 
         if (lvl > 1)
-            c->set(lvl_attr, Variant(--lvl));
+            c->set(event_attr.lvl_attr, Variant(--lvl));
 
         // Construct the trigger info entry with previous level
 
-        Attribute attrs[2] = { trigger_level_attr, trigger_end_attr };
-        Variant   vals[2]  = { v_p_lvl, Variant(attr.id()) };
+        Attribute attrs[3] = { trigger_level_attr, trigger_end_attr, event_attr.end_attr };
+        Variant   vals[3]  = { v_p_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<2> trigger_info_data;
+        EntryList::FixedEntryList<3> trigger_info_data;
         EntryList trigger_info(trigger_info_data);
 
-        c->make_entrylist(2, attrs, vals, trigger_info);
+        c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     } else {
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -235,7 +266,7 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_trigger_register(Caliper* c)
 {
-    level_attributes_lock.unlock();
+    event_attributes_lock.unlock();
     
     // parse the configuration & set up triggers
 
