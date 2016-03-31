@@ -253,10 +253,10 @@ Variant::to_int(bool* okptr)
     return i;
 }
 
-unsigned
+uint64_t
 Variant::to_uint(bool* okptr) const
 {
-    unsigned       uint = static_cast<unsigned>(m_value.v_uint);
+    uint64_t       uint = m_value.v_uint;
     cali_attr_type type = m_type;
 
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
@@ -276,11 +276,11 @@ Variant::to_uint(bool* okptr) const
     return ok ? uint : 0;
 }
 
-unsigned
+uint64_t
 Variant::to_uint(bool* okptr) 
 {
     bool       ok = false;
-    unsigned uint = const_cast<const Variant*>(this)->to_uint(&ok);
+    uint64_t uint = const_cast<const Variant*>(this)->to_uint(&ok);
 
     if (m_type == CALI_TYPE_INV && ok) {
         m_type         = CALI_TYPE_UINT;
