@@ -119,7 +119,7 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
             name.append(attr.name());
 
             *(setup.attr_ptr) =
-                c->create_attribute(name, attr.type(), attr.properties());
+                c->create_attribute(name, attr.type(), attr.properties() | CALI_ATTR_SKIP_EVENTS);
         }
         
         std::string name = "cali.lvl.";
