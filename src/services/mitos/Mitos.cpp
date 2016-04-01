@@ -69,12 +69,12 @@ cali_id_t mitos_attributes[MITOS_NUM_ATTR] = { CALI_INV_ID };
     
 const ConfigSet::Entry configdata[] = {
     { "latency_threshold", CALI_TYPE_UINT, "20",
-      "Threshold for triggering memory access samples",
-      "Threshold for triggering memory access samples"
+      "Load latency threshold",
+      "Latency above which samples will be collected."
     },
     { "time_frequency",    CALI_TYPE_UINT, "4000",
-      "Sample time frequency",
-      "Sample time frequency"
+      "Sample frequency",
+      "Number of samples per second to collect (approximately)."
     },
     ConfigSet::Terminator
 };
