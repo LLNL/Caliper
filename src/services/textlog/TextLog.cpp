@@ -166,7 +166,7 @@ class TextLogService
                 trigger_attr = it->second;
         }
 
-        if (trigger_attr == Attribute::invalid)
+        if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
         formatter.print(get_stream(), snapshot) << std::endl;
