@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,30 +30,29 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file  Trace.cpp
-/// @brief Caliper trace service
+/// \file  Trace.cpp
+/// \brief Caliper trace service
 
 #include "../CaliperService.h"
+
+#include "TraceBufferChunk.h"
 
 #include <Caliper.h>
 #include <EntryList.h>
 
-#include <ContextRecord.h>
 #include <Log.h>
-#include <Node.h>
 #include <RuntimeConfig.h>
 
 #include <util/spinlock.hpp>
-#include <c-util/vlenc.h>
 
 #include <pthread.h>
 
+#include <atomic>
 #include <cstring>
 #include <mutex>
 #include <unordered_set>
 
-#define SNAP_MAX 64
-
+using namespace trace;
 using namespace cali;
 using namespace std;
 
@@ -63,168 +62,27 @@ namespace
         Flush, Grow, Stop
     };
     
-    class TraceBuffer {
-        size_t         m_size;
-        size_t         m_pos;
-        size_t         m_nrec;
+    struct TraceBuffer {
+        std::atomic<bool>  stopped;
+        std::atomic<bool>  retired;
 
-        bool           m_stop;
-        
-        unsigned char* m_data;
-        
-        TraceBuffer*   m_next;
-        
-    public:
-        
+        TraceBufferChunk*  chunks;
+        TraceBuffer*       next;
+        TraceBuffer*       prev;
+
         TraceBuffer(size_t s)
-            : m_size(s), m_pos(0), m_nrec(0), m_stop(false), m_data(new unsigned char[s]), m_next(0)
+            : stopped(false), retired(false), chunks(new TraceBufferChunk(s)), next(0), prev(0)
             { }
         
         ~TraceBuffer() {
-            delete[] m_data;
-
-            if (m_next)
-                delete m_next;
+            delete chunks;
         }
 
-        bool stopped() const { return m_stop; }
-        void stop() {
-            m_stop = true;
-        }
-        
-        void append(TraceBuffer* tbuf) {
-            if (m_next)
-                m_next->append(tbuf);
-            else
-                m_next = tbuf;
-        }
-
-        void reset() {
-            m_pos  = 0;
-            m_nrec = 0;
-            
-            m_stop = false;
-
-            memset(m_data, 0, m_size);
-        }
-        
-        size_t flush(Caliper* c, unordered_set<cali_id_t>& written_node_cache) {
-            size_t written = 0;
-
-            //
-            // local flush
-            //
-
-            size_t p = 0;
-
-            for (size_t r = 0; r < m_nrec; ++r) {
-                // decode snapshot record
-                
-                int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
-                int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
-
-                Variant node_vec[SNAP_MAX];
-                Variant attr_vec[SNAP_MAX];
-                Variant vals_vec[SNAP_MAX];
-
-                for (int i = 0; i < n_nodes; ++i)
-                    node_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
-                for (int i = 0; i < n_attr;  ++i)
-                    attr_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
-                for (int i = 0; i < n_attr;  ++i)
-                    vals_vec[i] = Variant::unpack(m_data + p, &p, nullptr);
-
-                // write nodes
-                // FIXME: this node cache is a terrible kludge, needs to go away
-                //   either make node-by-id lookup fast,
-                //   or fix node-before-snapshot I/O requirement
-
-                for (int i = 0; i < n_nodes; ++i) {
-                    cali_id_t node_id = node_vec[i].to_id();
-
-                    if (written_node_cache.count(node_id))
-                        continue;
-                    
-                    Node* node = c->node(node_vec[i].to_id());
-                    
-                    if (node)
-                        node->write_path(c->events().write_record);
-
-                    written_node_cache.insert(node_id);
-                }
-                for (int i = 0; i < n_attr; ++i) {
-                    cali_id_t node_id = attr_vec[i].to_id();
-
-                    if (written_node_cache.count(node_id))
-                        continue;
-
-                    Node* node = c->node(attr_vec[i].to_id());
-                    
-                    if (node)
-                        node->write_path(c->events().write_record);
-
-                    written_node_cache.insert(node_id);
-                }
-
-                // write snapshot
-                
-                int               n[3] = {  n_nodes,   n_attr,   n_attr };
-                const Variant* data[3] = { node_vec, attr_vec, vals_vec };
-
-                c->events().write_record(ContextRecord::record_descriptor(), n, data);
-            }
-
-            written += m_nrec;            
-            reset();
-            
-            //
-            // flush subsequent buffers in list
-            // 
-            
-            if (m_next) {
-                written += m_next->flush(c, written_node_cache);
-                delete m_next;
-                m_next = 0;
-            }
-            
-            return written;
-        }
-
-        void save_snapshot(const EntryList* s) {
-            EntryList::Sizes sizes = s->size();
-
-            if ((sizes.n_nodes + sizes.n_immediate) == 0)
-                return;
-
-            sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     SNAP_MAX);
-            sizes.n_immediate = std::min<size_t>(sizes.n_immediate, SNAP_MAX);
-                
-            m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
-            m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);
-
-            EntryList::Data addr = s->data();
-
-            for (int i = 0; i < sizes.n_nodes; ++i)
-                m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
-            for (int i = 0; i < sizes.n_immediate;  ++i)
-                m_pos += vlenc_u64(addr.immediate_attr[i],     m_data + m_pos);
-            for (int i = 0; i < sizes.n_immediate;  ++i)
-                m_pos += addr.immediate_data[i].pack(m_data + m_pos);
-
-            ++m_nrec;
-        }
-        
-        bool fits(const EntryList* s) const {
-            EntryList::Sizes sizes = s->size();
-
-            // get worst-case estimate of packed snapshot size:
-            //   20 bytes for size indicators
-            //   10 bytes per node id
-            //   10+22 bytes per immediate entry (10 for attr, 22 for variant)
-            
-            size_t max = 20 + 10 * sizes.n_nodes + 32 * sizes.n_immediate;
-
-            return (m_pos + max) < m_size;
+        void unlink() {
+            if (next)
+                next->prev = prev;
+            if (prev)
+                prev->next = next;
         }
     };
 
@@ -252,25 +110,19 @@ namespace
     
     pthread_key_t  trace_buf_key;
 
-    TraceBuffer*   global_tbuf_list = nullptr;
+    TraceBuffer*   global_tbuf_list  = nullptr;
     util::spinlock global_tbuf_lock;
 
+    std::mutex     global_flush_lock;
     
-    void save_tbuf(TraceBuffer* tb) {
-        pthread_setspecific(trace_buf_key, tb);
-    }
 
     void destroy_tbuf(void* ctx) {
         TraceBuffer* tbuf = static_cast<TraceBuffer*>(ctx);
 
         if (!tbuf)
             return;
-        else {
-            std::lock_guard<util::spinlock> g(global_tbuf_lock);
-            
-            tbuf->append(global_tbuf_list);
-            global_tbuf_list = tbuf;
-        }
+
+        tbuf->retired.store(true);
     }
     
     TraceBuffer* acquire_tbuf(bool alloc = true) {
@@ -284,7 +136,16 @@ namespace
                 return 0;
             }
 
-            if (pthread_setspecific(trace_buf_key, tbuf) != 0) {
+            if (pthread_setspecific(trace_buf_key, tbuf) == 0) {
+                std::lock_guard<util::spinlock>
+                    g(global_tbuf_lock);
+
+                if (global_tbuf_list)
+                    global_tbuf_list->prev = tbuf;
+                
+                tbuf->next       = global_tbuf_list;
+                global_tbuf_list = tbuf;                
+            } else {
                 Log(0).stream() << "trace: error: unable to set thread trace buffer" << endl;
                 delete tbuf;
                 tbuf = 0;
@@ -297,23 +158,22 @@ namespace
     TraceBuffer* handle_overflow(Caliper* c, TraceBuffer* tbuf) {
         switch (policy) {
         case BufferPolicy::Stop:
-            tbuf->stop();
+            tbuf->stopped.store(true);
             Log(1).stream() << "Trace buffer full: recording stopped." << endl;
             return 0;
                 
         case BufferPolicy::Grow:
         {
-            TraceBuffer* newtbuf = new TraceBuffer(buffersize);
+            TraceBufferChunk* newchunk = new TraceBufferChunk(buffersize);
 
-            if (!newtbuf) {
+            if (!newchunk) {
                 Log(0).stream() << "trace: error: unable to allocate new trace buffer. Recording stopped." << endl;
-                tbuf->stop();
+                tbuf->stopped.store(true);
                 return 0;
             }
-
-            newtbuf->append(tbuf);
-            tbuf = newtbuf;
-            save_tbuf(tbuf);
+            
+            newchunk->append(tbuf->chunks);
+            tbuf->chunks = newchunk;
 
             return tbuf;
         }
@@ -321,7 +181,14 @@ namespace
         case BufferPolicy::Flush:
         {
             unordered_set<cali_id_t> written_node_cache;
-            Log(1).stream() << "Trace buffer full: flushed " << tbuf->flush(c, written_node_cache) << " snapshots." << endl;
+            
+            std::lock_guard<std::mutex>
+                g(global_flush_lock);            
+
+            Log(1).stream() << "Trace buffer full: flushed "
+                            << tbuf->chunks->flush(c, written_node_cache)
+                            << " snapshots." << endl;
+            
             return tbuf;
         }
         
@@ -333,40 +200,62 @@ namespace
     void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf(!c->is_signal());
 
-        if (!tbuf || tbuf->stopped()) { // error messaging is done in acquire_tbuf()
+        if (!tbuf || tbuf->stopped.load()) { // error messaging is done in acquire_tbuf()
             ++dropped_snapshots;
             return;
         }
         
-        if (!tbuf->fits(sbuf))
+        if (!tbuf->chunks->fits(sbuf))
             tbuf = handle_overflow(c, tbuf);
         if (!tbuf)
             return;
 
-        tbuf->save_snapshot(sbuf);
+        tbuf->chunks->save_snapshot(sbuf);
     }        
 
     void flush_cb(Caliper* c, const EntryList*) {
-        TraceBuffer* gtbuf = nullptr;
+        std::lock_guard<std::mutex>
+            g(global_flush_lock);
+
+        TraceBuffer* tbuf = nullptr;
         
         {
-            std::lock_guard<util::spinlock> g(global_tbuf_lock);
+            std::lock_guard<util::spinlock>
+                g(global_tbuf_lock);
             
-            gtbuf            = global_tbuf_list;
-            global_tbuf_list = nullptr;
+            tbuf = global_tbuf_list;
         }
 
+        size_t num_written = 0;
         unordered_set<cali_id_t> written_node_cache;
-            
-        if (gtbuf) {
-            Log(1).stream() << "Flushed " << gtbuf->flush(c, written_node_cache) << " snapshots." << endl;
-            delete gtbuf;
-        }
-        
-        TraceBuffer* tbuf = acquire_tbuf();
 
-        if (tbuf)
-            Log(1).stream() << "Flushed " << tbuf->flush(c, written_node_cache)  << " snapshots." << endl;
+        while (tbuf) {
+            // Stop tracing while we flush: writers won't block
+            // but just drop the snapshot
+            
+            tbuf->stopped.store(true);
+            num_written += tbuf->chunks->flush(c, written_node_cache);
+            tbuf->stopped.store(false);
+            
+            if (tbuf->retired.load()) {
+                // delete retired thread's trace buffer                
+                TraceBuffer* tmp = tbuf->next;
+
+                {
+                    std::lock_guard<util::spinlock>
+                        g(global_tbuf_lock);
+                
+                    tbuf->unlink();
+                }
+                
+                delete tbuf;
+                tbuf = tmp;
+            } else {
+                tbuf = tbuf->next;
+            }
+        }
+            
+        Log(1).stream() << "Flushed " << num_written << " snapshots." << endl;
     }
 
     void init_overflow_policy() {
@@ -391,6 +280,7 @@ namespace
     
     void trace_register(Caliper* c) {
         global_tbuf_lock.unlock();
+        global_flush_lock.unlock();
         
         config = RuntimeConfig::init("trace", configdata);
         dropped_snapshots = 0;
