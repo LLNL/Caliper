@@ -25,6 +25,9 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
+option(WITH_TOOLS "Build Caliper tools" TRUE)
+option(WITH_TESTS "Build Caliper test apps" TRUE)
+
 # the RPATH to be used when installing, but only if it's not a system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
@@ -103,7 +106,9 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper
 
 add_subdirectory(doc)
 add_subdirectory(src)
-add_subdirectory(test)
+if (WITH_TESTS)
+  add_subdirectory(test)
+endif()
 
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)
