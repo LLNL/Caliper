@@ -95,48 +95,59 @@ Attribute                trigger_set_attr   { Attribute::invalid };
 
 Attribute                trigger_level_attr { Attribute::invalid };
 
+    
+void pre_create_attribute_cb(Caliper* c, const std::string& name, cali_attr_type* type, int* prop)
+{
+    if (trigger_attr_names.empty() || *prop & CALI_ATTR_SKIP_EVENTS)
+        return;
+
+    // add SKIP_EVENTS property to all non-trigger attributes
+    
+    std::vector<std::string>::iterator it =
+        std::find(trigger_attr_names.begin(), trigger_attr_names.end(), name);
+    
+    if (it == trigger_attr_names.end())
+        *prop |= CALI_ATTR_SKIP_EVENTS;
+}
+
 void create_attribute_cb(Caliper* c, const Attribute& attr)
 {
     if (attr.skip_events())
         return;
 
-    std::vector<std::string>::iterator it = find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
+    EventAttributes event_attributes;
 
-    if (it != trigger_attr_names.end() || trigger_attr_names.empty()) {
-        EventAttributes event_attributes;
+    struct evt_attr_setup_t {
+        std::string prefix;
+        Attribute*  attr_ptr;
+    } evt_attr_setup[] = {
+        { "event.begin.", &(event_attributes.begin_attr) },
+        { "event.set.",   &(event_attributes.set_attr)   },
+        { "event.end.",   &(event_attributes.end_attr)   }
+    };
 
-        struct evt_attr_setup_t {
-            std::string prefix;
-            Attribute*  attr_ptr;
-        } evt_attr_setup[] = {
-            { "event.begin.", &(event_attributes.begin_attr) },
-            { "event.set.",   &(event_attributes.set_attr)   },
-            { "event.end.",   &(event_attributes.end_attr)   }
-        };
+    for ( evt_attr_setup_t setup : evt_attr_setup ) {
+        std::string name = setup.prefix;
+        name.append(attr.name());
 
-        for ( evt_attr_setup_t setup : evt_attr_setup ) {
-            std::string name = setup.prefix;
-            name.append(attr.name());
-
-            *(setup.attr_ptr) =
-                c->create_attribute(name, attr.type(), attr.properties() | CALI_ATTR_SKIP_EVENTS);
-        }
-        
-        std::string name = "cali.lvl.";
-        name.append(std::to_string(attr.id()));
-
-        event_attributes.lvl_attr = 
-            c->create_attribute(name, CALI_TYPE_INT, 
-                                CALI_ATTR_ASVALUE     | 
-                                CALI_ATTR_HIDDEN      | 
-                                CALI_ATTR_SKIP_EVENTS | 
-                                (attr.properties() & CALI_ATTR_SCOPE_MASK));
-
-        std::lock_guard<std::mutex>
-            g(event_attributes_lock);
-        
-        event_attributes_map.insert(std::make_pair(attr.id(), event_attributes));
+        *(setup.attr_ptr) =
+            c->create_attribute(name, attr.type(), attr.properties() | CALI_ATTR_SKIP_EVENTS);
     }
+        
+    std::string name = "cali.lvl.";
+    name.append(std::to_string(attr.id()));
+
+    event_attributes.lvl_attr = 
+        c->create_attribute(name, CALI_TYPE_INT, 
+                            CALI_ATTR_ASVALUE     | 
+                            CALI_ATTR_HIDDEN      | 
+                            CALI_ATTR_SKIP_EVENTS | 
+                            (attr.properties() & CALI_ATTR_SCOPE_MASK));
+
+    std::lock_guard<std::mutex>
+        g(event_attributes_lock);
+        
+    event_attributes_map.insert(std::make_pair(attr.id(), event_attributes));
 }
 
 bool get_event_attributes(const Attribute& attr, EventAttributes& evt_attr)
@@ -292,6 +303,7 @@ void event_trigger_register(Caliper* c)
 
     // register callbacks
 
+    c->events().pre_create_attr_evt.connect(&pre_create_attribute_cb);
     c->events().create_attr_evt.connect(&create_attribute_cb);
 
     c->events().pre_begin_evt.connect(&event_begin_cb);

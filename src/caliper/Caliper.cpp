@@ -478,6 +478,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     // Create attribute nodes
 
     if (!node) {
+        mG->events.pre_create_attr_evt(this, name, &type, &prop);
+
         assert(type >= 0 && type <= CALI_MAXTYPE);
         node = mG->tree.type_node(type);
         assert(node);
