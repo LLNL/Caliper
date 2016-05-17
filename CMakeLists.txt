@@ -34,9 +34,6 @@ if("${isSystemDir}" STREQUAL "-1")
    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif("${isSystemDir}" STREQUAL "-1")
 
-# Linux PC sampler needs -lrt
-list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
-
 # Find libunwind
 if (LIBUNWIND_FOUND)
   set(CALIPER_HAVE_LIBUNWIND TRUE)
@@ -94,6 +91,8 @@ find_package(PythonLibs)
 # Sampler is currently Linux-specific: check for Linux
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
   set(CALIPER_HAVE_SAMPLER TRUE)
+  # Linux PC sampler needs -lrt
+  list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
   message(STATUS "Linux detected, adding sampler service")
 endif()
 
