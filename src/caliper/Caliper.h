@@ -102,7 +102,8 @@ public:
     struct Events {
         typedef util::callback<void(Caliper*,const Attribute&)>
             create_attr_cbvec;
-
+        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type*,int*)>
+            pre_create_attr_cbvec;                        
         typedef util::callback<void(Caliper*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*)>
@@ -119,7 +120,8 @@ public:
             flush_cbvec;
         typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
             write_record_cbvec;
-        
+                                    
+        pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
 
         update_cbvec           pre_begin_evt;
