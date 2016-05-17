@@ -53,6 +53,21 @@
 using namespace cali;
 using namespace std;
 
+namespace
+{
+    size_t entrylist_hash(EntryList& list) {
+        // normalize list by sorting
+        std::sort(list.begin(), list.end());
+
+        size_t hash = 0;
+
+        for (const Entry& e : list)
+            hash = hash ^ (e.hash() << 1);
+
+        return hash;
+    }
+}
+
 struct Aggregator::AggregatorImpl
 {
     // --- data
@@ -60,7 +75,7 @@ struct Aggregator::AggregatorImpl
     vector<string>    m_aggr_attribute_strings;
     vector<cali_id_t> m_aggr_attribute_ids;
 
-    map< vector<string>, RecordMap > m_aggr_db;
+    map< EntryList, EntryList >      m_aggr_db;
 
 
     // --- interface
@@ -71,30 +86,27 @@ struct Aggregator::AggregatorImpl
         util::split(aggr_config, ':', back_inserter(m_aggr_attribute_strings));
     }
 
-    vector<int> find_aggr_attribute_indices(CaliperMetadataDB& db, const vector<Variant>& v_attr_ids) {
-        vector<int> vec;
+    void update_aggr_attribute_ids(CaliperMetadataDB& db, const EntryList& list) {
+        if (m_aggr_attribute_strings.empty())
+            return;
+        
+        // see we can find one of the attributes for which we don't know numeric ID's yet
 
-        for (int i = 0; i < v_attr_ids.size(); ++i) {
-            if (find(m_aggr_attribute_ids.begin(), m_aggr_attribute_ids.end(), v_attr_ids[i].to_id()) != m_aggr_attribute_ids.end())
-                vec.push_back(i);
-            else if (!m_aggr_attribute_strings.empty()) {
-                Attribute attr = db.attribute(v_attr_ids[i].to_id());
+        for (const Entry& e : list)
+            if (!e.node()) {
+                Attribute attr = db.attribute(e.attribute());
 
                 if (attr == Attribute::invalid)
                     continue;
 
-                auto it = find(m_aggr_attribute_strings.begin(), m_aggr_attribute_strings.end(), attr.name());
+                auto it = std::find(m_aggr_attribute_strings.begin(), m_aggr_attribute_strings.end(), attr.name());
 
                 if (it != m_aggr_attribute_strings.end()) {
-                    vec.push_back(i);
                     m_aggr_attribute_ids.push_back(attr.id());
                     m_aggr_attribute_strings.erase(it);
                 }
             }
-        }
-            
-        return vec;
-    }
+    }    
 
     Variant aggregate(const Attribute& attr, const Variant& l, const Variant& r) {
         switch (attr.type()) {
@@ -114,90 +126,48 @@ struct Aggregator::AggregatorImpl
         return Variant();
     }
 
-    bool process(CaliperMetadataDB& db, const RecordMap& rec) {
-        if (get_record_type(rec) != "ctx")
-            return false;
+    void process(CaliperMetadataDB& db, const EntryList& list) {
+        update_aggr_attribute_ids(db, list);
 
-        auto attr_it = rec.find("attr");
+        EntryList key_vec;
 
-        if (attr_it == rec.end())
-            return false;
+        for (const Entry& e : list)
+            if (std::find(m_aggr_attribute_ids.begin(), m_aggr_attribute_ids.end(), e.attribute()) == m_aggr_attribute_ids.end())
+                key_vec.push_back(e);
 
-        // --- get indices in attribute/data array of the values we want to aggregate
+        // if there aren't any entries to aggregate, just return
+        if (key_vec.size() == list.size())
+            return;
 
-        vector<int> idx_vec = find_aggr_attribute_indices(db, attr_it->second);
+        // normalize key by sorting
+        std::sort(key_vec.begin(), key_vec.end());
 
-        if (idx_vec.empty())
-            return false;
+        auto it = m_aggr_db.find(key_vec);
 
-        auto ctxt_it = rec.find("ref");
-        auto data_it = rec.find("data");
+        if (it == m_aggr_db.end()) {
+            m_aggr_db.insert(std::make_pair(key_vec, list));
+        } else {
+            for (cali_id_t id : m_aggr_attribute_ids) {
+                auto find_entry =
+                    [id](const Entry& e) { return e.attribute() == id; } ;
+                
+                auto elst_it = std::find_if(list.begin(), list.end(), find_entry);
 
-        // --- build key vec
+                if (elst_it != list.end()) {
+                    auto alst_it = std::find_if(it->second.begin(), it->second.end(), find_entry);
 
-        vector<string> key_vec;
-
-        // add strings of context node ids and immediate attribute ids
-        for (const auto &rec_it : { ctxt_it, attr_it }) {
-            if (rec_it == rec.end())
-                continue;
-            for (const Variant& v : rec_it->second)
-                key_vec.emplace_back(v.to_string());
-        }
-
-        auto num_id_entries = key_vec.size();
-
-        // add non-aggregate immediate data entries to key vec
-        if (data_it != rec.end())
-            for (int n = 0; n < data_it->second.size(); ++n)
-                if (find(idx_vec.begin(), idx_vec.end(), n) == idx_vec.end())
-                    key_vec.push_back(data_it->second[n].to_string());
-
-        // sort to account for differently ordered elements
-        sort(key_vec.begin(), key_vec.begin() + num_id_entries);
-        sort(key_vec.begin() + num_id_entries, key_vec.end());
-
-        // --- aggregate context records and enter into db
-
-        auto aggr_db_it = m_aggr_db.find(key_vec);
-
-        if (aggr_db_it == m_aggr_db.end())
-            m_aggr_db.emplace(std::move(key_vec), rec);
-        else {
-            auto arec_attr_it = aggr_db_it->second.find("attr");
-            auto arec_data_it = aggr_db_it->second.find("data");
-
-            // there must be immediate data entries in aggregation record, otherwise it shouldn't be in db
-            assert(arec_attr_it != aggr_db_it->second.end());
-            assert(arec_data_it != aggr_db_it->second.end());
-
-            // shortcuts
-            vector<Variant>&       arec_attr_vec(arec_attr_it->second);
-            vector<Variant>&       arec_data_vec(arec_data_it->second);
-            const vector<Variant>& attr_vec(attr_it->second);
-            const vector<Variant>& data_vec(data_it->second);
-
-            assert(arec_attr_vec.size() == arec_data_vec.size());
-            assert(attr_vec.size()      == data_vec.size()     );
-
-            // aggregate values
-            for (int i : idx_vec) {
-                auto it = find(arec_attr_vec.begin(), arec_attr_vec.end(), attr_vec[i]);
-
-                if (it != arec_attr_vec.end()) {
-                    auto arec_i = (it - arec_attr_vec.begin());
-
-                    arec_data_vec[arec_i] = 
-                        aggregate(db.attribute(attr_vec[i].to_id()), arec_data_vec[arec_i], data_vec[i]);
+                    if (alst_it != it->second.end()) {
+                        Attribute attr = db.attribute(id);
+                        
+                        *alst_it = Entry(attr, aggregate(attr, alst_it->value(), elst_it->value()));
+                    }
                 }
             }
         }
-
-        return true;
     }
 
-    void flush(CaliperMetadataDB& db, RecordProcessFn push) {
-        for (const auto &p : m_aggr_db)
+    void flush(CaliperMetadataDB& db, const SnapshotProcessFn push) {
+        for (const auto p : m_aggr_db)
             push(db, p.second);
     }
 };
@@ -214,14 +184,13 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataDB& db, RecordProcessFn push)
+Aggregator::flush(CaliperMetadataDB& db, SnapshotProcessFn push)
 {
     mP->flush(db, push);
 }
 
 void
-Aggregator::operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push)
+Aggregator::operator()(CaliperMetadataDB& db, const EntryList& list)
 {
-    if (!mP->process(db, rec))
-        push(db, rec);
+    mP->process(db, list);
 }

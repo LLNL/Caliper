@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <csv/CsvSpec.h>
 #include <Log.h>
@@ -57,22 +57,22 @@ void create_attr_cb(Caliper* c, const Attribute& attr)
     Log(2).stream() << "Event: create_attribute (attr=" << attr.name() << ")" << endl;
 }
 
-void begin_cb(Caliper* c, const Attribute& attr)
+void begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_begin (attr=" << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
 }
 
-void end_cb(Caliper* c, const Attribute& attr)
+void end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_end (attr=" << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
 }
 
-void set_cb(Caliper* c, const Attribute& attr)
+void set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_set (attr=" << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
 }
 
 const char* scopestrings[] = { "", "process", "thread", "", "task" };
@@ -119,15 +119,14 @@ void release_scope_cb(Caliper* c, cali_context_scope_t scope)
     Log(2).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, const Entry* trigger_info, Snapshot*)
+void snapshot_cb(Caliper* c, int scope, const EntryList* trigger_info, EntryList*)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
-                    << format_triggerinfo(trigger_info) 
                     << ")" << endl;
 }
 
-void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* sbuf)
+void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);
 

@@ -107,7 +107,7 @@ private:
         : m_node(node), m_keys(keys)
         { }
 
-    friend bool operator < (const cali::Attribute& a, const cali::Attribute& b);
+    friend bool operator <  (const cali::Attribute& a, const cali::Attribute& b);
     friend bool operator == (const cali::Attribute& a, const cali::Attribute& b);
     friend bool operator != (const cali::Attribute& a, const cali::Attribute& b);
 };

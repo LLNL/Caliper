@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.0)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)
-set(CALIPER_MINOR_VERSION 3)
+set(CALIPER_MINOR_VERSION 4)
 set(CALIPER_PATCH_VERSION 0)
 set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}")
 
@@ -48,6 +48,16 @@ if (PAPI_FOUND)
   list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
 endif()
 
+# Find Mitos
+
+find_package(Mitos QUIET)
+if(Mitos_FOUND)
+  find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
+  set(CALIPER_HAVE_MITOS TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
+  message(STATUS "Mitos found")
+endif()
+
 find_package(Threads)
 
 # Find OMPT header
@@ -71,6 +81,10 @@ if (MPI_C_FOUND)
   set(CALIPER_HAVE_MPI TRUE)
 endif()
 
+# Find Python
+
+find_package(PythonLibs)
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
@@ -90,9 +104,6 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper
 add_subdirectory(doc)
 add_subdirectory(src)
 add_subdirectory(test)
-if (WITH_FORTRAN)
-  add_subdirectory(fortran)
-endif()
 
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)

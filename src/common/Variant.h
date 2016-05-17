@@ -118,8 +118,8 @@ public:
     cali_id_t      to_id(bool* okptr = nullptr) const;
     int            to_int(bool* okptr = nullptr);
     int            to_int(bool* okptr = nullptr) const;
-    unsigned       to_uint(bool* okptr = nullptr);
-    unsigned       to_uint(bool* okptr = nullptr) const;
+    uint64_t       to_uint(bool* okptr = nullptr);
+    uint64_t       to_uint(bool* okptr = nullptr) const;
     bool           to_bool(bool* okptr = nullptr);
     double         to_double(bool* okptr = nullptr);
     double         to_double(bool* okptr = nullptr) const;
@@ -127,6 +127,9 @@ public:
 
     std::string    to_string() const;
 
+    size_t         pack(unsigned char* buf) const;
+    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok);
+    
     // vector<unsigned char> data() const;
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);

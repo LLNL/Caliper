@@ -18,5 +18,11 @@ add_subdirectory(caliper)
 add_subdirectory(caliper-stub)
 add_subdirectory(reader)
 add_subdirectory(tools)
-add_subdirectory(python)
+
+if (WITH_FORTRAN)
+  add_subdirectory(fortran)
+endif()
+if (PYTHONLIBS_FOUND)
+  add_subdirectory(python)
+endif()
 

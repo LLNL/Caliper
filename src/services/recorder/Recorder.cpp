@@ -36,7 +36,6 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 
 #include <csv/CsvSpec.h>
 
@@ -48,16 +47,12 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <ctime>
 #include <iostream>
-#include <iterator>
 #include <mutex>
 #include <fstream>
 #include <random>
 #include <string>
-#include <vector>
 
 using namespace cali;
 using namespace std;
@@ -72,19 +67,15 @@ class Recorder
 
     enum class Stream { None, File, StdErr, StdOut };
 
-    ConfigSet m_config;
+    ConfigSet  m_config;
+    
+    Stream     m_stream;
+    ofstream   m_ofstream;
 
-    vector<RecordDescriptor>   m_record_buffer;
-    vector<Variant>            m_data_buffer;
+    std::mutex m_lock;
 
-    bool                       m_buffer_can_grow;
-    vector<RecordDescriptor>::size_type m_record_buffer_size;
-    vector<Variant>::size_type m_data_buffer_size; 
-
-    SigsafeRWLock m_lock;
-    Stream    m_stream;
-    ofstream  m_ofstream;
-
+    int        m_reccount;
+    
     // --- helpers
 
     string random_string(string::size_type len) {
@@ -147,13 +138,6 @@ class Recorder
                 m_stream = Stream::File;
         } else
             m_stream = it->second;
-
-        m_buffer_can_grow    = m_config.get("buffer_can_grow").to_bool();
-        m_record_buffer_size = m_config.get("record_buffer_size").to_uint();
-        m_data_buffer_size   = m_config.get("data_buffer_size").to_uint();
-
-        m_record_buffer.reserve(m_record_buffer_size);
-        m_data_buffer.reserve(m_data_buffer_size);
     }
 
     std::ostream& get_stream() {
@@ -167,78 +151,29 @@ class Recorder
         }
     }
 
-    void flush_buffer() {
-        const int MAX_RECORD = 16;
+    static void write_record_cb(const RecordDescriptor& rec, const int* count, const Variant** data) {
+        if (!s_instance)
+            return;
 
-        int            count[MAX_RECORD];
-        const Variant* data[MAX_RECORD];        
-
-        vector<Variant>::size_type dptr = 0;
-
-        for (const RecordDescriptor& rec : m_record_buffer) {
-            assert(rec.num_entries < MAX_RECORD);
-
-            for (unsigned n = 0; n < rec.num_entries; ++n)
-                count[n] = m_data_buffer[dptr++].to_int();
-            for (unsigned n = 0; n < rec.num_entries; ++n) {
-                data[n]  = count[n] > 0 ? &m_data_buffer[dptr] : nullptr;
-                dptr    += count[n];
-            }
-
-            CsvSpec::write_record(get_stream(), rec, count, data);
-        }
-
-        Log(1).stream() << "Wrote " << m_record_buffer.size() << " records." << endl;
-
-        m_record_buffer.clear();
-        m_data_buffer.clear();
+        std::lock_guard<std::mutex> g(s_instance->m_lock);
+        
+        CsvSpec::write_record(s_instance->get_stream(), rec, count, data);
+        ++s_instance->m_reccount;
     }
 
-    void buffer_record(const RecordDescriptor& rec, const int* count, const Variant** data) {
-        int total = rec.num_entries;
-
-        for (unsigned n = 0; n < rec.num_entries; ++n)
-            total += count[n];
-
-        if (m_buffer_can_grow || (m_record_buffer.size() + 1   < m_record_buffer_size && 
-                                  m_data_buffer.size() + total < m_data_buffer_size)) {
-            for (unsigned n = 0; n < rec.num_entries; ++n)
-                m_data_buffer.emplace_back(count[n]);
-
-            for (unsigned entry = 0; entry < rec.num_entries; ++entry)
-                for (int n = 0; n < count[entry]; ++n)
-                    m_data_buffer.push_back(data[entry][n]);
-
-            m_record_buffer.push_back(rec);
-        } else {
-            flush_buffer();
-            CsvSpec::write_record(get_stream(), rec, count, data);
-        }
+    static void finish_cb(Caliper* c) {
+        if (s_instance)
+            Log(1).stream() << "Wrote " << s_instance->m_reccount << " records." << endl;
     }
-
+    
     void register_callbacks(Caliper* c) {
-        auto recfn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
-            m_lock.wlock();
-            CsvSpec::write_record(get_stream(), rec, count, data);
-            m_lock.unlock();
-        };
-
-        auto buffn = [&](const RecordDescriptor& rec, const int* count, const Variant** data){
-            m_lock.wlock();
-            buffer_record(rec, count, data);
-            m_lock.unlock();
-        };        
-
-        if (!m_buffer_can_grow && m_record_buffer_size == 0)
-            c->events().write_record.connect(recfn);
-        else
-            c->events().write_record.connect(buffn);
-
-        c->events().finish_evt.connect([&](Caliper*){ m_lock.wlock(); flush_buffer(); m_lock.unlock(); });
+        c->events().write_record.connect(write_record_cb);
+        c->events().finish_evt.connect(finish_cb);
     }
 
     Recorder(Caliper* c)
-        : m_config { RuntimeConfig::init("recorder", s_configdata) }
+        : m_config   { RuntimeConfig::init("recorder", s_configdata) },
+          m_reccount { 0 }
     { 
         init_recorder();
 
@@ -273,18 +208,6 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
     { "directory", CALI_TYPE_STRING, "",
       "Name of Caliper output directory (default: current working directory)",
       "Name of Caliper output directory (default: current working directory)"
-    },
-    { "record_buffer_size", CALI_TYPE_UINT, "8000",
-      "Size of record buffer",
-      "Size of record buffer. This is the number of records that can be buffered."
-    },
-    { "data_buffer_size", CALI_TYPE_UINT, "60000",
-      "Size of data buffer",
-      "Size of record buffer. This is the number of record entries that can be buffered."
-    },
-    { "buffer_can_grow", CALI_TYPE_BOOL, "true",
-      "Allow record and data buffers to grow at runtime if necessary",
-      "Allow record and data buffers to grow at runtime if necessary."
     },
     ConfigSet::Terminator
 };

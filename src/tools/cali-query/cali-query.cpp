@@ -290,25 +290,20 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    NodeProcessFn     node_proc = [](CaliperMetadataDB&,const Node*) { return; };
-    SnapshotProcessFn snap_proc = [](CaliperMetadataDB&,const EntryList&){ return; };
+    NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
+    SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
 
     if (args.is_set("expand"))
-        snap_proc = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
+        snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
     else {
         WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
 
-        snap_proc = writer;
-        node_proc = writer;
+        snap_writer = writer;
+        node_proc   = writer;
     }
 
-    Annotation filter_ann("cali-query.filter");
-
-    // RecordProcessFn output_processor = processor; 
-    // Aggregator      aggregate(args.get("aggregate"));
-
-    // if (args.is_set("aggregate"))
-    //     processor = ::FilterStep(aggregate, processor);
+    Aggregator        aggregate { args.get("aggregate") };
+    SnapshotProcessFn snap_proc { args.is_set("aggregate") ? aggregate : snap_writer };
 
     string select = args.get("select");
 
@@ -341,5 +336,5 @@ int main(int argc, const char* argv[])
 
     a_phase.set("flush");
 
-    // aggregate.flush(metadb, output_processor);
+    aggregate.flush(metadb, snap_writer);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,73 +30,50 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file SigsafeRWLock.cpp
-/// SigsafeRWLock implementation
+/// \file  TraceBufferChunk.h
+/// \brief TraceBufferChunk class definition
 
-#include "SigsafeRWLock.h"
+#pragma once
 
-#include <iostream>
+#include <cali_types.h>
 
-pthread_key_t cali::SigsafeRWLock::s_sig_key;
+#include <cstring>
+#include <unordered_set>
 
-using namespace cali;
-
-SigsafeRWLock::SigsafeRWLock()
+namespace cali
 {
-    pthread_rwlock_init(&m_rwlock, NULL);
+    class Caliper;
+    class EntryList;
 }
 
-SigsafeRWLock::~SigsafeRWLock()
+namespace trace
 {
-    pthread_rwlock_destroy(&m_rwlock);
-}
 
-void SigsafeRWLock::init()
-{
-    pthread_key_create(&s_sig_key, NULL);
-}
+    class TraceBufferChunk {
+        size_t            m_size;
+        size_t            m_pos;
+        size_t            m_nrec;
+        
+        unsigned char*    m_data;
+        
+        TraceBufferChunk* m_next;
 
-bool SigsafeRWLock::is_thread_locked()
-{
-    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
+    public:
 
-    return (flagptr == nullptr) || (*flagptr) > 0;
-}
+        TraceBufferChunk(size_t s)
+            : m_size(s), m_pos(0), m_nrec(0), m_data(new unsigned char[s]), m_next(0)
+            { }
 
-void SigsafeRWLock::rlock()
-{
-    sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
+        ~TraceBufferChunk();
 
-    if (flagptr == nullptr) {
-        flagptr  = new sig_atomic_t;
-        *flagptr = 0;
-        pthread_setspecific(s_sig_key, flagptr);
-    }
+        void   append(TraceBufferChunk* chunk);
+        void   reset();
 
-    ++(*flagptr);
+        size_t flush(cali::Caliper* c, std::unordered_set<cali_id_t>& written_node_cache);
 
-    pthread_rwlock_rdlock(&m_rwlock);
-}
+        void   save_snapshot(const cali::EntryList* s);
+        bool   fits(const cali::EntryList* s) const;
+    };
+    
+} // namespace trace
 
-void SigsafeRWLock::wlock()
-{
-    sig_atomic_t *flagptr = static_cast<sig_atomic_t*>(pthread_getspecific(s_sig_key));
-
-    if (!flagptr) {
-        flagptr  = new sig_atomic_t;
-        *flagptr = 0;
-        pthread_setspecific(s_sig_key, flagptr);
-    }
-
-    ++(*flagptr);
-
-    pthread_rwlock_wrlock(&m_rwlock);
-}
-
-void SigsafeRWLock::unlock()
-{
-    pthread_rwlock_unlock(&m_rwlock);
-
-    volatile sig_atomic_t *flagptr = static_cast<volatile sig_atomic_t*>(pthread_getspecific(s_sig_key));
-    --(*flagptr);
-}

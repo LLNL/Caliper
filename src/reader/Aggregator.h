@@ -57,9 +57,9 @@ public:
 
     ~Aggregator();
 
-    void operator()(CaliperMetadataDB&, const RecordMap&, RecordProcessFn push);
+    void operator()(CaliperMetadataDB&, const EntryList&);
 
-    void flush(CaliperMetadataDB&, RecordProcessFn push);
+    void flush(CaliperMetadataDB&, SnapshotProcessFn push);
 };
 
 } // namespace cali

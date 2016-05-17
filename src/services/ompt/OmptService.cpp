@@ -36,12 +36,12 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
 
 #include <map>
+#include <mutex>
 
 #include <ompt.h>
 
@@ -66,6 +66,10 @@ const ConfigSet::Entry configdata[] = {
       "Capture the OpenMP runtime state on context queries",
       "Capture the OpenMP runtime state on context queries"
     },
+    { "capture_events", CALI_TYPE_BOOL, "false",
+      "Capture OpenMP events (enter/exit parallel regions, barriers, etc.)",
+      "Capture OpenMP events (enter/exit parallel regions, barriers, etc.)"
+    },
     ConfigSet::Terminator
 };
 
@@ -76,7 +80,7 @@ Attribute                        thread_attr { Attribute::invalid };
 Attribute                        state_attr  { Attribute::invalid };
 Attribute			 region_attr { Attribute::invalid };
 
-SigsafeRWLock                    thread_env_lock;
+std::mutex                       thread_env_lock;
 map<ompt_thread_id_t, Caliper::Scope*> thread_env; ///< Thread ID -> Environment
 
 map<ompt_state_t, string>        runtime_states;
@@ -129,9 +133,10 @@ cb_event_thread_begin(ompt_thread_type_t type, ompt_thread_id_t thread_id)
         else
             ctx = c.create_scope(CALI_SCOPE_THREAD);
 
-        thread_env_lock.wlock();
+        std::lock_guard<std::mutex>
+            g(thread_env_lock);
+        
         thread_env.insert(make_pair(thread_id, ctx));
-        thread_env_lock.unlock();
     }
 
     // Set the thread id in the new environment
@@ -149,8 +154,9 @@ cb_event_thread_end(ompt_thread_type_t type, ompt_thread_id_t thread_id)
 
     Caliper::Scope* ctx { nullptr };
 
-    thread_env_lock.wlock();
+    thread_env_lock.lock();
     auto it = thread_env.find(thread_id);
+    
     if (it != thread_env.end()) {
         ctx = it->second;
         thread_env.erase(it);
@@ -280,7 +286,7 @@ finish_cb(Caliper*)
 }
 
 Caliper::Scope*
-get_thread_scope(Caliper* c) 
+get_thread_scope(Caliper* c, bool alloc) 
 {
     Caliper::Scope* ctx = c->default_scope(CALI_SCOPE_THREAD);
 
@@ -289,7 +295,7 @@ get_thread_scope(Caliper* c)
 
     ompt_thread_id_t thread_id = (*api.get_thread_id)();
 
-    thread_env_lock.rlock();
+    thread_env_lock.lock();
     auto it = thread_env.find(thread_id);
     if (it != thread_env.end())
         ctx = it->second;
@@ -299,7 +305,7 @@ get_thread_scope(Caliper* c)
 }
 
 void
-snapshot_cb(Caliper* c, int scope, const Entry*, Snapshot*)
+snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList*)
 {
     if (!api.get_state || !(scope & CALI_SCOPE_THREAD))
         return;
@@ -318,7 +324,7 @@ snapshot_cb(Caliper* c, int scope, const Entry*, Snapshot*)
 /// Register our callbacks with the OpenMP runtime
 
 bool
-register_ompt_callbacks()
+register_ompt_callbacks(bool capture_events)
 {
     if (!api.set_callback)
         return false;
@@ -326,22 +332,28 @@ register_ompt_callbacks()
     struct callback_info_t { 
         ompt_event_t    event;
         ompt_callback_t cbptr;
-    } callbacks[] = {
-        { ompt_event_thread_begin,     (ompt_callback_t) &cb_event_thread_begin     },
-        { ompt_event_thread_end,       (ompt_callback_t) &cb_event_thread_end       },
-        { ompt_event_control,          (ompt_callback_t) &cb_event_control          },
-	{ ompt_event_idle_begin,       (ompt_callback_t) &cb_event_idle_begin       },
-	{ ompt_event_idle_end,         (ompt_callback_t) &cb_event_idle_end         },
-	{ ompt_event_wait_barrier_begin,  (ompt_callback_t) &cb_event_wait_barrier_begin },
-	{ ompt_event_wait_barrier_end,    (ompt_callback_t) &cb_event_wait_barrier_end   },
-	{ ompt_event_parallel_begin,      (ompt_callback_t) &cb_event_parallel_begin     },
-	{ ompt_event_parallel_end,        (ompt_callback_t) &cb_event_parallel_end       }
+    } basic_callbacks[] = {
+        { ompt_event_thread_begin,       (ompt_callback_t) &cb_event_thread_begin       },
+        { ompt_event_thread_end,         (ompt_callback_t) &cb_event_thread_end         },
+        { ompt_event_control,            (ompt_callback_t) &cb_event_control            }
 //        { ompt_event_runtime_shutdown, (ompt_callback_t) &cb_event_runtime_shutdown }
+    }, event_callbacks[] = {
+	{ ompt_event_idle_begin,         (ompt_callback_t) &cb_event_idle_begin         },
+	{ ompt_event_idle_end,           (ompt_callback_t) &cb_event_idle_end           },
+	{ ompt_event_wait_barrier_begin, (ompt_callback_t) &cb_event_wait_barrier_begin },
+	{ ompt_event_wait_barrier_end,   (ompt_callback_t) &cb_event_wait_barrier_end   },
+	{ ompt_event_parallel_begin,     (ompt_callback_t) &cb_event_parallel_begin     },
+	{ ompt_event_parallel_end,       (ompt_callback_t) &cb_event_parallel_end       }
     };
 
-    for ( auto cb : callbacks ) 
+    for ( auto cb : basic_callbacks ) 
         if ((*api.set_callback)(cb.event, cb.cbptr) == 0)
             return false;
+    
+    if (capture_events)
+        for ( auto cb : event_callbacks ) 
+            if ((*api.set_callback)(cb.event, cb.cbptr) == 0)
+                return false;
 
     return true;
 }
@@ -373,8 +385,8 @@ omptservice_initialize(Caliper* c)
     enable_ompt = true;
 
     thread_attr = 
-        c->create_attribute("ompt.thread.id", CALI_TYPE_INT,   
-                            CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+        c->create_attribute("ompt.thread.id", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD);
+    
     state_attr  =
         c->create_attribute("ompt.state",     CALI_TYPE_STRING, 
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
@@ -416,7 +428,7 @@ ompt_initialize(ompt_function_lookup_t lookup,
 
     // register callbacks
 
-    if (!::api.init(lookup) || !::register_ompt_callbacks()) {
+    if (!::api.init(lookup) || !::register_ompt_callbacks(::config.get("capture_events").to_bool())) {
         Log(0).stream() << "Callback registration error: OMPT interface disabled" << endl;
         return 0;
     }

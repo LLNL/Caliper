@@ -57,7 +57,7 @@ void create_attr_cb(Caliper*, const Attribute&)
     ++num_attributes;
 }
 
-void update_cb(Caliper*, const Attribute&)
+void update_cb(Caliper*, const Attribute&,const Variant&)
 {
     ++num_updates;
 }
@@ -67,7 +67,7 @@ void create_scope_cb(Caliper*, cali_context_scope_t)
     ++num_scopes;
 }
 
-void snapshot_cb(Caliper*, int, const Entry*, Snapshot*)
+void snapshot_cb(Caliper*, int, const EntryList*, EntryList*)
 {
     ++num_snapshots;
 }

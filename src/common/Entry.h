@@ -17,11 +17,11 @@ class Entry
     cali_id_t m_attr_id;
     Variant   m_value;
 
+public:
+
     Entry()
         : m_node(0), m_attr_id(CALI_INV_ID)
         { }
-
-public:
 
     Entry(Node* node)
         : m_node(node), m_attr_id(CALI_INV_ID)
@@ -35,6 +35,8 @@ public:
         return m_node;
     }
 
+    size_t    hash() const;
+    
     /// @brief Return top-level attribute of this entry
     cali_id_t attribute() const;
 
@@ -60,8 +62,15 @@ public:
     // int       extract(cali_id_t attr, int n, Variant buf[]) const;
 
     static const Entry empty;
+
+    friend bool operator == (const Entry&, const Entry&);
+    friend bool operator <  (const Entry&, const Entry&);
 };
 
+bool operator == (const Entry& lhs, const Entry& rhs);
+
+bool operator <  (const Entry& lhs, const Entry& rhs);    
+    
 } // namespace cali
 
 #endif

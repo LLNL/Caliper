@@ -45,10 +45,8 @@ namespace cali
 {
 
 class Attribute;
+class EntryList;
 class Node;
-
-template<int> class FixedSnapshot;
-typedef FixedSnapshot<64> Snapshot;
 
 class ContextBuffer
 {
@@ -77,7 +75,7 @@ public:
     /// @name get context
     /// @{
 
-    void     snapshot(Snapshot* sbuf) const;
+    void     snapshot(EntryList* sbuf) const;
 
     /// @}
     /// @name Serialization API

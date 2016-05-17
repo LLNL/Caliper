@@ -52,10 +52,8 @@ namespace cali
 // Forward declarations
 
 class Node;    
-
-template<int> class FixedSnapshot;
-typedef FixedSnapshot<64> Snapshot;
-
+class EntryList;
+    
 /// @class Caliper
 
 class Caliper 
@@ -64,7 +62,7 @@ public:
 
     struct Scope;
 
-    typedef Scope* (*ScopeCallbackFn)(Caliper*);
+    typedef Scope* (*ScopeCallbackFn)(Caliper*, bool can_create);
 
     
 private:
@@ -76,9 +74,11 @@ private:
     Scope* m_thread_scope;
     Scope* m_task_scope;
 
+    bool   m_is_signal; // are we in a signal handler?
+
     
-    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0)
-        : mG(g), m_thread_scope(thread), m_task_scope(task)
+    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0, bool sig = false)
+        : mG(g), m_thread_scope(thread), m_task_scope(task), m_is_signal(sig)
         { }
 
     Scope* scope(cali_context_scope_t scope);
@@ -94,38 +94,52 @@ public:
     Caliper(const Caliper&) = default;
 
     Caliper& operator = (const Caliper&) = default;
+
+    bool is_signal() const { return m_is_signal; };
     
     // --- Events
 
     struct Events {
-        util::callback<void(Caliper*, const Attribute&)> create_attr_evt;
+        typedef util::callback<void(Caliper*,const Attribute&)>
+            create_attr_cbvec;
 
-        util::callback<void(Caliper*, const Attribute&)> pre_begin_evt;
-        util::callback<void(Caliper*, const Attribute&)> post_begin_evt;
-        util::callback<void(Caliper*, const Attribute&)> pre_end_evt;
-        util::callback<void(Caliper*, const Attribute&)> post_end_evt;
-        util::callback<void(Caliper*, const Attribute&)> pre_set_evt;
-        util::callback<void(Caliper*, const Attribute&)> post_set_evt;
+        typedef util::callback<void(Caliper*,const Attribute&,const Variant&)>
+            update_cbvec;
+        typedef util::callback<void(Caliper*)>
+            caliper_cbvec;
+        typedef util::callback<void(Caliper*,cali_context_scope_t)>
+            scope_cbvec;
 
-        util::callback<void(Caliper*,
-                            cali_context_scope_t)>       create_scope_evt;
-        util::callback<void(Caliper*,
-                            cali_context_scope_t)>       release_scope_evt;
+        typedef util::callback<void(Caliper*,int,const EntryList*,EntryList*)>
+            snapshot_cbvec;
+        typedef util::callback<void(Caliper*,const EntryList*,const EntryList*)>
+            process_snapshot_cbvec;
 
-        util::callback<void(Caliper*)>                   post_init_evt;
-        util::callback<void(Caliper*)>                   finish_evt;
+        typedef util::callback<void(Caliper*, const EntryList*)>
+            flush_cbvec;
+        typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
+            write_record_cbvec;
+        
+        create_attr_cbvec      create_attr_evt;
 
-        util::callback<void(Caliper*, 
-                            int, 
-                            const Entry*,
-                            Snapshot*)>                  snapshot;
-        util::callback<void(Caliper*,
-                            const Entry*,
-                            const Snapshot*)>            process_snapshot;
+        update_cbvec           pre_begin_evt;
+        update_cbvec           post_begin_evt;
+        update_cbvec           pre_set_evt;
+        update_cbvec           post_set_evt;
+        update_cbvec           pre_end_evt;
+        update_cbvec           post_end_evt;
 
-        util::callback<void(const RecordDescriptor&,
-                            const int*,
-                            const Variant**)>            write_record;
+        scope_cbvec            create_scope_evt;
+        scope_cbvec            release_scope_evt;
+
+        caliper_cbvec          post_init_evt;
+        caliper_cbvec          finish_evt;
+
+        snapshot_cbvec         snapshot;
+        process_snapshot_cbvec process_snapshot;
+
+        flush_cbvec            flush;
+        write_record_cbvec     write_record;
     };
 
     Events&   events();
@@ -141,9 +155,11 @@ public:
 
     // --- Snapshot API
 
-    void      push_snapshot(int scopes, const Entry* trigger_info);
-    void      pull_snapshot(int scopes, const Entry* trigger_info, Snapshot* snapshot);
+    void      push_snapshot(int scopes, const EntryList* trigger_info);
+    void      pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* snapshot);
 
+    void      flush(const EntryList* trigger_info);
+    
     // --- Annotation API
 
     cali_err  begin(const Attribute& attr, const Variant& data);
@@ -153,10 +169,12 @@ public:
 
     Variant   exchange(const Attribute& attr, const Variant& data);
 
-    // --- Direct metadata API
+    // --- Direct metadata / data access API
 
-    Entry     make_entry(size_t n, const Attribute* attr, const Variant* value);
+    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
+
+    Node*     node(cali_id_t id); // EXTREMELY SLOW, use with caution!
 
     // --- Query API
 
@@ -185,7 +203,9 @@ public:
     static Caliper instance();
     static void    release();
     
-    // static Caliper try_instance();
+    static Caliper sigsafe_instance();
+
+    friend struct GlobalData;
 };
 
 } // namespace cali

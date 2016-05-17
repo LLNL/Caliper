@@ -6,8 +6,7 @@
 #include "SnapshotTextFormatter.h"
 
 #include <Caliper.h>
-#include <SigsafeRWLock.h>
-#include <Snapshot.h>
+#include <EntryList.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -143,10 +142,16 @@ class TextLogService
         }
     }
 
-    void process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* snapshot) {
+    void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
         // operate only on cali.snapshot.event.end attributes for now
-        if (!trigger_info || 
-            !(trigger_info->attribute() == end_event_attr.id() || trigger_info->attribute() == set_event_attr.id()))
+        if (!trigger_info)
+            return;
+
+        Entry event = trigger_info->get(end_event_attr);
+
+        if (event.is_empty())
+            event = trigger_info->get(set_event_attr);
+        if (event.is_empty())
             return;
 
         Attribute trigger_attr { Attribute::invalid };
@@ -155,13 +160,13 @@ class TextLogService
             std::lock_guard<std::mutex> lock(trigger_attr_mutex);
 
             TriggerAttributeMap::const_iterator it = 
-                trigger_attr_map.find(trigger_info->value().to_id());
+                trigger_attr_map.find(event.value().to_id());
 
             if (it != trigger_attr_map.end())
                 trigger_attr = it->second;
         }
 
-        if (trigger_attr == Attribute::invalid)
+        if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
         formatter.print(get_stream(), snapshot) << std::endl;
@@ -190,7 +195,7 @@ class TextLogService
         s_textlog->create_attribute_cb(c, attr);
     }
 
-    static void s_process_snapshot_cb(Caliper* c, const Entry* trigger_info, const Snapshot* snapshot) {
+    static void s_process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
         s_textlog->process_snapshot_cb(c, trigger_info, snapshot);
     }
 

@@ -221,11 +221,8 @@ Recorder
 
 The recorder service writes Caliper I/O records into a file.
 
-By default, the recorder service stores records in an
-in-memory buffer to avoid application performance perturbance because
-of I/O. You can configure the buffer sizes and determine whether they
-are allowed to grow. You can also set the directory and filename that
-should be used; by default, the recorder service will auto-generate a
+You can also set the directory and filename that should be used;
+by default, the recorder service will auto-generate a
 file name.
 
 Configuration
@@ -243,27 +240,6 @@ Configuration
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
-
-.. envvar:: CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)
-            
-   Initial number of records that can be stored in the in-memory record
-   buffer.
-
-   Default: 8000
-
-.. envvar:: CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)
-            
-   Initial number of data elements that can be stored in the in-memory record
-   buffer.
-
-   Default: 60000
-
-.. envvar:: CALI_RECORDER_BUFFER_CAN_GROW=(true|false)
-            
-   Allow record and data buffers to grow if necessary. If false, buffer content
-   will be flushed to disk when either buffer is full.
-   
-   Default: true
 
 Textlog
 --------------------------------
@@ -379,3 +355,32 @@ Trace
 The trace service creates an I/O record for each snapshot. With the
 ``recorder`` sercice enabled, this will create a snapshot trace file.
 
+The trace service maintains per-thread snapshot buffers. By default,
+trace buffers will grow automatically. This behavior can be changed by
+setting a *buffer policy*. There are three options:
+
+Grow
+    Grow the buffer when it is full. This is the default.
+
+Stop
+    Stop recording when the buffer is full.
+
+Flush
+    Flush the buffer when it is full and continue recording. Note that 
+    buffer flushes can significantly perturb the program's
+    performance.
+
+Configuration
+................................
+
+.. envvar:: CALI_TRACE_BUFFER_SIZE
+
+   Size of the trace buffer, in Megabytes. With the `grow` buffer
+   policy, this is the size of a trace buffer *chunk*: When the buffer
+   is full, another chunk of this size is added. Default: 2 (MiB).
+
+.. envvar:: CALI_TRACE_BUFFER_POLICY
+
+   Sets the trace buffer policy (see above). Either `grow`, `stop`, or
+   `flush`. Default: `grow`.
+   
