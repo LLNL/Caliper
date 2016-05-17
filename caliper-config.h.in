@@ -7,6 +7,7 @@
 #cmakedefine CALIPER_HAVE_LIBCURL
 #cmakedefine CALIPER_HAVE_PAPI
 #cmakedefine CALIPER_HAVE_MITOS
+#cmakedefine CALIPER_HAVE_SAMPLER
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@

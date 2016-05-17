@@ -58,7 +58,7 @@ using namespace std;
 
 namespace 
 {
-    Attribute timer_attr    { Attribute::invalid };
+    Attribute timer_attr   { Attribute::invalid };
     Attribute sampler_attr { Attribute::invalid };
 
     cali_id_t sampler_attr_id    = CALI_INV_ID;

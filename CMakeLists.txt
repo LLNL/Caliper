@@ -91,6 +91,12 @@ endif()
 
 find_package(PythonLibs)
 
+# Sampler is currently Linux-specific: check for Linux
+if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
+  set(CALIPER_HAVE_SAMPLER TRUE)
+  message(STATUS "Linux detected, adding sampler service")
+endif()
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
