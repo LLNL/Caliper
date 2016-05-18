@@ -1,6 +1,8 @@
 Caliper: Context Annotation Library (for Performance)
 ==========================================
 
+[![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
+
 Caliper is a generic context annotation system. It gives programmers
 the ability to provide arbitrary program context information to 
 (performance) tools at runtime.

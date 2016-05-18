@@ -1,0 +1,23 @@
+language: cpp
+sudo: required
+
+dist: trusty
+
+matrix:
+  include:
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+      env: COMPILER=g++-4.9
+
+before_install:
+  - sudo apt-get update -qq
+script:
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_CXX_FLAGS="-std=c++11" ..
+  - make -j8
