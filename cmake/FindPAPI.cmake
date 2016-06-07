@@ -22,8 +22,7 @@ find_path(PAPI_PREFIX
 )
 
 find_library(PAPI_LIBRARIES
-    # Pick the static library first for easier run-time linking.
-    NAMES libpapi.a papi
+    NAMES papi
     HINTS ${PAPI_PREFIX}/lib ${HILTIDEPS}/lib
 )
 
