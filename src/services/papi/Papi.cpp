@@ -46,24 +46,26 @@
 
 #include <pthread.h>
 
+#include <vector>
+
 using namespace cali;
 using namespace std;
 
 #include <papi.h>
 
-#define MAX_COUNTERS 16
-
 namespace 
 {
 
-cali_id_t counter_attrbs[MAX_COUNTERS];
+#define MAX_COUNTERS 16
+    
+struct PapiGlobalInfo {
+    std::vector<cali_id_t> counter_attrbs;
+    std::vector<int>       counter_events;
+} global_info;
 
-int       counter_events[MAX_COUNTERS];
-long long counter_values[MAX_COUNTERS];
-
-int       num_counters { 0 };
-
-
+pthread_key_t counter_array_key;
+size_t        num_failed = 0;
+    
 static const ConfigSet::Entry s_configdata[] = {
     { "counters", CALI_TYPE_STRING, "",
       "List of PAPI events to record",
@@ -72,37 +74,69 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void push_counter(Caliper* c, int scope, const EntryList*, EntryList* snapshot) {
+    
+void destroy_counter_array(void* array)
+{
+    PAPI_unregister_thread();
+    
+    delete[] static_cast<long long*>(array);
+}
+    
+long long* get_counter_array(bool alloc, size_t num_counters)
+{
+    long long* array = static_cast<long long*>(pthread_getspecific(counter_array_key));
+
+    if (!array && alloc && global_info.counter_events.size() > 0) {
+        array = new long long[num_counters];
+        
+        pthread_setspecific(counter_array_key, array);
+
+        // Register thread and start counters on new thread
+        
+        PAPI_register_thread();
+
+        if (PAPI_start_counters(global_info.counter_events.data(), num_counters) != PAPI_OK)
+            Log(0).stream() << "PAPI counters failed to initialize!" << endl;
+    }
+    
+    return array;
+}
+    
+void snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList* snapshot) {
+    auto num_counters = global_info.counter_events.size();
+    
     if (num_counters < 1)
         return;
 
+    long long* counter_values = get_counter_array(!c->is_signal(), num_counters);
+
+    if (!counter_values)
+        return;
+
     if (PAPI_accum_counters(counter_values, num_counters) != PAPI_OK) {
-        Log(1).stream() << "PAPI failed to accumulate counters!" << endl;
+        ++num_failed;
         return;
     }
 
     Variant data[MAX_COUNTERS];
 
-    int m = std::min(num_counters, MAX_COUNTERS);
-    
+    int m = std::min(static_cast<int>(num_counters), MAX_COUNTERS);
+
     for (int i = 0; i < m; ++i)
         data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
 
-    snapshot->append(m, counter_attrbs, data);
+    snapshot->append(m, global_info.counter_attrbs.data(), data);
 }
 
 void papi_init(Caliper* c) {
-    if (PAPI_start_counters(counter_events, num_counters) != PAPI_OK)
-        Log(1).stream() << "PAPI counters failed to initialize!" << endl;
-    else
-        Log(1).stream() << "PAPI counters initialized successfully" << endl;
+    // start counters
+    get_counter_array(true, global_info.counter_events.size());
 }
 
 void papi_finish(Caliper* c) {
-    if (PAPI_stop_counters(counter_values, num_counters) != PAPI_OK)
-        Log(1).stream() << "PAPI counters failed to stop!" << endl;
-    else
-        Log(1).stream() << "PAPI counters stopped successfully" << endl;
+    if (num_failed > 0)
+        Log(1).stream() << "PAPI: Failed to read counters " << num_failed
+                        << " times." << std::endl;
 }
 
 void setup_events(Caliper* c, const string& eventstring)
@@ -110,8 +144,6 @@ void setup_events(Caliper* c, const string& eventstring)
     vector<string> events;
 
     util::split(eventstring, ':', back_inserter(events));
-
-    num_counters = 0;
 
     for (string& event : events) {
         int code;
@@ -121,15 +153,13 @@ void setup_events(Caliper* c, const string& eventstring)
             continue;
         }
 
-        if (num_counters < MAX_COUNTERS) {
+        if (global_info.counter_events.size() < MAX_COUNTERS) {
             Attribute attr =
                 c->create_attribute(string("papi.")+event, CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
-            counter_events[num_counters] = code;
-            counter_attrbs[num_counters] = attr.id();
-
-            ++num_counters;
+            global_info.counter_events.push_back(code);
+            global_info.counter_attrbs.push_back(attr.id());
         } else
             Log(0).stream() << "Maximum number of PAPI counters exceeded; dropping \"" 
                             << event << '"' << endl;
@@ -146,7 +176,7 @@ void papi_register(Caliper* c) {
         return;
     }        
 
-    // PAPI_thread_init(pthread_self);
+    PAPI_thread_init(pthread_self);
     
     if (PAPI_is_initialized() == PAPI_NOT_INITED) {
         Log(0).stream() << "PAPI library is not initialized" << endl;
@@ -155,15 +185,20 @@ void papi_register(Caliper* c) {
 
     setup_events(c, RuntimeConfig::init("papi", s_configdata).get("counters").to_string());
 
-    if (num_counters < 1) {
+    if (global_info.counter_events.size() < 1) {
         Log(1).stream() << "No PAPI counters registered, dropping PAPI service" << endl;
         return;
     }
 
+    if (pthread_key_create(&counter_array_key, destroy_counter_array) != 0) {
+        Log(0).stream() << "papi: error: pthread_key_create() failed" << std::endl;
+        return;
+    }
+    
     // add callback for Caliper::get_context() event
     c->events().post_init_evt.connect(&papi_init);
     c->events().finish_evt.connect(&papi_finish);
-    c->events().snapshot.connect(&push_counter);
+    c->events().snapshot.connect(&snapshot_cb);
 
     Log(1).stream() << "Registered PAPI service" << endl;
 }
