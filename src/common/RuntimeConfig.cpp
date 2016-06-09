@@ -213,6 +213,10 @@ struct RuntimeConfigImpl
         return (it == m_database.end() ? Variant() : it->second->get(key));
     }
 
+    void preset(const char* key, const std::string& value) {
+        m_config_profiles[m_profile_name][key] = value;
+    }
+    
     shared_ptr<ConfigSetImpl> init(const char* name, const ConfigSet::Entry* list) {
         auto it = m_database.find(name);
 
@@ -301,6 +305,12 @@ Variant
 RuntimeConfig::get(const char* set, const char* key)
 {
     return RuntimeConfigImpl::instance()->get(set, key);
+}
+
+void
+RuntimeConfig::preset(const char* key, const std::string& value)
+{
+    RuntimeConfigImpl::instance()->preset(key, value);
 }
 
 ConfigSet 

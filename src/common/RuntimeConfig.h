@@ -39,6 +39,7 @@
 #include "Variant.h"
 
 #include <memory>
+#include <string>
 
 namespace cali
 {
@@ -77,6 +78,7 @@ class RuntimeConfig
 public:
 
     static Variant   get(const char* set, const char* key);
+    static void      preset(const char* key, const std::string& value);
     static ConfigSet init(const char* name, const ConfigSet::Entry* set);
 
     static void print(std::ostream& os);
