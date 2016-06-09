@@ -86,7 +86,7 @@ long long* get_counter_array(bool alloc, size_t num_counters)
 {
     long long* array = static_cast<long long*>(pthread_getspecific(counter_array_key));
 
-    if (!array && alloc && global_info.counter_events.size() > 0) {
+    if (!array && alloc && num_counters > 0) {
         array = new long long[num_counters];
         
         pthread_setspecific(counter_array_key, array);
