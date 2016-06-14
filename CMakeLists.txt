@@ -101,16 +101,32 @@ configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
   ${PROJECT_BINARY_DIR}/caliper-config.h)
 
-# Make caliper findable
+# Create pkg-confic .pc file
+set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
+set(PKG_CONFIG_LIBDIR "\${prefix}/lib")
+set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
+set(PKG_CONFIG_CFLAGS "-I\${includedir}")
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/caliper.pc.in
+  ${PROJECT_BINARY_DIR}/caliper.pc)
+
+# Make caliper findable for cmake
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
   ${PROJECT_BINARY_DIR}/caliper-config.cmake
   @ONLY)
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake DESTINATION share/cmake/caliper)
-install(EXPORT caliper                                   DESTINATION share/cmake/caliper)
 
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake 
+  DESTINATION share/cmake/caliper)
+install(EXPORT caliper
+  DESTINATION share/cmake/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h DESTINATION include/caliper)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h 
+  DESTINATION include/caliper)
+
+install(FILES ${PROJECT_BINARY_DIR}/caliper.pc 
+  DESTINATION lib/pkgconfig)
 
 add_subdirectory(doc)
 add_subdirectory(src)
