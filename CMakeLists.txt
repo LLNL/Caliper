@@ -27,6 +27,14 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS "Build Caliper tools" TRUE)
 option(WITH_TESTS "Build Caliper test apps" TRUE)
+option(WITH_CUDA "Enable Caliper CUDA services" TRUE)
+
+if(WITH_CUDA)
+   find_package(CUDA)
+   include_directories(${CUDA_INCLUDE_DIRS})
+   find_library(NVVP_LIBRARY NAME libnvToolsExt.so PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+   list(APPEND CALIPER_EXTERNAL_LIBS ${NVVP_LIBRARY})
+endif()
 
 # the RPATH to be used when installing, but only if it's not a system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
