@@ -36,6 +36,7 @@
 #include "cali.h"
 
 #include "Caliper.h"
+#include "EntryList.h"
 
 #include <Variant.h>
 
@@ -148,9 +149,26 @@ cali_find_attribute(const char* name)
 //
 
 void
-cali_push_context(int scope)
+cali_push_snapshot(int scope, int n,
+                   const cali_id_t trigger_info_attr_list[],
+                   const void* trigger_info_val_list[],
+                   const size_t trigger_info_size_list[])
 {
-    Caliper::instance().push_snapshot(scope, nullptr);
+    Caliper   c;
+    
+    Attribute attr[64];
+    Variant   data[64];
+        
+    for (int i = 0; i < n; ++i) {
+        attr[i] = ::lookup_attribute(c, trigger_info_attr_list[i]);
+        data[i]  = Variant(attr[i].type(), trigger_info_val_list[i], trigger_info_size_list[i]);
+    }
+
+    EntryList::FixedEntryList<64> trigger_info_data;
+    EntryList trigger_info(trigger_info_data);
+
+    c.make_entrylist(n, attr, data, trigger_info);
+    c.push_snapshot(scope, &trigger_info);
 }
 
 //
