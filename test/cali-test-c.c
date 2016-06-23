@@ -113,6 +113,10 @@ void test_snapshot()
 {
   cali_begin_string_byname("cali-test-c.experiment", "snapshot");
 
+  /* Test w/o event trigger info */ 
+  cali_push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD,
+                     0, NULL, NULL, NULL);
+  
   cali_id_t event_str_attr =
     cali_create_attribute("myevent-string", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
   cali_id_t event_val_attr =
