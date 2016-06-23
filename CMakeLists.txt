@@ -126,7 +126,7 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
   DESTINATION include/caliper)
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc 
-  DESTINATION lib/pkgconfig)
+  DESTINATION share/pkgconfig)
 
 add_subdirectory(doc)
 add_subdirectory(src)
