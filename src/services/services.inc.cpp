@@ -37,6 +37,7 @@
 namespace cali
 {
 
+extern CaliperService AggregateService;
 #ifdef CALIPER_HAVE_LIBUNWIND
 extern CaliperService CallpathService;
 #endif
@@ -70,6 +71,7 @@ extern CaliperService OmptService;
 extern CaliperService NetOutService;
 #endif
 const CaliperService caliper_services[] = {
+    AggregateService,
 #ifdef CALIPER_HAVE_LIBUNWIND
     CallpathService,
 #endif

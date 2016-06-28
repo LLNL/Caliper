@@ -30,6 +30,7 @@ endmacro()
 
 # Service subdirectories
 
+add_subdirectory(aggregate)
 if (LIBUNWIND_FOUND)
   add_subdirectory(callpath)
 endif()
