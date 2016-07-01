@@ -62,10 +62,10 @@ using namespace cali;
 
 #define MAX_KEYLEN         128
 #define MAX_BLOCKS        2048
-#define ENTRIES_PER_BLOCK 2048
+#define ENTRIES_PER_BLOCK 1024
 
 #define SNAP_MAX            80 // max snapshot size
-#define AGGR_MAX             8 // max aggregation variables
+#define AGGR_MAX             4 // max aggregation variables
     
 //
 // --- Class for the per-thread aggregation database 
