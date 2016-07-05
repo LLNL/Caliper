@@ -36,6 +36,7 @@
 #include "MemoryPool.h"
 
 #include <RuntimeConfig.h>
+
 #include <util/spinlock.hpp>
 
 #include <algorithm>
@@ -71,6 +72,9 @@ struct MemoryPool::MemoryPoolImpl
     size_t                    m_index;
     bool                      m_can_expand;
 
+    size_t                    m_total_reserved;
+    size_t                    m_total_used;
+    
     // --- interface 
 
     void expand(size_t bytes) {
@@ -79,6 +83,7 @@ struct MemoryPool::MemoryPoolImpl
         m_chunks.push_back( { new uint64_t[len], 0, len } );
 
         m_index = m_chunks.size() - 1;
+        m_total_reserved += len;
     }
 
     void* allocate(size_t bytes, bool can_expand) {
@@ -96,19 +101,29 @@ struct MemoryPool::MemoryPoolImpl
         void *ptr = static_cast<void*>(m_chunks[m_index].ptr + m_chunks[m_index].wmark);
         m_chunks[m_index].wmark += n;
 
+        m_total_used += n;
         return ptr;
     }
 
+    std::ostream& print_statistics(std::ostream& os) const {
+        os << "Metadata memory pool: "
+           << m_total_reserved << " bytes reserved, "
+           << m_total_used << " bytes allocated";
+
+        return os;
+    }
+    
     MemoryPoolImpl() 
-        : m_config { RuntimeConfig::init("memory", s_configdata) }, m_index { 0 } 
+        : m_config { RuntimeConfig::init("memory", s_configdata) }, m_index { 0 },
+          m_total_reserved { 0 }, m_total_used { 0 }
     {
         m_can_expand = m_config.get("can_expand").to_bool();
         size_t s     = m_config.get("pool_size").to_uint();
 
         expand(s);
     }
-
-    ~MemoryPoolImpl() {
+    
+    ~MemoryPoolImpl() {            
         for ( auto &c : m_chunks )
             delete[] c.ptr;
 
@@ -152,4 +167,9 @@ MemoryPool::~MemoryPool()
 void* MemoryPool::allocate(size_t bytes)
 {
     return mP->allocate(bytes, mP->m_can_expand);
+}
+
+std::ostream& MemoryPool::print_statistics(std::ostream& os) const
+{
+    return mP->print_statistics(os);
 }

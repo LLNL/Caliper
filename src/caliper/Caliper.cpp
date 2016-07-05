@@ -96,6 +96,10 @@ namespace
         if (c) {
             c.events().flush(&c, nullptr);
             c.events().finish_evt(&c);
+
+            c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
+            // Somehow default thread scope is not released by pthread_key_create destructor
+            c.release_scope(c.default_scope(CALI_SCOPE_THREAD));
         }
 
         // Don't delete global data, some thread-specific finalization may occur after this point 
@@ -439,6 +443,25 @@ Caliper::release_scope(Caliper::Scope* s)
 {
     assert(mG != 0);
 
+    if (Log::verbosity() >= 2) {
+        const char* scopestr = "";
+
+        switch (s->scope) {
+        case CALI_SCOPE_THREAD:
+            scopestr = "thread";
+            break;
+        case CALI_SCOPE_TASK:
+            scopestr = "task";
+            break;
+        case CALI_SCOPE_PROCESS:
+            scopestr = "process";
+            break;
+        }
+        
+        s->mempool.print_statistics( Log(2).stream() << "Releasing " << scopestr << " scope: (" )
+            << ")" << std::endl;
+    }
+    
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
     

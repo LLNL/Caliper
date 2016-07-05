@@ -38,8 +38,8 @@
 #ifndef CALI_MEMORYPOOL_H
 #define CALI_MEMORYPOOL_H
 
+#include <iostream>
 #include <memory>
-
 
 namespace cali
 {
@@ -67,6 +67,8 @@ public:
     // --- allocate 
 
     void* allocate(std::size_t bytes);
+
+    std::ostream& print_statistics(std::ostream& os) const;
 };
 
 } // namespace cali
