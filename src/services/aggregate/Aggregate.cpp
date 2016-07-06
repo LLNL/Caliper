@@ -545,10 +545,9 @@ public:
     }
 
     static void finish_cb(Caliper* c) {
-        Log(2).stream() << "aggregate: runtime statistics:"
-                        << "\n  max key len: " << s_global_max_keylen
-                        << "\n  num entries: " << s_global_num_entries
-                        << "\n  num blocks:  " << s_global_num_blocks
+        Log(2).stream() << "aggregate: max key len " << s_global_max_keylen << ", "
+                        << s_global_num_entries << " entries, "
+                        << s_global_num_blocks  << " blocks " 
                         << " (" << s_global_num_blocks * sizeof(Entry) * ENTRIES_PER_BLOCK << " bytes)"
                         << std::endl;
             

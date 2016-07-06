@@ -135,7 +135,7 @@ namespace
 struct Caliper::Scope
 {
     MemoryPool           mempool;
-    ContextBuffer        statebuffer;
+    ContextBuffer        blackboard;
     
     cali_context_scope_t scope;
 
@@ -457,9 +457,16 @@ Caliper::release_scope(Caliper::Scope* s)
             scopestr = "process";
             break;
         }
+
+        // This will print
+        //   "Releasing <process/thread> scope:
+        //      <Mempool statistics>
+        //      <Blackboard statistics>"
         
-        s->mempool.print_statistics( Log(2).stream() << "Releasing " << scopestr << " scope: (" )
-            << ")" << std::endl;
+        s->blackboard.print_statistics(
+            s->mempool.print_statistics(
+                Log(2).stream() << "Releasing " << scopestr << " scope:\n      "
+                ) << "\n      " ) << std::endl;            
     }
     
     std::lock_guard<::siglock>
@@ -598,7 +605,7 @@ Caliper::pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* sbu
 
     for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
         if (scopes & s)
-            scope(s)->statebuffer.snapshot(sbuf);
+            scope(s)->blackboard.snapshot(sbuf);
 }
 
 void 
@@ -647,7 +654,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
         mG->events.pre_begin_evt(this, attr, data);
 
     Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->statebuffer;
+    ContextBuffer* sb = &s->blackboard;
     
     if (attr.store_as_value())
         ret = sb->set(attr, data);
@@ -673,7 +680,7 @@ Caliper::end(const Attribute& attr)
     cali_err ret = CALI_EINV;
 
     Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->statebuffer;
+    ContextBuffer* sb = &s->blackboard;
 
     Variant val;
 
@@ -723,7 +730,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
         g(m_thread_scope->lock);
 
     Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->statebuffer;
+    ContextBuffer* sb = &s->blackboard;
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -757,7 +764,7 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
         g(m_thread_scope->lock);
 
     Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->statebuffer;
+    ContextBuffer* sb = &s->blackboard;
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -793,7 +800,7 @@ Caliper::get(const Attribute& attr)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    ContextBuffer* sb = &(scope(attr2caliscope(attr))->statebuffer);
+    ContextBuffer* sb = &(scope(attr2caliscope(attr))->blackboard);
 
     if (attr.store_as_value())
         return Entry(attr, sb->get(attr));
@@ -863,7 +870,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    return scope(attr2caliscope(attr))->statebuffer.exchange(attr, data);
+    return scope(attr2caliscope(attr))->blackboard.exchange(attr, data);
 }
 
 

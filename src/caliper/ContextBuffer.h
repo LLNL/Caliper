@@ -39,6 +39,7 @@
 #include "Record.h"
 #include "Variant.h"
 
+#include <iostream>
 #include <memory>
 
 namespace cali
@@ -82,6 +83,12 @@ public:
     /// @{
 
     void     push_record(WriteRecordFn fn) const;
+
+    /// @}
+    /// @name Statistics
+    /// @{
+
+    std::ostream& print_statistics(std::ostream& os) const;
 
     /// @}
 };
