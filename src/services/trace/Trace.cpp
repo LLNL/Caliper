@@ -229,11 +229,23 @@ namespace
         size_t num_written = 0;
         unordered_set<cali_id_t> written_node_cache;
 
+        TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
+        
         while (tbuf) {
             // Stop tracing while we flush: writers won't block
             // but just drop the snapshot
             
             tbuf->stopped.store(true);
+
+            // Accumulate usage statistics before they're reset in flush
+            if (Log::verbosity() > 1) {
+                TraceBufferChunk::UsageInfo info = tbuf->chunks->info();
+
+                aggregate_info.nchunks  += info.nchunks;
+                aggregate_info.reserved += info.reserved;
+                aggregate_info.used     += info.used;
+            }
+            
             num_written += tbuf->chunks->flush(c, written_node_cache);
             tbuf->stopped.store(false);
             
@@ -254,8 +266,15 @@ namespace
                 tbuf = tbuf->next;
             }
         }
-            
-        Log(1).stream() << "Flushed " << num_written << " snapshots." << endl;
+
+        if (Log::verbosity() > 1) {
+            Log(2).stream() << "Trace: "
+                            << aggregate_info.reserved << " bytes reserved, "
+                            << aggregate_info.used     << " bytes used in "
+                            << aggregate_info.nchunks  << " chunks." << std::endl;
+        }
+        
+        Log(1).stream() << "Trace: Flushed " << num_written << " snapshots." << endl;
     }
 
     void init_overflow_policy() {

@@ -198,3 +198,18 @@ bool TraceBufferChunk::fits(const EntryList* s) const
 
     return (m_pos + max) < m_size;
 }
+
+
+TraceBufferChunk::UsageInfo TraceBufferChunk::info() const
+{
+    UsageInfo info { 0, 0, 0 };
+
+    if (m_next)
+        info = m_next->info();
+
+    info.nchunks++;
+    info.reserved += m_size;
+    info.used     += m_pos;
+
+    return info;
+}

@@ -108,7 +108,7 @@ struct MemoryPool::MemoryPoolImpl
     std::ostream& print_statistics(std::ostream& os) const {
         os << "Metadata memory pool: "
            << m_total_reserved << " bytes reserved, "
-           << m_total_used << " bytes allocated";
+           << m_total_used << " bytes used";
 
         return os;
     }
