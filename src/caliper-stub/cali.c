@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file cali.cpp
+/// \file cali.c
 /// Caliper C interface stub implementation
 
 #include <cali.h>
@@ -79,103 +79,103 @@ cali_push_snapshot(int scope, int n,
 //
 
 cali_err
-cali_begin(cali_id_t)
+cali_begin(cali_id_t attr)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_end(cali_id_t)
+cali_end(cali_id_t attr)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set(cali_id_t, const void*, size_t)
+cali_set(cali_id_t attr, const void* val, size_t size)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_begin_double(cali_id_t, double)
+cali_begin_double(cali_id_t attr, double val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_begin_int(cali_id_t, int)
+cali_begin_int(cali_id_t id, int val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_begin_string(cali_id_t, const char*)
+cali_begin_string(cali_id_t id, const char* val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set_double(cali_id_t, double)
+cali_set_double(cali_id_t attr, double val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set_int(cali_id_t, int)
+cali_set_int(cali_id_t attr, int val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err  
-cali_set_string(cali_id_t, const char*)
+cali_set_string(cali_id_t attr, const char* val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_double_byname(const char*, double)
+cali_begin_double_byname(const char* attr_name, double val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_int_byname(const char*, int)
+cali_begin_int_byname(const char* attr_name, int val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_byname(const char*)
+cali_begin_byname(const char* attr_name)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_begin_string_byname(const char*, const char*)
+cali_begin_string_byname(const char* attr_name, const char* val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_double_byname(const char*, double)
+cali_set_double_byname(const char* attr_name, double val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_int_byname(const char*, int)
+cali_set_int_byname(const char* attr_name, int val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_set_string_byname(const char*, const char*)
+cali_set_string_byname(const char* attr_name, const char* val)
 {
     return CALI_SUCCESS;
 }
 
 cali_err
-cali_end_byname(const char* )
+cali_end_byname(const char* attr_name)
 {
     return CALI_SUCCESS;
 }
