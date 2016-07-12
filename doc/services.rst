@@ -37,10 +37,7 @@ function names on-line. Call-path addresses are provided in the
   $ callpath.address=401207/2aaaac052d5d/400fd9,callpath.regname=main/__libc_start_main/_start
 
 The example shows the ``callpath.address`` and ``callpath.regname``
-attributes in Caliper context records.
-  
-Configuration
-................................
+attributes in Caliper context records.  
 
 .. envvar:: CALI_CALLPATH_USE_NAME=(true|false)
             
@@ -79,9 +76,6 @@ Specifically, it collects
 Moreover, the environment information service can put any environment
 variable defined at program start on the Caliper blackboard.
 
-Configuration
-................................
-
 .. envvar:: CALI_ENV_EXTRA=(variable1:variable2:...)
 
    List of extra environment variables to import.
@@ -93,10 +87,7 @@ Event
 
 The event trigger service triggers context snapshots when attributes
 are updated. You can select a list of triggering attributes, or have
-any attribute update trigger context snapshots.
-
-Example
-................................
+any attribute update trigger context snapshots. Examples:
 
 All attributes trigger context snapshots:
 
@@ -129,9 +120,6 @@ Only "iteration" attribute updates trigger context snapshots:
                 iteration=1,phase=loop/main
                 iteration=2,phase=loop/main
                 iteration=3,phase=loop/main
-
-Configuration
-................................
 
 .. envvar:: CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
             
@@ -190,9 +178,6 @@ Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
-Configuration
-................................
-
 .. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
             
    List of MPI functions to instrument. If set, only whitelisted
@@ -224,9 +209,6 @@ The recorder service writes Caliper I/O records into a file.
 You can also set the directory and filename that should be used;
 by default, the recorder service will auto-generate a
 file name.
-
-Configuration
-................................
 
 .. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename)
             
@@ -271,9 +253,6 @@ test application with Caliper's auto-generated format string:
                 == CALIPER: Finished
                 
 
-Configuration
-................................
-
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
             
    Select attributes which trigger a text log output. Note that the `event`
@@ -313,9 +292,6 @@ Timestamp
 The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
-
-Configuration
-................................
 
 .. envvar:: CALI_TIMER_SNAPSHOT_DURATION=(true|false)
             
@@ -369,9 +345,6 @@ Flush
     Flush the buffer when it is full and continue recording. Note that 
     buffer flushes can significantly perturb the program's
     performance.
-
-Configuration
-................................
 
 .. envvar:: CALI_TRACE_BUFFER_SIZE
 
