@@ -121,9 +121,9 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
         std::string prefix;
         Attribute*  attr_ptr;
     } evt_attr_setup[] = {
-        { "event.begin.", &(event_attributes.begin_attr) },
-        { "event.set.",   &(event_attributes.set_attr)   },
-        { "event.end.",   &(event_attributes.end_attr)   }
+        { "event.begin#", &(event_attributes.begin_attr) },
+        { "event.set#",   &(event_attributes.set_attr)   },
+        { "event.end#",   &(event_attributes.end_attr)   }
     };
 
     for ( evt_attr_setup_t setup : evt_attr_setup ) {

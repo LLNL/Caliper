@@ -561,16 +561,16 @@ public:
             
         for (size_t i = 0; i < s_aggr_attribute_names.size(); ++i) {
             s_stats_attributes[i].min_attr =
-                c->create_attribute(std::string("aggregate.min*") + s_aggr_attribute_names[i],
+                c->create_attribute(std::string("aggregate.min#") + s_aggr_attribute_names[i],
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].max_attr =
-                c->create_attribute(std::string("aggregate.max*") + s_aggr_attribute_names[i],
+                c->create_attribute(std::string("aggregate.max#") + s_aggr_attribute_names[i],
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].sum_attr =
-                c->create_attribute(std::string("aggregate.sum*") + s_aggr_attribute_names[i],
+                c->create_attribute(std::string("aggregate.sum#") + s_aggr_attribute_names[i],
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].count_attr =
-                c->create_attribute(std::string("aggregate.count*") + s_aggr_attribute_names[i],
+                c->create_attribute(std::string("aggregate.count#") + s_aggr_attribute_names[i],
                                     CALI_TYPE_INT,    CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);                
         }
     }

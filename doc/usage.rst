@@ -41,8 +41,6 @@ C++ code, and exports the main loop's current iteration counter.
             cali::Annotation::Guard 
                 g_loop( cali::Annotation("loop").begin() );
 
-            double t = 0.0, delta_t = 1e-6;
-
             // Create "iteration" attribute to export the iteration count
             cali::Annotation iteration_ann("iteration");
 
@@ -52,9 +50,6 @@ C++ code, and exports the main loop's current iteration counter.
 
                 // A Caliper snapshot taken at this point will contain
                 // { "loop", "iteration"=<i> }
-
-                // perform computation
-                t += delta_t;
             }
 
             // Clear the "iteration" attribute (otherwise, snapshots taken
