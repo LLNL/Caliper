@@ -33,6 +33,7 @@ if(WITH_CUDA)
    find_package(CUDA)
    include_directories(${CUDA_INCLUDE_DIRS})
    find_library(NVVP_LIBRARY NAME libnvToolsExt.so PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+   set(CALIPER_HAVE_NVVP ON)
    list(APPEND CALIPER_EXTERNAL_LIBS ${NVVP_LIBRARY})
 endif()
 
@@ -136,7 +137,6 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc 
   DESTINATION lib/pkgconfig)
 
-add_subdirectory(doc)
 add_subdirectory(src)
 if (WITH_TESTS)
   add_subdirectory(test)
