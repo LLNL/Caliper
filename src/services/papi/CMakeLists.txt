@@ -14,5 +14,6 @@ set(CALIPER_PAPI_SOURCES
 add_library(caliper-papi OBJECT ${CALIPER_PAPI_SOURCES})
 
 add_service_objlib("caliper-papi")
+add_caliper_service("papi CALIPER_HAVE_PAPI")
 
 # target_link_libraries(caliper ${PAPI_LIBRARIES})

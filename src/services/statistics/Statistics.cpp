@@ -103,5 +103,5 @@ void statistics_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService StatisticsService = { "statistics", ::statistics_service_register };
+    CaliperService statistics_service = { "statistics", ::statistics_service_register };
 }

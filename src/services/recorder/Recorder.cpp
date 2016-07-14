@@ -216,5 +216,5 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
 
 namespace cali
 {
-    CaliperService RecorderService { "recorder", &(::Recorder::create) };
+    CaliperService recorder_service { "recorder", &(::Recorder::create) };
 }

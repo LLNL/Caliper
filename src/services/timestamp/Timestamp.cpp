@@ -306,5 +306,5 @@ void timestamp_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService TimestampService = { "timestamp", ::timestamp_service_register };
+    CaliperService timestamp_service = { "timestamp", ::timestamp_service_register };
 } // namespace cali

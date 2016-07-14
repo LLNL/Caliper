@@ -162,5 +162,5 @@ void debug_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService DebugService = { "debug", ::debug_service_register };
+    CaliperService debug_service = { "debug", ::debug_service_register };
 }

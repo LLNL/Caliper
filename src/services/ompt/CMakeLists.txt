@@ -13,3 +13,4 @@ set(CALIPER_OMPT_SOURCES
 add_library(caliper-ompt OBJECT ${CALIPER_OMPT_SOURCES})
 
 add_service_objlib("caliper-ompt")
+add_caliper_service("ompt CALIPER_HAVE_OMPT")

@@ -6,3 +6,4 @@ set(CALIPER_NETOUT_SOURCES
 add_library(caliper-netout OBJECT ${CALIPER_NETOUT_SOURCES})
 
 add_service_objlib("caliper-netout")
+add_caliper_service("netout CALIPER_HAVE_LIBCURL")

@@ -238,5 +238,5 @@ namespace
 
 namespace cali
 {
-    CaliperService SamplerService { "sampler", &::sampler_register };
+    CaliperService sampler_service { "sampler", &::sampler_register };
 }

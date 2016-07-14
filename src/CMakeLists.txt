@@ -24,6 +24,6 @@ if (WITH_FORTRAN)
   add_subdirectory(fortran)
 endif()
 if (PYTHONLIBS_FOUND)
-  add_subdirectory(python)
+#  add_subdirectory(python)
 endif()
 
