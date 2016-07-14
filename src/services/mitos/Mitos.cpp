@@ -196,6 +196,6 @@ void mitos_register(Caliper* c)
 
 namespace cali 
 {
-    CaliperService MitosService = { "mitos", ::mitos_register };
+    CaliperService mitos_service = { "mitos", ::mitos_register };
 } // namespace cali
 

@@ -135,6 +135,6 @@ void git_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService GitInfoService = { "git", ::git_service_register };
+    CaliperService git_service = { "git", ::git_service_register };
 } // namespace cali
  

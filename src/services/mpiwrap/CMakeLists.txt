@@ -29,3 +29,4 @@ install(TARGETS caliper-mpiwrap
   EXPORT caliper
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib)
+add_caliper_service("mpi CALIPER_HAVE_MPI")

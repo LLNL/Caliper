@@ -177,6 +177,6 @@ void environment_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService EnvironmentInfoService = { "env", ::environment_service_register };
+    CaliperService env_service = { "env", ::environment_service_register };
 } // namespace cali
  

@@ -17,6 +17,10 @@ macro(add_service_sources)
   endif()
 endmacro()
 
+macro(add_caliper_service)
+  string(REPLACE " " ";" NEW_SERVICE ${ARGV0})
+  set(CALIPER_SERVICE_NAMES "${CALIPER_SERVICE_NAMES} ${NEW_SERVICE}" PARENT_SCOPE)
+endmacro()
 # A macro to include service modules as object libs in the caliper runtime lib.
 # Used when service subdirectories needs additional includes etc. 
 
@@ -68,7 +72,12 @@ if (OMPT_FOUND)
 endif()
 
 add_service_sources(Services.cpp)
+message("${CALIPER_SERVICE_NAMES}")
 
+configure_file(
+   ${CMAKE_CURRENT_SOURCE_DIR}/gen_services_inc.py.in
+   ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
+)
 # Build service management classes 
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})

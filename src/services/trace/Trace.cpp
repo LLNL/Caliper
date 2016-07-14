@@ -324,5 +324,5 @@ namespace
 
 namespace cali
 {
-    CaliperService TraceService { "trace", &::trace_register };
+    CaliperService trace_service { "trace", &::trace_register };
 }
