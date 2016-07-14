@@ -73,6 +73,14 @@ namespace trace
 
         void   save_snapshot(const cali::EntryList* s);
         bool   fits(const cali::EntryList* s) const;
+
+        struct UsageInfo {
+            size_t nchunks;
+            size_t reserved;
+            size_t used;
+        };
+
+        UsageInfo info() const;
     };
     
 } // namespace trace

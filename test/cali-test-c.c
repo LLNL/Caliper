@@ -109,12 +109,42 @@ void test_metadata()
   cali_end_byname("cali-test-c.experiment");
 }
 
+void test_snapshot()
+{
+  cali_begin_string_byname("cali-test-c.experiment", "snapshot");
+
+  /* Test w/o event trigger info */ 
+  cali_push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD,
+                     0, NULL, NULL, NULL);
+  
+  cali_id_t event_str_attr =
+    cali_create_attribute("myevent-string", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+  cali_id_t event_val_attr =
+    cali_create_attribute("myevent-value",  CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+
+  int64_t     event_val = 42;
+  const char* event_str = "myevent";
+  
+  cali_id_t   event_attr[2] = { event_str_attr,
+                                event_val_attr  };
+  const void* event_data[2] = { event_str,
+                                &event_val      };
+  size_t      event_size[2] = { strlen(event_str),
+                                sizeof(int64_t) };
+
+  cali_push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD,
+                     2, event_attr, event_data, event_size);
+
+  cali_end_byname("cali-test-c.experiment");    
+}
+
 int main(int argc, char* argv[])
 {
   test_attr_by_name();
   test_attr();
   test_mismatch();
   test_metadata();
+  test_snapshot();
   
   return 0;
 }

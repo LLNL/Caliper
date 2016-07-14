@@ -76,11 +76,14 @@ struct ContextBuffer::ContextBufferImpl
     vector<Variant>::size_type m_num_nodes;
     vector<Variant>::size_type m_num_hidden;
 
+    vector<Variant>::size_type m_max_entries;
+    
     // --- constructor
 
     ContextBufferImpl() 
-        : m_num_nodes { 0 },
-          m_num_hidden  { 0 } 
+        : m_num_nodes   { 0 },
+          m_num_hidden  { 0 },
+          m_max_entries { 0 }
         {
             m_keys.reserve(64);
             m_attr.reserve(64);
@@ -186,6 +189,8 @@ struct ContextBuffer::ContextBufferImpl
             }
         }
 
+        m_max_entries = std::max(m_max_entries, m_attr.size());
+        
         return CALI_SUCCESS;
     }
 
@@ -231,6 +236,8 @@ struct ContextBuffer::ContextBufferImpl
 
             ++m_num_nodes;
         }
+
+        m_max_entries = std::max(m_max_entries, m_attr.size());
 
         return CALI_SUCCESS;
     }
@@ -288,6 +295,12 @@ struct ContextBuffer::ContextBufferImpl
 
         fn(ContextRecord::record_descriptor(), n, data);
     }
+
+    std::ostream& print_statistics(std::ostream& os) const {
+        os << "Blackboard buffer: max " << m_max_entries << " entries";
+
+        return os;
+    }
 };
 
 
@@ -344,3 +357,7 @@ void ContextBuffer::push_record(WriteRecordFn fn) const
     mP->push_record(fn);
 }
 
+std::ostream& ContextBuffer::print_statistics(std::ostream& os) const
+{
+    return mP->print_statistics(os);
+}

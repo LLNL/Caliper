@@ -108,10 +108,17 @@ cali_find_attribute  (const char* name);
  * Take a snapshot and push it into the processing queue.
  * \param scope Indicates which scopes (process, thread, or task) the 
  *   snapshot should span
+ * \param n Number of event info entries
+ * \param trigger_info_attr_list Attribute IDs of event info entries
+ * \param trigger_info_val_list  Pointers to values of event info entries
+ * \param trigger_info_size_list Sizes (in bytes) of event info entries
  */
 
 void
-cali_push_snapshot(int scope);
+cali_push_snapshot(int scope, int n,
+                   const cali_id_t trigger_info_attr_list[],
+                   const void*     trigger_info_val_list[],
+                   const size_t    trigger_info_size_list[]);
 
 /*
  * --- Instrumentation API -----------------------------------
