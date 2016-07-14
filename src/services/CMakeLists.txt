@@ -72,12 +72,19 @@ if (OMPT_FOUND)
 endif()
 
 add_service_sources(Services.cpp)
-message("${CALIPER_SERVICE_NAMES}")
 
 configure_file(
    ${CMAKE_CURRENT_SOURCE_DIR}/gen_services_inc.py.in
    ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
 )
+
+execute_process(
+    COMMAND "python" gen_services_inc.py
+    OUTPUT_VARIABLE SERVICES_INC_VARIABLE
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+file (WRITE "${CMAKE_CURRENT_SOURCE_DIR}/services.inc.cpp" "${SERVICES_INC_VARIABLE}")
+
 # Build service management classes 
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
