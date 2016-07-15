@@ -7,14 +7,16 @@
 #include <sstream>
 #include <regex>
 
-class RegexFilter : Filter<RegexFilter> {
+class RegexFilter : public Filter<RegexFilter> {
   public:
-    static bool apply_filter(const Attribute& attr, const Variant& value)
+    static bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
     {
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
 
       std::string attr_and_val = ss.str();
+
+      std::regex filter_regex("function=.*",  std::regex_constants::basic);
 
       if (std::regex_search(attr_and_val, filter_regex)) {
         return true;

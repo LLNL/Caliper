@@ -1,4 +1,4 @@
 set(CALIPER_EVENT_SOURCES
-    NVVP.cpp)
+    nvvp.cpp)
 
 add_service_sources(${CALIPER_EVENT_SOURCES})

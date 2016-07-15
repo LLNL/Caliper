@@ -33,34 +33,13 @@
 /// @file  NVVP.cpp
 /// @brief Caliper NVVP service
 
-#include "../CaliperService.h"
-
-#include <Caliper.h>
-#include <EntryList.h>
-
-#include <Log.h>
-#include <RuntimeConfig.h>
-
-#include <util/split.hpp>
-
-#include <algorithm>
-#include <iterator>
-#include <map>
-#include <mutex>
-#include <string>
-#include <vector>
-
-using namespace cali;
-using namespace std;
-
-
-namespace 
-{
+#include "../tool_wrapper/ToolWrapper.h"
+#include "../filters/RegexFilter.h"
 
 #include "nvToolsExt.h"
 
-        const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
-        const int num_colors = sizeof(colors)/sizeof(uint32_t);
+const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
+const int num_colors = sizeof(colors)/sizeof(uint32_t);
 
 #define CALIPER_NVVP_PUSH_RANGE(name,cid) { \
             int color_id = cid; \
@@ -76,58 +55,27 @@ namespace
 }
 #define CALIPER_NVVP_POP_RANGE nvtxRangePop();
 
-const ConfigSet::Entry   configdata[] = {
-    { "trigger", CALI_TYPE_STRING, "phase",
-      "Attribute on which to trigger NVVP regions",
-    },
-    ConfigSet::Terminator
-};
+namespace cali {
 
-ConfigSet                config;
-cali_id_t                trigger_event_id;
-std::string              trigger_event_name;
+class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
+    public:
+    static void initialize(){}
 
-static inline bool attributeNameInteresting(const Attribute& attr){
-    return(attr.name()==trigger_event_name);
-} 
-static inline bool isTriggerAttribute(const Attribute& attr){
-    return(attr.id()==trigger_event_id);
-}
-void create_attribute_cb(Caliper* c, const Attribute& attr)
-{
-    if(attributeNameInteresting(attr)){
-        trigger_event_id = attr.id();
+    static std::string service_name() { 
+        return "NVVP service";
     }
-}
 
-void nvvp_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
-{
-    if(isTriggerAttribute(attr)){
+    static void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+        std::cout<<attr.name()<<","<<value.to_string()<<std::endl;
         CALIPER_NVVP_PUSH_RANGE(value.to_string().c_str(),1)
     }
-}
 
-void nvvp_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
-{
-    if(isTriggerAttribute(attr)){
-        CALIPER_NVVP_POP_RANGE
+    static void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+         CALIPER_NVVP_POP_RANGE
     }
+};
+
+CaliperService NVVPTriggerService { "nvvp", &NVVPWrapper::setCallbacks};
+
 }
 
-void nvvp_trigger_register(Caliper* c)
-{
-    config = RuntimeConfig::init("event", configdata);
-    trigger_event_name = config.get("trigger").to_string();
-
-    c->events().pre_begin_evt.connect(&nvvp_begin_cb);
-    c->events().pre_end_evt.connect(&nvvp_end_cb);
-
-    Log(1).stream() << "Registered event trigger service" << endl;
-}
-
-} // namespace
-
-namespace cali
-{
-    CaliperService NVVPTriggerService { "nvvp", &::nvvp_trigger_register };
-}

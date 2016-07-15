@@ -1,15 +1,11 @@
-#ifndef CALI_SERVICES_FILTER_REGEX_FILTER_HXX_
-#define CALI_SERVICES_FILTER_REGEX_FILTER_HXX_
+#ifndef CALI_SERVICES_FILTER_DEFAULT_FILTER_HXX_
+#define CALI_SERVICES_FILTER_DEFAULT_FILTER_HXX_
 
 #include "Filter.h"
 
-#include <string>
-#include <sstream>
-#include <regex>
-
-class DefaultFilter : Filter<RegexFilter> {
+class DefaultFilter : public Filter<DefaultFilter> {
   public:
-    static bool apply_filter(const Attribute& attr, const Variant& value)
+    static bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
     {
         return true;
     }

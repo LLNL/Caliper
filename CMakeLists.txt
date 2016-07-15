@@ -27,7 +27,7 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS "Build Caliper tools" TRUE)
 option(WITH_TESTS "Build Caliper test apps" TRUE)
-option(WITH_CUDA "Enable Caliper CUDA services" FALSE)
+option(WITH_CUDA "Enable Caliper CUDA services" TRUE)
 
 if(WITH_CUDA)
    find_package(CUDA)
@@ -62,13 +62,13 @@ endif()
 
 # Find Mitos
 
-find_package(Mitos QUIET)
-if(Mitos_FOUND)
-  find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
-  set(CALIPER_HAVE_MITOS TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
-  message(STATUS "Mitos found")
-endif()
+# find_package(Mitos QUIET)
+# if(Mitos_FOUND)
+#   find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
+#   set(CALIPER_HAVE_MITOS TRUE)
+#   list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
+#   message(STATUS "Mitos found")
+# endif()
 
 find_package(Threads)
 
