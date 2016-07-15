@@ -30,88 +30,52 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file services.inc.cpp
-/// Static list of all available Caliper service modules.
+/// @file  NVVP.cpp
+/// @brief Caliper NVVP service
 
+#include "../tool_wrapper/ToolWrapper.h"
+#include "../filters/RegexFilter.h"
 
-namespace cali
-{
+#include "nvToolsExt.h"
 
-extern CaliperService AggregateService;
-#ifdef CALIPER_HAVE_LIBUNWIND
-extern CaliperService CallpathService;
-#endif
-#ifdef CALIPER_HAVE_PAPI
-extern CaliperService PapiService;
-#endif
-#ifdef CALIPER_HAVE_MITOS
-extern CaliperService MitosService;
-#endif
-extern CaliperService DebugService;
-extern CaliperService EnvironmentInfoService;
-extern CaliperService GitInfoService;
-extern CaliperService CMakeInfoService;
-extern CaliperService EventTriggerService;
-extern CaliperService PthreadService;
-extern CaliperService RecorderService;
-#ifdef CALIPER_HAVE_SAMPLER
-extern CaliperService SamplerService;
-#endif
-extern CaliperService StatisticsService;
-extern CaliperService TextLogService;
-extern CaliperService TimestampService;
-extern CaliperService TraceService;
-#ifdef CALIPER_HAVE_MPI
-extern CaliperService MpiService;
-#endif
-#ifdef CALIPER_HAVE_OMPT
-extern CaliperService OmptService;
-#endif
-#ifdef CALIPER_HAVE_NVVP
-extern CaliperService NVVPTriggerService;
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-extern CaliperService NetOutService;
-#endif
-const CaliperService caliper_services[] = {
-    AggregateService,
-#ifdef CALIPER_HAVE_LIBUNWIND
-    CallpathService,
-#endif
-#ifdef CALIPER_HAVE_PAPI
-    PapiService,
-#endif
-#ifdef CALIPER_HAVE_MITOS
-    MitosService,
-#endif
-    DebugService,
-    EnvironmentInfoService,
-    GitInfoService,
-    CMakeInfoService,
-    EventTriggerService,
-    PthreadService,
-    RecorderService,
-#ifdef CALIPER_HAVE_SAMPLER
-    SamplerService,
-#endif
-    StatisticsService,
-    TimestampService,
-    TextLogService,
-    TraceService,
-#ifdef CALIPER_HAVE_MPI
-    MpiService,
-#endif
-#ifdef CALIPER_HAVE_OMPT
-    OmptService,
-#endif
-#ifdef CALIPER_HAVE_NVVP
-    NVVPTriggerService,
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-    NetOutService,
-#else
-#endif
-    { nullptr, nullptr }
+const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
+const int num_colors = sizeof(colors)/sizeof(uint32_t);
+
+#define CALIPER_NVVP_PUSH_RANGE(name,cid) { \
+            int color_id = cid; \
+            color_id = color_id%num_colors;\
+            nvtxEventAttributes_t eventAttrib = {0}; \
+            eventAttrib.version = NVTX_VERSION; \
+            eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE; \
+            eventAttrib.colorType = NVTX_COLOR_ARGB; \
+            eventAttrib.color = colors[color_id]; \
+            eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII; \
+            eventAttrib.message.ascii = name; \
+            nvtxRangePushEx(&eventAttrib); \
+}
+#define CALIPER_NVVP_POP_RANGE nvtxRangePop();
+
+namespace cali {
+
+class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
+    public:
+    static void initialize(){}
+
+    static std::string service_name() { 
+        return "NVVP service";
+    }
+
+    static void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+        std::cout<<attr.name()<<","<<value.to_string()<<std::endl;
+        CALIPER_NVVP_PUSH_RANGE(value.to_string().c_str(),1)
+    }
+
+    static void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+         CALIPER_NVVP_POP_RANGE
+    }
 };
 
+CaliperService NVVPTriggerService { "nvvp", &NVVPWrapper::setCallbacks};
+
 }
+

@@ -7,4 +7,4 @@ add_library(calireader SHARED calireader.cpp)
 
 target_link_libraries(calireader caliper-reader ${PYTHON_LIBRARIES})
 
-file(COPY calireader.py DESTINATION ".")
+#file(COPY calireader.py DESTINATION ".")
