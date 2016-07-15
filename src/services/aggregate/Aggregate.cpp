@@ -642,5 +642,5 @@ size_t         AggregateDB::s_global_max_keylen  = 0;
 
 namespace cali
 {
-    CaliperService AggregateService { "aggregate", &AggregateDB::aggregate_register };
+    CaliperService aggregate_service { "aggregate", &AggregateDB::aggregate_register };
 }

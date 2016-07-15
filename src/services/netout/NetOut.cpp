@@ -254,5 +254,5 @@ unique_ptr<NetOutService> NetOutService::s_netout { nullptr };
 
 namespace cali
 {
-    CaliperService NetOutService = { "netout", ::NetOutService::netout_register };
+    CaliperService netout_service = { "netout", ::NetOutService::netout_register };
 } // namespace cali

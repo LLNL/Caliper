@@ -166,6 +166,6 @@ void callpath_service_register(Caliper* c)
     Log(1).stream() << "Registered callpath service" << endl;
 }
 
-CaliperService CallpathService = { "callpath", callpath_service_register };
+CaliperService callpath_service = { "callpath", callpath_service_register };
 
 } // namespace cali

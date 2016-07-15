@@ -107,6 +107,6 @@ void cmake_service_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService CMakeInfoService = { "cmake", ::cmake_service_register };
+    CaliperService cmake_service = { "cmake", ::cmake_service_register };
 } // namespace cali
  

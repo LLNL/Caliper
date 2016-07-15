@@ -10,3 +10,4 @@ set(CALIPER_RECORDER_SOURCES
 # install(TARGETS caliper-recorder DESTINATION lib)
 
 add_service_sources(${CALIPER_RECORDER_SOURCES})
+add_caliper_service("recorder")

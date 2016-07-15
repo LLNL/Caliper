@@ -1,4 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+copyrightNotice="""
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -32,86 +33,59 @@
 
 /// @file services.inc.cpp
 /// Static list of all available Caliper service modules.
+"""
 
 
+
+initial_service_string = "@CALIPER_SERVICE_NAMES@"
+def insert_magic_here(service_string):
+    service_list=[x for x in service_string.split(" ") if x is not '']
+    # print service_list
+    service_ret = []
+    for service in service_list:
+        # print service
+        items = service.split(";")
+        condition=""
+        if(len(items)>1):
+            condition=items[1]
+        service_ret.append([items[0]+"_service",condition])
+    return service_ret
+services_list = insert_magic_here(initial_service_string)
+# print services_list
+
+
+
+header = """
 namespace cali
 {
+"""
 
-extern CaliperService AggregateService;
-#ifdef CALIPER_HAVE_LIBUNWIND
-extern CaliperService CallpathService;
-#endif
-#ifdef CALIPER_HAVE_PAPI
-extern CaliperService PapiService;
-#endif
-#ifdef CALIPER_HAVE_MITOS
-extern CaliperService MitosService;
-#endif
-extern CaliperService DebugService;
-extern CaliperService EnvironmentInfoService;
-extern CaliperService GitInfoService;
-extern CaliperService CMakeInfoService;
-extern CaliperService EventTriggerService;
-extern CaliperService PthreadService;
-extern CaliperService RecorderService;
-#ifdef CALIPER_HAVE_SAMPLER
-extern CaliperService SamplerService;
-#endif
-extern CaliperService StatisticsService;
-extern CaliperService TextLogService;
-extern CaliperService TimestampService;
-extern CaliperService TraceService;
-#ifdef CALIPER_HAVE_MPI
-extern CaliperService MpiService;
-#endif
-#ifdef CALIPER_HAVE_OMPT
-extern CaliperService OmptService;
-#endif
-#ifdef CALIPER_HAVE_NVVP
-extern CaliperService NVVPTriggerService;
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-extern CaliperService NetOutService;
-#endif
-const CaliperService caliper_services[] = {
-    AggregateService,
-#ifdef CALIPER_HAVE_LIBUNWIND
-    CallpathService,
-#endif
-#ifdef CALIPER_HAVE_PAPI
-    PapiService,
-#endif
-#ifdef CALIPER_HAVE_MITOS
-    MitosService,
-#endif
-    DebugService,
-    EnvironmentInfoService,
-    GitInfoService,
-    CMakeInfoService,
-    EventTriggerService,
-    PthreadService,
-    RecorderService,
-#ifdef CALIPER_HAVE_SAMPLER
-    SamplerService,
-#endif
-    StatisticsService,
-    TimestampService,
-    TextLogService,
-    TraceService,
-#ifdef CALIPER_HAVE_MPI
-    MpiService,
-#endif
-#ifdef CALIPER_HAVE_OMPT
-    OmptService,
-#endif
-#ifdef CALIPER_HAVE_NVVP
-    NVVPTriggerService,
-#endif
-#ifdef CALIPER_HAVE_LIBCURL
-    NetOutService,
-#else
-#endif
-    { nullptr, nullptr }
-};
 
-}
+service_declaration_text=""
+
+for service in services_list:
+    service_name = service[0]
+    service_condition = service[1]
+    if service_condition is not "":
+        service_declaration_text += "#ifdef "+service_condition+"\n"
+    service_declaration_text += "extern CaliperService "+service_name+";\n"
+    if service_condition is not "":
+        service_declaration_text += "#endif\n"
+
+service_list_definition_text="const CaliperService caliper_services[] = {\n"
+
+for service in services_list:
+    service_name = service[0]
+    service_condition = service[1]
+    if service_condition is not "":
+        service_list_definition_text += "#ifdef "+service_condition+"\n"
+    service_list_definition_text += "    "+service_name+",\n"
+    if service_condition is not "":
+        service_list_definition_text += "#endif\n"
+
+service_list_definition_text+="    { nullptr, nullptr }\n};\n\n}"
+
+print(copyrightNotice)
+print(header)
+print(service_declaration_text)
+print(service_list_definition_text)

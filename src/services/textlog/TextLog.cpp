@@ -234,5 +234,5 @@ unique_ptr<TextLogService> TextLogService::s_textlog { nullptr };
 
 namespace cali
 {
-    CaliperService TextLogService = { "textlog", ::TextLogService::textlog_register };
+    CaliperService textlog_service = { "textlog", ::TextLogService::textlog_register };
 } // namespace cali

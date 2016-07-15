@@ -6,3 +6,4 @@ set(CALIPER_MITOS_SOURCES
 add_library(caliper-mitos OBJECT ${CALIPER_MITOS_SOURCES})
 
 add_service_objlib("caliper-mitos")
+add_caliper_service("mitos CALIPER_HAVE_MITOS")

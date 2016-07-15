@@ -317,5 +317,5 @@ void event_trigger_register(Caliper* c)
 
 namespace cali
 {
-    CaliperService EventTriggerService { "event", &::event_trigger_register };
+    CaliperService event_service { "event", &::event_trigger_register };
 }
