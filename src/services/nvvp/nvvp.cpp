@@ -79,8 +79,10 @@ class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
-      nvtxRangeId_t r = nvtx_ranges[name];
-      nvtxRangeEnd(r);
+      if (nvtx_ranges.find(name) != nvtx_ranges.end()) {
+        nvtxRangeId_t r = nvtx_ranges[name];
+        nvtxRangeEnd(r);
+      }
     }
 };
 
