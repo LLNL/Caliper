@@ -7,7 +7,7 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
-#include "../filters/DefaultFilter.h"
+#include "common/filters/DefaultFilter.h"
 
 namespace cali {
 
@@ -26,6 +26,7 @@ class ToolWrapper {
     }
     static void setCallbacks(Caliper* c){
         ProfilerType::initialize();
+        FilterType::initialize();
         c->events().pre_begin_evt.connect(&beginCallback);
         c->events().pre_end_evt.connect(&endCallback);
         Log(1).stream() << "Registered "<<ProfilerType::service_name()<<" service "<<std::endl;
