@@ -33,49 +33,63 @@
 /// @file  NVVP.cpp
 /// @brief Caliper NVVP service
 
-#include "../tool_wrapper/ToolWrapper.h"
-#include "../filters/RegexFilter.h"
+#include "../common/ToolWrapper.h"
+#include "./common/filters/RegexFilter.h"
 
 #include "nvToolsExt.h"
 
+#include <map>
+
 const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
 const int num_colors = sizeof(colors)/sizeof(uint32_t);
-
-#define CALIPER_NVVP_PUSH_RANGE(name,cid) { \
-            int color_id = cid; \
-            color_id = color_id%num_colors;\
-            nvtxEventAttributes_t eventAttrib = {0}; \
-            eventAttrib.version = NVTX_VERSION; \
-            eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE; \
-            eventAttrib.colorType = NVTX_COLOR_ARGB; \
-            eventAttrib.color = colors[color_id]; \
-            eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII; \
-            eventAttrib.message.ascii = name; \
-            nvtxRangePushEx(&eventAttrib); \
-}
-#define CALIPER_NVVP_POP_RANGE nvtxRangePop();
+static int color_id = 0;
 
 namespace cali {
 
+
 class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
-    public:
-    static void initialize(){}
+  private:
+    static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
+
+  public:
+    static void initialize(){
+    }
 
     static std::string service_name() { 
-        return "NVVP service";
+      return "NVVP service";
     }
 
     static void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
-        std::cout<<attr.name()<<","<<value.to_string()<<std::endl;
-        CALIPER_NVVP_PUSH_RANGE(value.to_string().c_str(),1)
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
+
+      color_id = (color_id+1)%num_colors;
+      nvtxEventAttributes_t eventAttrib = {0};
+      eventAttrib.version = NVTX_VERSION;
+      eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+      eventAttrib.colorType = NVTX_COLOR_ARGB;
+      eventAttrib.color = colors[color_id];
+      eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+      eventAttrib.message.ascii = name.c_str();
+      nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
     }
 
     static void endAction(Caliper* c, const Attribute& attr, const Variant& value){
-         CALIPER_NVVP_POP_RANGE
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
+      if (nvtx_ranges.find(name) != nvtx_ranges.end()) {
+        nvtxRangeId_t r = nvtx_ranges[name];
+        nvtxRangeEnd(r);
+      }
     }
 };
 
-CaliperService NVVPTriggerService { "nvvp", &NVVPWrapper::setCallbacks};
+CaliperService nvvp_service { "nvvp", &NVVPWrapper::setCallbacks};
+
+std::map<std::string, nvtxRangeId_t> NVVPWrapper::nvtx_ranges;
+
 
 }
 
