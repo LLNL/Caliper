@@ -52,14 +52,14 @@ class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
     static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
 
   public:
-    static void initialize(){
+    virtual void initialize(){
     }
 
-    static std::string service_name() { 
+    virtual std::string service_name() { 
       return "NVVP service";
     }
 
-    static void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
@@ -75,7 +75,7 @@ class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
       nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
     }
 
-    static void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
@@ -86,7 +86,7 @@ class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
     }
 };
 
-CaliperService nvvp_service { "nvvp", &NVVPWrapper::setCallbacks};
+CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper>};
 
 std::map<std::string, nvtxRangeId_t> NVVPWrapper::nvtx_ranges;
 
