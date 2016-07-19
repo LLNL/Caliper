@@ -53,14 +53,12 @@
 using namespace cali;
 using namespace std;
 
-// Include list of services:
-//   const MetadataWriterService metadata_writer_services[]
-//   const CaliperService caliper_services[]
+// List of services, defined in services.inc.cpp
 #include "services.inc.cpp"
 
 namespace cali
 {
-
+    
 struct Services::ServicesImpl
 {
     // --- data

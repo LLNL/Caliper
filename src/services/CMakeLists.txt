@@ -1,5 +1,6 @@
 include_directories("../common")
 include_directories("../caliper")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # A macro to include service module source files in the caliper runtime lib
 
@@ -78,16 +79,19 @@ configure_file(
    ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
 )
 
-execute_process(
-    COMMAND "python" gen_services_inc.py
-    OUTPUT_VARIABLE SERVICES_INC_VARIABLE
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+find_package(PythonInterp REQUIRED)
+
+add_custom_target(services.inc.cpp
+  COMMAND ${PYTHON_EXECUTABLE} gen_services_inc.py
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Generating services.inc.cpp"
 )
-file (WRITE "${CMAKE_CURRENT_SOURCE_DIR}/services.inc.cpp" "${SERVICES_INC_VARIABLE}")
 
 # Build service management classes 
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
+
+add_dependencies(caliper-services services.inc.cpp)
 
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)

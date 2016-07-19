@@ -85,7 +85,9 @@ for service in services_list:
 
 service_list_definition_text+="    { nullptr, nullptr }\n};\n\n}"
 
-print(copyrightNotice)
-print(header)
-print(service_declaration_text)
-print(service_list_definition_text)
+f = open('services.inc.cpp', 'w')
+
+f.write(copyrightNotice)
+f.write(header)
+f.write(service_declaration_text)
+f.write(service_list_definition_text)
