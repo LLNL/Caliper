@@ -24,9 +24,9 @@ class ToolWrapper {
                 this->endAction(c,attr,value);
         }
     }
-    virtual void beginAction(Caliper* c, const Attribute& attr, const Variant& value) = 0;
+    virtual void beginAction(Caliper* c, const Attribute& attr, const Variant& value) {}
     
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value) = 0;
+    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value) {}
 };
 
 template <class ProfilerType,class FilterType=DefaultFilter>
@@ -40,6 +40,9 @@ static void setCallbacks(Caliper* c){
     });
     c->events().pre_end_evt.connect([=](Caliper* c,const Attribute& attr,const Variant& value){
         newProfiler->endCallback(c,attr,value);
+    });
+    c->events().finish_evt.connect([=](Caliper* c){
+        delete newProfiler;
     });
     //c->events().pre_end_evt.connect(&endCallback);
     Log(1).stream() << "Registered "<<newProfiler->service_name()<<" service "<<std::endl;
