@@ -158,7 +158,9 @@ cali_push_snapshot(int scope, int n,
     
     Attribute attr[64];
     Variant   data[64];
-        
+
+    n = std::min(std::max(n, 0), 64);
+
     for (int i = 0; i < n; ++i) {
         attr[i] = ::lookup_attribute(c, trigger_info_attr_list[i]);
         data[i]  = Variant(attr[i].type(), trigger_info_val_list[i], trigger_info_size_list[i]);
