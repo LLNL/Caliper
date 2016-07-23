@@ -14,24 +14,39 @@ namespace cali {
 template<class ProfilerType,class FilterType=DefaultFilter>
 class ToolWrapper {
     public:
-    static void beginCallback(Caliper* c, const Attribute& attr, const Variant& value){
+    virtual void beginCallback(Caliper* c, const Attribute& attr, const Variant& value){
         if(FilterType::filter(attr, value)){
-                ProfilerType::beginAction(c,attr,value);
+                this->beginAction(c,attr,value);
         }
     }
-    static void endCallback(Caliper* c, const Attribute& attr, const Variant& value){
+    virtual void endCallback(Caliper* c, const Attribute& attr, const Variant& value){
         if(FilterType::filter(attr, value)){
-                ProfilerType::endAction(c,attr,value);
+                this->endAction(c,attr,value);
         }
     }
-    static void setCallbacks(Caliper* c){
-        ProfilerType::initialize();
-        FilterType::initialize();
-        c->events().pre_begin_evt.connect(&beginCallback);
-        c->events().pre_end_evt.connect(&endCallback);
-        Log(1).stream() << "Registered "<<ProfilerType::service_name()<<" service "<<std::endl;
-    }
+    virtual void beginAction(Caliper* c, const Attribute& attr, const Variant& value) {}
+    
+    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value) {}
 };
+
+template <class ProfilerType,class FilterType=DefaultFilter>
+static void setCallbacks(Caliper* c){
+    FilterType::initialize();
+    ProfilerType* newProfiler = new ProfilerType();
+    newProfiler->initialize();
+    //c->events().pre_begin_evt.connect(&(newProfiler->beginAction));
+    c->events().pre_begin_evt.connect([=](Caliper* c,const Attribute& attr,const Variant& value){
+        newProfiler->beginCallback(c,attr,value);
+    });
+    c->events().pre_end_evt.connect([=](Caliper* c,const Attribute& attr,const Variant& value){
+        newProfiler->endCallback(c,attr,value);
+    });
+    c->events().finish_evt.connect([=](Caliper* c){
+        delete newProfiler;
+    });
+    //c->events().pre_end_evt.connect(&endCallback);
+    Log(1).stream() << "Registered "<<newProfiler->service_name()<<" service "<<std::endl;
+}
 
 }
 
