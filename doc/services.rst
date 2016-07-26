@@ -89,6 +89,8 @@ Event
 The event trigger service triggers snapshots when attributes are
 updated. It is possible to select a list of snapshot-triggering
 attributes, or have any attribute update trigger snapshots.
+Updates of attributes with the ``CALI_ATTR_SKIP_EVENTS`` property will
+never trigger snapshots.
 
 Snapshots triggered by the event service include an attribute which
 describes the event that triggered the snapshot, in the following
@@ -181,7 +183,8 @@ MPI
 The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting ``CALI_MPI_WHITELIST`` or
-``CALI_MPI_BLACKLIST`` filters.
+``CALI_MPI_BLACKLIST`` filters. By default, all MPI functions are
+instrument.
 
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
@@ -316,7 +319,7 @@ nodes in a distributed-memory program.
    each context snapshot. The value will be saved in the snapshot record
    as attribute ``time.timestamp``.
 
-.. envvar:: CALI_TIMER_INCLUSIVE_DURATION
+.. envvar:: CALI_TIMER_INCLUSIVE_DURATION=(true|false)
             
    For snapshots triggered by ``set`` or ``end`` events, calculate the
    duration of the corresponding ``begin-end``, ``set-set``, or
@@ -325,6 +328,8 @@ nodes in a distributed-memory program.
 
    The event service with event trigger information generation needs
    to be enabled for this feature.
+
+   Default: true
   
 Trace
 --------------------------------
