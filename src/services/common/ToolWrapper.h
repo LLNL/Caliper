@@ -49,7 +49,7 @@ class ToolWrapper {
     }
     virtual void pre_initialize(){
         std::string name = service_tag();
-        config = cali::RuntimeConfig::init("tau",s_configdata);
+        config = cali::RuntimeConfig::init(service_tag,s_configdata);
     }
     virtual void initialize(std::string name) {}
     virtual void endCallback(Caliper* c, const Attribute& attr, const Variant& value){
