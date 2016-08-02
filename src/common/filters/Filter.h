@@ -2,19 +2,22 @@
 #define CALI_SERVICES_FILTER_HXX_
 
 #include "Caliper.h"
-
-template<class FilterType>
 class Filter {
+  protected:
+    cali::ConfigSet config;
   public:
-    static bool filter(const cali::Attribute& attr, const cali::Variant& value ) 
+    virtual bool filter(const cali::Attribute& attr, const cali::Variant& value ) 
     {
-      return FilterType::apply_filter(attr, value);
+      return apply_filter(attr, value);
     }
-
-    static bool do_initialize()
-    {
-      FilterType::initialize();
+    void configure(cali::ConfigSet newConfig){
+      config = newConfig;
     }
+    virtual void do_initialize(std::string name){
+        initialize(name);
+    }
+    virtual bool apply_filter(const cali::Attribute& attr, const cali::Variant& value) = 0;
+    virtual void initialize(std::string name) = 0;
 };
 
 #endif

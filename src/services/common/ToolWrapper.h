@@ -26,11 +26,10 @@ static cali::ConfigSet::Entry s_configdata[] = {
   cali::ConfigSet::Terminator
 };
 
-template<class ProfilerType>
 class ToolWrapper {
     protected:
     cali::ConfigSet config;
-    Filter<ProfilerType>* filter;
+    Filter* filter;
     public:
     virtual std::string service_tag(){
         throw std::runtime_error("Caliper services must implement service_tag");
@@ -40,18 +39,19 @@ class ToolWrapper {
                 this->beginAction(c,attr,value);
         }
     }
-    Filter<ProfilerType>* getFilter(){
+    Filter* getFilter(){
         if(config.get("regex").to_string()==""){
            filter = new DefaultFilter();
         }
         filter = new RegexFilter();
-        filter->configure();
+        filter->configure(config);
         return filter;
     }
-    //virtual void do_initiailize(){
-    //    std::string name = service_tag();
-    //    initialize(name);
-    //}
+    virtual void do_initialize(){
+        std::string name = service_tag();
+        config = cali::RuntimeConfig::init("tau",s_configdata);
+        initialize(name);
+    }
     virtual void initialize(std::string name) {}
     virtual void endCallback(Caliper* c, const Attribute& attr, const Variant& value){
         if(filter->filter(attr, value)){
@@ -67,9 +67,9 @@ template <class ProfilerType>
 static void setCallbacks(Caliper* c){
     ProfilerType* newProfiler = new ProfilerType();
     //newProfiler->do_initialize();
-    newProfiler->initialize();
+    newProfiler->do_initialize();
 
-    Filter<ProfilerType>* newFilter = newProfiler->getFilter();
+    Filter* newFilter = newProfiler->getFilter();
     newFilter->do_initialize(newProfiler->service_tag());
     c->events().pre_begin_evt.connect([=](Caliper* c,const Attribute& attr,const Variant& value){
         newProfiler->beginCallback(c,attr,value);

@@ -43,7 +43,7 @@
 namespace cali {
 
 
-class TAUWrapper : public ToolWrapper<TAUWrapper> {
+class TAUWrapper : public ToolWrapper {
   public:
     virtual void initialize(){
     }

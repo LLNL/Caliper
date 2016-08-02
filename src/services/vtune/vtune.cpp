@@ -1,6 +1,6 @@
 #include <ittnotify.h>
 
-class ITTWrapper : public ToolWrapper<ITTWrapper> {
+class ITTWrapper : public ToolWrapper {
     public:
     static itt_domain* domain;
     virtual std::string service_name(){

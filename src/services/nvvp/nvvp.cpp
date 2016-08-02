@@ -47,7 +47,7 @@ static int color_id = 0;
 namespace cali {
 
 
-class NVVPWrapper : public ToolWrapper<NVVPWrapper> {
+class NVVPWrapper : public ToolWrapper {
   private:
     static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
 
