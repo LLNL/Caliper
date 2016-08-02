@@ -11,7 +11,7 @@ class Filter {
       return FilterType::apply_filter(attr, value);
     }
 
-    static bool initialize()
+    static bool do_initialize()
     {
       FilterType::initialize();
     }

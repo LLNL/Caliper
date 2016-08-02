@@ -5,6 +5,7 @@
 
 class DefaultFilter : public Filter<DefaultFilter> {
   public:
+    static void initialize(){};
     static bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
     {
         return true;

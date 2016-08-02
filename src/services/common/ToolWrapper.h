@@ -31,7 +31,7 @@ class ToolWrapper {
 
 template <class ProfilerType,class FilterType=DefaultFilter>
 static void setCallbacks(Caliper* c){
-    FilterType::initialize();
+    FilterType::do_initialize();
     ProfilerType* newProfiler = new ProfilerType();
     newProfiler->initialize();
     //c->events().pre_begin_evt.connect(&(newProfiler->beginAction));
