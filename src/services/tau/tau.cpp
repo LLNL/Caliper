@@ -43,7 +43,7 @@
 namespace cali {
 
 
-class TAUWrapper : public ToolWrapper<TAUWrapper, RegexFilter> {
+class TAUWrapper : public ToolWrapper<TAUWrapper> {
   public:
     virtual void initialize(){
     }
@@ -51,7 +51,9 @@ class TAUWrapper : public ToolWrapper<TAUWrapper, RegexFilter> {
     virtual std::string service_name() { 
       return "TAU service";
     }
-
+    virtual std::string service_tag(){
+      return "tau";
+    }
     virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
@@ -68,7 +70,7 @@ class TAUWrapper : public ToolWrapper<TAUWrapper, RegexFilter> {
     }
 };
 
-CaliperService tau_service { "tau", &setCallbacks<TAUWrapper,RegexFilter>};
+CaliperService tau_service { "tau", &setCallbacks<TAUWrapper>};
 
 
 }

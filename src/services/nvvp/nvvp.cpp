@@ -47,7 +47,7 @@ static int color_id = 0;
 namespace cali {
 
 
-class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
+class NVVPWrapper : public ToolWrapper<NVVPWrapper> {
   private:
     static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
 
@@ -58,7 +58,9 @@ class NVVPWrapper : public ToolWrapper<NVVPWrapper, RegexFilter> {
     virtual std::string service_name() { 
       return "NVVP service";
     }
-
+    virtual std::string service_tag(){
+      return "nvvp";
+    }
     virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();

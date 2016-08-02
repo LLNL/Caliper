@@ -6,6 +6,9 @@ class ITTWrapper : public ToolWrapper<ITTWrapper> {
     virtual std::string service_name(){
         return "VTune Service";
     }
+    virtual std::string service_tag(){
+        return "vtune";
+    }
     virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
        __itt_task_begin(domain, __itt_null, __itt_null, __itt_string_handle_create(value.to_string()));
     }
