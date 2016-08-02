@@ -1,4 +1,3 @@
-MESSAGE("INCLUDING TAU")
 set(CALIPER_TAU_SOURCES
     tau.cpp)
 

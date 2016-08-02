@@ -47,10 +47,9 @@ class ToolWrapper {
         filter->configure(config);
         return filter;
     }
-    virtual void do_initialize(){
+    virtual void pre_initialize(){
         std::string name = service_tag();
         config = cali::RuntimeConfig::init("tau",s_configdata);
-        initialize(name);
     }
     virtual void initialize(std::string name) {}
     virtual void endCallback(Caliper* c, const Attribute& attr, const Variant& value){
@@ -66,8 +65,8 @@ class ToolWrapper {
 template <class ProfilerType>
 static void setCallbacks(Caliper* c){
     ProfilerType* newProfiler = new ProfilerType();
-    //newProfiler->do_initialize();
-    newProfiler->do_initialize();
+    newProfiler->pre_initialize();
+    newProfiler->initialize();
 
     Filter* newFilter = newProfiler->getFilter();
     newFilter->do_initialize(newProfiler->service_tag());

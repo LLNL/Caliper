@@ -46,6 +46,7 @@ namespace cali {
 class TAUWrapper : public ToolWrapper {
   public:
     virtual void initialize(){
+        TAU_PROFILE_SET_NODE(0);
     }
 
     virtual std::string service_name() { 

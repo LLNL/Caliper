@@ -19,7 +19,6 @@ class RegexFilter : public Filter {
     {
       regex = config.get("regex").to_string();
       inclusive = config.get("inclusive").to_bool();
-      std::cout<<"REGEX: "<<regex<<std::endl;
     }
 
     virtual bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
