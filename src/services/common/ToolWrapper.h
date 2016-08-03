@@ -20,8 +20,18 @@ static cali::ConfigSet::Entry s_configdata[] = {
   },
   {
     "inclusive", CALI_TYPE_BOOL, "true",
-    "Whether the regular expression should include or exclude annotations",
-    "Whether the regular expression should include or exclude annotations"
+    "Whether the condition of the filter says what to include or what to exclude",
+    "Whether the condition of the filter says what to include or what to exclude"
+  },
+  {
+    "id", CALI_TYPE_STRING, "",
+    "A colon-separated list of attribute IDs to filter on",
+    "A colon-separated list of attribute IDs to filter on"
+  },
+  {
+    "logfile", CALI_TYPE_STRING, "",
+    "A file produced by the validator service expressing which attributes to filter out (see validator service docs",
+    "A file produced by the validator service expressing which attributes to filter out (see validator service docs"
   },
   cali::ConfigSet::Terminator
 };
@@ -43,7 +53,9 @@ class ToolWrapper {
         if(config.get("regex").to_string()==""){
            filter = new DefaultFilter();
         }
-        filter = new RegexFilter();
+        else{
+           filter = new RegexFilter();
+        }
         filter->configure(config);
         return filter;
     }
@@ -60,6 +72,7 @@ class ToolWrapper {
     virtual void beginAction(Caliper* c, const Attribute& attr, const Variant& value) {}
     
     virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value) {}
+    virtual void finalize(){}
 };
 
 template <class ProfilerType>
@@ -77,6 +90,7 @@ static void setCallbacks(Caliper* c){
         newProfiler->endCallback(c,attr,value);
     });
     c->events().finish_evt.connect([=](Caliper* c){
+        newProfiler->finalize();
         delete newProfiler;
         delete newFilter;
     });

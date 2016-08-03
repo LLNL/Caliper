@@ -66,7 +66,6 @@ add_subdirectory(timestamp)
 add_subdirectory(statistics)
 if(CALIPER_HAVE_TAU)
 find_library(tau_lib  libTAU.so)
-
 add_subdirectory(tau)
 endif()
 add_subdirectory(trace)
@@ -76,6 +75,7 @@ endif()
 if (OMPT_FOUND)
   add_subdirectory(ompt)
 endif()
+add_subdirectory(validator)
 
 add_service_sources(Services.cpp)
 
