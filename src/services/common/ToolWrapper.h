@@ -23,16 +23,6 @@ static cali::ConfigSet::Entry s_configdata[] = {
     "Whether the condition of the filter says what to include or what to exclude",
     "Whether the condition of the filter says what to include or what to exclude"
   },
-  {
-    "id", CALI_TYPE_STRING, "",
-    "A colon-separated list of attribute IDs to filter on",
-    "A colon-separated list of attribute IDs to filter on"
-  },
-  {
-    "logfile", CALI_TYPE_STRING, "",
-    "A file produced by the validator service expressing which attributes to filter out (see validator service docs",
-    "A file produced by the validator service expressing which attributes to filter out (see validator service docs"
-  },
   cali::ConfigSet::Terminator
 };
 
