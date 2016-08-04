@@ -30,67 +30,48 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file  NVVP.cpp
-/// @brief Caliper NVVP service
+/// @file  tau.cpp
+/// @brief Caliper TAU service
 
 #include "../common/ToolWrapper.h"
 #include "./common/filters/RegexFilter.h"
 
-#include "nvToolsExt.h"
 
 #include <map>
-
-const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
-const int num_colors = sizeof(colors)/sizeof(uint32_t);
-static int color_id = 0;
+#include <TAU.h>
 
 namespace cali {
 
 
-class NVVPWrapper : public ToolWrapper {
-  private:
-    static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
-
+class TAUWrapper : public ToolWrapper {
   public:
     virtual void initialize(){
+        TAU_PROFILE_SET_NODE(0);
     }
 
     virtual std::string service_name() { 
-      return "NVVP service";
+      return "TAU service";
     }
     virtual std::string service_tag(){
-      return "nvvp";
+      return "tau";
     }
     virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
 
-      color_id = (color_id+1)%num_colors;
-      nvtxEventAttributes_t eventAttrib = {0};
-      eventAttrib.version = NVTX_VERSION;
-      eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-      eventAttrib.colorType = NVTX_COLOR_ARGB;
-      eventAttrib.color = colors[color_id];
-      eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
-      eventAttrib.message.ascii = name.c_str();
-      nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
+      TAU_START(name.c_str());
     }
 
     virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
-      if (nvtx_ranges.find(name) != nvtx_ranges.end()) {
-        nvtxRangeId_t r = nvtx_ranges[name];
-        nvtxRangeEnd(r);
-      }
+      TAU_STOP(name.c_str());
     }
 };
 
-CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper>};
-
-std::map<std::string, nvtxRangeId_t> NVVPWrapper::nvtx_ranges;
+CaliperService tau_service { "tau", &setCallbacks<TAUWrapper>};
 
 
 }

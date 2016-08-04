@@ -37,6 +37,10 @@ if(WITH_CUDA)
    list(APPEND CALIPER_EXTERNAL_LIBS ${NVVP_LIBRARY})
 endif()
 
+if(CALIPER_HAVE_TAU)
+    find_library(tau_lib libTAU.so)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib}) 
+endif()
 # the RPATH to be used when installing, but only if it's not a system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
