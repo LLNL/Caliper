@@ -1,4 +1,5 @@
 #include "../Annotation.h"
+#include <iostream>
 namespace cali{
 
 template<class... ValidatorList>
@@ -78,9 +79,7 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
     #define DEBUG_RETURN_TYPE ValidatedAnnotation<Validator, ValidatorList...>
     using innerValidator = ValidatedAnnotation<ValidatorList...>;
 
-    ValidatedAnnotation(const char* name, int opt=0) : ValidatedAnnotation<ValidatorList...>(name,opt){
-       // ValidatedAnnotation<ValidatorList...>(name,opt);
-    }
+    ValidatedAnnotation(const char* name, int opt=0) : ValidatedAnnotation<ValidatorList...>(name,opt){}
     ValidatedAnnotation(const DEBUG_RETURN_TYPE & other) : ValidatedAnnotation<ValidatorList...>(other){}
     //begin
     DEBUG_RETURN_TYPE &operator = (const DEBUG_RETURN_TYPE & other){
@@ -88,51 +87,63 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(){
+        my_val.validateBegin();
         innerValidator::begin();
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(int data){
+        my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(double data){
+        my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(const char* data){
+        my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(cali_attr_type type, void* data, uint64_t size){
+        my_val.validateBegin(type,data,size);
         innerValidator::begin(type,data,size);
         return *this;
     }
     DEBUG_RETURN_TYPE& begin(const Variant& data){
+        my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
     //set
     DEBUG_RETURN_TYPE& set(int data){
+        my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& set(double data){
+        my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& set(const char* data){
+        my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
     DEBUG_RETURN_TYPE& set(cali_attr_type type, void* data, uint64_t size){
+        my_val.validateSet(type,data,size);
         innerValidator::set(type,data,size);
         return *this;
     }
     DEBUG_RETURN_TYPE& set(const Variant& data){
+        my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
     void end(){
+        my_val.validateEnd();
         innerValidator::end();
     }
     Validator my_val;
@@ -142,5 +153,32 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
 
 };
 
-struct dummy{};
+template<typename T>
+struct MonotonicIncreasing{
+    public:
+    template<typename Q,std::enable_if<std::is_same<Q,T>::type>::int  >
+    void validateBegin(Q next){
+        if(last>next){
+            std::cout<<"ASPOLDE"<<std::endl;
+        }
+
+    }
+    template<typename Q,std::enable_if<!std::is_same<Q,T>::type>::int  >
+    void validateBegin(Q next){
+    }
+    template<typename Q,std::enable_if<std::is_same<Q,T>::type>::int  >
+    void validateSet(Q next){
+        if(last>next){
+            std::cout<<"ASPOLDE"<<std::endl;
+        }
+
+    }
+    template<typename Q,std::enable_if<!std::is_same<Q,T>::type>::int  >
+    void validateSet(Q next){
+    }
+    void validateEnd(){
+    }
+    private:
+    T last;
+};
 } //end namespace cali

@@ -33,12 +33,14 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
-
+#include <RichAnnotations.h>
 int main(int argc, char* argv[])
 {
+    using cali::dummy;
     // Mark begin of "initialization" phase
-    cali::Annotation
-        init_ann = cali::Annotation("initialization").begin();
+    cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>
+        init_ann = cali::ValidatedAnnotation<dummy>("initialization").begin();
+    
     // perform initialization tasks
     int count = 4;
     // Mark end of "initialization" phase
