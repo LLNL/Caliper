@@ -1,5 +1,6 @@
 #include "../Annotation.h"
 #include <iostream>
+#include <type_traits>
 namespace cali{
 
 template<class... ValidatorList>
@@ -156,26 +157,32 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
 template<typename T>
 struct MonotonicIncreasing{
     public:
-    template<typename Q,std::enable_if<std::is_same<Q,T>::type>::int  >
-    void validateBegin(Q next){
+    void validateBegin(){}
+    template<typename Q>
+    std::enable_if<std::is_same<T,Q>::value::type,void> validateBegin(Q& next){
         if(last>next){
             std::cout<<"ASPOLDE"<<std::endl;
         }
-
     }
-    template<typename Q,std::enable_if<!std::is_same<Q,T>::type>::int  >
-    void validateBegin(Q next){
-    }
-    template<typename Q,std::enable_if<std::is_same<Q,T>::type>::int  >
-    void validateSet(Q next){
+    template<typename Q>
+    std::enable_if<!std::is_same<T,Q>::value::type,void> validateBegin(Q& next){
         if(last>next){
             std::cout<<"ASPOLDE"<<std::endl;
         }
+    }
+    template<typename Q>
+    std::enable_if<std::is_same<T,Q>::value::type,void> validateSet(Q& next){
+        if(last>next){
+            std::cout<<"ASPOLDE"<<std::endl;
+        }
+    }
+    template<typename Q>
+    std::enable_if<!std::is_same<T,Q>::value::type,void> validateSet(Q& next){
+        if(last>next){
+            std::cout<<"ASPOLDE"<<std::endl;
+        }
+    }
 
-    }
-    template<typename Q,std::enable_if<!std::is_same<Q,T>::type>::int  >
-    void validateSet(Q next){
-    }
     void validateEnd(){
     }
     private:

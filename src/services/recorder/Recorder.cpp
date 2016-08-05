@@ -168,8 +168,10 @@ class Recorder
     }
 
     static void write_record_cb(const RecordDescriptor& rec, const int* count, const Variant** data) {
-        if (!s_instance)
+        if (!s_instance){
+            std::cout<<"CANNOT WRITE: NOT YET INITIALIZED"<<std::endl;
             return;
+        }
 
         std::lock_guard<std::mutex> g(s_instance->m_lock);
         

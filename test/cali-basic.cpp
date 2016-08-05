@@ -36,10 +36,10 @@
 #include <RichAnnotations.h>
 int main(int argc, char* argv[])
 {
-    using cali::dummy;
+    using AnnotationType = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>;
     // Mark begin of "initialization" phase
     cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>
-        init_ann = cali::ValidatedAnnotation<dummy>("initialization").begin();
+        init_ann = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>("initialization").begin();
     
     // perform initialization tasks
     int count = 4;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
         double t = 0.0, delta_t = 1e-6;
 
         // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
+        AnnotationType iteration_ann("iteration");
         
         for (int i = 0; i < count; ++i) {
             // Export current iteration count under "iteration"

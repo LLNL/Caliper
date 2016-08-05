@@ -115,10 +115,21 @@ void read_gitdir(Caliper* c){
     string date = makeCaliSafe(shell_exec("git --git-dir="+gitDirectory+"/.git log -1 --pretty=%ad"));
     string message = makeCaliSafe(shell_exec("git --git-dir="+gitDirectory+"/.git log -1 --pretty=%s"));
     c->begin(annot_git_dir,cali::Variant(CALI_TYPE_STRING,gitDirectory.c_str(),gitDirectory.length()));
-    c->set(annot_git_hash,cali::Variant(CALI_TYPE_STRING,hash.c_str(),hash.length()));
-    c->set(annot_git_message,cali::Variant(CALI_TYPE_STRING,message.c_str(),message.length()));
-    c->set(annot_git_name,cali::Variant(CALI_TYPE_STRING,author_name.c_str(),author_name.length()));
-    c->set(annot_git_date,cali::Variant(CALI_TYPE_STRING,date.c_str(),date.length()));
+    c->begin(annot_git_hash,cali::Variant(CALI_TYPE_STRING,hash.c_str(),hash.length()));
+    c->begin(annot_git_message,cali::Variant(CALI_TYPE_STRING,message.c_str(),message.length()));
+    c->begin(annot_git_name,cali::Variant(CALI_TYPE_STRING,author_name.c_str(),author_name.length()));
+    c->begin(annot_git_date,cali::Variant(CALI_TYPE_STRING,date.c_str(),date.length()));
+    c->end(annot_git_date);
+    c->end(annot_git_name);
+    c->end(annot_git_message);
+    c->end(annot_git_hash);
+    c->end(annot_git_dir);
+    //c->begin(annot_git_dir,cali::Variant(CALI_TYPE_STRING,gitDirectory.c_str(),gitDirectory.length()));
+    //c->set(annot_git_hash,cali::Variant(CALI_TYPE_STRING,hash.c_str(),hash.length()));
+    //c->set(annot_git_message,cali::Variant(CALI_TYPE_STRING,message.c_str(),message.length()));
+    //c->set(annot_git_name,cali::Variant(CALI_TYPE_STRING,author_name.c_str(),author_name.length()));
+    //c->set(annot_git_date,cali::Variant(CALI_TYPE_STRING,date.c_str(),date.length()));
+    //c->end(annot_git_dir);
 }
 
 void git_service_register(Caliper* c)

@@ -140,6 +140,10 @@ class TextLogService
             std::lock_guard<std::mutex> lock(trigger_attr_mutex);
             trigger_attr_map.insert(std::make_pair(attr.id(), attr));
         }
+        if(trigger_attr_names.size()==0){
+            std::lock_guard<std::mutex> lock(trigger_attr_mutex);
+            trigger_attr_map.insert(std::make_pair(attr.id(), attr));
+        }
     }
 
     void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
