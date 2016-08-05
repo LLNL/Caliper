@@ -38,8 +38,8 @@ int main(int argc, char* argv[])
 {
     using AnnotationType = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>;
     // Mark begin of "initialization" phase
-    cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>
-        init_ann = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>("initialization").begin();
+    cali::Annotation
+        init_ann = cali::Annotation("initialization").begin();
     
     // perform initialization tasks
     int count = 4;
