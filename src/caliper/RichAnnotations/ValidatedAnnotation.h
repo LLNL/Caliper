@@ -1,5 +1,6 @@
 #include "../Annotation.h"
 #include <iostream>
+#include <functional>
 #include <type_traits>
 namespace cali{
 
@@ -154,33 +155,27 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
 
 };
 
-template<typename T>
-struct MonotonicIncreasing{
+template<typename T, typename Comparator>
+struct Monotonic{
     public:
     void validateBegin(){}
     template<typename Q>
-    std::enable_if<std::is_same<T,Q>::value::type,void> validateBegin(Q& next){
-        if(last>next){
+    typename std::enable_if<std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
+        if(Comparator()(next,last)){
             std::cout<<"ASPOLDE"<<std::endl;
         }
     }
     template<typename Q>
-    std::enable_if<!std::is_same<T,Q>::value::type,void> validateBegin(Q& next){
-        if(last>next){
+    typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
+    }
+    template<typename Q>
+    typename std::enable_if<std::is_same<T,Q>::value,void>::type validateSet(Q& next){
+        if(Comparator()(next,last)){
             std::cout<<"ASPOLDE"<<std::endl;
         }
     }
     template<typename Q>
-    std::enable_if<std::is_same<T,Q>::value::type,void> validateSet(Q& next){
-        if(last>next){
-            std::cout<<"ASPOLDE"<<std::endl;
-        }
-    }
-    template<typename Q>
-    std::enable_if<!std::is_same<T,Q>::value::type,void> validateSet(Q& next){
-        if(last>next){
-            std::cout<<"ASPOLDE"<<std::endl;
-        }
+    typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateSet(Q& next){
     }
 
     void validateEnd(){
@@ -188,4 +183,8 @@ struct MonotonicIncreasing{
     private:
     T last;
 };
+template<typename T>
+using MonotonicDecreasing = Monotonic<T,std::less_equal<T>>;
+template<typename T>
+using MonotonicIncreasing = Monotonic<T,std::greater_equal<T>>;
 } //end namespace cali
