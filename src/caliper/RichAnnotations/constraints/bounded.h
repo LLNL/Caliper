@@ -12,6 +12,8 @@ class Bounded
             std::cout<<"ASPOLDE 2"<<std::endl;
         }
     }
+    void validateBegin(cali_attr_type type, void* data, uint64_t size){
+    }
     template<typename Q>
     typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
     }
@@ -25,6 +27,8 @@ class Bounded
     typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateSet(Q& next){
     }
 
+    void validateSet(cali_attr_type type, void* data, uint64_t size){
+    }
     void validateEnd(){
     }
 };
