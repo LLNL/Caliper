@@ -31,6 +31,8 @@ class Bounded
 
 template<typename T, T bound>
 using BoundedAbove = Bounded<T,std::less_equal<T>,bound>;
+template<typename T, T bound>
+using BoundedBelow = Bounded<T,std::greater_equal<T>,bound>;
 
 } //end namespace cali
 #endif
