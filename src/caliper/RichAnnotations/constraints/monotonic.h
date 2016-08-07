@@ -12,6 +12,7 @@ struct Monotonic{
         if(Comparator()(next,last)){
             std::cout<<"ASPOLDE"<<std::endl;
         }
+        last = next;
     }
     template<typename Q>
     typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
@@ -21,6 +22,7 @@ struct Monotonic{
         if(Comparator()(next,last)){
             std::cout<<"ASPOLDE"<<std::endl;
         }
+        last = next;
     }
     void validateSet(cali_attr_type type, void* data, uint64_t size){
     }
