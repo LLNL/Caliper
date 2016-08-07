@@ -36,7 +36,7 @@
 #include <RichAnnotations.h>
 int main(int argc, char* argv[])
 {
-    using AnnotationType = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>>;
+    using AnnotationType = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>, cali::BoundedAbove<int,2>>;
     // Mark begin of "initialization" phase
     cali::Annotation
         init_ann = cali::Annotation("initialization").begin();

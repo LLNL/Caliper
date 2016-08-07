@@ -1,0 +1,36 @@
+#ifndef CALI_BOUNDED_H
+#define CALI_BOUNDED_H
+namespace cali {
+template<typename T, typename Comparator, T bound>
+class Bounded
+{
+    public:
+    void validateBegin(){}
+    template<typename Q>
+    typename std::enable_if<std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
+        if(Comparator()(bound,next)){
+            std::cout<<"ASPOLDE 2"<<std::endl;
+        }
+    }
+    template<typename Q>
+    typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateBegin(Q& next){
+    }
+    template<typename Q>
+    typename std::enable_if<std::is_same<T,Q>::value,void>::type validateSet(Q& next){
+        if(Comparator()(bound,next)){
+            std::cout<<"ASPOLDE 2"<<std::endl;
+        }
+    }
+    template<typename Q>
+    typename std::enable_if<!std::is_same<T,Q>::value,void>::type validateSet(Q& next){
+    }
+
+    void validateEnd(){
+    }
+};
+
+template<typename T, T bound>
+using BoundedAbove = Bounded<T,std::less_equal<T>,bound>;
+
+} //end namespace cali
+#endif
