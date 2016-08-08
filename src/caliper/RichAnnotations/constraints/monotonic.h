@@ -1,5 +1,6 @@
 #ifndef CALI_MONOTONIC_H
 #define CALI_MONOTONIC_H
+#include <functional>
 namespace cali {
 template<typename T, typename Comparator>
 struct Monotonic{
@@ -37,8 +38,8 @@ struct Monotonic{
 };
 
 template<typename T>
-using MonotonicDecreasing = Monotonic<T,std::less_equal<T>>;
+using MonotonicDecreasing = Monotonic<T,std::greater_equal<T>>;
 template<typename T>
-using MonotonicIncreasing = Monotonic<T,std::greater_equal<T>>;
+using MonotonicIncreasing = Monotonic<T,std::less_equal<T>>;
 } //end namespace cali
 #endif
