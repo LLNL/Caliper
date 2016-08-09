@@ -287,6 +287,25 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return ret;
     }
 
+    const Node* make_entry(size_t n, const Attribute* attr, const Variant* value) {
+        Node* node = nullptr;
+
+        for (size_t i = 0; i < n; ++i) {
+            if (!attr[i].store_as_value())
+                continue;
+
+            Node* parent = node ? node : &m_root;
+
+            for (node = parent->first_child(); node && !node->equals(attr[i].id(), value[i]); node = node->next_sibling())
+                ;
+
+            if (!node)
+                node = create_node(attr[i].id(), value[i], parent);
+        }
+
+        return node;
+    }
+    
     CaliperMetadataDBImpl()
         : m_root { CALI_INV_ID, CALI_INV_ID, { } }
         { }
@@ -338,4 +357,10 @@ Attribute
 CaliperMetadataDB::attribute(cali_id_t id) const
 {
     return mP->attribute(id);
+}
+
+const Node*
+CaliperMetadataDB::make_entry(size_t n, const Attribute* attr, const Variant* value)
+{
+    return mP->make_entry(n, attr, value);
 }

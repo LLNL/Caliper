@@ -48,7 +48,8 @@ namespace cali
 {
 
 class Node;
-
+class Variant;
+    
 typedef std::map<cali_id_t, cali_id_t> IdMap;
 
 class CaliperMetadataDB
@@ -77,6 +78,11 @@ public:
 
     const Node* node(cali_id_t id) const;
     Attribute   attribute(cali_id_t id) const;
+
+    //
+    // --- Manipulation
+
+    const Node* make_entry(size_t n, const Attribute* attr, const Variant* value);
 };
 
 }
