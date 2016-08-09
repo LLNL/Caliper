@@ -63,6 +63,47 @@ Examples
 
 // example of non-expand vs expand? //
 
+Cali-print
+--------------------------------
+
+Print expanded records from ``cali-query`` in a table format.
+
+Usage
+````````````````````````````````
+``cali-print [OPTIONS]... [FILE]...``
+
+Options
+````````````````````````````````
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-f`` | ``--format=FORMAT_STRING``        | Print the entries of the table in the format specified by           |
+|        |                                   | ``FORMAT_STRING``. ``FORMAT_STRING`` should be of the form:         |
+|        |                                   | ``%[width1]attr1% %[width2]attr2% ...``, where ``width`` is the     |
+|        |                                   | minimum width in characters of the printed value for the matching   |
+|        |                                   | attribute, ``attr``. Limits the printed attributes to those         |
+|        |                                   | listed in ``FORMAT_STRING``.                                        |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-s`` | ``--select=QUERY_STRING``         | Select the attributes to print in the table when not specifying the |
+|        |                                   | ``FORMAT_STRING`` with ``--format``. ``QUERY_STRING`` should be of  |
+|        |                                   | the form: ``attr1:attr2: ...``.                                     |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-t`` | ``--title=STRING``                | Specify a custom title or header line.                              |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-o`` | ``--output=FILE``                 | Set the name of the output file.                                    |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-h`` | ``--help``                        | Print the help message, a summary of these options.                 |
++--------+-----------------------------------+---------------------------------------------------------------------+
+
+
+Files
+````````````````````````````````
+The files used by ``cali-print`` are expanded records produced by ``cali-query``. Only
+one file may be read at a time.
+
+
+Examples
+````````````````````````````````
+(forthcoming)
+
 Cali-stat
 --------------------------------
 
