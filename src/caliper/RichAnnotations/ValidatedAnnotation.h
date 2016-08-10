@@ -84,9 +84,9 @@ class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotat
     using wholeValidator = ValidatedAnnotation<Validator,ValidatorList...>;
 
     ValidatedAnnotation(const char* name, int opt=0) : ValidatedAnnotation<ValidatorList...>(name,opt){}
-    ValidatedAnnotation(const DEBUG_RETURN_TYPE & other) : ValidatedAnnotation<ValidatorList...>(other){}
+    ValidatedAnnotation(const wholeValidator & other) : ValidatedAnnotation<ValidatorList...>(other){}
     //begin
-    wholeValidator &operator = (const DEBUG_RETURN_TYPE & other){
+    wholeValidator &operator = (const wholeValidator & other){
         my_val = other.getValidator();
         return *this;
     }
