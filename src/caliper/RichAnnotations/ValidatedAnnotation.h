@@ -80,68 +80,68 @@ private:
 template<class Validator, class... ValidatorList>
 class ValidatedAnnotation<Validator, ValidatorList...> : public ValidatedAnnotation<ValidatorList...>{
     public:
-    #define DEBUG_RETURN_TYPE ValidatedAnnotation<Validator, ValidatorList...>
     using innerValidator = ValidatedAnnotation<ValidatorList...>;
+    using wholeValidator = ValidatedAnnotation<Validator,ValidatorList...>;
 
     ValidatedAnnotation(const char* name, int opt=0) : ValidatedAnnotation<ValidatorList...>(name,opt){}
     ValidatedAnnotation(const DEBUG_RETURN_TYPE & other) : ValidatedAnnotation<ValidatorList...>(other){}
     //begin
-    DEBUG_RETURN_TYPE &operator = (const DEBUG_RETURN_TYPE & other){
+    wholeValidator &operator = (const DEBUG_RETURN_TYPE & other){
         my_val = other.getValidator();
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(){
+    wholeValidator& begin(){
         my_val.validateBegin();
         innerValidator::begin();
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(int data){
+    wholeValidator& begin(int data){
         my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(double data){
+    wholeValidator& begin(double data){
         my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(const char* data){
+    wholeValidator& begin(const char* data){
         my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(cali_attr_type type, void* data, uint64_t size){
+    wholeValidator& begin(cali_attr_type type, void* data, uint64_t size){
         my_val.validateBegin(type,data,size);
         innerValidator::begin(type,data,size);
         return *this;
     }
-    DEBUG_RETURN_TYPE& begin(const Variant& data){
+    wholeValidator& begin(const Variant& data){
         my_val.validateBegin(data);
         innerValidator::begin(data);
         return *this;
     }
     //set
-    DEBUG_RETURN_TYPE& set(int data){
+    wholeValidator& set(int data){
         my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& set(double data){
+    wholeValidator& set(double data){
         my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& set(const char* data){
+    wholeValidator& set(const char* data){
         my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
     }
-    DEBUG_RETURN_TYPE& set(cali_attr_type type, void* data, uint64_t size){
+    wholeValidator& set(cali_attr_type type, void* data, uint64_t size){
         my_val.validateSet(type,data,size);
         innerValidator::set(type,data,size);
         return *this;
     }
-    DEBUG_RETURN_TYPE& set(const Variant& data){
+    wholeValidator& set(const Variant& data){
         my_val.validateSet(data);
         innerValidator::set(data);
         return *this;
