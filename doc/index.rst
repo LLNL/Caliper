@@ -25,6 +25,7 @@ Contents:
    link
    configuration
    services
+   tools
 
 
 Indices and tables

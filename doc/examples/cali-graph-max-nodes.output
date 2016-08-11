@@ -1,0 +1,26 @@
+graph {
+  0 [label=":usr"];
+  1 [label=":int"];
+  2 [label=":uint"];
+  3 [label=":string"];
+  4 [label=":addr"];
+  5 [label=":double"];
+  6 [label=":bool"];
+  7 [label=":type"];
+  8 [label=":cali.attribute.name"];
+  3 -- 8;
+  9 [label="cali.attribute.name:cali.attribute.type"];
+  7 -- 9;
+  10 [label="cali.attribute.name:cali.attribute.prop"];
+  1 -- 10;
+  11 [label="cali.attribute.prop:12"];
+  3 -- 11;
+  12 [label="cali.attribute.name:cali.caliper.version"];
+  11 -- 12;
+  13 [label="cali.attribute.prop:148"];
+  0 -- 13;
+  14 [label="cali.attribute.name:cali.key.attribute"];
+  13 -- 14;
+  15 [label="cali.attribute.prop:213"];
+  1 -- 15;
+}

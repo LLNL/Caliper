@@ -22,13 +22,6 @@ Borrows create_default_formatstring from TextLog.cpp
 Borrows from parse() in SnapshotTextFormatter.cpp
  */
 
-// scratch thoughts                                                                                                                                           
-// would like to read command for input strings like cali-query?                                                                                              
-// and then format appropriately or use their defined format                                                                                                  
-// or env vars like textlog? 
-
-
-
 // define the namespace
 
 namespace 
@@ -39,11 +32,8 @@ namespace
 
   const Args::Table option_table[] = {
     // name, longopt name, shortopt char, has argument, info, argument info
-    // want something else like custom formatting?
     { "format", "format", 'f', true,  "Set the format of the data",      "FORMAT_STRING" },
-    // or custom attribute selection?
     { "select", "select", 's', true,  "Select the attributes to print",  "QUERY_STRING"  },
-    // how about a custom header string?
     { "title",  "title",  't', true,  "Set the title and/or header row", "STRING"        },
     { "output", "output", 'o', true,  "Set the output file name",        "FILE"          },
     { "help",   "help",   'h', false, "Print help message",              nullptr         },
@@ -61,7 +51,7 @@ void QueryFormatter(ostream& os, string format, string title, string file) {
   // print the header
   os << title << endl;
   // get and format the input from cali-query
-  while (query.getline(line,512)) { // I haven't the slightest if this will work
+  while (query.getline(line,512)) {
     formatline = parse_print(format, line);
     os << formatline << endl;
   };
@@ -87,11 +77,12 @@ string parse_print(const string formatstr, const string queryline) { // heavily 
     
     int nfields = field_strings.size();
     
-    for (int i = 0; i < nfields; ++i)
-      if (field_strings[i] == "[")
+    for (int i = 0; i < nfields; ++i) {
+      if (field_strings[i].compare("[") == 0)
 	wfbegin = i;
-      else if (field_strings[i] == "]")
+      else if (field_strings[i].compare("]") == 0)
 	wfend = i;
+    }
 
     if (wfbegin >=0 && wfend > wfbegin+1) {
       frmtwidth.push_back(stoi(field_strings[wfbegin+1]));
@@ -100,7 +91,6 @@ string parse_print(const string formatstr, const string queryline) { // heavily 
 	apos = 0;
       else if(wfend+1 < nfields) {
 	apos = wfend+1;
-	frmtname.push_back("   ");
       }
     }
     else if (nfields >0) {
@@ -108,10 +98,12 @@ string parse_print(const string formatstr, const string queryline) { // heavily 
 	apos = 0;
       else 
 	apos = wfend+1;
-      if (nfields == 2)
+      if (nfields == 2) {
 	apos = -1;
+	frmtname.push_back("");
+      }
     }
-
+    
     
     if (apos >= 0) {
       frmtname.push_back(field_strings[apos]);
@@ -120,7 +112,7 @@ string parse_print(const string formatstr, const string queryline) { // heavily 
     }
     split_string.erase(split_string.begin());
   }
-    // now compare and strip and print
+  // now compare and strip and print
   vector<string> split_query;
   
   split(queryline,',',back_inserter(split_query));
@@ -134,13 +126,15 @@ string parse_print(const string formatstr, const string queryline) { // heavily 
     split_query.erase(split_query.begin());
   }
   // then match the print value to the width via map search and print
-  for (int i = 0; i < frmtname.size(); i++) {
-    int len = query_map[frmtname[i]].length();
-    static const char whitespace[40+1] = "                                        ";
-    int w = len < frmtwidth[i] ? min<int>(frmtwidth[i] -len, 40) : 0;
-    string space = (w >0 ? whitespace+(40-w) : " ");
-    str = str + query_map[frmtname[i]];
-    str += space ;
+  for (int i = 0; i < frmtname.size(); ++i) {
+    if (frmtname[i].compare("") != 0) {
+      int len = query_map[frmtname[i]].length();
+      string whitespace = "                                        ";
+      int w = ( (len < frmtwidth[i]) ? (frmtwidth[i] - len) : 0 );
+      string space = whitespace.substr(0,w);
+      str += query_map[frmtname[i]];
+      str += space;
+    }
   }   
   return str;
 }
@@ -153,14 +147,12 @@ string create_default_formatstring(const vector<string>& attr_names) {
   int name_sizes = 0;
 
   for (const string& s : attr_names)
-    name_sizes += s.size();
-
-  int w = max<int>(0, (name_sizes) / attr_names.size());
+    name_sizes = max<int>(name_sizes, s.size());
 
   ostringstream os;
 
   for (const string& s : attr_names)
-    os << "=%[" << w << "]" << s << "% ";
+    os << "%[" << name_sizes << "]" << s << "% ";
 
   os << endl;
 
@@ -193,6 +185,18 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
+
+  // check input files
+
+  if (args.arguments().empty()) {
+    cerr << "cali-print: Input file required" << endl;
+    return -2;
+  }
+  if (args.arguments().size() > 1) {
+    cerr << "cali-print: Only one input file is accepted" << endl;
+    return -2;
+  }
+
   // create output stream if designated
 
   ofstream fs;
@@ -216,17 +220,18 @@ int main(int argc, const char* argv[])
   // brilliant!
   if (args.is_set("select")) {
     if (!args.get("select").empty()) {
-      // vector<string> attr_names;
       split(args.get("select"),':',back_inserter(attr_names));
     }
-    else 
+    else {
       cerr << "cali-print: error: Arguments required for --select" << endl; 
+      return -2;
+    }
   }
   else {
     map<string,string> attrs;
     ifstream queryfile (args.arguments().front(), ifstream::in);
     char line[512];
-    while (queryfile.getline(line,512)) { // I haven't the slightest if this will work
+    while (queryfile.getline(line,512)) {
       vector<string> entries;
       string linestr(line);
       split(linestr,',',back_inserter(entries));
@@ -240,22 +245,10 @@ int main(int argc, const char* argv[])
 	}
       }
     };
-    cout << "attrs: " << attrs.size() << endl;
-      // vector<string> attr_names;
     for (map<string,string>::iterator it=attrs.begin(); it != attrs.end(); ++it) {
       attr_names.push_back(it->second);
     }
   }
-/*
-pseudo
-
-reads a line
-records the attr names (before '=')
-ignores dupes
-ignores cali./event. attrs
-stores these names into a vector<string>
-*/
-
 
 // create the query output formatting
   string formatstr = args.get("format");
@@ -276,7 +269,6 @@ stores these names into a vector<string>
     }
     titlestr = parse_print(formatstr, titlelist);
   }
-
   QueryFormatter(fs.is_open() ? fs : cout, formatstr, titlestr, args.arguments().front());
 }
 

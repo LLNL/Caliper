@@ -1,0 +1,46 @@
+factorial                 iteration                 main                      time.inclusive.duration    
+                                                                                                         
+                                                    init                      1813                       
+                                                    body                                                 
+                                                    body/init                 114                        
+                                                    body/loop                                            
+                          0                         body/loop                                            
+init                      0                         body/loop                 215                        
+comp                      0                         body/loop                 21                         
+                          0                         body/loop                 529                        
+                          1                         body/loop                                            
+init                      1                         body/loop                 15                         
+comp                      1                         body/loop                 14                         
+                          1                         body/loop                 69                         
+                          2                         body/loop                                            
+init                      2                         body/loop                 15                         
+comp                      2                         body/loop                                            
+comp/init                 2                         body/loop                 101                        
+comp/comp                 2                         body/loop                 16                         
+comp                      2                         body/loop                                            
+                          2                         body/loop                 183                        
+                          3                         body/loop                                            
+init                      3                         body/loop                 15                         
+comp                      3                         body/loop                                            
+comp/init                 3                         body/loop                 36                         
+comp/comp                 3                         body/loop                                            
+comp/comp/init            3                         body/loop                 37                         
+comp/comp/comp            3                         body/loop                 14                         
+comp/comp                 3                         body/loop                                            
+comp                      3                         body/loop                                            
+                          3                         body/loop                 164                        
+                          4                         body/loop                                            
+init                      4                         body/loop                 14                         
+comp                      4                         body/loop                                            
+comp/init                 4                         body/loop                 36                         
+comp/comp                 4                         body/loop                                            
+comp/comp/init            4                         body/loop                 36                         
+comp/comp/comp            4                         body/loop                                            
+comp/comp/comp/init       4                         body/loop                 36                         
+comp/comp/comp/comp       4                         body/loop                 14                         
+comp/comp/comp            4                         body/loop                                            
+comp/comp                 4                         body/loop                                            
+comp                      4                         body/loop                                            
+                          4                         body/loop                 210                        
+                                                    body/loop                 1214                       
+                                                    body/conclusion           37                         

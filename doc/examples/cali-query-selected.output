@@ -1,0 +1,8 @@
+event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=15
+event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
+event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=36
+event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
+event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=37
+event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
+event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=0,factorial=comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
+event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=0,factorial=comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev

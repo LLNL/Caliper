@@ -1,0 +1,19 @@
+Number of records
+Total          Nodes          Snapshots
+169            124            45             
+
+Number of elements
+Total          Nodes          Tree refs      Direct val
+680            496            134            50             
+
+Data size (est.)
+Total          Nodes          Snapshots
+5.26172KiB     4.01953KiB     1.24219KiB     
+
+Elements/snapshot
+Min            Max            Average
+2              5              4.08889        
+
+Attributes referenced in snapshot records
+Total          Average        Refs/Elem
+381            8.46667        0.560294       
