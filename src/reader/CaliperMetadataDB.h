@@ -43,6 +43,7 @@
 
 #include <map>
 #include <memory>
+#include <string>
 
 namespace cali
 {
@@ -77,12 +78,16 @@ public:
     //
 
     const Node* node(cali_id_t id) const;
+    
     Attribute   attribute(cali_id_t id) const;
-
+    Attribute   attribute(const std::string& name) const;
+    
     //
     // --- Manipulation
+    //
 
     const Node* make_entry(size_t n, const Attribute* attr, const Variant* value);
+    Attribute   create_attribute(const char* name, cali_attr_type type, int prop);
 };
 
 }

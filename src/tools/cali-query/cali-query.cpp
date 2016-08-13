@@ -80,7 +80,11 @@ namespace
           "ATTRIBUTES"
         },
         { "aggregate", "aggregate", 'a', true,
-          "Aggregate the given attributes",
+          "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
+          "AGGREGATION_OPS"
+        },
+        { "aggregate-key", "aggregate-over", 0, true,
+          "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
           "ATTRIBUTES"
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
@@ -302,8 +306,8 @@ int main(int argc, const char* argv[])
         node_proc   = writer;
     }
 
-    Aggregator        aggregate { args.get("aggregate") };
-    SnapshotProcessFn snap_proc { args.is_set("aggregate") ? aggregate : snap_writer };
+    Aggregator        aggregate(args.get("aggregate"), args.get("aggregate-key"));
+    SnapshotProcessFn snap_proc(args.is_set("aggregate") ? aggregate : snap_writer);
 
     string select = args.get("select");
 

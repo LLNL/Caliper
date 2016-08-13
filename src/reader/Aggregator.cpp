@@ -43,6 +43,8 @@
 
 #include <cali_types.h>
 
+#include <c-util/vlenc.h>
+
 #include <util/split.hpp>
 
 #include <algorithm>
@@ -53,129 +55,415 @@
 using namespace cali;
 using namespace std;
 
-namespace
+#define MAX_KEYLEN 32
+
+class AggregateKernel {
+public:
+
+    virtual ~AggregateKernel()
+        { }
+    
+    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) = 0;
+    virtual void append_result(CaliperMetadataDB& db, EntryList& list) = 0;
+};
+
+class AggregateKernelConfig
 {
-    size_t entrylist_hash(EntryList& list) {
-        // normalize list by sorting
-        std::sort(list.begin(), list.end());
+public:
 
-        size_t hash = 0;
+    virtual ~AggregateKernelConfig()
+        { }
 
-        for (const Entry& e : list)
-            hash = hash ^ (e.hash() << 1);
+    virtual AggregateKernel* make_kernel() = 0;
+};
 
-        return hash;
+
+//
+// --- CountKernel
+//
+
+class CountKernel : public AggregateKernel {    
+public:
+
+    class Config : public AggregateKernelConfig {
+        Attribute m_attr;
+
+    public:
+
+        Attribute attribute(CaliperMetadataDB& db) {
+            if (m_attr == Attribute::invalid)
+                m_attr = db.create_attribute("aggregate.count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+
+            return m_attr;
+        }        
+        
+        AggregateKernel* make_kernel() {
+            return new CountKernel(this);
+        }
+
+        Config()
+            : m_attr { Attribute::invalid }
+            { }
+
+        static AggregateKernelConfig* create(const std::string&) {
+            return new Config;
+        }
+    };
+
+    CountKernel(Config* config)
+        : m_count(0), m_config(config)
+        { }
+    
+    virtual void aggregate(CaliperMetadataDB&, const EntryList&) {
+        ++m_count;
     }
-}
+
+    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+        if (m_count > 0)
+            list.push_back(Entry(m_config->attribute(db),
+                                 Variant(CALI_TYPE_UINT, &m_count, sizeof(uint64_t))));
+    }
+
+private:
+
+    uint64_t m_count;
+    Config*  m_config;
+};
+
+
+//
+// --- SumKernel
+//
+
+class SumKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_aggr_attr_name;
+        Attribute   m_aggr_attr;
+        
+    public:
+
+        Attribute get_aggr_attr(CaliperMetadataDB& db) {
+            if (m_aggr_attr == Attribute::invalid)
+                m_aggr_attr = db.attribute(m_aggr_attr_name);
+
+            return m_aggr_attr;
+        }
+        
+        AggregateKernel* make_kernel() {
+            return new SumKernel(this);
+        }
+
+        Config(const std::string& name)
+            : m_aggr_attr_name(name),
+              m_aggr_attr(Attribute::invalid)
+            {
+                Log(2).stream() << "aggregate: creating sum kernel for attribute " << m_aggr_attr_name << std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::string& cfg) {
+            return new Config(cfg);
+        }        
+    };
+
+    SumKernel(Config* config)
+        : m_count(0), m_config(config)
+        { }
+    
+    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+        Attribute aggr_attr = m_config->get_aggr_attr(db);
+
+        if (aggr_attr == Attribute::invalid)
+            return;
+            
+        for (const Entry& e : list) {
+            if (e.attribute() == aggr_attr.id()) {
+                switch (aggr_attr.type()) {
+                case CALI_TYPE_DOUBLE:
+                    m_sum = Variant(m_sum.to_double() + e.value().to_double());
+                    break;
+                case CALI_TYPE_INT:
+                    m_sum = Variant(m_sum.to_int()    + e.value().to_int()   );
+                    break;
+                case CALI_TYPE_UINT:
+                    m_sum = Variant(m_sum.to_uint()   + e.value().to_uint()  );
+                    break;
+                default:
+                    ;
+                    // Some error?!
+                }
+
+                ++m_count;
+                
+                break;
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+        if (m_count > 0)
+            list.push_back(Entry(m_config->get_aggr_attr(db), m_sum));
+    }
+
+private:
+
+    unsigned m_count;
+    Variant  m_sum;
+    Config*  m_config;
+};
+
+const struct KernelInfo {
+    const char* name;
+    AggregateKernelConfig* (*create)(const std::string& cfg);
+} kernel_list[] = {
+    { "count", CountKernel::Config::create },
+    { "sum",   SumKernel::Config::create   },
+    { 0, 0 }
+};
+
 
 struct Aggregator::AggregatorImpl
 {
     // --- data
 
-    vector<string>    m_aggr_attribute_strings;
-    vector<cali_id_t> m_aggr_attribute_ids;
+    vector<string>         m_key_strings;
+    vector<cali_id_t>      m_key_ids;
 
-    map< EntryList, EntryList >      m_aggr_db;
+    vector<AggregateKernelConfig*> m_kernel_configs;
+    
+    struct TrieNode {
+        uint32_t next[256] = { 0 };
+        vector<AggregateKernel*> kernels;
 
+        ~TrieNode() {
+            for (AggregateKernel* k : kernels)
+                delete k;
+            kernels.clear();
+        }
+    };
 
-    // --- interface
+    std::vector<TrieNode*> m_trie;    
 
-    void parse(const string& aggr_config) {
-        vector<string> attributes;
+    //
+    // --- parse config
+    //
 
-        util::split(aggr_config, ':', back_inserter(m_aggr_attribute_strings));
+    void parse_key(const string& key) {
+        util::split(key, ':', back_inserter(m_key_strings));
     }
 
-    void update_aggr_attribute_ids(CaliperMetadataDB& db, const EntryList& list) {
-        if (m_aggr_attribute_strings.empty())
-            return;
+    void parse_aggr_config(const string& configstr) {
+        vector<string> aggregators;
         
-        // see we can find one of the attributes for which we don't know numeric ID's yet
+        util::split(configstr, ':', back_inserter(aggregators));
 
-        for (const Entry& e : list)
-            if (!e.node()) {
-                Attribute attr = db.attribute(e.attribute());
+        for (const string& s : aggregators) {
+            string::size_type oparen = s.find_first_of('(');
+            string::size_type cparen = s.find_last_of(')');
 
-                if (attr == Attribute::invalid)
-                    continue;
+            string kernelname = s.substr(0, oparen);
+            string kernelconfig;
 
-                auto it = std::find(m_aggr_attribute_strings.begin(), m_aggr_attribute_strings.end(), attr.name());
+            if (cparen != string::npos && cparen > oparen+1)
+                kernelconfig = s.substr(oparen+1, cparen-oparen-1);
 
-                if (it != m_aggr_attribute_strings.end()) {
-                    m_aggr_attribute_ids.push_back(attr.id());
-                    m_aggr_attribute_strings.erase(it);
-                }
-            }
-    }    
+            const KernelInfo* ki = kernel_list;
 
-    Variant aggregate(const Attribute& attr, const Variant& l, const Variant& r) {
-        switch (attr.type()) {
-        case CALI_TYPE_INT:
-            return Variant(l.to_int() + r.to_int());
-        case CALI_TYPE_UINT:
-            return Variant(l.to_uint() + r.to_uint());
-        case CALI_TYPE_DOUBLE:
-            return Variant(l.to_double() + r.to_double());
-        default:
-            Log(0).stream() << "Cannot aggregate attribute " << attr.name() 
-                            << " with non-aggregatable type " 
-                            << cali_type2string(attr.type()) 
-                            << endl;
+            for ( ; ki->name && ki->create && kernelname != ki->name; ++ki)
+                ;
+
+            if (ki->create)
+                m_kernel_configs.push_back((*ki->create)(kernelconfig));
+            else
+                Log(0).stream() << "aggregator: unknown aggregation kernel \"" << kernelname << "\"" << std::endl;
         }
+    }
+    
+    //
+    // --- aggregation db ops
+    //
+    
+    TrieNode* get_trienode(uint32_t id) {
+        if (id >= m_trie.size())
+            m_trie.resize(id+1);
 
-        return Variant();
+        if (!m_trie[id])
+            m_trie[id] = new TrieNode;
+
+        return m_trie[id];
     }
 
+    TrieNode* find_trienode(size_t n, unsigned char* key) {
+        TrieNode* trie = get_trienode(0);
+
+        for ( size_t i = 0; trie && i < n; ++i ) {
+            uint32_t id = trie->next[key[i]];
+
+            if (!id) {
+                id = static_cast<uint32_t>(m_trie.size()+1);
+                trie->next[key[i]] = id;
+            }
+
+            trie = get_trienode(id);
+        }
+
+        if (trie->kernels.empty())
+            for (AggregateKernelConfig* c : m_kernel_configs)
+                trie->kernels.push_back(c->make_kernel());
+        
+        return trie;
+    }
+
+    //
+    // --- snapshot processing
+    //
+
+    void update_key_attribute_ids(CaliperMetadataDB& db) {
+        auto it = m_key_strings.begin();
+        
+        while (it != m_key_strings.end()) {
+            Attribute attr = db.attribute(*it);
+
+            if (attr != Attribute::invalid) {
+                m_key_ids.push_back(attr.id());
+                it = m_key_strings.erase(it);
+            } else
+                ++it;
+        }
+    }
+    
     void process(CaliperMetadataDB& db, const EntryList& list) {
-        update_aggr_attribute_ids(db, list);
+        update_key_attribute_ids(db);
 
-        EntryList key_vec;
+        // --- Unravel nodes, filter for key attributes, and group by attribute
 
+        std::vector<const Node*> nodes;
+
+        nodes.reserve(80);
+
+        bool select_all = m_key_strings.empty() && m_key_ids.empty();
+        
         for (const Entry& e : list)
-            if (std::find(m_aggr_attribute_ids.begin(), m_aggr_attribute_ids.end(), e.attribute()) == m_aggr_attribute_ids.end())
-                key_vec.push_back(e);
-
-        // if there aren't any entries to aggregate, just return
-        if (key_vec.size() == list.size())
+            for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
+                if (select_all || std::find(m_key_ids.begin(), m_key_ids.end(), node->attribute()) != m_key_ids.end())
+                    nodes.push_back(node);
+        // ignore immediate value entries for now?!
+        
+        if (nodes.empty())
             return;
 
-        // normalize key by sorting
-        std::sort(key_vec.begin(), key_vec.end());
+        stable_sort(nodes.begin(), nodes.end(),
+                    [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+        
+        // --- Reverse nodes (restores original order) and get/create tree node
 
-        auto it = m_aggr_db.find(key_vec);
+        std::vector<Attribute> attr;
+        std::vector<Variant>   data;
 
-        if (it == m_aggr_db.end()) {
-            m_aggr_db.insert(std::make_pair(key_vec, list));
-        } else {
-            for (cali_id_t id : m_aggr_attribute_ids) {
-                auto find_entry =
-                    [id](const Entry& e) { return e.attribute() == id; } ;
-                
-                auto elst_it = std::find_if(list.begin(), list.end(), find_entry);
+        attr.reserve(nodes.size());
+        data.reserve(nodes.size());
 
-                if (elst_it != list.end()) {
-                    auto alst_it = std::find_if(it->second.begin(), it->second.end(), find_entry);
-
-                    if (alst_it != it->second.end()) {
-                        Attribute attr = db.attribute(id);
-                        
-                        *alst_it = Entry(attr, aggregate(attr, alst_it->value(), elst_it->value()));
-                    }
-                }
-            }
+        for (auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit) {
+            attr.push_back(db.attribute((*rit)->attribute()));
+            data.push_back((*rit)->data());
         }
+
+        const Node*   key_node = db.make_entry(attr.size(), attr.data(), data.data());
+
+        if (!key_node)
+            return;
+
+        // --- Pack key
+
+        unsigned char key[MAX_KEYLEN];
+        size_t        pos  = 0;
+
+        pos += vlenc_u64(key_node->id(), key + pos);
+
+        TrieNode*     trie = find_trienode(pos, key);
+
+        if (!trie)
+            return;
+
+        // --- Aggregate
+        
+        for (AggregateKernel* k : trie->kernels)
+            k->aggregate(db, list);
     }
 
+    //
+    // --- Flush
+    //
+
+    void recursive_flush(size_t n, unsigned char* key, TrieNode* trie,
+                         CaliperMetadataDB& db, const SnapshotProcessFn push) {
+        if (!trie)
+            return;
+
+        // --- Write current entry (if it represents a snapshot)
+        
+        if (!trie->kernels.empty()) {
+            EntryList list;
+            size_t    p = 0;
+
+            // Decode & add key node entry
+            list.push_back(Entry(db.node(vldec_u64(key + p, &p))));
+
+            // Write aggregation variables
+            for (AggregateKernel* k : trie->kernels)
+                k->append_result(db, list);
+
+            push(db, list);
+        }
+
+        // --- Recursively iterate over subsequent DB entries
+
+        unsigned char* next_key = static_cast<unsigned char*>(alloca(n+2));
+
+        memset(next_key, 0, n+2);
+        memcpy(next_key, key, n);
+        
+        for (size_t i = 0; i < 256; ++i) {
+            if (trie->next[i] == 0)
+                continue;
+
+            TrieNode* next = get_trienode(trie->next[i]);
+            next_key[n]    = static_cast<unsigned char>(i);
+
+            recursive_flush(n+1, next_key, next, db, push);
+        }
+    }
+    
     void flush(CaliperMetadataDB& db, const SnapshotProcessFn push) {
-        for (const auto p : m_aggr_db)
-            push(db, p.second);
+        TrieNode*     trie = get_trienode(0);
+        unsigned char key  = 0;
+
+        recursive_flush(0, &key, trie, db, push);
+    }
+
+    AggregatorImpl() {
+        m_trie.reserve(4096);
+    }
+    
+    ~AggregatorImpl() {
+        for (TrieNode* e : m_trie)
+            delete e;
+
+        m_trie.clear();
+        
+        for (AggregateKernelConfig* c : m_kernel_configs)
+            delete c;
+
+        m_kernel_configs.clear();
     }
 };
 
-Aggregator::Aggregator(const string& aggr_config)
+Aggregator::Aggregator(const string& aggr_config, const string& key)
     : mP { new AggregatorImpl() }
 {
-    mP->parse(aggr_config);
+    mP->parse_aggr_config(aggr_config);
+    mP->parse_key(key);
 }
 
 Aggregator::~Aggregator()
