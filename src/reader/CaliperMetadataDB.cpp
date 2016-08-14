@@ -404,7 +404,7 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_f
 
 
 const Node* 
-CaliperMetadataDB::node(cali_id_t id) const 
+CaliperMetadataDB::node(cali_id_t id) const
 {
     return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
 }
@@ -431,4 +431,10 @@ Attribute
 CaliperMetadataDB::create_attribute(const char* name, cali_attr_type type, int prop)
 {
     return mP->create_attribute(name, type, prop);
+}
+
+Node* 
+CaliperMetadataDB::mutable_node(cali_id_t id) 
+{
+    return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
 }

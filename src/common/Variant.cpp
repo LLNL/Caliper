@@ -542,7 +542,10 @@ Variant::concretize(cali_attr_type type, bool *ok) const
     case CALI_TYPE_ADDR:
     case CALI_TYPE_INT:
     case CALI_TYPE_UINT:
-        ret = Variant(type, &m_value.v_uint, sizeof(uint64_t));
+        {
+            uint64_t u = to_uint();
+            ret = Variant(type, &u, sizeof(uint64_t));
+        }
         break;
     case CALI_TYPE_DOUBLE:
         ret = Variant(to_double(ok));

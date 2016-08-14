@@ -88,6 +88,9 @@ public:
 
     const Node* make_entry(size_t n, const Attribute* attr, const Variant* value);
     Attribute   create_attribute(const char* name, cali_attr_type type, int prop);
+
+    // awful kludge till we find solution for node writing problem
+    Node*       mutable_node(cali_id_t);
 };
 
 }
