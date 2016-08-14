@@ -159,10 +159,13 @@ Variant::to_id(bool* okptr)
 }
 
 bool
-Variant::to_bool(bool* okptr)  
+Variant::to_bool(bool* okptr) const
 {
     bool ok = false;
-
+    bool b  = m_value.v_bool;
+    
+    cali_attr_type type = m_type;
+    
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         // try string
         {
@@ -172,10 +175,10 @@ Variant::to_bool(bool* okptr)
 
             if (lower == "true" || lower == "t") {
                 ok = true;
-                m_value.v_bool = true;
+                b  = true;
             } else if (lower == "false" || lower == "f") {
                 ok = true;
-                m_value.v_bool = false;
+                b  = false;
             }
         }
 
@@ -183,24 +186,22 @@ Variant::to_bool(bool* okptr)
         if (!ok) {
             istringstream is(m_string.obj());
 
-            is >> m_value.v_bool;
+            is >> b;
             ok = !is.fail();
         }
 
-        if (ok) {
-            m_type = CALI_TYPE_BOOL;
-            m_size = sizeof(bool);
-        }
+        if (ok)
+            type = CALI_TYPE_BOOL;
     }
 
-    ok = (m_type == CALI_TYPE_BOOL || m_type == CALI_TYPE_INT || m_type == CALI_TYPE_UINT);
+    ok = (type == CALI_TYPE_BOOL || type == CALI_TYPE_INT || type == CALI_TYPE_UINT);
 
     if (okptr)
         *okptr = ok;
 
-    switch (m_type) {
+    switch (type) {
     case CALI_TYPE_BOOL:
-        return m_value.v_bool;
+        return b;
     case CALI_TYPE_INT:
         return m_value.v_int  != 0;
     case CALI_TYPE_UINT:
@@ -210,6 +211,24 @@ Variant::to_bool(bool* okptr)
     }
 
     return false;
+}
+
+bool
+Variant::to_bool(bool* okptr) 
+{
+    bool ok = false;
+    bool b  = const_cast<const Variant*>(this)->to_bool(&ok);
+
+    if (m_type == CALI_TYPE_INV && ok) {
+        m_type        = CALI_TYPE_BOOL;
+        m_size        = sizeof(bool);
+        m_value.v_int = b;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return b;
 }
 
 int
@@ -345,21 +364,42 @@ Variant::to_double(bool* okptr)
 }
 
 cali_attr_type
-Variant::to_attr_type(bool* okptr) 
+Variant::to_attr_type(bool* okptr) const
 {
+    cali_attr_type ret  = m_value.v_type;
+    cali_attr_type type = m_type;
+    
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
-        m_value.v_type = cali_string2type(m_string.obj().c_str());
+        ret = cali_string2type(m_string.obj().c_str());
 
-        if (m_value.v_type != CALI_TYPE_INV)
-            m_type = CALI_TYPE_TYPE;
+        if (ret != CALI_TYPE_INV)
+            type = CALI_TYPE_TYPE;
     }
 
-    bool ok = (m_type == CALI_TYPE_TYPE);
+    bool ok = (type == CALI_TYPE_TYPE);
 
     if (okptr)
         *okptr = ok;
 
-    return ok ? m_value.v_type : CALI_TYPE_INV;
+    return ok ? ret : CALI_TYPE_INV;
+}
+
+cali_attr_type
+Variant::to_attr_type(bool* okptr)
+{
+    bool ok = false;
+    cali_attr_type t = const_cast<const Variant*>(this)->to_attr_type(&ok);
+
+    if (m_type == CALI_TYPE_INV && ok) {
+        m_type         = CALI_TYPE_TYPE;
+        m_size         = sizeof(cali_attr_type);
+        m_value.v_type = t;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return t;
 }
 
 std::string
@@ -477,6 +517,45 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
         *inc += p;
 
     return v;
+}
+
+Variant
+Variant::concretize(cali_attr_type type, bool *ok) const
+{
+    Variant ret;
+
+    if (m_type == type && m_type != CALI_TYPE_INV) {
+        if (ok)
+            *ok = true;
+
+        return *this;
+    }
+        
+    switch (type) {
+    case CALI_TYPE_INV:
+    case CALI_TYPE_USR:        
+    case CALI_TYPE_STRING:
+        // can't concretize this without knowing where to alloc memory
+        if (ok)
+            *ok = false;
+        break;
+    case CALI_TYPE_ADDR:
+    case CALI_TYPE_INT:
+    case CALI_TYPE_UINT:
+        ret = Variant(type, &m_value.v_uint, sizeof(uint64_t));
+        break;
+    case CALI_TYPE_DOUBLE:
+        ret = Variant(to_double(ok));
+        break;
+    case CALI_TYPE_BOOL:
+        ret = Variant(to_bool(ok));
+        break;
+    case CALI_TYPE_TYPE:
+        ret = Variant(to_attr_type(ok));
+        break;
+    };
+
+    return ret;
 }
 
 bool cali::operator == (const Variant& lhs, const Variant& rhs)

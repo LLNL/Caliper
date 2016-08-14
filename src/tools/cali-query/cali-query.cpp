@@ -83,7 +83,7 @@ namespace
           "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
           "AGGREGATION_OPS"
         },
-        { "aggregate-key", "aggregate-over", 0, true,
+        { "aggregate-key", "aggregate-key", 0, true,
           "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
           "ATTRIBUTES"
         },

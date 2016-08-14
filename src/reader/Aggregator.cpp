@@ -332,37 +332,86 @@ struct Aggregator::AggregatorImpl
                 ++it;
         }
     }
+
+    size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataDB& db, unsigned char* key) {
+        unsigned char node_key[10];
+        size_t        node_key_len  = 0;
+
+        if (key_node)
+            node_key_len = vlenc_u64(key_node->id(), node_key);
+
+        uint64_t      num_immediate = 0;
+        unsigned char imm_key[MAX_KEYLEN];
+        size_t        imm_key_len = 0;
+        
+        for (const Entry& e : immediates) {
+            unsigned char buf[32]; // max space for one immediate entry
+            size_t        p = 0;
+
+            // need to convert the Variant to its actual type before saving
+            bool    ok = true;
+            Variant v  = e.value().concretize(db.attribute(e.attribute()).type(), &ok);
+
+            if (!ok)
+                continue;
+            
+            p += vlenc_u64(e.attribute(), buf+p);
+            p += v.pack(buf+p);
+
+            // discard entry if it won't fit in the key buf :-(
+            if (p + imm_key_len + node_key_len + 1 >= MAX_KEYLEN)
+                break;
+
+            ++num_immediate;
+            memcpy(imm_key+imm_key_len, buf, p);
+            imm_key_len += p;
+        }
+        
+        size_t pos = vlenc_u64(2*num_immediate + (key_node ? 1 : 0), key);
+        
+        memcpy(key+pos, node_key, node_key_len);
+        pos += node_key_len;
+        memcpy(key+pos, imm_key,  imm_key_len);
+        pos += imm_key_len;
+
+        return pos;
+    }
     
     void process(CaliperMetadataDB& db, const EntryList& list) {
         update_key_attribute_ids(db);
 
-        // --- Unravel nodes, filter for key attributes, and group by attribute
+        // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
-
-        nodes.reserve(80);
-
-        bool select_all = m_key_strings.empty() && m_key_ids.empty();
+        std::vector<Entry>       immediates;
         
+        nodes.reserve(80);
+        immediates.reserve(m_key_ids.size());
+        
+        bool select_all = m_key_strings.empty() && m_key_ids.empty();
+
         for (const Entry& e : list)
             for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
                 if (select_all || std::find(m_key_ids.begin(), m_key_ids.end(), node->attribute()) != m_key_ids.end())
-                    nodes.push_back(node);
-        // ignore immediate value entries for now?!
-        
-        if (nodes.empty())
-            return;
+                    nodes.push_back(node);    
 
-        stable_sort(nodes.begin(), nodes.end(),
-                    [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+        // Only include explicitly selected immediate entries in the key.
+        // Add them in m_key_ids order to make sure they're normalized
+        for (cali_id_t id : m_key_ids)
+            for (const Entry& e : list)
+                if (e.is_immediate() && e.attribute() == id)
+                    immediates.push_back(e);                
         
-        // --- Reverse nodes (restores original order) and get/create tree node
+        // --- Group by attribute, reverse nodes (restores original order) and get/create tree node
 
         std::vector<Attribute> attr;
         std::vector<Variant>   data;
 
         attr.reserve(nodes.size());
         data.reserve(nodes.size());
+
+        stable_sort(nodes.begin(), nodes.end(),
+                    [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
 
         for (auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit) {
             attr.push_back(db.attribute((*rit)->attribute()));
@@ -371,15 +420,10 @@ struct Aggregator::AggregatorImpl
 
         const Node*   key_node = db.make_entry(attr.size(), attr.data(), data.data());
 
-        if (!key_node)
-            return;
-
         // --- Pack key
 
         unsigned char key[MAX_KEYLEN];
-        size_t        pos  = 0;
-
-        pos += vlenc_u64(key_node->id(), key + pos);
+        size_t        pos  = pack_key(key_node, immediates, db, key);
 
         TrieNode*     trie = find_trienode(pos, key);
 
@@ -396,6 +440,26 @@ struct Aggregator::AggregatorImpl
     // --- Flush
     //
 
+    void unpack_key(const unsigned char* key, const CaliperMetadataDB& db, EntryList& list) {
+        // key format: 2*N + node flag, node id, N * (attr id, Variant)
+
+        size_t   p = 0;
+        uint64_t n = vldec_u64(key + p, &p);
+
+        if (n % 2 == 1)
+            list.push_back(Entry(db.node(vldec_u64(key + p, &p))));
+
+        for (unsigned i = 0; i < n/2; ++i) {
+            bool      ok   = true;
+            
+            cali_id_t id   = static_cast<cali_id_t>(vldec_u64(key+p, &p));
+            Variant   data = Variant::unpack(key+p, &p, &ok);
+
+            if (ok)
+                list.push_back(Entry(db.attribute(id), data));
+        }
+    }
+    
     void recursive_flush(size_t n, unsigned char* key, TrieNode* trie,
                          CaliperMetadataDB& db, const SnapshotProcessFn push) {
         if (!trie)
@@ -405,10 +469,9 @@ struct Aggregator::AggregatorImpl
         
         if (!trie->kernels.empty()) {
             EntryList list;
-            size_t    p = 0;
 
             // Decode & add key node entry
-            list.push_back(Entry(db.node(vldec_u64(key + p, &p))));
+            unpack_key(key, db, list);
 
             // Write aggregation variables
             for (AggregateKernel* k : trie->kernels)
