@@ -337,12 +337,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return node;
     }
 
-    Attribute create_attribute(const char* name, cali_attr_type type, int prop) {
-        // AAH! Need to put attribute name in self-controlled memory somehow
-
+    Attribute create_attribute(const std::string& name, cali_attr_type type, int prop) {
         // --- Check if attribute exists
         
-        auto it = m_attributes.lower_bound(std::string(name));
+        auto it = m_attributes.lower_bound(name);
 
         if (it != m_attributes.end() && it->first == name)
             return Attribute::make_attribute(it->second, &m_attr_keys);
@@ -353,7 +351,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         Attribute n_attr[2] = { attribute(m_attr_keys.prop_attr_id),
                                 attribute(m_attr_keys.name_attr_id) };
         Variant   n_data[2] = { Variant(prop),
-                                Variant(CALI_TYPE_STRING, name, strlen(name)) };
+                                Variant(name) /* FIXME: Using explicit string rep */ }; 
 
         Node* node = make_entry(2, n_attr, n_data, typenode);
 
@@ -428,7 +426,7 @@ CaliperMetadataDB::make_entry(size_t n, const Attribute* attr, const Variant* va
 }
 
 Attribute
-CaliperMetadataDB::create_attribute(const char* name, cali_attr_type type, int prop)
+CaliperMetadataDB::create_attribute(const std::string& name, cali_attr_type type, int prop)
 {
     return mP->create_attribute(name, type, prop);
 }

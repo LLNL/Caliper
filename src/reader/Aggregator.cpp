@@ -213,12 +213,181 @@ private:
     Config*  m_config;
 };
 
+//
+// --- StatisticsKernel
+//
+
+class StatisticsKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_aggr_attr_name;
+        Attribute   m_aggr_attr;
+
+        Attribute   m_avg_attr;
+        Attribute   m_min_attr;
+        Attribute   m_max_attr;
+
+        
+    public:
+
+        Attribute get_aggr_attr(CaliperMetadataDB& db) {
+            if (m_aggr_attr == Attribute::invalid)
+                m_aggr_attr = db.attribute(m_aggr_attr_name);
+
+            return m_aggr_attr;
+        }
+
+        Attribute get_avg_attribute(CaliperMetadataDB& db) {
+            if (m_aggr_attr == Attribute::invalid)
+                return Attribute::invalid;
+            if (m_avg_attr == Attribute::invalid)
+                m_avg_attr =
+                    db.create_attribute("aggregate.avg#" + m_aggr_attr_name,
+                                        CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            return m_avg_attr;
+        }
+
+        Attribute get_min_attribute(CaliperMetadataDB& db) {
+            if (m_aggr_attr == Attribute::invalid)
+                return Attribute::invalid;            
+            if (m_min_attr == Attribute::invalid)
+                m_min_attr =
+                    db.create_attribute("aggregate.min#" + m_aggr_attr_name,
+                                        m_aggr_attr.type(),
+                                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            return m_min_attr;
+        }
+        
+        Attribute get_max_attribute(CaliperMetadataDB& db) {
+            if (m_aggr_attr == Attribute::invalid)
+                return Attribute::invalid;            
+            if (m_max_attr == Attribute::invalid)
+                m_max_attr =
+                    db.create_attribute("aggregate.max#" + m_aggr_attr_name,
+                                        m_aggr_attr.type(),
+                                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            return m_max_attr;
+        }
+                
+        AggregateKernel* make_kernel() {
+            return new StatisticsKernel(this);
+        }
+
+        Config(const std::string& name)
+            : m_aggr_attr_name(name),
+              m_aggr_attr(Attribute::invalid),
+              m_avg_attr(Attribute::invalid),
+              m_min_attr(Attribute::invalid),
+              m_max_attr(Attribute::invalid)
+            {
+                Log(2).stream() << "aggregate: creating sum kernel for attribute " << m_aggr_attr_name << std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::string& cfg) {
+            return new Config(cfg);
+        }        
+    };
+
+    StatisticsKernel(Config* config)
+        : m_count(0), m_sum(0), m_config(config)
+        { }
+    
+    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+        Attribute aggr_attr = m_config->get_aggr_attr(db);
+
+        if (aggr_attr == Attribute::invalid)
+            return;
+            
+        for (const Entry& e : list) {
+            if (e.attribute() == aggr_attr.id()) {
+                switch (aggr_attr.type()) {
+                case CALI_TYPE_DOUBLE:
+                    {
+                        if (m_min.empty())
+                            m_min = Variant(std::numeric_limits<double>::max());
+                        if (m_max.empty())
+                            m_max = Variant(std::numeric_limits<double>::min());
+                        
+                        double val = e.value().to_double();                        
+                    
+                        m_sum = Variant(m_sum.to_double() + val);
+                        m_min = Variant(std::min(m_min.to_double(), val));
+                        m_max = Variant(std::max(m_max.to_double(), val));
+                    }
+                    break;
+                case CALI_TYPE_INT:
+                    {
+                        if (m_min.empty())
+                            m_min = Variant(std::numeric_limits<int>::max());
+                        if (m_max.empty())
+                            m_max = Variant(std::numeric_limits<int>::min());
+
+                        int val = e.value().to_int();
+                    
+                        m_sum = Variant(m_sum.to_int() + val);
+                        m_min = Variant(std::min(m_min.to_int(), val));
+                        m_max = Variant(std::max(m_max.to_int(), val));
+                    }
+                    break;
+                case CALI_TYPE_UINT:
+                    {
+                        if (m_min.empty())
+                            m_min = Variant(std::numeric_limits<uint64_t>::max());
+                        if (m_max.empty())
+                            m_max = Variant(std::numeric_limits<uint64_t>::min());
+
+                        uint64_t val = e.value().to_uint();
+                    
+                        m_sum = Variant(m_sum.to_uint() + val);
+                        m_min = Variant(std::min(m_min.to_uint(), val));
+                        m_max = Variant(std::max(m_max.to_uint(), val));
+                    }
+                    break;
+                default:
+                    ;
+                    // Some error?!
+                }
+
+                ++m_count;
+                
+                break;
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+        if (m_count > 0) {
+            list.push_back(Entry(m_config->get_avg_attribute(db),
+                                 m_sum.to_double() / m_count));
+            list.push_back(Entry(m_config->get_min_attribute(db), m_min));
+            list.push_back(Entry(m_config->get_max_attribute(db), m_max));
+        }
+    }
+
+private:
+
+    unsigned m_count;
+    
+    Variant  m_sum;
+    Variant  m_min;
+    Variant  m_max;
+    
+    Config*  m_config;
+};
+
+
 const struct KernelInfo {
     const char* name;
     AggregateKernelConfig* (*create)(const std::string& cfg);
 } kernel_list[] = {
-    { "count", CountKernel::Config::create },
-    { "sum",   SumKernel::Config::create   },
+    { "count",      CountKernel::Config::create      },
+    { "sum",        SumKernel::Config::create        },
+    { "statistics", StatisticsKernel::Config::create },
     { 0, 0 }
 };
 
