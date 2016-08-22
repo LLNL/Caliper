@@ -1,9 +1,9 @@
 #
-# - Find libunwind
+# - Find libcurl
 #
-# LIBCURL_INCLUDE_DIR - Path to libunwind.h
-# LIBCURL_LIBRARY     - List of libraries for using libunwind
-# LIBCURL_FOUND       - True if libunwind was found
+# LIBCURL_INCLUDE_DIR - Path to libcurl.h
+# LIBCURL_LIBRARY     - List of libraries for using libcurl
+# LIBCURL_FOUND       - True if libcurl was found
 
 if(LIBCURL_INCLUDE_DIR)
   set(LIBCURL_FIND_QUIETLY true)
