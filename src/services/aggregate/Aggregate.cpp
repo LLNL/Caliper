@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -62,16 +62,16 @@ using namespace cali;
 
 #define MAX_KEYLEN         128
 #define SNAP_MAX            80 // max snapshot size
-    
+
 //
-// --- Class for the per-thread aggregation database 
+// --- Class for the per-thread aggregation database
 //
-    
+
 class AggregateDB {
     //
     // --- members
     //
-        
+
     std::atomic<bool>        m_stopped;
     std::atomic<bool>        m_retired;
 
@@ -87,7 +87,7 @@ class AggregateDB {
         double   max;
         double   sum;
         int      count;
-            
+
         AggregateKernel()
             : min(std::numeric_limits<double>::max()),
               max(std::numeric_limits<double>::min()),
@@ -99,11 +99,11 @@ class AggregateDB {
             max  = std::max(max, val);
             sum += val;
             ++count;
-        }            
+        }
     };
 
     struct TrieNode {
-        uint32_t next[256] = { 0 };        
+        uint32_t next[256] = { 0 };
         uint32_t k_id      = 0xFFFFFFFF;
         uint32_t count     = 0;
     };
@@ -128,8 +128,8 @@ class AggregateDB {
                 } else
                     return 0;
             }
-            
-            return m_blocks[block] + (id % ENTRIES_PER_BLOCK);            
+
+            return m_blocks[block] + (id % ENTRIES_PER_BLOCK);
         }
 
         void clear() {
@@ -138,29 +138,29 @@ class AggregateDB {
 
             m_num_blocks = 0;
         }
-        
+
         size_t num_blocks() const {
             return m_num_blocks;
         }
-        
+
         BlockAlloc() {
-            
+
         }
 
         ~BlockAlloc() {
             clear();
         }
     };
-    
+
     BlockAlloc<TrieNode>        m_trie;
     BlockAlloc<AggregateKernel> m_kernels;
-    
-    // we maintain some internal statistics        
+
+    // we maintain some internal statistics
     size_t                   m_num_trie_entries;
     size_t                   m_num_kernel_entries;
     size_t                   m_num_dropped;
-    size_t                   m_max_keylen;        
-        
+    size_t                   m_max_keylen;
+
     //
     // --- static data
     //
@@ -174,10 +174,12 @@ class AggregateDB {
     static Attribute         s_count_attribute;
 
     static std::vector<std::string>
+                             s_key_attribute_names;
+    static std::vector<std::string>
                              s_aggr_attribute_names;
     static std::vector<StatisticsAttributes>
                              s_stats_attributes;
-        
+
     static const ConfigSet::Entry
                              s_configdata[];
     static ConfigSet         s_config;
@@ -194,7 +196,8 @@ class AggregateDB {
     static size_t            s_global_num_kernel_blocks;
     static size_t            s_global_num_dropped;
     static size_t            s_global_max_keylen;
-        
+
+
     //
     // --- helper functions
     //
@@ -204,8 +207,8 @@ class AggregateDB {
             m_next->m_prev = m_prev;
         if (m_prev)
             m_prev->m_next = m_next;
-    }        
-    
+    }
+
     TrieNode* find_entry(size_t n, unsigned char* key, bool alloc) {
         TrieNode* entry = m_trie.get(0, alloc);
 
@@ -224,13 +227,13 @@ class AggregateDB {
             uint32_t id = static_cast<uint32_t>(m_num_kernel_entries + 1);
 
             m_num_kernel_entries += std::max<size_t>(1, m_aggr_attributes.size());
-            
+
             if (m_kernels.get(id, alloc) == 0)
                 return 0;
             else
                 entry->k_id = id;
         }
-        
+
         return entry;
     }
 
@@ -238,9 +241,9 @@ class AggregateDB {
                                    Caliper* c, std::unordered_set<cali_id_t>& written_node_cache) {
         // --- decode key
 
-        size_t   p = 0;            
+        size_t   p = 0;
         int      num_nodes = static_cast<int>(vldec_u64(key + p, &p));
-            
+
         Variant  node_vec[SNAP_MAX];
 
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
@@ -249,15 +252,15 @@ class AggregateDB {
         // --- write aggregate entries
 
         int      num_aggr_attr = 1; // limit to single aggregation attribute for now
-            
+
         Variant  attr_vec[SNAP_MAX];
         Variant  data_vec[SNAP_MAX];
-            
+
         int      ap = 0;
 
         for (int a = 0; a < std::min(num_aggr_attr, SNAP_MAX/3); ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
-            
+
             if (!k)
                 break;
             if (k->count == 0)
@@ -266,14 +269,14 @@ class AggregateDB {
             attr_vec[3*ap+0] = Variant(s_stats_attributes[a].min_attr.id());
             attr_vec[3*ap+1] = Variant(s_stats_attributes[a].max_attr.id());
             attr_vec[3*ap+2] = Variant(s_stats_attributes[a].sum_attr.id());
-                
+
             data_vec[3*ap+0] = Variant(k->min);
             data_vec[3*ap+1] = Variant(k->max);
             data_vec[3*ap+2] = Variant(k->sum);
 
             ++ap;
         }
-        
+
         uint64_t count = entry->count;
 
         attr_vec[3*ap] = s_count_attribute.id();
@@ -317,7 +320,7 @@ class AggregateDB {
 
         c->events().write_record(ContextRecord::record_descriptor(), n, data);
     }
-        
+
     size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry,
                            Caliper* c, std::unordered_set<cali_id_t>& written_node_cache) {
         if (!entry)
@@ -338,7 +341,7 @@ class AggregateDB {
 
         memset(next_key, 0, n+2);
         memcpy(next_key, key, n);
-        
+
         for (size_t i = 0; i < 256; ++i) {
             if (entry->next[i] == 0)
                 continue;
@@ -351,19 +354,19 @@ class AggregateDB {
 
         return num_written;
     }
-        
+
 public:
 
     void clear() {
         m_trie.clear();
         m_kernels.clear();
-        
+
         m_num_trie_entries   = 0;
         m_num_kernel_entries = 0;
         m_num_dropped        = 0;
         m_max_keylen         = 0;
     }
-    
+
     void process_snapshot(Caliper* c, const EntryList* snapshot) {
         EntryList::Sizes sizes = snapshot->size();
 
@@ -371,24 +374,24 @@ public:
             return;
 
         EntryList::Data addr   = snapshot->data();
-            
+
         //
         // --- sort entries in node vector to normalize key
         //
-            
-        cali_id_t       nodeid_vec[SNAP_MAX];
+
+        cali_id_t*  nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
 
         for (size_t i = 0; i < sizes.n_nodes; ++i)
             nodeid_vec[i] = addr.node_entries[i]->id();
-            
-        std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);            
+
+        std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
 
         //
         // --- encode key
         //
-            
+
         unsigned char   key[MAX_KEYLEN];
-            
+
         uint64_t        n_nodes = sizes.n_nodes;
         size_t          pos     = 0;
 
@@ -415,9 +418,9 @@ public:
         //
 
         ++entry->count;
-        
-        for (size_t a = 0; a < m_aggr_attributes.size(); ++a) 
-            for (size_t i = 0; i < sizes.n_immediate; ++i) 
+
+        for (size_t a = 0; a < m_aggr_attributes.size(); ++a)
+            for (size_t i = 0; i < sizes.n_immediate; ++i)
                 if (addr.immediate_attr[i] == m_aggr_attributes[a].id()) {
                     AggregateKernel* k = m_kernels.get(entry->k_id + a, !c->is_signal());
 
@@ -437,7 +440,7 @@ public:
         return m_stopped.load();
     }
 
-    AggregateDB(Caliper* c)
+    AggregateDB(Caliper* c, const std::vector<std::string>& key_names)
         : m_stopped(false),
           m_retired(false),
           m_next(nullptr),
@@ -450,7 +453,7 @@ public:
         m_aggr_attributes.assign(s_aggr_attribute_names.size(), Attribute::invalid);
 
         Log(2).stream() << "aggregate: creating aggregation database" << std::endl;
-            
+
         for (int a = 0; a < s_aggr_attribute_names.size(); ++a) {
             Attribute attr = c->get_attribute(s_aggr_attribute_names[a]);
 
@@ -471,14 +474,14 @@ public:
     }
 
     static AggregateDB* acquire(Caliper* c, bool alloc) {
-        AggregateDB* db = 
+        AggregateDB* db =
             static_cast<AggregateDB*>(pthread_getspecific(s_aggregate_db_key));
 
         if (alloc && !db) {
-            db = new AggregateDB(c);
+            db = new AggregateDB(c, s_key_attribute_names);
 
             if (pthread_setspecific(s_aggregate_db_key, db) == 0) {
-                std::lock_guard<util::spinlock> 
+                std::lock_guard<util::spinlock>
                     g(s_list_lock);
 
                 if (s_list)
@@ -513,7 +516,7 @@ public:
 
         size_t num_written = 0;
         std::unordered_set<cali_id_t> written_node_cache;
-            
+
         while (db) {
             db->m_stopped.store(true);
             num_written += db->flush(c, written_node_cache);
@@ -551,7 +554,7 @@ public:
 
         Log(1).stream() << "aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
-        
+
     static void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
         AggregateDB* db = AggregateDB::acquire(c, !c->is_signal());
 
@@ -561,7 +564,7 @@ public:
             ++s_global_num_dropped;
     }
 
-    static void post_init_cb(Caliper* c) {        
+    static void post_init_cb(Caliper* c) {
         // Initialize master-thread aggregation DB
         AggregateDB::acquire(c, true);
     }
@@ -570,13 +573,12 @@ public:
         Log(2).stream() << "aggregate: max key len " << s_global_max_keylen << ", "
                         << s_global_num_kernel_entries << " entries, "
                         << s_global_num_trie_entries << " nodes, "
-                        << s_global_num_trie_blocks + s_global_num_kernel_blocks  << " blocks " 
-                        << " (" <<
-            (s_global_num_trie_blocks * sizeof(TrieNode) * 1024
-             + s_global_num_kernel_blocks * sizeof(AggregateKernel) * 1024)
-                        << " bytes allocated)"
+                        << s_global_num_trie_blocks + s_global_num_kernel_blocks << " blocks ("
+                        << s_global_num_trie_blocks * sizeof(TrieNode) * 1024
+            + s_global_num_kernel_blocks * sizeof(AggregateKernel) * 1024
+                        << " bytes reserved)"
                         << std::endl;
-            
+
         if (s_global_num_dropped > 0)
             Log(1).stream() << "aggregate: dropped " << s_global_num_dropped
                             << " snapshots." << std::endl;
@@ -584,7 +586,7 @@ public:
 
     static void create_statistics_attributes(Caliper* c) {
         s_stats_attributes.resize(s_aggr_attribute_names.size());
-            
+
         for (size_t i = 0; i < s_aggr_attribute_names.size(); ++i) {
             s_stats_attributes[i].min_attr =
                 c->create_attribute(std::string("aggregate.min#") + s_aggr_attribute_names[i],
@@ -613,26 +615,28 @@ public:
             return false;
         }
 
-        util::split(s_config.get("attributes").to_string(), ':', 
+        util::split(s_config.get("attributes").to_string(), ':',
                     std::back_inserter(s_aggr_attribute_names));
+        util::split(s_config.get("key").to_string(), ':',
+                    std::back_inserter(s_key_attribute_names));
 
         if (pthread_key_create(&s_aggregate_db_key, retire) != 0) {
-            Log(0).stream() << "aggregate: error: pthread_key_create() failed" 
+            Log(0).stream() << "aggregate: error: pthread_key_create() failed"
                             << std::endl;
             return false;
         }
 
         return true;
     }
-        
+
     static void aggregate_register(Caliper* c) {
         if (!AggregateDB::init_static_data()) {
             Log(0).stream() << "aggregate: disabling aggregation service"
                             << std::endl;
-                
+
             return;
         }
-            
+
         AggregateDB::create_statistics_attributes(c);
 
         c->events().post_init_evt.connect(post_init_cb);
@@ -642,13 +646,17 @@ public:
 
         Log(1).stream() << "Registered aggregation service" << std::endl;
     }
-        
+
 };
 
 const ConfigSet::Entry AggregateDB::s_configdata[] = {
     { "attributes",   CALI_TYPE_STRING, "time.inclusive.duration",
       "List of attributes to be aggregated",
-      "List of attributes to be aggregated" },        
+      "List of attributes to be aggregated" },
+    { "key",   CALI_TYPE_STRING, "",
+      "List of attributes in the aggregation key",
+      "List of attributes in the aggregation key."
+      "If specified, only aggregate over the given attributes." },
     ConfigSet::Terminator
 };
 
@@ -656,6 +664,7 @@ ConfigSet      AggregateDB::s_config;
 
 Attribute      AggregateDB::s_count_attribute = Attribute::invalid;
 
+std::vector<std::string> AggregateDB::s_key_attribute_names;
 std::vector<std::string> AggregateDB::s_aggr_attribute_names;
 std::vector<AggregateDB::StatisticsAttributes> AggregateDB::s_stats_attributes;
 
