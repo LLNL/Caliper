@@ -853,6 +853,15 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
 }
 
 Node*
+Caliper::make_tree_entry(size_t n, const Node* nodelist[])
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    return mG->tree.get_path(n, nodelist, nullptr, &m_thread_scope->mempool);
+}
+
+Node*
 Caliper::node(cali_id_t id)
 {
     // no siglock necessary
@@ -902,7 +911,6 @@ Caliper::instance()
                 Log(0).stream() << "Unable to register exit handler";
 
             GlobalData::sG = new Caliper::GlobalData;
-            
             GlobalData::s_init_lock = 0;
         }
     }

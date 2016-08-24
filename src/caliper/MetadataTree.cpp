@@ -270,14 +270,28 @@ struct MetadataTree::MetadataTreeImpl
         return node;
     }
 
+    Node*
+    get_path(MemoryPool* pool, size_t n, const Node* nodelist[], Node* parent = nullptr) {
+        Node* node = parent;
+
+        for (size_t i = 0; i < n; ++i)
+            if (nodelist[i])
+                node = get_or_copy_node(pool, nodelist[i], node);
+
+        return node;
+    }
+
     /// \brief Get a new node under \param parent that is a copy of \param node
     /// This may create a new node entry, but does not deep-copy its data
 
     Node*
-    get_or_copy_node(MemoryPool* pool, Node* from, Node* parent = nullptr) {
-        Node* node = parent ? parent->first_child() : m_root.first_child();
+    get_or_copy_node(MemoryPool* pool, const Node* from, Node* parent = nullptr) {
+        if (!parent)
+            parent = &m_root;
         
-        for ( ; node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
+        Node* node = nullptr;
+        
+        for ( node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
             ;
 
         if (!node) {
@@ -285,9 +299,8 @@ struct MetadataTree::MetadataTreeImpl
 
             node = new(ptr) 
                 Node(m_node_id.fetch_add(1), from->attribute(), from->data());
-
-            if (parent)
-                parent->append(node);
+            
+            parent->append(node);
         }
 
         return node;
@@ -405,6 +418,12 @@ Node*
 MetadataTree::get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent, MemoryPool* pool)
 {
     return mP->get_path(pool, n, attr, data, parent);
+}
+
+Node*
+MetadataTree::get_path(size_t n, const Node* nodelist[], Node* parent, MemoryPool* pool)
+{
+    return mP->get_path(pool, n, nodelist, parent);
 }
 
 Node*

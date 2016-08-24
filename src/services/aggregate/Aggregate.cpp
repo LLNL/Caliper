@@ -59,6 +59,7 @@
 #include <unordered_set>
 
 using namespace cali;
+using namespace std;
 
 #define MAX_KEYLEN         128
 #define SNAP_MAX            80 // max snapshot size
@@ -173,11 +174,11 @@ class AggregateDB {
 
     static Attribute         s_count_attribute;
 
-    static std::vector<std::string>
-                             s_key_attribute_names;
-    static std::vector<std::string>
-                             s_aggr_attribute_names;
-    static std::vector<StatisticsAttributes>
+    static vector<cali_id_t> s_key_attribute_ids;
+    static vector<Attribute> s_key_attributes;
+    static vector<string>    s_key_attribute_names;
+    static vector<string>    s_aggr_attribute_names;
+    static vector<StatisticsAttributes>
                              s_stats_attributes;
 
     static const ConfigSet::Entry
@@ -376,28 +377,80 @@ public:
         EntryList::Data addr   = snapshot->data();
 
         //
-        // --- sort entries in node vector to normalize key
+        // --- create / get context tree nodes for key
         //
+        
+        cali_id_t   key_node   = CALI_INV_ID;
+        cali_id_t*  nodeid_vec = &key_node;
+        uint64_t    n_nodes    = 0;
 
-        cali_id_t*  nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
+        size_t      n_key_attr = s_key_attribute_names.size();
+            
+        if (n_key_attr > 0) {
+            // --- find out number of entries for each key attribute
+            
+            size_t* key_entries = static_cast<size_t*>(alloca(n_key_attr * sizeof(size_t)));
+            
+            memset(key_entries, 0, n_key_attr * sizeof(size_t));
+            
+            for (size_t i = 0; i < sizes.n_nodes; ++i)
+                for (const Node* node = addr.node_entries[i]; node; node = node->parent())
+                    for (size_t a = 0; a < n_key_attr; ++a)
+                        if (s_key_attribute_ids[a] != CALI_INV_ID &&
+                            s_key_attribute_ids[a] == node->attribute())
+                            ++key_entries[a];
 
-        for (size_t i = 0; i < sizes.n_nodes; ++i)
-            nodeid_vec[i] = addr.node_entries[i]->id();
+            // --- make prefix sum
+            
+            for (size_t a = 1; a < n_key_attr; ++a)
+                key_entries[a] += key_entries[a-1];
 
-        std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
+            // --- construct path of key nodes in reverse order, make/find new entry
+
+            size_t tot_entries = key_entries[n_key_attr-1];
+            
+            if (tot_entries > 0) {
+                const Node* *nodelist = static_cast<const Node**>(alloca(tot_entries*sizeof(const Node*)));
+                size_t* filled = static_cast<size_t*>(alloca(n_key_attr*sizeof(size_t)));
+
+                memset(nodelist, 0, tot_entries * sizeof(const Node*));
+                memset(filled,   0, n_key_attr  * sizeof(size_t));
+                
+                for (size_t i = 0; i < sizes.n_nodes; ++i)
+                    for (const Node* node = addr.node_entries[i]; node; node = node->parent())
+                        for (size_t a = 0; a < n_key_attr; ++a)
+                            if (s_key_attribute_ids[a] != CALI_INV_ID &&
+                                s_key_attribute_ids[a] == node->attribute())
+                                nodelist[key_entries[a] - (++filled[a])] = node;
+                
+                const Node* node = c->make_tree_entry(tot_entries, nodelist);
+
+                if (node)
+                    nodeid_vec[n_nodes++] = node->id();
+            }
+        } else {
+            // --- no key attributes set: take nodes in snapshot   
+
+            nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
+            n_nodes    = sizes.n_nodes;
+            
+            for (size_t i = 0; i < sizes.n_nodes; ++i)
+                nodeid_vec[i] = addr.node_entries[i]->id();
+
+            // --- sort to make unique keys
+            std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
+        }
 
         //
         // --- encode key
         //
 
         unsigned char   key[MAX_KEYLEN];
-
-        uint64_t        n_nodes = sizes.n_nodes;
-        size_t          pos     = 0;
+        size_t          pos = 0;
 
         pos += vlenc_u64(n_nodes, key + pos);
 
-        for (size_t i = 0; i < sizes.n_nodes && pos+10 < MAX_KEYLEN; ++i)
+        for (size_t i = 0; i < n_nodes && pos+10 < MAX_KEYLEN; ++i)
             pos += vlenc_u64(nodeid_vec[i], key + pos);
 
         m_max_keylen = std::max(pos, m_max_keylen);
@@ -440,7 +493,7 @@ public:
         return m_stopped.load();
     }
 
-    AggregateDB(Caliper* c, const std::vector<std::string>& key_names)
+    AggregateDB(Caliper* c)
         : m_stopped(false),
           m_retired(false),
           m_next(nullptr),
@@ -478,7 +531,7 @@ public:
             static_cast<AggregateDB*>(pthread_getspecific(s_aggregate_db_key));
 
         if (alloc && !db) {
-            db = new AggregateDB(c, s_key_attribute_names);
+            db = new AggregateDB(c);
 
             if (pthread_setspecific(s_aggregate_db_key, db) == 0) {
                 std::lock_guard<util::spinlock>
@@ -526,7 +579,7 @@ public:
             s_global_num_trie_blocks    += db->m_trie.num_blocks();
             s_global_num_kernel_blocks  += db->m_kernels.num_blocks();
             s_global_num_dropped        += db->m_num_dropped;
-            s_global_max_keylen   = std::max(s_global_max_keylen, db->m_max_keylen);
+            s_global_max_keylen = std::max(s_global_max_keylen, db->m_max_keylen);
 
             db->m_stopped.store(false);
 
@@ -556,7 +609,7 @@ public:
     }
 
     static void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
-        AggregateDB* db = AggregateDB::acquire(c, !c->is_signal());
+        AggregateDB* db = acquire(c, !c->is_signal());
 
         if (db && !db->stopped())
             db->process_snapshot(c, snapshot);
@@ -566,9 +619,32 @@ public:
 
     static void post_init_cb(Caliper* c) {
         // Initialize master-thread aggregation DB
-        AggregateDB::acquire(c, true);
+        acquire(c, true);
+
+        // Update key attributes
+        for (unsigned i = 0; i < s_key_attribute_names.size(); ++i) {
+            Attribute attr = c->get_attribute(s_key_attribute_names[i]);
+
+            if (attr != Attribute::invalid) {
+                s_key_attributes[i]    = attr;
+                s_key_attribute_ids[i] = attr.id();
+            }
+        }
     }
 
+    static void create_attribute_cb(Caliper* c, const Attribute& attr) {
+        // Update key attributes
+        auto it = std::find(s_key_attribute_names.begin(), s_key_attribute_names.end(),
+                            attr.name());
+
+        // No lock: hope that update is more-or-less atomic, and
+        // consequences of invalid values are negligible
+        if (it != s_key_attribute_names.end()) {
+            s_key_attributes[it-s_key_attribute_names.begin()]    = attr;
+            s_key_attribute_ids[it-s_key_attribute_names.begin()] = attr.id();
+        }
+    }
+    
     static void finish_cb(Caliper* c) {
         Log(2).stream() << "aggregate: max key len " << s_global_max_keylen << ", "
                         << s_global_num_kernel_entries << " entries, "
@@ -620,6 +696,9 @@ public:
         util::split(s_config.get("key").to_string(), ':',
                     std::back_inserter(s_key_attribute_names));
 
+        s_key_attribute_ids.assign(s_key_attribute_names.size(), CALI_INV_ID);
+        s_key_attributes.assign(s_key_attribute_names.size(), Attribute::invalid);
+        
         if (pthread_key_create(&s_aggregate_db_key, retire) != 0) {
             Log(0).stream() << "aggregate: error: pthread_key_create() failed"
                             << std::endl;
@@ -639,6 +718,7 @@ public:
 
         AggregateDB::create_statistics_attributes(c);
 
+        c->events().create_attr_evt.connect(create_attribute_cb);
         c->events().post_init_evt.connect(post_init_cb);
         c->events().process_snapshot.connect(process_snapshot_cb);
         c->events().flush.connect(flush_cb);
@@ -664,9 +744,11 @@ ConfigSet      AggregateDB::s_config;
 
 Attribute      AggregateDB::s_count_attribute = Attribute::invalid;
 
-std::vector<std::string> AggregateDB::s_key_attribute_names;
-std::vector<std::string> AggregateDB::s_aggr_attribute_names;
-std::vector<AggregateDB::StatisticsAttributes> AggregateDB::s_stats_attributes;
+vector<string> AggregateDB::s_key_attribute_names;
+vector<Attribute> AggregateDB::s_key_attributes;
+vector<string> AggregateDB::s_aggr_attribute_names;
+vector<cali_id_t> AggregateDB::s_key_attribute_ids;
+vector<AggregateDB::StatisticsAttributes> AggregateDB::s_stats_attributes;
 
 pthread_key_t  AggregateDB::s_aggregate_db_key;
 
