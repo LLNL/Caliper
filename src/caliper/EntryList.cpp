@@ -119,20 +119,20 @@ EntryList::push_record(WriteRecordFn fn) const
 
     for (int i = 0; i < m_sizes.n_nodes; ++i)
         m_node_array[i]->write_path(fn);
-        
-    cali::Variant *attr = (cali::Variant*)alloca(m_sizes.n_nodes*sizeof(cali::Variant));
-    cali::Variant *node = (cali::Variant*)alloca(m_sizes.n_immediate*sizeof(cali::Variant));
+
+    std::vector<cali::Variant> attr_vec(m_sizes.n_immediate, Variant());
+    std::vector<cali::Variant> node_vec(m_sizes.n_nodes,     Variant());
 
     for (int i = 0; i < m_sizes.n_nodes; ++i)
-        node[i] = cali::Variant(m_node_array[i]->id());
+        node_vec[i] = cali::Variant(m_node_array[i]->id());
     for (int i = 0; i < m_sizes.n_immediate; ++i)
-        attr[i] = cali::Variant(m_attr_array[i]);
+        attr_vec[i] = cali::Variant(m_attr_array[i]);
 
     int n_nodes     = static_cast<size_t>(m_sizes.n_nodes);
     int n_immediate = static_cast<size_t>(m_sizes.n_immediate);
     
     int                     n[3] = { n_nodes, n_immediate, n_immediate };
-    const cali::Variant* data[3] = { node, attr, m_data_array }; 
+    const cali::Variant* data[3] = { node_vec.data(), attr_vec.data(), m_data_array }; 
 
     fn(ContextRecord::record_descriptor(), n, data);
 }
