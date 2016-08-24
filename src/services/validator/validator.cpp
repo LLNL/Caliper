@@ -30,38 +30,59 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Expand.h
-/// Expand output formatter declarations
+/// @file  NVVP.cpp
+/// @brief Caliper NVVP service
 
-#ifndef CALI_EXPAND_H
-#define CALI_EXPAND_H
+#include "../common/ToolWrapper.h"
+#include "./common/filters/RegexFilter.h"
+#include <cstdio>
+#include <vector>
+namespace cali {
 
-#include "RecordMap.h"
-#include "RecordProcessor.h"
 
-#include <iostream>
-#include <memory>
+class Validator : public ToolWrapper {
+  private:
+     std::vector<std::string> regionTracker;
+     bool isValidlyNested;
+     FILE* logFile;
+  public:
+    void registerBadAnnotation(const Attribute& attr, const Variant& value, const std::string& error = "UNSPECIFIED"){
+        fprintf(logFile,"%lu ; %s ; %s\n",attr.id(),value.to_string().c_str(),error.c_str()); 
+    }
+    virtual void initialize(){
+        isValidlyNested=true;
+        logFile = fopen("AnnotationLog.err","w");
+    }
 
-namespace cali
-{
+    virtual std::string service_name() { 
+      return "Annotation Validator Service";
+    }
+    virtual std::string service_tag(){
+      return "validator";
+    }
+    virtual void finalize(){
+        fclose(logFile);
+    }
+    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
+      regionTracker.push_back(name);
+    }
 
-class CaliperMetadataDB;
-
-class Expand 
-{
-    struct ExpandImpl;
-    std::shared_ptr<ExpandImpl> mP;
-
-public:
-
-    Expand(std::ostream& os, const std::string& filter_string, const std::string& formatstr, const std::string& titlestr);
-
-    ~Expand();
-
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
-    void operator()(CaliperMetadataDB&, const EntryList&) const;
+    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
+      if(name!=regionTracker[regionTracker.size()-1]){
+          std::cout<<"BAD REGION NESTING ON "<<name<<std::endl;
+          isValidlyNested=false;
+          registerBadAnnotation(attr, value, "BAD NESTING");
+      }
+    }
 };
 
-} // namespace cali
+CaliperService validator_service { "validator", &setCallbacks<Validator>};
 
-#endif
+}
+

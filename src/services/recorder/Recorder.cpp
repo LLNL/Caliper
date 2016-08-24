@@ -68,6 +68,8 @@ class Recorder
     enum class Stream { None, File, StdErr, StdOut };
 
     ConfigSet  m_config;
+
+    bool       m_stream_initialized;
     
     Stream     m_stream;
     ofstream   m_ofstream;
@@ -114,9 +116,18 @@ class Recorder
 
         auto it = strmap.find(filename);
 
-        if (it == strmap.end()) {
-            m_stream = Stream::None;
+        if (it == strmap.end())
+            m_stream = Stream::File;
+        else {
+            m_stream = it->second;
+            m_stream_initialized = true;
+        }
+    }
 
+    void init_stream() {
+        if (m_stream == Stream::File) {
+            string filename = m_config.get("filename").to_string();
+            
             if (filename.empty())
                 filename = create_filename();
 
@@ -132,15 +143,20 @@ class Recorder
 
             m_ofstream.open(dirname + filename);
 
-            if (!m_ofstream)
+            if (!m_ofstream) {
                 Log(0).stream() << "Could not open recording file " << filename << endl;
-            else
+                m_stream = Stream::None;
+            } else
                 m_stream = Stream::File;
-        } else
-            m_stream = it->second;
-    }
+        }
 
+        m_stream_initialized = true;
+    }
+    
     std::ostream& get_stream() {
+        if (!m_stream_initialized)
+            init_stream();
+        
         switch (m_stream) {
         case Stream::StdOut:
             return std::cout;
@@ -173,6 +189,7 @@ class Recorder
 
     Recorder(Caliper* c)
         : m_config   { RuntimeConfig::init("recorder", s_configdata) },
+          m_stream_initialized { false },
           m_reccount { 0 }
     { 
         init_recorder();

@@ -3,9 +3,10 @@
 
 #include "Filter.h"
 
-class DefaultFilter : public Filter<DefaultFilter> {
+class DefaultFilter : public Filter {
   public:
-    static bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
+    virtual void initialize(std::string name){};
+    virtual bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
     {
         return true;
     }

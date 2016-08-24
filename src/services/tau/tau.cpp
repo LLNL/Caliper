@@ -30,38 +30,49 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Expand.h
-/// Expand output formatter declarations
+/// @file  tau.cpp
+/// @brief Caliper TAU service
 
-#ifndef CALI_EXPAND_H
-#define CALI_EXPAND_H
+#include "../common/ToolWrapper.h"
+#include "./common/filters/RegexFilter.h"
 
-#include "RecordMap.h"
-#include "RecordProcessor.h"
 
-#include <iostream>
-#include <memory>
+#include <map>
+#include <TAU.h>
 
-namespace cali
-{
+namespace cali {
 
-class CaliperMetadataDB;
 
-class Expand 
-{
-    struct ExpandImpl;
-    std::shared_ptr<ExpandImpl> mP;
+class TAUWrapper : public ToolWrapper {
+  public:
+    virtual void initialize(){
+        TAU_PROFILE_SET_NODE(0);
+    }
 
-public:
+    virtual std::string service_name() { 
+      return "TAU service";
+    }
+    virtual std::string service_tag(){
+      return "tau";
+    }
+    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
 
-    Expand(std::ostream& os, const std::string& filter_string, const std::string& formatstr, const std::string& titlestr);
+      TAU_START(name.c_str());
+    }
 
-    ~Expand();
-
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
-    void operator()(CaliperMetadataDB&, const EntryList&) const;
+    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+      std::stringstream ss;
+      ss << attr.name() << "=" << value.to_string();
+      std::string name = ss.str();
+      TAU_STOP(name.c_str());
+    }
 };
 
-} // namespace cali
+CaliperService tau_service { "tau", &setCallbacks<TAUWrapper>};
 
-#endif
+
+}
+

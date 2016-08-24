@@ -9,48 +9,32 @@
 
 #include <iostream>
 
-namespace {
 
-    static const cali::ConfigSet::Entry s_configdata[] = {
-      { "regex", CALI_TYPE_STRING, "",
-        "Regular expression for matching annotions",
-        "Regular expression for matching annotions"
-      },
-      cali::ConfigSet::Terminator
-    };
-
-}
-
-class RegexFilter : public Filter<RegexFilter> {
+class RegexFilter : public Filter {
   private:
-    static std::string regex;
-    static cali::ConfigSet config;
-
+    std::regex filter_regex;
+    bool inclusive;
   public:
-    static void initialize()
+    virtual void initialize(std::string config_name)
     {
-      config = cali::RuntimeConfig::init("nvvp", s_configdata);
-      regex = config.get("regex").to_string();
+      std::string regex = config.get("regex").to_string();
+      inclusive = config.get("inclusive").to_bool();
+      filter_regex = std::regex(regex, std::regex::optimize);
     }
 
-    static bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
+    virtual bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
     {
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
 
       std::string attr_and_val = ss.str();
 
-      std::regex filter_regex(regex,  std::regex_constants::extended);
-
       if (std::regex_search(attr_and_val, filter_regex)) {
-        return true;
+        return inclusive;
       } else {
-        return false;
+        return (!inclusive);
       }
     }
 };
-
-std::string RegexFilter::regex;
-cali::ConfigSet RegexFilter::config;
 
 #endif

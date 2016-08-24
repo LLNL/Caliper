@@ -46,6 +46,9 @@
 #include <ContextRecord.h>
 #include <Node.h>
 
+// #include <../../services/textlog/TextLog.cpp>
+// #include <../../services/textlog/SnapshotTextFormatter.h>
+
 #include <csv/CsvReader.h>
 #include <csv/CsvSpec.h>
 
@@ -68,14 +71,14 @@ namespace
     const Args::Table option_table[] = { 
         // name, longopt name, shortopt char, has argument, info, argument info
         { "select", "select", 's', true,  
-          "Select context records: [-]attribute[(<|>|=)value][:...]", 
+          "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]", 
           "QUERY_STRING" 
         },
         { "expand", "expand", 'e', false,  
           "Expand context records and print the selected attributes (default: all)", 
           nullptr 
         },
-        { "attributes", "print-attributes", 0, true,
+        { "attributes", "print-attributes", 'p', true, // can we brainstorm other ways of naming this?
           "Select attributes to print, or hide: [-]attribute[:...]",
           "ATTRIBUTES"
         },
@@ -83,6 +86,9 @@ namespace
           "Aggregate the given attributes",
           "ATTRIBUTES"
         },
+	// { "table",  "print-table", 0, false, "Print record in table format", nullptr ), // add option to print as a table
+	{ "format", "format", 'f', true,  "Set the format of the table: %[<width+alignment(l|r|c)>]attr_name%...", "FORMAT_STRING"}, // added format option
+	{ "title",  "title",  't', true,  "Set the title row",        "STRING" }, // added title option
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
@@ -293,9 +299,16 @@ int main(int argc, const char* argv[])
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
 
-    if (args.is_set("expand"))
-        snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
-    else {
+    if (args.is_set("expand")) {
+      snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"), "","");
+    } else if (args.is_set("format")) {
+      string formatstr = args.get("format");
+      if (formatstr.empty()) {
+	cerr << "cali-query: error: format needs an argument" << endl;
+	return -2;
+      }
+      snap_writer = Expand(fs.is_open() ? fs : cout, "", formatstr, args.get("title"));
+    } else {
         WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
 
         snap_writer = writer;
@@ -314,6 +327,22 @@ int main(int argc, const char* argv[])
 
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
+    /*
+    // check if we're printing in table form
+    if (args.is_set("table") {
+	if (!args.is_set("format")) {
+	  // need a default for attr_names and 'if' for attributes set
+	  vector<string> attr_names;
+	  split(args.get("attributes"),':',back_inserter(attr_names));
+	  string formatstr = create_default_formatstring(attr_names);
+	}
+	// format set but no format given exception
+	else
+	  string formatstr = args.get("format");
+	if (args.is_set("title"))
+	  string header = args.get("title");
+    }
+    */
 
     //
     // --- Process inputs
