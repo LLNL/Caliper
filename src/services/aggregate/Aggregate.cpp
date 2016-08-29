@@ -685,12 +685,6 @@ public:
 
         s_config = RuntimeConfig::init("aggregate", s_configdata);
 
-        if (s_config.get("attributes").to_string().size() < 1) {
-            Log(0).stream() << "aggregate: no aggregation attributes set"
-                            << std::endl;
-            return false;
-        }
-
         util::split(s_config.get("attributes").to_string(), ':',
                     std::back_inserter(s_aggr_attribute_names));
         util::split(s_config.get("key").to_string(), ':',
