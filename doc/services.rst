@@ -18,6 +18,154 @@ The following sections describe the available service modules and
 their configuration.
 
 
+Aggregate
+--------------------------------
+
+The `aggregate` service accumulates aggregation attributes (e.g., time
+durations) of snapshots with a similar `key`, creating a profile.
+
+.. envvar:: CALI_AGGREGATE_KEY
+
+   Colon-separated list of attributes that form the aggregation key
+   (see below).
+
+   Default: Empty (all attributes without the ``ASVALUE`` storage
+   property are key attributes).
+
+.. envvar:: CALI_AGGREGATE_ATTRIBUTES
+
+   Colon-separated list of aggregation attributes. The aggregate
+   service aggregates values of aggregation attributes from all input
+   snapshots with similar aggregation keys. Note that only attributes
+   with the ``ASVALUE`` storage property can be aggregation
+   attributes.
+
+   Default: ``time.inclusive.duration`` (Generates event-triggered
+   time profiles, if `event` and `timestamp` services are enabled)
+
+Aggregation key
+................................
+
+The aggregation key defines for which attributes separate (aggregate)
+snapshot records will be kept. That is, the aggregate service will
+generate an aggregate snapshot record for each unique combination of
+key values found in the input snapshots.  The values of the
+aggregation attributes in the input snapshots will be accumulated and
+appended to the aggregate snapshot.  The aggregate snapshot records
+also include an `aggregate.count` attribute that indicates how many
+input snapshots with the given aggregation key were found. Attributes
+that are neither aggregation attributes nor part of the aggregation
+key will not appear in the aggregate snapshot records.
+
+As an example, consider the following program:
+
+.. code-block:: c++
+
+    #include <caliper/Annotation.h>
+    
+    void foo(int c) {
+        cali::Annotation::Guard
+          g( cali::Annotation("function").begin("foo") );
+
+        // ...
+    }
+
+    int main()
+    {
+      { // "A" loop
+        cali::Annotation::Guard
+          g( cali::Annotation("loop.id").begin("A") );
+        
+        for (int i = 0; i < 3; ++i) {
+            cali::Annotation("iteration").set(i);            
+
+            foo(1);
+            foo(2);
+        }
+      }
+
+      { // "B" loop
+        cali::Annotation::Guard
+          g( cali::Annotation("loop.id").begin("B") );
+        
+        for (int i = 0; i < 4; ++i) {
+            cali::Annotation("iteration").set(i);
+            
+            foo(1);
+        }
+      }
+    }
+
+Assuming snapshots are generated from the `function` annotation and
+the aggregation key contains the `function`, `loop.id`, and
+`iteration` attributes, the `aggregate` service will generate the
+following aggregate snapshots : ::
+
+    loop.id=A  iteration=0  function=foo  aggregate.count=2
+    loop.id=A  iteration=1  function=foo  aggregate.count=2
+    loop.id=A  iteration=2  function=foo  aggregate.count=2
+    loop.id=B  iteration=0  function=foo  aggregate.count=1
+    loop.id=B  iteration=1  function=foo  aggregate.count=1
+    loop.id=B  iteration=2  function=foo  aggregate.count=1
+    loop.id=B  iteration=3  function=foo  aggregate.count=1
+
+Removing the `iteration` attribute from the aggregation key will
+collapse input snapshots with different iteration values into a
+single aggregate snapshot: ::
+
+    loop.id=A  function=foo  aggregate.count=6
+    loop.id=B  function=foo  aggregate.count=4
+
+Aggregation attributes
+................................
+
+The aggregate service accumulates values of aggregation attributes in
+input snapshots with similar aggregation keys. Specifically, it
+reports the minimum and maximum value, and computes the sum of the
+aggregation attributes in the input snapshots. Aggregate snapshots
+include `aggregate.(min|max|sum)#attribute-name` attributes with the
+minimum, maximum, and sum values for each aggregation attribute,
+respectively.
+
+Note that only attributes with the ``ASVALUE`` property can be
+aggregation attributes.
+
+Example
+................................
+
+The following configuration generates a time profile for the function
+annotation separated by loop id. Note: when using
+`time.inclusive.duration` as aggregation attribute, we strongly
+recommend to include the `event.end` event attributes for all
+annotations of interest in the aggregation key (e.g.,
+`event.end#function` in the example), or use the default, empty key.
+
+.. code-block:: sh
+
+   $ CALI_SERVICES_ENABLE=aggregate:event:recorder:timestamp \
+       CALI_EVENT_TRIGGER=function \
+       CALI_AGGREGATE_KEY=event.end#function:loop.id \
+         ./test/cali-basic-aggregate
+   == CALIPER: Registered aggregation service   
+   == CALIPER: Registered event service   
+   == CALIPER: Registered recorder service   
+   == CALIPER: Registered timestamp service   
+   == CALIPER: Initialized
+   == CALIPER: aggregate: flushed 4 snapshots.
+   == CALIPER: Wrote 57 records.
+
+The resulting file has the following contents: ::
+
+   loop.id=A  event.end#function=foo  aggregate.count=6
+     aggregate.min#time.inclusive.duration=25
+     aggregate.max#time.inclusive.duration=26
+     aggregate.sum#time.inclusice.duration=151
+   loop.id=B  event.end#function=foo  aggregate.count=4
+     aggregate.min#time.inclusive.duration=25
+     aggregate.max#time.inclusive.duration=26
+     aggregate.sum#time.inclusice.duration=102
+   
+
 Callpath
 --------------------------------
 
