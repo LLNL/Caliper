@@ -493,7 +493,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     if (!(prop & CALI_ATTR_SCOPE_PROCESS) && !(prop & CALI_ATTR_SCOPE_TASK))
         prop |= CALI_ATTR_SCOPE_THREAD;
 
-    Node* node { nullptr };
+    Node* node        = nullptr;
+    bool  created_now = false;
 
     // Check if an attribute with this name already exists
 
@@ -536,6 +537,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
             if (it == mG->attribute_nodes.end() || it->first != name) {
                 mG->attribute_nodes.emplace_hint(it, name, node);
                 mG->new_attributes.store(true);
+                created_now = true;
             } else
                 node = it->second;
 
@@ -547,7 +549,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     Attribute attr = Attribute::make_attribute(node, mG->tree.meta_attribute_ids());
 
-    mG->events.create_attr_evt(this, attr);
+    if (created_now)
+        mG->events.create_attr_evt(this, attr);
 
     return attr;
 }
@@ -850,6 +853,15 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
 }
 
 Node*
+Caliper::make_tree_entry(size_t n, const Node* nodelist[])
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    return mG->tree.get_path(n, nodelist, nullptr, &m_thread_scope->mempool);
+}
+
+Node*
 Caliper::node(cali_id_t id)
 {
     // no siglock necessary
@@ -899,7 +911,6 @@ Caliper::instance()
                 Log(0).stream() << "Unable to register exit handler";
 
             GlobalData::sG = new Caliper::GlobalData;
-            
             GlobalData::s_init_lock = 0;
         }
     }

@@ -176,6 +176,10 @@ public:
     void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
+    /// \brief Get or create new tree path with data from given nodes in given order 
+    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
+
+    /// \brief return node by id
     Node*     node(cali_id_t id); // EXTREMELY SLOW, use with caution!
 
     // --- Query API

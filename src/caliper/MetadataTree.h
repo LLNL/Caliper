@@ -62,9 +62,16 @@ namespace cali
         
         // --- Modifying tree operations ---
 
+        /// \brief Get or construct a path in the tree under parent with
+        ///   the given attribute:data pairs
         Node*
         get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent, MemoryPool* pool);
 
+        /// \brief Get or construct a path in the tree under parent with
+        ///   the data of the nodes given in the nodelist in the order of that list
+        Node*
+        get_path(size_t n, const Node* nodelist[], Node* parent, MemoryPool* pool);
+        
         Node*
         remove_first_in_path(Node* path, const Attribute& attr, MemoryPool* pool);
         

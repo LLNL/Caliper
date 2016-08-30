@@ -121,14 +121,18 @@ public:
     uint64_t       to_uint(bool* okptr = nullptr);
     uint64_t       to_uint(bool* okptr = nullptr) const;
     bool           to_bool(bool* okptr = nullptr);
+    bool           to_bool(bool* okptr = nullptr) const;
     double         to_double(bool* okptr = nullptr);
     double         to_double(bool* okptr = nullptr) const;
     cali_attr_type to_attr_type(bool* okptr = nullptr);
+    cali_attr_type to_attr_type(bool* okptr = nullptr) const;
 
     std::string    to_string() const;
 
     size_t         pack(unsigned char* buf) const;
     static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok);
+
+    Variant        concretize(cali_attr_type type, bool* okptr) const;
     
     // vector<unsigned char> data() const;
 

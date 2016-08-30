@@ -146,5 +146,7 @@ if (WITH_TESTS)
   add_subdirectory(test)
 endif()
 
+add_subdirectory(doc)
+
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)

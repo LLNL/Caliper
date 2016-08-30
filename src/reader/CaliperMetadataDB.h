@@ -43,12 +43,14 @@
 
 #include <map>
 #include <memory>
+#include <string>
 
 namespace cali
 {
 
 class Node;
-
+class Variant;
+    
 typedef std::map<cali_id_t, cali_id_t> IdMap;
 
 class CaliperMetadataDB
@@ -76,7 +78,19 @@ public:
     //
 
     const Node* node(cali_id_t id) const;
+    
     Attribute   attribute(cali_id_t id) const;
+    Attribute   attribute(const std::string& name) const;
+    
+    //
+    // --- Manipulation
+    //
+
+    const Node* make_entry(size_t n, const Attribute* attr, const Variant* value);
+    Attribute   create_attribute(const std::string& name, cali_attr_type type, int prop);
+
+    // awful kludge till we find solution for node writing problem
+    Node*       mutable_node(cali_id_t);
 };
 
 }
