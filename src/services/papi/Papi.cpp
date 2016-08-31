@@ -56,7 +56,7 @@ using namespace std;
 namespace 
 {
 
-#define MAX_COUNTERS 16
+#define MAX_COUNTERS 32
     
 struct PapiGlobalInfo {
     std::vector<cali_id_t> counter_attrbs;
@@ -69,7 +69,7 @@ size_t        num_failed = 0;
 static const ConfigSet::Entry s_configdata[] = {
     { "counters", CALI_TYPE_STRING, "",
       "List of PAPI events to record",
-      "List of PAPI events to record, separated by ':'" 
+      "List of PAPI events to record, separated by ','" 
     },
     ConfigSet::Terminator
 };
@@ -143,7 +143,7 @@ void setup_events(Caliper* c, const string& eventstring)
 {
     vector<string> events;
 
-    util::split(eventstring, ':', back_inserter(events));
+    util::split(eventstring, ',', back_inserter(events));
 
     for (string& event : events) {
         int code;
