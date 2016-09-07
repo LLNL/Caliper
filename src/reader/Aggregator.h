@@ -53,7 +53,7 @@ class Aggregator
 
 public:
 
-    Aggregator(const std::string& aggr_config);
+    Aggregator(const std::string& aggr_config, const std::string& key);
 
     ~Aggregator();
 

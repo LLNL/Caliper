@@ -84,7 +84,11 @@ namespace
           "ATTRIBUTES"
         },
         { "aggregate", "aggregate", 'a', true,
-          "Aggregate the given attributes",
+          "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
+          "AGGREGATION_OPS"
+        },
+        { "aggregate-key", "aggregate-key", 0, true,
+          "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
           "ATTRIBUTES"
         },
 	// { "table",  "print-table", 0, false, "Print record in table format", nullptr ), // add option to print as a table
@@ -97,26 +101,37 @@ namespace
 
     class WriteRecord {
         ostream&      m_os;
-
+        
     public:
         
         WriteRecord(ostream& os)
             : m_os(os) { }
 
-        void operator()(CaliperMetadataDB&, const Node* node) {
-            node->push_record([this](const RecordDescriptor& r,const int* c,const Variant** d)
-                              { CsvSpec::write_record(m_os, r, c, d); });
+        void operator()(CaliperMetadataDB& db, const Node* node) {
+            db.mutable_node(node->id())->write_path([this](const RecordDescriptor& r,
+                                                           const int* c,
+                                                           const Variant** d)
+                                                    { CsvSpec::write_record(m_os, r, c, d); });
         }
 
-        void operator()(CaliperMetadataDB&, const EntryList& list) {
+        void operator()(CaliperMetadataDB& db, const EntryList& list) {
             std::vector<Variant> attr;
             std::vector<Variant> vals;
             std::vector<Variant> refs;
 
+            auto write_fn = [this](const RecordDescriptor& r,
+                                   const int* c,
+                                   const Variant** d)
+                { CsvSpec::write_record(m_os, r, c, d); };
+            
             for (const Entry& e : list) {
-                if (e.node()) {
+                if (e.node()) {                    
+                    db.mutable_node(e.node()->id())->write_path(write_fn);
+                    
                     refs.push_back(Variant(e.node()->id()));
                 } else if (e.attribute() != CALI_INV_ID) {
+                    db.mutable_node(e.attribute())->write_path(write_fn);
+                    
                     attr.push_back(Variant(e.attribute()));
                     vals.push_back(e.value());
                 }
@@ -318,8 +333,8 @@ int main(int argc, const char* argv[])
         node_proc   = writer;
     }
 
-    Aggregator        aggregate { args.get("aggregate") };
-    SnapshotProcessFn snap_proc { args.is_set("aggregate") ? aggregate : snap_writer };
+    Aggregator        aggregate(args.get("aggregate"), args.get("aggregate-key"));
+    SnapshotProcessFn snap_proc(args.is_set("aggregate") ? aggregate : snap_writer);
 
     string select = args.get("select");
 

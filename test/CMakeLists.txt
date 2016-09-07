@@ -6,6 +6,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 
 add_executable(cali-basic cali-basic.cpp)
+add_executable(cali-basic-aggregate cali-basic-aggregate.cpp)
 add_executable(cali-test cali-test.cpp)
 add_executable(cali-basic-c cali-basic-c.c)
 add_executable(cali-test-c cali-test-c.c)
@@ -17,6 +18,7 @@ set_target_properties(cali-test-c PROPERTIES LINKER_LANGUAGE CXX)
 
 target_link_libraries(cali-test caliper)
 target_link_libraries(cali-basic caliper)
+target_link_libraries(cali-basic-aggregate caliper)
 target_link_libraries(cali-basic-c caliper)
 target_link_libraries(cali-test-c caliper)
 
