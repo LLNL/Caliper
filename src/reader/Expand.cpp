@@ -3,6 +3,7 @@
 //
 // This file is part of Caliper.
 // Written by David Boehme, boehme3@llnl.gov.
+// Modified by Aimee Sylvia
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -167,7 +168,9 @@ struct Expand::ExpandImpl
   void print(CaliperMetadataDB& db, const EntryList& list) {
     int nentry = 0;
 
+    // differentiate which kind of printing to do pending on format strings
     if (m_fields.empty()) {
+      // this is exactly the same as the regular Expand.cpp
       for (const Entry& e : list) {
 	if (e.node()) {
 	  vector<const Node*> nodes;
@@ -209,9 +212,12 @@ struct Expand::ExpandImpl
       if (nentry > 0)
 	m_os << endl;
     } else {
+      string printstr;
+      // this is for the formatted table printing
       for (Field f : m_fields) {
 	int outputcheck = 0; // this is dumb but I don't know a better way to do this
 	for (const Entry& e: list) {
+	  // pretty much the same as non-formatted section
 	  if (e.node()) {
 	    vector<const Node*> nodes;
 
@@ -225,25 +231,15 @@ struct Expand::ExpandImpl
 	    if (nodes.empty())
 	      continue;
 
-	    /*
-	    if (!f.attr_name.empty() && name == f.attr_name) {
-	      const Node* node = e.node();
-	      f.attr = db.attribute(node->attribute()); // does this work or need to be modified?
-	      f.attr_name.clear();
-	    }
-	    */
-
 	    stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
 
 	    cali_id_t prev_attr_id = CALI_INV_ID;
 
-	    // need to use db on this?
-	    // if (f.attr_name.compare(name) == 0) {
-	      string valuestr = "";
-	      string whitespace = "                              ";
-	      string space;
-	      for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
-		if (db.attribute((*it)->attribute()).name().compare(f.attr_name) == 0) {
+	    string valuestr = "";
+	    string whitespace = "                              ";
+	    string space;
+	    for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
+	      if (db.attribute((*it)->attribute()).name().compare(f.attr_name) == 0) {
 		if ((*it)->attribute() != prev_attr_id) {
 		  prev_attr_id = (*it)->attribute();
 		} else {
@@ -251,150 +247,42 @@ struct Expand::ExpandImpl
 		}
 		
 		valuestr.append((*it)->data().to_string());
-	      }}
-	      if (!valuestr.empty()) {
-	      space = (valuestr.length() < f.width ? (whitespace.substr(0,(f.width - valuestr.length()))) : "");
-	      m_os << valuestr << space;
-	      outputcheck = 1;
 	      }
+	    }
+	    if (!valuestr.empty()) {
+	      // print the value and the buffer space
+	      space = (valuestr.length() < f.width ? (whitespace.substr(0,(f.width - valuestr.length()))) : "");
+	      printstr << valuestr << space;
+	      outputcheck = 1;
+	    }
 	  } else if (e.attribute() != CALI_INV_ID) {
 	    string name = db.attribute(e.attribute()).name();
-
-	    /*
-	    if (!f.attr_name.empty() && name == f.attr_name) {
-	      f.attr = db.attribute(e.attribute());
-	      f.attr_name.clear();
-	    }
-	    */
 
 	    string whitespace = "                              ";
 	    string space;
 	    if (f.attr_name.compare(name) == 0) {
 	      string valuestr = e.value().to_string();
+	      // print the value and the buffer space
 	      space = (valuestr.length() < f.width ? (whitespace.substr(0,(f.width - valuestr.length()))) : "");
-	      m_os << valuestr << space;
+	      printstr << valuestr << space;
 	      outputcheck = 1;
 	    }
 	  }
 	}
-	// put the check for m_os update and print blank in f.width if yes
+	// check for a value added, if no value added (no match in the entryline for
+	// the m_field field) then print blank of f.width
 	if (outputcheck == 0) {
 	  string whitespace = "                              ";
 	  string space = whitespace.substr(0,f.width);
-	  m_os << space;
+	  printstr << space;
 	}
       }
-      m_os << endl;
-    }
-  }
-  
-  /*
-
-    for (Field f : m_fields) {
-      for (const Entry& e : list) {
-
-	// we could do the updating of the m_fields here? y/n?                                                                                                
-	// copypasta the update_attribute? and the bit from `parse`?  
-
-
-
-	if (e.node()) {
-	  // Unravel nodes, group them by attribute, and print in reverse order
-	
-	  std::vector<const Node*> nodes;
-
-	  for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
-	    string name = db.attribute(node->attribute()).name();
-	    
-	    if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
-	      continue;
-	  
-	    nodes.push_back(node);
-	  }
-
-	  if (nodes.empty())
-	    continue;
-
-	  // update the attribute names
-	  if (!f.attr_name.empty() && name == f.attr_name) {
-	    f.attr = db.attribute(node->attribute());
-	    f.attr_name.clear();
-	  }
-	
-	  stable_sort(nodes.begin(), nodes.end(),
-		      [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
-
-	  cali_id_t prev_attr_id = CALI_INV_ID;
-
-	  if (m_fields.empty()) {
-	    for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
-	      if ((*it)->attribute() != prev_attr_id) {
-		m_os << (nentry++ ? "," : "") << db.attribute((*it)->attribute()).name() << '=';
-		prev_attr_id = (*it)->attribute();
-	      } else {
-		m_os << '/';
-	      }
-	      
-	      m_os << (*it)->data().to_string();
-	    }
-	  } else {
-	    // if the names match, do the thing 
-	    // THIS IS PROBABLY TOTALLY WRONG FIX IT
-	    if (f.attr_name.compare(name) == 0) {
-	      // this is where I put the table printing stuff
-	      string valuestr = "";
-	      string whitespace = "                              ";
-	      string space;
-	      for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
-		if ((*it)->attribute() != prev_attr_id) {
-		  prev_attr_id = (*it)->attribute();
-		} else {
-		  valuestr.insert(0,"/");
-		}
-		
-		valuestr.insert(0,(*it)->data().to_string());
-	      }
-	      // settle up space
-	      space = (valuestr.length() < f.width ? (whitespace.substr(0,(f.width-valuestr.length()))) : "");
-	      m_os << valuestr << space;
-	    }
-	  }
-	} else if (e.attribute() != CALI_INV_ID) {
-	  string name = db.attribute(e.attribute()).name();
-
-	  // update attribute names
-	  if (!f.attr_name.empty() && name == f.attr_name) {
-	    f.attr = db.attribute(e.attribute);
-	    f.attr_name.clear();
-	  }
-
-	  if (m_fields.empty()){
-	    if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
-	      continue;
-
-	    m_os << (nentry++ ? "," : "") << name << '=' << e.value();
-	  } else {
-	    string whitespace = "                              "; // added for reasons
-	    string space;
-	    if (f.attr.name().compare(name) == 0) {
-	      space = (e.value().length() < f.width ? (whitespace.substr(0,(f.width - e.value().length()))) : "");
-	      // need to map the values to the same order as the names and if the name isn't called print blankspace
-	      m_os << e.value() << space; // modified for whitespace
-	      /*	    } else {
-	      space = whitespace.substr(0,f.width);
-	      m_os << space;
-	      
-	    }
-	  }
-	}
-
-	if (nentry > 0)
-	  m_os << endl;
+      // this checks for an empty line. if empty, skips printing it
+      if (printstr.find_first_not_of(" ") >= 0){
+	m_os << printstr << endl;
       }
     }
   }
-
-*/
 };
 
 
@@ -402,6 +290,7 @@ Expand::Expand(ostream& os, const string& field_string, const string& formatstr,
     : mP { new ExpandImpl(os) }
 {
     mP->parse(field_string);
+    // if format is defined, create the format fields vector
     if (!formatstr.empty())
       mP->frmtparse(formatstr,titlestr);
 }

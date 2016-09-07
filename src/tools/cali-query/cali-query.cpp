@@ -3,6 +3,7 @@
 //
 // This file is part of Caliper.
 // Written by David Boehme, boehme3@llnl.gov.
+// Modified by Aimee Sylvia
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -78,7 +79,7 @@ namespace
           "Expand context records and print the selected attributes (default: all)", 
           nullptr 
         },
-        { "attributes", "print-attributes", 'p', true, // can we brainstorm other ways of naming this?
+        { "attributes", "print-attributes", 'p', true, 
           "Select attributes to print, or hide: [-]attribute[:...]",
           "ATTRIBUTES"
         },
@@ -299,12 +300,14 @@ int main(int argc, const char* argv[])
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
 
+
+    // differentiate between "expand" and "format"
     if (args.is_set("expand")) {
       snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"), "","");
     } else if (args.is_set("format")) {
       string formatstr = args.get("format");
       if (formatstr.empty()) {
-	cerr << "cali-query: error: format needs an argument" << endl;
+	cerr << "cali-query: error: --format needs an argument" << endl;
 	return -2;
       }
       snap_writer = Expand(fs.is_open() ? fs : cout, "", formatstr, args.get("title"));
@@ -326,23 +329,6 @@ int main(int argc, const char* argv[])
         cerr << "cali-query: Arguments required for --select" << endl;
 
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
-
-    /*
-    // check if we're printing in table form
-    if (args.is_set("table") {
-	if (!args.is_set("format")) {
-	  // need a default for attr_names and 'if' for attributes set
-	  vector<string> attr_names;
-	  split(args.get("attributes"),':',back_inserter(attr_names));
-	  string formatstr = create_default_formatstring(attr_names);
-	}
-	// format set but no format given exception
-	else
-	  string formatstr = args.get("format");
-	if (args.is_set("title"))
-	  string header = args.get("title");
-    }
-    */
 
     //
     // --- Process inputs
