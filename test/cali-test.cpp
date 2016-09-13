@@ -42,9 +42,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
-
 
 void begin_foo_op()
 {
@@ -88,9 +85,6 @@ void make_hierarchy_2()
 
 void test_blob()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("binary-blob-test") );
-
     // An annotation with a user-defined datatype
 
     struct my_weird_type {
@@ -105,9 +99,6 @@ void test_blob()
 
 void test_annotation_copy()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("annotation-copy") );
-
     cali::Annotation ann("copy_ann_1");
 
     ann.begin("outer");
@@ -129,9 +120,6 @@ void test_annotation_copy()
 
 void test_attribute_metadata()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("attribute-metadata") );
-
     cali::Caliper   c;
 
     cali::Attribute meta_attr[2] = {
@@ -157,9 +145,6 @@ void test_attribute_metadata()
 
 void test_uninitialized()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("uninitialized_annotation") );
-
     // Call end() on uninitialized annotation object
 
     cali::Annotation("cali-test.uninitialized").end();
@@ -167,9 +152,6 @@ void test_uninitialized()
 
 void test_end_mismatch()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("end_mismatch") );
-
     // simulate end() stack error
 
     cali::Annotation a("cali-test.end-mismatch");
@@ -181,9 +163,6 @@ void test_end_mismatch()
 
 void test_escaping()
 {
-    cali::Annotation::Guard
-        g( cali::Annotation("phase").begin("escaping") );
-
     cali::Annotation w("weird\\attribute = what,?");
     w.begin("crazy \\string\\=1,2,3=");
     w.begin("=42");
@@ -194,62 +173,91 @@ void test_escaping()
     w.end();
 }
 
+void test_hierarchy()
+{
+    cali::Annotation h("hierarchy");
+
+    h.set(1);
+    make_hierarchy_1();
+    h.set(2);
+    make_hierarchy_2();
+    h.end();
+}
+
+void test_cross_scope()
+{
+    begin_foo_op();
+    end_foo_op();
+}
+
+std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
+{
+    const char* whitespace =
+        "                                        "
+        "                                        "
+        "                                        "; // 120 spaces
+
+    int slen = strlen(string);
+
+    os << string;
+
+    if (slen < fieldlen)
+        os << whitespace + (120 - std::min(120, fieldlen-slen));
+    
+    return os;
+}
+
 int main(int argc, char* argv[])
 {
-    // Declare "phase" annotation
-    cali::Annotation phase("phase");
-
-    // Begin scope of phase->"main"
-    cali::Annotation::Guard ann_main( phase.begin("main") );
-
-    int count = argc > 1 ? atoi(argv[1]) : 4;
-
-    test_blob();
-    
-    // A hierarchy to test the Caliper::set_path() API call
-    make_hierarchy_1();
+    const struct testcase_info_t {
+        const char*  name;
+        void        (*fn)();
+    } testcases[] = {
+        { "blob",                     test_blob               },
+        { "annotation-copy",          test_annotation_copy    },
+        { "attribute-metadata",       test_attribute_metadata },
+        { "uninitialized-annotation", test_uninitialized      },
+        { "end-mismatch",             test_end_mismatch       },
+        { "escaping",                 test_escaping           },
+        { "cross-scope",              test_cross_scope        },
+        { 0, 0 }
+    };
 
     {
-        // Add new scope phase->"loop" under phase->"main"
-        // Annotation::Guard used to be AutoScope: keep backward compatibility
-        cali::Annotation::AutoScope
-            g_loop( phase.begin("loop") );
-
-        // Set "loopcount" annotation to 'count' in current C++ scope
-        cali::Annotation::Guard 
-            g_loopcount( cali::Annotation("loopcount").set(count) );
-
-        // Declare "iteration" annotation, store entries explicitly as values
-        cali::Annotation iteration("iteration", CALI_ATTR_ASVALUE);
-
         cali::Annotation::Guard
-            g_iteration(iteration);
+            g( cali::Annotation("cali-test").begin("checking") );
 
-        for (int i = 0; i < count; ++i) {
-            // Set "iteration" annotation to current value of 'i'
-            iteration.set(i);
+        // check for missing/misspelled command line test cases
+        for (int a = 1; a < argc; ++a) {
+            const testcase_info_t* t = testcases;
+        
+            for ( ; t->name && 0 != strcmp(t->name, argv[a]); ++t)
+                ;
 
-            begin_foo_op();
-            end_foo_op();
+            if (!t->name)
+                std::cerr << "test \"" << argv[a] << "\" not found" << std::endl;
+        }
+    }
+    
+    cali::Annotation::Guard
+        g( cali::Annotation("cali-test").begin("testing") );
+    
+    for (const testcase_info_t* t = testcases; t->fn; ++t) {
+        if (argc > 1) {
+            int a = 1;
+            
+            for ( ; a < argc && 0 != strcmp(t->name, argv[a]); ++a)
+                ;
+            
+            if (a == argc)
+                continue;
         }
 
-        // "loop", "loopcount" and "iteration" annotations implicitly end here 
+        cali::Annotation::Guard
+            g( cali::Annotation("cali-test.test").begin(t->name) );
+
+        print_padded(std::cout, t->name, 28) << " ... ";
+        (*(t->fn))();
+        std::cout << "done" << std::endl;
     }
-
-    test_annotation_copy();
-    test_attribute_metadata();
-    test_uninitialized();
-    test_end_mismatch();
-    test_escaping();
-    
-    {
-        phase.begin("finalize");
-
-        // A different hierarchy to test the Caliper::set_path() API call
-        make_hierarchy_2();
-
-        phase.end();
-    }
-
-    // implicitly end phase->"main"
 }
