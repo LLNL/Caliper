@@ -97,6 +97,10 @@ struct Annotation::Impl {
                 new Attribute(c.get_attribute(m_name)) :
                 new Attribute(c.create_attribute(m_name, type, m_opt));
 
+            // Don't store invalid attribute in shared pointer
+            if (*new_attr == Attribute::invalid)
+                return Attribute::invalid;
+            
             // Save new_attr iff m_attr == attr_p. If that is no longer the case,
             // some other thread has a set m_attr in the meantime, so just
             // delete our new object.

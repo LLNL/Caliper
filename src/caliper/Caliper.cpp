@@ -692,8 +692,10 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events()) {
-        val = get(attr).value();
-        mG->events.pre_end_evt(this, attr, val);
+        Entry e = get(attr);
+
+        if (!e.is_empty()) // prevent callbacks in end-before-begin situations 
+            mG->events.pre_end_evt(this, attr, e.value());
     }
     
     if (attr.store_as_value())

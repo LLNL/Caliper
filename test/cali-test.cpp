@@ -155,6 +155,30 @@ void test_attribute_metadata()
     c.end(attr);
 }
 
+void test_uninitialized()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("uninitialized_annotation") );
+
+    // Call end() on uninitialized annotation object
+
+    cali::Annotation("cali-test.uninitialized").end();
+}
+
+void test_end_mismatch()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("end_mismatch") );
+
+    // simulate end() stack error
+
+    cali::Annotation a("cali-test.end-mismatch");
+
+    a.begin(1);
+    a.end();
+    a.end();
+}
+
 int main(int argc, char* argv[])
 {
     // Declare "phase" annotation
@@ -199,6 +223,8 @@ int main(int argc, char* argv[])
 
     test_annotation_copy();
     test_attribute_metadata();
+    test_uninitialized();
+    test_end_mismatch();
     
     {
         phase.begin("finalize");
