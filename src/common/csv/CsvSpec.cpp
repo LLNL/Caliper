@@ -50,9 +50,9 @@ struct CsvSpecImpl
 {
     static CsvSpecImpl s_caliper_csvspec;
 
-    string m_sep       { ","    }; ///< separator character
-    char   m_esc       { '\\'   }; ///< escape character
-    string m_esc_chars { "\\,=" }; ///< characters that need to be escaped
+    string m_sep       { ","      }; ///< separator character
+    char   m_esc       { '\\'     }; ///< escape character
+    string m_esc_chars { "\\,=\n" }; ///< characters that need to be escaped
 
     // --- write interface
 
@@ -75,16 +75,24 @@ struct CsvSpecImpl
 
     // --- read interface
 
-    vector<string> split(const string& list, char sep) const {
+    vector<string> split(const string& line, char sep, bool keep_escape = false) const {
         vector<string> vec;
         string str;
-
-        for (auto it = list.begin(); it != list.end(); ++it) {
-            if (*it == sep) {
+        bool   escaped = false;
+        
+        for (auto it = line.begin(); it != line.end(); ++it) {
+            if (!escaped && *it == m_esc) {
+                escaped = true;
+                
+                if (keep_escape)
+                    str.push_back(m_esc);
+            } else if (!escaped && *it == sep) {
                 vec.push_back(str);
                 str.clear();
-            } else 
+            } else {
                 str.push_back(*it);
+                escaped = false;
+            }
         }
 
         vec.push_back(str);
@@ -98,8 +106,10 @@ struct CsvSpecImpl
         for (unsigned e = 0; e < record.num_entries; ++e) {
             if (count[e] > 0)
                 os << "," << record.entries[e];
-            for (int c = 0; c < count[e]; ++c)
-                os << "=" << data[e][c].to_string();
+            for (int c = 0; c < count[e]; ++c) {
+                os << "=";
+                write_string(os, data[e][c].to_string());
+            }
         }
 
         os << endl;
@@ -122,11 +132,11 @@ struct CsvSpecImpl
     }
 
     RecordMap read_record(const string& line) {
-        vector<string> entries = split(line, m_sep[0]);
+        vector<string> entries = split(line, m_sep[0], true /* keep escape */ );
         RecordMap      rec;
 
         for (const string& entry : entries) {
-            vector<string> keyval = split(entry, '=');
+            vector<string> keyval = split(entry, '=', false);
 
             if (keyval.size() > 1) {
                 vector<Variant> data;

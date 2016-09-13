@@ -179,6 +179,21 @@ void test_end_mismatch()
     a.end();
 }
 
+void test_escaping()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("phase").begin("escaping") );
+
+    cali::Annotation w("weird\\attribute = what,?");
+    w.begin("crazy \\string\\=1,2,3=");
+    w.begin("=42");
+    w.begin(",noattribute=novalue,");
+
+    w.end();
+    w.end();
+    w.end();
+}
+
 int main(int argc, char* argv[])
 {
     // Declare "phase" annotation
@@ -225,6 +240,7 @@ int main(int argc, char* argv[])
     test_attribute_metadata();
     test_uninitialized();
     test_end_mismatch();
+    test_escaping();
     
     {
         phase.begin("finalize");
