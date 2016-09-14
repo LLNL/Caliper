@@ -10,12 +10,161 @@ range of usage scenarios.
 You can enable the services required for your measurement with the
 ``CALI_SERVICES_ENABLE`` configuration variable, e.g.::
 
-  export CALI_SERVICES_ENABLE=event:pthread:recorder
+  export CALI_SERVICES_ENABLE=event:recorder:trace
 
-to create event-triggered context traces for a multi-threaded application.
+to create event-triggered context traces for an application.
 
 The following sections describe the available service modules and
 their configuration.
+
+
+Aggregate
+--------------------------------
+
+The `aggregate` service accumulates aggregation attributes (e.g., time
+durations) of snapshots with a similar `key`, creating a profile.
+
+.. envvar:: CALI_AGGREGATE_KEY
+
+   Colon-separated list of attributes that form the aggregation key
+   (see below).
+
+   Default: Empty (all attributes without the ``ASVALUE`` storage
+   property are key attributes).
+
+.. envvar:: CALI_AGGREGATE_ATTRIBUTES
+
+   Colon-separated list of aggregation attributes. The aggregate
+   service aggregates values of aggregation attributes from all input
+   snapshots with similar aggregation keys. Note that only attributes
+   with the ``ASVALUE`` storage property can be aggregation
+   attributes.
+
+   Default: ``time.inclusive.duration`` (Generates event-triggered
+   time profiles, if `event` and `timestamp` services are enabled)
+
+Aggregation key
+................................
+
+The aggregation key defines for which attributes separate (aggregate)
+snapshot records will be kept. That is, the aggregate service will
+generate an aggregate snapshot record for each unique combination of
+key values found in the input snapshots.  The values of the
+aggregation attributes in the input snapshots will be accumulated and
+appended to the aggregate snapshot.  The aggregate snapshot records
+also include an `aggregate.count` attribute that indicates how many
+input snapshots with the given aggregation key were found. Attributes
+that are neither aggregation attributes nor part of the aggregation
+key will not appear in the aggregate snapshot records.
+
+As an example, consider the following program:
+
+.. code-block:: c++
+
+    #include <caliper/Annotation.h>
+    
+    void foo(int c) {
+        cali::Annotation::Guard
+          g( cali::Annotation("function").begin("foo") );
+
+        // ...
+    }
+
+    int main()
+    {
+      { // "A" loop
+        cali::Annotation::Guard
+          g( cali::Annotation("loop.id").begin("A") );
+        
+        for (int i = 0; i < 3; ++i) {
+            cali::Annotation("iteration").set(i);            
+
+            foo(1);
+            foo(2);
+        }
+      }
+
+      { // "B" loop
+        cali::Annotation::Guard
+          g( cali::Annotation("loop.id").begin("B") );
+        
+        for (int i = 0; i < 4; ++i) {
+            cali::Annotation("iteration").set(i);
+            
+            foo(1);
+        }
+      }
+    }
+
+Assuming snapshots are generated from the `function` annotation and
+the aggregation key contains the `function`, `loop.id`, and
+`iteration` attributes, the `aggregate` service will generate the
+following aggregate snapshots : ::
+
+    loop.id=A  iteration=0  function=foo  aggregate.count=2
+    loop.id=A  iteration=1  function=foo  aggregate.count=2
+    loop.id=A  iteration=2  function=foo  aggregate.count=2
+    loop.id=B  iteration=0  function=foo  aggregate.count=1
+    loop.id=B  iteration=1  function=foo  aggregate.count=1
+    loop.id=B  iteration=2  function=foo  aggregate.count=1
+    loop.id=B  iteration=3  function=foo  aggregate.count=1
+
+Removing the `iteration` attribute from the aggregation key will
+collapse input snapshots with different iteration values into a
+single aggregate snapshot: ::
+
+    loop.id=A  function=foo  aggregate.count=6
+    loop.id=B  function=foo  aggregate.count=4
+
+Aggregation attributes
+................................
+
+The aggregate service accumulates values of aggregation attributes in
+input snapshots with similar aggregation keys. Specifically, it
+reports the minimum and maximum value, and computes the sum of the
+aggregation attributes in the input snapshots. Aggregate snapshots
+include `aggregate.(min|max|sum)#attribute-name` attributes with the
+minimum, maximum, and sum values for each aggregation attribute,
+respectively.
+
+Note that only attributes with the ``ASVALUE`` property can be
+aggregation attributes.
+
+Example
+................................
+
+The following configuration generates a time profile for the function
+annotation separated by loop id. Note: when using
+`time.inclusive.duration` as aggregation attribute, we strongly
+recommend to include the `event.end` event attributes for all
+annotations of interest in the aggregation key (e.g.,
+`event.end#function` in the example), or use the default, empty key.
+
+.. code-block:: sh
+
+   $ CALI_SERVICES_ENABLE=aggregate:event:recorder:timestamp \
+       CALI_EVENT_TRIGGER=function \
+       CALI_AGGREGATE_KEY=event.end#function:loop.id \
+         ./test/cali-basic-aggregate
+   == CALIPER: Registered aggregation service   
+   == CALIPER: Registered event service   
+   == CALIPER: Registered recorder service   
+   == CALIPER: Registered timestamp service   
+   == CALIPER: Initialized
+   == CALIPER: aggregate: flushed 4 snapshots.
+   == CALIPER: Wrote 57 records.
+
+The resulting file has the following contents: ::
+
+   loop.id=A  event.end#function=foo  aggregate.count=6
+     aggregate.min#time.inclusive.duration=25
+     aggregate.max#time.inclusive.duration=26
+     aggregate.sum#time.inclusice.duration=151
+   loop.id=B  event.end#function=foo  aggregate.count=4
+     aggregate.min#time.inclusive.duration=25
+     aggregate.max#time.inclusive.duration=26
+     aggregate.sum#time.inclusice.duration=102
+   
 
 Callpath
 --------------------------------
@@ -29,7 +178,7 @@ function names on-line. Call-path addresses are provided in the
 
 .. code-block:: sh
 
-  $ export CALI_SERVICES_ENABLE=callpath:event:recorder
+  $ export CALI_SERVICES_ENABLE=callpath:event:recorder:trace
   $ export CALI_CALLPATH_USE_NAME=true
   $ export CALI_CALLPATH_USE_ADDRESS=true
   $ ./test/cali-basic
@@ -37,10 +186,7 @@ function names on-line. Call-path addresses are provided in the
   $ callpath.address=401207/2aaaac052d5d/400fd9,callpath.regname=main/__libc_start_main/_start
 
 The example shows the ``callpath.address`` and ``callpath.regname``
-attributes in Caliper context records.
-  
-Configuration
-................................
+attributes in Caliper context records.  
 
 .. envvar:: CALI_CALLPATH_USE_NAME=(true|false)
             
@@ -65,7 +211,7 @@ Configuration
 Environment Information
 --------------------------------
 
-The environment information (``env``) service collects runtime
+The environment information (`env`) service collects runtime
 environment information at process startup and adds it to the Caliper
 context.
 
@@ -79,9 +225,6 @@ Specifically, it collects
 Moreover, the environment information service can put any environment
 variable defined at program start on the Caliper blackboard.
 
-Configuration
-................................
-
 .. envvar:: CALI_ENV_EXTRA=(variable1:variable2:...)
 
    List of extra environment variables to import.
@@ -91,32 +234,42 @@ Configuration
 Event
 --------------------------------
 
-The event trigger service triggers context snapshots when attributes
-are updated. You can select a list of triggering attributes, or have
-any attribute update trigger context snapshots.
+The event trigger service triggers snapshots when attributes are
+updated. It is possible to select a list of snapshot-triggering
+attributes, or have any attribute update trigger snapshots.
+Updates of attributes with the ``CALI_ATTR_SKIP_EVENTS`` property will
+never trigger snapshots.
 
-Example
-................................
+Snapshots triggered by the event service include an attribute which
+describes the event that triggered the snapshot, in the following
+form: ::
 
-All attributes trigger context snapshots:
+  event.<begin|set|end>#<attribute name>=<value>
+
+For example, a snapshot triggered by the call 
+``cali_set_int_byname("my.iteration", 42);`` includes the attribute
+`event.set#my.iteration=42` to describe the triggering event.
+  
+The following example shows the snapshots generated by the example
+program in :doc:`usage`:
 
 .. code-block:: sh
 
                 $ export CALI_SERVICES_ENABLE=event:recorder:trace
                 $ ./test/cali-basic
                 $ cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
-                phase=main
-                phase=init/main
-                phase=main
-                phase=loop/main
-                iteration=0,phase=loop/main
-                iteration=1,phase=loop/main
-                iteration=2,phase=loop/main
-                iteration=3,phase=loop/main
-                phase=loop/main
-                phase=main
+                event.begin#initialization=true,cali.snapshot.event.begin=39
+                event.end#initialization=true,cali.snapshot.event.end=39,initialization=true
+                event.begin#loop=true,cali.snapshot.event.begin=53
+                event.set#iteration=0,cali.snapshot.event.set=63,loop=true
+                event.set#iteration=1,cali.snapshot.event.set=63,iteration=0,loop=true
+                event.set#iteration=2,cali.snapshot.event.set=63,iteration=1,loop=true
+                event.set#iteration=3,cali.snapshot.event.set=63,iteration=2,loop=true
+                event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
+                event.end#loop=true,cali.snapshot.event.end=53,loop=true
 
-Only "iteration" attribute updates trigger context snapshots:
+By setting ``CALI_EVENT_TRIGGER``, we can configure the example to
+only trigger snapshot for "iteration" attribute updates:
 
 .. code-block:: sh
                 
@@ -124,14 +277,11 @@ Only "iteration" attribute updates trigger context snapshots:
                 $ export CALI_EVENT_TRIGGER=iteration
                 $ ./test/cali-basic
                 $ cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
-                phase=loop/main
-                iteration=0,phase=loop/main
-                iteration=1,phase=loop/main
-                iteration=2,phase=loop/main
-                iteration=3,phase=loop/main
-
-Configuration
-................................
+                event.set#iteration=0,cali.snapshot.event.set=63,loop=true
+                event.set#iteration=1,cali.snapshot.event.set=63,iteration=0,loop=true
+                event.set#iteration=2,cali.snapshot.event.set=63,iteration=1,loop=true
+                event.set#iteration=3,cali.snapshot.event.set=63,iteration=2,loop=true
+                event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
 
 .. envvar:: CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
             
@@ -181,7 +331,8 @@ MPI
 The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting ``CALI_MPI_WHITELIST`` or
-``CALI_MPI_BLACKLIST`` filters.
+``CALI_MPI_BLACKLIST`` filters. By default, all MPI functions are
+instrument.
 
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
@@ -189,9 +340,6 @@ the MPI rank in the ``mpi.rank`` attribute.
 Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
-
-Configuration
-................................
 
 .. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
             
@@ -205,31 +353,14 @@ Configuration
    be instrumented, and the blacklist will be applied to the
    whitelisted functions.
 
-Pthread
---------------------------------
-
-The `pthread` service manages thread environments for any
-pthread-based multi-threading runtime system. A thread environment
-manager such as the `pthread` service is responsible for creating
-separate per-thread contexts in multithreaded programs.
-
-If you record attributes on multiple threads, it is strongly
-recommended to enable the `pthread` service.
-
 Recorder
 --------------------------------
 
 The recorder service writes Caliper I/O records into a file.
 
-By default, the recorder service stores records in an
-in-memory buffer to avoid application performance perturbance because
-of I/O. You can configure the buffer sizes and determine whether they
-are allowed to grow. You can also set the directory and filename that
-should be used; by default, the recorder service will auto-generate a
+You can also set the directory and filename that should be used;
+by default, the recorder service will auto-generate a
 file name.
-
-Configuration
-................................
 
 .. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename)
             
@@ -243,27 +374,6 @@ Configuration
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
-
-.. envvar:: CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)
-            
-   Initial number of records that can be stored in the in-memory record
-   buffer.
-
-   Default: 8000
-
-.. envvar:: CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)
-            
-   Initial number of data elements that can be stored in the in-memory record
-   buffer.
-
-   Default: 60000
-
-.. envvar:: CALI_RECORDER_BUFFER_CAN_GROW=(true|false)
-            
-   Allow record and data buffers to grow if necessary. If false, buffer content
-   will be flushed to disk when either buffer is full.
-   
-   Default: true
 
 Textlog
 --------------------------------
@@ -294,9 +404,6 @@ test application with Caliper's auto-generated format string:
                 phase=main                                                            219     
                 == CALIPER: Finished
                 
-
-Configuration
-................................
 
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
             
@@ -338,9 +445,6 @@ The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 
-Configuration
-................................
-
 .. envvar:: CALI_TIMER_SNAPSHOT_DURATION=(true|false)
             
    Measure duration (in microseconds) of the context epoch (i.e., the
@@ -363,7 +467,7 @@ Configuration
    each context snapshot. The value will be saved in the snapshot record
    as attribute ``time.timestamp``.
 
-.. envvar:: CALI_TIMER_INCLUSIVE_DURATION
+.. envvar:: CALI_TIMER_INCLUSIVE_DURATION=(true|false)
             
    For snapshots triggered by ``set`` or ``end`` events, calculate the
    duration of the corresponding ``begin-end``, ``set-set``, or
@@ -372,6 +476,8 @@ Configuration
 
    The event service with event trigger information generation needs
    to be enabled for this feature.
+
+   Default: true
   
 Trace
 --------------------------------
@@ -379,3 +485,29 @@ Trace
 The trace service creates an I/O record for each snapshot. With the
 ``recorder`` sercice enabled, this will create a snapshot trace file.
 
+The trace service maintains per-thread snapshot buffers. By default,
+trace buffers will grow automatically. This behavior can be changed by
+setting a *buffer policy*. There are three options:
+
+Grow
+    Grow the buffer when it is full. This is the default.
+
+Stop
+    Stop recording when the buffer is full.
+
+Flush
+    Flush the buffer when it is full and continue recording. Note that 
+    buffer flushes can significantly perturb the program's
+    performance.
+
+.. envvar:: CALI_TRACE_BUFFER_SIZE
+
+   Size of the trace buffer, in Megabytes. With the `grow` buffer
+   policy, this is the size of a trace buffer *chunk*: When the buffer
+   is full, another chunk of this size is added. Default: 2 (MiB).
+
+.. envvar:: CALI_TRACE_BUFFER_POLICY
+
+   Sets the trace buffer policy (see above). Either `grow`, `stop`, or
+   `flush`. Default: `grow`.
+   

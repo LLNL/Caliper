@@ -1,201 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Getting started &mdash; Caliper 1.3.0 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
-        <link rel="next" title="Concepts" href="concepts.html"/>
-        <link rel="prev" title="Build and install" href="build.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-
+    <title>Getting started &mdash; Caliper 1.5.0 documentation</title>
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
+    <link rel="next" title="Concepts" href="concepts.html" />
+    <link rel="prev" title="Build and install" href="build.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="concepts.html" title="Concepts"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Build and install"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
-        
-          <a href="index.html" class="icon icon-home"> Caliper
-        
-
-        
-          
-          <img src="_static/caliper-logo-small.png" class="logo" />
-        
-        </a>
-
-        
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-        
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
-          
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#running-caliper-programs">Running Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#analyzing-data">Analyzing Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#where-to-go-from-here">Where to go from here?</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      </div>
-      &nbsp;
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Caliper</a>
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Getting started</li>
-      <li class="wy-breadcrumbs-aside">
-        
-          
-            <a href="_sources/usage.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document">
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
   <div class="section" id="getting-started">
 <h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
@@ -232,8 +84,6 @@ C++ code, and exports the main loop&#8217;s current iteration counter.</p>
         <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
             <span class="n">g_loop</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">()</span> <span class="p">);</span>
 
-        <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kt">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
-
         <span class="c1">// Create &quot;iteration&quot; attribute to export the iteration count</span>
         <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">iteration_ann</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">);</span>
 
@@ -243,9 +93,6 @@ C++ code, and exports the main loop&#8217;s current iteration counter.</p>
 
             <span class="c1">// A Caliper snapshot taken at this point will contain</span>
             <span class="c1">// { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }</span>
-
-            <span class="c1">// perform computation</span>
-            <span class="n">t</span> <span class="o">+=</span> <span class="kt">delta_t</span><span class="p">;</span>
         <span class="p">}</span>
 
         <span class="c1">// Clear the &quot;iteration&quot; attribute (otherwise, snapshots taken</span>
@@ -255,7 +102,7 @@ C++ code, and exports the main loop&#8217;s current iteration counter.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="api.html"><em>Annotation API</em></a> for examples in C and Fortran.</p>
+<p>See <a class="reference internal" href="api.html"><span class="doc">Annotation API</span></a> for examples in C and Fortran.</p>
 <p>Caliper-enabled tools will now be able to access the information
 provided by the source-code annotations at runtime by taking
 snapshots. The source-code annotations also provide hooks to enable
@@ -267,10 +114,10 @@ triggering snapshots or writing traces.</p>
 <p>To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper) and infrastructure libraries (libcaliper-common).</p>
-<div class="highlight-python"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
+<div class="highlight-default"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="link.html"><em>Linking Caliper programs</em></a> for more information.</p>
+<p>See <a class="reference internal" href="link.html"><span class="doc">Linking Caliper programs</span></a> for more information.</p>
 </div>
 <div class="section" id="running-caliper-programs">
 <h2>Running Caliper programs<a class="headerlink" href="#running-caliper-programs" title="Permalink to this headline">¶</a></h2>
@@ -292,7 +139,7 @@ selected with the <cite>CALI_CONFIG_PROFILE</cite> environment variable:</p>
 <span class="o">==</span> CALIPER: Finished
 </pre></div>
 </div>
-<p>With this configuration, Caliper will write a take a snapshot for each
+<p>With this configuration, Caliper will take a snapshot for each
 attribute update performed by the annotation commands, calculate the
 time spent in each of the annotated phases, and write the results in
 form of a snapshot trace to a <cite>.cali</cite> file in the current working
@@ -323,8 +170,8 @@ iteration of the example program:</p>
 <p>Caliper allows a great amount of flexibility and control in utilizing
 source-code annotations. Much of Caliper&#8217;s functionality is
 implemented by built-in &#8220;services&#8221;, which can be enabled or disabled
-as needed. Refer to the <a class="reference internal" href="services.html"><em>Caliper services</em></a> section to learn about
-functionality they provide.  Finally, the <a class="reference internal" href="api.html"><em>Annotation API</em></a> section in the
+as needed. Refer to the <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> section to learn about
+functionality they provide.  Finally, the <a class="reference internal" href="api.html"><span class="doc">Annotation API</span></a> section in the
 documentation provides reference documentation for Caliper&#8217;s C, C++,
 and Fortran annotation APIs.</p>
 </div>
@@ -332,68 +179,70 @@ and Fortran annotation APIs.</p>
 
 
           </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="concepts.html" class="btn btn-neutral float-right" title="Concepts" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="build.html" class="btn btn-neutral" title="Build and install" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-
-</footer>
-
         </div>
       </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting started</a><ul>
+<li><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
+<li><a class="reference internal" href="#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
+<li><a class="reference internal" href="#running-caliper-programs">Running Caliper programs</a></li>
+<li><a class="reference internal" href="#analyzing-data">Analyzing Data</a></li>
+<li><a class="reference internal" href="#where-to-go-from-here">Where to go from here?</a></li>
+</ul>
+</li>
+</ul>
 
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.3.0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="build.html"
+                        title="previous chapter">Build and install</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="concepts.html"
+                        title="next chapter">Concepts</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/usage.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="concepts.html" title="Concepts"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="build.html" title="Build and install"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+    </div>
+  </body>
 </html>

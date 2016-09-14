@@ -1,200 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Caliper services &mdash; Caliper 1.3.0 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
-        <link rel="prev" title="Configuration" href="configuration.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-
+    <title>Caliper services &mdash; Caliper 1.5.0 documentation</title>
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
+    <link rel="next" title="Caliper Tools" href="tools.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper Tools"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
-        
-          <a href="index.html" class="icon icon-home"> Caliper
-        
-
-        
-          
-          <img src="_static/caliper-logo-small.png" class="logo" />
-        
-        </a>
-
-        
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-        
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
-          
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api.html">Annotation API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api.html#constants-and-types">Constants and types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#c-annotation-api">C++ annotation API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api.html#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api.html#examples">Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Caliper services</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#callpath">Callpath</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#environment-information">Environment Information</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id1">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#event">Event</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#example">Example</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id2">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#debug">Debug</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#mpi">MPI</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id3">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#pthread">Pthread</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#recorder">Recorder</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id4">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#textlog">Textlog</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id5">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#timestamp">Timestamp</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id6">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#trace">Trace</a></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      </div>
-      &nbsp;
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Caliper</a>
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Caliper services</li>
-      <li class="wy-breadcrumbs-aside">
-        
-          
-            <a href="_sources/services.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document">
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
   <div class="section" id="caliper-services">
 <h1>Caliper services<a class="headerlink" href="#caliper-services" title="Permalink to this headline">¶</a></h1>
@@ -205,12 +58,153 @@ services allows you to quickly assemble recording solutions for a wide
 range of usage scenarios.</p>
 <p>You can enable the services required for your measurement with the
 <code class="docutils literal"><span class="pre">CALI_SERVICES_ENABLE</span></code> configuration variable, e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre>export CALI_SERVICES_ENABLE=event:pthread:recorder
+<div class="highlight-default"><div class="highlight"><pre><span class="n">export</span> <span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">trace</span>
 </pre></div>
 </div>
-<p>to create event-triggered context traces for a multi-threaded application.</p>
+<p>to create event-triggered context traces for an application.</p>
 <p>The following sections describe the available service modules and
 their configuration.</p>
+<div class="section" id="aggregate">
+<h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>aggregate</cite> service accumulates aggregation attributes (e.g., time
+durations) of snapshots with a similar <cite>key</cite>, creating a profile.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_AGGREGATE_KEY">
+<code class="descname">CALI_AGGREGATE_KEY</code><a class="headerlink" href="#envvar-CALI_AGGREGATE_KEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colon-separated list of attributes that form the aggregation key
+(see below).</p>
+<p>Default: Empty (all attributes without the <code class="docutils literal"><span class="pre">ASVALUE</span></code> storage
+property are key attributes).</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_AGGREGATE_ATTRIBUTES">
+<code class="descname">CALI_AGGREGATE_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_AGGREGATE_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colon-separated list of aggregation attributes. The aggregate
+service aggregates values of aggregation attributes from all input
+snapshots with similar aggregation keys. Note that only attributes
+with the <code class="docutils literal"><span class="pre">ASVALUE</span></code> storage property can be aggregation
+attributes.</p>
+<p>Default: <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code> (Generates event-triggered
+time profiles, if <cite>event</cite> and <cite>timestamp</cite> services are enabled)</p>
+</dd></dl>
+
+<div class="section" id="aggregation-key">
+<h3>Aggregation key<a class="headerlink" href="#aggregation-key" title="Permalink to this headline">¶</a></h3>
+<p>The aggregation key defines for which attributes separate (aggregate)
+snapshot records will be kept. That is, the aggregate service will
+generate an aggregate snapshot record for each unique combination of
+key values found in the input snapshots.  The values of the
+aggregation attributes in the input snapshots will be accumulated and
+appended to the aggregate snapshot.  The aggregate snapshot records
+also include an <cite>aggregate.count</cite> attribute that indicates how many
+input snapshots with the given aggregation key were found. Attributes
+that are neither aggregation attributes nor part of the aggregation
+key will not appear in the aggregate snapshot records.</p>
+<p>As an example, consider the following program:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;caliper/Annotation.h&gt;</span>
+
+<span class="kt">void</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;function&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;foo&quot;</span><span class="p">)</span> <span class="p">);</span>
+
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="p">{</span> <span class="c1">// &quot;A&quot; loop</span>
+    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">)</span> <span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+
+        <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+        <span class="n">foo</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="p">{</span> <span class="c1">// &quot;B&quot; loop</span>
+    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
+      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">)</span> <span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+
+        <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Assuming snapshots are generated from the <cite>function</cite> annotation and
+the aggregation key contains the <cite>function</cite>, <cite>loop.id</cite>, and
+<cite>iteration</cite> attributes, the <cite>aggregate</cite> service will generate the
+following aggregate snapshots :</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">0</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">1</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">2</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">0</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">1</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">2</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">3</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>Removing the <cite>iteration</cite> attribute from the aggregation key will
+collapse input snapshots with different iteration values into a
+single aggregate snapshot:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">6</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">4</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="aggregation-attributes">
+<h3>Aggregation attributes<a class="headerlink" href="#aggregation-attributes" title="Permalink to this headline">¶</a></h3>
+<p>The aggregate service accumulates values of aggregation attributes in
+input snapshots with similar aggregation keys. Specifically, it
+reports the minimum and maximum value, and computes the sum of the
+aggregation attributes in the input snapshots. Aggregate snapshots
+include <cite>aggregate.(min|max|sum)#attribute-name</cite> attributes with the
+minimum, maximum, and sum values for each aggregation attribute,
+respectively.</p>
+<p>Note that only attributes with the <code class="docutils literal"><span class="pre">ASVALUE</span></code> property can be
+aggregation attributes.</p>
+</div>
+<div class="section" id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>The following configuration generates a time profile for the function
+annotation separated by loop id. Note: when using
+<cite>time.inclusive.duration</cite> as aggregation attribute, we strongly
+recommend to include the <cite>event.end</cite> event attributes for all
+annotations of interest in the aggregation key (e.g.,
+<cite>event.end#function</cite> in the example), or use the default, empty key.</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ CALI_SERVICES_ENABLE</span><span class="o">=</span>aggregate:event:recorder:timestamp <span class="se">\</span>
+    <span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span><span class="k">function</span> <span class="se">\</span>
+    <span class="nv">CALI_AGGREGATE_KEY</span><span class="o">=</span>event.end#function:loop.id <span class="se">\</span>
+      ./test/cali-basic-aggregate
+<span class="o">==</span> CALIPER: Registered aggregation <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered event <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
+<span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
+<span class="o">==</span> CALIPER: <span class="nv">Initialized</span>
+<span class="o">==</span> CALIPER: aggregate: flushed <span class="m">4</span> snapshots.
+<span class="o">==</span> CALIPER: Wrote <span class="m">57</span> records.
+</pre></div>
+</div>
+<p>The resulting file has the following contents:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=foo  aggregate.count=6</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">min</span><span class="c">#time.inclusive.duration=25</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">max</span><span class="c">#time.inclusive.duration=26</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">sum</span><span class="c">#time.inclusice.duration=151</span>
+<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=foo  aggregate.count=4</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">min</span><span class="c">#time.inclusive.duration=25</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">max</span><span class="c">#time.inclusive.duration=26</span>
+  <span class="n">aggregate</span><span class="o">.</span><span class="n">sum</span><span class="c">#time.inclusice.duration=102</span>
+</pre></div>
+</div>
+</div>
+</div>
 <div class="section" id="callpath">
 <h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>callpath</cite> service uses libunwind to add callpaths to Caliper
@@ -219,7 +213,7 @@ call-stack addresses. Set <code class="docutils literal"><span class="pre">CALI_
 function names on-line. Call-path addresses are provided in the
 <code class="docutils literal"><span class="pre">callpath.address</span></code> attribute, call-path region names in
 <code class="docutils literal"><span class="pre">callpath.regname</span></code>. Example:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>callpath:event:recorder
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>callpath:event:recorder:trace
 <span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="nb">true</span>
 <span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_CALLPATH_USE_ADDRESS</span><span class="o">=</span><span class="nb">true</span>
 <span class="nv">$ </span>./test/cali-basic
@@ -229,8 +223,6 @@ function names on-line. Call-path addresses are provided in the
 </div>
 <p>The example shows the <code class="docutils literal"><span class="pre">callpath.address</span></code> and <code class="docutils literal"><span class="pre">callpath.regname</span></code>
 attributes in Caliper context records.</p>
-<div class="section" id="configuration">
-<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_CALLPATH_USE_NAME=(true|false)">
 <code class="descname">CALI_CALLPATH_USE_NAME=(true|false)</code><a class="headerlink" href="#envvar-CALI_CALLPATH_USE_NAME=(true|false)" title="Permalink to this definition">¶</a></dt>
@@ -255,10 +247,9 @@ within the Caliper library.</p>
 </dd></dl>
 
 </div>
-</div>
 <div class="section" id="environment-information">
 <h2>Environment Information<a class="headerlink" href="#environment-information" title="Permalink to this headline">¶</a></h2>
-<p>The environment information (<code class="docutils literal"><span class="pre">env</span></code>) service collects runtime
+<p>The environment information (<cite>env</cite>) service collects runtime
 environment information at process startup and adds it to the Caliper
 context.</p>
 <p>Specifically, it collects</p>
@@ -272,8 +263,6 @@ version</li>
 </div></blockquote>
 <p>Moreover, the environment information service can put any environment
 variable defined at program start on the Caliper blackboard.</p>
-<div class="section" id="id1">
-<h3>Configuration<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_ENV_EXTRA=(variable1:variable2:...)">
 <code class="descname">CALI_ENV_EXTRA=(variable1:variable2:...)</code><a class="headerlink" href="#envvar-CALI_ENV_EXTRA=(variable1:variable2:...)" title="Permalink to this definition">¶</a></dt>
@@ -282,45 +271,51 @@ variable defined at program start on the Caliper blackboard.</p>
 </dd></dl>
 
 </div>
-</div>
 <div class="section" id="event">
 <h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
-<p>The event trigger service triggers context snapshots when attributes
-are updated. You can select a list of triggering attributes, or have
-any attribute update trigger context snapshots.</p>
-<div class="section" id="example">
-<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
-<p>All attributes trigger context snapshots:</p>
+<p>The event trigger service triggers snapshots when attributes are
+updated. It is possible to select a list of snapshot-triggering
+attributes, or have any attribute update trigger snapshots.
+Updates of attributes with the <code class="docutils literal"><span class="pre">CALI_ATTR_SKIP_EVENTS</span></code> property will
+never trigger snapshots.</p>
+<p>Snapshots triggered by the event service include an attribute which
+describes the event that triggered the snapshot, in the following
+form:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.&lt;</span><span class="n">begin</span><span class="o">|</span><span class="nb">set</span><span class="o">|</span><span class="n">end</span><span class="o">&gt;</span><span class="c">#&lt;attribute name&gt;=&lt;value&gt;</span>
+</pre></div>
+</div>
+<p>For example, a snapshot triggered by the call
+<code class="docutils literal"><span class="pre">cali_set_int_byname(&quot;my.iteration&quot;,</span> <span class="pre">42);</span></code> includes the attribute
+<cite>event.set#my.iteration=42</cite> to describe the triggering event.</p>
+<p>The following example shows the snapshots generated by the example
+program in <a class="reference internal" href="usage.html"><span class="doc">Getting started</span></a>:</p>
 <div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:trace
 <span class="nv">$ </span>./test/cali-basic
 <span class="nv">$ </span>cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
-<span class="nv">phase</span><span class="o">=</span>main
-<span class="nv">phase</span><span class="o">=</span>init/main
-<span class="nv">phase</span><span class="o">=</span>main
-<span class="nv">phase</span><span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>0,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>1,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>2,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>3,phase<span class="o">=</span>loop/main
-<span class="nv">phase</span><span class="o">=</span>loop/main
-<span class="nv">phase</span><span class="o">=</span>main
+event.begin#initialization<span class="o">=</span><span class="nb">true</span>,cali.snapshot.event.begin<span class="o">=</span>39
+event.end#initialization<span class="o">=</span><span class="nb">true</span>,cali.snapshot.event.end<span class="o">=</span>39,initialization<span class="o">=</span><span class="nb">true</span>
+event.begin#loop<span class="o">=</span><span class="nb">true</span>,cali.snapshot.event.begin<span class="o">=</span>53
+event.set#iteration<span class="o">=</span>0,cali.snapshot.event.set<span class="o">=</span>63,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>1,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>0,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>2,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>1,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>3,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>2,loop<span class="o">=</span><span class="nb">true</span>
+event.end#iteration<span class="o">=</span>3,cali.snapshot.event.end<span class="o">=</span>63,iteration<span class="o">=</span>3,loop<span class="o">=</span><span class="nb">true</span>
+event.end#loop<span class="o">=</span><span class="nb">true</span>,cali.snapshot.event.end<span class="o">=</span>53,loop<span class="o">=</span><span class="nb">true</span>
 </pre></div>
 </div>
-<p>Only &#8220;iteration&#8221; attribute updates trigger context snapshots:</p>
+<p>By setting <code class="docutils literal"><span class="pre">CALI_EVENT_TRIGGER</span></code>, we can configure the example to
+only trigger snapshot for &#8220;iteration&#8221; attribute updates:</p>
 <div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:trace
 <span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_EVENT_TRIGGER</span><span class="o">=</span>iteration
 <span class="nv">$ </span>./test/cali-basic
 <span class="nv">$ </span>cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
-<span class="nv">phase</span><span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>0,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>1,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>2,phase<span class="o">=</span>loop/main
-<span class="nv">iteration</span><span class="o">=</span>3,phase<span class="o">=</span>loop/main
+event.set#iteration<span class="o">=</span>0,cali.snapshot.event.set<span class="o">=</span>63,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>1,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>0,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>2,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>1,loop<span class="o">=</span><span class="nb">true</span>
+event.set#iteration<span class="o">=</span>3,cali.snapshot.event.set<span class="o">=</span>63,iteration<span class="o">=</span>2,loop<span class="o">=</span><span class="nb">true</span>
+event.end#iteration<span class="o">=</span>3,cali.snapshot.event.end<span class="o">=</span>63,iteration<span class="o">=</span>3,loop<span class="o">=</span><span class="nb">true</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="id2">
-<h3>Configuration<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)">
 <code class="descname">CALI_EVENT_TRIGGER=(attribute1:attribute2:...)</code><a class="headerlink" href="#envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)" title="Permalink to this definition">¶</a></dt>
@@ -329,7 +324,6 @@ If empty, all user attributes trigger snapshots.</p>
 <p>Default: empty</p>
 </dd></dl>
 
-</div>
 </div>
 <div class="section" id="debug">
 <h2>Debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h2>
@@ -368,14 +362,13 @@ output.</p>
 <p>The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting <code class="docutils literal"><span class="pre">CALI_MPI_WHITELIST</span></code> or
-<code class="docutils literal"><span class="pre">CALI_MPI_BLACKLIST</span></code> filters.</p>
+<code class="docutils literal"><span class="pre">CALI_MPI_BLACKLIST</span></code> filters. By default, all MPI functions are
+instrument.</p>
 <p>MPI function names are stored in the <code class="docutils literal"><span class="pre">mpi.function</span></code> attribute, and
 the MPI rank in the <code class="docutils literal"><span class="pre">mpi.rank</span></code> attribute.</p>
 <p>Note that you have to link the <cite>libcaliper-mpiwrap</cite> library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.</p>
-<div class="section" id="id3">
-<h3>Configuration<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)">
 <code class="descname">CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)</code><a class="headerlink" href="#envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)" title="Permalink to this definition">¶</a></dt>
@@ -393,27 +386,12 @@ whitelisted functions.</p>
 </dd></dl>
 
 </div>
-</div>
-<div class="section" id="pthread">
-<h2>Pthread<a class="headerlink" href="#pthread" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>pthread</cite> service manages thread environments for any
-pthread-based multi-threading runtime system. A thread environment
-manager such as the <cite>pthread</cite> service is responsible for creating
-separate per-thread contexts in multithreaded programs.</p>
-<p>If you record attributes on multiple threads, it is strongly
-recommended to enable the <cite>pthread</cite> service.</p>
-</div>
 <div class="section" id="recorder">
 <h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
 <p>The recorder service writes Caliper I/O records into a file.</p>
-<p>By default, the recorder service stores records in an
-in-memory buffer to avoid application performance perturbance because
-of I/O. You can configure the buffer sizes and determine whether they
-are allowed to grow. You can also set the directory and filename that
-should be used; by default, the recorder service will auto-generate a
+<p>You can also set the directory and filename that should be used;
+by default, the recorder service will auto-generate a
 file name.</p>
-<div class="section" id="id4">
-<h3>Configuration<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)">
 <code class="descname">CALI_RECORDER_FILENAME=(stdout|stderr|filename)</code><a class="headerlink" href="#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)" title="Permalink to this definition">¶</a></dt>
@@ -430,31 +408,6 @@ Caliper does not create it. Default: not set, use current working
 directory.</p>
 </dd></dl>
 
-<dl class="envvar">
-<dt id="envvar-CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)">
-<code class="descname">CALI_RECORDER_RECORD_BUFFER_SIZE=(number of records)</code><a class="headerlink" href="#envvar-CALI_RECORDER_RECORD_BUFFER_SIZE=(numberofrecords)" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initial number of records that can be stored in the in-memory record
-buffer.</p>
-<p>Default: 8000</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)">
-<code class="descname">CALI_RECORDER_DATA_BUFFER_SIZE=(number of data elements)</code><a class="headerlink" href="#envvar-CALI_RECORDER_DATA_BUFFER_SIZE=(numberofdataelements)" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initial number of data elements that can be stored in the in-memory record
-buffer.</p>
-<p>Default: 60000</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)">
-<code class="descname">CALI_RECORDER_BUFFER_CAN_GROW=(true|false)</code><a class="headerlink" href="#envvar-CALI_RECORDER_BUFFER_CAN_GROW=(true|false)" title="Permalink to this definition">¶</a></dt>
-<dd><p>Allow record and data buffers to grow if necessary. If false, buffer content
-will be flushed to disk when either buffer is full.</p>
-<p>Default: true</p>
-</dd></dl>
-
-</div>
 </div>
 <div class="section" id="textlog">
 <h2>Textlog<a class="headerlink" href="#textlog" title="Permalink to this headline">¶</a></h2>
@@ -480,8 +433,6 @@ test application with Caliper&#8217;s auto-generated format string:</p>
 <span class="o">==</span> CALIPER: Finished
 </pre></div>
 </div>
-<div class="section" id="id5">
-<h3>Configuration<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:...">
 <code class="descname">CALI_TEXTLOG_TRIGGER=attr1:attr2:...</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:..." title="Permalink to this definition">¶</a></dt>
@@ -519,14 +470,11 @@ to print to the standard output or error streams, respectively.</p>
 </dd></dl>
 
 </div>
-</div>
 <div class="section" id="timestamp">
 <h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
 <p>The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
-<div class="section" id="id6">
-<h3>Configuration<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
 <dl class="envvar">
 <dt id="envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)">
 <code class="descname">CALI_TIMER_SNAPSHOT_DURATION=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)" title="Permalink to this definition">¶</a></dt>
@@ -554,87 +502,129 @@ as attribute <code class="docutils literal"><span class="pre">time.timestamp</sp
 </dd></dl>
 
 <dl class="envvar">
-<dt id="envvar-CALI_TIMER_INCLUSIVE_DURATION">
-<code class="descname">CALI_TIMER_INCLUSIVE_DURATION</code><a class="headerlink" href="#envvar-CALI_TIMER_INCLUSIVE_DURATION" title="Permalink to this definition">¶</a></dt>
+<dt id="envvar-CALI_TIMER_INCLUSIVE_DURATION=(true|false)">
+<code class="descname">CALI_TIMER_INCLUSIVE_DURATION=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_INCLUSIVE_DURATION=(true|false)" title="Permalink to this definition">¶</a></dt>
 <dd><p>For snapshots triggered by <code class="docutils literal"><span class="pre">set</span></code> or <code class="docutils literal"><span class="pre">end</span></code> events, calculate the
 duration of the corresponding <code class="docutils literal"><span class="pre">begin-end</span></code>, <code class="docutils literal"><span class="pre">set-set</span></code>, or
 <code class="docutils literal"><span class="pre">set-end</span></code> phase. The value will be saved in the snapshot record
 as attribute <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code>.</p>
 <p>The event service with event trigger information generation needs
 to be enabled for this feature.</p>
+<p>Default: true</p>
 </dd></dl>
 
-</div>
 </div>
 <div class="section" id="trace">
 <h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
 <p>The trace service creates an I/O record for each snapshot. With the
 <code class="docutils literal"><span class="pre">recorder</span></code> sercice enabled, this will create a snapshot trace file.</p>
+<p>The trace service maintains per-thread snapshot buffers. By default,
+trace buffers will grow automatically. This behavior can be changed by
+setting a <em>buffer policy</em>. There are three options:</p>
+<dl class="docutils">
+<dt>Grow</dt>
+<dd>Grow the buffer when it is full. This is the default.</dd>
+<dt>Stop</dt>
+<dd>Stop recording when the buffer is full.</dd>
+<dt>Flush</dt>
+<dd>Flush the buffer when it is full and continue recording. Note that
+buffer flushes can significantly perturb the program&#8217;s
+performance.</dd>
+</dl>
+<dl class="envvar">
+<dt id="envvar-CALI_TRACE_BUFFER_SIZE">
+<code class="descname">CALI_TRACE_BUFFER_SIZE</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_SIZE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Size of the trace buffer, in Megabytes. With the <cite>grow</cite> buffer
+policy, this is the size of a trace buffer <em>chunk</em>: When the buffer
+is full, another chunk of this size is added. Default: 2 (MiB).</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_TRACE_BUFFER_POLICY">
+<code class="descname">CALI_TRACE_BUFFER_POLICY</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_POLICY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the trace buffer policy (see above). Either <cite>grow</cite>, <cite>stop</cite>, or
+<cite>flush</cite>. Default: <cite>grow</cite>.</p>
+</dd></dl>
+
 </div>
 </div>
 
 
           </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-      
-        <a href="configuration.html" class="btn btn-neutral" title="Configuration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-
-</footer>
-
         </div>
       </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Caliper services</a><ul>
+<li><a class="reference internal" href="#aggregate">Aggregate</a><ul>
+<li><a class="reference internal" href="#aggregation-key">Aggregation key</a></li>
+<li><a class="reference internal" href="#aggregation-attributes">Aggregation attributes</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#callpath">Callpath</a></li>
+<li><a class="reference internal" href="#environment-information">Environment Information</a></li>
+<li><a class="reference internal" href="#event">Event</a></li>
+<li><a class="reference internal" href="#debug">Debug</a></li>
+<li><a class="reference internal" href="#mpi">MPI</a></li>
+<li><a class="reference internal" href="#recorder">Recorder</a></li>
+<li><a class="reference internal" href="#textlog">Textlog</a></li>
+<li><a class="reference internal" href="#timestamp">Timestamp</a></li>
+<li><a class="reference internal" href="#trace">Trace</a></li>
+</ul>
+</li>
+</ul>
 
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.3.0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="configuration.html"
+                        title="previous chapter">Configuration</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="tools.html"
+                        title="next chapter">Caliper Tools</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/services.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper Tools"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="configuration.html" title="Configuration"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+    </div>
+  </body>
 </html>

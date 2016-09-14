@@ -1,201 +1,53 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 
-<!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
-<head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Annotation API &mdash; Caliper 1.3.0 documentation</title>
-  
-
-  
-  
-
-  
-
-  
-  
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-
-  
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-
-  
-    <link rel="top" title="Caliper 1.3.0 documentation" href="index.html"/>
-        <link rel="next" title="Linking Caliper programs" href="link.html"/>
-        <link rel="prev" title="Concepts" href="concepts.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
-</head>
-
-<body class="wy-body-for-nav" role="document">
-
-  <div class="wy-grid-for-nav">
-
+    <title>Annotation API &mdash; Caliper 1.5.0 documentation</title>
     
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
+    <link rel="next" title="Linking Caliper programs" href="link.html" />
+    <link rel="prev" title="Concepts" href="concepts.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="link.html" title="Linking Caliper programs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="concepts.html" title="Concepts"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
 
-        
-          <a href="index.html" class="icon icon-home"> Caliper
-        
-
-        
-          
-          <img src="_static/caliper-logo-small.png" class="logo" />
-        
-        </a>
-
-        
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-
-        
-      </div>
-
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
-          
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="build.html">Build and install</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="build.html#optional-modules">Optional modules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#common-cmake-flags">Common CMake Flags</a></li>
-<li class="toctree-l2"><a class="reference internal" href="build.html#building-on-bg-q">Building on BG/Q</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Getting started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#source-code-annotations">Source-code annotations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#running-caliper-programs">Running Caliper programs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#analyzing-data">Analyzing Data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="usage.html#where-to-go-from-here">Where to go from here?</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="concepts.html">Concepts</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#attributes">Attributes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#datatypes">Datatypes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#hierarchical-stacked-values">Hierarchical/stacked values</a></li>
-<li class="toctree-l3"><a class="reference internal" href="concepts.html#properties">Properties</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#blackboard">Blackboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="concepts.html#snapshots">Snapshots</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Annotation API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#constants-and-types">Constants and types</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#c-annotation-api">C++ annotation API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="link.html">Linking Caliper programs</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="link.html#mpi">MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="link.html#fortran">Fortran</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-variables">Configuration variables</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-files">Configuration files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-profiles">Configuration profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="configuration.html#built-in-configuration-profiles">Built-in configuration profiles</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-variables-reference">Configuration variables reference</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="services.html#callpath">Callpath</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#configuration">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#environment-information">Environment Information</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id1">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#event">Event</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#example">Example</a></li>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id2">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#debug">Debug</a></li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#mpi">MPI</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id3">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#pthread">Pthread</a></li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#recorder">Recorder</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id4">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#textlog">Textlog</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id5">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#timestamp">Timestamp</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="services.html#id6">Configuration</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="services.html#trace">Trace</a></li>
-</ul>
-</li>
-</ul>
-
-          
-        
-      </div>
-      &nbsp;
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
-
-      
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
-        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="index.html">Caliper</a>
-      </nav>
-
-
-      
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
-  <ul class="wy-breadcrumbs">
-    <li><a href="index.html">Docs</a> &raquo;</li>
-      
-    <li>Annotation API</li>
-      <li class="wy-breadcrumbs-aside">
-        
-          
-            <a href="_sources/api.txt" rel="nofollow"> View page source</a>
-          
-        
-      </li>
-  </ul>
-  <hr/>
-</div>
-          <div role="main" class="document">
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
             
   <div class="section" id="annotation-api">
 <h1>Annotation API<a class="headerlink" href="#annotation-api" title="Permalink to this headline">¶</a></h1>
@@ -377,11 +229,11 @@ it will be created on the first invocation of a <code class="docutils literal"><
 
 <dl class="function">
 <dt id="_CPPv2N4cali10Annotation5beginEi">
-<span id="cali::Annotation::begin__i"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEi" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::begin__i"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEi" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2N4cali10Annotation5beginEd">
-<span id="cali::Annotation::begin__double"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEd" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::begin__double"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEd" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2N4cali10Annotation5beginEPKc">
-<span id="cali::Annotation::begin__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEPKc" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::begin__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEPKc" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add new value for the referenced attribute to the blackboard.
 If there is already a value for the referenced attribute on the
 blackboard, the new value will be stacked on top.</p>
@@ -403,7 +255,7 @@ of a not-yet-existing attribute is defined by the first call to
 
 <dl class="function">
 <dt id="_CPPv2N4cali10Annotation5beginEv">
-<span id="cali::Annotation::begin"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEv" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::begin"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEv" title="Permalink to this definition">¶</a></dt>
 <dd><p>This &#8216;value-less&#8217; variant can be used for marking named code
 regions without having to set a specific value. Internally, this
 will create boolean-type attribute and set it to <code class="docutils literal"><span class="pre">true</span></code>.</p>
@@ -411,7 +263,7 @@ will create boolean-type attribute and set it to <code class="docutils literal">
 
 <dl class="function">
 <dt id="_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t">
-<span id="cali::Annotation::begin__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::begin__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generic version.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -430,13 +282,13 @@ will create boolean-type attribute and set it to <code class="docutils literal">
 
 <dl class="function">
 <dt id="_CPPv2N4cali10Annotation3setEi">
-<span id="cali::Annotation::set__i"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEi" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::set__i"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEi" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2N4cali10Annotation3setEd">
-<span id="cali::Annotation::set__double"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEd" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::set__double"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEd" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2N4cali10Annotation3setEPKc">
-<span id="cali::Annotation::set__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEPKc" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::set__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEPKc" title="Permalink to this definition">¶</a></dt>
 <dt id="_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t">
-<span id="cali::Annotation::set__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
+<span id="cali::Annotation::set__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set value for the referenced attribute on the blackboard.</p>
 <p>Works like <a class="reference internal" href="#_CPPv2N4cali10Annotation5beginEi" title="cali::Annotation::begin"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::begin()</span></code></a>, except instead
 of stacking a new value on top of an existing one, <code class="docutils literal"><span class="pre">set</span></code>
@@ -482,11 +334,11 @@ exists, return its ID instead.</p>
 </tbody>
 </table>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_create_attribute(name, type, properties, id)
-  character(len=*),        intent(in)  :: name
-  integer,                 intent(in)  :: type
-  integer,                 intent(in)  :: properties
-  integer(kind=C_INT64_T), intent(out) :: id
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>        <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="n">name</span>
+  <span class="n">integer</span><span class="p">,</span>                 <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="nb">type</span>
+  <span class="n">integer</span><span class="p">,</span>                 <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="n">properties</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -521,20 +373,20 @@ assigned to attributes with type <code class="docutils literal"><span class="pre
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  character(len=*),            intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin_string</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>            <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_begin_int(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  integer,                     intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_begin_int</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">integer</span><span class="p">,</span>                     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_begin_double(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  real*8,                      intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_begin_double</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>                      <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -546,9 +398,9 @@ subroutine cali_begin_double(id, val, err)
 regions without having to set a specific value. Internally, this
 will set a boolean-type attribute to <code class="docutils literal"><span class="pre">true</span></code>.</p>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin(id, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -580,20 +432,20 @@ except instead of stacking a new value on top of an existing one,
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_set_string(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  character(len=*),            intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_set_string</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>            <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_set_int(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  integer,                     intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_set_int</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">integer</span><span class="p">,</span>                     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_set_double(id, val, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  real*8,                      intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_set_double</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>                      <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -603,7 +455,7 @@ subroutine cali_set_double(id, val, err)
 <a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const void*<em>&nbsp;ptr</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generic version. This function allows setting values for attributes
 with data types other than integer, string, or double; in
-particular user-defined raw data (<cite>CALI_TPYE_USR</cite>).</p>
+particular user-defined raw data (<cite>CALI_TYPE_USR</cite>).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -628,9 +480,9 @@ particular user-defined raw data (<cite>CALI_TPYE_USR</cite>).</p>
 <a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_end(id, err)
-  integer(kind=C_INT64_T),     intent(in) :: id
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_end</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -684,39 +536,39 @@ sections.</p>
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string_byname
-  character(len=*), intent(in) :: attr_name
-  character(len=*), intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin_string_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_begin_int_byname
-  character(len=*), intent(in) :: attr_name
-  integer,          intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_begin_int_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">integer</span><span class="p">,</span>          <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_begin_double_byname
-  character(len=*), intent(in) :: attr_name
-  real*8,           intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_begin_double_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>           <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_set_string_byname
-  character(len=*), intent(in) :: attr_name
-  character(len=*), intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_set_string_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_set_int_byname
-  character(len=*), intent(in) :: attr_name
-  integer,          intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_set_int_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">integer</span><span class="p">,</span>          <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_set_double_byname
-  character(len=*), intent(in) :: attr_name
-  real*8,           intent(in) :: val
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_set_double_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>           <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 
-subroutine cali_end_byname
-  character(len=*), intent(in) :: attr_name
-  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+<span class="n">subroutine</span> <span class="n">cali_end_byname</span>
+  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
+  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -725,7 +577,7 @@ subroutine cali_end_byname
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>The following examples demonstrate basic Caliper source-code
 annotations in C and Fortran. Similar to the C++ example in
-<a class="reference internal" href="usage.html"><em>Getting started</em></a>, they mark <em>initialization</em> and <em>loop</em> phases in a
+<a class="reference internal" href="usage.html"><span class="doc">Getting started</span></a>, they mark <em>initialization</em> and <em>loop</em> phases in a
 program, and export the main loop&#8217;s iteration counter in the
 <em>iteration</em> attribute.</p>
 <p>C:</p>
@@ -768,7 +620,7 @@ program, and export the main loop&#8217;s iteration counter in the
 </pre></div>
 </div>
 <p>Fortran:</p>
-<div class="highlight-python"><div class="highlight"><pre>program testf03
+<div class="highlight-default"><div class="highlight"><pre>program testf03
   use Caliper
 
   implicit none
@@ -817,72 +669,145 @@ end program testf03
 </div>
 </div>
 </div>
+<div class="section" id="c-control-api">
+<h2>C control API<a class="headerlink" href="#c-control-api" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt>
+<code class="descname">void cali_push_snapshot(int scope, int n,                     const cali_id_t trigger_info_attr_list[],                     const void*     trigger_info_val_list[],                     const size_t    trigger_info_size_list[]);</code></dt>
+<dd><p>This function triggers a snapshot and puts it into Caliper&#8217;s processing
+queue. Optionally, users can provide a list of trigger (event) info
+parameters to include in the snapshot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>scope</strong> &#8211; Indicates which scopes (process, thread, or task) the
+snapshot should span.</li>
+<li><strong>n</strong> &#8211; Number of optional trigger info entries.</li>
+<li><strong>trigger_info_attr_list</strong> &#8211; Array of attribute IDs for the
+trigger info entries.</li>
+<li><strong>trigger_info_val_list</strong> &#8211; Array of pointers to values for the
+trigger info entries.</li>
+<li><strong>trigger_info_size_list</strong> &#8211; Array to sizes of the provided
+trigger info values.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The given trigger info (or event) attributes will be attached to
+the generated snapshot, but not retained on the blackboard.</p>
+<p>Example:</p>
+</dd></dl>
+
+<div class="highlight-c"><div class="highlight"><pre><span class="c1">// ...</span>
+
+<span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;push_snapshot_example&quot;</span><span class="p">);</span>
+
+<span class="kt">cali_id_t</span> <span class="n">int_attr</span> <span class="o">=</span>
+  <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;snapshot.intarg&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_INT</span><span class="p">,</span>
+    <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
+<span class="kt">cali_id_t</span> <span class="n">str_attr</span> <span class="o">=</span>
+  <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;snapshot.strarg&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_STRING</span><span class="p">,</span>
+    <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
+
+<span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">strval</span> <span class="o">=</span> <span class="s">&quot;MySnapshot&quot;</span><span class="p">;</span>
+<span class="kt">int64_t</span>     <span class="n">intval</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+
+<span class="kt">cali_id_t</span> <span class="n">trigger_attr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">int_attr</span><span class="p">,</span> <span class="n">str_attr</span> <span class="p">};</span>
+<span class="kt">void</span><span class="o">*</span>     <span class="n">trigger_vals</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="o">&amp;</span><span class="n">intval</span><span class="p">,</span>  <span class="n">strval</span>   <span class="p">};</span>
+<span class="kt">size_t</span>    <span class="n">trigger_size</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">),</span>
+                              <span class="n">strlen</span><span class="p">(</span><span class="n">strval</span><span class="p">)</span> <span class="p">};</span>
+
+<span class="cm">/* Trigger snapshot with process and thread-local</span>
+<span class="cm">   blackboard contents */</span>
+
+<span class="n">cali_push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span> <span class="o">|</span> <span class="n">CALI_SCOPE_PROCESS</span><span class="p">,</span>
+  <span class="mi">2</span><span class="p">,</span> <span class="cm">/* number of trigger info attributes */</span><span class="p">,</span>
+  <span class="n">trigger_attr</span><span class="p">,</span> <span class="n">trigger_val</span><span class="p">,</span> <span class="n">trigger_size</span><span class="p">);</span>
+
+<span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;push_snapshot_example&quot;</span><span class="p">);</span>
+
+<span class="c1">// ...</span>
+</pre></div>
+</div>
+<p>This example program will generate a snapshot with (at least) the
+following contents:</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">push_snapshot_example</span><span class="o">=</span><span class="n">true</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">intarg</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">strarg</span><span class="o">=</span><span class="n">MySnapshot</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
           </div>
-          <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="link.html" class="btn btn-neutral float-right" title="Linking Caliper programs" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="concepts.html" class="btn btn-neutral" title="Concepts" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
-
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-    </p>
-  </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
-
-</footer>
-
         </div>
       </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Annotation API</a><ul>
+<li><a class="reference internal" href="#constants-and-types">Constants and types</a></li>
+<li><a class="reference internal" href="#c-annotation-api">C++ annotation API</a></li>
+<li><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
+<li><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#c-control-api">C control API</a></li>
+</ul>
+</li>
+</ul>
 
-    </section>
-
-  </div>
-  
-
-
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'1.3.0',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
-  <script type="text/javascript">
-      jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
-      });
-  </script>
-   
-
-</body>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="concepts.html"
+                        title="previous chapter">Concepts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="link.html"
+                        title="next chapter">Linking Caliper programs</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/api.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="link.html" title="Linking Caliper programs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="concepts.html" title="Concepts"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+    </div>
+  </body>
 </html>

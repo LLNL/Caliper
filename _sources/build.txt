@@ -2,7 +2,8 @@ Build and install
 ================================
 
 Building and installing Caliper requires cmake and a current C++11-compatible
-Compiler. Unpack the source distribution and proceed as follows:
+Compiler. GNU 4.8 and greater, and LLVM clang 3.7 and greater are known to work.
+Unpack the source distribution and proceed as follows:
 
 .. code-block:: sh
 
@@ -36,7 +37,8 @@ and only built when their dependencies are found.
 +------------+------------------------------+------------------------+
 |papi        | PAPI hardware counters       | PAPI library           |
 +------------+------------------------------+------------------------+
-
+|sampler     | Timer-based sampling         | Linux OS               |
++------------+------------------------------+------------------------+
 
 Common CMake Flags
 --------------------------------
@@ -59,6 +61,11 @@ You can configure the Caliper build with the following CMake variables:
 +---------------------------+----------------------------------------+
 | `WITH_FORTRAN`            | Build Fortran test cases and install   |
 |                           | Fortran wrapper module                 |
++---------------------------+----------------------------------------+
+| `WITH_TESTS`              | Build small example test programs      |
++---------------------------+----------------------------------------+
+| `WITH_TOOLS`              | Build `cali-query`, `cali-graph`, and  |
+|                           | `cali-stat` tools.                     |
 +---------------------------+----------------------------------------+
 
 Building on BG/Q

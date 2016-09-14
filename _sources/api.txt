@@ -294,7 +294,7 @@ names and semantics are identical to the respective C versions.
 
    Generic version. This function allows setting values for attributes
    with data types other than integer, string, or double; in
-   particular user-defined raw data (`CALI_TPYE_USR`).
+   particular user-defined raw data (`CALI_TYPE_USR`).
    
    :param cali_id_t attr: Attribute ID
    :param void* ptr: Address of value
@@ -480,3 +480,70 @@ Fortran: ::
        call cali_end_byname('loop')
     end if
   end program testf03
+
+
+C control API
+--------------------------------
+
+
+.. c:function:: void cali_push_snapshot(int scope, int n, \
+                       const cali_id_t trigger_info_attr_list[], \
+                       const void*     trigger_info_val_list[], \
+                       const size_t    trigger_info_size_list[]);
+
+   This function triggers a snapshot and puts it into Caliper's processing
+   queue. Optionally, users can provide a list of trigger (event) info
+   parameters to include in the snapshot.
+
+   :param scope: Indicates which scopes (process, thread, or task) the
+                 snapshot should span.
+   :param n:     Number of optional trigger info entries.
+   :param trigger_info_attr_list: Array of attribute IDs for the
+                                  trigger info entries.
+   :param trigger_info_val_list:  Array of pointers to values for the
+                                  trigger info entries.
+   :param trigger_info_size_list: Array to sizes of the provided
+                                  trigger info values. 
+
+   The given trigger info (or event) attributes will be attached to
+   the generated snapshot, but not retained on the blackboard.
+
+   Example:
+
+.. code-block:: c
+
+   // ...
+
+   cali_begin_byname("push_snapshot_example");
+
+   cali_id_t int_attr =
+     cali_create_attribute("snapshot.intarg", CALI_TYPE_INT,
+       CALI_ATTR_DEFAULT);
+   cali_id_t str_attr =
+     cali_create_attribute("snapshot.strarg", CALI_TYPE_STRING,
+       CALI_ATTR_DEFAULT);
+
+   const char* strval = "MySnapshot";
+   int64_t     intval = 42;
+
+   cali_id_t trigger_attr[2] = { int_attr, str_attr };
+   void*     trigger_vals[2] = { &intval,  strval   };
+   size_t    trigger_size[2] = { sizeof(int64_t),
+                                 strlen(strval) };
+
+   /* Trigger snapshot with process and thread-local
+      blackboard contents */
+   
+   cali_push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS,
+     2, /* number of trigger info attributes */,
+     trigger_attr, trigger_val, trigger_size);
+     
+   cali_end_byname("push_snapshot_example");
+
+   // ...
+
+This example program will generate a snapshot with (at least) the
+following contents: ::
+
+  push_snapshot_example=true,snapshot.intarg=42,snapshot.strarg=MySnapshot
+
