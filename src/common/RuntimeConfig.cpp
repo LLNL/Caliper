@@ -60,11 +60,13 @@ namespace
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event:recorder:timestamp:trace\n"
         "# [thread-trace]\n"
-        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
+        "CALI_SERVICES_ENABLE=event:recorder:timestamp:trace\n"
         "# [mpi-trace]\n"
-        "CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace\n"
+        "CALI_SERVICES_ENABLE=event:mpi:recorder:timestamp:trace\n"
+        "# [time-profile]\n"
+        "CALI_SERVICES_ENABLE=aggregate:event:recorder:timestamp\n"
         "# [load-sampling]\n"
-        "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:mitos\n"
+        "CALI_SERVICES_ENABLE=event:recorder:timestamp:mitos\n"
         "CALI_LOG_VERBOSITY=2\n";
 
     string config_var_name(const string& name, const string& key) {
