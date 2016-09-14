@@ -4,6 +4,7 @@ set(CALIPER_READER_HEADERS
     Aggregator.h
     CaliperMetadataDB.h
     Expand.h
+    Format.h
     RecordProcessor.h
     RecordSelector.h
     SimpleReader.h)
@@ -11,6 +12,7 @@ set(CALIPER_READER_HEADERS
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
     Expand.cpp
+    Format.cpp
     CaliperMetadataDB.cpp
     RecordSelector.cpp
     SimpleReader.cpp)

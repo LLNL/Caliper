@@ -3,6 +3,7 @@
 //
 // This file is part of Caliper.
 // Written by David Boehme, boehme3@llnl.gov.
+// Modified by Aimee Sylvia
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -104,9 +105,7 @@ struct Expand::ExpandImpl
 
         for (const Entry& e : list) {
             if (e.node()) {
-                // Unravel nodes, group them by attribute, and print in reverse order
-
-                std::vector<const Node*> nodes;
+                vector<const Node*> nodes;
 
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                     string name = db.attribute(node->attribute()).name();
@@ -120,9 +119,8 @@ struct Expand::ExpandImpl
                 if (nodes.empty())
                     continue;
 
-                stable_sort(nodes.begin(), nodes.end(),
-                            [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
-
+                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+	  
                 cali_id_t prev_attr_id = CALI_INV_ID;
 
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
@@ -132,7 +130,6 @@ struct Expand::ExpandImpl
                     } else {
                         m_os << '/';
                     }
-
                     m_os << (*it)->data().to_string();
                 }
             } else if (e.attribute() != CALI_INV_ID) {
@@ -144,7 +141,7 @@ struct Expand::ExpandImpl
                 m_os << (nentry++ ? "," : "") << name << '=' << e.value();
             }
         }
-
+        
         if (nentry > 0)
             m_os << endl;
     }

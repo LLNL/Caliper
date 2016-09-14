@@ -1,0 +1,26 @@
+main                      factorial                 time.inclusive.duration    
+init                                                1813                       
+body/init                                           114                        
+body/loop                                           1214                       
+body/loop                                           529                        
+body/loop                 init                      215                        
+body/loop                 init                      15                         
+body/loop                 init                      15                         
+body/loop                 comp/init                 101                        
+body/loop                 init                      15                         
+body/loop                 comp/init                 36                         
+body/loop                 comp/comp/init            37                         
+body/loop                 init                      14                         
+body/loop                 comp/init                 36                         
+body/loop                 comp/comp/init            36                         
+body/loop                 comp/comp/comp/init       36                         
+body/loop                 comp                      21                         
+body/loop                 comp                      14                         
+body/loop                 comp/comp                 16                         
+body/loop                 comp/comp/comp            14                         
+body/loop                 comp/comp/comp/comp       14                         
+body/loop                                           69                         
+body/loop                                           183                        
+body/loop                                           164                        
+body/loop                                           210                        
+body/conclusion                                     37                         

@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,11 +30,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Expand.h
-/// Expand output formatter declarations
+///@file Format.h
+/// Format output formatter declarations
 
-#ifndef CALI_EXPAND_H
-#define CALI_EXPAND_H
+#ifndef CALI_FORMAT_H
+#define CALI_FORMAT_H
 
 #include "RecordMap.h"
 #include "RecordProcessor.h"
@@ -47,18 +47,17 @@ namespace cali
 
 class CaliperMetadataDB;
 
-class Expand 
+class Format 
 {
-    struct ExpandImpl;
-    std::shared_ptr<ExpandImpl> mP;
+    struct FormatImpl;
+    std::shared_ptr<FormatImpl> mP;
 
 public:
 
-    Expand(std::ostream& os, const std::string& filter_string);
+    Format(std::ostream& os, const std::string& formatstr, const std::string& titlestr);
 
-    ~Expand();
+    ~Format();
 
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
     void operator()(CaliperMetadataDB&, const EntryList&) const;
 };
 

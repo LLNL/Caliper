@@ -1,0 +1,41 @@
+Number of records
+Total          Nodes          Snapshots
+169            124            45             
+
+Number of elements
+Total          Nodes          Tree refs      Direct val
+680            496            134            50             
+
+Data size (est.)
+Total          Nodes          Snapshots
+5.26172KiB     4.01953KiB     1.24219KiB     
+
+Elements/snapshot
+Min            Max            Average
+2              5              4.08889        
+
+Attributes referenced in snapshot records
+Total          Average        Refs/Elem
+381            8.46667        0.560294       
+
+Reuse statistics:
+Attribute                       #nodes      #elem       #uses       #uses/elem  #uses/node
+cali.attribute.name             38          38          38          1           1           
+cali.attribute.type             8           8           8           1           1           
+cali.attribute.prop             12          7           12          1.71429     1           
+cali.caliper.version            1           1           46          46          46          
+cali.snapshot.event.attr.level  3           3           48          16          16          
+cali.snapshot.event.begin       4           2           17          8.5         4.25        
+cali.snapshot.event.end         4           3           17          5.66667     4.25        
+cali.snapshot.event.set         5           5           24          4.8         4.8         
+event.begin#main                2           1           4           4           2           
+event.end#main                  1           1           2           2           2           
+event.set#main                  3           3           6           2           2           
+main                            5           4           91          22.75       18.2        
+event.end#iteration             1           1           2           2           2           
+event.set#iteration             5           5           10          2           2           
+iteration                       5           5           43          8.6         8.6         
+event.begin#factorial           2           1           13          13          6.5         
+event.end#factorial             2           1           13          13          6.5         
+event.set#factorial             1           1           12          12          12          
+factorial                       22          2           74          37          3.36364     
