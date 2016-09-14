@@ -3,6 +3,7 @@
 //
 // This file is part of Caliper.
 // Written by David Boehme, boehme3@llnl.gov.
+// Modified by Aimee Sylvia
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -320,6 +321,8 @@ int main(int argc, const char* argv[])
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
 
+
+    // differentiate between "expand" and "format"
     if (args.is_set("expand")) {
         snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
     } else if (args.is_set("format")) {

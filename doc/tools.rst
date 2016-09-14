@@ -37,13 +37,30 @@ Options
 |        |                                   | attributes (from ``--print-attributes``). Default behavior is to    |
 |        |                                   | expand and print all snapshots and attributes.                      |              
 +--------+-----------------------------------+---------------------------------------------------------------------+
-|        | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print when expanded. Attributes can be   |
+| ``-p`` | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print when expanded. Attributes can be   |
 |        |                                   | excluded by using a ``-`` symbol in front of the name. Multiple     |
 |        |                                   | attributes are selected/excluded by listing with a ``:`` separator. |
 |        |                                   | By default, all attributes are printed.                             |
 +--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-a`` | ``--aggregate=ATTRIBUTES``        | Aggregate the specified attributes. Currently, aggregation only     |
-|        |                                   | occurs over matching snapshots.                                     |
+| ``-a`` | ``--aggregate=AGGREGATION_OPS``   | Aggregate over the specified attributes with the specified          |
+|        |                                   | operation(s). ``AGGREGATION_OPS`` format is:                        |
+|        |                                   | ``(operation(attr1)|operation(attr1)):(operation(attr2)):...``      |
+|        |                                   | Operations available: ``sum(attr)``, ``max(attr)``, ``min(attr)``,  |
+|        |                                   | ``count``.                                                          |
++--------+-----------------------------------+---------------------------------------------------------------------+
+|        | ``--aggregate-key=ATTRIBUTES``    | Collapses previously aggregated snapshots, using ``--aggregate``,   |
+|        |                                   | by the specified attributes. ``ATTRIBUTES`` is of the form:         |
+|        |                                   | ``attr1:attr2:...`` where ``attribute#value`` may be used.          |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-f`` | ``--format=FORMAT_STRING``        | Print the snapshot data in a table in the format specified by       |
+|        |                                   | ``FORMAT_STRING``. ``FORMAT_STRING`` should be of the form:         |
+|        |                                   | ``%[width1]attr1% %[width2]attr2% ...``, where ``width`` is the     |
+|        |                                   | minimum width in characters of the printed value for the matching   |
+|        |                                   | attribute, ``attr``. Limits the printed attributes to those         |
+|        |                                   | listed in ``FORMAT_STRING``. Will override the ``--expand`` option. |
+|        |                                   | Attributes excluded by ``--print-attributes`` will not print.       |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-t`` | ``--title=TITLE_STRING``          | Specify a custom title or header line.                              |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-o`` | ``--output=FILE``                 | Set the name of the output file.                                    |
 +--------+-----------------------------------+---------------------------------------------------------------------+
@@ -148,14 +165,14 @@ are expanded and written. These are the first six lines of records written::
     event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
 
 
-``-a`` and ``--aggregate``
+``-a``/ ``--aggregate`` and ``--aggregate-key``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``-a`` and ``--aggregate`` add up the values of the specified attribute(s) on any repetition
-of the set of values of the other attributes.
+``-a`` and ``--aggregate`` will give the appropriate values of the operations in ``AGGREGATION_OPS`` for the specified attribute(s)
+performed over all snapshots with a matching trace.
 
 .. code-block:: sh
 
-    $ cali-query -a "time.inclusive.duration" -e -o cali-query-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
+    $ cali-query -a "sum(time.inclusive.duration)" -e -o cali-query-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
     == CALIPER: Initialized
 
 This is the last six records after aggregation of the ``time.inclusive.duration`` attribute::
@@ -167,6 +184,32 @@ This is the last six records after aggregation of the ``time.inclusive.duration`
     event.end#iteration=4,cali.snapshot.event.end=60,cali.snapshot.event.attr.level=1,iteration=4,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=210
     event.end#main=conclusion,cali.snapshot.event.end=38,cali.snapshot.event.attr.level=1,main=body/conclusion,cali.caliper.version=1.5.dev,time.inclusive.duration=37
 
+``--aggregate-key`` will collapse the aggregated value(s) by what attributes you select with ``ATTRIBUTES``. 
+
+.. code-block:: sh
+
+    $ cali-query -a "count:sum(time.inclusive.duration)" --aggregate-key="event.end#main:event.end#factorial" -e 160809-094411_72298_fuu1NeAHT2US.cali
+
+The ``event.end`` attributes work in ``--aggregate-key`` to add up all of the values for the listed attribute::
+
+    aggregate.count=33,time.inclusive.duration=4852
+    event.end#factorial=comp,aggregate.count=11,time.inclusive.duration=79
+    event.end#main=conclusion,aggregate.count=1,time.inclusive.duration=37
+
+Note the first line, with no attribute listed. That is every other call of ``time.inclusive.duration`` that does not fall into
+the listed attributes, ``event.end#main`` and ``event.end#factorial``, added together.
+
+Options available for ``--aggregate`` are:
+
++---------------+-----------------------------------------------------------+
+| ``sum(attr)`` | Sum up the values of the designated attribute.            |
++---------------+-----------------------------------------------------------+
+| ``count``     | Total the number of times the attribute is called.        |
++---------------+-----------------------------------------------------------+
+| ``min(attr)`` | Display just the minimum value of the selected attribute. |
++---------------+-----------------------------------------------------------+
+| ``max(attr)`` | Display just the maximum value of the selected attribute. |
++---------------+-----------------------------------------------------------+
 
 ``--print-attributes``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -187,6 +230,47 @@ This is the last six records as above, but printing only the
     iteration=3,main=body/loop,time.inclusive.duration=164
     iteration=4,main=body/loop,time.inclusive.duration=210
     main=body/conclusion,time.inclusive.duration=37
+
+
+``-f`` and ``--format``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``-f`` and ``--format`` can be used to specify a specific output format
+for the table, including limiting the printed attributes. Use the form
+``%[width1]attr1% %[width2]attr2% ...``.
+.. code-block:: sh
+
+    $ cali-query -f "%[10]main% %[20]factorial% %[10]time.inclusive.duration%" -o cali-print-agg-format.output cali-query-aggregated.output
+
+The title line and first eight records are formatted as specified::
+
+    init                                1813
+    body/init                           114
+    body/loop                           1214
+    body/loop                           529
+    body/loop    init                   215
+    body/loop    init                   15
+    body/loop    init                   15 
+    body/loop    comp/init              101
+
+``-t`` and ``--title``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+For a custom title string for the table, use ``-t`` or ``--title``. The format is any string.
+
+.. code-block:: sh
+
+    $ cali-query -f "%[10]main% %[20]factorial% %[10]time.inclusive.duration%" -t "Main         Factorial              Time" -o cali-print-agg-format-title.output cali-query-aggregated.output
+
+This is the same as the ``--format`` example, but with a custom title::
+
+    Main         Factorial              Time 
+    init                                1813
+    body/init                           114
+    body/loop                           1214
+    body/loop                           529
+    body/loop    init                   215
+    body/loop    init                   15
+    body/loop    init                   15
+    body/loop    comp/init              101
 
 
 

@@ -3,6 +3,7 @@
 //
 // This file is part of Caliper.
 // Written by David Boehme, boehme3@llnl.gov.
+// Modified by Aimee Sylvia
 // LLNL-CODE-678900
 // All rights reserved.
 //
