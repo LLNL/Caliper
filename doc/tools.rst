@@ -4,7 +4,7 @@ Caliper Tools
 Caliper comes with additional tool programs for post-processing
 the raw Caliper output data (in ``.cali`` files by default).
 
-Caliper’s output is in the form of snapshots. Snapshots
+Caliper's output is in the form of snapshots. Snapshots
 hold the information chosen to be recorded by the enabled services.
 See :doc:`services` for more on services.
 
@@ -18,6 +18,7 @@ The ``cali-query`` tool reads the raw snapshot records and can merge data and fi
 
 Usage
 ````````````````````````````````
+
 ``cali-query [OPTIONS]... [FILES]...``
 
 Options
@@ -29,15 +30,16 @@ Options
 |        |                                   | ``expand`` command. Snapshots with specific attributes and variables|
 |        |                                   | or values thereof can be excluded by using a ``-`` symbol in front  |
 |        |                                   | of the name of the attribute/variable. Specific attribute or        |
-|        |                                   | variable values are listed in ``attribute#value`` format. Multiple  |
+|        |                                   | variable values are listed in ``attribute=value`` format. Multiple  |
 |        |                                   | attributes/variables are selected by listing with a ``:`` separator.|
 |        |                                   | The default behavior is to select all snapshots.                    |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-e`` | ``--expand``                      | Expands the selected snapshots (from ``-s``) and prints the selected|
 |        |                                   | attributes (from ``--print-attributes``). Default behavior is to    |
-|        |                                   | expand and print all snapshots and attributes.                      |              
+|        |                                   | expand and print all snapshots and attributes.                      |
 +--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-p`` | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print when expanded. Attributes can be   |
+| ``-p`` | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print with the ``--expand`` option.      |
+|        |                                   | Attributes can be                                                   |
 |        |                                   | excluded by using a ``-`` symbol in front of the name. Multiple     |
 |        |                                   | attributes are selected/excluded by listing with a ``:`` separator. |
 |        |                                   | By default, all attributes are printed.                             |
@@ -70,10 +72,12 @@ Options
 Files
 ````````````````````````````````
 The files used by ``cali-query`` are ``.cali`` record files produced from running Caliper
-in a program. Multiple ``.cali`` files can be read at once.
+in a program. Multiple ``.cali`` files can be read at once; ``cali-query`` will merge their
+contents into a single output stream.
 
 Examples
 ````````````````````````````````
+
 ``cali-query`` can only be used on the ``.cali`` files created by using a configured
 Caliper library in a program. The program example.cpp_ was run:
 
@@ -93,7 +97,9 @@ and produced the following file::
 
     160809-094411_72298_fuu1NeAHT2US.cali
 
-For comparison, here are the first six lines of records from this file::
+For comparison, here are the first six lines of records from this file:
+
+.. code-block:: none
 
     __rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
     __rec=node,id=9,attr=8,data=cali.attribute.type,parent=7
@@ -112,7 +118,9 @@ Basic Use
 
 Note that ``-o`` is being used to control the output in all examples.
 
-The first six lines of records after processing look like this::
+The first six lines of records after processing look like this:
+
+.. code-block:: none
 
     __rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
     __rec=node,id=9,attr=8,data=cali.attribute.type,parent=7
@@ -126,14 +134,18 @@ of the records.
 
 ``-e`` and ``--expand``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The ``-e`` or ``--expand`` option expands the records in to a more readable form.
+
+The ``-e`` or ``--expand`` option expands snapshot records into
+comma-separated `attribute=value` lists.
 
 .. code-block:: sh
 
     $ cali-query -e -o cali-query-expanded.output 160809-094411_72298_fuu1NeAHT2US.cali
     == CALIPER: Initialized
 
-The first six lines of records after expansion look like this::
+The first six lines of records after expansion look like this:
+
+.. code-block:: none
 
     event.begin#main=init,cali.snapshot.event.begin=38,cali.snapshot.event.attr.level=1,cali.caliper.version=1.5.dev
     event.set#main=body,cali.snapshot.event.set=38,cali.snapshot.event.attr.level=1,main=init,cali.caliper.version=1.5.dev,time.inclusive.duration=1813
@@ -147,6 +159,7 @@ be using the ``-e`` option.
 
 ``-s`` and ``--select``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 ``-s`` and ``--select`` expands and/or prints only records that contain the selected attributes.
 
 .. code-block:: sh
@@ -155,27 +168,32 @@ be using the ``-e`` option.
     == CALIPER: Initialized
 
 Here, only the records that contain the ``iteration=3`` attribute value and the ``factorial`` attribute
-are expanded and written. These are the first six lines of records written::
+are expanded and written. These are the first six lines of records written
 
-    event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=15
-    event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
-    event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=36
-    event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
-    event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=37
-    event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
+.. code-block:: none
+                
+     event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=15
+     event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
+     event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=36
+     event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
+     event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=37
+     event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
 
 
 ``-a``/ ``--aggregate`` and ``--aggregate-key``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 ``-a`` and ``--aggregate`` will give the appropriate values of the operations in ``AGGREGATION_OPS`` for the specified attribute(s)
-performed over all snapshots with a matching trace.
+performed over all snapshots with a matching key.
 
 .. code-block:: sh
 
     $ cali-query -a "sum(time.inclusive.duration)" -e -o cali-query-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
     == CALIPER: Initialized
 
-This is the last six records after aggregation of the ``time.inclusive.duration`` attribute::
+This is the last six records after aggregation of the ``time.inclusive.duration`` attribute:
+
+.. code-block:: none
 
     event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp/comp,iteration=4,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
     event.set#iteration=2,cali.snapshot.event.set=60,cali.snapshot.event.attr.level=1,iteration=1,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=69
@@ -190,7 +208,9 @@ This is the last six records after aggregation of the ``time.inclusive.duration`
 
     $ cali-query -a "count:sum(time.inclusive.duration)" --aggregate-key="event.end#main:event.end#factorial" -e 160809-094411_72298_fuu1NeAHT2US.cali
 
-The ``event.end`` attributes work in ``--aggregate-key`` to add up all of the values for the listed attribute::
+The ``event.end`` attributes work in ``--aggregate-key`` to add up all of the values for the listed attribute:
+
+.. code-block:: none
 
     aggregate.count=33,time.inclusive.duration=4852
     event.end#factorial=comp,aggregate.count=11,time.inclusive.duration=79
@@ -234,8 +254,9 @@ This is the last six records as above, but printing only the
 
 ``-f`` and ``--format``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``-f`` and ``--format`` can be used to specify a specific output format
-for the table, including limiting the printed attributes. Use the form
+``-f`` and ``--format`` can be used to specify a custom output format
+for snapshots, including limiting the printed attributes. The output
+format is specified with a format string of the form
 ``%[width1]attr1% %[width2]attr2% ...``.
 .. code-block:: sh
 
@@ -254,7 +275,7 @@ The title line and first eight records are formatted as specified::
 
 ``-t`` and ``--title``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-For a custom title string for the table, use ``-t`` or ``--title``. The format is any string.
+Prints a custom title string for the ``--format`` output option. The format is any string.
 
 .. code-block:: sh
 
@@ -270,155 +291,6 @@ This is the same as the ``--format`` example, but with a custom title::
     body/loop    init                   215
     body/loop    init                   15
     body/loop    init                   15
-    body/loop    comp/init              101
-
-
-
-Cali-print
---------------------------------
-
-Print expanded records from ``cali-query`` in a table format.
-
-Usage
-````````````````````````````````
-``cali-print [OPTIONS]... [FILE]...``
-
-Options
-````````````````````````````````
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-f`` | ``--format=FORMAT_STRING``        | Print the entries of the table in the format specified by           |
-|        |                                   | ``FORMAT_STRING``. ``FORMAT_STRING`` should be of the form:         |
-|        |                                   | ``%[width1]attr1% %[width2]attr2% ...``, where ``width`` is the     |
-|        |                                   | minimum width in characters of the printed value for the matching   |
-|        |                                   | attribute, ``attr``. Limits the printed attributes to those         |
-|        |                                   | listed in ``FORMAT_STRING``.                                        |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-s`` | ``--select=QUERY_STRING``         | Select the attributes to print in the table when not specifying the |
-|        |                                   | ``FORMAT_STRING`` with ``--format``. ``QUERY_STRING`` should be of  |
-|        |                                   | the form: ``attr1:attr2: ...``.                                     |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-t`` | ``--title=STRING``                | Specify a custom title or header line.                              |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-o`` | ``--output=FILE``                 | Set the name of the output file.                                    |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-h`` | ``--help``                        | Print the help message, a summary of these options.                 |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-
-
-Files
-````````````````````````````````
-The files used by ``cali-print`` are expanded records produced by ``cali-query``. Only
-one file may be read at a time.
-
-
-Examples
-````````````````````````````````
-All of these examples are using as input output files from the ``cali-query`` examples
-above. ``cali-print`` can only read ``cali-query`` outputs that have used the ``-e`` or
-``--expand`` option.
-
-Basic Use
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``cali-print`` will, if nothing is specified, automatically format and print
-all attributes that are not internal Caliper information or event triggers.
-Note that all examples will use the ``-o`` option to specify output file.
-
-.. code-block:: sh
-
-    $ cali-print -o cali-print.output cali-query-expanded.output
-
-The first eight lines of records and title line appear as so::
-
-    factorial                 iteration                 main                      time.inclusive.duration    
-                                                                                                             
-                                                        init                      1813                       
-                                                        body                                                 
-                                                        body/init                 114                        
-                                                        body/loop                                            
-                              0                         body/loop                                            
-    init                      0                         body/loop                 215                        
-    comp                      0                         body/loop                 21                         
-                              0                         body/loop                 529
-
-The same can be done with the aggregated output:
-
-.. code-block:: sh
-
-    $ cali-print -o cali-print-agg.output cali-query-aggregated.output
-
-And the results are similar::
-
-    factorial                 iteration                 main                      time.inclusive.duration    
-                                                        init                      1813                       
-                                                        body/init                 114                        
-                                                        body/loop                 1214                       
-                              0                         body/loop                 529                        
-    init                      0                         body/loop                 215                        
-    init                      1                         body/loop                 15                         
-    init                      2                         body/loop                 15                         
-    comp/init                 2                         body/loop                 101
-
-
-``-f`` and ``--format``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``-f`` and ``--format`` can be used to specify a specific output format
-for the table, including limiting the printed attributes. Use the form
-``%[width1]attr1% %[width2]attr2% ...``.
-.. code-block:: sh
-
-    $ cali-print -f "%[10]main% %[20]factorial% %[10]time.inclusive.duration%" -o cali-print-agg-format.output cali-query-aggregated.output
-
-The title line and first eight records are formatted as specified::
-
-    main         factorial              time.inclusive.duration
-    init                                1813      
-    body/init                           114       
-    body/loop                           1214      
-    body/loop                           529       
-    body/loop    init                   215       
-    body/loop    init                   15        
-    body/loop    init                   15        
-    body/loop    comp/init              101
-
-
-``-s`` and ``--select``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``-s`` and ``--select`` will choose which attributes to print, but let ``cali-print``
-autoformat the table. Use the form ``attr1:attr2:...``.
-.. code-block:: sh
-
-    $ cali-print -s "main:factorial:time.inclusive.duration" -o cali-print-agg-select.output cali-query-aggregated.output
-
-The title line and first eight records::
-
-    main                      factorial                 time.inclusive.duration    
-    init                                                1813                       
-    body/init                                           114                        
-    body/loop                                           1214                       
-    body/loop                                           529                        
-    body/loop                 init                      215                        
-    body/loop                 init                      15                         
-    body/loop                 init                      15                         
-    body/loop                 comp/init                 101
-
-
-``-t`` and ``--title``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-For a custom title string for the table, use ``-t`` or ``--title``. The format is any string.
-.. code-block:: sh
-
-    $ cali-print -f "%[10]main% %[20]factorial% %[10]time.inclusive.duration%" -t "Main         Factorial              Time" -o cali-print-agg-format-title.output cali-query-aggregated.output
-
-This is the same as the ``--format`` example, but with a custom title::
-
-    Main         Factorial              Time
-    init                                1813      
-    body/init                           114       
-    body/loop                           1214      
-    body/loop                           529       
-    body/loop    init                   215       
-    body/loop    init                   15        
-    body/loop    init                   15        
     body/loop    comp/init              101
 
 
@@ -482,7 +354,8 @@ The report generated::
 
 
 ``-r`` and ``--reuse-statistics``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 ``-r`` and ``--reuse-statistics`` prints how often a node is reused in the tree.
 
 .. code-block:: sh
@@ -643,46 +516,6 @@ Example Files
 --------------------------------
 
 .. _`example.cpp`:
-example.cpp
+
 .. literalinclude:: examples/example.cpp
    :language: cpp
-.. _`.cali file`:
-160809-094411_72298_fuu1NeAHT2US.cali
-.. literalinclude:: examples/160809-094411_72298_fuu1NeAHT2US.cali
-   :language: text
-.. _`cali-query.output`:
-cali-query.output
-.. literalinclude:: examples/cali-query.output
-   :language: text
-.. _`cali-query-expanded.output`:
-cali-query-expanded.output
-.. literalinclude:: examples/cali-query-expanded.output
-   :language: text
-.. _`cali-query-selected.output`:
-cali-query-selected.output
-.. literalinclude:: examples/cali-query-selected.output
-   :language: text
-.. _`cali-query-aggregated.output`:
-cali-query-aggregated.output
-
-cali-query-print-aggregated.output
-
-cali-print.output
-
-cali-print-agg.output
-
-cali-print-agg-format.output
-
-cali-print-agg-select.output
-
-cali-print-agg-format-title.output
-
-cali-stat.output
-
-cali-stat-reuse.output
-
-cali-graph.output
-
-cali-graph-max-nodes.output
-
-cali-graph-skip.output
