@@ -86,42 +86,43 @@ struct Format::FormatImpl
 
             field.prefix = split_string.front();
             split_string.erase(split_string.begin());
-            
+
             // parse field entry
+            if (!split_string.empty()) {
+                vector<string> field_strings;
+                util::tokenize(split_string.front(), "[]", back_inserter(field_strings));
 
-            vector<string> field_strings;
-            util::tokenize(split_string.front(), "[]", back_inserter(field_strings));
+                // look for width/alignment specification (in [] brackets)
 
-            // look for width/alignment specification (in [] brackets)
+                int wfbegin = -1;
+                int wfend   = -1;
+                int apos    = -1;
 
-            int wfbegin = -1;
-            int wfend   = -1;
-            int apos    = -1;
+                int nfields = field_strings.size();
 
-            int nfields = field_strings.size();
+                for (int i = 0; i < nfields; ++i)
+                    if(field_strings[i] == "[")
+                        wfbegin = i;
+                    else if (field_strings[i] == "]")
+                        wfend = i;
 
-            for (int i = 0; i < nfields; ++i)
-                if(field_strings[i] == "[")
-                    wfbegin = i;
-                else if (field_strings[i] == "]")
-                    wfend = i;
+                if (wfbegin >= 0 && wfend > wfbegin+1) {
+                    // width field specified
+                    field.width = stoi(field_strings[wfbegin+1]);
 
-            if (wfbegin >= 0 && wfend > wfbegin+1) {
-                // width field specified
-                field.width = stoi(field_strings[wfbegin+1]);
-
-                if (wfbegin > 0)
+                    if (wfbegin > 0)
+                        apos = 0;
+                    else if (wfend+1 < nfields)
+                        apos = wfend+1;
+                } else if (nfields > 0)
                     apos = 0;
-                else if (wfend+1 < nfields)
-                    apos = wfend+1;
-            } else if (nfields > 0)
-                apos = 0;
 
-            if (apos >= 0)
-                field.attr_name = field_strings[apos];
+                if (apos >= 0)
+                    field.attr_name = field_strings[apos];
 
-            split_string.erase(split_string.begin());
-
+                split_string.erase(split_string.begin());
+            }
+            
             m_fields.push_back(field);
         }
     }
