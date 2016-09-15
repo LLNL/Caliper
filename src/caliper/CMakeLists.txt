@@ -3,6 +3,7 @@ include_directories ("../services")
 
 set(CALIPER_HEADERS
     Annotation.h
+    AnnotatedRegion.h
     Caliper.h
     EntryList.h
     cali.h
