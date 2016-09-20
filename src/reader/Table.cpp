@@ -172,9 +172,17 @@ struct Table::TableImpl
         // print rows
 
         for (auto row : m_rows) {
-            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c)
-                os << row[c] << whitespace+(120 - std::min<std::size_t>(120, 1+m_cols[c].max_width-row[c].size()));
+            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c) {
+                cali_attr_type t   = m_cols[c].attr.type();
+                bool           align_right = (t == CALI_TYPE_INT || t == CALI_TYPE_UINT || t == CALI_TYPE_DOUBLE);
+                std::size_t    len = m_cols[c].max_width-row[c].size();
 
+                if (align_right)
+                    os << whitespace+(120 - std::min<std::size_t>(120, len)) << row[c] << ' ';
+                else
+                    os << row[c] << whitespace+(120 - std::min<std::size_t>(120, 1+len));
+            }
+            
             os << std::endl;
         }        
     }
