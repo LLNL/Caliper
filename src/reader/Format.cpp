@@ -175,7 +175,7 @@ Format::~Format()
 }
 
 void 
-Format::operator()(CaliperMetadataDB& db, const EntryList& list) const
+Format::operator()(CaliperMetadataDB& db, const EntryList& list)
 {
     mP->print(db, list);
 }

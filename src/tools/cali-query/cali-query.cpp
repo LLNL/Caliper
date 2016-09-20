@@ -44,6 +44,7 @@
 #include <Format.h>
 #include <RecordProcessor.h>
 #include <RecordSelector.h>
+#include <Table.h>
 
 #include <ContextRecord.h>
 #include <Node.h>
@@ -76,14 +77,6 @@ namespace
           "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]", 
           "QUERY_STRING" 
         },
-        { "expand", "expand", 'e', false,  
-          "Expand context records and print the selected attributes (default: all)", 
-          nullptr 
-        },
-        { "attributes", "print-attributes", 0, true,  
-          "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
-          "ATTRIBUTES" 
-        },
         { "aggregate", "aggregate", 'a', true,
           "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
           "AGGREGATION_OPS"
@@ -92,14 +85,26 @@ namespace
           "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
           "ATTRIBUTES"
         },
+        { "expand", "expand", 'e', false,  
+          "Expand context records and print the selected attributes (default: all)", 
+          nullptr 
+        },
+        { "attributes", "print-attributes", 0, true,  
+          "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
+          "ATTRIBUTES" 
+        },
 	{ "format", "format", 'f', true,
           "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
           "FORMAT_STRING"
-        }, // added format option
-	{ "title",  "title",  't', true,
+        }, 
+	{ "title",  "title",  'T', true,
           "Set the title row for formatted output",
           "STRING"
-        }, // added title option
+        }, 
+        { "table", "table", 't', true,
+          "Print given attributes in human-readable table form",
+          "ATTRIBUTES"
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
@@ -318,6 +323,8 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
+    Table             tbl_writer(args.get("table"));
+
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
 
@@ -334,6 +341,13 @@ int main(int argc, const char* argv[])
         }
         
         snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
+    } else if (args.is_set("table")) {
+        if (args.get("table").empty()) {
+            cerr << "cali-query: Attribute list required for --table" << endl;
+            return -2;
+        }
+        
+        snap_writer = tbl_writer;
     } else {
         WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
 
@@ -375,4 +389,7 @@ int main(int argc, const char* argv[])
     a_phase.set("flush");
 
     aggregate.flush(metadb, snap_writer);
+
+    if (args.is_set("table"))
+        tbl_writer.flush(metadb, fs.is_open() ? fs : cout);
 }

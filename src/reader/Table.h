@@ -30,11 +30,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Format.h
-/// Format output formatter declarations
+///@file Table.h
+/// Table output formatter declarations
 
-#ifndef CALI_FORMAT_H
-#define CALI_FORMAT_H
+#ifndef CALI_TABLE_H
+#define CALI_TABLE_H
 
 #include "RecordMap.h"
 #include "RecordProcessor.h"
@@ -47,18 +47,20 @@ namespace cali
 
 class CaliperMetadataDB;
 
-class Format 
+class Table 
 {
-    struct FormatImpl;
-    std::shared_ptr<FormatImpl> mP;
+    struct TableImpl;
+    std::shared_ptr<TableImpl> mP;
 
 public:
 
-    Format(std::ostream& os, const std::string& formatstr, const std::string& titlestr);
+    Table(const std::string& fields);
 
-    ~Format();
+    ~Table();
 
     void operator()(CaliperMetadataDB&, const EntryList&);
+
+    void flush(CaliperMetadataDB&, std::ostream& os);
 };
 
 } // namespace cali
