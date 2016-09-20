@@ -63,8 +63,16 @@ struct Table::TableImpl
 
     std::vector<Column>                     m_cols;
     std::vector< std::vector<std::string> > m_rows;
+
+    bool                                    m_auto_column;
     
     void parse(const std::string& field_string) {
+        if (field_string.empty()) {
+            m_auto_column = true;
+            return;
+        } else
+            m_auto_column = false;
+        
         std::vector<std::string> fields;
 
         util::split(field_string, ':', std::back_inserter(fields));
@@ -74,7 +82,47 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid);
     }
 
+    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
+        auto it = std::find_if(m_cols.begin(), m_cols.end(),
+                               [attr_id](const Column& c) {
+                                   return c.attr.id() == attr_id;
+                               });
+
+        if (it != m_cols.end())
+            return;
+        
+        Attribute attr   = db.attribute(attr_id);
+
+        if (attr == Attribute::invalid)
+            return;
+        
+        std::string name = attr.name();
+
+        // Skip internal "cali." and ".event" attributes
+        if (name.compare(0, 5, "cali." ) == 0 ||
+            name.compare(0, 6, "event.") == 0)
+            return;
+                
+        m_cols.emplace_back(name, name.size(), attr);
+    }
+    
+    void update_columns(CaliperMetadataDB& db, const EntryList& list) {
+        // Auto-generate columns from attributes in the snapshots. Used if no
+        // field list was given. Skips some internal attributes.
+
+        for (Entry e : list) {
+            if (e.node()) {
+                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
+                    update_column_attribute(db, node->attribute());
+            } else
+                update_column_attribute(db, e.attribute());
+        }
+    }
+    
     void add(CaliperMetadataDB& db, const EntryList& list) {
+        if (m_auto_column)
+            update_columns(db, list);
+        
         std::vector<std::string> row(m_cols.size());
         bool active = false;
         
@@ -124,7 +172,7 @@ struct Table::TableImpl
         // print rows
 
         for (auto row : m_rows) {
-            for (std::vector<Column>::size_type c = 0; c < m_cols.size(); ++c)
+            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c)
                 os << row[c] << whitespace+(120 - std::min<std::size_t>(120, 1+m_cols[c].max_width-row[c].size()));
 
             os << std::endl;

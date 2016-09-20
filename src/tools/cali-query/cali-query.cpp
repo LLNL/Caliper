@@ -101,7 +101,7 @@ namespace
           "Set the title row for formatted output",
           "STRING"
         }, 
-        { "table", "table", 't', true,
+        { "table", "table", 't', false,
           "Print given attributes in human-readable table form",
           "ATTRIBUTES"
         },
@@ -323,7 +323,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    Table             tbl_writer(args.get("table"));
+    Table             tbl_writer(args.get("attributes"));
 
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
@@ -341,12 +341,7 @@ int main(int argc, const char* argv[])
         }
         
         snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
-    } else if (args.is_set("table")) {
-        if (args.get("table").empty()) {
-            cerr << "cali-query: Attribute list required for --table" << endl;
-            return -2;
-        }
-        
+    } else if (args.is_set("table")) {        
         snap_writer = tbl_writer;
     } else {
         WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
