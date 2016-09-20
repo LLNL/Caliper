@@ -30,11 +30,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file AnnotatedRegion.h
-/// Caliper C++ Function Annotation Library
+/// \file CaliFunctional.h
+/// Caliper C++ Functional Annotation Utilities
 
-#ifndef CALI_ANNOTATED_REGION_H
-#define CALI_ANNOTATED_REGION_H
+#ifndef CALI_FUNCTIONAL_H
+#define CALI_FUNCTIONAL_H
 
 #include "Annotation.h"
 #include <type_traits>
@@ -42,15 +42,28 @@
 namespace cali{
 
 template<typename LB, typename... Args>
-auto Wrapped(LB body, const char* name, Args... args) -> typename std::result_of<LB(Args...)>::type{
+auto WrappedCall(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     cali::Annotation::Guard func_annot(cali::Annotation("Wrapped Function").begin(name));
     return body(args...);
 }
 
-template<typename LB, typename... Args>
-auto Wrapped(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
-    cali::Annotation::Guard func_annot(cali::Annotation("Wrapped Function").begin(name));
-    return body(args...);
+template<class LB>
+struct WrappedFunction {
+    WrappedFunction(const char* func_name, LB func) : body(func){
+        name = func_name;
+    }
+    template <typename... Args>
+    auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
+        cali::Annotation::Guard func_annot(cali::Annotation("Wrapped Function").begin(name));
+        return body(args...);
+    }
+    LB body;
+    const char* name;
+};
+
+template<typename LB>
+WrappedFunction<LB> WrapFunction(const char* name, LB body){
+    return WrappedFunction<LB>(name,body);
 }
 
 }
