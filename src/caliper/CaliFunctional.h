@@ -41,12 +41,15 @@
 
 namespace cali{
 
+//Wrap a call to a function
 template<typename LB, typename... Args>
-auto WrappedCall(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
-    cali::Annotation::Guard func_annot(cali::Annotation("Wrapped Function").begin(name));
+auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
+    static cali::Annotation::Guard func_annot(cali::Annotation("wrapped_function").begin(name));
     return body(args...);
 }
 
+//Functor containing a function which should always be wrapped. Should not be instantiated directly, 
+//but through calls to wrap_function below
 template<class LB>
 struct WrappedFunction {
     WrappedFunction(const char* func_name, LB func) : body(func){
@@ -61,8 +64,9 @@ struct WrappedFunction {
     const char* name;
 };
 
+//Helper factory function to create WrappedFunction objects
 template<typename LB>
-WrappedFunction<LB> WrapFunction(const char* name, LB body){
+WrappedFunction<LB> wrap_function(const char* name, LB body){
     return WrappedFunction<LB>(name,body);
 }
 
