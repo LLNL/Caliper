@@ -40,11 +40,11 @@
 #include <type_traits>
 
 namespace cali{
-
+        
 //Wrap a call to a function
 template<typename LB, typename... Args>
 auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
-    static cali::Annotation::Guard func_annot(cali::Annotation("wrapped_function").begin(name));
+    cali::Annotation::Guard func_annot(cali::Annotation("wrapped_function").begin(name));
     return body(args...);
 }
 
@@ -57,7 +57,7 @@ struct WrappedFunction {
     }
     template <typename... Args>
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
-        cali::Annotation::Guard func_annot(cali::Annotation("Wrapped Function").begin(name));
+        cali::Annotation::Guard func_annot(cali::Annotation("wrapped_function").begin(name));
         return body(args...);
     }
     LB body;
