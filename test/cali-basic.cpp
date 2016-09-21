@@ -33,41 +33,50 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
+#include <CaliFunctional.h>
+
+int doWork(int input){
+        return 5;
+}
 
 int main(int argc, char* argv[])
 {
     // Mark begin of "initialization" phase
     cali::Annotation
         init_ann = cali::Annotation("initialization").begin();
+    //int x = cali::wrap_with_args("doWork", doWork, 5);
+    auto wrapped_f = cali::wrap_function_and_args("doWork", doWork);
+    int x2 = wrapped_f(5);
     // perform initialization tasks
     int count = 4;
     // Mark end of "initialization" phase
     init_ann.end();
+    cali::wrap("dog",[&] () {
+        if (count > 0) {
+            // Mark begin of "loop" phase. The scope guard will
+            // automatically end it at the end of the C++ scope
+            cali::Annotation::Guard 
+                g_loop( cali::Annotation("loop").begin() );
 
-    if (count > 0) {
-        // Mark begin of "loop" phase. The scope guard will
-        // automatically end it at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_loop( cali::Annotation("loop").begin() );
+            double t = 0.0, delta_t = 1e-6;
 
-        double t = 0.0, delta_t = 1e-6;
+            // Create "iteration" attribute to export the iteration count
+            cali::Annotation iteration_ann("iteration");
+            
+            for (int i = 0; i < count; ++i) {
+                // Export current iteration count under "iteration"
+                iteration_ann.set(i);
 
-        // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
-        
-        for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration"
-            iteration_ann.set(i);
+                // A Caliper snapshot taken at this point will contain
+                // { "loop", "iteration"=<i> }
 
-            // A Caliper snapshot taken at this point will contain
-            // { "loop", "iteration"=<i> }
+                // perform computation
+                t += delta_t;
+            }
 
-            // perform computation
-            t += delta_t;
+            // Clear the "iteration" attribute (otherwise, snapshots taken
+            // after the loop will still contain the "iteration" attribute)
+            iteration_ann.end();
         }
-
-        // Clear the "iteration" attribute (otherwise, snapshots taken
-        // after the loop will still contain the "iteration" attribute)
-        iteration_ann.end();
-    }
+    });
 }

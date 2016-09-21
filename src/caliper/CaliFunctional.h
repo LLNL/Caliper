@@ -44,11 +44,28 @@ cali::Annotation& wrapper_annotation(){
         static cali::Annotation instance("wrapped_function");
         return instance;
 }       
+
 //Wrap a call to a function
 template<typename LB, typename... Args>
 auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
     return body(args...);
+}
+
+template<typename... Args>
+void record_args(const char* name, int arg_num, Args... args){
+}
+
+template<typename Arg, typename... Args>
+void record_args(const char* name, int arg_num, Arg arg, Args... args){
+    std::cout<<"In function "<<name<<" arg number "<<arg_num<<" has value "<<arg<<std::endl;
+    record_args(name,arg_num+1,args...);
+}
+
+template<typename LB, typename... Args>
+auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
+    record_args(name,0,args...);
+    return wrap(name,body, args...);
 }
 
 //Functor containing a function which should always be wrapped. Should not be instantiated directly, 
@@ -68,10 +85,30 @@ struct WrappedFunction {
     const char* name;
 };
 
+template<class LB>
+struct ArgWrappedFunction {
+    ArgWrappedFunction(const char* func_name, LB func) : body(func){
+        name = func_name;
+    }
+    template <typename... Args>
+    auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
+        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
+        record_args(name,0, args...);
+        return body(args...);
+    }
+    LB body;
+    const char* name;
+};
+
 //Helper factory function to create WrappedFunction objects
 template<typename LB>
 WrappedFunction<LB> wrap_function(const char* name, LB body){
     return WrappedFunction<LB>(name,body);
+}
+
+template<typename LB>
+ArgWrappedFunction<LB> wrap_function_and_args(const char* name, LB body){
+    return ArgWrappedFunction<LB>(name,body);
 }
 
 }
