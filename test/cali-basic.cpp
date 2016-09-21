@@ -45,13 +45,13 @@ int main(int argc, char* argv[])
     cali::Annotation
         init_ann = cali::Annotation("initialization").begin();
     //int x = cali::wrap_with_args("doWork", doWork, 5);
-    auto wrapped_f = cali::wrap_function_and_args("doWork", doWork);
+    auto wrapped_f = cali::wrap_function_and_args("noWork", doWork);
     int x2 = wrapped_f(5);
     // perform initialization tasks
     int count = 4;
     // Mark end of "initialization" phase
     init_ann.end();
-    cali::wrap("dog",[&] () {
+    cali::wrap_with_args("dog",[&] () {
         if (count > 0) {
             // Mark begin of "loop" phase. The scope guard will
             // automatically end it at the end of the C++ scope

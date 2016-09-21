@@ -39,9 +39,21 @@
 #include "Annotation.h"
 #include <type_traits>
 #include <iostream>
+#include <tuple>
 namespace cali{
 cali::Annotation& wrapper_annotation(){
         static cali::Annotation instance("wrapped_function");
+        return instance;
+}       
+
+template<int N>
+const char* annotation_name(){
+    static std::string name = "function_argument_"+std::to_string(N); 
+    return (name.c_str());
+}
+template<int N>
+cali::Annotation& arg_annotation(){
+        static cali::Annotation instance(annotation_name<N>());
         return instance;
 }       
 
@@ -52,19 +64,25 @@ auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB
     return body(args...);
 }
 
-template<typename... Args>
-void record_args(const char* name, int arg_num, Args... args){
+template<int N,typename... Args>
+auto record_args(const char* name, Args... args) -> std::tuple<> {
+    return std::make_tuple();
 }
 
-template<typename Arg, typename... Args>
-void record_args(const char* name, int arg_num, Arg arg, Args... args){
-    std::cout<<"In function "<<name<<" arg number "<<arg_num<<" has value "<<arg<<std::endl;
-    record_args(name,arg_num+1,args...);
+
+template<int N,typename Arg, typename... Args>
+auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple_cat(
+                                                                                        record_args<N+1>(name,args...),
+                                                                                        std::move(std::forward_as_tuple(std::move(cali::Annotation::Guard(wrapper_annotation()))))
+                                                                                    )
+                                                                     ){
+    cali::Annotation::Guard x (arg_annotation<N>().begin(arg));
+    return std::tuple_cat(record_args<N+1>(name,args...),std::forward_as_tuple(std::move(x)));
 }
 
 template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
-    record_args(name,0,args...);
+    auto n =record_args<1>(name,args...);
     return wrap(name,body, args...);
 }
 
@@ -93,7 +111,7 @@ struct ArgWrappedFunction {
     template <typename... Args>
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
         cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
-        record_args(name,0, args...);
+        auto n =record_args<1>(name, args...);
         return body(args...);
     }
     LB body;
