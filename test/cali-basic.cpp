@@ -39,6 +39,8 @@ int doWork(int input){
         return 5;
 }
 
+static auto hahah = cali::wrap_function_and_args("pups",doWork);
+
 int main(int argc, char* argv[])
 {
     // Mark begin of "initialization" phase
@@ -46,7 +48,7 @@ int main(int argc, char* argv[])
         init_ann = cali::Annotation("initialization").begin();
     //int x = cali::wrap_with_args("doWork", doWork, 5);
     auto wrapped_f = cali::wrap_function_and_args("noWork", doWork);
-    int x2 = wrapped_f(5);
+    int x2 = hahah(5);
     // perform initialization tasks
     int count = 4;
     // Mark end of "initialization" phase
