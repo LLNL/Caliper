@@ -317,6 +317,9 @@ namespace
         c->events().flush.connect(&flush_cb);
         c->events().finish_evt.connect(&finish_cb);
 
+        // Initialize trace buffer on master thread
+        acquire_tbuf(true);
+        
         Log(1).stream() << "Registered trace service" << endl;
     }
     
