@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
         int sum = 0;
         cali::wrap("Initialization",[&](){
             int* inArray = cali::wrap_with_args("initializer",initialize<int>,data_size,0);
-            int sum = doWorkWrapped(inArray,data_size);
+            //int sum = doWorkWrapped(inArray,data_size);
         });
     });
     std::cout<<data_size<<std::endl;
