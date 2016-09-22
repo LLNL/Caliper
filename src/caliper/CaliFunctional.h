@@ -42,8 +42,85 @@
 #include <iostream>
 #include <tuple>
 namespace cali{
-cali::Annotation& wrapper_annotation(){
-        static cali::Annotation instance("wrapped_function");
+struct SafeAnnotation{
+public:
+    //ValidatedAnnotation() : inner_annot("ERROR"){}
+    SafeAnnotation(const char* name, int opt=0) : inner_annot(name,opt){
+        inner_annot = Annotation(name,opt);
+    }
+    SafeAnnotation(SafeAnnotation& other) : inner_annot(other.getAnnot()) {
+        
+    }
+    Annotation& getAnnot() {
+        return inner_annot;
+    }
+    SafeAnnotation& operator = (SafeAnnotation& other){
+        inner_annot = other.getAnnot();
+        return *this;
+    }
+    SafeAnnotation& begin(){
+        inner_annot.begin();
+        return *this;
+    }
+    SafeAnnotation& begin(int data){
+        inner_annot.begin(data);
+        return *this;
+    }
+    SafeAnnotation& begin(double data){
+        inner_annot.begin(data);
+        return *this;
+    }
+    SafeAnnotation& begin(const char* data){
+        inner_annot.begin(data);
+        return *this;
+    }
+    SafeAnnotation& begin(cali_attr_type type, void* data, uint64_t size){
+        inner_annot.begin(type,data,size);
+        return *this;
+    }
+    SafeAnnotation& begin(const Variant& data){
+        inner_annot.begin(data);
+        return *this;
+    }
+    //set
+    SafeAnnotation& set(int data){
+        inner_annot.set(data);
+        return *this;
+    }
+    SafeAnnotation& set(double data){
+        inner_annot.set(data);
+        return *this;
+    }
+    SafeAnnotation& set(const char* data){
+        inner_annot.set(data);
+        return *this;
+    }
+    SafeAnnotation& set(cali_attr_type type, void* data, uint64_t size){
+        inner_annot.set(type,data,size);
+        return *this;
+    }
+    SafeAnnotation& set(const Variant& data){
+        inner_annot.set(data);
+        return *this;
+    }
+    void end(){
+        inner_annot.end();
+    }
+    template<typename T>
+    SafeAnnotation & begin(T start){
+        inner_annot.begin("Unmeasurable");
+        return *this;
+    }
+    template<typename T>
+    SafeAnnotation & set(T start){
+        inner_annot.set("Unmeasurable");
+        return *this;
+    }
+    Annotation inner_annot;
+};
+
+cali::SafeAnnotation& wrapper_annotation(){
+        static cali::SafeAnnotation instance("wrapped_function");
         return instance;
 }       
 
@@ -53,7 +130,12 @@ const char* annotation_name(){
     return (name.c_str());
 }
 template<int N>
-cali::Annotation& arg_annotation(){
+cali::SafeAnnotation& arg_annotation(){
+        static cali::SafeAnnotation instance(annotation_name<N>());
+        return instance;
+}       
+template<int N>
+cali::Annotation& arg_annotation_raw(){
         static cali::Annotation instance(annotation_name<N>());
         return instance;
 }       
@@ -61,7 +143,8 @@ cali::Annotation& arg_annotation(){
 //Wrap a call to a function
 template<typename LB, typename... Args>
 auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
-    cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
+    Annotation startedAnnot = wrapper_annotation().begin(name).getAnnot();
+    cali::Annotation::Guard func_annot(startedAnnot);
     return body(args...);
 }
 
@@ -70,29 +153,21 @@ auto record_args(const char* name, Args... args) -> std::tuple<> {
     return std::make_tuple();
 }
 
-template<int N, class Arg,
-         typename std::enable_if<std::is_fundamental<Arg>{},int>::type = 0>
-cali::Annotation::Guard&& record_arg(Arg arg){
-    cali::Annotation::Guard x (arg_annotation<N>().begin(arg));
-    return std::move(x);
+cali::Annotation& dummy_annot(){
+    static cali::Annotation instance ("wrapped func");
+    return instance;
 }
-
-template<int N, class Arg,
-         typename std::enable_if<!std::is_fundamental<Arg>{},int>::type = 0>
-cali::Annotation::Guard&& record_arg(Arg arg){
-    cali::Annotation::Guard x (arg_annotation<N>().begin("unmeasurable"));
-    return std::move(x);
-}
-
 template<int N,typename Arg, typename... Args>
 auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple_cat(
                                                                                         record_args<N+1>(name,args...),
-                                                                                        std::forward_as_tuple(std::move(record_arg<N>(std::declval<Arg>)))
+                                                                                        std::move(std::forward_as_tuple(std::move(cali::Annotation::Guard(dummy_annot())  )))
                                                                                     )
                                                                      ){
+    //cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
+    cali::Annotation::Guard func_annot (arg_annotation_raw<N>().begin(arg));
     return std::tuple_cat(
         record_args<N+1>(name,args...),
-        std::forward_as_tuple(std::move(record_arg<N>(arg)))
+        std::forward_as_tuple(std::move(func_annot))
     );
 }
 
@@ -100,9 +175,8 @@ template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     #ifdef VARIADIC_RETURN_SAFE
     auto n =record_args<1>(name,args...);
-    
     #else
-    #warning CALIPER WARNING: This version of the C++ compiler has bugs which prevent argument profiling
+    #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
     #endif
     return wrap(name,body, args...);
 }
@@ -131,11 +205,11 @@ struct ArgWrappedFunction {
     }
     template <typename... Args>
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
-        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
+        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name).getAnnot());
         #ifdef VARIADIC_RETURN_SAFE
         auto n =record_args<1>(name, args...);
         #else
-        #warning CALIPER WARNING: This version of the C++ compiler has bugs which prevent argument profiling
+        #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
         #endif
         return body(args...);
     }
