@@ -82,7 +82,11 @@ auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple
 
 template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
+    #ifdef VARIADIC_RETURN_SAFE
     auto n =record_args<1>(name,args...);
+    #else
+    #warning CALIPER WARNING: This version of the C++ compiler has bugs which prevent argument profiling
+    #endif
     return wrap(name,body, args...);
 }
 
@@ -111,7 +115,11 @@ struct ArgWrappedFunction {
     template <typename... Args>
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
         cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
+        #ifdef VARIADIC_RETURN_SAFE
         auto n =record_args<1>(name, args...);
+        #else
+        #warning CALIPER WARNING: This version of the C++ compiler has bugs which prevent argument profiling
+        #endif
         return body(args...);
     }
     LB body;
