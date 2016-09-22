@@ -148,9 +148,10 @@ auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB
     return body(args...);
 }
 
-template<int N,typename... Args>
-auto record_args(const char* name, Args... args) -> std::tuple<> {
-    return std::make_tuple();
+template<int N,typename Arg>
+auto record_args(const char* name, Arg arg) -> std::tuple<cali::Annotation::Guard&&> {
+    cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
+    return std::forward_as_tuple(std::move(func_annot));
 }
 
 cali::Annotation& dummy_annot(){
@@ -163,8 +164,7 @@ auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple
                                                                                         std::move(std::forward_as_tuple(std::move(cali::Annotation::Guard(dummy_annot())  )))
                                                                                     )
                                                                      ){
-    //cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
-    cali::Annotation::Guard func_annot (arg_annotation_raw<N>().begin(arg));
+    cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
     return std::tuple_cat(
         record_args<N+1>(name,args...),
         std::forward_as_tuple(std::move(func_annot))
