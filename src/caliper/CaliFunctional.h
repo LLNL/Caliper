@@ -37,6 +37,7 @@
 #define CALI_FUNCTIONAL_H
 
 #include "Annotation.h"
+#include "cali_definitions.h"
 #include <type_traits>
 #include <iostream>
 #include <tuple>
@@ -69,21 +70,37 @@ auto record_args(const char* name, Args... args) -> std::tuple<> {
     return std::make_tuple();
 }
 
+template<int N, class Arg,
+         typename std::enable_if<std::is_fundamental<Arg>{},int>::type = 0>
+cali::Annotation::Guard&& record_arg(Arg arg){
+    cali::Annotation::Guard x (arg_annotation<N>().begin(arg));
+    return std::move(x);
+}
+
+template<int N, class Arg,
+         typename std::enable_if<!std::is_fundamental<Arg>{},int>::type = 0>
+cali::Annotation::Guard&& record_arg(Arg arg){
+    cali::Annotation::Guard x (arg_annotation<N>().begin("unmeasurable"));
+    return std::move(x);
+}
 
 template<int N,typename Arg, typename... Args>
 auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple_cat(
                                                                                         record_args<N+1>(name,args...),
-                                                                                        std::move(std::forward_as_tuple(std::move(cali::Annotation::Guard(wrapper_annotation()))))
+                                                                                        std::forward_as_tuple(std::move(record_arg<N>(std::declval<Arg>)))
                                                                                     )
                                                                      ){
-    cali::Annotation::Guard x (arg_annotation<N>().begin(arg));
-    return std::tuple_cat(record_args<N+1>(name,args...),std::forward_as_tuple(std::move(x)));
+    return std::tuple_cat(
+        record_args<N+1>(name,args...),
+        std::forward_as_tuple(std::move(record_arg<N>(arg)))
+    );
 }
 
 template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     #ifdef VARIADIC_RETURN_SAFE
     auto n =record_args<1>(name,args...);
+    
     #else
     #warning CALIPER WARNING: This version of the C++ compiler has bugs which prevent argument profiling
     #endif
