@@ -41,13 +41,7 @@
 /* Test for GCC > 3.2.0 */
 
 
-#ifdef __clang__
 #define VARIADIC_RETURN_SAFE
-#else
-#if GCC_VERSION > 48999
-#define VARIADIC_RETURN_SAFE
-#endif
-#endif
 
 #ifdef __cplusplus
 extern "C" {

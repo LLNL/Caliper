@@ -145,6 +145,7 @@ cali::Annotation& arg_annotation_raw(){
         return instance;
 }       
 
+
 //Wrap a call to a function
 template<typename LB, typename... Args>
 auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
@@ -153,40 +154,40 @@ auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB
     return body(args...);
 }
 
-template<int N>
-auto record_args(const char* name) -> std::tuple<> {
-    return std::make_tuple();
-}
-
-template<int N,typename Arg>
-auto record_args(const char* name, Arg arg) -> std::tuple<cali::Annotation::Guard&&> {
-    cali::Annotation::Guard func_annot (arg_annotation<N>().set(arg).getAnnot());
-    return std::forward_as_tuple(std::move(func_annot));
-}
-
 cali::Annotation& dummy_annot(){
     static cali::Annotation instance ("wrapped func");
     return instance;
 }
-template<int N,typename Arg, typename... Args>
-auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple_cat(
-                                                                                        record_args<N+1>(name,args...),
+
+template<int N, typename... Args>
+struct ArgRecorder{
+    static auto record(const char* name) -> std::tuple<> {
+        return std::make_tuple();
+    }
+};
+
+template <int N, typename Arg, typename... Args>
+struct ArgRecorder<N, Arg, Args...>{
+    using NextRecorder = ArgRecorder<N+1,Args...>;
+    static auto record(const char* name, Arg arg, Args... args) -> decltype(std::tuple_cat(
+                                                                                        NextRecorder::record(name,args...),
                                                                                         std::move(std::forward_as_tuple(std::move(cali::Annotation::Guard(dummy_annot())  )))
                                                                                     )
                                                                      ){
-    cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
-    return std::tuple_cat(
-        record_args<N+1>(name,args...),
-        std::forward_as_tuple(std::move(func_annot))
-    );
-}
+        cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
+        return std::tuple_cat(
+            NextRecorder::record(name,args...),
+            std::forward_as_tuple(std::move(func_annot))
+        );
+    }
+};
 
 template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     Annotation startedAnnot = wrapper_annotation().begin(name).getAnnot();
     cali::Annotation::Guard func_annot(startedAnnot);
     #ifdef VARIADIC_RETURN_SAFE
-    auto n =record_args<1>(name,args...);
+    auto n =ArgRecorder<1,Args...>::record(name,args...);
     #else
     #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
     #endif
@@ -219,7 +220,7 @@ struct ArgWrappedFunction {
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
         cali::Annotation::Guard func_annot(wrapper_annotation().begin(name).getAnnot());
         #ifdef VARIADIC_RETURN_SAFE
-        auto n =record_args<1>(name, args...);
+        auto n =ArgRecorder<1,Args...>::record(name,args...);
         #else
         #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
         #endif
