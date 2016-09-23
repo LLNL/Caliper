@@ -33,6 +33,7 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
+#include <math.h>
 #include <CaliFunctional.h>
 
 int doWork(int* inArray, int size){
@@ -55,15 +56,21 @@ T* initialize(size_t data_size, T initial_value){
 
 auto doWorkWrapped = cali::wrap_function_and_args("doWork", doWork);
 
+
+
 int main(int argc, char* argv[])
 {
-    constexpr int data_size = 1000;
+    constexpr int data_size = 1000000;
+    constexpr int iterations = 10;
+    int data_size_increment = data_size/iterations;
     cali::wrap("Program",[&](){
         int sum = 0;
+        int * inArray;
         cali::wrap("Initialization",[&](){
-            int* inArray = cali::wrap_with_args("initializer",initialize<int>,data_size, 0);
-            int sum = doWorkWrapped(inArray,data_size);
+            inArray = cali::wrap_with_args("initializer",initialize<int>,data_size, 0);
         });
+        for(int size = data_size_increment; size<=data_size; size+=data_size_increment){
+            doWorkWrapped(inArray,size);
+        }
     });
-    std::cout<<data_size<<std::endl;
 }

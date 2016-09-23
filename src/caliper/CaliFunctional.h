@@ -148,9 +148,14 @@ auto wrap(const char* name, LB body, Args... args) -> typename std::result_of<LB
     return body(args...);
 }
 
+template<int N>
+auto record_args(const char* name) -> std::tuple<> {
+    return std::make_tuple();
+}
+
 template<int N,typename Arg>
 auto record_args(const char* name, Arg arg) -> std::tuple<cali::Annotation::Guard&&> {
-    cali::Annotation::Guard func_annot (arg_annotation<N>().begin(arg).getAnnot());
+    cali::Annotation::Guard func_annot (arg_annotation<N>().set(arg).getAnnot());
     return std::forward_as_tuple(std::move(func_annot));
 }
 
@@ -173,12 +178,14 @@ auto record_args(const char* name, Arg arg, Args... args) -> decltype(std::tuple
 
 template<typename LB, typename... Args>
 auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
+    Annotation startedAnnot = wrapper_annotation().begin(name).getAnnot();
+    cali::Annotation::Guard func_annot(startedAnnot);
     #ifdef VARIADIC_RETURN_SAFE
     auto n =record_args<1>(name,args...);
     #else
     #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
     #endif
-    return wrap(name,body, args...);
+    return body(args...);
 }
 
 //Functor containing a function which should always be wrapped. Should not be instantiated directly, 
