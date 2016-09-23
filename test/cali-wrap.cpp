@@ -33,41 +33,44 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
+#include <math.h>
+#include <CaliFunctional.h>
+
+int doWork(int* inArray, int size){
+    int reduce_var = 0;
+    for(int i=0; i<size; i++){
+        inArray[i] = i*i;
+        reduce_var += i*i;
+    }
+    return  reduce_var;
+}
+
+template<typename T>
+T* initialize(size_t data_size, T initial_value){
+    T* array = (T*)malloc(sizeof(T)*data_size);
+    for(int i=0;i<data_size;i++){
+        array[i] = initial_value;
+    }
+    return array;
+}
+
+auto doWorkWrapped = cali::wrap_function_and_args("doWork", doWork);
+
+
 
 int main(int argc, char* argv[])
 {
-    // Mark begin of "initialization" phase
-    cali::Annotation
-        init_ann = cali::Annotation("initialization").begin();
-    
-    // perform initialization tasks
-    int count = 4;
-    // Mark end of "initialization" phase
-    init_ann.end();
-    if (count > 0) {
-        // Mark begin of "loop" phase. The scope guard will
-        // automatically end it at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_loop( cali::Annotation("loop").begin() );
-
-        double t = 0.0, delta_t = 1e-6;
-
-        // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
-        
-        for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration"
-            iteration_ann.set(i);
-
-            // A Caliper snapshot taken at this point will contain
-            // { "loop", "iteration"=<i> }
-
-            // perform computation
-            t += delta_t;
+    constexpr int data_size = 1000000;
+    constexpr int iterations = 10;
+    int data_size_increment = data_size/iterations;
+    cali::wrap("Program",[&](){
+        int sum = 0;
+        int * inArray;
+        cali::wrap("Initialization",[&](){
+            inArray = cali::wrap_with_args("initializer",initialize<int>,data_size, 0);
+        });
+        for(int size = data_size_increment; size<=data_size; size+=data_size_increment){
+            doWorkWrapped(inArray,size);
         }
-
-        // Clear the "iteration" attribute (otherwise, snapshots taken
-        // after the loop will still contain the "iteration" attribute)
-        iteration_ann.end();
-    }
+    });
 }

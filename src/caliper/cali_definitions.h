@@ -35,6 +35,20 @@
 #ifndef CALI_CALI_DEFINITIONS_H
 #define CALI_CALI_DEFINITIONS_H
 
+#define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+/* Test for GCC > 3.2.0 */
+
+
+#ifdef __clang__
+#define VARIADIC_RETURN_SAFE
+#else
+#if GCC_VERSION > 48999
+#define VARIADIC_RETURN_SAFE
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
