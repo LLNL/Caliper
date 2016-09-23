@@ -44,7 +44,7 @@
 #ifdef __clang__
 #define VARIADIC_RETURN_SAFE
 #else
-#if GCC_VERSION > 48999
+#if GCC_VERSION > 40809
 #define VARIADIC_RETURN_SAFE
 #endif
 #endif
