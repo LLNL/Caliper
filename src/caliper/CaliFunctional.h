@@ -38,9 +38,14 @@
 
 #include "Annotation.h"
 #include "cali_definitions.h"
-#include <type_traits>
+
+#include "Variant.h"
+
+#include <cstring>
 #include <iostream>
 #include <tuple>
+#include <type_traits>
+
 namespace cali{
 struct SafeAnnotation{
 public:
@@ -71,7 +76,7 @@ public:
         return *this;
     }
     SafeAnnotation& begin(const char* data){
-        inner_annot.begin(data);
+        inner_annot.begin(Variant(CALI_TYPE_STRING, data, strlen(data)));
         return *this;
     }
     SafeAnnotation& begin(cali_attr_type type, void* data, uint64_t size){
@@ -92,7 +97,7 @@ public:
         return *this;
     }
     SafeAnnotation& set(const char* data){
-        inner_annot.set(data);
+        inner_annot.set(Variant(CALI_TYPE_STRING, data, strlen(data)));
         return *this;
     }
     SafeAnnotation& set(cali_attr_type type, void* data, uint64_t size){

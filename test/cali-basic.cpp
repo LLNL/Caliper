@@ -33,8 +33,6 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
-#include <CaliFunctional.h>
-
 
 int main(int argc, char* argv[])
 {
