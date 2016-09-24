@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,105 +30,57 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Annotation.h
-/// Caliper C++ annotation interface
+/// \file api.cpp
+/// Initialization of API attributes and static variables
 
-//
-// --- NOTE: This interface must be C++98 only!
-//
-
-#ifndef CALI_ANNOTATION_H
-#define CALI_ANNOTATION_H
+#include "Attribute.h"
+#include "Caliper.h"
 
 #include "cali_types.h"
 
 namespace cali
 {
-
-class Variant;
-
-/// \brief Pre-defined function annotation class
+    Attribute ann_type_code_attr;
     
-class Function
-{
-public:
+    Attribute ann_function_attr;
+    Attribute ann_loop_attr;
 
-    Function(const char* name);
+    void init_api_attributes(Caliper* c) {
+        // --- attributes w/o metadata
+        
+        struct attr_info_t {
+            const char*    name;
+            cali_attr_type type;
+            int            prop;
+            Attribute*     attr;
+        } attr_info[] = {
+            { "annotation.type.code", CALI_TYPE_BOOL,   CALI_ATTR_SKIP_EVENTS,
+              &ann_type_code_attr
+            },
+            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0 }
+        };
 
-    ~Function();
-};
-    
-/// \brief Instrumentation interface to add and manipulate context attributes
+        for (attr_info_t *p = attr_info; p->name; ++p)
+            *(p->attr) =
+                c->create_attribute(p->name, p->type, p->prop);
 
-class Annotation 
-{
-    struct Impl;
-    Impl*  pI;
+        // --- code annotation attributes
 
+        attr_info_t codeattr_info[] = {
+            { "annotation.function",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+              &ann_function_attr
+            },
+            { "annotation.loop",      CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+              &ann_loop_attr
+            },
+            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0 }
+        };
 
-public:
-
-    /// \brief Constructor. Creates an annotation object to manipulate 
-    ///    the context attribute \c name. 
-
-    Annotation(const char* name, int opt = 0);
-
-    Annotation(const Annotation&);
-
-    ~Annotation();
-
-    Annotation& operator = (const Annotation&);
-
-    
-    /// \brief Scope guard to automatically \c end() an annotation at the end of
-    ///   the C++ scope.
-
-    class Guard {
-        Impl* pI;
-
-        Guard(const Guard&);
-        Guard& operator = (const Guard&);
-
-    public:
-
-        Guard(Annotation& a);
-
-        ~Guard();
-    };
-
-    // Keep AutoScope name for backward compatibility
-    typedef Guard AutoScope;
-
-    /// \name \c begin() overloads
-    /// \{
-
-    Annotation& begin();
-
-    Annotation& begin(int data);
-    Annotation& begin(double data);
-    Annotation& begin(const char* data);
-    Annotation& begin(cali_attr_type type, void* data, uint64_t size);
-    Annotation& begin(const Variant& data);
-
-    /// \}
-    /// \name \c set() overloads
-    /// \{
-
-    Annotation& set(int data);
-    Annotation& set(double data);
-    Annotation& set(const char* data);
-    Annotation& set(cali_attr_type type, void* data, uint64_t size);
-    Annotation& set(const Variant& data);
-
-    /// \}
-    /// \name \c end()
-    /// \{
-
-    void end();
-
-    /// \}
-};
-
-} // namespace cali
-
-#endif
+        Variant v_true(true);
+        
+        for (attr_info_t *p = codeattr_info; p->name; ++p)
+            *(p->attr) =
+                c->create_attribute(p->name, p->type, p->prop,
+                                    1, &ann_type_code_attr, &v_true);
+    }
+}

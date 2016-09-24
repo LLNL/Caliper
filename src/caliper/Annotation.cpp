@@ -47,6 +47,26 @@
 using namespace std;
 using namespace cali;
 
+namespace cali
+{
+    extern Attribute ann_type_code_attr;
+
+    extern Attribute ann_function_attr;
+    extern Attribute ann_loop_attr;
+}
+
+// --- Pre-defined Function annotation
+
+Function::Function(const char* name)
+{
+    Caliper().begin(ann_function_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
+}
+
+Function::~Function()
+{
+    Caliper().end(ann_function_attr);
+}
+        
 
 // --- Annotation implementation object
 

@@ -36,6 +36,8 @@
 
 int main(int argc, char* argv[])
 {
+    cali::Function f_ann("main");
+    
     // Mark begin of "initialization" phase
     cali::Annotation
         init_ann = cali::Annotation("initialization").begin();

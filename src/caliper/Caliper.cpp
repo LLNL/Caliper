@@ -66,6 +66,10 @@
 using namespace cali;
 using namespace std;
 
+namespace cali
+{
+    extern void init_api_attributes(Caliper* c);
+}
 
 namespace
 {
@@ -278,6 +282,8 @@ struct Caliper::GlobalData
             
         Services::register_services(&c);
 
+        init_api_attributes(&c);
+        
         Log(1).stream() << "Initialized" << endl;
 
         if (Log::verbosity() >= 2)

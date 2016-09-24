@@ -16,6 +16,7 @@ set(CALIPER_SOURCES
     EntryList.cpp
     MemoryPool.cpp
     MetadataTree.cpp
+    api.cpp
     cali.cpp)
 
 
