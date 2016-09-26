@@ -40,6 +40,7 @@
 #ifndef CALI_CALI_TYPES_H
 #define CALI_CALI_TYPES_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -83,6 +84,19 @@ typedef enum {
 
 #define CALI_ATTR_SCOPE_MASK 60
 
+/**
+ * Provides descriptive string of given attribute property flags, separated with ':'
+ * \param  prop Attribute property flag
+ * \param  buf  Buffer to write string to
+ * \param  len  Length of string buffer
+ * \return      -1 if provided buffer is too short; length of written string otherwise
+ */  
+int
+cali_prop2string(int prop, char* buf, size_t len);
+
+int
+cali_string2prop(const char*);
+  
 typedef enum {
   CALI_OP_SUM = 1,
   CALI_OP_MIN = 2,

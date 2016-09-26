@@ -36,3 +36,58 @@ cali_string2type(const char* str)
 
   return CALI_TYPE_INV;
 }
+
+static const struct propmap_t {
+  const char* str; cali_attr_properties prop;
+} propmap[] = {
+  { "default",       CALI_ATTR_DEFAULT,      },
+  { "asvalue",       CALI_ATTR_ASVALUE       },
+  { "nomerge",       CALI_ATTR_NOMERGE       },
+  { "process_scope", CALI_ATTR_SCOPE_PROCESS },
+  { "thread_scope",  CALI_ATTR_SCOPE_THREAD  }, 
+  { "task_scope",    CALI_ATTR_SCOPE_TASK    },
+  { "skip_events",   CALI_ATTR_SKIP_EVENTS   },
+  { "hidden",        CALI_ATTR_HIDDEN        },
+  { 0, CALI_ATTR_DEFAULT }
+};
+
+int
+cali_prop2string(int prop, char* buf, size_t len)
+{
+  int ret = 0;
+  
+  for (const struct propmap_t* p = propmap; p->str; ++p) {
+    if (!(p->prop & prop))
+      continue;
+    
+    size_t slen = strlen(p->str);
+    
+    if ((slen + (ret>0?2:1)) > len)
+      return -1;
+    if (ret > 0)
+      buf[ret++] = ':';
+    
+    strcpy(buf+ret, p->str);
+
+    ret      += slen;
+    buf[ret]  = '\0';
+  }
+
+  return ret;
+}
+
+int
+cali_string2prop(const char* str)
+{
+  int prop = 0;
+  
+  for (const struct propmap_t* p = propmap; p->str; ++p) {
+    const char* pos = strstr(str, p->str);
+    size_t      len = strlen(p->str);
+
+    if (pos && !(pos > str && *(pos-1) != ':') && (pos[len] == '\0' || pos[len] == ':'))
+      prop |= p->prop;
+  }
+
+  return prop;
+}
