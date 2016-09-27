@@ -217,7 +217,9 @@ std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
 int main(int argc, char* argv[])
 {
     cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
-    
+
+    CALI_MARK_FUNCTION;
+        
     const struct testcase_info_t {
         const char*  name;
         void        (*fn)();
@@ -232,7 +234,7 @@ int main(int argc, char* argv[])
         { "attribute-prop-preset",    test_attr_prop_preset   },
         { 0, 0 }
     };
-
+    
     {
         cali::Annotation::Guard
             g( cali::Annotation("cali-test").begin("checking") );

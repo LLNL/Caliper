@@ -42,6 +42,8 @@
 
 #include "cali_types.h"
 
+#define CALI_MARK_FUNCTION cali::Function __cali_ann##__func__(__func__);
+
 namespace cali
 {
 
