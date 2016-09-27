@@ -101,7 +101,7 @@ namespace
         Caliper c = Caliper::instance();
 
         if (c) {
-            c.events().flush(&c, nullptr);
+            c.flush(nullptr);
             c.events().finish_evt(&c);
 
             c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
@@ -671,9 +671,6 @@ Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 
     pull_snapshot(scopes, trigger_info, &sbuf);
 
-    if (!m_is_signal)
-        mG->write_new_attribute_nodes(mG->events.write_record);
-
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }
 
@@ -683,6 +680,7 @@ Caliper::flush(const EntryList* entry)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
+    mG->write_new_attribute_nodes(mG->events.write_record);
     mG->events.flush(this, entry);
 }
 
