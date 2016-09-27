@@ -35,6 +35,7 @@
 #include <Annotation.h>
 #include <Caliper.h>
 
+#include <RuntimeConfig.h>
 #include <Variant.h>
 
 #include <cstdlib>
@@ -190,6 +191,12 @@ void test_cross_scope()
     end_foo_op();
 }
 
+void test_attr_prop_preset()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("test-prop-preset").set(true) );
+}
+
 std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
 {
     const char* whitespace =
@@ -209,6 +216,8 @@ std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
 
 int main(int argc, char* argv[])
 {
+    cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
+    
     const struct testcase_info_t {
         const char*  name;
         void        (*fn)();
@@ -220,6 +229,7 @@ int main(int argc, char* argv[])
         { "end-mismatch",             test_end_mismatch       },
         { "escaping",                 test_escaping           },
         { "cross-scope",              test_cross_scope        },
+        { "attribute-prop-preset",    test_attr_prop_preset   },
         { 0, 0 }
     };
 
