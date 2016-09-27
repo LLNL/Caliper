@@ -207,6 +207,20 @@ cali_set_string_byname(const char* attr_name, const char* val);
 cali_err
 cali_end_byname(const char* attr_name);
 
+/*
+ * --- Runtime system configuration
+ */
+
+/**
+ * Add a value to Caliper's runtime configuration system.
+ * Note: only effective _before_ the Caliper runtime system is initialized.
+ * \param key   Configuration key (e.g., CALI_SERVICES_ENABLE)
+ * \param value Configuration value 
+ */
+  
+void
+cali_config_preset(const char* key, const char* value);
+  
 #ifdef __cplusplus
 } // extern "C"
 #endif

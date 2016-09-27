@@ -38,6 +38,7 @@
 #include "Caliper.h"
 #include "EntryList.h"
 
+#include <RuntimeConfig.h>
 #include <Variant.h>
 
 #include <cstring>
@@ -383,4 +384,10 @@ cali_end_byname(const char* attr_name)
     Attribute attr = c.get_attribute(attr_name);
 
     return c.end(attr);
+}
+
+void
+cali_config_preset(const char* key, const char* value)
+{
+    RuntimeConfig::preset(key, value);
 }
