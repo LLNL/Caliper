@@ -405,32 +405,25 @@ omptservice_initialize(Caliper* c)
 }  // namespace [ anonymous ]
 
 
-// The OpenMP tools interface intialization function, called by the OpenMP 
-// runtime. We must register our callbacks w/ the OpenMP runtime here.
-// Returns 0 if no callbacks should be registered (i.e., OMPT service was 
-// disabled in Caliper configuration), or 1 if they should.
-
 extern "C" {
 
-int 
-ompt_initialize(ompt_function_lookup_t lookup,
-                const char*            runtime_version,
-                unsigned int           /* ompt_version */)
+// The OpenMP tools interface intialization function, called by the OpenMP 
+// runtime. We must register our callbacks w/ the OpenMP runtime here.
+
+void
+ompt_initialize_real(ompt_function_lookup_t lookup,
+                     const char*            runtime_version,
+                     unsigned int           /* ompt_version */)
 {
-    // Make sure Caliper is initialized & OMPT service is enabled in Caliper config
-
-    Caliper c;
-
-    if (!::enable_ompt)
-        return 0;
-
     Log(1).stream() << "Initializing OMPT interface with " << runtime_version << endl;
 
+    Caliper c;
+    
     // register callbacks
 
     if (!::api.init(lookup) || !::register_ompt_callbacks(::config.get("capture_events").to_bool())) {
         Log(0).stream() << "Callback registration error: OMPT interface disabled" << endl;
-        return 0;
+        return;
     }
 
     if (::config.get("capture_state").to_bool() == true) {
@@ -443,10 +436,40 @@ ompt_initialize(ompt_function_lookup_t lookup,
         c.set(thread_attr, Variant(static_cast<int>((*api.get_thread_id)())));
         
     Log(1).stream() << "OMPT interface enabled." << endl;
+}
+    
+// Old version of initialization interface. 
 
+int 
+ompt_initialize(ompt_function_lookup_t lookup,
+                const char*            runtime_version,
+                unsigned int           ompt_version)
+{
+    // Make sure Caliper is initialized & OMPT service is enabled in Caliper config
+
+    Caliper c;
+
+    if (!::enable_ompt)
+        return 0;
+
+    ompt_initialize_real(lookup, runtime_version, ompt_version);
+    
     return 1;
 }
 
+// New version of the initialization interface; returns NULL or real init fn
+// if we want to enable OMPT
+
+// The tech report calls it ompt_initialize_fn_t, but the Intel header does not ...
+ompt_initialize_t
+ompt_tool(void)
+{
+    // Make sure Caliper is initialized & OMPT service is enabled    
+    Caliper::instance();
+    
+    return ::enable_ompt ? ompt_initialize_real : NULL;
+}
+    
 } // extern "C"
 
 namespace cali
