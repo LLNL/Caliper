@@ -36,7 +36,7 @@
 
 int main(int argc, char* argv[])
 {
-    cali::Function f_ann("main");
+    CALI_MARK_FUNCTION;
     
     // Mark begin of "initialization" phase
     cali::Annotation
@@ -47,29 +47,20 @@ int main(int argc, char* argv[])
     // Mark end of "initialization" phase
     init_ann.end();
     if (count > 0) {
-        // Mark begin of "loop" phase. The scope guard will
-        // automatically end it at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_loop( cali::Annotation("loop").begin() );
-
+        // Mark "loop"
         double t = 0.0, delta_t = 1e-6;
 
-        // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
+        cali::Loop loop_ann("mainloop");
         
         for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration"
-            iteration_ann.set(i);
+            // Export current iteration count under "iteration#mainloop"
+            auto i_ann(loop_ann.iteration(i));
 
             // A Caliper snapshot taken at this point will contain
-            // { "loop", "iteration"=<i> }
+            // { "annotation.loop=mainloop", "iteration#mainloop"=<i> }
 
             // perform computation
             t += delta_t;
         }
-
-        // Clear the "iteration" attribute (otherwise, snapshots taken
-        // after the loop will still contain the "iteration" attribute)
-        iteration_ann.end();
     }
 }

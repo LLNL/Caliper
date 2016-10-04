@@ -53,12 +53,45 @@ class Variant;
     
 class Function
 {
+private:
+
+    // Do not copy Function objects: will double-end things
+    Function(const Function&);
+    Function& operator = (const Function&);
+    
 public:
 
     Function(const char* name);
 
     ~Function();
 };
+
+/// \brief Pre-defined loop annotation class, with optional iteration attribute
+    
+class Loop
+{
+    struct Impl;
+    Impl* pI;
+    
+    class Iteration {
+        const Impl* pI;
+
+    public:
+        
+        Iteration(const Impl*, int);
+        ~Iteration();
+    };
+
+public:
+    
+    Loop(const char* name);
+    ~Loop();
+
+    Iteration iteration(int i);
+
+    void end();
+};
+
     
 /// \brief Instrumentation interface to add and manipulate context attributes
 
