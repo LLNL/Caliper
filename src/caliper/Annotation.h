@@ -69,8 +69,10 @@ public:
 class Loop
 {
     struct Impl;
-    Impl* pI;
-    
+    Impl* pI;    
+
+public:
+
     class Iteration {
         const Impl* pI;
 
@@ -80,8 +82,6 @@ class Loop
         ~Iteration();
     };
 
-public:
-    
     Loop(const char* name);
     ~Loop();
 

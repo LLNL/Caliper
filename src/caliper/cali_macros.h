@@ -51,6 +51,6 @@
 
 /// \brief C++ macro for a loop iteration
 #define CALI_CXX_MARK_LOOP_ITERATION(id, iter) \
-    auto __cali_iter_##id ( __cali_loop_##id.iteration(iter) )
+    cali::Loop::Iteration __cali_iter_##id ( __cali_loop_##id.iteration(iter) )
 
 #define CALI_CXX_MARK_LOOP_END(id) __cali_loop_##id.end()
