@@ -34,6 +34,8 @@
 
 #include <Annotation.h>
 
+#include <cali_macros.h>
+
 int main(int argc, char* argv[])
 {
     CALI_CXX_MARK_FUNCTION;
@@ -50,11 +52,11 @@ int main(int argc, char* argv[])
         // Mark "loop"
         double t = 0.0, delta_t = 1e-6;
 
-        cali::Loop loop_ann("mainloop");
+        CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
         
         for (int i = 0; i < count; ++i) {
             // Export current iteration count under "iteration#mainloop"
-            auto i_ann(loop_ann.iteration(i));
+            CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
             // A Caliper snapshot taken at this point will contain
             // { "annotation.loop=mainloop", "iteration#mainloop"=<i> }
@@ -62,5 +64,7 @@ int main(int argc, char* argv[])
             // perform computation
             t += delta_t;
         }
+
+        CALI_CXX_MARK_LOOP_END(mainloop);
     }
 }

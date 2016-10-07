@@ -7,7 +7,8 @@ set(CALIPER_HEADERS
     Caliper.h
     EntryList.h
     cali.h
-    cali_definitions.h)
+    cali_definitions.h
+    cali_macros.h)
 
 set(CALIPER_SOURCES
     Annotation.cpp

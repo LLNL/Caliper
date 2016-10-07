@@ -35,6 +35,8 @@
 #include <Annotation.h>
 #include <Caliper.h>
 
+#include <cali_macros.h>
+
 #include <RuntimeConfig.h>
 #include <Variant.h>
 
