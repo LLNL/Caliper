@@ -36,7 +36,7 @@
 
 int main(int argc, char* argv[])
 {
-    CALI_MARK_FUNCTION;
+    CALI_CXX_MARK_FUNCTION;
     
     // Mark begin of "initialization" phase
     cali::Annotation

@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
 {
     cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
 
-    CALI_MARK_FUNCTION;
+    CALI_CXX_MARK_FUNCTION;
         
     const struct testcase_info_t {
         const char*  name;
