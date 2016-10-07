@@ -134,9 +134,11 @@ class AggregateDB {
         }
 
         void clear() {
-            for (size_t b = 0; b < m_num_blocks; ++b)
+            for (size_t b = 0; b < MAX_BLOCKS; ++b)
                 delete[] m_blocks[b];
-
+            
+            std::fill_n(m_blocks, MAX_BLOCKS, nullptr);
+            
             m_num_blocks = 0;
         }
 
@@ -580,10 +582,10 @@ public:
             s_global_num_kernel_blocks  += db->m_kernels.num_blocks();
             s_global_num_dropped        += db->m_num_dropped;
             s_global_max_keylen = std::max(s_global_max_keylen, db->m_max_keylen);
-
-            db->m_stopped.store(false);
-
+            
             db->clear();
+            
+            db->m_stopped.store(false);
 
             if (db->m_retired) {
                 AggregateDB* tmp = db->m_next;
