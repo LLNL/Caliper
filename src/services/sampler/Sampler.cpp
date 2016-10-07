@@ -66,6 +66,7 @@ namespace
     ConfigSet config;
 
     int       nsec_interval       = 0;
+    int       sample_contexts     = 0;
 
     int       n_samples           = 0;
     int       n_processed_samples = 0;
@@ -74,6 +75,10 @@ namespace
         { "frequency", CALI_TYPE_INT, "10",
           "Sampling frequency (in Hz)",
           "Sampling frequency (in Hz)"
+        },
+        { "add_shared_context", CALI_TYPE_BOOL, "true",
+          "Capture process-wide context information",
+          "Capture process-wide context information in addition to thread-local context"
         },
         ConfigSet::Terminator
     };
@@ -94,7 +99,7 @@ namespace
 
         EntryList trigger_info(1, &sampler_attr_id, &v_pc);
 
-        c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(sample_contexts, &trigger_info);
 
         ++n_processed_samples;
     }
@@ -218,11 +223,16 @@ namespace
         sampler_attr_id = sampler_attr.id();
 
         int frequency = config.get("frequency").to_int();
-
+        
         // some sanity checking
         frequency     = std::min(std::max(frequency, 1), 10000);
         nsec_interval = 1000000000 / frequency;
 
+        sample_contexts = CALI_SCOPE_THREAD;
+
+        if (config.get("add_shared_context").to_bool() == true)
+            sample_contexts |= CALI_SCOPE_PROCESS;
+        
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().release_scope_evt.connect(release_scope_cb);
         c->events().finish_evt.connect(finish_cb);
