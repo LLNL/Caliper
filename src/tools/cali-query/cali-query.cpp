@@ -45,6 +45,7 @@
 #include <RecordProcessor.h>
 #include <RecordSelector.h>
 #include <Table.h>
+#include <Json.h>
 
 #include <ContextRecord.h>
 #include <Node.h>
@@ -103,6 +104,10 @@ namespace
         }, 
         { "table", "table", 't', false,
           "Print given attributes in human-readable table form",
+          "ATTRIBUTES"
+        },
+        { "json", "json", 'j', false,
+          "Print given attributes in web-friendly json format",
           "ATTRIBUTES"
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
@@ -324,6 +329,7 @@ int main(int argc, const char* argv[])
     //
 
     Table             tbl_writer(args.get("attributes"));
+    Json              jsn_writer(args.get("attributes"));
 
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
     SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
@@ -343,7 +349,11 @@ int main(int argc, const char* argv[])
         snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
     } else if (args.is_set("table")) {        
         snap_writer = tbl_writer;
-    } else {
+    } 
+    else if(args.is_set("json")) {
+        snap_writer = jsn_writer;
+    }
+    else {
         WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
 
         snap_writer = writer;
@@ -387,4 +397,6 @@ int main(int argc, const char* argv[])
 
     if (args.is_set("table"))
         tbl_writer.flush(metadb, fs.is_open() ? fs : cout);
+    if (args.is_set("json"))
+        jsn_writer.flush(metadb, fs.is_open() ? fs : cout);
 }
