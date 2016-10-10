@@ -52,12 +52,11 @@ struct Json::JsonImpl
 {
     struct Column {
         std::string name;
-        std::size_t max_width;
 
         Attribute   attr;
 
-        Column(const std::string& n, std::size_t w, const Attribute& a)
-            : name(n), max_width(w), attr(a)
+        Column(const std::string& n, const Attribute& a)
+            : name(n), attr(a)
             { }
     };
 
@@ -148,7 +147,6 @@ struct Json::JsonImpl
             if (!val.empty()) {
                 active = true;
                 row[c] = val;
-                m_cols[c].max_width = std::max(val.size(), m_cols[c].max_width);
             }
         }
 
