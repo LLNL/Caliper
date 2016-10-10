@@ -102,7 +102,7 @@ struct Json::JsonImpl
             name.compare(0, 6, "event.") == 0)
             return;
                 
-        m_cols.emplace_back(name, name.size(), attr);
+        m_cols.emplace_back(name, attr);
     }
     
     void update_columns(CaliperMetadataDB& db, const EntryList& list) {
