@@ -5,6 +5,7 @@
 
 #include "cali_types.h"
 
+#include <ctype.h>
 #include <string.h>
 
 static const struct typemap_t {
@@ -38,17 +39,17 @@ cali_string2type(const char* str)
 }
 
 static const struct propmap_t {
-  const char* str; cali_attr_properties prop;
+  const char* str; cali_attr_properties prop; int mask;
 } propmap[] = {
-  { "default",       CALI_ATTR_DEFAULT,      },
-  { "asvalue",       CALI_ATTR_ASVALUE       },
-  { "nomerge",       CALI_ATTR_NOMERGE       },
-  { "process_scope", CALI_ATTR_SCOPE_PROCESS },
-  { "thread_scope",  CALI_ATTR_SCOPE_THREAD  }, 
-  { "task_scope",    CALI_ATTR_SCOPE_TASK    },
-  { "skip_events",   CALI_ATTR_SKIP_EVENTS   },
-  { "hidden",        CALI_ATTR_HIDDEN        },
-  { 0, CALI_ATTR_DEFAULT }
+  { "default",       CALI_ATTR_DEFAULT,       CALI_ATTR_DEFAULT     },
+  { "asvalue",       CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE     },
+  { "nomerge",       CALI_ATTR_NOMERGE,       CALI_ATTR_NOMERGE     },
+  { "process_scope", CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK  },
+  { "thread_scope",  CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK  }, 
+  { "task_scope",    CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK  },
+  { "skip_events",   CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS },
+  { "hidden",        CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN      },
+  { 0, CALI_ATTR_DEFAULT, CALI_ATTR_DEFAULT }
 };
 
 int
@@ -57,7 +58,7 @@ cali_prop2string(int prop, char* buf, size_t len)
   int ret = 0;
   
   for (const struct propmap_t* p = propmap; p->str; ++p) {
-    if (!(p->prop & prop))
+    if (!((prop & p->mask) == p->prop))
       continue;
     
     size_t slen = strlen(p->str);
@@ -85,7 +86,7 @@ cali_string2prop(const char* str)
     const char* pos = strstr(str, p->str);
     size_t      len = strlen(p->str);
 
-    if (pos && !(pos > str && *(pos-1) != ':') && (pos[len] == '\0' || pos[len] == ':'))
+    if (pos && ((pos == str) || !isalnum(pos-1)) && !isalnum(pos[len]))
       prop |= p->prop;
   }
 

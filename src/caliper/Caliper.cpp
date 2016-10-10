@@ -555,7 +555,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         mG->events.pre_create_attr_evt(this, name, &type, &prop);
         
         // Add default SCOPE_THREAD property if no other is set
-        if (!(prop & CALI_ATTR_SCOPE_PROCESS) && !(prop & CALI_ATTR_SCOPE_TASK))
+        if (((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_PROCESS) &&
+            ((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_TASK))
             prop |= CALI_ATTR_SCOPE_THREAD;
 
         assert(type >= 0 && type <= CALI_MAXTYPE);
