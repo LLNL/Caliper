@@ -8,7 +8,8 @@ set(CALIPER_READER_HEADERS
     RecordProcessor.h
     RecordSelector.h
     SimpleReader.h
-    Table.h)
+    Table.h
+    Json.h)
 
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
@@ -17,7 +18,8 @@ set(CALIPER_READER_SOURCES
     CaliperMetadataDB.cpp
     RecordSelector.cpp
     SimpleReader.cpp
-    Table.cpp)
+    Table.cpp
+    Json.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
