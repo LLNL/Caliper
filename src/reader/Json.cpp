@@ -78,7 +78,7 @@ struct Json::JsonImpl
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s.size(), Attribute::invalid);
+                m_cols.emplace_back(s, Attribute::invalid);
     }
 
     void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
