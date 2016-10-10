@@ -51,10 +51,22 @@ namespace
 
 mutex dbg_mutex;
 
+void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type* type, int* prop)
+{
+    char buf[256];
+
+    cali_prop2string(*prop, buf, 256);
+    
+    lock_guard<mutex> lock(dbg_mutex);
+    Log(2).stream() << "Event: pre_create_attr (name=" << name
+                    << ", type=" << cali_type2string(*type)
+                    << ", prop=" << buf << ")" << endl;
+}
+    
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_attribute (attr=" << attr.name() << ")" << endl;
+    Log(2).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
 }
 
 void begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
@@ -145,6 +157,7 @@ void finish_cb(Caliper* c)
 
 void debug_service_register(Caliper* c)
 {
+    c->events().pre_create_attr_evt.connect(&pre_create_attr_cb);
     c->events().create_attr_evt.connect(&create_attr_cb);
     c->events().pre_begin_evt.connect(&begin_cb);
     c->events().pre_end_evt.connect(&end_cb);

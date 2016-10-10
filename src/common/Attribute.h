@@ -42,6 +42,7 @@
 
 #include "Variant.h"
 
+#include <iostream>
 #include <string>
 
 namespace cali
@@ -124,6 +125,8 @@ inline bool operator == (const cali::Attribute& a, const cali::Attribute& b) {
 inline bool operator != (const cali::Attribute& a, const cali::Attribute& b) {
     return a.m_node != b.m_node;
 }
+
+std::ostream& operator << (std::ostream&, const cali::Attribute&);
 
 } // namespace cali
 
