@@ -56,7 +56,6 @@ public:
 
     ~RecordSelector();
 
-    void operator()(CaliperMetadataDB&, const RecordMap&, RecordProcessFn) const;
     void operator()(CaliperMetadataDB&, const EntryList& node, SnapshotProcessFn) const;
 };
 
