@@ -51,6 +51,7 @@
 #include <cassert>
 #include <iostream>
 #include <iterator>
+#include <mutex>
 
 using namespace cali;
 using namespace std;
@@ -126,7 +127,7 @@ public:
 
 private:
 
-    uint64_t m_count;
+    uint64_t m_count; // assume it's atomic?
     Config*  m_config;
 };
 
@@ -172,6 +173,9 @@ public:
         { }
     
     virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+        
         Attribute aggr_attr = m_config->get_aggr_attr(db);
 
         if (aggr_attr == Attribute::invalid)
@@ -208,9 +212,10 @@ public:
 
 private:
 
-    unsigned m_count;
-    Variant  m_sum;
-    Config*  m_config;
+    unsigned   m_count;
+    Variant    m_sum;
+    std::mutex m_lock;
+    Config*    m_config;
 };
 
 //
@@ -298,6 +303,9 @@ public:
         { }
     
     virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+        
         Attribute aggr_attr = m_config->get_aggr_attr(db);
 
         if (aggr_attr == Attribute::invalid)
@@ -371,13 +379,15 @@ public:
 
 private:
 
-    unsigned m_count;
+    unsigned   m_count;
     
-    Variant  m_sum;
-    Variant  m_min;
-    Variant  m_max;
+    Variant    m_sum;
+    Variant    m_min;
+    Variant    m_max;
+
+    std::mutex m_lock;
     
-    Config*  m_config;
+    Config*    m_config;
 };
 
 
@@ -398,7 +408,10 @@ struct Aggregator::AggregatorImpl
 
     vector<string>         m_key_strings;
     vector<cali_id_t>      m_key_ids;
+    std::mutex             m_key_lock;
 
+    bool                   m_select_all;
+    
     vector<AggregateKernelConfig*> m_kernel_configs;
     
     struct TrieNode {
@@ -413,13 +426,15 @@ struct Aggregator::AggregatorImpl
     };
 
     std::vector<TrieNode*> m_trie;    
-
+    std::mutex             m_trie_lock;
+    
     //
     // --- parse config
     //
 
     void parse_key(const string& key) {
         util::split(key, ':', back_inserter(m_key_strings));
+        m_select_all = m_key_strings.empty();
     }
 
     void parse_aggr_config(const string& configstr) {
@@ -454,6 +469,8 @@ struct Aggregator::AggregatorImpl
     //
     
     TrieNode* get_trienode(uint32_t id) {
+        // Assume trie is locked!!
+        
         if (id >= m_trie.size())
             m_trie.resize(id+1);
 
@@ -464,6 +481,9 @@ struct Aggregator::AggregatorImpl
     }
 
     TrieNode* find_trienode(size_t n, unsigned char* key) {
+        std::lock_guard<std::mutex>
+            g(m_trie_lock);
+
         TrieNode* trie = get_trienode(0);
 
         for ( size_t i = 0; trie && i < n; ++i ) {
@@ -488,7 +508,10 @@ struct Aggregator::AggregatorImpl
     // --- snapshot processing
     //
 
-    void update_key_attribute_ids(CaliperMetadataDB& db) {
+    std::vector<cali_id_t> update_key_attribute_ids(CaliperMetadataDB& db) {
+        std::lock_guard<std::mutex>
+            g(m_key_lock);
+        
         auto it = m_key_strings.begin();
         
         while (it != m_key_strings.end()) {
@@ -500,6 +523,8 @@ struct Aggregator::AggregatorImpl
             } else
                 ++it;
         }
+
+        return m_key_ids;
     }
 
     size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataDB& db, unsigned char* key) {
@@ -547,26 +572,26 @@ struct Aggregator::AggregatorImpl
     }
     
     void process(CaliperMetadataDB& db, const EntryList& list) {
-        update_key_attribute_ids(db);
-
+        std::vector<cali_id_t>   key_ids = update_key_attribute_ids(db);
+                
         // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
         std::vector<Entry>       immediates;
         
         nodes.reserve(80);
-        immediates.reserve(m_key_ids.size());
-        
-        bool select_all = m_key_strings.empty() && m_key_ids.empty();
+        immediates.reserve(key_ids.size());        
 
+        bool select_all = m_select_all;
+        
         for (const Entry& e : list)
             for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                if (select_all || std::find(m_key_ids.begin(), m_key_ids.end(), node->attribute()) != m_key_ids.end())
+                if (select_all || std::find(key_ids.begin(), key_ids.end(), node->attribute()) != key_ids.end())
                     nodes.push_back(node);    
 
         // Only include explicitly selected immediate entries in the key.
-        // Add them in m_key_ids order to make sure they're normalized
-        for (cali_id_t id : m_key_ids)
+        // Add them in key_ids order to make sure they're normalized
+        for (cali_id_t id : key_ids)
             for (const Entry& e : list)
                 if (e.is_immediate() && e.attribute() == id)
                     immediates.push_back(e);                
@@ -668,6 +693,8 @@ struct Aggregator::AggregatorImpl
     }
     
     void flush(CaliperMetadataDB& db, const SnapshotProcessFn push) {
+        // NOTE: No locking: we assume flush() runs serially!
+        
         TrieNode*     trie = get_trienode(0);
         unsigned char key  = 0;
 
