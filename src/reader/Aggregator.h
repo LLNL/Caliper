@@ -59,7 +59,7 @@ public:
 
     void operator()(CaliperMetadataDB&, const EntryList&);
 
-    void flush(CaliperMetadataDB&, SnapshotProcessFn push);
+    void flush(CaliperMetadataDB&, SnapshotProcessFn& push);
 };
 
 } // namespace cali

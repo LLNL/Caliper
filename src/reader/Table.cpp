@@ -69,8 +69,16 @@ struct Table::TableImpl
     std::mutex                              m_row_lock;
     
     bool                                    m_auto_column;
+
+    unsigned n_snapshots;
+    
+    ~TableImpl() {
+        std::cerr << "cali table formatter: Deleting table (" << n_snapshots << " snapshots)" << std::endl;
+    }
     
     void parse(const std::string& field_string) {
+        n_snapshots = 0;
+        
         if (field_string.empty()) {
             m_auto_column = true;
             return;
@@ -86,10 +94,7 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid);
     }
 
-    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
-        std::lock_guard<std::mutex>
-            g(m_col_lock);
-        
+    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {        
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Column& c) {
                                    return c.attr.id() == attr_id;
@@ -114,6 +119,9 @@ struct Table::TableImpl
     }
     
     std::vector<Column> update_columns(CaliperMetadataDB& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_col_lock);
+
         // Auto-generate columns from attributes in the snapshots. Used if no
         // field list was given. Skips some internal attributes.
         
@@ -138,7 +146,9 @@ struct Table::TableImpl
     void add(CaliperMetadataDB& db, const EntryList& list) {
         std::vector<Column>      cols = update_columns(db, list);
         std::vector<std::string> row(cols.size());
+        
         bool active = false;
+        bool update_max_width = false;
         
         for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c) {
             if (cols[c].attr == Attribute::invalid)
@@ -160,7 +170,11 @@ struct Table::TableImpl
             if (!val.empty()) {
                 active = true;
                 row[c] = val;
-                cols[c].max_width = std::max(val.size(), cols[c].max_width);
+
+                if (val.size() > cols[c].max_width) {
+                    cols[c].max_width = val.size();
+                    update_max_width  = true;
+                }
             }
         }
 
@@ -169,6 +183,17 @@ struct Table::TableImpl
                 g(m_row_lock);
             
             m_rows.push_back(std::move(row));
+
+            ++n_snapshots;
+        }
+
+        if (update_max_width) {
+            std::lock_guard<std::mutex>
+                g(m_col_lock);
+
+            for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c)
+                if (cols[c].max_width > m_cols[c].max_width)
+                    m_cols[c].max_width = cols[c].max_width;
         }
     }
 
@@ -202,7 +227,9 @@ struct Table::TableImpl
             }
             
             os << std::endl;
-        }        
+        }
+
+        std::cerr << "cali table formatter: Flushed " << m_rows.size() << " snapshots" << std::endl;
     }
 };
 

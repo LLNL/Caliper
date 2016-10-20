@@ -36,6 +36,8 @@
 /// \file shared_obj
 /// shared_obj template definition
 
+#include <atomic>
+
 namespace util
 {
     template<class T>
@@ -47,8 +49,8 @@ namespace util
     template<class T>
     class shared_obj {
         struct Data {
-            T                m_data;
-            mutable unsigned m_ref;
+            T m_data;
+            mutable std::atomic<unsigned> m_ref;
 
             Data(const T& data)
                 : m_data(data), m_ref(1)

@@ -731,7 +731,7 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataDB& db, SnapshotProcessFn push)
+Aggregator::flush(CaliperMetadataDB& db, SnapshotProcessFn& push)
 {
     mP->flush(db, push);
 }
