@@ -120,14 +120,16 @@ public:
     }
 
     virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
-        if (m_count > 0)
+        uint64_t count = m_count.load();
+        
+        if (count > 0)
             list.push_back(Entry(m_config->attribute(db),
-                                 Variant(CALI_TYPE_UINT, &m_count, sizeof(uint64_t))));
+                                 Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t))));
     }
 
 private:
 
-    uint64_t m_count; // assume it's atomic?
+    std::atomic<uint64_t> m_count;
     Config*  m_config;
 };
 

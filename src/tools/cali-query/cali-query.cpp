@@ -414,7 +414,7 @@ int main(int argc, const char* argv[])
     Annotation("cali-query.num-threads", CALI_ATTR_SCOPE_PROCESS).set(static_cast<int>(num_threads));
     
     //
-    // --- Process inputs
+    // --- Thread processing function
     //
 
     a_phase.set("process");
