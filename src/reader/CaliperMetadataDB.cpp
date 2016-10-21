@@ -64,32 +64,53 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     map<string, Node*>        m_attributes;
     mutable mutex             m_attribute_lock;
     
-    void setup_attribute_nodes(cali_id_t id, const std::string& name) {
-        struct attr_t {
-            const char* name; cali_id_t* id;
-        } base_attributes[] = {
-            { "cali.attribute.name", &m_attr_keys.name_attr_id },
-            { "cali.attribute.prop", &m_attr_keys.prop_attr_id },
-            { "cali.attribute.type", &m_attr_keys.type_attr_id }
+    void setup_bootstrap_nodes() {
+        // Create initial nodes
+        
+        static const struct NodeInfo {
+            cali_id_t id;
+            cali_id_t attr_id;
+            Variant   data;
+            cali_id_t parent;
+        }  bootstrap_nodes[] = {
+            {  0, 9,  { CALI_TYPE_USR    }, CALI_INV_ID },
+            {  1, 9,  { CALI_TYPE_INT    }, CALI_INV_ID },
+            {  2, 9,  { CALI_TYPE_UINT   }, CALI_INV_ID },
+            {  3, 9,  { CALI_TYPE_STRING }, CALI_INV_ID },
+            {  4, 9,  { CALI_TYPE_ADDR   }, CALI_INV_ID },
+            {  5, 9,  { CALI_TYPE_DOUBLE }, CALI_INV_ID },
+            {  6, 9,  { CALI_TYPE_BOOL   }, CALI_INV_ID },
+            {  7, 9,  { CALI_TYPE_TYPE   }, CALI_INV_ID },
+            {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 }, 3 },
+            {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 }, 7 },
+            { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 }, 1 },
+            { CALI_INV_ID, CALI_INV_ID, { }, CALI_INV_ID },
         };
 
-        for ( attr_t &a : base_attributes )
-            if (*a.id == CALI_INV_ID && name == a.name) {
-                *a.id = id; break;
-            }
+        // Create nodes
 
-        std::lock_guard<std::mutex>
-            g(m_node_lock);
+        m_nodes.resize(11);
         
-        // Found the cali.attribute.type attribute? Seek out the type nodes
-        if (!m_type_nodes[0] && m_attr_keys.type_attr_id != CALI_INV_ID)
-            for (Node* node : m_nodes)
-                if (node->attribute() == m_attr_keys.type_attr_id) {
-                    cali_attr_type type = node->data().to_attr_type();
+        for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
+            Node* node = new Node(info->id, info->attr_id, info->data);
 
-                    if (type != CALI_TYPE_INV)
-                        m_type_nodes[type] = node;
-                }
+            m_nodes[info->id] = node;
+                    
+            if (info->parent != CALI_INV_ID)
+                m_nodes[info->parent]->append(node);
+            else
+                m_root.append(node);
+            
+            if (info->attr_id == 9 /* type node */)
+                m_type_nodes[info->data.to_attr_type()] = node;
+            else if (info->attr_id == 8 /* attribute node*/)
+                m_attributes.insert(make_pair(info->data.to_string(), node));
+        }
+
+        // Initialize bootstrap attributes
+
+        const MetaAttributeIDs keys = { 8, 9, 10 };
+        m_attr_keys = keys;
     }
 
     void insert_node(const RecordMap& rec) {
@@ -130,9 +151,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             m_root.append(node);
         
         m_node_lock.unlock();
-        
-        // Check if this is one of the basic attribute nodes
-        setup_attribute_nodes(id.to_id(), data.to_string());
         
         // Is this an attribute node? if so, put it in the dict
         std::lock_guard<std::mutex>
@@ -200,9 +218,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         if (!node) {
             node = create_node(attr, v_data, parent);
-
-            // Check if this is one of the basic attribute nodes
-            setup_attribute_nodes(node->id(), v_data.to_string());
 
             // Is this an attribute node? if so, put it in the dict
             std::lock_guard<std::mutex>
@@ -398,8 +413,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     CaliperMetadataDBImpl()
         : m_root { CALI_INV_ID, CALI_INV_ID, { } }
         {
-            m_node_lock.unlock();
-            m_attribute_lock.unlock();
+            setup_bootstrap_nodes();
         }
 
     ~CaliperMetadataDBImpl() {
