@@ -46,8 +46,9 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <mutex>
 #include <set>
-
+#include <sstream>
 
 using namespace cali;
 using namespace std;
@@ -67,8 +68,11 @@ struct Format::FormatImpl
     vector<Field> m_fields; // for the format strings
     string        m_title;
 
-    ostream&      m_os;
+    std::mutex    m_fields_lock;
 
+    ostream&      m_os;
+    std::mutex    m_os_lock;
+    
     FormatImpl(ostream& os)
         : m_os(os)
         { }
@@ -127,20 +131,31 @@ struct Format::FormatImpl
         }
     }
 
-    void print(CaliperMetadataDB& db, const EntryList& list) {        
+    void print(CaliperMetadataDB& db, const EntryList& list) {
+        std::ostringstream os;
+        
         for (Field f : m_fields) {
-            if (f.attr == Attribute::invalid)
-                f.attr = db.attribute(f.attr_name);
+            Attribute attr { Attribute::invalid };
+            
+            {
+                std::lock_guard<std::mutex>
+                    g(m_fields_lock);
+                
+                if (f.attr == Attribute::invalid)
+                    f.attr = db.attribute(f.attr_name);
+
+                attr = f.attr;
+            }
             
             string str;
 
-            if (f.attr != Attribute::invalid)
+            if (attr != Attribute::invalid)
                 for (const Entry& e: list) {
                     if (e.node()) {
                         for (const Node* node = e.node(); node; node = node->parent())
-                            if (node->attribute() == f.attr.id())
+                            if (node->attribute() == attr.id())
                                 str = node->data().to_string().append(str.size() ? "/" : "").append(str);
-                    } else if (e.attribute() == f.attr.id())
+                    } else if (e.attribute() == attr.id())
                         str.append(e.value().to_string());
 
                     if (!str.empty())
@@ -154,10 +169,15 @@ struct Format::FormatImpl
             size_t len = str.size();
             size_t w   = len < f.width ? std::min<size_t>(f.width - len, 80) : 0;
 
-            m_os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
+            os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
         }
 
-        m_os << std::endl;
+        {
+            std::lock_guard<std::mutex>
+                g(m_os_lock);
+            
+            m_os << os.str() <<std::endl;
+        }
     }
 };
 
