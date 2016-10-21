@@ -113,6 +113,9 @@ struct RecordSelector::RecordSelectorImpl
     }
 
     void parse(const string& filter_string) {
+        std::lock_guard<std::mutex>
+            g(m_clause_lock);
+        
         vector<string> clause_strings;
 
         util::split(filter_string, ':', back_inserter(clause_strings));

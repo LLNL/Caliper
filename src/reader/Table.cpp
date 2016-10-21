@@ -69,16 +69,8 @@ struct Table::TableImpl
     std::mutex                              m_row_lock;
     
     bool                                    m_auto_column;
-
-    unsigned n_snapshots;
-    
-    ~TableImpl() {
-        std::cerr << "cali table formatter: Deleting table (" << n_snapshots << " snapshots)" << std::endl;
-    }
     
     void parse(const std::string& field_string) {
-        n_snapshots = 0;
-        
         if (field_string.empty()) {
             m_auto_column = true;
             return;
@@ -183,8 +175,6 @@ struct Table::TableImpl
                 g(m_row_lock);
             
             m_rows.push_back(std::move(row));
-
-            ++n_snapshots;
         }
 
         if (update_max_width) {
@@ -228,8 +218,6 @@ struct Table::TableImpl
             
             os << std::endl;
         }
-
-        std::cerr << "cali table formatter: Flushed " << m_rows.size() << " snapshots" << std::endl;
     }
 };
 
