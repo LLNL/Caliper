@@ -45,24 +45,20 @@
 
 #include <algorithm>
 #include <iterator>
+#include <mutex>
 
 using namespace cali;
 
 struct Json::JsonImpl
 {
-    struct Column {
-        std::string name;
+    std::vector<std::string>                m_col_attr_names;
+    std::vector<Attribute>                  m_cols;    
 
-        Attribute   attr;
-
-        Column(const std::string& n, const Attribute& a)
-            : name(n), attr(a)
-            { }
-    };
-
-    std::vector<Column>                     m_cols;
     std::vector< std::vector<std::string> > m_rows;
 
+    std::mutex m_col_lock;
+    std::mutex m_row_lock;
+    
     bool                                    m_auto_column;
     
     void parse(const std::string& field_string) {
@@ -72,19 +68,13 @@ struct Json::JsonImpl
         } else
             m_auto_column = false;
         
-        std::vector<std::string> fields;
-
-        util::split(field_string, ':', std::back_inserter(fields));
-
-        for (const std::string& s : fields)
-            if (s.size() > 0)
-                m_cols.emplace_back(s, Attribute::invalid);
+        util::split(field_string, ':', std::back_inserter(m_col_attr_names));
     }
 
     void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
-                               [attr_id](const Column& c) {
-                                   return c.attr.id() == attr_id;
+                               [attr_id](const Attribute& c) {
+                                   return c.id() == attr_id;
                                });
 
         if (it != m_cols.end())
@@ -102,33 +92,51 @@ struct Json::JsonImpl
             name.compare(0, 6, "event.") == 0)
             return;
                 
-        m_cols.emplace_back(name, attr);
+        m_cols.push_back(attr);
     }
     
-    void update_columns(CaliperMetadataDB& db, const EntryList& list) {
+    std::vector<Attribute> update_columns(CaliperMetadataDB& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_col_lock);
+        
         // Auto-generate columns from attributes in the snapshots. Used if no
         // field list was given. Skips some internal attributes.
 
-        for (Entry e : list) {
-            if (e.node()) {
-                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                    update_column_attribute(db, node->attribute());
-            } else
-                update_column_attribute(db, e.attribute());
+        if (m_auto_column) {
+            for (Entry e : list) {
+                if (e.node()) {
+                    for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
+                        update_column_attribute(db, node->attribute());
+                } else
+                    update_column_attribute(db, e.attribute());
+            }
+        } else {
+            // Check if we can look up attribute object from name
+
+            auto it = m_col_attr_names.begin();
+
+            while (it != m_col_attr_names.end()) {
+                Attribute attr = db.attribute(*it);
+
+                if (attr != Attribute::invalid) {
+                    m_cols.push_back(attr);
+                    it = m_col_attr_names.erase(it);
+                } else
+                    ++it;
+            }
         }
+
+        return m_cols;
     }
     
     void add(CaliperMetadataDB& db, const EntryList& list) {
-        if (m_auto_column)
-            update_columns(db, list);
-        
-        std::vector<std::string> row(m_cols.size());
+        std::vector<Attribute>   col(update_columns(db, list));
+        std::vector<std::string> row(col.size());
+
         bool active = false;
         
-        for (std::vector<Column>::size_type c = 0; c < m_cols.size(); ++c) {
-            if (m_cols[c].attr == Attribute::invalid)
-                m_cols[c].attr = db.attribute(m_cols[c].name);
-            if (m_cols[c].attr == Attribute::invalid)
+        for (std::vector<Attribute>::size_type c = 0; c < col.size(); ++c) {
+            if (col[c] == Attribute::invalid)
                 continue;
 
             std::string val;
@@ -136,10 +144,10 @@ struct Json::JsonImpl
             for (Entry e : list) {
                 if (e.node()) {
                     for (const Node* node = e.node(); node; node = node->parent())
-                        if (node->attribute() == m_cols[c].attr.id())
+                        if (node->attribute() == col[c].id())
                             val = node->data().to_string().append(val.empty() ? "" : "/").append(val);
                 } else {
-                    if (e.attribute() == m_cols[c].attr.id())
+                    if (e.attribute() == col[c].id())
                         val = e.value().to_string();
                 }
             }
@@ -150,16 +158,19 @@ struct Json::JsonImpl
             }
         }
 
-        if (active)
+        if (active) {
+            std::lock_guard<std::mutex>
+                g(m_row_lock);
+            
             m_rows.push_back(std::move(row));
+        }
     }
 
-    void flush(std::ostream& os) {
-            
+    void flush(std::ostream& os) {            
         // print header
         os << "{ \"attributes\" : [" ;
-        for (const Column& col : m_cols)
-            os << "\"" << col.name <<"\",";
+        for (const Attribute& col : m_cols)
+            os << "\"" << col.name() <<"\",";
 
         os << "\b ], "<< std::endl<<" \"rows\" : [ ";
 
@@ -167,7 +178,7 @@ struct Json::JsonImpl
 
         for (auto row : m_rows) {
             os << " [ " ;
-            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c) {
+            for (std::vector<std::string>::size_type c = 0; c < row.size(); ++c) {
                     os << "\"" << row[c] << "\",";
             }
             os<< "\b ]," ;

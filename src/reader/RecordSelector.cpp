@@ -44,6 +44,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <mutex>
 
 using namespace cali;
 using namespace std;
@@ -53,22 +54,30 @@ struct RecordSelector::RecordSelectorImpl
     enum class Op { Contains, Equals, Less, Greater };
 
     struct Clause {
-        std::string attr_name;
-        cali_id_t   attr_id;
-        std::string value;
-        Op          op;
-        bool        negate;
+        cali_id_t     attr_id;
+        std::string   value;
+        Op            op;
+        bool          negate;
     };
 
-    std::vector<Clause> m_clauses;
+    struct ClauseConfig {
+        std::string   attr_name;
+        cali_id_t     attr_id;
+        std::string   value;
+        Op            op;
+        bool          negate;
+    };
 
+    std::vector<ClauseConfig> m_clauses;
+    std::mutex                m_clause_lock;
+    
     bool parse_clause(const string& str) {
         // parse "[-]attribute[(<>=)value]" string
 
         if (str.empty())
             return false;
 
-        Clause clause { "", CALI_INV_ID, "", Op::Contains, false };
+        ClauseConfig clause { "", CALI_INV_ID, "", Op::Contains, false };
         string::size_type spos = 0;
 
         if (str[spos] == '-') {
@@ -104,6 +113,9 @@ struct RecordSelector::RecordSelectorImpl
     }
 
     void parse(const string& filter_string) {
+        std::lock_guard<std::mutex>
+            g(m_clause_lock);
+        
         vector<string> clause_strings;
 
         util::split(filter_string, ':', back_inserter(clause_strings));
@@ -113,11 +125,22 @@ struct RecordSelector::RecordSelectorImpl
                 cerr << "cali-query: malformed selector clause: \"" << s << "\"" << endl;
     }
 
-    bool match(const Attribute& attr, const Variant& data, Clause& clause) {
-        if (clause.attr_id == CALI_INV_ID && clause.attr_name == attr.name())
-            clause.attr_id = attr.id();
+    Clause check_and_update_clause(CaliperMetadataDB& db, ClauseConfig& clause) {
+        std::lock_guard<std::mutex>
+            g(m_clause_lock);
 
-        if (clause.attr_id == attr.id())
+        if (clause.attr_id == CALI_INV_ID) {
+            Attribute attr = db.attribute(clause.attr_name);
+
+            if (attr != Attribute::invalid)
+                clause.attr_id = attr.id();
+        }
+        
+        return { clause.attr_id, clause.value, clause.op, clause.negate };
+    }
+    
+    bool match(cali_id_t attr_id, const Variant& data, const Clause& clause) {            
+        if (clause.attr_id == attr_id)
             switch (clause.op) {
             case Op::Contains:
                 return true;
@@ -130,87 +153,33 @@ struct RecordSelector::RecordSelectorImpl
         return false;
     }    
     
-    bool match(const CaliperMetadataDB& db, const Entry& entry, Clause& clause) {
+    bool match(const Entry& entry, const Clause& clause) {
         const Node* node = entry.node();
 
         if (node) {
-            for ( ; node && node->id() != CALI_INV_ID; node = node->parent()) {
-                Attribute attr = db.attribute(node->attribute());
-
-                if (attr == Attribute::invalid)
-                    continue;
-                if (match(attr, node->data(), clause))
+            for ( ; node && node->id() != CALI_INV_ID; node = node->parent())
+                if (match(node->attribute(), node->data(), clause))
                     return true;
-            }
-        } else if (entry.attribute() != CALI_INV_ID &&
-                   match(db.attribute(entry.attribute()), entry.value(), clause))
+        } else if (match(entry.attribute(), entry.value(), clause))
             return true;
 
         return false;
     }
 
-    bool match_implicit(const CaliperMetadataDB& db, const vector<Variant>& node_ids, Clause& clause) {
-        for (const Variant& elem : node_ids)
-            for (const Node* node = db.node(elem.to_id()); node && node->id() != CALI_INV_ID; node = node->parent()) {
-                Attribute attr = db.attribute(node->attribute());
+    bool pass(CaliperMetadataDB& db, const EntryList& list) {
+        for (ClauseConfig& clause_conf : m_clauses) {
+            Clause clause = check_and_update_clause(db, clause_conf);
 
-                if (attr == Attribute::invalid)
-                    continue;
-
-                if (match(attr, node->data(), clause))
-                    return true;            
-            }
-
-        return false;
-    }
-
-    bool match_explicit(const CaliperMetadataDB& db, const vector<Variant>& attr_ids, const vector<Variant>& data_entries, Clause& clause) {
-        for (unsigned i = 0; i < attr_ids.size() && i < data_entries.size(); ++i) {
-            Attribute attr = db.attribute(attr_ids[i].to_id());
-
-            if (attr == Attribute::invalid)
-                continue;
-
-            if (match(attr, data_entries[i], clause))
-                return true;
-        }
-
-        return false;
-    }
-
-    bool pass(const CaliperMetadataDB& db, const RecordMap& rec) {
-        if (get_record_type(rec) != "ctx")
-            return true;
-
-        // implicit entries
-
-        auto impl_entry_it = rec.find("ref");
-        auto expl_entry_it = rec.find("attr");
-        auto data_entry_it = rec.find("data");
-
-        bool check_implicit = impl_entry_it != rec.end() && impl_entry_it->second.size() > 0;
-        bool check_explicit = 
-            expl_entry_it != rec.end() && expl_entry_it->second.size() > 0 &&
-            data_entry_it != rec.end() && data_entry_it->second.size() > 0;
-
-        for (Clause &clause : m_clauses) {
-            if ((check_implicit && match_implicit(db, impl_entry_it->second, clause)) ||
-                (check_explicit && match_explicit(db, expl_entry_it->second, data_entry_it->second, clause))) {
+            if (clause.attr_id == CALI_INV_ID)
                 if (clause.negate)
+                    continue;
+                else
                     return false;
-            } else if (!clause.negate)
-                return false;
-        }
 
-        return true;
-    }
-
-    bool pass(const CaliperMetadataDB& db, const EntryList& list) {
-        for (Clause& clause : m_clauses) {
             bool m = false;
 
             for (const Entry& e : list)
-                if ((m = (m || match(db, e, clause))))
+                if ((m = (m || match(e, clause))))
                     break;
 
             if (m == clause.negate)
@@ -233,15 +202,8 @@ RecordSelector::~RecordSelector()
     mP.reset();
 }
 
-void
-RecordSelector::operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) const
-{
-    if (mP->pass(db, rec))
-        push(db, rec);
-}
-
 void 
-RecordSelector::operator()(CaliperMetadataDB& db, const EntryList& list, SnapshotProcessFn push) const
+RecordSelector::operator()(CaliperMetadataDB& db, const EntryList& list, SnapshotProcessFn& push) const
 {
     if (mP->pass(db, list))
         push(db, list);

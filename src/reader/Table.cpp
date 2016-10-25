@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <mutex>
 
 using namespace cali;
 
@@ -64,6 +65,9 @@ struct Table::TableImpl
     std::vector<Column>                     m_cols;
     std::vector< std::vector<std::string> > m_rows;
 
+    std::mutex                              m_col_lock;
+    std::mutex                              m_row_lock;
+    
     bool                                    m_auto_column;
     
     void parse(const std::string& field_string) {
@@ -82,7 +86,7 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid);
     }
 
-    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
+    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {        
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Column& c) {
                                    return c.attr.id() == attr_id;
@@ -106,30 +110,40 @@ struct Table::TableImpl
         m_cols.emplace_back(name, name.size(), attr);
     }
     
-    void update_columns(CaliperMetadataDB& db, const EntryList& list) {
+    std::vector<Column> update_columns(CaliperMetadataDB& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_col_lock);
+
         // Auto-generate columns from attributes in the snapshots. Used if no
         // field list was given. Skips some internal attributes.
+        
+        if (m_auto_column)
+            for (Entry e : list) {
+                if (e.node()) {
+                    for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
+                        update_column_attribute(db, node->attribute());
+                } else
+                    update_column_attribute(db, e.attribute());
+            }
 
-        for (Entry e : list) {
-            if (e.node()) {
-                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                    update_column_attribute(db, node->attribute());
-            } else
-                update_column_attribute(db, e.attribute());
-        }
+        // Check if we can look up attribute object from name
+
+        for (Column& col : m_cols)
+            if (col.attr == Attribute::invalid)
+                col.attr = db.attribute(col.name);
+
+        return m_cols;
     }
     
     void add(CaliperMetadataDB& db, const EntryList& list) {
-        if (m_auto_column)
-            update_columns(db, list);
+        std::vector<Column>      cols = update_columns(db, list);
+        std::vector<std::string> row(cols.size());
         
-        std::vector<std::string> row(m_cols.size());
         bool active = false;
+        bool update_max_width = false;
         
-        for (std::vector<Column>::size_type c = 0; c < m_cols.size(); ++c) {
-            if (m_cols[c].attr == Attribute::invalid)
-                m_cols[c].attr = db.attribute(m_cols[c].name);
-            if (m_cols[c].attr == Attribute::invalid)
+        for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c) {
+            if (cols[c].attr == Attribute::invalid)
                 continue;
 
             std::string val;
@@ -137,10 +151,10 @@ struct Table::TableImpl
             for (Entry e : list) {
                 if (e.node()) {
                     for (const Node* node = e.node(); node; node = node->parent())
-                        if (node->attribute() == m_cols[c].attr.id())
+                        if (node->attribute() == cols[c].attr.id())
                             val = node->data().to_string().append(val.empty() ? "" : "/").append(val);
                 } else {
-                    if (e.attribute() == m_cols[c].attr.id())
+                    if (e.attribute() == cols[c].attr.id())
                         val = e.value().to_string();
                 }
             }
@@ -148,15 +162,34 @@ struct Table::TableImpl
             if (!val.empty()) {
                 active = true;
                 row[c] = val;
-                m_cols[c].max_width = std::max(val.size(), m_cols[c].max_width);
+
+                if (val.size() > cols[c].max_width) {
+                    cols[c].max_width = val.size();
+                    update_max_width  = true;
+                }
             }
         }
 
-        if (active)
+        if (active) {
+            std::lock_guard<std::mutex>
+                g(m_row_lock);
+            
             m_rows.push_back(std::move(row));
+        }
+
+        if (update_max_width) {
+            std::lock_guard<std::mutex>
+                g(m_col_lock);
+
+            for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c)
+                if (cols[c].max_width > m_cols[c].max_width)
+                    m_cols[c].max_width = cols[c].max_width;
+        }
     }
 
     void flush(std::ostream& os) {
+        // NOTE: No locking, assume flush() runs serially
+        
         const char whitespace[120+1] =
             "                                        "
             "                                        "
@@ -184,7 +217,7 @@ struct Table::TableImpl
             }
             
             os << std::endl;
-        }        
+        }
     }
 };
 

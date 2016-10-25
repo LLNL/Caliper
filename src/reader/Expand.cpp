@@ -47,8 +47,9 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <mutex>
 #include <set>
-
+#include <sstream>
 
 using namespace cali;
 using namespace std;
@@ -59,6 +60,8 @@ struct Expand::ExpandImpl
     set<string> m_deselected;
 
     ostream&    m_os;
+
+    std::mutex  m_os_lock;
 
     ExpandImpl(ostream& os)
         : m_os(os)
@@ -103,6 +106,8 @@ struct Expand::ExpandImpl
     void print(CaliperMetadataDB& db, const EntryList& list) {
         int nentry = 0;
 
+        std::ostringstream os;
+        
         for (const Entry& e : list) {
             if (e.node()) {
                 vector<const Node*> nodes;
@@ -125,12 +130,12 @@ struct Expand::ExpandImpl
 
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
                     if ((*it)->attribute() != prev_attr_id) {
-                        m_os << (nentry++ ? "," : "") << db.attribute((*it)->attribute()).name() << '=';
+                        os << (nentry++ ? "," : "") << db.attribute((*it)->attribute()).name() << '=';
                         prev_attr_id = (*it)->attribute();
                     } else {
-                        m_os << '/';
+                        os << '/';
                     }
-                    m_os << (*it)->data().to_string();
+                    os << (*it)->data().to_string();
                 }
             } else if (e.attribute() != CALI_INV_ID) {
                 string name = db.attribute(e.attribute()).name();
@@ -138,12 +143,16 @@ struct Expand::ExpandImpl
                 if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
 
-                m_os << (nentry++ ? "," : "") << name << '=' << e.value();
+                os << (nentry++ ? "," : "") << name << '=' << e.value();
             }
         }
         
-        if (nentry > 0)
-            m_os << endl;
+        if (nentry > 0) {
+            std::lock_guard<std::mutex>
+                g(m_os_lock);
+            
+            m_os << os.str() << endl;
+        }
     }
 };
 

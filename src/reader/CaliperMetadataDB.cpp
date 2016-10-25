@@ -44,6 +44,7 @@
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <mutex>
 #include <vector>
 
 using namespace cali;
@@ -54,36 +55,62 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 {
     Node                      m_root;         ///< (Artificial) root node
     vector<Node*>             m_nodes;        ///< Node list
+    mutable mutex             m_node_lock;
 
     MetaAttributeIDs          m_attr_keys = MetaAttributeIDs::invalid;
 
     Node*                     m_type_nodes[CALI_MAXTYPE+1] = { 0 };
     
     map<string, Node*>        m_attributes;
+    mutable mutex             m_attribute_lock;
     
-    void setup_attribute_nodes(cali_id_t id, const std::string& name) {
-        struct attr_t {
-            const char* name; cali_id_t* id;
-        } base_attributes[] = {
-            { "cali.attribute.name", &m_attr_keys.name_attr_id },
-            { "cali.attribute.prop", &m_attr_keys.prop_attr_id },
-            { "cali.attribute.type", &m_attr_keys.type_attr_id }
+    void setup_bootstrap_nodes() {
+        // Create initial nodes
+        
+        static const struct NodeInfo {
+            cali_id_t id;
+            cali_id_t attr_id;
+            Variant   data;
+            cali_id_t parent;
+        }  bootstrap_nodes[] = {
+            {  0, 9,  { CALI_TYPE_USR    }, CALI_INV_ID },
+            {  1, 9,  { CALI_TYPE_INT    }, CALI_INV_ID },
+            {  2, 9,  { CALI_TYPE_UINT   }, CALI_INV_ID },
+            {  3, 9,  { CALI_TYPE_STRING }, CALI_INV_ID },
+            {  4, 9,  { CALI_TYPE_ADDR   }, CALI_INV_ID },
+            {  5, 9,  { CALI_TYPE_DOUBLE }, CALI_INV_ID },
+            {  6, 9,  { CALI_TYPE_BOOL   }, CALI_INV_ID },
+            {  7, 9,  { CALI_TYPE_TYPE   }, CALI_INV_ID },
+            {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 }, 3 },
+            {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 }, 7 },
+            { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 }, 1 },
+            { CALI_INV_ID, CALI_INV_ID, { }, CALI_INV_ID },
         };
 
-        for ( attr_t &a : base_attributes )
-            if (*a.id == CALI_INV_ID && name == a.name) {
-                *a.id = id; break;
-            }
-        
-        // Found the cali.attribute.type attribute? Seek out the type nodes
-        if (!m_type_nodes[0] && m_attr_keys.type_attr_id != CALI_INV_ID)
-            for (Node* node : m_nodes)
-                if (node->attribute() == m_attr_keys.type_attr_id) {
-                    cali_attr_type type = node->data().to_attr_type();
+        // Create nodes
 
-                    if (type != CALI_TYPE_INV)
-                        m_type_nodes[type] = node;
-                }
+        m_nodes.resize(11);
+        
+        for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
+            Node* node = new Node(info->id, info->attr_id, info->data);
+
+            m_nodes[info->id] = node;
+                    
+            if (info->parent != CALI_INV_ID)
+                m_nodes[info->parent]->append(node);
+            else
+                m_root.append(node);
+            
+            if (info->attr_id == 9 /* type node */)
+                m_type_nodes[info->data.to_attr_type()] = node;
+            else if (info->attr_id == 8 /* attribute node*/)
+                m_attributes.insert(make_pair(info->data.to_string(), node));
+        }
+
+        // Initialize bootstrap attributes
+
+        const MetaAttributeIDs keys = { 8, 9, 10 };
+        m_attr_keys = keys;
     }
 
     void insert_node(const RecordMap& rec) {
@@ -109,6 +136,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         Node* node = new Node (id.to_id(), attr.to_id(), data);
 
+        m_node_lock.lock();
+        
         // FIXME: Do some error checking here
 
         if (m_nodes.size() <= node->id())
@@ -120,17 +149,23 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             m_nodes[parent.to_id()]->append(node);
         else
             m_root.append(node);
-
-        // Check if this is one of the basic attribute nodes
-        setup_attribute_nodes(id.to_id(), data.to_string());
         
-        // Is this an attribute node? if so, put it in the dict        
+        m_node_lock.unlock();
+        
+        // Is this an attribute node? if so, put it in the dict
+        std::lock_guard<std::mutex>
+            g_attr(m_attribute_lock);
+        
         if (m_attr_keys.name_attr_id != CALI_INV_ID && node->attribute() == m_attr_keys.name_attr_id)
             m_attributes.insert(make_pair(string(node->data().to_string()), node));
     }
 
     Node* create_node(cali_id_t attr_id, const Variant& data, Node* parent) {
+        std::lock_guard<std::mutex>
+            g(m_node_lock);
+
         Node* node = new Node(m_nodes.size(), attr_id, data);
+        
         m_nodes.push_back(node);
 
         if (parent)
@@ -169,8 +204,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             auto parent_it = idmap.find(v_parent.to_id());
             cali_id_t id   = (parent_it == idmap.end() ? v_parent.to_id() : parent_it->second);
 
+            std::lock_guard<std::mutex>
+                g(m_node_lock);
+            
             assert(id < m_nodes.size());
-
             parent = m_nodes[id];
         }
 
@@ -182,10 +219,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (!node) {
             node = create_node(attr, v_data, parent);
 
-            // Check if this is one of the basic attribute nodes
-            setup_attribute_nodes(node->id(), v_data.to_string());
-
-            // Is this an attribute node? if so, put it in the dict        
+            // Is this an attribute node? if so, put it in the dict
+            std::lock_guard<std::mutex>
+                g(m_attribute_lock);
+            
             if (m_attr_keys.name_attr_id != CALI_INV_ID && node->attribute() == m_attr_keys.name_attr_id)
                 m_attributes.insert(make_pair(string(node->data().to_string()), node));
         }
@@ -208,6 +245,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
                 if (idmap_it != idmap.end())
                     id = idmap_it->second;
+
+                std::lock_guard<std::mutex>
+                    g(m_node_lock);
+                
                 if (id < m_nodes.size())
                     list.push_back(Entry(m_nodes[id]));
             }
@@ -279,6 +320,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     Attribute attribute(cali_id_t id) const {
+        std::lock_guard<std::mutex>
+            g(m_node_lock);
+        
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
@@ -286,6 +330,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     Attribute attribute(const std::string& name) const {
+        std::lock_guard<std::mutex>
+            g(m_attribute_lock);
+        
         auto it = m_attributes.find(name);
 
         return it == m_attributes.end() ? Attribute::invalid :
@@ -338,6 +385,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     Attribute create_attribute(const std::string& name, cali_attr_type type, int prop) {
+        std::lock_guard<std::mutex>
+            g(m_attribute_lock);
+        
         // --- Check if attribute exists
         
         auto it = m_attributes.lower_bound(name);
@@ -362,7 +412,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     
     CaliperMetadataDBImpl()
         : m_root { CALI_INV_ID, CALI_INV_ID, { } }
-        { }
+        {
+            setup_bootstrap_nodes();
+        }
 
     ~CaliperMetadataDBImpl() {
         for (Node* n : m_nodes)
@@ -404,6 +456,9 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_f
 const Node* 
 CaliperMetadataDB::node(cali_id_t id) const
 {
+    std::lock_guard<std::mutex>
+        g(mP->m_node_lock);
+
     return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
 }
 
@@ -434,5 +489,8 @@ CaliperMetadataDB::create_attribute(const std::string& name, cali_attr_type type
 Node* 
 CaliperMetadataDB::mutable_node(cali_id_t id) 
 {
+    std::lock_guard<std::mutex>
+        g(mP->m_node_lock);
+    
     return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
 }

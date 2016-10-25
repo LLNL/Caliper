@@ -70,6 +70,8 @@ class TextLogService
     Attribute                   set_event_attr;   
     Attribute                   end_event_attr;
 
+    std::mutex                  stream_mutex;
+    
     static unique_ptr<TextLogService> 
                                 s_textlog;
 
@@ -169,7 +171,14 @@ class TextLogService
         if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
-        formatter.print(get_stream(), snapshot) << std::endl;
+        ostringstream os;
+        
+        formatter.print(os, snapshot) << std::endl;
+
+        std::lock_guard<std::mutex>
+            g(stream_mutex);
+
+        get_stream() << os.str();
     }
 
     void post_init_cb(Caliper* c) {

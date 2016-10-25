@@ -50,17 +50,18 @@
 #include <ContextRecord.h>
 #include <Node.h>
 
-// #include <../../services/textlog/TextLog.cpp>
-// #include <../../services/textlog/SnapshotTextFormatter.h>
-
 #include <csv/CsvReader.h>
 #include <csv/CsvSpec.h>
 
 #include <util/split.hpp>
 
+#include <atomic>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <mutex>
+#include <sstream>
+#include <thread>
 
 using namespace cali;
 using namespace std;
@@ -110,24 +111,41 @@ namespace
           "Print given attributes in web-friendly json format",
           "ATTRIBUTES"
         },
+        { "threads", "threads", 0, true,
+          "Use this many threads (applicable only with multiple files)",
+          "THREADS"
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
     };
 
     class WriteRecord {
-        ostream&      m_os;
+        struct StreamInfo {
+            ostream&      os;
+            std::mutex    os_lock;
+
+            StreamInfo(std::ostream& os_arg)
+                : os(os_arg)
+                { }
+        };
+
+        std::shared_ptr<StreamInfo> sI;
         
     public:
         
         WriteRecord(ostream& os)
-            : m_os(os) { }
+            : sI { new StreamInfo(os) }
+            { }
 
         void operator()(CaliperMetadataDB& db, const Node* node) {
+            std::lock_guard<std::mutex>
+                g(sI->os_lock);
+            
             db.mutable_node(node->id())->write_path([this](const RecordDescriptor& r,
                                                            const int* c,
                                                            const Variant** d)
-                                                    { CsvSpec::write_record(m_os, r, c, d); });
+                                                    { CsvSpec::write_record(sI->os, r, c, d); });
         }
 
         void operator()(CaliperMetadataDB& db, const EntryList& list) {
@@ -135,10 +153,12 @@ namespace
             std::vector<Variant> vals;
             std::vector<Variant> refs;
 
-            auto write_fn = [this](const RecordDescriptor& r,
-                                   const int* c,
-                                   const Variant** d)
-                { CsvSpec::write_record(m_os, r, c, d); };
+            std::ostringstream os;
+            
+            auto write_fn = [&os](const RecordDescriptor& r,
+                                 const int* c,
+                                 const Variant** d)
+                { CsvSpec::write_record(os, r, c, d); };
             
             for (const Entry& e : list) {
                 if (e.node()) {                    
@@ -157,12 +177,22 @@ namespace
                                        static_cast<int>(attr.size()),
                                        static_cast<int>(vals.size()) };
             const Variant* data[3] = { &refs.front(), &attr.front(), &vals.front() };
+            
+            CsvSpec::write_record(os, ContextRecord::record_descriptor(), count, data);
 
-            CsvSpec::write_record(m_os, ContextRecord::record_descriptor(), count, data);
+            if (!os.str().empty()) {
+                std::lock_guard<std::mutex>
+                    g(sI->os_lock);
+
+                sI->os << os.str();
+            }
         }
 
         void operator()(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
-            m_os << rec << endl;
+            std::lock_guard<std::mutex>
+                g(sI->os_lock);
+            
+            sI->os << rec << endl;
         }
     };
 
@@ -372,24 +402,57 @@ int main(int argc, const char* argv[])
 
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
+    std::vector<std::string> files = args.arguments();
+    
+    unsigned num_threads =
+        std::min<unsigned>(files.size(),
+                           std::stoul(args.get("threads", std::to_string(std::thread::hardware_concurrency()))));
+
+    std::cerr << "cali-query: processing " << files.size() << " files using "
+              << num_threads << " thread" << (num_threads == 1 ? "." : "s.")  << std::endl;
+
+    Annotation("cali-query.num-threads", CALI_ATTR_SCOPE_PROCESS).set(static_cast<int>(num_threads));
+    
     //
-    // --- Process inputs
+    // --- Thread processing function
     //
 
     a_phase.set("process");
 
-    CaliperMetadataDB metadb;
-
-    for (const string& file : args.arguments()) {
-        Annotation::Guard 
-            g_s(Annotation("cali-query.stream").set(file.c_str()));
+    CaliperMetadataDB     metadb;
+    std::atomic<unsigned> index(0);
+    
+    auto thread_fn = [&](unsigned t) {
+        Annotation::Guard
+            g_t(Annotation("thread").set(static_cast<int>(t)));
+        
+        for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write 
+            Annotation::Guard 
+                g_s(Annotation("cali-query.stream").set(files[i].c_str()));
             
-        CsvReader reader(file);
-        IdMap     idmap;
+            CsvReader reader(files[i]);
+            IdMap     idmap;
 
-        if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
-            cerr << "Could not read file " << file << endl;
-    }
+            if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
+                cerr << "Could not read file " << files[i] << endl;
+        }
+    };
+
+    std::vector<std::thread> threads;
+
+    //
+    // --- Fill thread vector and process
+    //
+     
+    for (unsigned t = 0; t < num_threads; ++t)
+        threads.emplace_back(thread_fn, t);
+
+    for (auto &t : threads)
+        t.join();
+    
+    //
+    // --- Flush outputs
+    //
 
     a_phase.set("flush");
 
