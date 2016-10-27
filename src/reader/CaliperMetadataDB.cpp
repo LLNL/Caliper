@@ -161,9 +161,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     }
 
     Node* create_node(cali_id_t attr_id, const Variant& data, Node* parent) {
-        std::lock_guard<std::mutex>
-            g(m_node_lock);
-
+        // NOTE: We assume that m_node_lock is locked!
+        
         Node* node = new Node(m_nodes.size(), attr_id, data);
         
         m_nodes.push_back(node);
@@ -211,20 +210,27 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             parent = m_nodes[id];
         }
 
-        Node* node = parent->first_child();
+        Node* node     = nullptr;
+        bool  new_node = false;
 
-        while ( node && !node->equals(attr, v_data) )
-            node = node->next_sibling();
+        {
+            std::lock_guard<std::mutex>
+                g(m_node_lock);
 
-        if (!node) {
-            node = create_node(attr, v_data, parent);
+            for ( node = parent->first_child(); node && !node->equals(attr, v_data); node = node->next_sibling() )
+                ;
 
-            // Is this an attribute node? if so, put it in the dict
+            if (!node) {
+                node     = create_node(attr, v_data, parent);
+                new_node = true;
+            }
+        }
+
+        if (new_node && node->attribute() == m_attr_keys.name_attr_id) {
             std::lock_guard<std::mutex>
                 g(m_attribute_lock);
             
-            if (m_attr_keys.name_attr_id != CALI_INV_ID && node->attribute() == m_attr_keys.name_attr_id)
-                m_attributes.insert(make_pair(string(node->data().to_string()), node));
+            m_attributes.insert(make_pair(string(node->data().to_string()), node));
         }
 
         if (v_id.to_id() != node->id())
@@ -371,6 +377,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         for (size_t i = 0; i < n; ++i) {
             if (attr[i].store_as_value())
                 continue;
+
+            std::lock_guard<std::mutex>
+                g(m_node_lock);
             
             for (node = parent->first_child(); node && !node->equals(attr[i].id(), value[i]); node = node->next_sibling())
                 ;
