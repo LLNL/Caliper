@@ -2,8 +2,8 @@
 # Caliper
 #
 
-project (caliper)
 cmake_minimum_required(VERSION 3.0)
+project (caliper)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)
@@ -39,7 +39,7 @@ endif()
 
 if(CALIPER_HAVE_TAU)
     find_library(tau_lib libTAU.so)
-    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib}) 
+    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
 endif()
 # the RPATH to be used when installing, but only if it's not a system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
@@ -130,15 +130,15 @@ configure_file(
   ${PROJECT_BINARY_DIR}/caliper-config.cmake
   @ONLY)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake 
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
   DESTINATION share/cmake/caliper)
 install(EXPORT caliper
   DESTINATION share/cmake/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h 
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
   DESTINATION include/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper.pc 
+install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
   DESTINATION share/pkgconfig)
 
 add_subdirectory(src)
