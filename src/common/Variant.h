@@ -137,9 +137,11 @@ public:
     // vector<unsigned char> data() const;
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);
+    friend bool operator <  (const Variant& lhs, const Variant& rhs);
 };
 
 bool operator == (const Variant& lhs, const Variant& rhs);
+bool operator <  (const Variant& lhs, const Variant& rhs);
 
 std::ostream& operator << (std::ostream& os, const Variant& v);
 

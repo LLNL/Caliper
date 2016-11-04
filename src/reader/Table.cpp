@@ -57,37 +57,56 @@ struct Table::TableImpl
 
         Attribute   attr;
 
-        Column(const std::string& n, std::size_t w, const Attribute& a)
-            : name(n), max_width(w), attr(a)
+        bool        print; // used for hidden sort columns
+        
+        Column(const std::string& n, std::size_t w, const Attribute& a, bool p)
+            : name(n), max_width(w), attr(a), print(p)
             { }
     };
-
+        
     std::vector<Column>                     m_cols;
-    std::vector< std::vector<std::string> > m_rows;
+    std::vector< std::vector<Variant> >     m_rows;
 
     std::mutex                              m_col_lock;
     std::mutex                              m_row_lock;
     
     bool                                    m_auto_column;
+    std::size_t                             m_num_sort_columns;
     
-    void parse(const std::string& field_string) {
+    void parse(const std::string& field_string, const std::string& sort_string) {        
+        std::vector<std::string> fields;
+
+        // fill sort columns
+        
+        util::split(sort_string, ':', std::back_inserter(fields));
+
+        for (const std::string& s : fields)
+            if (s.size() > 0)
+                m_cols.emplace_back(s, s.size(), Attribute::invalid, false);
+
+        for (Column& col : m_cols)
+            std::cout << sort_string << "Sort col " << col.name << std::endl;
+        
+        m_num_sort_columns = m_cols.size();
+        fields.clear();
+        
+        // fill print columns
+
         if (field_string.empty()) {
             m_auto_column = true;
             return;
         } else
             m_auto_column = false;
-        
-        std::vector<std::string> fields;
 
         util::split(field_string, ':', std::back_inserter(fields));
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s.size(), Attribute::invalid);
+                m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
     }
 
     void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {        
-        auto it = std::find_if(m_cols.begin(), m_cols.end(),
+        auto it = std::find_if(m_cols.begin()+m_num_sort_columns, m_cols.end(),
                                [attr_id](const Column& c) {
                                    return c.attr.id() == attr_id;
                                });
@@ -107,7 +126,7 @@ struct Table::TableImpl
             name.compare(0, 6, "event.") == 0)
             return;
                 
-        m_cols.emplace_back(name, name.size(), attr);
+        m_cols.emplace_back(name, name.size(), attr, true);
     }
     
     std::vector<Column> update_columns(CaliperMetadataDB& db, const EntryList& list) {
@@ -134,11 +153,11 @@ struct Table::TableImpl
 
         return m_cols;
     }
-    
+
     void add(CaliperMetadataDB& db, const EntryList& list) {
-        std::vector<Column>      cols = update_columns(db, list);
-        std::vector<std::string> row(cols.size());
-        
+        std::vector<Column>  cols = update_columns(db, list);
+        std::vector<Variant> row(cols.size());
+
         bool active = false;
         bool update_max_width = false;
         
@@ -146,16 +165,30 @@ struct Table::TableImpl
             if (cols[c].attr == Attribute::invalid)
                 continue;
 
-            std::string val;
-
+            Variant val;
+            std::size_t width = 0;
+            
             for (Entry e : list) {
                 if (e.node()) {
+                    std::string str;
+                    
                     for (const Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == cols[c].attr.id())
-                            val = node->data().to_string().append(val.empty() ? "" : "/").append(val);
-                } else {
-                    if (e.attribute() == cols[c].attr.id())
-                        val = e.value().to_string();
+                            str = node->data().to_string().append(str.empty() ? "" : "/").append(str);
+
+                    width = std::max(str.size(), width);
+                    bool ok = true;
+                    
+                    if (!str.empty()) 
+                        val = Variant(str).concretize(cols[c].attr.type(), &ok);
+                    if (!ok)
+                        val = Variant(str);
+                } else if (e.attribute() == cols[c].attr.id()) {
+                    bool ok;
+                    val = e.value().concretize(cols[c].attr.type(), &ok);
+
+                    if (!ok)
+                        val = e.value();
                 }
             }
 
@@ -163,13 +196,13 @@ struct Table::TableImpl
                 active = true;
                 row[c] = val;
 
-                if (val.size() > cols[c].max_width) {
-                    cols[c].max_width = val.size();
+                if (width > cols[c].max_width) {
+                    cols[c].max_width = width;
                     update_max_width  = true;
                 }
             }
         }
-
+        
         if (active) {
             std::lock_guard<std::mutex>
                 g(m_row_lock);
@@ -189,6 +222,16 @@ struct Table::TableImpl
 
     void flush(std::ostream& os) {
         // NOTE: No locking, assume flush() runs serially
+
+        // sort rows
+
+        for (std::vector<Column>::size_type c = 0; c < m_num_sort_columns; ++c)
+            std::stable_sort(m_rows.begin(), m_rows.end(),
+                             [c](const std::vector<Variant>& lhs, const std::vector<Variant>& rhs){
+                                 if (c >= lhs.size() || c >= rhs.size())
+                                     return lhs.size() < rhs.size();
+                                 return lhs[c] < rhs[c];
+                             });
         
         const char whitespace[120+1] =
             "                                        "
@@ -198,22 +241,27 @@ struct Table::TableImpl
         // print header
 
         for (const Column& col : m_cols)
-            os << col.name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.name.size()));
-
+            if (col.print)
+                os << col.name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.name.size()));
+        
         os << std::endl;
 
         // print rows
 
         for (auto row : m_rows) {
-            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c) {
+            for (std::vector<Column>::size_type c = m_num_sort_columns; c < row.size(); ++c) {
+                if (!m_cols[c].print)
+                    continue;
+
+                std::string    str = row[c].to_string();
                 cali_attr_type t   = m_cols[c].attr.type();
                 bool           align_right = (t == CALI_TYPE_INT || t == CALI_TYPE_UINT || t == CALI_TYPE_DOUBLE);
-                std::size_t    len = m_cols[c].max_width-row[c].size();
-
+                std::size_t    len = m_cols[c].max_width-str.size();
+                
                 if (align_right)
-                    os << whitespace+(120 - std::min<std::size_t>(120, len)) << row[c] << ' ';
+                    os << whitespace+(120 - std::min<std::size_t>(120, len)) << str << ' ';
                 else
-                    os << row[c] << whitespace+(120 - std::min<std::size_t>(120, 1+len));
+                    os << str << whitespace+(120 - std::min<std::size_t>(120, 1+len));
             }
             
             os << std::endl;
@@ -222,10 +270,10 @@ struct Table::TableImpl
 };
 
 
-Table::Table(const std::string& fields)
+Table::Table(const std::string& fields, const std::string& sort_fields)
     : mP { new TableImpl }
 {
-    mP->parse(fields);
+    mP->parse(fields, sort_fields);
 }
 
 Table::~Table()

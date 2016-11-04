@@ -95,6 +95,10 @@ namespace
           "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
           "ATTRIBUTES" 
         },
+        { "sort", "sort-by", 's', true,  
+          "Sort rows in table format: attribute[:...]", 
+          "SORT_ATTRIBUTES" 
+        },
 	{ "format", "format", 'f', true,
           "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
           "FORMAT_STRING"
@@ -358,7 +362,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    Table             tbl_writer(args.get("attributes"));
+    Table             tbl_writer(args.get("attributes"), args.get("sort"));
     Json              jsn_writer(args.get("attributes"));
 
     NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };

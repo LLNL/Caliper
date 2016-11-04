@@ -541,10 +541,19 @@ Variant::concretize(cali_attr_type type, bool *ok) const
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_INT:
+        {
+            int64_t u = to_int(ok);
+
+            if (ok)
+                ret = Variant(type, &u, sizeof(int64_t));
+        }
+        break;
     case CALI_TYPE_UINT:
         {
-            uint64_t u = to_uint();
-            ret = Variant(type, &u, sizeof(uint64_t));
+            uint64_t u = to_uint(ok);
+
+            if (ok)
+                ret = Variant(type, &u, sizeof(uint64_t));
         }
         break;
     case CALI_TYPE_DOUBLE:
@@ -589,6 +598,33 @@ bool cali::operator == (const Variant& lhs, const Variant& rhs)
         return lhs.m_value.v_double == rhs.m_value.v_double;
     default:
         return lhs.m_value.v_uint   == rhs.m_value.v_uint;
+    }
+}
+
+bool cali::operator < (const Variant& lhs, const Variant& rhs)
+{
+    if (lhs.m_type == CALI_TYPE_INV || rhs.m_type == CALI_TYPE_INV)
+        return lhs.to_string() < rhs.to_string();
+
+    if (lhs.m_type != rhs.m_type)
+        return lhs.m_type < rhs.m_type;
+
+    switch (lhs.m_type) {
+    case CALI_TYPE_STRING:
+        return strncmp(static_cast<const char*>(lhs.m_value.ptr),
+                       static_cast<const char*>(rhs.m_value.ptr), std::min(lhs.m_size, rhs.m_size)) < 0;
+    case CALI_TYPE_USR:
+        return memcmp(lhs.m_value.ptr, rhs.m_value.ptr, std::min(lhs.m_size, rhs.m_size)) < 0;
+    case CALI_TYPE_BOOL:
+        return lhs.m_value.v_bool   < rhs.m_value.v_bool;
+    case CALI_TYPE_TYPE:
+        return lhs.m_value.v_type   < rhs.m_value.v_type;
+    case CALI_TYPE_DOUBLE:
+        return lhs.m_value.v_double < rhs.m_value.v_double;
+    case CALI_TYPE_INT:
+        return lhs.m_value.v_int    < rhs.m_value.v_int;
+    default:
+        return lhs.m_value.v_uint   < rhs.m_value.v_uint;
     }
 }
 

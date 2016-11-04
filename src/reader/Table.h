@@ -54,7 +54,7 @@ class Table
 
 public:
 
-    Table(const std::string& fields);
+    Table(const std::string& fields, const std::string& sort_fields);
 
     ~Table();
 
