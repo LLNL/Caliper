@@ -30,6 +30,7 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #################################################################################################
+from __future__ import print_function
 usage_string = \
 '''Usage: wrap.py [-fgd] [-i pmpi_init] [-c mpicc_name] [-o file] wrapper.w [...]
  Python script for creating PMPI wrappers. Roughly follows the syntax of
@@ -48,7 +49,7 @@ usage_string = \
 
  by Todd Gamblin, tgamblin@llnl.gov
 '''
-import tempfile, getopt, subprocess, sys, os, re, StringIO, types, itertools
+import tempfile, getopt, subprocess, sys, os, re, types, itertools
 
 # Default values for command-line parameters
 mpicc = 'mpicc'                    # Default name for the MPI compiler
@@ -66,7 +67,7 @@ pmpi_init_bindings = ["PMPI_INIT", "pmpi_init", "pmpi_init_", "pmpi_init__"]
 # In general, all MPI calls we care about return int.  We include double
 # to grab MPI_Wtick and MPI_Wtime, but we'll ignore the f2c and c2f calls
 # that return MPI_Datatypes and other such things.
-# MPI_Aint_add and MPI_Aint_diff return MPI_Aint, so include that too.
+# MPI_Aint_add and MPI_Aint_diff return MPI_Aint, so include that too. 
 rtypes = ['int', 'double', 'MPI_Aint' ]
 
 # If we find these strings in a declaration, exclude it from consideration.
@@ -277,7 +278,7 @@ class InnerLexer(OuterRegionLexer):
 cur_filename = ""
 cur_function = None
 
-class WrapSyntaxError:
+class WrapSyntaxError(Exception):
     """Simple Class for syntax errors raised by the wrapper generator (rather than python)"""
     pass
 
@@ -506,10 +507,10 @@ def enumerate_mpi_declarations(mpicc, includes):
         the caller.
     """
     # Create an input file that just includes <mpi.h>
-    tmpfile = tempfile.NamedTemporaryFile('w+b', -1, '.c')
+    tmpfile = tempfile.NamedTemporaryFile('w+b', -1, suffix='.c')
     tmpname = "%s" % tmpfile.name
-    tmpfile.write('#include <mpi.h>')
-    tmpfile.write("\n")
+    tmpfile.write(b'#include <mpi.h>')
+    tmpfile.write(b"\n")
     tmpfile.flush()
 
     # Run the mpicc -E on the temp file and pipe the output
@@ -526,7 +527,7 @@ def enumerate_mpi_declarations(mpicc, includes):
     # Parse out the declarations from the MPI file
     mpi_h = popen.stdout
     for line in mpi_h:
-        line = line.strip()
+        line = line.decode().strip()
         begin = begin_decl_re.search(line)
         if begin and not exclude_re.search(line):
             # Grab return type and fn name from initial parse
@@ -534,7 +535,7 @@ def enumerate_mpi_declarations(mpicc, includes):
 
             # Accumulate rest of declaration (possibly multi-line)
             while not end_decl_re.search(line):
-                line += " " + mpi_h.next().strip()
+                line += " " + next(mpi_h).decode().strip()
 
             # Split args up by commas so we can parse them independently
             fn_and_paren = r'(%s\s*\()' % fn_name
@@ -545,7 +546,7 @@ def enumerate_mpi_declarations(mpicc, includes):
                 raise ValueError("Malformed declaration in header: '%s'" % line)
 
             arg_string = line[lparen+1:rparen]
-            arg_list = map(lambda s: s.strip(), arg_string.split(","))
+            arg_list = list(map(lambda s: s.strip(), arg_string.split(",")))
 
             # Handle functions that take no args specially
             if arg_list == ['void']:
@@ -870,7 +871,7 @@ def all_but(fn_list):
     """Return a list of all mpi functions except those in fn_list"""
     all_mpi = set(mpi_functions.keys())
     diff = all_mpi - set(fn_list)
-    return [x for x in diff]
+    return [x for x in sorted(diff)]
 
 @macro("foreachfn", has_body=True)
 def foreachfn(out, scope, args, children):
@@ -1027,7 +1028,7 @@ def filter_macro(out, scope, args, children):
         syntax_error("Invalid regex in 'filter' macro: '%s'" % str(regex))
     def match(s):
         return re.search(regex, s)
-    return filter(match, l)
+    return list(filter(match, l))
 
 @macro("fn_num")
 def fn_num(out, scope, args, children):
@@ -1130,7 +1131,7 @@ class Parser:
     def gettok(self):
         """Puts the next token in the input stream into self.next."""
         try:
-            self.next = self.tokens.next()
+            self.next = next(self.tokens)
         except StopIteration:
             self.next = None
 
@@ -1241,7 +1242,7 @@ output_filename = None
 
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fsgdc:o:i:I:")
-except getopt.GetoptError, err:
+except getopt.GetoptError as err:
     sys.stderr.write(err + "\n")
     usage()
 
@@ -1268,7 +1269,7 @@ if len(args) < 1 and not dump_prototypes:
 # Parse mpi.h and put declarations into a map.
 for decl in enumerate_mpi_declarations(mpicc, includes):
     mpi_functions[decl.name] = decl
-    if dump_prototypes: print decl
+    if dump_prototypes: print(decl)
 
 # Fail gracefully if we didn't find anything.
 if not mpi_functions:
