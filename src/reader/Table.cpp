@@ -83,9 +83,6 @@ struct Table::TableImpl
         for (const std::string& s : fields)
             if (s.size() > 0)
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, false);
-
-        for (Column& col : m_cols)
-            std::cout << sort_string << "Sort col " << col.name << std::endl;
         
         m_num_sort_columns = m_cols.size();
         fields.clear();
