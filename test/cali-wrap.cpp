@@ -48,7 +48,7 @@ int doWork(int* inArray, int size){
 template<typename T>
 T* initialize(size_t data_size, T initial_value){
     T* array = (T*)malloc(sizeof(T)*data_size);
-    for(int i=0;i<data_size;i++){
+    for(size_t i=0;i<data_size;i++){
         array[i] = initial_value;
     }
     return array;
@@ -64,7 +64,6 @@ int main(int argc, char* argv[])
     constexpr int iterations = 10;
     int data_size_increment = data_size/iterations;
     cali::wrap("Program",[&](){
-        int sum = 0;
         int * inArray;
         cali::wrap("Initialization",[&](){
             inArray = cali::wrap_with_args("initializer",initialize<int>,data_size, 0);
