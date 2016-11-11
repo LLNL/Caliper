@@ -95,7 +95,7 @@ namespace
           "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
           "ATTRIBUTES" 
         },
-        { "sort", "sort-by", 's', true,  
+        { "sort", "sort-by", 'S', true,  
           "Sort rows in table format: attribute[:...]", 
           "SORT_ATTRIBUTES" 
         },

@@ -3,9 +3,12 @@ Caliper: Context Annotation Library (for Performance)
 
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 
-Caliper is a generic context annotation system. It gives programmers
-the ability to provide arbitrary program context information to 
-(performance) tools at runtime.
+Caliper is a generic context annotation system. It serves as an
+abstraction layer between applications and performance tools,
+providing a clean and easy-to-use interface for application developers
+to express application semantics that can be used by tools and
+auto-tuners. In addition, Caliper provides performance profiling and
+tracing capabilites on its own.
 
 Released under a BSD license, `LLNL-CODE-678900`. 
 See `LICENSE` file for details.
@@ -21,11 +24,6 @@ Usage examples of the C++ and C annotation interfaces are provided in
 `test/cali-basic.cpp` and `test/cali-basic-c.c`, respectively.
 
 See the "Getting started" section below for a brief tutorial.
-
-License
-------------------------------------------
-
-See LICENSE file in this directory.
 
 Building and installing
 ------------------------------------------
@@ -119,7 +117,7 @@ int main(int argc, char* argv[])
 
 ### Run the program
 
-Caliper-enabled tools will now be able to take and process snapshots
+Caliper will now be able to take and process snapshots
 or access the information provided by the source-code annotations at
 runtime. The source-code annotations also provide hooks to enable
 various runtime actions, such as triggering snapshots or writing
@@ -152,13 +150,13 @@ directory.
 ### Analyze Data
 
 Use the `cali-query` tool to filter, aggregate, or print the recorded
-traces. For example, the following command will show us the time spent
+snapshots. For example, the following command will show us the time spent
 in the "initialization" phase, in the entire "loop" phase, and in each
 iteration of the example program: 
 
     $ ls *.cali
     160219-095419_5623_LQfNQTNgpqdM.cali
-    $ cali-query -e \
+    $ cali-query --table \
           --print-attributes=iteration:loop:initialization:time.inclusive.duration \
           160219-095419_5623_LQfNQTNgpqdM.cali
     initialization=true,time.inclusive.duration=202

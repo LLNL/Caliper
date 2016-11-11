@@ -119,15 +119,17 @@ iteration of the example program:
                 
     $ ls *.cali
     160219-095419_5623_LQfNQTNgpqdM.cali
-    $ cali-query -e \
-          --print-attributes=iteration:loop:initialization:time.inclusive.duration \
+    $ cali-query --table \
+          --print-attributes=initialization:loop:iteration:time.inclusive.duration \
           160219-095419_5623_LQfNQTNgpqdM.cali
-    initialization=true,time.inclusive.duration=202
-    iteration=0,loop=true,time.inclusive.duration=51
-    iteration=1,loop=true,time.inclusive.duration=24
-    iteration=2,loop=true,time.inclusive.duration=17
-    iteration=3,loop=true,time.inclusive.duration=24
-    loop=true,time.inclusive.duration=211
+    initialization loop iteration time.inclusive.duration
+    true                                             4437
+                   true
+                   true         0                     179
+                   true         1                      14
+                   true         2                      11
+                   true         3                      12
+                   true                               435 
 
 Where to go from here?
 --------------------------------

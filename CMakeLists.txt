@@ -16,6 +16,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
 include(FindPAPI)
 include(FindLibcurl)
+
 # Optional Fortran
 option(WITH_FORTRAN "Install Fortran interface and build test programs")
 
@@ -27,7 +28,8 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS "Build Caliper tools" TRUE)
 option(WITH_TESTS "Build Caliper test apps" TRUE)
-option(WITH_CUDA "Enable Caliper CUDA services" FALSE)
+option(WITH_DOCS  "Build Caliper documentation" FALSE)
+option(WITH_CUDA  "Enable Caliper CUDA services" FALSE)
 
 if(WITH_CUDA)
    find_package(CUDA)
@@ -41,6 +43,7 @@ if(CALIPER_HAVE_TAU)
     find_library(tau_lib libTAU.so)
     list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
 endif()
+
 # the RPATH to be used when installing, but only if it's not a system directory
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
@@ -142,11 +145,13 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
   DESTINATION share/pkgconfig)
 
 add_subdirectory(src)
+
 if (WITH_TESTS)
   add_subdirectory(test)
 endif()
-
-add_subdirectory(doc)
+if (WITH_DOCS)
+  add_subdirectory(doc)
+endif()
 
 # Install exports
 #install(EXPORT caliper DESTINATION lib/cmake)
