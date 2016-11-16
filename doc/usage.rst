@@ -1,23 +1,39 @@
 Getting started
 ================================
 
-Caliper provides annotation APIs for marking source-code regions or
-exporting arbitrary data in the form of key:value attributes. Caliper
-makes this data accessible to tools.
+Caliper is an abstraction layer for a variety of performance
+engineering tasks, such as tracing, profiling, monitoring, or on-line
+adaptation. Caliper provides
 
-Moreover, Caliper contains built-in *service* modules for basic
-measurement and recording tasks.  For example, Caliper can be
-configured to trigger *snapshots* of the provided
-information. Optionally, measurement data, e.g. timestamps, can be
-added to the snapshots. Source-code annotations and Caliper service
-modules can be flexibly combined to support a wide range of
-performance analysis or monitoring use cases.
+* Annotation APIs for marking source-code regions or
+  exporting arbitrary data in the form of key:value attributes.
+  Annotations can be added (and removed) independent of each other;
+  Caliper will automatically combine information from different
+  annotations.
+* Built-in *service* modules, which provide measurement data
+  (e.g., timestamps), or perform specific functions such as
+  recording profiles or traces.
+
+Source-code annotations and Caliper service modules can be flexibly
+combined to support a wide range of performance engineering use cases.
+Specific actions to be performed (e.g., creating a trace or profile)
+can be specified in a configuration profile at runtime.
 
 Source-code annotations
 --------------------------------
 
-Adding Caliper source-code annotations is easy. 
+Caliper provides annotation APIs for C, C++, and Fortran.
+The annotation commands fulfill two functions:
 
+(1) They provide contextual information, such as the name of a code
+    region or an iteration number.
+(2) They serve as hooks for additional actions (e.g., taking
+    performance measurements). 
+
+The specific action performed is determined by a runtime configuration
+profile. By default, the annotations perform no actions other than
+updating the Caliper-internal *blackboard* buffer.
+    
 The following example marks "initialization" and "loop" phases in a
 C++ code, and exports the main loop's current iteration counter.
 
@@ -77,8 +93,8 @@ runtime (libcaliper) and infrastructure libraries (libcaliper-common). ::
 
 See :doc:`link` for more information.
 
-Running Caliper programs
---------------------------------
+Configuring and Running Caliper programs
+------------------------------------------
 
 By default, Caliper annotation commands perform no actions other than
 updating a Caliper-internal *blackboard buffer* . However, we can
@@ -134,11 +150,15 @@ iteration of the example program:
 Where to go from here?
 --------------------------------
 
-Caliper allows a great amount of flexibility and control in utilizing
-source-code annotations. Much of Caliper's functionality is
-implemented by built-in "services", which can be enabled or disabled
-as needed. Refer to the :doc:`services` section to learn about
-functionality they provide.  Finally, the :doc:`api` section in the
-documentation provides reference documentation for Caliper's C, C++,
-and Fortran annotation APIs.
+The :doc:`concepts` section explains Caliper's underlying concepts
+better.
 
+Much of Caliper's functionality is implemented by built-in "services",
+which can be enabled or disabled as needed. Refer to the
+:doc:`services` section to learn about functionality they provide.
+
+The :doc:`api` section in the documentation provides reference
+documentation for Caliper's C, C++, and Fortran annotation APIs.
+Finally, the :doc:`tools` section documents the command-line tools
+used to analyze and export the data streams produced by Caliper's
+tracing and profiling services.

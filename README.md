@@ -6,9 +6,10 @@ Caliper: Context Annotation Library (for Performance)
 Caliper is a generic context annotation system. It serves as an
 abstraction layer between applications and performance tools,
 providing a clean and easy-to-use interface for application developers
-to express application semantics that can be used by tools and
-auto-tuners. In addition, Caliper provides performance profiling and
-tracing capabilites on its own.
+to express application semantics in a tool-agnostic way.
+These annotations can then be used for a variety of performance
+engineering use cases (e.g., performance monitoring,
+profiling, tracing, and auto-tuning). 
 
 Released under a BSD license, `LLNL-CODE-678900`. 
 See `LICENSE` file for details.
@@ -68,7 +69,7 @@ runtime (libcaliper.so).
 
 ### Source-code annotation
 
-Adding Caliper source-code annotations is easy. 
+Caliper provides source-code annotation APIs for C, C++, and Fortran.
 
 The following example marks "initialization" and "loop" phases in a
 C++ code, and exports the main loop's current iteration counter.

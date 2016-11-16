@@ -1,9 +1,10 @@
 Build and install
 ================================
 
-Building and installing Caliper requires cmake, a current C++11-compatible
-compiler (GNU 4.8 and greater, LLVM clang 3.7 and greater are known to work),
-a Python interpreter, and the POSIX threads library.
+Building and installing Caliper requires cmake (version 3.0 or
+greater), a current C++11-compatible compiler (GNU 4.8 and greater,
+LLVM clang 3.7 and greater are known to work), a Python interpreter,
+and the POSIX threads library.
 
 To obtain Caliper, clone it from the
 `github repository <https://github.com/LLNL/Caliper>`_.
@@ -24,7 +25,7 @@ Next, configure and build Caliper:
 Optional modules
 --------------------------------
 
-Caliper contains a number of modules (*measurement services*) that
+Caliper contains a number of modules (*services*) that
 provide additional measurement or context data. Some of these services
 have additional dependencies:
 
