@@ -19,7 +19,7 @@ Documentation
 ------------------------------------------
 
 Extensive documentation is available here:
-http://software.llnl.gov/Caliper/
+https://llnl.github.io/Caliper/
 
 Usage examples of the C++ and C annotation interfaces are provided in 
 `test/cali-basic.cpp` and `test/cali-basic-c.c`, respectively.
