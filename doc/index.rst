@@ -29,7 +29,7 @@ Contents:
    configuration
    services
    tools
-
+   serviceapi
 
 Indices and tables
 ==================
