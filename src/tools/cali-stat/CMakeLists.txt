@@ -13,4 +13,4 @@ target_link_libraries(cali-stat caliper-common)
 target_link_libraries(cali-stat caliper-tools-util)
 target_link_libraries(cali-stat caliper)
 
-install(TARGETS cali-stat DESTINATION bin)
+install(TARGETS cali-stat DESTINATION ${CMAKE_INSTALL_BINDIR})
