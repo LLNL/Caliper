@@ -47,9 +47,9 @@ if(CALIPER_HAVE_TAU)
 endif()
 
 # the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 endif("${isSystemDir}" STREQUAL "-1")
 
 # Find libunwind
@@ -121,7 +121,7 @@ configure_file(
 
 # Create pkg-confic .pc file
 set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
-set(PKG_CONFIG_LIBDIR "\${prefix}/lib")
+set(PKG_CONFIG_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
 set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
 set(PKG_CONFIG_CFLAGS "-I\${includedir}")
 
