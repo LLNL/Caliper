@@ -9,7 +9,7 @@ set(CALIPER_PAPI_SOURCES
 # target_link_libraries(caliper-papi caliper)
 # target_link_libraries(caliper-papi ${PAPI_LIBRARIES})
 
-# install(TARGETS caliper-papi DESTINATION lib)
+# install(TARGETS caliper-papi DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 add_library(caliper-papi OBJECT ${CALIPER_PAPI_SOURCES})
 

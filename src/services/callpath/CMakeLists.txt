@@ -3,7 +3,7 @@ include_directories(${LIBUNWIND_INCLUDE_DIR})
 set(CALIPER_CALLPATH_SOURCES
     Callpath.cpp)
 
-# install(TARGETS caliper-callpath DESTINATION lib)
+# install(TARGETS caliper-callpath DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 add_library(caliper-callpath OBJECT ${CALIPER_CALLPATH_SOURCES})
 

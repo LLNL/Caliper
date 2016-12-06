@@ -17,6 +17,8 @@ include(FindLibunwind)
 include(FindPAPI)
 include(FindLibcurl)
 
+include(GNUInstallDirs)
+
 # Optional Fortran
 option(WITH_FORTRAN "Install Fortran interface and build test programs")
 
@@ -134,15 +136,15 @@ configure_file(
   @ONLY)
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
-  DESTINATION share/cmake/caliper)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 install(EXPORT caliper
-  DESTINATION share/cmake/caliper)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
-  DESTINATION include/caliper)
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
-  DESTINATION share/pkgconfig)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 add_subdirectory(src)
 
@@ -154,4 +156,4 @@ if (WITH_DOCS)
 endif()
 
 # Install exports
-#install(EXPORT caliper DESTINATION lib/cmake)
+#install(EXPORT caliper DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)

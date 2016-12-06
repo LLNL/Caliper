@@ -13,4 +13,4 @@ target_link_libraries(cali-query caliper-common)
 target_link_libraries(cali-query caliper-tools-util)
 target_link_libraries(cali-query caliper)
 
-install(TARGETS cali-query DESTINATION bin)
+install(TARGETS cali-query DESTINATION ${CMAKE_INSTALL_BINDIR})
