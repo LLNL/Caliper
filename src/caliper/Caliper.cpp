@@ -40,7 +40,6 @@
 #include "ContextBuffer.h"
 #include "EntryList.h"
 #include "MetadataTree.h"
-#include "MemoryPool.h"
 
 #include <Services.h>
 
@@ -134,7 +133,7 @@ namespace
 
 struct Caliper::Scope
 {
-    MemoryPool           mempool;
+    MetadataTree         tree;
     ContextBuffer        blackboard;
     
     cali_context_scope_t scope;
@@ -176,8 +175,6 @@ struct Caliper::GlobalData
     ScopeCallbackFn        get_thread_scope_cb;
     ScopeCallbackFn        get_task_scope_cb;
 
-    MetadataTree           tree;
-    
     mutable std::mutex     attribute_lock;
     map<string, Node*>     attribute_nodes;
 
@@ -220,15 +217,15 @@ struct Caliper::GlobalData
     {
         automerge = config.get("automerge").to_bool();
 
-        const MetaAttributeIDs* m = tree.meta_attribute_ids();
+        const MetaAttributeIDs* m = default_thread_scope->tree.meta_attribute_ids();
         
-        name_attr = Attribute::make_attribute(tree.node(m->name_attr_id), m);
-        type_attr = Attribute::make_attribute(tree.node(m->type_attr_id), m);
-        prop_attr = Attribute::make_attribute(tree.node(m->prop_attr_id), m);
+        name_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->name_attr_id), m);
+        type_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->type_attr_id), m);
+        prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->prop_attr_id), m);
 
-        attribute_nodes.insert(make_pair(name_attr.name(), tree.node(name_attr.id())));
-        attribute_nodes.insert(make_pair(type_attr.name(), tree.node(type_attr.id())));
-        attribute_nodes.insert(make_pair(prop_attr.name(), tree.node(prop_attr.id())));
+        attribute_nodes.insert(make_pair(name_attr.name(), default_thread_scope->tree.node(name_attr.id())));
+        attribute_nodes.insert(make_pair(type_attr.name(), default_thread_scope->tree.node(type_attr.id())));
+        attribute_nodes.insert(make_pair(prop_attr.name(), default_thread_scope->tree.node(prop_attr.id())));
         
         assert(name_attr != Attribute::invalid);
         assert(type_attr != Attribute::invalid);
@@ -304,7 +301,7 @@ struct Caliper::GlobalData
             // special handling for bootstrap nodes: write all nodes in-order
             if (!bootstrap_nodes_written.exchange(true))
                 for (cali_id_t id = 0; id <= type_attr.id(); ++id) {
-                    Node* node = tree.node(id);
+                    Node* node = default_thread_scope->tree.node(id);
 
                     if (node && !node->check_written())
                         node->push_record(write_rec);
@@ -460,13 +457,10 @@ Caliper::release_scope(Caliper::Scope* s)
 
         // This will print
         //   "Releasing <process/thread> scope:
-        //      <Mempool statistics>
         //      <Blackboard statistics>"
         
         s->blackboard.print_statistics(
-            s->mempool.print_statistics(
-                Log(2).stream() << "Releasing " << scopestr << " scope:\n      "
-                ) << "\n      " ) << std::endl;            
+            Log(2).stream() << "Releasing " << scopestr << " scope:\n      " ) << std::endl;
     }
     
     std::lock_guard<::siglock>
@@ -512,19 +506,19 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         mG->events.pre_create_attr_evt(this, name, &type, &prop);
 
         assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = mG->tree.type_node(type);
+        node = m_thread_scope->tree.type_node(type);
         assert(node);
 
         if (meta > 0)
-            node = mG->tree.get_path(meta, meta_attr, meta_val, node, &mG->process_scope->mempool);
+            node = m_thread_scope->tree.get_path(meta, meta_attr, meta_val, node);
 
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
         Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
         if (prop == CALI_ATTR_DEFAULT)
-            node = mG->tree.get_path(1, &attr[1], &data[1], node, &mG->process_scope->mempool);
+            node = m_thread_scope->tree.get_path(1, &attr[1], &data[1], node);
         else
-            node = mG->tree.get_path(2, &attr[0], &data[0], node, &mG->process_scope->mempool);
+            node = m_thread_scope->tree.get_path(2, &attr[0], &data[0], node);
 
         if (node) {
             // Check again if attribute already exists; might have been created by 
@@ -547,7 +541,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     // Create attribute object
 
-    Attribute attr = Attribute::make_attribute(node, mG->tree.meta_attribute_ids());
+    Attribute attr = Attribute::make_attribute(node, m_thread_scope->tree.meta_attribute_ids());
 
     if (created_now)
         mG->events.create_attr_evt(this, attr);
@@ -574,7 +568,7 @@ Caliper::get_attribute(const string& name) const
 
     mG->attribute_lock.unlock();
 
-    return Attribute::make_attribute(node, mG->tree.meta_attribute_ids());
+    return Attribute::make_attribute(node, m_thread_scope->tree.meta_attribute_ids());
 }
 
 Attribute 
@@ -583,7 +577,7 @@ Caliper::get_attribute(cali_id_t id) const
     assert(mG != 0);
     // no signal lock necessary
     
-    return Attribute::make_attribute(mG->tree.node(id), mG->tree.meta_attribute_ids());
+    return Attribute::make_attribute(m_thread_scope->tree.node(id), m_thread_scope->tree.meta_attribute_ids());
 }
 
 
@@ -663,9 +657,8 @@ Caliper::begin(const Attribute& attr, const Variant& data)
         ret = sb->set(attr, data);
     else
         ret = sb->set_node(mG->get_key(attr),
-                           mG->tree.get_path(1, &attr, &data,
-                                             sb->get_node(mG->get_key(attr)),
-                                             &s->mempool));
+                           m_thread_scope->tree.get_path(1, &attr, &data,
+                                                         sb->get_node(mG->get_key(attr))));
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -704,9 +697,9 @@ Caliper::end(const Attribute& attr)
         Node* node = sb->get_node(mG->get_key(attr));
 
         if (node) {
-            node = mG->tree.remove_first_in_path(node, attr, &s->mempool);
+            node = m_thread_scope->tree.remove_first_in_path(node, attr);
                 
-            if (node == mG->tree.root())
+            if (node == m_thread_scope->tree.root())
                 ret = sb->unset(mG->get_key(attr));
             else if (node)
                 ret = sb->set_node(mG->get_key(attr), node);
@@ -746,7 +739,7 @@ Caliper::set(const Attribute& attr, const Variant& data)
     else {
         Attribute key = mG->get_key(attr);
         
-        ret = sb->set_node(key, mG->tree.replace_first_in_path(sb->get_node(key), attr, data, &s->mempool));
+        ret = sb->set_node(key, m_thread_scope->tree.replace_first_in_path(sb->get_node(key), attr, data));
     }
     
     // invoke callbacks
@@ -782,7 +775,7 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
         Attribute key = mG->get_key(attr);
         
         ret = sb->set_node(key,
-                           mG->tree.replace_all_in_path(sb->get_node(key), attr, n, data, &s->mempool));
+                           m_thread_scope->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
     }
     
     // invoke callbacks
@@ -810,7 +803,7 @@ Caliper::get(const Attribute& attr)
     if (attr.store_as_value())
         return Entry(attr, sb->get(attr));
     else
-        return Entry(mG->tree.find_node_with_attribute(attr, sb->get_node(mG->get_key(attr))));
+        return Entry(m_thread_scope->tree.find_node_with_attribute(attr, sb->get_node(mG->get_key(attr))));
 
     return e;
 }
@@ -829,7 +822,7 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, E
         if (attr[i].store_as_value())
             list.append(attr[i].id(), value[i]);
         else
-            node = mG->tree.get_path(1, &attr[i], &value[i], node, &(scope(attr2caliscope(attr[i]))->mempool));
+            node = m_thread_scope->tree.get_path(1, &attr[i], &value[i], node);
 
     if (node)
         list.append(node);
@@ -849,7 +842,7 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
     if (attr.store_as_value())
         return Entry(attr, value);
     else
-        return Entry(mG->tree.get_path(1, &attr, &value, nullptr, &(scope(attr2caliscope(attr))->mempool)));
+        return Entry(m_thread_scope->tree.get_path(1, &attr, &value, nullptr));
 
     return entry;
 }
@@ -860,14 +853,14 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[])
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    return mG->tree.get_path(n, nodelist, nullptr, &m_thread_scope->mempool);
+    return m_thread_scope->tree.get_path(n, nodelist, nullptr);
 }
 
 Node*
 Caliper::node(cali_id_t id)
 {
     // no siglock necessary
-    return mG->tree.node(id);
+    return m_thread_scope->tree.node(id);
 }
 
 // --- Events interface

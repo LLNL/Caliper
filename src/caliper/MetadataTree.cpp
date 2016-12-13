@@ -48,25 +48,106 @@
 
 using namespace cali;
 
+#define NODES_PER_BLOCK 256 // Temporary, will be configurable
+#define NUM_BLOCKS 4096
+
 struct MetadataTree::MetadataTreeImpl
 {
-    Node                   m_root;
-    std::atomic<unsigned>  m_node_id;
+    struct NodeBlock {
+        Node*  chunk;
+        size_t index;
+    };
 
-    Node*                  m_type_nodes[CALI_MAXTYPE+1];
+    struct GlobalData {
+        GlobalData(MemoryPool& pool)
+            : root(CALI_INV_ID, CALI_INV_ID, Variant()),
+              next_block(1),
+              node_blocks(0),
+              meta_attributes(MetaAttributeIDs::invalid)
+            { 
+                node_blocks = new NodeBlock[NUM_BLOCKS];
 
-    MetaAttributeIDs       m_meta_attributes;
+                Node* chunk = static_cast<Node*>(pool.allocate(NODES_PER_BLOCK * sizeof(Node)));
 
+                static const struct NodeInfo {
+                    cali_id_t id;
+                    cali_id_t attr_id;
+                    Variant   data;
+                    cali_id_t parent;
+                }  bootstrap_nodes[] = {
+                    {  0, 9,  { CALI_TYPE_USR    }, CALI_INV_ID },
+                    {  1, 9,  { CALI_TYPE_INT    }, CALI_INV_ID },
+                    {  2, 9,  { CALI_TYPE_UINT   }, CALI_INV_ID },
+                    {  3, 9,  { CALI_TYPE_STRING }, CALI_INV_ID },
+                    {  4, 9,  { CALI_TYPE_ADDR   }, CALI_INV_ID },
+                    {  5, 9,  { CALI_TYPE_DOUBLE }, CALI_INV_ID },
+                    {  6, 9,  { CALI_TYPE_BOOL   }, CALI_INV_ID },
+                    {  7, 9,  { CALI_TYPE_TYPE   }, CALI_INV_ID },
+                    {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 }, 3 },
+                    {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 }, 7 },
+                    { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 }, 1 },
+                    { CALI_INV_ID, CALI_INV_ID, { }, CALI_INV_ID },
+                };
+
+                for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
+                    Node* node = new(chunk + info->id) 
+                        Node(info->id, info->attr_id, info->data);
+
+                    if (info->parent != CALI_INV_ID)
+                        chunk[info->parent].append(node);
+                    else
+                        root.append(node);
+            
+                    if (info->attr_id == 9 /* type node */)
+                        type_nodes[info->data.to_attr_type()] = node;
+                }
+
+                node_blocks[0].chunk = chunk;
+                node_blocks[0].index = 11;
+
+                // Initialize bootstrap attributes
+
+                const MetaAttributeIDs keys = { 8, 9, 10 };
+                meta_attributes = keys;
+            }
+
+        ~GlobalData() {
+            delete[] node_blocks;
+        }            
+
+        Node                   root;
+        std::atomic<unsigned>  next_block;
+        NodeBlock*             node_blocks;
+
+        Node*                  type_nodes[CALI_MAXTYPE+1];
+
+        MetaAttributeIDs       meta_attributes;
+    };
+
+    static std::atomic<GlobalData*> mG;
+
+    MemoryPool  m_mempool;    
+    NodeBlock*  m_nodeblock;
+    
     //
     // --- Constructor
     //
 
     MetadataTreeImpl()
-        : m_root(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_node_id(0),
-          m_meta_attributes(MetaAttributeIDs::invalid)
+        : m_nodeblock(nullptr)
         {
-            bootstrap();
+            GlobalData* g = mG.load();
+
+            if (!g) {
+                GlobalData* new_g = new GlobalData(m_mempool);
+
+                // Set mG. If mG != new_g, some other thread has set it, 
+                // so just delete our new object.
+                if (mG.compare_exchange_strong(g, new_g))
+                    m_nodeblock = new_g->node_blocks;
+                else
+                    delete new_g;
+            }
         }
 
     ~MetadataTreeImpl() {
@@ -76,56 +157,34 @@ struct MetadataTree::MetadataTreeImpl
         //     n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here
     }
 
-    //
-    // --- bootstrap
-    //
+    /// \brief Get a node block with \param n free entries
 
-    void
-    bootstrap() {
-        // Create initial nodes
+    bool have_free_nodeblock(size_t n) {
+        GlobalData* g = mG.load();
 
-        static Node bootstrap_type_nodes[] = {
-            {  0, 9, { CALI_TYPE_USR    },  },
-            {  1, 9, { CALI_TYPE_INT    },  },
-            {  2, 9, { CALI_TYPE_UINT   },  },
-            {  3, 9, { CALI_TYPE_STRING },  },
-            {  4, 9, { CALI_TYPE_ADDR   },  },
-            {  5, 9, { CALI_TYPE_DOUBLE },  },
-            {  6, 9, { CALI_TYPE_BOOL   },  },
-            {  7, 9, { CALI_TYPE_TYPE   },  },
-            { CALI_INV_ID, CALI_INV_ID, { } } 
-        };
-        static Node bootstrap_attr_nodes[] = {
-            {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 } },
-            {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 } },
-            { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 } },
-            { CALI_INV_ID, CALI_INV_ID, { } } 
-        };
+        if (!m_nodeblock || m_nodeblock->index + n >= NODES_PER_BLOCK) {
+            if (g->next_block.load() >= NUM_BLOCKS)
+                return false;
 
-        m_node_id.store(11);
+            // allocate new node block
 
-        // Fill type map
+            Node* chunk = static_cast<Node*>(m_mempool.allocate(NODES_PER_BLOCK * sizeof(Node)));
 
-        for (Node* node = bootstrap_type_nodes ; node->id() != CALI_INV_ID; ++node)
-            m_type_nodes[node->data().to_attr_type()] = node;
+            if (!chunk)
+                return false;
 
-        // Initialize bootstrap attributes
+            size_t block_index = g->next_block++;
 
-        const MetaAttributeIDs keys = { 8, 9, 10 };
-        m_meta_attributes = keys;
+            if (block_index >= NUM_BLOCKS)
+                return false;
 
-        struct attr_node_t { 
-            Node* node; cali_attr_type type;
-        } attr_nodes[] = { 
-            { &bootstrap_attr_nodes[0], CALI_TYPE_STRING },
-            { &bootstrap_attr_nodes[1], CALI_TYPE_TYPE   },
-            { &bootstrap_attr_nodes[2], CALI_TYPE_INT    }
-        };
+            m_nodeblock = g->node_blocks + block_index;
 
-        for ( attr_node_t p : attr_nodes ) {
-            // Append to type node
-            m_type_nodes[p.type]->append(p.node);
+            m_nodeblock->chunk = chunk;
+            m_nodeblock->index = 0;
         }
+
+        return true;
     }
 
     //
@@ -135,38 +194,50 @@ struct MetadataTree::MetadataTreeImpl
     /// \brief Creates \param n new nodes hierarchically under \param parent 
 
     Node*
-    create_path(MemoryPool* pool, const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
+    create_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
+        // Get a node block with sufficient free space
+
+        if (!have_free_nodeblock(n))
+            return 0;
+        
         // Calculate and allocate required memory
 
         const size_t align = 8;
-        const size_t pad   = align - sizeof(Node)%align;
-        size_t total_size  = n * (sizeof(Node) + pad);
+        size_t data_size   = 0;
 
         bool   copy        = (attr.type() == CALI_TYPE_USR || attr.type() == CALI_TYPE_STRING);
+        char*  ptr         = nullptr;
 
-        if (copy)
+        if (copy) {
             for (size_t i = 0; i < n; ++i)
-                total_size += data[i].size() + (align - data[i].size()%align);
+                data_size += data[i].size() + (align - data[i].size()%align);
 
-        char* ptr  = static_cast<char*>(pool->allocate(total_size));
+            ptr  = static_cast<char*>(m_mempool.allocate(data_size));
+        }
+
         Node* node = nullptr;
 
         // Create nodes
+
+        GlobalData* g = mG.load();
 
         for (size_t i = 0; i < n; ++i) {
             const void* dptr { data[i].data() };
             size_t size      { data[i].size() }; 
 
-            if (copy)
-                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
+            if (copy) {
+                dptr = memcpy(ptr, dptr, size);
+                ptr += size+(align-size%align);
+            }
 
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), attr.id(), Variant(attr.type(), dptr, size));
+            size_t index = m_nodeblock->index++;
+
+            node = new(m_nodeblock->chunk + index)
+                Node((m_nodeblock - g->node_blocks) * NODES_PER_BLOCK + index, attr.id(), Variant(attr.type(), dptr, size));
 
             if (parent)
                 parent->append(node);
 
-            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
         }
 
@@ -176,23 +247,28 @@ struct MetadataTree::MetadataTreeImpl
     /// \brief Creates \param n new nodes (with different attributes) hierarchically under \param parent
 
     Node*
-    create_path(MemoryPool* pool, size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+    create_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+        // Get a node block with sufficient free space
+
+        if (!have_free_nodeblock(n))
+            return 0;
+
         // Calculate and allocate required memory
 
         const size_t align = 8;
-        const size_t pad   = align - sizeof(Node)%align;
+        size_t data_size   = 0;
 
-        size_t total_size  = 0;
-
-        for (size_t i = 0; i < n; ++i) {
-            total_size += n * (sizeof(Node) + pad);
-
+        for (size_t i = 0; i < n; ++i)
             if (attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING)
-                total_size += data[i].size() + (align - data[i].size()%align);
-        }
+                data_size += data[i].size() + (align - data[i].size()%align);
 
-        char* ptr  = static_cast<char*>(pool->allocate(total_size));
+        char* ptr  = nullptr;
+
+        if (data_size > 0)
+            ptr = static_cast<char*>(m_mempool.allocate(data_size));
+
         Node* node = nullptr;
+        GlobalData* g = mG.load();
 
         // Create nodes
 
@@ -202,16 +278,19 @@ struct MetadataTree::MetadataTreeImpl
             const void* dptr { data[i].data() };
             size_t size      { data[i].size() }; 
 
-            if (copy)
-                dptr = memcpy(ptr+sizeof(Node)+pad, dptr, size);
+            if (copy) {
+                dptr = memcpy(ptr, dptr, size);
+                ptr += size+(align-size%align);
+            }
 
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), attr[i].id(), Variant(attr[i].type(), dptr, size));
+            size_t index = m_nodeblock->index++;
+
+            node = new(m_nodeblock->chunk + index) 
+                Node((m_nodeblock - g->node_blocks) * NODES_PER_BLOCK + index, attr[i].id(), Variant(attr[i].type(), dptr, size));
 
             if (parent)
                 parent->append(node);
 
-            ptr   += sizeof(Node)+pad + (copy ? size+(align-size%align) : 0);
             parent = node;
         }
 
@@ -222,8 +301,8 @@ struct MetadataTree::MetadataTreeImpl
     /// Creates new nodes if necessery
 
     Node*
-    get_path(MemoryPool* pool, const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
-        Node*  node = parent ? parent : &m_root;
+    get_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
+        Node*  node = parent ? parent : &(mG.load()->root);
         size_t base = 0;
 
         for (size_t i = 0; i < n; ++i) {
@@ -239,7 +318,7 @@ struct MetadataTree::MetadataTreeImpl
         }
 
         if (!node)
-            node = create_path(pool, attr, n-base, data+base, parent);
+            node = create_path(attr, n-base, data+base, parent);
 
         return node;
     }
@@ -248,8 +327,8 @@ struct MetadataTree::MetadataTreeImpl
     /// Creates new nodes if necessery
 
     Node*
-    get_path(MemoryPool* pool, size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
-        Node*  node = parent ? parent : &m_root;
+    get_path(size_t n, const Attribute* attr, const Variant* data, Node* parent = nullptr) {
+        Node*  node = parent ? parent : &(mG.load()->root);
         size_t base = 0;
 
         for (size_t i = 0; i < n; ++i) {
@@ -265,18 +344,18 @@ struct MetadataTree::MetadataTreeImpl
         }
 
         if (!node)
-            node = create_path(pool, n-base, attr+base, data+base, parent);
+            node = create_path(n-base, attr+base, data+base, parent);
 
         return node;
     }
 
     Node*
-    get_path(MemoryPool* pool, size_t n, const Node* nodelist[], Node* parent = nullptr) {
+    get_path(size_t n, const Node* nodelist[], Node* parent = nullptr) {
         Node* node = parent;
 
         for (size_t i = 0; i < n; ++i)
             if (nodelist[i])
-                node = get_or_copy_node(pool, nodelist[i], node);
+                node = get_or_copy_node(nodelist[i], node);
 
         return node;
     }
@@ -285,9 +364,9 @@ struct MetadataTree::MetadataTreeImpl
     /// This may create a new node entry, but does not deep-copy its data
 
     Node*
-    get_or_copy_node(MemoryPool* pool, const Node* from, Node* parent = nullptr) {
+    get_or_copy_node(const Node* from, Node* parent = nullptr) {
         if (!parent)
-            parent = &m_root;
+            parent = &(mG.load()->root);
         
         Node* node = nullptr;
         
@@ -295,10 +374,13 @@ struct MetadataTree::MetadataTreeImpl
             ;
 
         if (!node) {
-            char* ptr = static_cast<char*>(pool->allocate(sizeof(Node)));
+            if (!have_free_nodeblock(1))
+                return 0;
 
-            node = new(ptr) 
-                Node(m_node_id.fetch_add(1), from->attribute(), from->data());
+            size_t index = m_nodeblock->index++;
+
+            node = new(m_nodeblock->chunk + index) 
+                Node((m_nodeblock - mG.load()->node_blocks) * NODES_PER_BLOCK + index, from->attribute(), from->data());
             
             parent->append(node);
         }
@@ -308,12 +390,14 @@ struct MetadataTree::MetadataTreeImpl
 
     Node*
     find_hierarchy_parent(const Attribute& attr, Node* node) {
+        GlobalData* g = mG.load();
+
         // parent info is fixed, no need to lock
-        for (Node* tmp = node ; tmp && tmp != &m_root; tmp = tmp->parent())
+        for (Node* tmp = node ; tmp && tmp != &(g->root); tmp = tmp->parent())
             if (tmp->attribute() == attr.id())
                 node = tmp;
 
-        return node ? node->parent() : &m_root;
+        return node ? node->parent() : &(g->root);
     }
 
     Node*
@@ -325,16 +409,16 @@ struct MetadataTree::MetadataTreeImpl
     }
 
     Node*
-    copy_path_without_attribute(MemoryPool* pool, const Attribute& attr, Node* node, Node* root) {
+    copy_path_without_attribute(const Attribute& attr, Node* node, Node* root) {
         if (!root)
-            root = &m_root;
+            root = &(mG.load()->root);
         if (!node || node == root)
             return root;
 
-        Node* tmp = copy_path_without_attribute(pool, attr, node->parent(), root);
+        Node* tmp = copy_path_without_attribute(attr, node->parent(), root);
 
         if (attr.id() != node->attribute())
-            tmp = get_or_copy_node(pool, node, tmp);
+            tmp = get_or_copy_node(node, tmp);
 
         return tmp;
     }
@@ -344,56 +428,50 @@ struct MetadataTree::MetadataTreeImpl
     //
 
     Node*
-    remove_first_in_path(MemoryPool* pool, Node* path, const Attribute& attr) {
+    remove_first_in_path(Node* path, const Attribute& attr) {
         Node* parent = find_node_with_attribute(attr, path);
 
         if (parent)
             parent = parent->parent();
 
-        return copy_path_without_attribute(pool, attr, path, parent);
+        return copy_path_without_attribute(attr, path, parent);
     }
 
     Node*
-    replace_first_in_path(MemoryPool* pool, Node* path, const Attribute& attr, const Variant& data) {
+    replace_first_in_path(Node* path, const Attribute& attr, const Variant& data) {
         if (path)
-            path = remove_first_in_path(pool, path, attr);
+            path = remove_first_in_path(path, attr);
 
-        return get_path(pool, attr, 1, &data, path);
+        return get_path(attr, 1, &data, path);
     }
 
     Node*
-    replace_all_in_path(MemoryPool* pool, Node* path, const Attribute& attr, size_t n, const Variant data[]) {
+    replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[]) {
         if (path)
-            path = copy_path_without_attribute(pool, attr, path, find_hierarchy_parent(attr, path));
+            path = copy_path_without_attribute(attr, path, find_hierarchy_parent(attr, path));
 
-        return get_path(pool, attr, n, data,  path);
+        return get_path(attr, n, data,  path);
     }
     
     Node* 
     node(cali_id_t id) {
-        Node* ret = nullptr;
+        GlobalData* g = mG.load();
 
-        for (Node* typenode : m_type_nodes)
-            for (auto &n : *typenode)
-                if (n.id() == id) {
-                    ret = &n;
-                    break;
-                }
+        size_t block = id / NODES_PER_BLOCK;
+        size_t index = id % NODES_PER_BLOCK;
 
-        if (!ret) 
-            for (auto &n : m_root)
-                if (n.id() == id) {
-                    ret = &n;
-                    break;
-                }
+        if (block >= NUM_BLOCKS || index >= g->node_blocks[block].index)
+            return nullptr;
 
-        return ret;
+        return g->node_blocks[block].chunk + index;
     }
 
     //
     // --- I/O
     //
 };
+
+std::atomic<MetadataTree::MetadataTreeImpl::GlobalData*> MetadataTree::MetadataTreeImpl::mG;
 
 
 //
@@ -415,33 +493,33 @@ MetadataTree::~MetadataTree()
 // 
 
 Node*
-MetadataTree::get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent, MemoryPool* pool)
+MetadataTree::get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent)
 {
-    return mP->get_path(pool, n, attr, data, parent);
+    return mP->get_path(n, attr, data, parent);
 }
 
 Node*
-MetadataTree::get_path(size_t n, const Node* nodelist[], Node* parent, MemoryPool* pool)
+MetadataTree::get_path(size_t n, const Node* nodelist[], Node* parent)
 {
-    return mP->get_path(pool, n, nodelist, parent);
+    return mP->get_path(n, nodelist, parent);
 }
 
 Node*
-MetadataTree::remove_first_in_path(Node* path, const Attribute& attr, MemoryPool* pool)
+MetadataTree::remove_first_in_path(Node* path, const Attribute& attr)
 {
-    return mP->remove_first_in_path(pool, path, attr);
+    return mP->remove_first_in_path(path, attr);
 }
 
 Node*
-MetadataTree::replace_first_in_path(Node* path, const Attribute& attr, const Variant& data, MemoryPool* pool)
+MetadataTree::replace_first_in_path(Node* path, const Attribute& attr, const Variant& data)
 {
-    return mP->replace_first_in_path(pool, path, attr, data);
+    return mP->replace_first_in_path(path, attr, data);
 }
 
 Node*
-MetadataTree::replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[], MemoryPool* pool)
+MetadataTree::replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[])
 {
-    return mP->replace_all_in_path(pool, path, attr, n, data);
+    return mP->replace_all_in_path(path, attr, n, data);
 }
 
 //
@@ -467,19 +545,19 @@ MetadataTree::node(cali_id_t id) const
 Node*
 MetadataTree::root() const
 {
-    return &(mP->m_root);
+    return &(MetadataTreeImpl::mG.load()->root);
 }
 
 Node*
 MetadataTree::type_node(cali_attr_type type) const
 {
-    return mP->m_type_nodes[type];
+    return MetadataTreeImpl::mG.load()->type_nodes[type];
 }
 
 const MetaAttributeIDs*
 MetadataTree::meta_attribute_ids() const
 {
-    return &(mP->m_meta_attributes);
+    return &(MetadataTreeImpl::mG.load()->meta_attributes);
 }
 
 //
