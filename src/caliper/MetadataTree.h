@@ -94,9 +94,6 @@ namespace cali
         Node*
         type_node(cali_attr_type type) const;
 
-        const MetaAttributeIDs*
-        meta_attribute_ids() const;
-
         // --- I/O ---
     };
 

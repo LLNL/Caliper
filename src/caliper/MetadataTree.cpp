@@ -62,8 +62,7 @@ struct MetadataTree::MetadataTreeImpl
         GlobalData(MemoryPool& pool)
             : root(CALI_INV_ID, CALI_INV_ID, Variant()),
               next_block(1),
-              node_blocks(0),
-              meta_attributes(MetaAttributeIDs::invalid)
+              node_blocks(0)
             { 
                 node_blocks = new NodeBlock[NUM_BLOCKS];
 
@@ -104,11 +103,6 @@ struct MetadataTree::MetadataTreeImpl
 
                 node_blocks[0].chunk = chunk;
                 node_blocks[0].index = 11;
-
-                // Initialize bootstrap attributes
-
-                const MetaAttributeIDs keys = { 8, 9, 10 };
-                meta_attributes = keys;
             }
 
         ~GlobalData() {
@@ -120,8 +114,6 @@ struct MetadataTree::MetadataTreeImpl
         NodeBlock*             node_blocks;
 
         Node*                  type_nodes[CALI_MAXTYPE+1];
-
-        MetaAttributeIDs       meta_attributes;
     };
 
     static std::atomic<GlobalData*> mG;
@@ -552,12 +544,6 @@ Node*
 MetadataTree::type_node(cali_attr_type type) const
 {
     return MetadataTreeImpl::mG.load()->type_nodes[type];
-}
-
-const MetaAttributeIDs*
-MetadataTree::meta_attribute_ids() const
-{
-    return &(MetadataTreeImpl::mG.load()->meta_attributes);
 }
 
 //

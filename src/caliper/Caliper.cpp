@@ -216,12 +216,10 @@ struct Caliper::GlobalData
           default_task_scope   { new Scope(CALI_SCOPE_TASK)    }
     {
         automerge = config.get("automerge").to_bool();
-
-        const MetaAttributeIDs* m = default_thread_scope->tree.meta_attribute_ids();
         
-        name_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->name_attr_id), m);
-        type_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->type_attr_id), m);
-        prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(m->prop_attr_id), m);
+        name_attr = Attribute::make_attribute(default_thread_scope->tree.node( 8));
+        type_attr = Attribute::make_attribute(default_thread_scope->tree.node( 9));
+        prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(10));
 
         attribute_nodes.insert(make_pair(name_attr.name(), default_thread_scope->tree.node(name_attr.id())));
         attribute_nodes.insert(make_pair(type_attr.name(), default_thread_scope->tree.node(type_attr.id())));
@@ -541,7 +539,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
     // Create attribute object
 
-    Attribute attr = Attribute::make_attribute(node, m_thread_scope->tree.meta_attribute_ids());
+    Attribute attr = Attribute::make_attribute(node);
 
     if (created_now)
         mG->events.create_attr_evt(this, attr);
@@ -568,16 +566,15 @@ Caliper::get_attribute(const string& name) const
 
     mG->attribute_lock.unlock();
 
-    return Attribute::make_attribute(node, m_thread_scope->tree.meta_attribute_ids());
+    return Attribute::make_attribute(node);
 }
 
 Attribute 
 Caliper::get_attribute(cali_id_t id) const
 {
-    assert(mG != 0);
     // no signal lock necessary
     
-    return Attribute::make_attribute(m_thread_scope->tree.node(id), m_thread_scope->tree.meta_attribute_ids());
+    return Attribute::make_attribute(m_thread_scope->tree.node(id));
 }
 
 

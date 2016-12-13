@@ -57,8 +57,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     vector<Node*>             m_nodes;        ///< Node list
     mutable mutex             m_node_lock;
 
-    MetaAttributeIDs          m_attr_keys = MetaAttributeIDs::invalid;
-
     Node*                     m_type_nodes[CALI_MAXTYPE+1] = { 0 };
     
     map<string, Node*>        m_attributes;
@@ -106,11 +104,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             else if (info->attr_id == 8 /* attribute node*/)
                 m_attributes.insert(make_pair(info->data.to_string(), node));
         }
-
-        // Initialize bootstrap attributes
-
-        const MetaAttributeIDs keys = { 8, 9, 10 };
-        m_attr_keys = keys;
     }
 
     void insert_node(const RecordMap& rec) {
@@ -156,7 +149,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         std::lock_guard<std::mutex>
             g_attr(m_attribute_lock);
         
-        if (m_attr_keys.name_attr_id != CALI_INV_ID && node->attribute() == m_attr_keys.name_attr_id)
+        if (node->attribute() == Attribute::meta_attribute_keys().name_attr_id)
             m_attributes.insert(make_pair(string(node->data().to_string()), node));
     }
 
@@ -226,7 +219,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             }
         }
 
-        if (new_node && node->attribute() == m_attr_keys.name_attr_id) {
+        if (new_node && node->attribute() == Attribute::meta_attribute_keys().name_attr_id) {
             std::lock_guard<std::mutex>
                 g(m_attribute_lock);
             
@@ -332,7 +325,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (id >= m_nodes.size())
             return Attribute::invalid;
 
-        return Attribute::make_attribute(m_nodes[id], &m_attr_keys);
+        return Attribute::make_attribute(m_nodes[id]);
     }
 
     Attribute attribute(const std::string& name) const {
@@ -342,7 +335,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         auto it = m_attributes.find(name);
 
         return it == m_attributes.end() ? Attribute::invalid :
-            Attribute::make_attribute(it->second, &m_attr_keys);
+            Attribute::make_attribute(it->second);
     }
     
     bool read(const char* filename) {
@@ -351,17 +344,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         m_nodes.clear();
 
-        m_attr_keys = MetaAttributeIDs::invalid;
-
         CsvReader reader(filename);
 
         bool ret = 
             reader.read(std::bind(&CaliperMetadataDBImpl::insert_node, this, std::placeholders::_1));
-
-        if (m_attr_keys.name_attr_id == CALI_INV_ID || 
-            m_attr_keys.prop_attr_id == CALI_INV_ID || 
-            m_attr_keys.type_attr_id == CALI_INV_ID)
-            ret = false;
 
         cerr << "Read " << m_nodes.size() << " nodes" << endl;
 
@@ -402,13 +388,13 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         auto it = m_attributes.lower_bound(name);
 
         if (it != m_attributes.end() && it->first == name)
-            return Attribute::make_attribute(it->second, &m_attr_keys);
+            return Attribute::make_attribute(it->second);
 
         // --- Create attribute
         
         Node*     typenode  = m_type_nodes[type];
-        Attribute n_attr[2] = { attribute(m_attr_keys.prop_attr_id),
-                                attribute(m_attr_keys.name_attr_id) };
+        Attribute n_attr[2] = { attribute(Attribute::meta_attribute_keys().prop_attr_id),
+                                attribute(Attribute::meta_attribute_keys().name_attr_id) };
         Variant   n_data[2] = { Variant(prop),
                                 Variant(name) /* FIXME: Using explicit string rep */ }; 
 
@@ -416,7 +402,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         m_attributes.insert(make_pair(string(name), node));
         
-        return Attribute::make_attribute(node, &m_attr_keys);
+        return Attribute::make_attribute(node);
     }
     
     CaliperMetadataDBImpl()
