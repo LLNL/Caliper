@@ -41,15 +41,13 @@
 
 #include "Attribute.h"
 #include "Node.h"
+#include "RuntimeConfig.h"
 #include "Variant.h"
 
 #include <atomic>
 #include <unordered_map>
 
 using namespace cali;
-
-#define NODES_PER_BLOCK 256 // Temporary, will be configurable
-#define NUM_BLOCKS 4096
 
 struct MetadataTree::MetadataTreeImpl
 {
@@ -60,13 +58,17 @@ struct MetadataTree::MetadataTreeImpl
 
     struct GlobalData {
         GlobalData(MemoryPool& pool)
-            : root(CALI_INV_ID, CALI_INV_ID, Variant()),
+            : config(RuntimeConfig::init("contexttree", s_configdata)),
+              root(CALI_INV_ID, CALI_INV_ID, Variant()),
               next_block(1),
               node_blocks(0)
-            { 
-                node_blocks = new NodeBlock[NUM_BLOCKS];
+            {
+                num_blocks      = config.get("num_blocks").to_uint();
+                nodes_per_block = config.get("nodes_per_block").to_uint();
 
-                Node* chunk = static_cast<Node*>(pool.allocate(NODES_PER_BLOCK * sizeof(Node)));
+                node_blocks = new NodeBlock[num_blocks];
+
+                Node* chunk = static_cast<Node*>(pool.allocate(nodes_per_block * sizeof(Node)));
 
                 static const struct NodeInfo {
                     cali_id_t id;
@@ -109,9 +111,16 @@ struct MetadataTree::MetadataTreeImpl
             delete[] node_blocks;
         }            
 
+        static const ConfigSet::Entry s_configdata[];
+
+        ConfigSet              config;
+
         Node                   root;
         std::atomic<unsigned>  next_block;
         NodeBlock*             node_blocks;
+
+        size_t                 num_blocks;
+        size_t                 nodes_per_block;
 
         Node*                  type_nodes[CALI_MAXTYPE+1];
     };
@@ -154,20 +163,20 @@ struct MetadataTree::MetadataTreeImpl
     bool have_free_nodeblock(size_t n) {
         GlobalData* g = mG.load();
 
-        if (!m_nodeblock || m_nodeblock->index + n >= NODES_PER_BLOCK) {
-            if (g->next_block.load() >= NUM_BLOCKS)
+        if (!m_nodeblock || m_nodeblock->index + n >= g->nodes_per_block) {
+            if (g->next_block.load() >= g->num_blocks)
                 return false;
 
             // allocate new node block
 
-            Node* chunk = static_cast<Node*>(m_mempool.allocate(NODES_PER_BLOCK * sizeof(Node)));
+            Node* chunk = static_cast<Node*>(m_mempool.allocate(g->nodes_per_block * sizeof(Node)));
 
             if (!chunk)
                 return false;
 
             size_t block_index = g->next_block++;
 
-            if (block_index >= NUM_BLOCKS)
+            if (block_index >= g->num_blocks)
                 return false;
 
             m_nodeblock = g->node_blocks + block_index;
@@ -225,7 +234,7 @@ struct MetadataTree::MetadataTreeImpl
             size_t index = m_nodeblock->index++;
 
             node = new(m_nodeblock->chunk + index)
-                Node((m_nodeblock - g->node_blocks) * NODES_PER_BLOCK + index, attr.id(), Variant(attr.type(), dptr, size));
+                Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr.id(), Variant(attr.type(), dptr, size));
 
             if (parent)
                 parent->append(node);
@@ -278,7 +287,7 @@ struct MetadataTree::MetadataTreeImpl
             size_t index = m_nodeblock->index++;
 
             node = new(m_nodeblock->chunk + index) 
-                Node((m_nodeblock - g->node_blocks) * NODES_PER_BLOCK + index, attr[i].id(), Variant(attr[i].type(), dptr, size));
+                Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr[i].id(), Variant(attr[i].type(), dptr, size));
 
             if (parent)
                 parent->append(node);
@@ -357,8 +366,10 @@ struct MetadataTree::MetadataTreeImpl
 
     Node*
     get_or_copy_node(const Node* from, Node* parent = nullptr) {
+        GlobalData* g = mG.load();
+
         if (!parent)
-            parent = &(mG.load()->root);
+            parent = &(g->root);
         
         Node* node = nullptr;
         
@@ -372,7 +383,7 @@ struct MetadataTree::MetadataTreeImpl
             size_t index = m_nodeblock->index++;
 
             node = new(m_nodeblock->chunk + index) 
-                Node((m_nodeblock - mG.load()->node_blocks) * NODES_PER_BLOCK + index, from->attribute(), from->data());
+                Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, from->attribute(), from->data());
             
             parent->append(node);
         }
@@ -449,10 +460,10 @@ struct MetadataTree::MetadataTreeImpl
     node(cali_id_t id) {
         GlobalData* g = mG.load();
 
-        size_t block = id / NODES_PER_BLOCK;
-        size_t index = id % NODES_PER_BLOCK;
+        size_t block = id / g->nodes_per_block;
+        size_t index = id % g->nodes_per_block;
 
-        if (block >= NUM_BLOCKS || index >= g->node_blocks[block].index)
+        if (block >= g->num_blocks || index >= g->node_blocks[block].index)
             return nullptr;
 
         return g->node_blocks[block].chunk + index;
@@ -464,6 +475,19 @@ struct MetadataTree::MetadataTreeImpl
 };
 
 std::atomic<MetadataTree::MetadataTreeImpl::GlobalData*> MetadataTree::MetadataTreeImpl::mG;
+
+const ConfigSet::Entry MetadataTree::MetadataTreeImpl::GlobalData::s_configdata[] = {
+    // key, type, value, short description, long description
+    { "nodes_per_block", CALI_TYPE_UINT, "256",
+      "Number of context tree nodes in a node block", 
+      "Number of context tree nodes in a node block", 
+    },
+    { "num_blocks", CALI_TYPE_UINT, "16384",
+      "Maximum number of context tree node blocks",
+      "Maximum number of context tree node blocks"
+    },
+    ConfigSet::Terminator 
+};
 
 
 //

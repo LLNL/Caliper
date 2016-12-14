@@ -180,7 +180,7 @@ public:
     Node*     make_tree_entry(size_t n, const Node* nodelist[]);
 
     /// \brief return node by id
-    Node*     node(cali_id_t id); // EXTREMELY SLOW, use with caution!
+    Node*     node(cali_id_t id);
 
     // --- Query API
 
