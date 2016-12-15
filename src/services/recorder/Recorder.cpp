@@ -36,11 +36,13 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
+#include <EntryList.h>
 
 #include <csv/CsvSpec.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
+#include <Node.h>
 #include <RuntimeConfig.h>
 
 #include <sys/stat.h>
@@ -177,6 +179,21 @@ class Recorder
         ++s_instance->m_reccount;
     }
 
+    static void flush_snapshot_cb(Caliper* c, const EntryList* flush_info, const EntryList* snapshot) {
+        if (!s_instance)
+            return;
+
+        EntryList::Data   data = snapshot->data();
+        EntryList::Sizes sizes = snapshot->size();
+
+        for (size_t i = 0; i < sizes.n_nodes; ++i)
+            c->node(data.node_entries[i]->id())->write_path(write_record_cb);
+        // for (size_t i = 0; i < sizes.n_immediate; ++i)
+        //     c->node(data.immediate_attr[i])->write_path(write_record_cb);
+
+        snapshot->push_record(write_record_cb);
+    }
+
     static void finish_cb(Caliper* c) {
         if (s_instance)
             Log(1).stream() << "Wrote " << s_instance->m_reccount << " records." << endl;
@@ -184,6 +201,7 @@ class Recorder
     
     void register_callbacks(Caliper* c) {
         c->events().write_record.connect(write_record_cb);
+        c->events().flush_snapshot.connect(flush_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 

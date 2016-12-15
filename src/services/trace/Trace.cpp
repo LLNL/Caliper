@@ -180,14 +180,14 @@ namespace
             
         case BufferPolicy::Flush:
         {
-            unordered_set<cali_id_t> written_node_cache;
-            
             std::lock_guard<std::mutex>
                 g(global_flush_lock);            
 
             Log(1).stream() << "Trace buffer full: flushed "
-                            << tbuf->chunks->flush(c, written_node_cache)
+                            << tbuf->chunks->flush(c)
                             << " snapshots." << endl;
+
+            c->events().flush_finish_evt(c, nullptr);
             
             return tbuf;
         }
@@ -227,7 +227,6 @@ namespace
         }
 
         size_t num_written = 0;
-        unordered_set<cali_id_t> written_node_cache;
 
         TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
         
@@ -246,7 +245,7 @@ namespace
                 aggregate_info.used     += info.used;
             }
             
-            num_written += tbuf->chunks->flush(c, written_node_cache);
+            num_written += tbuf->chunks->flush(c);
             tbuf->stopped.store(false);
             
             if (tbuf->retired.load()) {

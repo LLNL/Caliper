@@ -75,7 +75,7 @@ void TraceBufferChunk::reset()
 }
 
 
-size_t TraceBufferChunk::flush(Caliper* c, std::unordered_set<cali_id_t>& written_node_cache)
+size_t TraceBufferChunk::flush(Caliper* c)
 {
     size_t written = 0;
 
@@ -91,55 +91,21 @@ size_t TraceBufferChunk::flush(Caliper* c, std::unordered_set<cali_id_t>& writte
         int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
         int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
 
-        Variant node_vec[SNAP_MAX];
-        Variant attr_vec[SNAP_MAX];
-        Variant vals_vec[SNAP_MAX];
+        EntryList::FixedEntryList<SNAP_MAX> snapshot_data;
+        EntryList snapshot(snapshot_data);
 
         for (int i = 0; i < n_nodes; ++i)
-            node_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
-        for (int i = 0; i < n_attr;  ++i)
-            attr_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(m_data + p, &p)));
-        for (int i = 0; i < n_attr;  ++i)
-            vals_vec[i] = Variant::unpack(m_data + p, &p, nullptr);
+            snapshot.append(c->node(vldec_u64(m_data + p, &p)));
+        for (int i = 0; i < n_attr;  ++i) {
+            cali_id_t attr = vldec_u64(m_data + p, &p);
+            Variant   data = Variant::unpack(m_data + p, &p, nullptr);
 
-        // write nodes
-        // FIXME: this node cache is a terrible kludge, needs to go away
-        //   either make node-by-id lookup fast,
-        //   or fix node-before-snapshot I/O requirement
-
-        for (int i = 0; i < n_nodes; ++i) {
-            cali_id_t node_id = node_vec[i].to_id();
-
-            if (written_node_cache.count(node_id))
-                continue;
-                    
-            Node* node = c->node(node_vec[i].to_id());
-                    
-            if (node)
-                node->write_path(c->events().write_record);
-
-            written_node_cache.insert(node_id);
-        }
-        for (int i = 0; i < n_attr; ++i) {
-            cali_id_t node_id = attr_vec[i].to_id();
-
-            if (written_node_cache.count(node_id))
-                continue;
-
-            Node* node = c->node(attr_vec[i].to_id());
-                    
-            if (node)
-                node->write_path(c->events().write_record);
-
-            written_node_cache.insert(node_id);
+            snapshot.append(attr, data);
         }
 
-        // write snapshot
-                
-        int               n[3] = {  n_nodes,   n_attr,   n_attr };
-        const Variant* data[3] = { node_vec, attr_vec, vals_vec };
+        // write snapshot                
 
-        c->events().write_record(ContextRecord::record_descriptor(), n, data);
+        c->events().flush_snapshot(c, nullptr, &snapshot);
     }
 
     written += m_nrec;            
@@ -150,7 +116,7 @@ size_t TraceBufferChunk::flush(Caliper* c, std::unordered_set<cali_id_t>& writte
     // 
             
     if (m_next) {
-        written += m_next->flush(c, written_node_cache);
+        written += m_next->flush(c);
         delete m_next;
         m_next = 0;
     }

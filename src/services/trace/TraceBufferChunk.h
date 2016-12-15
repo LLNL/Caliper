@@ -38,7 +38,7 @@
 #include <cali_types.h>
 
 #include <cstring>
-#include <unordered_set>
+
 
 namespace cali
 {
@@ -69,7 +69,7 @@ namespace trace
         void   append(TraceBufferChunk* chunk);
         void   reset();
 
-        size_t flush(cali::Caliper* c, std::unordered_set<cali_id_t>& written_node_cache);
+        size_t flush(cali::Caliper* c);
 
         void   save_snapshot(const cali::EntryList* s);
         bool   fits(const cali::EntryList* s) const;
