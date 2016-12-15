@@ -129,13 +129,18 @@ struct MetadataTree::MetadataTreeImpl
 
     MemoryPool  m_mempool;    
     NodeBlock*  m_nodeblock;
-    
+
+    unsigned    m_num_nodes;
+    unsigned    m_num_blocks;
+
     //
     // --- Constructor
     //
 
     MetadataTreeImpl()
-        : m_nodeblock(nullptr)
+        : m_nodeblock(nullptr),
+          m_num_nodes(0),
+          m_num_blocks(0)
         {
             GlobalData* g = mG.load();
 
@@ -144,9 +149,12 @@ struct MetadataTree::MetadataTreeImpl
 
                 // Set mG. If mG != new_g, some other thread has set it, 
                 // so just delete our new object.
-                if (mG.compare_exchange_strong(g, new_g))
+                if (mG.compare_exchange_strong(g, new_g)) {
                     m_nodeblock = new_g->node_blocks;
-                else
+
+                    ++m_num_blocks;
+                    m_num_nodes = m_nodeblock->index;
+                } else
                     delete new_g;
             }
         }
@@ -183,6 +191,8 @@ struct MetadataTree::MetadataTreeImpl
 
             m_nodeblock->chunk = chunk;
             m_nodeblock->index = 0;
+
+            ++m_num_blocks;
         }
 
         return true;
@@ -213,7 +223,10 @@ struct MetadataTree::MetadataTreeImpl
             for (size_t i = 0; i < n; ++i)
                 data_size += data[i].size() + (align - data[i].size()%align);
 
-            ptr  = static_cast<char*>(m_mempool.allocate(data_size));
+            ptr = static_cast<char*>(m_mempool.allocate(data_size));
+
+            if (!ptr)
+                return nullptr;
         }
 
         Node* node = nullptr;
@@ -242,6 +255,8 @@ struct MetadataTree::MetadataTreeImpl
             parent = node;
         }
 
+        m_num_nodes += n;
+
         return node;
     }
 
@@ -265,8 +280,12 @@ struct MetadataTree::MetadataTreeImpl
 
         char* ptr  = nullptr;
 
-        if (data_size > 0)
+        if (data_size > 0) {
             ptr = static_cast<char*>(m_mempool.allocate(data_size));
+
+            if (!ptr)
+                return nullptr;
+        }
 
         Node* node = nullptr;
         GlobalData* g = mG.load();
@@ -294,6 +313,8 @@ struct MetadataTree::MetadataTreeImpl
 
             parent = node;
         }
+
+        m_num_nodes += n;
 
         return node;
     }
@@ -386,6 +407,8 @@ struct MetadataTree::MetadataTreeImpl
                 Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, from->attribute(), from->data());
             
             parent->append(node);
+
+            ++m_num_nodes;
         }
 
         return node;
@@ -472,6 +495,12 @@ struct MetadataTree::MetadataTreeImpl
     //
     // --- I/O
     //
+
+    std::ostream& 
+    print_statistics(std::ostream& os) const {
+        m_mempool.print_statistics(
+            os << "Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n      ");
+    }
 };
 
 std::atomic<MetadataTree::MetadataTreeImpl::GlobalData*> MetadataTree::MetadataTreeImpl::mG;
@@ -573,3 +602,9 @@ MetadataTree::type_node(cali_attr_type type) const
 //
 // --- I/O ---
 //
+
+std::ostream& 
+MetadataTree::print_statistics(std::ostream& os) const
+{
+    return mP->print_statistics(os);
+}

@@ -95,6 +95,9 @@ namespace cali
         type_node(cali_attr_type type) const;
 
         // --- I/O ---
+
+        std::ostream&
+        print_statistics(std::ostream& os) const;
     };
 
 } // namespace cali

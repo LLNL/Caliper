@@ -456,9 +456,12 @@ Caliper::release_scope(Caliper::Scope* s)
         // This will print
         //   "Releasing <process/thread> scope:
         //      <Blackboard statistics>"
-        
-        s->blackboard.print_statistics(
-            Log(2).stream() << "Releasing " << scopestr << " scope:\n      " ) << std::endl;
+        //      <Metadata tree statistics>
+
+        s->tree.print_statistics(        
+            s->blackboard.print_statistics(
+                Log(2).stream() << "Releasing " << scopestr << " scope:\n      " ) 
+            << "\n      ") << std::endl;
     }
     
     std::lock_guard<::siglock>
