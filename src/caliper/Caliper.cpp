@@ -94,6 +94,8 @@ namespace
 
         if (c) {
             c.events().flush(&c, nullptr);
+            c.events().flush_finish_evt(&c, nullptr);
+
             c.events().finish_evt(&c);
 
             c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
@@ -631,6 +633,7 @@ Caliper::flush(const EntryList* entry)
         g(m_thread_scope->lock);
 
     mG->events.flush(this, entry);
+    mG->events.flush_finish_evt(this, entry);
 }
 
 // --- Annotation interface
