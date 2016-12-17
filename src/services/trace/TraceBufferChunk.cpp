@@ -94,14 +94,17 @@ size_t TraceBufferChunk::flush(Caliper* c)
         EntryList::FixedEntryList<SNAP_MAX> snapshot_data;
         EntryList snapshot(snapshot_data);
 
+        cali_id_t attr[SNAP_MAX];
+        Variant   data[SNAP_MAX];
+
         for (int i = 0; i < n_nodes; ++i)
             snapshot.append(c->node(vldec_u64(m_data + p, &p)));
-        for (int i = 0; i < n_attr;  ++i) {
-            cali_id_t attr = vldec_u64(m_data + p, &p);
-            Variant   data = Variant::unpack(m_data + p, &p, nullptr);
+        for (int i = 0; i < n_attr;  ++i) 
+            attr[i] = vldec_u64(m_data + p, &p);
+        for (int i = 0; i < n_attr;  ++i)
+            data[i] = Variant::unpack(m_data + p, &p, nullptr);
 
-            snapshot.append(attr, data);
-        }
+        snapshot.append(n_attr, attr, data);
 
         // write snapshot                
 
