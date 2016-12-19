@@ -188,8 +188,6 @@ class Recorder
 
         for (size_t i = 0; i < sizes.n_nodes; ++i)
             c->node(data.node_entries[i]->id())->write_path(write_record_cb);
-        // for (size_t i = 0; i < sizes.n_immediate; ++i)
-        //     c->node(data.immediate_attr[i])->write_path(write_record_cb);
 
         snapshot->push_record(write_record_cb);
     }
