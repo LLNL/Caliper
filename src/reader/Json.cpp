@@ -35,7 +35,7 @@
 
 #include "Json.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include "Attribute.h"
 #include "ContextRecord.h"
@@ -71,7 +71,7 @@ struct Json::JsonImpl
         util::split(field_string, ':', std::back_inserter(m_col_attr_names));
     }
 
-    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {
+    void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Attribute& c) {
                                    return c.id() == attr_id;
@@ -80,7 +80,7 @@ struct Json::JsonImpl
         if (it != m_cols.end())
             return;
         
-        Attribute attr   = db.attribute(attr_id);
+        Attribute attr   = db.get_attribute(attr_id);
 
         if (attr == Attribute::invalid)
             return;
@@ -95,7 +95,7 @@ struct Json::JsonImpl
         m_cols.push_back(attr);
     }
     
-    std::vector<Attribute> update_columns(CaliperMetadataDB& db, const EntryList& list) {
+    std::vector<Attribute> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_col_lock);
         
@@ -116,7 +116,7 @@ struct Json::JsonImpl
             auto it = m_col_attr_names.begin();
 
             while (it != m_col_attr_names.end()) {
-                Attribute attr = db.attribute(*it);
+                Attribute attr = db.get_attribute(*it);
 
                 if (attr != Attribute::invalid) {
                     m_cols.push_back(attr);
@@ -129,7 +129,7 @@ struct Json::JsonImpl
         return m_cols;
     }
     
-    void add(CaliperMetadataDB& db, const EntryList& list) {
+    void add(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::vector<Attribute>   col(update_columns(db, list));
         std::vector<std::string> row(col.size());
 
@@ -200,13 +200,13 @@ Json::~Json()
 }
 
 void 
-Json::operator()(CaliperMetadataDB& db, const EntryList& list)
+Json::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
 }
 
 void
-Json::flush(CaliperMetadataDB&, std::ostream& os)
+Json::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
     mP->flush(os);
 }

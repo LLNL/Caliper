@@ -480,7 +480,7 @@ struct MetadataTree::MetadataTreeImpl
     }
     
     Node* 
-    node(cali_id_t id) {
+    node(cali_id_t id) const {
         GlobalData* g = mG.load();
 
         size_t block = id / g->nodes_per_block;

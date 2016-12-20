@@ -857,7 +857,7 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[])
 }
 
 Node*
-Caliper::node(cali_id_t id)
+Caliper::node(cali_id_t id) const
 {
     // no siglock necessary
     return m_thread_scope->tree.node(id);

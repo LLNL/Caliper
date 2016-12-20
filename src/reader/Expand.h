@@ -45,7 +45,7 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
+class CaliperMetadataAccessInterface;
 
 class Expand 
 {
@@ -58,8 +58,8 @@ public:
 
     ~Expand();
 
-    void operator()(CaliperMetadataDB&, const RecordMap&) const;
-    void operator()(CaliperMetadataDB&, const EntryList&) const;
+    void operator()(CaliperMetadataAccessInterface&, const RecordMap&) const;
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&) const;
 };
 
 } // namespace cali

@@ -354,7 +354,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return ret;
     }
 
-    Node* make_entry(size_t n, const Attribute* attr, const Variant* value, Node* parent = 0) {
+    Node* make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0) {
         Node* node = nullptr;
 
         if (!parent)
@@ -367,11 +367,11 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             std::lock_guard<std::mutex>
                 g(m_node_lock);
             
-            for (node = parent->first_child(); node && !node->equals(attr[i].id(), value[i]); node = node->next_sibling())
+            for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
                 ;
 
             if (!node)
-                node = create_node(attr[i].id(), value[i], parent);
+                node = create_node(attr[i].id(), data[i], parent);
 
             parent = node;
         }
@@ -379,7 +379,30 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return node;
     }
 
-    Attribute create_attribute(const std::string& name, cali_attr_type type, int prop) {
+    Node* make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0) {
+        Node* node = nullptr;
+
+        if (!parent)
+            parent = &m_root;
+
+        for (size_t i = 0; i < n; ++i) {
+            std::lock_guard<std::mutex>
+                g(m_node_lock);
+            
+            for (node = parent->first_child(); node && !node->equals(nodelist[i]->attribute(), nodelist[i]->data()); node = node->next_sibling())
+                ;
+
+            if (!node)
+                node = create_node(nodelist[i]->attribute(), nodelist[i]->data(), parent);
+
+            parent = node;
+        }
+
+        return node;
+    }
+
+    Attribute create_attribute(const std::string& name, cali_attr_type type, int prop,
+                               int meta, const Attribute* meta_attr, const Variant* meta_data) {
         std::lock_guard<std::mutex>
             g(m_attribute_lock);
         
@@ -392,13 +415,17 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         // --- Create attribute
         
-        Node*     typenode  = m_type_nodes[type];
+        Node* parent = m_type_nodes[type];
+
+        if (meta > 0)
+            parent = make_tree_entry(meta, meta_attr, meta_data, parent);
+
         Attribute n_attr[2] = { attribute(Attribute::meta_attribute_keys().prop_attr_id),
                                 attribute(Attribute::meta_attribute_keys().name_attr_id) };
         Variant   n_data[2] = { Variant(prop),
                                 Variant(name) /* FIXME: Using explicit string rep */ }; 
 
-        Node* node = make_entry(2, n_attr, n_data, typenode);
+        Node* node = make_tree_entry(2, n_attr, n_data, parent);
 
         m_attributes.insert(make_pair(string(name), node));
         
@@ -448,7 +475,7 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_f
 }
 
 
-const Node* 
+Node* 
 CaliperMetadataDB::node(cali_id_t id) const
 {
     std::lock_guard<std::mutex>
@@ -458,34 +485,26 @@ CaliperMetadataDB::node(cali_id_t id) const
 }
 
 Attribute
-CaliperMetadataDB::attribute(cali_id_t id) const
+CaliperMetadataDB::get_attribute(cali_id_t id) const
 {
     return mP->attribute(id);
 }
 
 Attribute
-CaliperMetadataDB::attribute(const std::string& name) const
+CaliperMetadataDB::get_attribute(const std::string& name) const
 {
     return mP->attribute(name);
 }
 
-const Node*
-CaliperMetadataDB::make_entry(size_t n, const Attribute* attr, const Variant* value)
+Node*
+CaliperMetadataDB::make_tree_entry(size_t n, const Node* nodelist[])
 {
-    return mP->make_entry(n, attr, value);
+    return mP->make_tree_entry(n, nodelist);
 }
 
 Attribute
-CaliperMetadataDB::create_attribute(const std::string& name, cali_attr_type type, int prop)
+CaliperMetadataDB::create_attribute(const std::string& name, cali_attr_type type, int prop, 
+                                    int meta, const Attribute* meta_attr, const Variant* meta_data)
 {
-    return mP->create_attribute(name, type, prop);
-}
-
-Node* 
-CaliperMetadataDB::mutable_node(cali_id_t id) 
-{
-    std::lock_guard<std::mutex>
-        g(mP->m_node_lock);
-    
-    return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
+    return mP->create_attribute(name, type, prop, meta, meta_attr, meta_data);
 }

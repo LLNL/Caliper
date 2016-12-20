@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,38 +30,46 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Aggregator.h
-/// Aggregator declarations
+/// \file CaliperMetadataQueryInterface.h 
+/// Abstract Caliper metadata access interface
 
-#ifndef CALI_AGGREGATOR_H
-#define CALI_AGGREGATOR_H
+#pragma once
 
-#include "RecordProcessor.h"
+#include "Attribute.h"
 
-#include <iostream>
-#include <memory>
+#include <cstddef>
 
 namespace cali
 {
 
-class CaliperMetadataAccessInterface;
+class Node;
 
-class Aggregator 
+class CaliperMetadataAccessInterface
 {
-    struct AggregatorImpl;
-    std::shared_ptr<AggregatorImpl> mP;
-
 public:
 
-    Aggregator(const std::string& aggr_config, const std::string& key);
+    // --- query operations
 
-    ~Aggregator();
+    virtual Node*
+    node(cali_id_t) const = 0;
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    virtual Attribute 
+    get_attribute(cali_id_t id) const = 0;
+    virtual Attribute
+    get_attribute(const std::string& str) const = 0;
 
-    void flush(CaliperMetadataAccessInterface&, SnapshotProcessFn& push);
+    // --- modifying operations
+
+    virtual Attribute
+    create_attribute(const std::string& name,
+                     cali_attr_type     type,
+                     int                prop = CALI_ATTR_DEFAULT,
+                     int                meta = 0,
+                     const Attribute*   meta_attr = nullptr,
+                     const Variant*     meta_data = nullptr) = 0;
+
+    virtual Node* 
+    make_tree_entry(std::size_t n, const Node* nodelist[]) = 0;
 };
 
-} // namespace cali
-
-#endif
+}

@@ -35,7 +35,7 @@
 
 #include "RecordSelector.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include <Attribute.h>
 #include <Node.h>
@@ -125,12 +125,12 @@ struct RecordSelector::RecordSelectorImpl
                 cerr << "cali-query: malformed selector clause: \"" << s << "\"" << endl;
     }
 
-    Clause check_and_update_clause(CaliperMetadataDB& db, ClauseConfig& clause) {
+    Clause check_and_update_clause(CaliperMetadataAccessInterface& db, ClauseConfig& clause) {
         std::lock_guard<std::mutex>
             g(m_clause_lock);
 
         if (clause.attr_id == CALI_INV_ID) {
-            Attribute attr = db.attribute(clause.attr_name);
+            Attribute attr = db.get_attribute(clause.attr_name);
 
             if (attr != Attribute::invalid)
                 clause.attr_id = attr.id();
@@ -166,7 +166,7 @@ struct RecordSelector::RecordSelectorImpl
         return false;
     }
 
-    bool pass(CaliperMetadataDB& db, const EntryList& list) {
+    bool pass(CaliperMetadataAccessInterface& db, const EntryList& list) {
         for (ClauseConfig& clause_conf : m_clauses) {
             Clause clause = check_and_update_clause(db, clause_conf);
 
@@ -203,7 +203,7 @@ RecordSelector::~RecordSelector()
 }
 
 void 
-RecordSelector::operator()(CaliperMetadataDB& db, const EntryList& list, SnapshotProcessFn& push) const
+RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn& push) const
 {
     if (mP->pass(db, list))
         push(db, list);

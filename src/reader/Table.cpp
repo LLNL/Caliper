@@ -35,7 +35,7 @@
 
 #include "Table.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include "Attribute.h"
 #include "ContextRecord.h"
@@ -102,7 +102,7 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
     }
 
-    void update_column_attribute(CaliperMetadataDB& db, cali_id_t attr_id) {        
+    void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {        
         auto it = std::find_if(m_cols.begin()+m_num_sort_columns, m_cols.end(),
                                [attr_id](const Column& c) {
                                    return c.attr.id() == attr_id;
@@ -111,7 +111,7 @@ struct Table::TableImpl
         if (it != m_cols.end())
             return;
         
-        Attribute attr   = db.attribute(attr_id);
+        Attribute attr   = db.get_attribute(attr_id);
 
         if (attr == Attribute::invalid)
             return;
@@ -126,7 +126,7 @@ struct Table::TableImpl
         m_cols.emplace_back(name, name.size(), attr, true);
     }
     
-    std::vector<Column> update_columns(CaliperMetadataDB& db, const EntryList& list) {
+    std::vector<Column> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_col_lock);
 
@@ -146,12 +146,12 @@ struct Table::TableImpl
 
         for (Column& col : m_cols)
             if (col.attr == Attribute::invalid)
-                col.attr = db.attribute(col.name);
+                col.attr = db.get_attribute(col.name);
 
         return m_cols;
     }
 
-    void add(CaliperMetadataDB& db, const EntryList& list) {
+    void add(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::vector<Column>  cols = update_columns(db, list);
         std::vector<Variant> row(cols.size());
 
@@ -279,13 +279,13 @@ Table::~Table()
 }
 
 void 
-Table::operator()(CaliperMetadataDB& db, const EntryList& list)
+Table::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
 }
 
 void
-Table::flush(CaliperMetadataDB&, std::ostream& os)
+Table::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
     mP->flush(os);
 }

@@ -45,7 +45,7 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
+class CaliperMetadataAccessInterface;
 
 class Format 
 {
@@ -58,7 +58,7 @@ public:
 
     ~Format();
 
-    void operator()(CaliperMetadataDB&, const EntryList&);
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
 };
 
 } // namespace cali

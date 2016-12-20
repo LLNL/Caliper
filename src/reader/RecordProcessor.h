@@ -44,25 +44,24 @@
 
 namespace cali
 {
-
-class CaliperMetadataDB;
+    class CaliperMetadataAccessInterface;
 
     typedef std::vector<Entry> 
         EntryList;
 
-    typedef std::function<void(CaliperMetadataDB& db,const RecordMap& rec)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec)> 
         RecordProcessFn;
-    typedef std::function<void(CaliperMetadataDB& db,const RecordMap& rec, RecordProcessFn)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec, RecordProcessFn)> 
         RecordFilterFn;
 
-    typedef std::function<void(CaliperMetadataDB& db,const Node* node)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node)> 
         NodeProcessFn;
-    typedef std::function<void(CaliperMetadataDB& db,const Node* node,NodeProcessFn&)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node,NodeProcessFn&)> 
         NodeFilterFn;
 
-    typedef std::function<void(CaliperMetadataDB& db,const EntryList& list)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list)> 
         SnapshotProcessFn;
-    typedef std::function<void(CaliperMetadataDB& db,const EntryList& list,SnapshotProcessFn&)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list,SnapshotProcessFn&)> 
         SnapshotFilterFn;
 
 } // namespace cali

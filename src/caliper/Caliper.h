@@ -38,6 +38,7 @@
 #include "cali_definitions.h"
 
 #include "Attribute.h"
+#include "CaliperMetadataAccessInterface.h"
 #include "Entry.h"
 #include "Record.h"
 #include "Variant.h"
@@ -56,7 +57,7 @@ class EntryList;
     
 /// @class Caliper
 
-class Caliper 
+class Caliper : public CaliperMetadataAccessInterface
 {
 public:
 
@@ -179,17 +180,11 @@ public:
     void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
-    /// \brief Get or create new tree path with data from given nodes in given order 
-    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
-
-    /// \brief return node by id
-    Node*     node(cali_id_t id);
-
     // --- Query API
 
     Entry     get(const Attribute& attr);
 
-    // --- Attribute API
+    // --- Metadata Access Interface
 
     size_t    num_attributes() const;
 
@@ -202,6 +197,12 @@ public:
                                int                meta = 0,
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
+
+    /// \brief return node by id
+    Node*     node(cali_id_t id) const;
+
+    /// \brief Get or create new tree path with data from given nodes in given order 
+    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
 
     // --- Caliper API access
 

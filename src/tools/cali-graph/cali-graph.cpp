@@ -117,11 +117,11 @@ namespace
             m_os << "}" << endl;
         }
 
-        void print_node(CaliperMetadataDB& db, const Node* node) {
+        void print_node(CaliperMetadataAccessInterface& db, const Node* node) {
             if (!node || (m_max >= 0 && node->id() >= static_cast<cali_id_t>(m_max)))
                 return;
 
-            Attribute attr = db.attribute(node->attribute());
+            Attribute attr = db.get_attribute(node->attribute());
 
             m_os << "  " << node->id()
                  << " [label=\"" << format_attr_name(attr) << ":" << node->data().to_string() << "\"];"
@@ -132,11 +132,11 @@ namespace
                      << endl;
         }
 
-        void operator()(CaliperMetadataDB& db, const Node* node) {
+        void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
             print_node(db, node);
         }
         
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             if (get_record_type(rec) == "node") {
                 auto id_entry_it = rec.find("id");
 
@@ -158,7 +158,7 @@ namespace
             : m_max_node { 0 }
             { } 
 
-        void operator()(CaliperMetadataDB& db, const Node* node, NodeProcessFn push) {
+        void operator()(CaliperMetadataAccessInterface& db, const Node* node, NodeProcessFn push) {
             cali_id_t id = node->id();
 
             if (id != CALI_INV_ID) {
@@ -183,7 +183,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             m_filter_fn(db, rec, m_push_fn);
         }
     };
@@ -199,7 +199,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const Node* node) {
+        void operator ()(CaliperMetadataAccessInterface& db, const Node* node) {
             m_filter_fn(db, node, m_push_fn);
         }
     };
@@ -272,7 +272,7 @@ int main(int argc, const char* argv[])
     DotPrinter        dotprint(fs.is_open() ? fs : cout, args);
 
     NodeProcessFn     node_proc = dotprint;
-    SnapshotProcessFn snap_proc = [](CaliperMetadataDB&,const EntryList&){ return; };
+    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
 
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
