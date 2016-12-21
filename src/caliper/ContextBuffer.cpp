@@ -35,7 +35,7 @@
 
 #include "ContextBuffer.h"
 
-#include "EntryList.h"
+#include "SnapshotRecord.h"
 
 #include <Attribute.h>
 #include <ContextRecord.h>
@@ -268,7 +268,7 @@ struct ContextBuffer::ContextBufferImpl
         return ret;
     }
 
-    void snapshot(EntryList* sbuf) const {
+    void snapshot(SnapshotRecord* sbuf) const {
         std::lock_guard<util::spinlock> lock(m_lock);
 
         cali::Node* const*   nodeptr = m_num_nodes > 0 ? m_nodes.data() : nullptr;
@@ -347,7 +347,7 @@ cali_err ContextBuffer::unset(const Attribute& attr)
     return mP->unset(attr);
 }
 
-void ContextBuffer::snapshot(EntryList* sbuf) const
+void ContextBuffer::snapshot(SnapshotRecord* sbuf) const
 {
     mP->snapshot(sbuf);
 }

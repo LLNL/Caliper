@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -97,7 +97,7 @@ namespace
         uint64_t  pc = static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
         Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
 
-        EntryList trigger_info(1, &sampler_attr_id, &v_pc);
+        SnapshotRecord trigger_info(1, &sampler_attr_id, &v_pc);
 
         c.push_snapshot(sample_contexts, &trigger_info);
 

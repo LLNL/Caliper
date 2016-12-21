@@ -43,7 +43,7 @@
 namespace cali
 {
     class Caliper;
-    class EntryList;
+    class SnapshotRecord;
 }
 
 namespace trace
@@ -71,8 +71,8 @@ namespace trace
 
         size_t flush(cali::Caliper* c);
 
-        void   save_snapshot(const cali::EntryList* s);
-        bool   fits(const cali::EntryList* s) const;
+        void   save_snapshot(const cali::SnapshotRecord* s);
+        bool   fits(const cali::SnapshotRecord* s) const;
 
         struct UsageInfo {
             size_t nchunks;

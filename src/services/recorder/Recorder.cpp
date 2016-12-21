@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <csv/CsvSpec.h>
 
@@ -179,12 +179,12 @@ class Recorder
         ++s_instance->m_reccount;
     }
 
-    static void flush_snapshot_cb(Caliper* c, const EntryList* flush_info, const EntryList* snapshot) {
+    static void flush_snapshot_cb(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
         if (!s_instance)
             return;
 
-        EntryList::Data   data = snapshot->data();
-        EntryList::Sizes sizes = snapshot->size();
+        SnapshotRecord::Data   data = snapshot->data();
+        SnapshotRecord::Sizes sizes = snapshot->size();
 
         for (size_t i = 0; i < sizes.n_nodes; ++i)
             c->node(data.node_entries[i]->id())->write_path(write_record_cb);

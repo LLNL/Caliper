@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <csv/CsvSpec.h>
 #include <Log.h>
@@ -119,14 +119,14 @@ void release_scope_cb(Caliper* c, cali_context_scope_t scope)
     Log(2).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, const EntryList* trigger_info, EntryList*)
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord*)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
                     << ")" << endl;
 }
 
-void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* sbuf)
+void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);
 

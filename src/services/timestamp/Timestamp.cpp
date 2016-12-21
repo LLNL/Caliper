@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -164,7 +164,7 @@ Attribute find_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level)
     return Attribute::invalid;
 }
 
-void snapshot_cb(Caliper* c, int scope, const EntryList* trigger_info, EntryList* sbuf) {
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf) {
     auto now = chrono::high_resolution_clock::now();
 
     if ((record_duration || record_phases || record_offset) && scope & CALI_SCOPE_THREAD) {

@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file EntryList.cpp
-/// EntryList class definition
+/// \file SnapshotRecord.cpp
+/// SnapshotRecord class definition
 
-#include "EntryList.h"
+#include "SnapshotRecord.h"
 
 #include "Node.h"
 
@@ -42,7 +42,7 @@
 using namespace cali;
 
 void
-EntryList::append(const EntryList& list)
+SnapshotRecord::append(const SnapshotRecord& list)
 {
     size_t max_nodes     = std::min(list.m_sizes.n_nodes,     m_capacity.n_nodes-m_sizes.n_nodes);
     size_t max_immediate = std::min(list.m_sizes.n_immediate, m_capacity.n_immediate-m_sizes.n_immediate);
@@ -59,7 +59,7 @@ EntryList::append(const EntryList& list)
 }
 
 void
-EntryList::append(Node* node)
+SnapshotRecord::append(Node* node)
 {
     if (m_sizes.n_nodes >= m_capacity.n_nodes)
         return;
@@ -68,7 +68,7 @@ EntryList::append(Node* node)
 }
 
 void
-EntryList::append(size_t n, const cali_id_t* attr_vec, const Variant* data_vec)
+SnapshotRecord::append(size_t n, const cali_id_t* attr_vec, const Variant* data_vec)
 {
     size_t max_immediate = std::min(n, m_capacity.n_immediate-m_sizes.n_immediate);
         
@@ -79,7 +79,7 @@ EntryList::append(size_t n, const cali_id_t* attr_vec, const Variant* data_vec)
 }
 
 void
-EntryList::append(size_t n, Node* const* node_vec, size_t m, const cali_id_t* attr_vec, const Variant* data_vec)
+SnapshotRecord::append(size_t n, Node* const* node_vec, size_t m, const cali_id_t* attr_vec, const Variant* data_vec)
 {
     size_t max_nodes     = std::min(n, m_capacity.n_nodes-m_sizes.n_nodes);
     size_t max_immediate = std::min(m, m_capacity.n_immediate-m_sizes.n_immediate);
@@ -93,7 +93,7 @@ EntryList::append(size_t n, Node* const* node_vec, size_t m, const cali_id_t* at
 }
 
 Entry
-EntryList::get(const Attribute& attr) const
+SnapshotRecord::get(const Attribute& attr) const
 {
     if (attr == Attribute::invalid)
         return Entry::empty;
@@ -113,7 +113,7 @@ EntryList::get(const Attribute& attr) const
 }
 
 void
-EntryList::push_record(WriteRecordFn fn) const
+SnapshotRecord::push_record(WriteRecordFn fn) const
 {
     // Push unwritten nodes. Temporary - will go away
 

@@ -53,7 +53,7 @@ namespace cali
 // Forward declarations
 
 class Node;    
-class EntryList;
+class SnapshotRecord;
     
 /// @class Caliper
 
@@ -112,12 +112,12 @@ public:
         typedef util::callback<void(Caliper*,cali_context_scope_t)>
             scope_cbvec;
 
-        typedef util::callback<void(Caliper*,int,const EntryList*,EntryList*)>
+        typedef util::callback<void(Caliper*,int,const SnapshotRecord*,SnapshotRecord*)>
             snapshot_cbvec;
-        typedef util::callback<void(Caliper*,const EntryList*,const EntryList*)>
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*, const EntryList*)>
+        typedef util::callback<void(Caliper*, const SnapshotRecord*)>
             flush_cbvec;
         typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
             write_record_cbvec;
@@ -161,10 +161,10 @@ public:
 
     // --- Snapshot API
 
-    void      push_snapshot(int scopes, const EntryList* trigger_info);
-    void      pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* snapshot);
+    void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
+    void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const EntryList* trigger_info);
+    void      flush(const SnapshotRecord* trigger_info);
     
     // --- Annotation API
 
@@ -177,7 +177,7 @@ public:
 
     // --- Direct metadata / data access API
 
-    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list);
+    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
     // --- Query API

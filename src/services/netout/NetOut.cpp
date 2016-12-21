@@ -7,7 +7,7 @@
 
 #include <curl/curl.h>
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -148,7 +148,7 @@ class NetOutService
         }
     }
 
-    void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         // operate only on cali.snapshot.event.end attributes for now
         if (!trigger_info)
             return;
@@ -219,7 +219,7 @@ class NetOutService
         s_netout->create_attribute_cb(c, attr);
     }
 
-    static void s_process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    static void s_process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         s_netout->process_snapshot_cb(c, trigger_info, snapshot);
     }
 

@@ -3,7 +3,7 @@
 
 #include "SnapshotTextFormatter.h"
 
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Node.h>
 #include <util/split.hpp>
@@ -99,7 +99,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             }
     }
 
-    std::ostream& print(std::ostream& os, const EntryList* s) const {
+    std::ostream& print(std::ostream& os, const SnapshotRecord* s) const {
         for (const Field& f : m_fields) {
             Entry e = Entry::empty;
 
@@ -151,7 +151,7 @@ SnapshotTextFormatter::update_attribute(const Attribute& attr)
 }
 
 std::ostream& 
-SnapshotTextFormatter::print(std::ostream& os, const EntryList* s) const
+SnapshotTextFormatter::print(std::ostream& os, const SnapshotRecord* s) const
 {
     return mP->print(os, s);
 }

@@ -36,7 +36,7 @@
 #include "cali.h"
 
 #include "Caliper.h"
-#include "EntryList.h"
+#include "SnapshotRecord.h"
 
 #include <Variant.h>
 
@@ -123,8 +123,8 @@ cali_push_snapshot(int scope, int n,
         data[i]  = Variant(attr[i].type(), trigger_info_val_list[i], trigger_info_size_list[i]);
     }
 
-    EntryList::FixedEntryList<64> trigger_info_data;
-    EntryList trigger_info(trigger_info_data);
+    SnapshotRecord::FixedSnapshotRecord<64> trigger_info_data;
+    SnapshotRecord trigger_info(trigger_info_data);
 
     c.make_entrylist(n, attr, data, trigger_info);
     c.push_snapshot(scope, &trigger_info);

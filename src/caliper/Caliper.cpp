@@ -38,7 +38,7 @@
 
 #include "Caliper.h"
 #include "ContextBuffer.h"
-#include "EntryList.h"
+#include "SnapshotRecord.h"
 #include "MetadataTree.h"
 
 #include <Services.h>
@@ -584,7 +584,7 @@ Caliper::get_attribute(cali_id_t id) const
 // --- Snapshot interface
 
 void
-Caliper::pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* sbuf)
+Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
     assert(mG != 0);
 
@@ -606,15 +606,15 @@ Caliper::pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* sbu
 }
 
 void 
-Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
+Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
 {
     assert(mG != 0);
     
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    EntryList::FixedEntryList<64> snapshot_data;
-    EntryList sbuf(snapshot_data);
+    SnapshotRecord::FixedSnapshotRecord<64> snapshot_data;
+    SnapshotRecord sbuf(snapshot_data);
 
     pull_snapshot(scopes, trigger_info, &sbuf);
 
@@ -622,7 +622,7 @@ Caliper::push_snapshot(int scopes, const EntryList* trigger_info)
 }
 
 void
-Caliper::flush(const EntryList* entry)
+Caliper::flush(const SnapshotRecord* entry)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
@@ -811,7 +811,7 @@ Caliper::get(const Attribute& attr)
 // --- Generic entry API
 
 void
-Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list) 
+Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list) 
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);

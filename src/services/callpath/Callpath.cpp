@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <RuntimeConfig.h>
 #include <Log.h>
@@ -84,7 +84,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList*)
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord*)
 {
     Variant v_addr[MAX_PATH];
     Variant v_name[MAX_PATH];

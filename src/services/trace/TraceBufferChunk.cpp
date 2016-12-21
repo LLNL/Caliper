@@ -33,7 +33,7 @@
 #include "TraceBufferChunk.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
@@ -91,8 +91,8 @@ size_t TraceBufferChunk::flush(Caliper* c)
         int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
         int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
 
-        EntryList::FixedEntryList<SNAP_MAX> snapshot_data;
-        EntryList snapshot(snapshot_data);
+        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
+        SnapshotRecord snapshot(snapshot_data);
 
         cali_id_t attr[SNAP_MAX];
         Variant   data[SNAP_MAX];
@@ -128,9 +128,9 @@ size_t TraceBufferChunk::flush(Caliper* c)
 }
 
 
-void TraceBufferChunk::save_snapshot(const EntryList* s)
+void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
 {
-    EntryList::Sizes sizes = s->size();
+    SnapshotRecord::Sizes sizes = s->size();
 
     if ((sizes.n_nodes + sizes.n_immediate) == 0)
         return;
@@ -141,7 +141,7 @@ void TraceBufferChunk::save_snapshot(const EntryList* s)
     m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
     m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);
 
-    EntryList::Data addr = s->data();
+    SnapshotRecord::Data addr = s->data();
 
     for (int i = 0; i < sizes.n_nodes; ++i)
         m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
@@ -154,9 +154,9 @@ void TraceBufferChunk::save_snapshot(const EntryList* s)
 }
 
 
-bool TraceBufferChunk::fits(const EntryList* s) const
+bool TraceBufferChunk::fits(const SnapshotRecord* s) const
 {
-    EntryList::Sizes sizes = s->size();
+    SnapshotRecord::Sizes sizes = s->size();
 
     // get worst-case estimate of packed snapshot size:
     //   20 bytes for size indicators

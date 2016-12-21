@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
@@ -246,8 +246,8 @@ class AggregateDB {
         size_t    p = 0;
         int       num_nodes = static_cast<int>(vldec_u64(key + p, &p));
 
-        EntryList::FixedEntryList<SNAP_MAX> snapshot_data;
-        EntryList snapshot(snapshot_data);
+        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
+        SnapshotRecord snapshot(snapshot_data);
 
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
             snapshot.append(c->node(vldec_u64(key + p, &p)));
@@ -326,13 +326,13 @@ public:
         m_max_keylen         = 0;
     }
 
-    void process_snapshot(Caliper* c, const EntryList* snapshot) {
-        EntryList::Sizes sizes = snapshot->size();
+    void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
+        SnapshotRecord::Sizes sizes = snapshot->size();
 
         if (sizes.n_nodes + sizes.n_immediate == 0)
             return;
 
-        EntryList::Data addr   = snapshot->data();
+        SnapshotRecord::Data addr   = snapshot->data();
 
         //
         // --- create / get context tree nodes for key
@@ -517,7 +517,7 @@ public:
         db->m_retired.store(true);
     }
 
-    static void flush_cb(Caliper* c, const EntryList*) {
+    static void flush_cb(Caliper* c, const SnapshotRecord*) {
         AggregateDB* db = nullptr;
 
         {
@@ -568,7 +568,7 @@ public:
         Log(1).stream() << "aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
-    static void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         AggregateDB* db = acquire(c, !c->is_signal());
 
         if (db && !db->stopped())

@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -99,7 +99,7 @@ void sample_handler(perf_event_sample *sample, void *args) {
         Variant(static_cast<uint64_t>(sample->cpu))
     };
 
-    EntryList trigger_info(MITOS_NUM_ATTR, mitos_attributes, data);
+    SnapshotRecord trigger_info(MITOS_NUM_ATTR, mitos_attributes, data);
 
     c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
 

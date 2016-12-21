@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <RuntimeConfig.h>
 #include <ContextRecord.h>
@@ -102,7 +102,7 @@ long long* get_counter_array(bool alloc, size_t num_counters)
     return array;
 }
     
-void snapshot_cb(Caliper* c, int scope, const EntryList*, EntryList* snapshot) {
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
     auto num_counters = global_info.counter_events.size();
     
     if (num_counters < 1)

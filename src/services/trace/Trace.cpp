@@ -38,7 +38,7 @@
 #include "TraceBufferChunk.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -197,7 +197,7 @@ namespace
         return 0;
     }
     
-    void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
+    void process_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf(!c->is_signal());
 
         if (!tbuf || tbuf->stopped.load()) { // error messaging is done in acquire_tbuf()
@@ -213,7 +213,7 @@ namespace
         tbuf->chunks->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, const EntryList*) {
+    void flush_cb(Caliper* c, const SnapshotRecord*) {
         std::lock_guard<std::mutex>
             g(global_flush_lock);
 

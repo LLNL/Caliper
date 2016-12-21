@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -196,8 +196,8 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
         Attribute attrs[3] = { trigger_level_attr, trigger_begin_attr, event_attr.begin_attr };
         Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<3> trigger_info_data;
-        EntryList trigger_info(trigger_info_data);
+        SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+        SnapshotRecord trigger_info(trigger_info_data);
 
         c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
@@ -226,8 +226,8 @@ void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
         Attribute attrs[3] = { trigger_level_attr, trigger_set_attr, event_attr.set_attr };
         Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<3> trigger_info_data;
-        EntryList trigger_info(trigger_info_data);
+        SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+        SnapshotRecord trigger_info(trigger_info_data);
 
         c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
@@ -265,8 +265,8 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
         Attribute attrs[3] = { trigger_level_attr, trigger_end_attr, event_attr.end_attr };
         Variant   vals[3]  = { v_p_lvl, Variant(attr.id()), value };
 
-        EntryList::FixedEntryList<3> trigger_info_data;
-        EntryList trigger_info(trigger_info_data);
+        SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+        SnapshotRecord trigger_info(trigger_info_data);
 
         c->make_entrylist(3, attrs, vals, trigger_info);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);

@@ -5,7 +5,7 @@ set(CALIPER_HEADERS
     Annotation.h
     CaliFunctional.h
     Caliper.h
-    EntryList.h
+    SnapshotRecord.h
     cali.h
     cali_definitions.h)
 
@@ -13,7 +13,7 @@ set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
     ContextBuffer.cpp
-    EntryList.cpp
+    SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
     cali.cpp)

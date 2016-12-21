@@ -67,7 +67,7 @@ void create_scope_cb(Caliper*, cali_context_scope_t)
     ++num_scopes;
 }
 
-void snapshot_cb(Caliper*, int, const EntryList*, EntryList*)
+void snapshot_cb(Caliper*, int, const SnapshotRecord*, SnapshotRecord*)
 {
     ++num_snapshots;
 }
