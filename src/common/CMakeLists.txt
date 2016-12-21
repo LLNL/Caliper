@@ -1,5 +1,6 @@
 set(CALIPER_COMMON_HEADERS
     Attribute.h
+    CaliperMetadataAccessInterface.h
     ContextRecord.h
     Entry.h
     IdType.h
