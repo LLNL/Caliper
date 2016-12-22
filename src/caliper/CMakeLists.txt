@@ -27,6 +27,9 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper ${_extlib})
 endforeach()
 
+# Add reader lib to runtime (for report service)
+target_link_libraries(caliper caliper-reader)
+
 install(FILES ${CALIPER_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(TARGETS caliper 

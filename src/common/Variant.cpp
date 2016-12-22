@@ -505,12 +505,30 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
     switch (v.m_type) {
     case CALI_TYPE_INV:
         break;
-
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
         v.m_size         = static_cast<size_t>(vldec_u64(buf+p, &p));
     default:
         v.m_value.v_uint = vldec_u64(buf+p, &p);
+    }
+
+    // set size for default types
+    switch (v.m_type) {
+    case CALI_TYPE_BOOL:
+        v.m_size = sizeof(bool);
+        break;
+    case CALI_TYPE_INT:
+        v.m_size = sizeof(int64_t);
+        break;
+    case CALI_TYPE_UINT:
+        v.m_size = sizeof(uint64_t);
+        break;
+    case CALI_TYPE_DOUBLE:
+        v.m_size = sizeof(double);
+        break;
+    case CALI_TYPE_TYPE:
+        v.m_size = sizeof(cali_attr_type);
+        break;
     }
 
     if (inc)
@@ -530,42 +548,46 @@ Variant::concretize(cali_attr_type type, bool *ok) const
 
         return *this;
     }
+
+    bool my_ok = false;
         
     switch (type) {
     case CALI_TYPE_INV:
     case CALI_TYPE_USR:        
     case CALI_TYPE_STRING:
         // can't concretize this without knowing where to alloc memory
-        if (ok)
-            *ok = false;
+        my_ok = false;
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_INT:
         {
-            int64_t u = to_int(ok);
+            int64_t u = to_int(&my_ok);
 
-            if (ok)
+            if (my_ok)
                 ret = Variant(type, &u, sizeof(int64_t));
         }
         break;
     case CALI_TYPE_UINT:
         {
-            uint64_t u = to_uint(ok);
+            uint64_t u = to_uint(&my_ok);
 
-            if (ok)
+            if (my_ok)
                 ret = Variant(type, &u, sizeof(uint64_t));
         }
         break;
     case CALI_TYPE_DOUBLE:
-        ret = Variant(to_double(ok));
+        ret = Variant(to_double(&my_ok));
         break;
     case CALI_TYPE_BOOL:
-        ret = Variant(to_bool(ok));
+        ret = Variant(to_bool(&my_ok));
         break;
     case CALI_TYPE_TYPE:
-        ret = Variant(to_attr_type(ok));
+        ret = Variant(to_attr_type(&my_ok));
         break;
     };
+
+    if (ok)
+        *ok = my_ok;
 
     return ret;
 }
