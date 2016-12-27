@@ -8,18 +8,6 @@
 
 using namespace cali;
 
-size_t
-Entry::hash() const
-{
-    if (m_node)
-        return m_node->id();
-
-    size_t h1 = m_attr_id;
-    size_t h2 = std::hash<std::string>()(m_value.to_string());
-
-    return h1 ^ (h2 << 1);
-}
-
 cali_id_t
 Entry::attribute() const
 {

@@ -4,16 +4,17 @@
 #ifndef CALI_SNAPSHOT_TEXT_FORMATTER_H
 #define CALI_SNAPSHOT_TEXT_FORMATTER_H
 
-#include <Caliper.h>
-
-#include <Attribute.h>
+#include "Entry.h"
 
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace cali
 {
+
+class CaliperMetadataAccessInterface;
 
 class SnapshotTextFormatter
 {
@@ -27,11 +28,11 @@ public:
 
     ~SnapshotTextFormatter();
 
-    void parse(const std::string& format_str, Caliper* c);
+    void 
+    parse(const std::string& format_str);
 
-    void update_attribute(const Attribute& attr);
-
-    std::ostream& print(std::ostream& os, const SnapshotRecord* s) const;
+    std::ostream& 
+    print(std::ostream&, const CaliperMetadataAccessInterface*, const std::vector<Entry>&);
 };
 
 }
