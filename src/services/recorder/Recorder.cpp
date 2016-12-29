@@ -54,6 +54,7 @@
 #include <mutex>
 #include <fstream>
 #include <random>
+#include <set>
 #include <string>
 
 using namespace cali;
@@ -75,6 +76,9 @@ class Recorder
     
     Stream     m_stream;
     ofstream   m_ofstream;
+
+    std::set<cali_id_t> m_written_nodes;
+    std::mutex m_written_nodes_lock;
 
     std::mutex m_lock;
 
@@ -169,6 +173,56 @@ class Recorder
         }
     }
 
+    // recursively write context tree branch and attributes for node with given id    
+    void 
+    write_node(Caliper* c, cali_id_t id, int level = 0) {
+        {
+            std::lock_guard<std::mutex>
+                g(m_written_nodes_lock);
+
+            if (m_written_nodes.count(id) > 0)
+                return;
+        }
+
+        Node* node = c->node(id);
+
+        if (!node)
+            return;
+        if (node->attribute() < node->id()) // special check for initial meta-attributes
+            write_node(c, node->attribute(), level+1);
+
+        Node* parent = node->parent();
+
+        if (parent && parent->id() != CALI_INV_ID)
+            write_node(c, parent->id(), level+1);
+
+        {
+            std::lock_guard<std::mutex>
+                g(m_written_nodes_lock);
+
+            if (m_written_nodes.count(id) > 0)
+                return;
+       
+            m_written_nodes.insert(id);
+        }
+            
+        node->push_record(write_record_cb);
+    }
+
+    void
+    flush_snapshot(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
+        SnapshotRecord::Data   data = snapshot->data();
+        SnapshotRecord::Sizes sizes = snapshot->size();
+
+        for (size_t i = 0; i < sizes.n_nodes; ++i)
+            write_node(c, data.node_entries[i]->id());
+        for (size_t i = 0; i < sizes.n_immediate; ++i)
+            write_node(c, data.immediate_attr[i]);
+
+        snapshot->push_record(write_record_cb);
+    }
+
+
     static void write_record_cb(const RecordDescriptor& rec, const int* count, const Variant** data) {
         if (!s_instance)
             return;
@@ -183,13 +237,7 @@ class Recorder
         if (!s_instance)
             return;
 
-        SnapshotRecord::Data   data = snapshot->data();
-        SnapshotRecord::Sizes sizes = snapshot->size();
-
-        for (size_t i = 0; i < sizes.n_nodes; ++i)
-            c->node(data.node_entries[i]->id())->write_path(write_record_cb);
-
-        snapshot->push_record(write_record_cb);
+        s_instance->flush_snapshot(c, flush_info, snapshot);
     }
 
     static void finish_cb(Caliper* c) {

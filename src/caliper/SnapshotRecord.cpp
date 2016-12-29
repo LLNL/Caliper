@@ -115,11 +115,6 @@ SnapshotRecord::get(const Attribute& attr) const
 void
 SnapshotRecord::push_record(WriteRecordFn fn) const
 {
-    // Push unwritten nodes. Temporary - will go away
-
-    for (int i = 0; i < m_sizes.n_nodes; ++i)
-        m_node_array[i]->write_path(fn);
-
     std::vector<cali::Variant> attr_vec(m_sizes.n_immediate, Variant());
     std::vector<cali::Variant> node_vec(m_sizes.n_nodes,     Variant());
 

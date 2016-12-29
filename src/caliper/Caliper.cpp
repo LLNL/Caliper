@@ -613,7 +613,7 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<64> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
     pull_snapshot(scopes, trigger_info, &sbuf);
@@ -622,15 +622,22 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
 }
 
 void
-Caliper::flush(const SnapshotRecord* entry)
+Caliper::flush(const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    mG->write_new_attribute_nodes(mG->events.write_record);
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord flush_info(snapshot_data);
 
-    mG->events.flush(this, entry);
-    mG->events.flush_finish_evt(this, entry);
+    if (input_flush_info)
+        flush_info.append(*input_flush_info);
+
+    m_thread_scope->blackboard.snapshot(&flush_info);
+    mG->process_scope->blackboard.snapshot(&flush_info);
+
+    mG->events.flush(this, &flush_info);
+    mG->events.flush_finish_evt(this, &flush_info);
 }
 
 // --- Annotation interface
