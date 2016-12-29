@@ -141,6 +141,7 @@ public:
         snapshot_cbvec         snapshot;
         process_snapshot_cbvec process_snapshot;
 
+        flush_cbvec            pre_flush_evt;
         flush_cbvec            flush;
         process_snapshot_cbvec flush_snapshot;
         flush_cbvec            flush_finish_evt;

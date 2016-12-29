@@ -636,6 +636,7 @@ Caliper::flush(const SnapshotRecord* input_flush_info)
     m_thread_scope->blackboard.snapshot(&flush_info);
     mG->process_scope->blackboard.snapshot(&flush_info);
 
+    mG->events.pre_flush_evt(this, &flush_info);
     mG->events.flush(this, &flush_info);
     mG->events.flush_finish_evt(this, &flush_info);
 }
