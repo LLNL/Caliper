@@ -46,9 +46,11 @@
 #include <Log.h>
 #include <Node.h>
 #include <RuntimeConfig.h>
+#include <SnapshotTextFormatter.h>
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 using namespace cali;
 
@@ -64,8 +66,11 @@ namespace
         Table          m_table_writer;
         RecordSelector m_selector;
 
-        void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            EntryList list;
+        std::vector<Entry> make_entrylist(Caliper* c, const SnapshotRecord* snapshot) {
+            std::vector<Entry> list;
+
+            if (!snapshot)
+                return list;
 
             SnapshotRecord::Data  data(snapshot->data());
             SnapshotRecord::Sizes size(snapshot->size());
@@ -75,12 +80,16 @@ namespace
             for (size_t n = 0; n < size.n_immediate; ++n)
                 list.push_back(Entry(c->get_attribute(data.immediate_attr[n]), data.immediate_data[n]));
 
-            SnapshotProcessFn fn(m_table_writer);
-
-             m_selector(*c, list, fn);
+            return list;
         }
 
-        void flush(Caliper* c) {
+        void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
+            SnapshotProcessFn fn(m_table_writer);
+
+            m_selector(*c, make_entrylist(c, snapshot), fn);
+        }
+
+        void flush(Caliper* c, const SnapshotRecord* flush_info) {
             std::string filename = m_config.get("filename").to_string();
 
             if (filename == "stdout")
@@ -88,10 +97,15 @@ namespace
             else if (filename == "stderr")
                 m_table_writer.flush(*c, std::cerr);
             else {
-                std::ofstream fs(filename);
+                SnapshotTextFormatter formatter(filename);
+                std::ostringstream    fnamestr;
+
+                formatter.print(fnamestr, c, make_entrylist(c, flush_info));
+
+                std::ofstream fs(fnamestr.str());
 
                 if (!fs) {
-                    Log(0).stream() << "report: could not open output stream " << filename << std::endl;
+                    Log(0).stream() << "Report: could not open output stream " << fnamestr.str() << std::endl;
                     return;
                 }
 
@@ -117,11 +131,11 @@ namespace
             s_instance->process_snapshot(c, snapshot);
         }
 
-        static void flush_finish_cb(Caliper* c, const SnapshotRecord*) {
+        static void flush_finish_cb(Caliper* c, const SnapshotRecord* flush_info) {
             if (!s_instance)
                 return;
 
-            s_instance->flush(c);
+            s_instance->flush(c, flush_info);
         }
 
     public:

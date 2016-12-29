@@ -33,6 +33,8 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
     void 
     parse(const std::string& formatstring) {
+        m_fields.clear();
+
         // parse format: "(prefix string) %[<width+alignment(l|r|c)>]attr_name% ... "
         // FIXME: this is a very primitive parser
 
@@ -149,9 +151,11 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
     }
 };
 
-SnapshotTextFormatter::SnapshotTextFormatter()
+SnapshotTextFormatter::SnapshotTextFormatter(const std::string& format_str)
     : mP(new SnapshotTextFormatterImpl)
-{ }
+{ 
+    mP->parse(format_str);
+}
 
 SnapshotTextFormatter::~SnapshotTextFormatter()
 {
@@ -159,7 +163,7 @@ SnapshotTextFormatter::~SnapshotTextFormatter()
 } 
 
 void
-SnapshotTextFormatter::parse(const std::string& format_str)
+SnapshotTextFormatter::reset(const std::string& format_str)
 {
     mP->parse(format_str);
 }

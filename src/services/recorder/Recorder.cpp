@@ -217,8 +217,7 @@ class Recorder
         // The actual output stream will be created on-demand 
         // with the first flush_snapshot call.
 
-        SnapshotTextFormatter formatter;
-        formatter.parse(m_config.get("filename").to_string());
+        SnapshotTextFormatter formatter(m_config.get("filename").to_string());
 
         // convert snapshot record
         std::vector<Entry> entrylist;
@@ -277,7 +276,7 @@ class Recorder
 
     static void finish_cb(Caliper* c) {
         if (s_instance)
-            Log(1).stream() << "Wrote " << s_instance->m_reccount << " records." << endl;
+            Log(1).stream() << "Recorder: Wrote " << s_instance->m_reccount << " records." << endl;
     }
     
     void register_callbacks(Caliper* c) {

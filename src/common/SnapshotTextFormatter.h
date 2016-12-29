@@ -24,12 +24,12 @@ class SnapshotTextFormatter
 
 public:
 
-    SnapshotTextFormatter();
+    SnapshotTextFormatter(const std::string& format_str = "");
 
     ~SnapshotTextFormatter();
 
     void 
-    parse(const std::string& format_str);
+    reset(const std::string& format_str);
 
     std::ostream& 
     print(std::ostream&, const CaliperMetadataAccessInterface*, const std::vector<Entry>&);

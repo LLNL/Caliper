@@ -194,7 +194,7 @@ class TextLogService
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
 
-        formatter.parse(formatstr);
+        formatter.reset(formatstr);
 
         set_event_attr = c->get_attribute("cali.snapshot.event.set");
         end_event_attr = c->get_attribute("cali.snapshot.event.end");
