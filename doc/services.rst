@@ -356,16 +356,32 @@ information.
 Recorder
 --------------------------------
 
-The recorder service writes Caliper I/O records into a file.
+The recorder service writes Caliper snapshot records into a file
+using a custom text-based I/O format. These files can be read
+with the `cali-query` tool.
+
+Writing occurs during a flush phase, which prompts snapshot-buffering
+services (in particular, the `trace` or `aggregate` services) to push
+out buffered snapshot records for writing. A flush phase can take
+several seconds and significantly disrupt program performance. By
+default, Caliper initiates a flush at the end of the program
+execution.
 
 You can also set the directory and filename that should be used;
 by default, the recorder service will auto-generate a
 file name.
 
-.. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename)
+.. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)
             
-   File name for context trace. May be set to ``stdout`` or ``stderr``
+   File name of the output file. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
+
+   The file name string can contain fields, denoted by ``%attribute_name%``,
+   which will be replaced with attribute values. For example, in an MPI
+   program with the `mpi` service enabled, the string ``caliper-%mpi.rank%.cali``
+   will create files ``caliper-0.cali``, ``caliper-1.cali``, etc. for each 
+   mpi rank. For this to work, the attributes named in the fields need to 
+   be set on the blackboard during the flush phase.
    
    Default: not set, auto-generates a unique file name.
 
@@ -374,6 +390,70 @@ file name.
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
+
+Report
+--------------------------------
+
+The report service prints a tabular, human-readable report of the
+collected snapshots. Similar to the `recorder` service, this report is
+generated and printed in a flush phase, typically at the end of the
+program execution. In contrast, the `textlog` service prints snapshots
+at the moment they are taken.
+
+.. envvar:: CALI_REPORT_FILENAME
+
+   File name of the output file. May be set to ``stdout`` or ``stderr``
+   to print to the standard output or error streams, respectively. 
+
+   Similar to the `recorder` service, the file name may contain fields
+   which will be substituted by attribute values (see `recorder`
+   service description), for example to create xindividual
+   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
+   multi-process program.
+
+   Default: stdout
+
+.. envvar:: CALI_REPORT_ATTRIBUTES
+
+   Colon-separated list of attribute names. Selects which attributes
+   in the snapshots should be printed (i.e., the table columns).
+
+   Default: empty; all attributes in the snapshots will be printed.
+
+.. envvar:: CALI_REPORT_FILTER
+
+   Selects which snapshots to print (i.e., the table rows). This is a
+   colon-seeparated list of filter specifications of the form
+   ``attribute name`` (selects snapshots which contain this attribute,
+   with any value), or ``attribute name=value`` (selects snapshots
+   where the attribute is set to the given value).
+
+.. envvar:: CALI_REPORT_SORT_BY
+
+   A colon-separated list of attributes to sort snapshots (rows) by.
+
+Example: Consider the following report configuration and list of
+flushed snapshots: ::
+
+   CALI_REPORT_FILTER=phase=loop
+   CALI_REPORT_ATTRIBUTES=function:time.duration
+   CALI_REPORT_SORT_BY=time.duration
+
+   phase=init,function=foo,time.duration=42
+   phase=loop,function=foo,time.duration=2000
+   phase=loop,function=bar,time.duration=12
+   phase=loop,function=foo,time.duration=100
+
+This configuration will create the following report output: ::
+
+   function time.duration
+   bar                 12
+   foo                100
+   foo		     2000 
+
+Only snapshots where ``phase=loop`` are selected (due to the filter
+configuration), and the ``function`` and ``time.duration`` attributes
+are printed, in ascending order of ``time.duration``.
 
 Textlog
 --------------------------------
