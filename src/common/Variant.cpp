@@ -505,12 +505,30 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
     switch (v.m_type) {
     case CALI_TYPE_INV:
         break;
-
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
         v.m_size         = static_cast<size_t>(vldec_u64(buf+p, &p));
     default:
         v.m_value.v_uint = vldec_u64(buf+p, &p);
+    }
+
+    // set size for default types
+    switch (v.m_type) {
+    case CALI_TYPE_BOOL:
+        v.m_size = sizeof(bool);
+        break;
+    case CALI_TYPE_INT:
+        v.m_size = sizeof(int64_t);
+        break;
+    case CALI_TYPE_UINT:
+        v.m_size = sizeof(uint64_t);
+        break;
+    case CALI_TYPE_DOUBLE:
+        v.m_size = sizeof(double);
+        break;
+    case CALI_TYPE_TYPE:
+        v.m_size = sizeof(cali_attr_type);
+        break;
     }
 
     if (inc)
@@ -530,33 +548,46 @@ Variant::concretize(cali_attr_type type, bool *ok) const
 
         return *this;
     }
+
+    bool my_ok = false;
         
     switch (type) {
     case CALI_TYPE_INV:
     case CALI_TYPE_USR:        
     case CALI_TYPE_STRING:
         // can't concretize this without knowing where to alloc memory
-        if (ok)
-            *ok = false;
+        my_ok = false;
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_INT:
+        {
+            int64_t u = to_int(&my_ok);
+
+            if (my_ok)
+                ret = Variant(type, &u, sizeof(int64_t));
+        }
+        break;
     case CALI_TYPE_UINT:
         {
-            uint64_t u = to_uint();
-            ret = Variant(type, &u, sizeof(uint64_t));
+            uint64_t u = to_uint(&my_ok);
+
+            if (my_ok)
+                ret = Variant(type, &u, sizeof(uint64_t));
         }
         break;
     case CALI_TYPE_DOUBLE:
-        ret = Variant(to_double(ok));
+        ret = Variant(to_double(&my_ok));
         break;
     case CALI_TYPE_BOOL:
-        ret = Variant(to_bool(ok));
+        ret = Variant(to_bool(&my_ok));
         break;
     case CALI_TYPE_TYPE:
-        ret = Variant(to_attr_type(ok));
+        ret = Variant(to_attr_type(&my_ok));
         break;
     };
+
+    if (ok)
+        *ok = my_ok;
 
     return ret;
 }
@@ -589,6 +620,33 @@ bool cali::operator == (const Variant& lhs, const Variant& rhs)
         return lhs.m_value.v_double == rhs.m_value.v_double;
     default:
         return lhs.m_value.v_uint   == rhs.m_value.v_uint;
+    }
+}
+
+bool cali::operator < (const Variant& lhs, const Variant& rhs)
+{
+    if (lhs.m_type == CALI_TYPE_INV || rhs.m_type == CALI_TYPE_INV)
+        return lhs.to_string() < rhs.to_string();
+
+    if (lhs.m_type != rhs.m_type)
+        return lhs.m_type < rhs.m_type;
+
+    switch (lhs.m_type) {
+    case CALI_TYPE_STRING:
+        return strncmp(static_cast<const char*>(lhs.m_value.ptr),
+                       static_cast<const char*>(rhs.m_value.ptr), std::min(lhs.m_size, rhs.m_size)) < 0;
+    case CALI_TYPE_USR:
+        return memcmp(lhs.m_value.ptr, rhs.m_value.ptr, std::min(lhs.m_size, rhs.m_size)) < 0;
+    case CALI_TYPE_BOOL:
+        return lhs.m_value.v_bool   < rhs.m_value.v_bool;
+    case CALI_TYPE_TYPE:
+        return lhs.m_value.v_type   < rhs.m_value.v_type;
+    case CALI_TYPE_DOUBLE:
+        return lhs.m_value.v_double < rhs.m_value.v_double;
+    case CALI_TYPE_INT:
+        return lhs.m_value.v_int    < rhs.m_value.v_int;
+    default:
+        return lhs.m_value.v_uint   < rhs.m_value.v_uint;
     }
 }
 

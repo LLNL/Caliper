@@ -35,7 +35,7 @@
 
 #include "Format.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include "Attribute.h"
 #include "ContextRecord.h"
@@ -131,7 +131,7 @@ struct Format::FormatImpl
         }
     }
 
-    void print(CaliperMetadataDB& db, const EntryList& list) {
+    void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::ostringstream os;
         
         for (Field f : m_fields) {
@@ -142,7 +142,7 @@ struct Format::FormatImpl
                     g(m_fields_lock);
                 
                 if (f.attr == Attribute::invalid)
-                    f.attr = db.attribute(f.attr_name);
+                    f.attr = db.get_attribute(f.attr_name);
 
                 attr = f.attr;
             }
@@ -195,7 +195,7 @@ Format::~Format()
 }
 
 void 
-Format::operator()(CaliperMetadataDB& db, const EntryList& list)
+Format::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
 }

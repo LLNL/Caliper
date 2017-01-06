@@ -25,9 +25,9 @@ add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
 target_link_libraries(caliper-reader caliper-common)
 
-install(FILES ${CALIPER_READER_HEADERS} DESTINATION include/caliper)
+install(FILES ${CALIPER_READER_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(TARGETS caliper-reader 
   EXPORT caliper
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

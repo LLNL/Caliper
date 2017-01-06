@@ -6,12 +6,15 @@
 Caliper: Context Annotation Library (for Performance)
 ================================================================
 
-Caliper is a generic context annotation system. It gives programmers
-the ability to provide arbitrary program context information to 
-(performance) tools at runtime. Alternatively, Caliper can be used 
-as a stand-alone performance profile or trace data collector.
+Caliper is a generic context annotation system. It serves as an
+abstraction layer between applications and performance tools,
+providing a clean and easy-to-use interface for application developers
+to express application semantics that can be used by tools and
+auto-tuners. In addition, Caliper provides performance profiling and
+tracing capabilites on its own.
 
-
+Caliper is available for download on
+`github <https://github.com/LLNL/Caliper>`_.
 
 Contents:
 --------------------------------

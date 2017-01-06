@@ -45,7 +45,7 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
+class CaliperMetadataAccessInterface;
 
 class Table 
 {
@@ -54,13 +54,13 @@ class Table
 
 public:
 
-    Table(const std::string& fields);
+    Table(const std::string& fields, const std::string& sort_fields);
 
     ~Table();
 
-    void operator()(CaliperMetadataDB&, const EntryList&);
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void flush(CaliperMetadataDB&, std::ostream& os);
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
 };
 
 } // namespace cali

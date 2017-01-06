@@ -40,7 +40,6 @@
 namespace cali
 {
     class  Attribute;
-    class  MemoryPool;
     struct MetaAttributeIDs;
     class  Node;
     class  Variant;
@@ -65,20 +64,20 @@ namespace cali
         /// \brief Get or construct a path in the tree under parent with
         ///   the given attribute:data pairs
         Node*
-        get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent, MemoryPool* pool);
+        get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent);
 
         /// \brief Get or construct a path in the tree under parent with
         ///   the data of the nodes given in the nodelist in the order of that list
         Node*
-        get_path(size_t n, const Node* nodelist[], Node* parent, MemoryPool* pool);
+        get_path(size_t n, const Node* nodelist[], Node* parent);
         
         Node*
-        remove_first_in_path(Node* path, const Attribute& attr, MemoryPool* pool);
+        remove_first_in_path(Node* path, const Attribute& attr);
         
         Node*
-        replace_first_in_path(Node* path, const Attribute& attr, const Variant& data, MemoryPool* pool);
+        replace_first_in_path(Node* path, const Attribute& attr, const Variant& data);
         Node*
-        replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[], MemoryPool* pool);
+        replace_all_in_path(Node* path, const Attribute& attr, size_t n, const Variant data[]);
 
         // --- Non-modifying tree operations
 
@@ -95,10 +94,10 @@ namespace cali
         Node*
         type_node(cali_attr_type type) const;
 
-        const MetaAttributeIDs*
-        meta_attribute_ids() const;
-
         // --- I/O ---
+
+        std::ostream&
+        print_statistics(std::ostream& os) const;
     };
 
 } // namespace cali

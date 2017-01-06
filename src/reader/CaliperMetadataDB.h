@@ -39,6 +39,7 @@
 #include "RecordProcessor.h"
 
 #include "Attribute.h"
+#include "CaliperMetadataAccessInterface.h"
 #include "RecordMap.h"
 
 #include <map>
@@ -53,7 +54,7 @@ class Variant;
     
 typedef std::map<cali_id_t, cali_id_t> IdMap;
 
-class CaliperMetadataDB
+class CaliperMetadataDB : public CaliperMetadataAccessInterface
 {
     struct CaliperMetadataDBImpl;
     std::unique_ptr<CaliperMetadataDBImpl> mP;
@@ -77,20 +78,23 @@ public:
     // --- Query API
     //
 
-    const Node* node(cali_id_t id) const;
+    Node*       node(cali_id_t id) const;
     
-    Attribute   attribute(cali_id_t id) const;
-    Attribute   attribute(const std::string& name) const;
+    Attribute   get_attribute(cali_id_t id) const;
+    Attribute   get_attribute(const std::string& name) const;
     
     //
     // --- Manipulation
     //
 
-    const Node* make_entry(size_t n, const Attribute* attr, const Variant* value);
-    Attribute   create_attribute(const std::string& name, cali_attr_type type, int prop);
+    Node*       make_tree_entry(std::size_t n, const Node* nodelist[]);
 
-    // awful kludge till we find solution for node writing problem
-    Node*       mutable_node(cali_id_t);
+    Attribute   create_attribute(const std::string& name, 
+                                 cali_attr_type     type, 
+                                 int                prop,
+                                 int                meta = 0,
+                                 const Attribute*   meta_attr = nullptr,
+                                 const Variant*     meta_data = nullptr);
 };
 
 }

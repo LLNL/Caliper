@@ -46,7 +46,7 @@ namespace cali
 {
 
 class Attribute;
-class EntryList;
+class SnapshotRecord;
 class Node;
 
 class ContextBuffer
@@ -76,7 +76,7 @@ public:
     /// @name get context
     /// @{
 
-    void     snapshot(EntryList* sbuf) const;
+    void     snapshot(SnapshotRecord* sbuf) const;
 
     /// @}
     /// @name Serialization API

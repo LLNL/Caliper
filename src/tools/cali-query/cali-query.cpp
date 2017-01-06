@@ -95,6 +95,10 @@ namespace
           "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
           "ATTRIBUTES" 
         },
+        { "sort", "sort-by", 'S', true,  
+          "Sort rows in table format: attribute[:...]", 
+          "SORT_ATTRIBUTES" 
+        },
 	{ "format", "format", 'f', true,
           "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
           "FORMAT_STRING"
@@ -138,17 +142,17 @@ namespace
             : sI { new StreamInfo(os) }
             { }
 
-        void operator()(CaliperMetadataDB& db, const Node* node) {
+        void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
             std::lock_guard<std::mutex>
                 g(sI->os_lock);
             
-            db.mutable_node(node->id())->write_path([this](const RecordDescriptor& r,
-                                                           const int* c,
-                                                           const Variant** d)
-                                                    { CsvSpec::write_record(sI->os, r, c, d); });
+            db.node(node->id())->write_path([this](const RecordDescriptor& r,
+                                                   const int* c,
+                                                   const Variant** d)
+                                            { CsvSpec::write_record(sI->os, r, c, d); });
         }
 
-        void operator()(CaliperMetadataDB& db, const EntryList& list) {
+        void operator()(CaliperMetadataAccessInterface& db, const EntryList& list) {
             std::vector<Variant> attr;
             std::vector<Variant> vals;
             std::vector<Variant> refs;
@@ -162,11 +166,11 @@ namespace
             
             for (const Entry& e : list) {
                 if (e.node()) {                    
-                    db.mutable_node(e.node()->id())->write_path(write_fn);
+                    db.node(e.node()->id())->write_path(write_fn);
                     
                     refs.push_back(Variant(e.node()->id()));
                 } else if (e.attribute() != CALI_INV_ID) {
-                    db.mutable_node(e.attribute())->write_path(write_fn);
+                    db.node(e.attribute())->write_path(write_fn);
                     
                     attr.push_back(Variant(e.attribute()));
                     vals.push_back(e.value());
@@ -207,7 +211,7 @@ namespace
             : m_max_node { 0 }
             { } 
 
-        void operator()(CaliperMetadataDB& db, const Node* node, NodeProcessFn push) {
+        void operator()(CaliperMetadataAccessInterface& db, const Node* node, NodeProcessFn push) {
             cali_id_t id = node->id();
 
             if (id != CALI_INV_ID) {
@@ -220,7 +224,7 @@ namespace
             push(db, node);
         }
         
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec, RecordProcessFn push) {
             if (get_record_type(rec) == "node") {
                 auto id_entry_it = rec.find("id");
 
@@ -251,7 +255,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             m_filter_fn(db, rec, m_push_fn);
         }
     };
@@ -267,7 +271,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const EntryList& list) {
+        void operator ()(CaliperMetadataAccessInterface& db, const EntryList& list) {
             m_filter_fn(db, list, m_push_fn);
         }
     };
@@ -283,7 +287,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const Node* node) {
+        void operator ()(CaliperMetadataAccessInterface& db, const Node* node) {
             m_filter_fn(db, node, m_push_fn);
         }
     };
@@ -358,11 +362,11 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    Table             tbl_writer(args.get("attributes"));
+    Table             tbl_writer(args.get("attributes"), args.get("sort"));
     Json              jsn_writer(args.get("attributes"));
 
-    NodeProcessFn     node_proc   = [](CaliperMetadataDB&,const Node*) { return; };
-    SnapshotProcessFn snap_writer = [](CaliperMetadataDB&,const EntryList&){ return; };
+    NodeProcessFn     node_proc   = [](CaliperMetadataAccessInterface&,const Node*) { return; };
+    SnapshotProcessFn snap_writer = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
 
 
     // differentiate between "expand" and "format"

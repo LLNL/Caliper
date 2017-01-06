@@ -36,7 +36,7 @@
 #include "../CaliperService.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
@@ -240,26 +240,24 @@ class AggregateDB {
         return entry;
     }
 
-    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry,
-                                   Caliper* c, std::unordered_set<cali_id_t>& written_node_cache) {
+    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c) {
         // --- decode key
 
-        size_t   p = 0;
-        int      num_nodes = static_cast<int>(vldec_u64(key + p, &p));
+        size_t    p = 0;
+        int       num_nodes = static_cast<int>(vldec_u64(key + p, &p));
 
-        Variant  node_vec[SNAP_MAX];
+        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
+        SnapshotRecord snapshot(snapshot_data);
 
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
-            node_vec[i] = Variant(static_cast<cali_id_t>(vldec_u64(key + p, &p)));
+            snapshot.append(c->node(vldec_u64(key + p, &p)));
 
         // --- write aggregate entries
 
-        int      num_aggr_attr = 1; // limit to single aggregation attribute for now
+        int       num_aggr_attr = 1; // limit to single aggregation attribute for now
 
-        Variant  attr_vec[SNAP_MAX];
-        Variant  data_vec[SNAP_MAX];
-
-        int      ap = 0;
+        Variant   attr_vec[SNAP_MAX];
+        Variant   data_vec[SNAP_MAX];
 
         for (int a = 0; a < std::min(num_aggr_attr, SNAP_MAX/3); ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
@@ -269,63 +267,21 @@ class AggregateDB {
             if (k->count == 0)
                 continue;
 
-            attr_vec[3*ap+0] = Variant(s_stats_attributes[a].min_attr.id());
-            attr_vec[3*ap+1] = Variant(s_stats_attributes[a].max_attr.id());
-            attr_vec[3*ap+2] = Variant(s_stats_attributes[a].sum_attr.id());
-
-            data_vec[3*ap+0] = Variant(k->min);
-            data_vec[3*ap+1] = Variant(k->max);
-            data_vec[3*ap+2] = Variant(k->sum);
-
-            ++ap;
+            snapshot.append(s_stats_attributes[a].min_attr.id(), Variant(k->min));
+            snapshot.append(s_stats_attributes[a].max_attr.id(), Variant(k->max));
+            snapshot.append(s_stats_attributes[a].sum_attr.id(), Variant(k->sum));
         }
 
         uint64_t count = entry->count;
 
-        attr_vec[3*ap] = s_count_attribute.id();
-        data_vec[3*ap] = Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t));
-
-        int      num_immediate = 3*ap + 1;
-
-        // --- write nodes (FIXME: get rid of this awful node cache hack)
-
-        for (int i = 0; i < num_nodes; ++i) {
-            cali_id_t node_id = node_vec[i].to_id();
-
-            if (written_node_cache.count(node_id))
-                continue;
-
-            Node* node = c->node(node_id);
-
-            if (node)
-                node->write_path(c->events().write_record);
-            else
-                Log(2).stream() << "aggregate: error: unknown node id " << node_id << std::endl;
-        }
-        for (int i = 0; i < num_immediate; ++i) {
-            cali_id_t node_id = attr_vec[i].to_id();
-
-            if (written_node_cache.count(node_id))
-                continue;
-
-            Node* node = c->node(node_id);
-
-            if (node)
-                node->write_path(c->events().write_record);
-            else
-                Log(2).stream() << "aggregate: error: unknown node id " << node_id << std::endl;
-        }
+        snapshot.append(s_count_attribute.id(), Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t)));
 
         // --- write snapshot record
 
-        int               n[3] = { num_nodes, num_immediate, num_immediate };
-        const Variant* data[3] = { node_vec,  attr_vec,      data_vec      };
-
-        c->events().write_record(ContextRecord::record_descriptor(), n, data);
+        c->events().flush_snapshot(c, nullptr, &snapshot);
     }
 
-    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry,
-                           Caliper* c, std::unordered_set<cali_id_t>& written_node_cache) {
+    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c) {
         if (!entry)
             return 0;
 
@@ -334,7 +290,7 @@ class AggregateDB {
         // --- write current entry if it represents a snapshot
 
         if (entry->count > 0)
-            write_aggregated_snapshot(key, entry, c, written_node_cache);
+            write_aggregated_snapshot(key, entry, c);
 
         num_written += (entry->count > 0 ? 1 : 0);
 
@@ -352,7 +308,7 @@ class AggregateDB {
             TrieNode* e  = m_trie.get(entry->next[i], false);
             next_key[n]  = static_cast<unsigned char>(i);
 
-            num_written += recursive_flush(n+1, next_key, e, c, written_node_cache);
+            num_written += recursive_flush(n+1, next_key, e, c);
         }
 
         return num_written;
@@ -370,13 +326,13 @@ public:
         m_max_keylen         = 0;
     }
 
-    void process_snapshot(Caliper* c, const EntryList* snapshot) {
-        EntryList::Sizes sizes = snapshot->size();
+    void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
+        SnapshotRecord::Sizes sizes = snapshot->size();
 
         if (sizes.n_nodes + sizes.n_immediate == 0)
             return;
 
-        EntryList::Data addr   = snapshot->data();
+        SnapshotRecord::Data addr   = snapshot->data();
 
         //
         // --- create / get context tree nodes for key
@@ -429,6 +385,8 @@ public:
 
                 if (node)
                     nodeid_vec[n_nodes++] = node->id();
+                else
+                    Log(0).stream() << "aggregate: can't create node" << std::endl;
             }
         } else {
             // --- no key attributes set: take nodes in snapshot   
@@ -484,11 +442,11 @@ public:
                 }
     }
 
-    size_t flush(Caliper* c, std::unordered_set<cali_id_t>& written_node_cache) {
+    size_t flush(Caliper* c) {
         TrieNode*     entry = m_trie.get(0, false);
         unsigned char key   = 0;
 
-        return recursive_flush(0, &key, entry, c, written_node_cache);
+        return recursive_flush(0, &key, entry, c);
     }
 
     bool stopped() const {
@@ -559,7 +517,7 @@ public:
         db->m_retired.store(true);
     }
 
-    static void flush_cb(Caliper* c, const EntryList*) {
+    static void flush_cb(Caliper* c, const SnapshotRecord*) {
         AggregateDB* db = nullptr;
 
         {
@@ -574,7 +532,7 @@ public:
 
         while (db) {
             db->m_stopped.store(true);
-            num_written += db->flush(c, written_node_cache);
+            num_written += db->flush(c);
 
             s_global_num_trie_entries   += db->m_num_trie_entries;
             s_global_num_kernel_entries += db->m_num_kernel_entries;
@@ -610,7 +568,7 @@ public:
         Log(1).stream() << "aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
-    static void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         AggregateDB* db = acquire(c, !c->is_signal());
 
         if (db && !db->stopped())

@@ -38,6 +38,7 @@
 #include "cali_definitions.h"
 
 #include "Attribute.h"
+#include "CaliperMetadataAccessInterface.h"
 #include "Entry.h"
 #include "Record.h"
 #include "Variant.h"
@@ -52,11 +53,11 @@ namespace cali
 // Forward declarations
 
 class Node;    
-class EntryList;
+class SnapshotRecord;
     
 /// @class Caliper
 
-class Caliper 
+class Caliper : public CaliperMetadataAccessInterface
 {
 public:
 
@@ -111,12 +112,12 @@ public:
         typedef util::callback<void(Caliper*,cali_context_scope_t)>
             scope_cbvec;
 
-        typedef util::callback<void(Caliper*,int,const EntryList*,EntryList*)>
+        typedef util::callback<void(Caliper*,int,const SnapshotRecord*,SnapshotRecord*)>
             snapshot_cbvec;
-        typedef util::callback<void(Caliper*,const EntryList*,const EntryList*)>
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*, const EntryList*)>
+        typedef util::callback<void(Caliper*, const SnapshotRecord*)>
             flush_cbvec;
         typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
             write_record_cbvec;
@@ -140,7 +141,11 @@ public:
         snapshot_cbvec         snapshot;
         process_snapshot_cbvec process_snapshot;
 
+        flush_cbvec            pre_flush_evt;
         flush_cbvec            flush;
+        process_snapshot_cbvec flush_snapshot;
+        flush_cbvec            flush_finish_evt;
+
         write_record_cbvec     write_record;
     };
 
@@ -157,10 +162,10 @@ public:
 
     // --- Snapshot API
 
-    void      push_snapshot(int scopes, const EntryList* trigger_info);
-    void      pull_snapshot(int scopes, const EntryList* trigger_info, EntryList* snapshot);
+    void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
+    void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const EntryList* trigger_info);
+    void      flush(const SnapshotRecord* trigger_info);
     
     // --- Annotation API
 
@@ -173,20 +178,14 @@ public:
 
     // --- Direct metadata / data access API
 
-    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, EntryList& list);
+    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
-
-    /// \brief Get or create new tree path with data from given nodes in given order 
-    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
-
-    /// \brief return node by id
-    Node*     node(cali_id_t id); // EXTREMELY SLOW, use with caution!
 
     // --- Query API
 
     Entry     get(const Attribute& attr);
 
-    // --- Attribute API
+    // --- Metadata Access Interface
 
     size_t    num_attributes() const;
 
@@ -199,6 +198,12 @@ public:
                                int                meta = 0,
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
+
+    /// \brief return node by id
+    Node*     node(cali_id_t id) const;
+
+    /// \brief Get or create new tree path with data from given nodes in given order 
+    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
 
     // --- Caliper API access
 

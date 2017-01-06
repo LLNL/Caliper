@@ -27,6 +27,6 @@ target_link_libraries(caliper-mpiwrap ${MPI_C_LIBRARIES})
 
 install(TARGETS caliper-mpiwrap
   EXPORT caliper
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 add_caliper_service("mpi CALIPER_HAVE_MPI")

@@ -3,11 +3,10 @@
 
 #include "../CaliperService.h"
 
-#include "../textlog/SnapshotTextFormatter.h"
-
 #include <curl/curl.h>
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
+#include <SnapshotTextFormatter.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -134,8 +133,6 @@ class NetOutService
     }
 
     void create_attribute_cb(Caliper* c, const Attribute& attr) {
-        formatter.update_attribute(attr);
-
         if (attr.skip_events())
             return;
 
@@ -148,7 +145,7 @@ class NetOutService
         }
     }
 
-    void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         // operate only on cali.snapshot.event.end attributes for now
         if (!trigger_info)
             return;
@@ -174,9 +171,19 @@ class NetOutService
 
         if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
-        
+
+        std::vector<Entry> entrylist;
+
+        SnapshotRecord::Sizes size = snapshot->size();
+        SnapshotRecord::Data  data = snapshot->data();
+
+        for (size_t n = 0; n < size.n_nodes; ++n)
+            entrylist.push_back(Entry(data.node_entries[n]));
+        for (size_t n = 0; n < size.n_immediate; ++n)
+            entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
+
         // DZPOLIA EDITING HERE
-        formatter.print(string_output, snapshot) << std::endl;
+        formatter.print(string_output, c, entrylist) << std::endl;
         std::string outThis = string_output.str();
         curl_easy_setopt(m_curl,CURLOPT_URL,m_output_url.c_str());
         curl_easy_setopt(m_curl,CURLOPT_USERAGENT,"libcurl-agent/1.0");
@@ -202,7 +209,7 @@ class NetOutService
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
 
-        formatter.parse(formatstr, c);
+        formatter.reset(formatstr);
 
         set_event_attr      = c->get_attribute("cali.snapshot.event.set");
         end_event_attr      = c->get_attribute("cali.snapshot.event.end");
@@ -219,7 +226,7 @@ class NetOutService
         s_netout->create_attribute_cb(c, attr);
     }
 
-    static void s_process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    static void s_process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         s_netout->process_snapshot_cb(c, trigger_info, snapshot);
     }
 

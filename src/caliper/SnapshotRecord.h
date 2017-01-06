@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file EntryList.h
-/// Snapshot EntryList class
+/// \file SnapshotRecord.h
+/// Snapshot SnapshotRecord class
 
 #pragma once
 
@@ -47,7 +47,7 @@ namespace cali
 // Snapshots are fixed-size, stack-allocated objects that can be used in 
 // a signal handler  
 
-class EntryList 
+class SnapshotRecord 
 {    
 public:
 
@@ -63,19 +63,19 @@ public:
     };
 
     template<std::size_t N>
-    struct FixedEntryList {
+    struct FixedSnapshotRecord {
         cali::Node*   node_array[N];
         cali_id_t     attr_array[N];
         cali::Variant data_array[N];
 
-        FixedEntryList() {
+        FixedSnapshotRecord() {
             std::fill_n(node_array, N, nullptr);
             std::fill_n(attr_array, N, CALI_INV_ID);
             std::fill_n(data_array, N, cali::Variant());            
         }
     };
 
-    EntryList()
+    SnapshotRecord()
         : m_node_array { 0 },
           m_attr_array { 0 },
           m_data_array { 0 },
@@ -84,7 +84,7 @@ public:
         { }
     
     template<std::size_t N>
-    EntryList(FixedEntryList<N>& list)
+    SnapshotRecord(FixedSnapshotRecord<N>& list)
         : m_node_array { list.node_array },
           m_attr_array { list.attr_array },
           m_data_array { list.data_array },
@@ -92,7 +92,7 @@ public:
           m_capacity { N, N }
         { }
 
-    EntryList(size_t n, cali_id_t* attr, Variant* data)
+    SnapshotRecord(size_t n, cali_id_t* attr, Variant* data)
         : m_node_array { 0 },
           m_attr_array { attr },
           m_data_array { data },
@@ -100,7 +100,7 @@ public:
           m_capacity { 0, n }
         { } 
 
-    void append(const EntryList& list);
+    void append(const SnapshotRecord& list);
     void append(cali::Node*);
     void append(size_t n, const cali_id_t*, const cali::Variant*);
     void append(size_t n, cali::Node* const*, size_t m, const cali_id_t*, const cali::Variant*);

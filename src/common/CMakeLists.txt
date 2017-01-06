@@ -1,5 +1,6 @@
 set(CALIPER_COMMON_HEADERS
     Attribute.h
+    CaliperMetadataAccessInterface.h
     ContextRecord.h
     Entry.h
     IdType.h
@@ -8,6 +9,7 @@ set(CALIPER_COMMON_HEADERS
     Record.h
     RecordMap.h
     RuntimeConfig.h
+    SnapshotTextFormatter.h
     Variant.h
     cali_types.h)
 set(CALIPER_UTIL_HEADERS
@@ -25,6 +27,7 @@ set(CALIPER_COMMON_SOURCES
     Node.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
+    SnapshotTextFormatter.cpp
     Variant.cpp
     cali_types.c)
 
@@ -36,10 +39,10 @@ add_library(caliper-common
   $<TARGET_OBJECTS:c-util>
   ${CALIPER_COMMON_SOURCES})
 
-install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION include/caliper)
-install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION include/caliper/util)
+install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
+install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/util)
 
 install(TARGETS caliper-common 
   EXPORT caliper
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

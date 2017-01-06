@@ -43,7 +43,7 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
+class CaliperMetadataAccessInterface;
 
 class RecordSelector 
 {
@@ -56,7 +56,7 @@ public:
 
     ~RecordSelector();
 
-    void operator()(CaliperMetadataDB&, const EntryList& node, SnapshotProcessFn&) const;
+    void operator()(CaliperMetadataAccessInterface&, const EntryList& node, SnapshotProcessFn&) const;
 };
 
 } // namespace cali

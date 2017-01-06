@@ -34,15 +34,21 @@ Options
 |        |                                   | attributes/variables are selected by listing with a ``:`` separator.|
 |        |                                   | The default behavior is to select all snapshots.                    |
 +--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-e`` | ``--expand``                      | Expands the selected snapshots (from ``-s``) and prints the selected|
-|        |                                   | attributes (from ``--print-attributes``). Default behavior is to    |
-|        |                                   | expand and print all snapshots and attributes.                      |
+| ``-t`` | ``--table``                       | Print snapshots in a human-readable table format.                   |
 +--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-p`` | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print with the ``--expand`` option.      |
+| ``-S`` | ``--sort-by=ATTRIBUTES``          | Sort snapshots by the given attributes when printing a table.       | 
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-e`` | ``--expand``                      | Expands the selected snapshots (from ``-s``) and prints the selected|
+|        |                                   | attributes (from ``--print-attributes``) as lists of comma-separated|
+|        |                                   | key-value pairs (e.g., ``attribute1=value1,...``. Default behavior  |
+|        |                                   | is to expand and print all snapshots and attributes.                |
++--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-p`` | ``--print-attributes=ATTRIBUTES`` | Select which attributes to print with the ``--expand`` or           |
+|        |                                   | ``--table`` formatters.                                             |
 |        |                                   | Attributes can be                                                   |
 |        |                                   | excluded by using a ``-`` symbol in front of the name. Multiple     |
 |        |                                   | attributes are selected/excluded by listing with a ``:`` separator. |
-|        |                                   | By default, all attributes are printed.                             |
+|        |                                   |                                                                     |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-a`` | ``--aggregate=AGGREGATION_OPS``   | Aggregate over the specified attributes with the specified          |
 |        |                                   | operation(s). ``AGGREGATION_OPS`` format is:                        |
@@ -62,7 +68,7 @@ Options
 |        |                                   | listed in ``FORMAT_STRING``. Will override the ``--expand`` option. |
 |        |                                   | Attributes excluded by ``--print-attributes`` will not print.       |
 +--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-t`` | ``--title=TITLE_STRING``          | Specify a custom title or header line.                              |
+| ``-T`` | ``--title=TITLE_STRING``          | Specify a custom title (header line) for formatted (``-f``) output. |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-o`` | ``--output=FILE``                 | Set the name of the output file.                                    |
 +--------+-----------------------------------+---------------------------------------------------------------------+
@@ -131,6 +137,59 @@ The first six lines of records after processing look like this:
 
 Without using ``-e`` or ``--expand``, ``cali-query`` does not change the format
 of the records.
+
+``-t`` / ``--table``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``--table`` option prints snaphsots in a human-readable table format. For example, 
+
+.. code-block:: sh
+
+    $ cali-query -t 160809-094411_72298_fuu1NeAHT2US.cali
+
+will print snapsots as follows:
+
+.. code-block:: none
+
+    main            time.inclusive.duration iteration factorial
+    init                               1813
+    body
+    body/init                           114
+    body/loop
+    body/loop                                       0
+    body/loop                           215         0 init
+    body/loop                            21         0 comp
+    body/loop                           529         0
+    body/loop                                       1
+
+The table's columns represent attributes. Each row represents a single snapshot.
+
+The ``--print-attributes`` specifies the list of attributes to
+print, and the order in which they are shown. By default, the table includes all
+attributes except certain Caliper-internal attributes whose names start
+with "event." or "cali.".
+
+The ``--sort-by`` option specifies a list of attributes to be used as sorting
+criteria. If given, rows will be printed in ascending order according to the value
+of the given attributes:
+
+.. code-block:: sh
+
+    $ cali-query -t 160809-094411_72298_fuu1NeAHT2US.cali --sort-by=time.inclusive.duration
+
+.. code-block:: none
+                
+    main            time.inclusive.duration iteration factorial
+    ...
+    body/init                           114
+    body/loop                           164         3
+    body/loop                           183         2
+    body/loop                           210         4
+    body/loop                           215         0 init
+    body/loop                           529         0
+    body/loop                          1214
+    init                               1813
+    
 
 ``-e`` and ``--expand``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -233,7 +292,8 @@ Options available for ``--aggregate`` are:
 
 ``--print-attributes``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``--print-attributes`` controls which parts of each record are written to the output.
+``--print-attributes`` controls which parts of each record are written to the output
+with the ``--expand`` and ``--table`` formatters.
 Only the selected attributes will print in each record.
 
 .. code-block:: sh
@@ -273,7 +333,7 @@ The title line and first eight records are formatted as specified::
     body/loop    init                   15 
     body/loop    comp/init              101
 
-``-t`` and ``--title``
+``-T`` and ``--title``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Prints a custom title string for the ``--format`` output option. The format is any string.
 

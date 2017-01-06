@@ -13,4 +13,4 @@ target_link_libraries(cali-graph caliper-common)
 target_link_libraries(cali-graph caliper-tools-util)
 target_link_libraries(cali-graph caliper)
 
-install(TARGETS cali-graph DESTINATION bin)
+install(TARGETS cali-graph DESTINATION ${CMAKE_INSTALL_BINDIR})

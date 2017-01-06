@@ -3,13 +3,12 @@
 
 #include "../CaliperService.h"
 
-#include "SnapshotTextFormatter.h"
-
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
+#include <SnapshotTextFormatter.h>
 
 #include <util/split.hpp>
 
@@ -129,9 +128,7 @@ class TextLogService
         }
     }
 
-    void create_attribute_cb(Caliper* c, const Attribute& attr) {
-        formatter.update_attribute(attr);
-
+    void create_attribute(Caliper* c, const Attribute& attr) {
         if (attr.skip_events())
             return;
 
@@ -144,7 +141,7 @@ class TextLogService
         }
     }
 
-    void process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
+    void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         // operate only on cali.snapshot.event.end attributes for now
         if (!trigger_info)
             return;
@@ -171,9 +168,19 @@ class TextLogService
         if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
+        std::vector<Entry> entrylist;
+
+        SnapshotRecord::Sizes size = snapshot->size();
+        SnapshotRecord::Data  data = snapshot->data();
+
+        for (size_t n = 0; n < size.n_nodes; ++n)
+            entrylist.push_back(Entry(data.node_entries[n]));
+        for (size_t n = 0; n < size.n_immediate; ++n)
+            entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
+
         ostringstream os;
         
-        formatter.print(os, snapshot) << std::endl;
+        formatter.print(os, c, entrylist) << std::endl;
 
         std::lock_guard<std::mutex>
             g(stream_mutex);
@@ -181,16 +188,16 @@ class TextLogService
         get_stream() << os.str();
     }
 
-    void post_init_cb(Caliper* c) {
+    void post_init(Caliper* c) {
         std::string formatstr = config.get("formatstring").to_string();
 
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
 
-        formatter.parse(formatstr, c);
+        formatter.reset(formatstr);
 
-        set_event_attr      = c->get_attribute("cali.snapshot.event.set");
-        end_event_attr      = c->get_attribute("cali.snapshot.event.end");
+        set_event_attr = c->get_attribute("cali.snapshot.event.set");
+        end_event_attr = c->get_attribute("cali.snapshot.event.end");
 
         if (end_event_attr      == Attribute::invalid ||
             set_event_attr      == Attribute::invalid)
@@ -200,16 +207,16 @@ class TextLogService
 
     // static callbacks
 
-    static void s_create_attribute_cb(Caliper* c, const Attribute& attr) { 
-        s_textlog->create_attribute_cb(c, attr);
+    static void create_attr_cb(Caliper* c, const Attribute& attr) {
+        s_textlog->create_attribute(c, attr);
     }
 
-    static void s_process_snapshot_cb(Caliper* c, const EntryList* trigger_info, const EntryList* snapshot) {
-        s_textlog->process_snapshot_cb(c, trigger_info, snapshot);
+    static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
+        s_textlog->process_snapshot(c, trigger_info, snapshot);
     }
 
-    static void s_post_init_cb(Caliper* c) { 
-        s_textlog->post_init_cb(c);
+    static void post_init_cb(Caliper* c) { 
+        s_textlog->post_init(c);
     }
 
     TextLogService(Caliper* c)
@@ -222,9 +229,9 @@ class TextLogService
             util::split(config.get("trigger").to_string(), ':', 
                         std::back_inserter(trigger_attr_names));
 
-            c->events().create_attr_evt.connect(&TextLogService::s_create_attribute_cb);
-            c->events().post_init_evt.connect(&TextLogService::s_post_init_cb);
-            c->events().process_snapshot.connect(&TextLogService::s_process_snapshot_cb);
+            c->events().create_attr_evt.connect(&TextLogService::create_attr_cb);
+            c->events().post_init_evt.connect(&TextLogService::post_init_cb);
+            c->events().process_snapshot.connect(&TextLogService::process_snapshot_cb);
 
             Log(1).stream() << "Registered text log service" << std::endl;
         }

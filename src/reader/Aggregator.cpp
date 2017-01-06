@@ -35,7 +35,7 @@
 
 #include "Aggregator.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include <Attribute.h>
 #include <Log.h>
@@ -64,8 +64,8 @@ public:
     virtual ~AggregateKernel()
         { }
     
-    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) = 0;
-    virtual void append_result(CaliperMetadataDB& db, EntryList& list) = 0;
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) = 0;
 };
 
 class AggregateKernelConfig
@@ -91,7 +91,7 @@ public:
 
     public:
 
-        Attribute attribute(CaliperMetadataDB& db) {
+        Attribute attribute(CaliperMetadataAccessInterface& db) {
             if (m_attr == Attribute::invalid)
                 m_attr = db.create_attribute("aggregate.count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
@@ -115,11 +115,11 @@ public:
         : m_count(0), m_config(config)
         { }
     
-    virtual void aggregate(CaliperMetadataDB&, const EntryList&) {
+    virtual void aggregate(CaliperMetadataAccessInterface&, const EntryList&) {
         ++m_count;
     }
 
-    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         uint64_t count = m_count.load();
         
         if (count > 0)
@@ -147,9 +147,9 @@ public:
         
     public:
 
-        Attribute get_aggr_attr(CaliperMetadataDB& db) {
+        Attribute get_aggr_attr(CaliperMetadataAccessInterface& db) {
             if (m_aggr_attr == Attribute::invalid)
-                m_aggr_attr = db.attribute(m_aggr_attr_name);
+                m_aggr_attr = db.get_attribute(m_aggr_attr_name);
 
             return m_aggr_attr;
         }
@@ -174,7 +174,7 @@ public:
         : m_count(0), m_config(config)
         { }
     
-    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_lock);
         
@@ -207,7 +207,7 @@ public:
         }
     }
 
-    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         if (m_count > 0)
             list.push_back(Entry(m_config->get_aggr_attr(db), m_sum));
     }
@@ -238,14 +238,14 @@ public:
         
     public:
 
-        Attribute get_aggr_attr(CaliperMetadataDB& db) {
+        Attribute get_aggr_attr(CaliperMetadataAccessInterface& db) {
             if (m_aggr_attr == Attribute::invalid)
-                m_aggr_attr = db.attribute(m_aggr_attr_name);
+                m_aggr_attr = db.get_attribute(m_aggr_attr_name);
 
             return m_aggr_attr;
         }
 
-        Attribute get_avg_attribute(CaliperMetadataDB& db) {
+        Attribute get_avg_attribute(CaliperMetadataAccessInterface& db) {
             if (m_aggr_attr == Attribute::invalid)
                 return Attribute::invalid;
             if (m_avg_attr == Attribute::invalid)
@@ -257,7 +257,7 @@ public:
             return m_avg_attr;
         }
 
-        Attribute get_min_attribute(CaliperMetadataDB& db) {
+        Attribute get_min_attribute(CaliperMetadataAccessInterface& db) {
             if (m_aggr_attr == Attribute::invalid)
                 return Attribute::invalid;            
             if (m_min_attr == Attribute::invalid)
@@ -269,7 +269,7 @@ public:
             return m_min_attr;
         }
         
-        Attribute get_max_attribute(CaliperMetadataDB& db) {
+        Attribute get_max_attribute(CaliperMetadataAccessInterface& db) {
             if (m_aggr_attr == Attribute::invalid)
                 return Attribute::invalid;            
             if (m_max_attr == Attribute::invalid)
@@ -304,7 +304,7 @@ public:
         : m_count(0), m_sum(0), m_config(config)
         { }
     
-    virtual void aggregate(CaliperMetadataDB& db, const EntryList& list) {
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_lock);
         
@@ -370,7 +370,7 @@ public:
         }
     }
 
-    virtual void append_result(CaliperMetadataDB& db, EntryList& list) {
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         if (m_count > 0) {
             list.push_back(Entry(m_config->get_avg_attribute(db),
                                  m_sum.to_double() / m_count));
@@ -510,14 +510,14 @@ struct Aggregator::AggregatorImpl
     // --- snapshot processing
     //
 
-    std::vector<cali_id_t> update_key_attribute_ids(CaliperMetadataDB& db) {
+    std::vector<cali_id_t> update_key_attribute_ids(CaliperMetadataAccessInterface& db) {
         std::lock_guard<std::mutex>
             g(m_key_lock);
         
         auto it = m_key_strings.begin();
         
         while (it != m_key_strings.end()) {
-            Attribute attr = db.attribute(*it);
+            Attribute attr = db.get_attribute(*it);
 
             if (attr != Attribute::invalid) {
                 m_key_ids.push_back(attr.id());
@@ -529,7 +529,7 @@ struct Aggregator::AggregatorImpl
         return m_key_ids;
     }
 
-    size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataDB& db, unsigned char* key) {
+    size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataAccessInterface& db, unsigned char* key) {
         unsigned char node_key[10];
         size_t        node_key_len  = 0;
 
@@ -546,7 +546,7 @@ struct Aggregator::AggregatorImpl
 
             // need to convert the Variant to its actual type before saving
             bool    ok = true;
-            Variant v  = e.value().concretize(db.attribute(e.attribute()).type(), &ok);
+            Variant v  = e.value().concretize(db.get_attribute(e.attribute()).type(), &ok);
 
             if (!ok)
                 continue;
@@ -573,7 +573,7 @@ struct Aggregator::AggregatorImpl
         return pos;
     }
     
-    void process(CaliperMetadataDB& db, const EntryList& list) {
+    void process(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::vector<cali_id_t>   key_ids = update_key_attribute_ids(db);
                 
         // --- Unravel nodes, filter for key attributes
@@ -600,21 +600,12 @@ struct Aggregator::AggregatorImpl
         
         // --- Group by attribute, reverse nodes (restores original order) and get/create tree node
 
-        std::vector<Attribute> attr;
-        std::vector<Variant>   data;
-
-        attr.reserve(nodes.size());
-        data.reserve(nodes.size());
-
-        stable_sort(nodes.begin(), nodes.end(),
+        std::stable_sort(nodes.begin(), nodes.end(),
                     [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
 
-        for (auto rit = nodes.rbegin(); rit != nodes.rend(); ++rit) {
-            attr.push_back(db.attribute((*rit)->attribute()));
-            data.push_back((*rit)->data());
-        }
+        std::reverse(nodes.begin(), nodes.end());
 
-        const Node*   key_node = db.make_entry(attr.size(), attr.data(), data.data());
+        const Node*   key_node = db.make_tree_entry(nodes.size(), nodes.data());
 
         // --- Pack key
 
@@ -636,7 +627,7 @@ struct Aggregator::AggregatorImpl
     // --- Flush
     //
 
-    void unpack_key(const unsigned char* key, const CaliperMetadataDB& db, EntryList& list) {
+    void unpack_key(const unsigned char* key, const CaliperMetadataAccessInterface& db, EntryList& list) {
         // key format: 2*N + node flag, node id, N * (attr id, Variant)
 
         size_t   p = 0;
@@ -652,12 +643,12 @@ struct Aggregator::AggregatorImpl
             Variant   data = Variant::unpack(key+p, &p, &ok);
 
             if (ok)
-                list.push_back(Entry(db.attribute(id), data));
+                list.push_back(Entry(db.get_attribute(id), data));
         }
     }
     
     void recursive_flush(size_t n, unsigned char* key, TrieNode* trie,
-                         CaliperMetadataDB& db, const SnapshotProcessFn push) {
+                         CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
         if (!trie)
             return;
 
@@ -694,7 +685,7 @@ struct Aggregator::AggregatorImpl
         }
     }
     
-    void flush(CaliperMetadataDB& db, const SnapshotProcessFn push) {
+    void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
         // NOTE: No locking: we assume flush() runs serially!
         
         TrieNode*     trie = get_trienode(0);
@@ -733,13 +724,13 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataDB& db, SnapshotProcessFn& push)
+Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn& push)
 {
     mP->flush(db, push);
 }
 
 void
-Aggregator::operator()(CaliperMetadataDB& db, const EntryList& list)
+Aggregator::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process(db, list);
 }

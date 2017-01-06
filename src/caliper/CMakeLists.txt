@@ -5,7 +5,7 @@ set(CALIPER_HEADERS
     Annotation.h
     CaliFunctional.h
     Caliper.h
-    EntryList.h
+    SnapshotRecord.h
     cali.h
     cali_definitions.h
     cali_macros.h)
@@ -14,7 +14,7 @@ set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
     ContextBuffer.cpp
-    EntryList.cpp
+    SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
     api.cpp
@@ -29,9 +29,12 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper ${_extlib})
 endforeach()
 
-install(FILES ${CALIPER_HEADERS} DESTINATION include/caliper)
+# Add reader lib to runtime (for report service)
+target_link_libraries(caliper caliper-reader)
+
+install(FILES ${CALIPER_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(TARGETS caliper 
   EXPORT caliper 
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

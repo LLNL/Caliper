@@ -45,7 +45,7 @@
 namespace cali
 {
 
-class CaliperMetadataDB;
+class CaliperMetadataAccessInterface;
 
 class Json 
 {
@@ -58,9 +58,9 @@ public:
 
     ~Json();
 
-    void operator()(CaliperMetadataDB&, const EntryList&);
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void flush(CaliperMetadataDB&, std::ostream& os);
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
 };
 
 } // namespace cali

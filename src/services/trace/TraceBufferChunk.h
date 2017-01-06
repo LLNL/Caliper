@@ -38,12 +38,12 @@
 #include <cali_types.h>
 
 #include <cstring>
-#include <unordered_set>
+
 
 namespace cali
 {
     class Caliper;
-    class EntryList;
+    class SnapshotRecord;
 }
 
 namespace trace
@@ -69,10 +69,10 @@ namespace trace
         void   append(TraceBufferChunk* chunk);
         void   reset();
 
-        size_t flush(cali::Caliper* c, std::unordered_set<cali_id_t>& written_node_cache);
+        size_t flush(cali::Caliper* c);
 
-        void   save_snapshot(const cali::EntryList* s);
-        bool   fits(const cali::EntryList* s) const;
+        void   save_snapshot(const cali::SnapshotRecord* s);
+        bool   fits(const cali::SnapshotRecord* s) const;
 
         struct UsageInfo {
             size_t nchunks;

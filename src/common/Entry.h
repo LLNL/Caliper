@@ -27,6 +27,9 @@ public:
         : m_node(node), m_attr_id(CALI_INV_ID)
         { }
 
+    Entry(cali_id_t id, const Variant& val)
+        : m_node(0), m_attr_id(id), m_value(val)
+        { }
     Entry(const Attribute& attr, const Variant& val)
         : m_node(0), m_attr_id(attr.id()), m_value(val)
         { }
@@ -34,8 +37,6 @@ public:
     const Node* node() const {
         return m_node;
     }
-
-    size_t    hash() const;
     
     /// @brief Return top-level attribute of this entry
     cali_id_t attribute() const;

@@ -2,8 +2,8 @@
 # Caliper
 #
 
-project (caliper)
 cmake_minimum_required(VERSION 3.0)
+project (caliper)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 1)
@@ -16,6 +16,9 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 include(FindLibunwind)
 include(FindPAPI)
 include(FindLibcurl)
+
+include(GNUInstallDirs)
+
 # Optional Fortran
 option(WITH_FORTRAN "Install Fortran interface and build test programs")
 
@@ -27,7 +30,8 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS "Build Caliper tools" TRUE)
 option(WITH_TESTS "Build Caliper test apps" TRUE)
-option(WITH_CUDA "Enable Caliper CUDA services" FALSE)
+option(WITH_DOCS  "Build Caliper documentation" FALSE)
+option(WITH_CUDA  "Enable Caliper CUDA services" FALSE)
 
 if(WITH_CUDA)
    find_package(CUDA)
@@ -39,12 +43,13 @@ endif()
 
 if(CALIPER_HAVE_TAU)
     find_library(tau_lib libTAU.so)
-    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib}) 
+    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
 endif()
+
 # the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 endif("${isSystemDir}" STREQUAL "-1")
 
 # Find libunwind
@@ -116,7 +121,7 @@ configure_file(
 
 # Create pkg-confic .pc file
 set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
-set(PKG_CONFIG_LIBDIR "\${prefix}/lib")
+set(PKG_CONFIG_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
 set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
 set(PKG_CONFIG_CFLAGS "-I\${includedir}")
 
@@ -130,23 +135,25 @@ configure_file(
   ${PROJECT_BINARY_DIR}/caliper-config.cmake
   @ONLY)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake 
-  DESTINATION share/cmake/caliper)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 install(EXPORT caliper
-  DESTINATION share/cmake/caliper)
+  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h 
-  DESTINATION include/caliper)
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper.pc 
-  DESTINATION share/pkgconfig)
+install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
 add_subdirectory(src)
+
 if (WITH_TESTS)
   add_subdirectory(test)
 endif()
-
-add_subdirectory(doc)
+if (WITH_DOCS)
+  add_subdirectory(doc)
+endif()
 
 # Install exports
-#install(EXPORT caliper DESTINATION lib/cmake)
+#install(EXPORT caliper DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)

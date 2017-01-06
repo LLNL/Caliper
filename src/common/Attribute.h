@@ -64,7 +64,7 @@ class Attribute
 public:
 
     constexpr Attribute()
-        : m_node(0), m_keys(0)
+        : m_node(0)
         { }
 
     cali_id_t      id() const;
@@ -93,7 +93,11 @@ public:
 
     Variant        get(const Attribute& attr) const;
     
-    static Attribute make_attribute(const Node* node, const MetaAttributeIDs* keys);
+    static Attribute make_attribute(const Node* node);
+
+    static MetaAttributeIDs meta_attribute_keys() {
+        return s_keys;
+    }
 
     // RecordMap record() const;
 
@@ -102,10 +106,11 @@ public:
 private:
 
     const Node*            m_node;
-    const MetaAttributeIDs* m_keys;
 
-    Attribute(const Node* node, const MetaAttributeIDs* keys)
-        : m_node(node), m_keys(keys)
+    static const MetaAttributeIDs s_keys;
+
+    Attribute(const Node* node)
+        : m_node(node)
         { }
 
     friend bool operator <  (const cali::Attribute& a, const cali::Attribute& b);

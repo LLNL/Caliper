@@ -38,7 +38,7 @@
 #include "TraceBufferChunk.h"
 
 #include <Caliper.h>
-#include <EntryList.h>
+#include <SnapshotRecord.h>
 
 #include <Log.h>
 #include <RuntimeConfig.h>
@@ -180,14 +180,14 @@ namespace
             
         case BufferPolicy::Flush:
         {
-            unordered_set<cali_id_t> written_node_cache;
-            
             std::lock_guard<std::mutex>
                 g(global_flush_lock);            
 
             Log(1).stream() << "Trace buffer full: flushed "
-                            << tbuf->chunks->flush(c, written_node_cache)
+                            << tbuf->chunks->flush(c)
                             << " snapshots." << endl;
+
+            c->events().flush_finish_evt(c, nullptr);
             
             return tbuf;
         }
@@ -197,7 +197,7 @@ namespace
         return 0;
     }
     
-    void process_snapshot_cb(Caliper* c, const EntryList*, const EntryList* sbuf) {
+    void process_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf(!c->is_signal());
 
         if (!tbuf || tbuf->stopped.load()) { // error messaging is done in acquire_tbuf()
@@ -213,7 +213,7 @@ namespace
         tbuf->chunks->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, const EntryList*) {
+    void flush_cb(Caliper* c, const SnapshotRecord*) {
         std::lock_guard<std::mutex>
             g(global_flush_lock);
 
@@ -227,7 +227,6 @@ namespace
         }
 
         size_t num_written = 0;
-        unordered_set<cali_id_t> written_node_cache;
 
         TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
         
@@ -246,7 +245,7 @@ namespace
                 aggregate_info.used     += info.used;
             }
             
-            num_written += tbuf->chunks->flush(c, written_node_cache);
+            num_written += tbuf->chunks->flush(c);
             tbuf->stopped.store(false);
             
             if (tbuf->retired.load()) {

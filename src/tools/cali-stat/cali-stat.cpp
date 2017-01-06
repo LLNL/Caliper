@@ -92,14 +92,14 @@ namespace
             : mS(new S)
             { }
 
-        void print_results(CaliperMetadataDB& db, ostream& os) {
+        void print_results(CaliperMetadataAccessInterface& db, ostream& os) {
             os << "\nReuse statistics:\n"
                << "Attribute                       #nodes      #elem       #uses       #uses/elem  #uses/node\n";
 
             for (auto &p : mS->reuse) {
                 int nelem = static_cast<int>(p.second.data.size());
                 
-                os << std::setw(32) << db.attribute(p.first).name()
+                os << std::setw(32) << db.get_attribute(p.first).name()
                    << std::setw(12) << p.second.nodes
                    << std::setw(12) << nelem;
 
@@ -116,7 +116,7 @@ namespace
                 
         }
 
-        void process_node(CaliperMetadataDB& db, const Node* node) {
+        void process_node(CaliperMetadataAccessInterface& db, const Node* node) {
             auto it = mS->reuse.find(node->attribute());
 
             if (it == mS->reuse.end()) {
@@ -132,7 +132,7 @@ namespace
             }
         }
         
-        void process_snapshot(const CaliperMetadataDB& db, const RecordMap& rec) {
+        void process_snapshot(const CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             auto ref_entry_it = rec.find("ref");
 
             int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
@@ -147,7 +147,7 @@ namespace
                     }   
         }
 
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             string type = get_record_type(rec);
             
             if      (type == "node") {
@@ -242,17 +242,17 @@ namespace
                << endl;
         }
 
-        void process_node(CaliperMetadataDB& db, const Node* node) {
+        void process_node(CaliperMetadataAccessInterface& db, const Node* node) {
             ++mS->n_nodes;
 
             // Get string size for usr and string nodes, otherwise assume 8 bytes
-            cali_attr_type type = db.attribute(node->attribute()).type();
+            cali_attr_type type = db.get_attribute(node->attribute()).type();
             
             mS->size_nodes += 3 * 8 +
                 (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? node->data().to_string().size() : 8);
         }
 
-        void process_snapshot(const CaliperMetadataDB& db, const RecordMap& rec) {
+        void process_snapshot(const CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             ++mS->n_snapshots;
             
             auto ref_entry_it  = rec.find("ref");
@@ -281,14 +281,14 @@ namespace
             mS->size_snapshots += ref * 8;
             
             for (int i = 0; i < val; ++i) {
-                cali_attr_type type = db.attribute(attr_entry_it->second[i].to_id()).type();
+                cali_attr_type type = db.get_attribute(attr_entry_it->second[i].to_id()).type();
 
                 mS->size_snapshots +=
                     (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? val_entry_it->second[i].to_string().size() : 8);
             }
         }        
 
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             string type = get_record_type(rec);
             
             if      (type == "node") {
@@ -313,7 +313,7 @@ namespace
             : m_max_node { 0 }
             { } 
         
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec, RecordProcessFn push) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec, RecordProcessFn push) {
             if (get_record_type(rec) == "node") {
                 auto id_entry_it = rec.find("id");
 
@@ -344,7 +344,7 @@ namespace
             : m_filter_fn { filter_fn }, m_push_fn { push_fn }
             { }
 
-        void operator ()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             m_filter_fn(db, rec, m_push_fn);
         }
     };
@@ -356,7 +356,7 @@ namespace
             m_processors.push_back(fn);
         }
 
-        void operator()(CaliperMetadataDB& db, const RecordMap& rec) {
+        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
             for (auto &f : m_processors)
                 f(db, rec);
         }

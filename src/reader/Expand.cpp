@@ -36,7 +36,7 @@
 
 #include "Expand.h"
 
-#include "CaliperMetadataDB.h"
+#include "CaliperMetadataAccessInterface.h"
 
 #include "Attribute.h"
 #include "ContextRecord.h"
@@ -83,10 +83,10 @@ struct Expand::ExpandImpl
         }
     }
 
-    void print(CaliperMetadataDB& db, const RecordMap& rec) {
+    void print(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
         int nentry = 0;
 
-        for (auto const &entry : ContextRecord::unpack(rec, std::bind(&CaliperMetadataDB::node, &db, std::placeholders::_1))) {
+        for (auto const &entry : ContextRecord::unpack(rec, std::bind(&CaliperMetadataAccessInterface::node, &db, std::placeholders::_1))) {
             if (entry.second.empty())
                 continue;
             if ((!m_selected.empty() && m_selected.count(entry.first) == 0) || m_deselected.count(entry.first))
@@ -103,7 +103,7 @@ struct Expand::ExpandImpl
             m_os << endl;
     }
 
-    void print(CaliperMetadataDB& db, const EntryList& list) {
+    void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         int nentry = 0;
 
         std::ostringstream os;
@@ -113,7 +113,7 @@ struct Expand::ExpandImpl
                 vector<const Node*> nodes;
 
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
-                    string name = db.attribute(node->attribute()).name();
+                    string name = db.get_attribute(node->attribute()).name();
 
                     if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                         continue;
@@ -130,7 +130,7 @@ struct Expand::ExpandImpl
 
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
                     if ((*it)->attribute() != prev_attr_id) {
-                        os << (nentry++ ? "," : "") << db.attribute((*it)->attribute()).name() << '=';
+                        os << (nentry++ ? "," : "") << db.get_attribute((*it)->attribute()).name() << '=';
                         prev_attr_id = (*it)->attribute();
                     } else {
                         os << '/';
@@ -138,7 +138,7 @@ struct Expand::ExpandImpl
                     os << (*it)->data().to_string();
                 }
             } else if (e.attribute() != CALI_INV_ID) {
-                string name = db.attribute(e.attribute()).name();
+                string name = db.get_attribute(e.attribute()).name();
 
                 if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
@@ -169,13 +169,13 @@ Expand::~Expand()
 }
 
 void
-Expand::operator()(CaliperMetadataDB& db, const RecordMap& rec) const
+Expand::operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) const
 {
     mP->print(db, rec);
 }
 
 void 
-Expand::operator()(CaliperMetadataDB& db, const EntryList& list) const
+Expand::operator()(CaliperMetadataAccessInterface& db, const EntryList& list) const
 {
     mP->print(db, list);
 }

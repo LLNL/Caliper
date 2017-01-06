@@ -3,13 +3,14 @@
 
 #include "SnapshotTextFormatter.h"
 
-#include <EntryList.h>
+#include "CaliperMetadataAccessInterface.h"
+#include "Node.h"
 
-#include <Node.h>
-#include <util/split.hpp>
+#include "util/split.hpp"
 
 #include <algorithm>
 #include <iterator>
+#include <mutex>
 #include <vector>
 
 using namespace cali;
@@ -28,8 +29,12 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
     };
 
     std::vector<Field> m_fields;    
+    std::mutex         m_field_mutex;
 
-    void parse(const std::string& formatstring, Caliper* c) {
+    void 
+    parse(const std::string& formatstring) {
+        m_fields.clear();
+
         // parse format: "(prefix string) %[<width+alignment(l|r|c)>]attr_name% ... "
         // FIXME: this is a very primitive parser
 
@@ -80,40 +85,50 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
                 split_string.erase(split_string.begin());
             }
 
-            field.attr = c->get_attribute(field.attr_name);
-
-            if (field.attr != Attribute::invalid)
-                field.attr_name.clear();
 
             m_fields.push_back(field);
         }
     }
 
-    void update_attribute(const Attribute& attr) {
-        std::string name = attr.name();
+    std::ostream& 
+    print(std::ostream& os, const CaliperMetadataAccessInterface* db, const std::vector<Entry>& list) {
+        std::vector<Field> fields;
 
-        for (Field& f : m_fields)
-            if (!f.attr_name.empty() && name == f.attr_name) {
-                f.attr = attr;
+        {
+            std::lock_guard<std::mutex>
+                g(m_field_mutex);
+
+            fields.assign(m_fields.begin(), m_fields.end());
+        }
+
+        bool update = false;
+
+        for (Field& f : fields) {
+            if (!f.attr_name.empty()) {
+                f.attr = db->get_attribute(f.attr_name);
                 f.attr_name.clear();
+                update = true;
             }
-    }
-
-    std::ostream& print(std::ostream& os, const EntryList* s) const {
-        for (const Field& f : m_fields) {
-            Entry e = Entry::empty;
-
-            if (f.attr != Attribute::invalid)
-                e = s->get(f.attr);
 
             std::string str;
-            
-            if (e.node()) {
-                for (const Node* node = e.node(); node; node = node->parent())
-                    if (node->attribute() == f.attr.id())
-                        str = node->data().to_string().append(str.size() ? "/" : "").append(str);
-            } else if (!e.is_empty())
-                str.append(e.value().to_string());
+
+            if (f.attr != Attribute::invalid) {
+                Entry e;
+
+                for (auto it = list.begin(); it != list.end(); ++it)
+                    if ((*it).count(f.attr)) {
+                        e = *it;
+                        break;
+                    }
+
+                if (e.node()) {
+                    for (const Node* node = e.node(); node; node = node->parent())
+                        if (node->attribute() == f.attr.id())
+                            str = node->data().to_string().append(str.size() ? "/" : "").append(str);
+                } else if (e.is_immediate()) {
+                    str.append(e.value().to_string());
+                }
+            }
 
             static const char whitespace[80+1] = 
                 "                                        "
@@ -125,13 +140,22 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
         }
 
+        if (update) {
+            std::lock_guard<std::mutex>
+                g(m_field_mutex);
+
+            m_fields.swap(fields);
+        }
+
         return os;
     }
 };
 
-SnapshotTextFormatter::SnapshotTextFormatter()
+SnapshotTextFormatter::SnapshotTextFormatter(const std::string& format_str)
     : mP(new SnapshotTextFormatterImpl)
-{ }
+{ 
+    mP->parse(format_str);
+}
 
 SnapshotTextFormatter::~SnapshotTextFormatter()
 {
@@ -139,19 +163,13 @@ SnapshotTextFormatter::~SnapshotTextFormatter()
 } 
 
 void
-SnapshotTextFormatter::parse(const std::string& format_str, Caliper* c)
+SnapshotTextFormatter::reset(const std::string& format_str)
 {
-    mP->parse(format_str, c);
-}
-
-void 
-SnapshotTextFormatter::update_attribute(const Attribute& attr)
-{
-    mP->update_attribute(attr);
+    mP->parse(format_str);
 }
 
 std::ostream& 
-SnapshotTextFormatter::print(std::ostream& os, const EntryList* s) const
+SnapshotTextFormatter::print(std::ostream& os, const CaliperMetadataAccessInterface* db, const std::vector<Entry>& list)
 {
-    return mP->print(os, s);
+    return mP->print(os, db, list);
 }
