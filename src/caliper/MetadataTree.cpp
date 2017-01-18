@@ -500,6 +500,8 @@ struct MetadataTree::MetadataTreeImpl
     print_statistics(std::ostream& os) const {
         m_mempool.print_statistics(
             os << "Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n      ");
+
+	return os;
     }
 };
 

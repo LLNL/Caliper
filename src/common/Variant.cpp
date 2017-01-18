@@ -514,6 +514,14 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
 
     // set size for default types
     switch (v.m_type) {
+    case CALI_TYPE_INV:
+	v.m_size = 0;
+	break;
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
+	break; // just here to avoid compiler warning
+    case CALI_TYPE_ADDR:
+	v.m_size = sizeof(uint64_t); // addresses are stored as uint64_t
     case CALI_TYPE_BOOL:
         v.m_size = sizeof(bool);
         break;
@@ -529,6 +537,7 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
     case CALI_TYPE_TYPE:
         v.m_size = sizeof(cali_attr_type);
         break;
+      break;
     }
 
     if (inc)
@@ -558,7 +567,6 @@ Variant::concretize(cali_attr_type type, bool *ok) const
         // can't concretize this without knowing where to alloc memory
         my_ok = false;
         break;
-    case CALI_TYPE_ADDR:
     case CALI_TYPE_INT:
         {
             int64_t u = to_int(&my_ok);
@@ -567,6 +575,7 @@ Variant::concretize(cali_attr_type type, bool *ok) const
                 ret = Variant(type, &u, sizeof(int64_t));
         }
         break;
+    case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
         {
             uint64_t u = to_uint(&my_ok);

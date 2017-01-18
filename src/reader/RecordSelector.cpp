@@ -170,11 +170,12 @@ struct RecordSelector::RecordSelectorImpl
         for (ClauseConfig& clause_conf : m_clauses) {
             Clause clause = check_and_update_clause(db, clause_conf);
 
-            if (clause.attr_id == CALI_INV_ID)
+            if (clause.attr_id == CALI_INV_ID) {
                 if (clause.negate)
                     continue;
                 else
                     return false;
+	    }
 
             bool m = false;
 
