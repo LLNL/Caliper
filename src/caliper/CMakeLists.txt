@@ -18,6 +18,7 @@ set(CALIPER_SOURCES
     MetadataTree.cpp
     cali.cpp)
 
+add_subdirectory("RichAnnotations")
 
 add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services> ${CALIPER_SERVICES_LIBS})
 target_link_libraries(caliper caliper-common)

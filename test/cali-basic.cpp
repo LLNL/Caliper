@@ -33,9 +33,10 @@
 // A minimal Caliper instrumentation demo 
 
 #include <Annotation.h>
-
+#include <RichAnnotations.h>
 int main(int argc, char* argv[])
 {
+    using AnnotationType = cali::ValidatedAnnotation<cali::MonotonicIncreasing<int>, cali::BoundedAbove<int,2>>;
     // Mark begin of "initialization" phase
     cali::Annotation
         init_ann = cali::Annotation("initialization").begin();
@@ -53,7 +54,7 @@ int main(int argc, char* argv[])
         double t = 0.0, delta_t = 1e-6;
 
         // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
+        AnnotationType iteration_ann("iteration");
         
         for (int i = 0; i < count; ++i) {
             // Export current iteration count under "iteration"
