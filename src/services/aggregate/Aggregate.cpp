@@ -225,16 +225,21 @@ class AggregateDB {
 
             entry = m_trie.get(id, alloc);
         }
-
+        
         if (entry && entry->k_id == 0xFFFFFFFF) {
-            uint32_t id = static_cast<uint32_t>(m_num_kernel_entries + 1);
+            size_t num_ids = m_aggr_attributes.size();
 
-            m_num_kernel_entries += std::max<size_t>(1, m_aggr_attributes.size());
+            if (num_ids > 0) {
+                uint32_t first_id = static_cast<uint32_t>(m_num_kernel_entries + 1);
 
-            if (m_kernels.get(id, alloc) == 0)
-                return 0;
-            else
-                entry->k_id = id;
+                m_num_kernel_entries += num_ids;
+
+                for (unsigned i = 0; i < num_ids; ++i)
+                    if (m_kernels.get(first_id + i, alloc) == 0)
+                        return 0;
+
+                entry->k_id = first_id;
+            }
         }
 
         return entry;
@@ -254,7 +259,7 @@ class AggregateDB {
 
         // --- write aggregate entries
 
-        int       num_aggr_attr = 1; // limit to single aggregation attribute for now
+        int       num_aggr_attr = m_aggr_attributes.size();
 
         Variant   attr_vec[SNAP_MAX];
         Variant   data_vec[SNAP_MAX];
