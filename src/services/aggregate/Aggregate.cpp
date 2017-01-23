@@ -248,16 +248,32 @@ class AggregateDB {
     }
 
     void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c) {
-        // --- decode key
-
-        size_t    p = 0;
-        int       num_nodes = static_cast<int>(vldec_u64(key + p, &p));
-
         SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
+        // --- decode key
+
+        size_t    p = 0;
+
+        uint64_t  toc = vldec_u64(key+p, &p); // first entry is 2*num_nodes + (1 : w/ immediate, 0 : w/o immediate)
+        int       num_nodes = static_cast<int>(toc)/2;
+        
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
             snapshot.append(c->node(vldec_u64(key + p, &p)));
+
+        if (toc % 2 == 1) {
+            // there are immediate key entries
+
+            uint64_t imm_bitfield = vldec_u64(key+p, &p);
+
+            for (size_t k = 0; k < s_key_attribute_ids.size(); ++k)
+                if (imm_bitfield & (1 << k)) {
+                    uint64_t val = vldec_u64(key+p, &p);
+                    Variant  v(s_key_attributes[k].type(), &val, sizeof(uint64_t));
+
+                    snapshot.append(s_key_attribute_ids[k], v);
+                }
+        }
 
         // --- write aggregate entries
 
@@ -424,13 +440,54 @@ public:
         // --- encode key
         //
 
+        // key encoding is as follows:
+        //    - 1 u64: "toc" = 2 * num_nodes + (1 if immediate entries | 0 if no immediate entries)
+        //    - num_nodes u64: key node ids
+        //    - 1 u64: bitfield of indices in s_key_attributes that mark immediate key entries
+        //    - for each immediate entry, 1 u64 entry for the value 
+
+        // encode node key
+
+        unsigned char   node_key[MAX_KEYLEN];
+        size_t          node_key_len = 0;
+
+        for (size_t i = 0; i < n_nodes && node_key_len+10 < MAX_KEYLEN; ++i)
+            node_key_len += vlenc_u64(nodeid_vec[i], node_key + node_key_len);
+
+        // encode selected immediate key entries
+
+        unsigned char   imm_key[MAX_KEYLEN];
+        size_t          imm_key_len = 0;
+        uint64_t        imm_key_bitfield = 0;
+
+        for (size_t k = 0; k < s_key_attribute_ids.size(); ++k) 
+            for (size_t i = 0; i < sizes.n_immediate; ++i)
+                if (s_key_attribute_ids[k] == addr.immediate_attr[i]) {
+                    unsigned char buf[10];
+                    size_t        p = 0;
+
+                    p += vlenc_u64(*static_cast<const uint64_t*>(addr.immediate_data[i].data()), imm_key + imm_key_len);
+                    
+                    // check size and discard entry if it won't fit :(
+                    if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN)
+                        break;
+
+                    imm_key_bitfield |= (1 << k);
+                    imm_key_len      += p;
+                }
+
         unsigned char   key[MAX_KEYLEN];
         size_t          pos = 0;
 
-        pos += vlenc_u64(n_nodes, key + pos);
+        pos += vlenc_u64(n_nodes * 2 + (imm_key_bitfield ? 1 : 0), key + pos);
+        memcpy(key+pos, node_key, node_key_len);
+        pos += node_key_len;
 
-        for (size_t i = 0; i < n_nodes && pos+10 < MAX_KEYLEN; ++i)
-            pos += vlenc_u64(nodeid_vec[i], key + pos);
+        if (imm_key_bitfield) {
+            pos += vlenc_u64(imm_key_bitfield, key+pos);
+            memcpy(key+pos, imm_key, imm_key_len);
+            pos += imm_key_len;
+        }
 
         m_max_keylen = std::max(pos, m_max_keylen);
 
