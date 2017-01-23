@@ -69,7 +69,7 @@ public:
                      const Variant*     meta_data = nullptr) = 0;
 
     virtual Node* 
-    make_tree_entry(std::size_t n, const Node* nodelist[]) = 0;
+    make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0) = 0;
 };
 
 }

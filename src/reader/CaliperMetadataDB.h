@@ -87,7 +87,7 @@ public:
     // --- Manipulation
     //
 
-    Node*       make_tree_entry(std::size_t n, const Node* nodelist[]);
+    Node*       make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0);
 
     Attribute   create_attribute(const std::string& name, 
                                  cali_attr_type     type, 

@@ -45,7 +45,8 @@
 #include "Variant.h"
 
 #include <atomic>
-#include <unordered_map>
+
+// #define METADATATREE_BENCHMARK
 
 using namespace cali;
 
@@ -133,6 +134,12 @@ struct MetadataTree::MetadataTreeImpl
     unsigned    m_num_nodes;
     unsigned    m_num_blocks;
 
+#ifdef METADATATREE_BENCHMARK
+    unsigned    m_num_lookups;
+    unsigned    m_max_lookup_ops;
+    unsigned    m_tot_lookup_ops;
+#endif
+
     //
     // --- Constructor
     //
@@ -141,6 +148,11 @@ struct MetadataTree::MetadataTreeImpl
         : m_nodeblock(nullptr),
           m_num_nodes(0),
           m_num_blocks(0)
+#ifdef METADATATREE_BENCHMARK
+        , m_num_lookups(0),
+          m_max_lookup_ops(0),
+          m_tot_lookup_ops(0)
+#endif
         {
             GlobalData* g = mG.load();
 
@@ -330,9 +342,22 @@ struct MetadataTree::MetadataTreeImpl
         for (size_t i = 0; i < n; ++i) {
             parent = node;
 
+#ifdef METADATATREE_BENCHMARK
+            unsigned num_ops = 1;
+#endif
+            
             for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
+#ifdef METADATATREE_BENCHMARK
+                ++num_ops
+#endif
                 ;
 
+#ifdef METADATATREE_BENCHMARK
+            ++m_num_lookups;
+            m_tot_lookup_ops += num_ops;
+            m_max_lookup_ops  = std::max(m_max_lookup_ops, num_ops);
+#endif
+            
             if (!node)
                 break;
 
@@ -356,8 +381,21 @@ struct MetadataTree::MetadataTreeImpl
         for (size_t i = 0; i < n; ++i) {
             parent = node;
 
+#ifdef METADATATREE_BENCHMARK
+            unsigned num_ops = 1;
+#endif
+
             for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
+#ifdef METADATATREE_BENCHMARK
+                ++num_ops
+#endif
                 ;
+
+#ifdef METADATATREE_BENCHMARK
+            ++m_num_lookups;
+            m_tot_lookup_ops += num_ops;
+            m_max_lookup_ops  = std::max(m_max_lookup_ops, num_ops);
+#endif
 
             if (!node)
                 break;
@@ -393,9 +431,22 @@ struct MetadataTree::MetadataTreeImpl
             parent = &(g->root);
         
         Node* node = nullptr;
-        
+
+#ifdef METADATATREE_BENCHMARK
+            unsigned num_ops = 1;
+#endif
+
         for ( node = parent->first_child(); node && !node->equals(from->attribute(), from->data()); node = node->next_sibling())
+#ifdef METADATATREE_BENCHMARK
+                ++num_ops
+#endif
             ;
+
+#ifdef METADATATREE_BENCHMARK
+            ++m_num_lookups;
+            m_tot_lookup_ops += num_ops;
+            m_max_lookup_ops  = std::max(m_max_lookup_ops, num_ops);
+#endif
 
         if (!node) {
             if (!have_free_nodeblock(1))
@@ -499,7 +550,16 @@ struct MetadataTree::MetadataTreeImpl
     std::ostream& 
     print_statistics(std::ostream& os) const {
         m_mempool.print_statistics(
-            os << "Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n      ");
+            os << "Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n      "
+#ifdef METADATATREE_BENCHMARK
+            << "  "
+            << m_num_lookups << " lookups with "
+            << m_tot_lookup_ops << " ops total (max "
+            << m_max_lookup_ops << " , avg "
+            << (m_num_lookups > 0 ? static_cast<double>(m_tot_lookup_ops) / m_num_lookups : 0.0)
+            << ").\n      "
+#endif
+                                   );
 
 	return os;
     }

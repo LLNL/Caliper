@@ -203,7 +203,7 @@ public:
     Node*     node(cali_id_t id) const;
 
     /// \brief Get or create new tree path with data from given nodes in given order 
-    Node*     make_tree_entry(size_t n, const Node* nodelist[]);
+    Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
 
     // --- Caliper API access
 

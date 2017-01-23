@@ -497,9 +497,9 @@ CaliperMetadataDB::get_attribute(const std::string& name) const
 }
 
 Node*
-CaliperMetadataDB::make_tree_entry(size_t n, const Node* nodelist[])
+CaliperMetadataDB::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
-    return mP->make_tree_entry(n, nodelist);
+    return mP->make_tree_entry(n, nodelist, parent);
 }
 
 Attribute

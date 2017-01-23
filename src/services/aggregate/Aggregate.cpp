@@ -158,6 +158,8 @@ class AggregateDB {
     BlockAlloc<TrieNode>        m_trie;
     BlockAlloc<AggregateKernel> m_kernels;
 
+    Node                        m_aggr_root_node;
+    
     // we maintain some internal statistics
     size_t                   m_num_trie_entries;
     size_t                   m_num_kernel_entries;
@@ -347,21 +349,34 @@ public:
         cali_id_t*  nodeid_vec = &key_node;
         uint64_t    n_nodes    = 0;
 
-        size_t      n_key_attr = s_key_attribute_names.size();
+        size_t      n_key_attr = 0;
+        cali_id_t*  key_attribute_ids = static_cast<cali_id_t*>(alloca(s_key_attribute_ids.size() * sizeof(cali_id_t)));
+
+        // create list of all valid key attribute ids
+        for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
+            if (s_key_attribute_ids[i] != CALI_INV_ID)
+                key_attribute_ids[n_key_attr++] = s_key_attribute_ids[i];
             
-        if (n_key_attr > 0) {
+        if (n_key_attr > 0 && sizes.n_nodes > 0) {
             // --- find out number of entries for each key attribute
             
             size_t* key_entries = static_cast<size_t*>(alloca(n_key_attr * sizeof(size_t)));
+            const Node* *start_nodes = static_cast<const Node**>(alloca(sizes.n_nodes * sizeof(const Node*)));
             
             memset(key_entries, 0, n_key_attr * sizeof(size_t));
+            memset(start_nodes, 0, sizes.n_nodes * sizeof(const Node*));
             
             for (size_t i = 0; i < sizes.n_nodes; ++i)
                 for (const Node* node = addr.node_entries[i]; node; node = node->parent())
                     for (size_t a = 0; a < n_key_attr; ++a)
-                        if (s_key_attribute_ids[a] != CALI_INV_ID &&
-                            s_key_attribute_ids[a] == node->attribute())
+                        if (key_attribute_ids[a] == node->attribute()) {
                             ++key_entries[a];
+
+                            // Save the snapshot nodes that lead to key nodes
+                            // to short-cut the subsequent loop a bit 
+                            if (!start_nodes[i])
+                                start_nodes[i] = node;
+                        }
 
             // --- make prefix sum
             
@@ -380,13 +395,12 @@ public:
                 memset(filled,   0, n_key_attr  * sizeof(size_t));
                 
                 for (size_t i = 0; i < sizes.n_nodes; ++i)
-                    for (const Node* node = addr.node_entries[i]; node; node = node->parent())
+                    for (const Node* node = start_nodes[i]; node; node = node->parent())
                         for (size_t a = 0; a < n_key_attr; ++a)
-                            if (s_key_attribute_ids[a] != CALI_INV_ID &&
-                                s_key_attribute_ids[a] == node->attribute())
+                            if (key_attribute_ids[a] == node->attribute())
                                 nodelist[key_entries[a] - (++filled[a])] = node;
                 
-                const Node* node = c->make_tree_entry(tot_entries, nodelist);
+                const Node* node = c->make_tree_entry(tot_entries, nodelist, &m_aggr_root_node);
 
                 if (node)
                     nodeid_vec[n_nodes++] = node->id();
@@ -404,8 +418,8 @@ public:
 
             // --- sort to make unique keys
             std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
-        }
-
+        }        
+        
         //
         // --- encode key
         //
@@ -463,6 +477,7 @@ public:
           m_retired(false),
           m_next(nullptr),
           m_prev(nullptr),
+          m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
           m_num_trie_entries(0),
           m_num_kernel_entries(0),
           m_num_dropped(0),
@@ -619,6 +634,13 @@ public:
             + s_global_num_kernel_blocks * sizeof(AggregateKernel) * 1024
                         << " bytes reserved)"
                         << std::endl;
+
+        // report attribute keys we haven't found 
+        for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
+            if (s_key_attribute_ids[i] == CALI_INV_ID)
+                Log(1).stream() << "aggregate: warning: key attribute \'"
+                                << s_key_attribute_names[i]
+                                << "\' was never encountered" << std::endl;
 
         if (s_global_num_dropped > 0)
             Log(1).stream() << "aggregate: dropped " << s_global_num_dropped

@@ -275,8 +275,8 @@ struct Caliper::GlobalData
 
         Log(1).stream() << "Initialized" << endl;
 
-        if (Log::verbosity() >= 2)
-            RuntimeConfig::print( Log(2).stream() << "Configuration:\n" );
+        if (Log::verbosity() >= 3)
+            RuntimeConfig::print( Log(3).stream() << "Configuration:\n" );
 
         c.events().post_init_evt(&c);        
     }
@@ -856,12 +856,12 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
 }
 
 Node*
-Caliper::make_tree_entry(size_t n, const Node* nodelist[])
+Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    return m_thread_scope->tree.get_path(n, nodelist, nullptr);
+    return m_thread_scope->tree.get_path(n, nodelist, parent);
 }
 
 Node*
