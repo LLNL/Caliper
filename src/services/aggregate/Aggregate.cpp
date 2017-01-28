@@ -61,7 +61,7 @@
 using namespace cali;
 using namespace std;
 
-#define MAX_KEYLEN         128
+#define MAX_KEYLEN          32
 #define SNAP_MAX            80 // max snapshot size
 
 //
@@ -164,6 +164,7 @@ class AggregateDB {
     size_t                   m_num_trie_entries;
     size_t                   m_num_kernel_entries;
     size_t                   m_num_dropped;
+    size_t                   m_num_skipped_keys;
     size_t                   m_max_keylen;
 
     //
@@ -200,6 +201,7 @@ class AggregateDB {
     static size_t            s_global_num_trie_blocks;
     static size_t            s_global_num_kernel_blocks;
     static size_t            s_global_num_dropped;
+    static size_t            s_global_num_skipped_keys;
     static size_t            s_global_max_keylen;
 
 
@@ -346,6 +348,7 @@ public:
         m_num_trie_entries   = 0;
         m_num_kernel_entries = 0;
         m_num_dropped        = 0;
+        m_num_skipped_keys   = 0;
         m_max_keylen         = 0;
     }
 
@@ -423,7 +426,7 @@ public:
                 else
                     Log(0).stream() << "aggregate: can't create node" << std::endl;
             }
-        } else {
+        } else if (s_key_attribute_ids.size() == 0) {
             // --- no key attributes set: take nodes in snapshot   
 
             nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
@@ -451,8 +454,16 @@ public:
         unsigned char   node_key[MAX_KEYLEN];
         size_t          node_key_len = 0;
 
-        for (size_t i = 0; i < n_nodes && node_key_len+10 < MAX_KEYLEN; ++i)
-            node_key_len += vlenc_u64(nodeid_vec[i], node_key + node_key_len);
+        for (size_t i = 0; i < n_nodes; ++i) {
+            size_t p = vlenc_u64(nodeid_vec[i], node_key + node_key_len);
+
+            if (node_key_len + p + 1 >= MAX_KEYLEN) {
+                ++m_num_skipped_keys;
+                break;
+            }
+
+            node_key_len += p;
+        }
 
         // encode selected immediate key entries
 
@@ -469,8 +480,10 @@ public:
                     p += vlenc_u64(*static_cast<const uint64_t*>(addr.immediate_data[i].data()), imm_key + imm_key_len);
                     
                     // check size and discard entry if it won't fit :(
-                    if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN)
+                    if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN) {
+                        ++m_num_skipped_keys;
                         break;
+                    }
 
                     imm_key_bitfield |= (1 << k);
                     imm_key_len      += p;
@@ -538,17 +551,18 @@ public:
           m_num_trie_entries(0),
           m_num_kernel_entries(0),
           m_num_dropped(0),
+          m_num_skipped_keys(0),
           m_max_keylen(0)
     {
         m_aggr_attributes.assign(s_aggr_attribute_names.size(), Attribute::invalid);
 
-        Log(2).stream() << "aggregate: creating aggregation database" << std::endl;
+        Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
 
         for (int a = 0; a < s_aggr_attribute_names.size(); ++a) {
             Attribute attr = c->get_attribute(s_aggr_attribute_names[a]);
 
             if (attr == Attribute::invalid)
-                Log(1).stream() << "aggregate: warning: aggregation attribute "
+                Log(1).stream() << "Aggregate: warning: aggregation attribute "
                                 << s_aggr_attribute_names[a]
                                 << " not found" << std::endl;
             else
@@ -615,6 +629,7 @@ public:
             s_global_num_kernel_entries += db->m_num_kernel_entries;
             s_global_num_trie_blocks    += db->m_trie.num_blocks();
             s_global_num_kernel_blocks  += db->m_kernels.num_blocks();
+            s_global_num_skipped_keys   += db->m_num_skipped_keys;
             s_global_num_dropped        += db->m_num_dropped;
             s_global_max_keylen = std::max(s_global_max_keylen, db->m_max_keylen);
             
@@ -642,7 +657,7 @@ public:
             }
         }
 
-        Log(1).stream() << "aggregate: flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << "Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
     static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
@@ -677,13 +692,29 @@ public:
         // No lock: hope that update is more-or-less atomic, and
         // consequences of invalid values are negligible
         if (it != s_key_attribute_names.end()) {
+            if (attr.store_as_value()) {
+                cali_attr_type type = attr.type();
+
+                if (type != CALI_TYPE_INT  &&
+                    type != CALI_TYPE_UINT &&
+                    type != CALI_TYPE_ADDR &&
+                    type != CALI_TYPE_BOOL &&   
+                    type != CALI_TYPE_TYPE) {
+                    Log(1).stream() << "Aggregate: warning: type " << cali_type2string(type)
+                                    << " in as-value attribute \"" << attr.name() 
+                                    << "\" is not supported in aggregation key and will be dropped." 
+                                    << std::endl;
+                    return;
+                }
+            }
+
             s_key_attributes[it-s_key_attribute_names.begin()]    = attr;
             s_key_attribute_ids[it-s_key_attribute_names.begin()] = attr.id();
         }
     }
     
     static void finish_cb(Caliper* c) {
-        Log(2).stream() << "aggregate: max key len " << s_global_max_keylen << ", "
+        Log(2).stream() << "Aggregate: max key len " << s_global_max_keylen << ", "
                         << s_global_num_kernel_entries << " entries, "
                         << s_global_num_trie_entries << " nodes, "
                         << s_global_num_trie_blocks + s_global_num_kernel_blocks << " blocks ("
@@ -695,13 +726,19 @@ public:
         // report attribute keys we haven't found 
         for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
             if (s_key_attribute_ids[i] == CALI_INV_ID)
-                Log(1).stream() << "aggregate: warning: key attribute \'"
+                Log(1).stream() << "Aggregate: warning: key attribute \""
                                 << s_key_attribute_names[i]
-                                << "\' was never encountered" << std::endl;
+                                << "\" unused" << std::endl;
 
         if (s_global_num_dropped > 0)
-            Log(1).stream() << "aggregate: dropped " << s_global_num_dropped
+            Log(1).stream() << "Aggregate: dropped " << s_global_num_dropped
                             << " snapshots." << std::endl;
+        if (s_global_num_skipped_keys > 0)
+            Log(0).stream() << "Aggregate: warning: maximum key length exceeded " 
+                            << s_global_num_skipped_keys
+                            << (s_global_num_skipped_keys == 1 ? " time!" : " times!")
+                            << " Some key attributes could not be preserved."
+                            << " Reduce number of aggregation key entries." << std::endl;
     }
 
     static void create_statistics_attributes(Caliper* c) {
@@ -798,6 +835,7 @@ size_t         AggregateDB::s_global_num_kernel_entries = 0;
 size_t         AggregateDB::s_global_num_trie_blocks    = 0;
 size_t         AggregateDB::s_global_num_kernel_blocks  = 0;
 size_t         AggregateDB::s_global_num_dropped        = 0;
+size_t         AggregateDB::s_global_num_skipped_keys   = 0;
 size_t         AggregateDB::s_global_max_keylen         = 0;
 
 namespace cali
