@@ -36,38 +36,37 @@
 
 int main(int argc, char* argv[])
 {
+    // Create annotation object for "phase" annotation
+    cali::Annotation phase_ann("phase");
+
     // Mark begin of "initialization" phase
-    cali::Annotation
-        init_ann = cali::Annotation("initialization").begin();
-    
+    phase_ann.begin("initialization");
+
     // perform initialization tasks
     int count = 4;
-    // Mark end of "initialization" phase
-    init_ann.end();
-    if (count > 0) {
-        // Mark begin of "loop" phase. The scope guard will
-        // automatically end it at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_loop( cali::Annotation("loop").begin() );
+    double t = 0.0, delta_t = 1e-6;
 
-        double t = 0.0, delta_t = 1e-6;
+    // Mark end of "initialization" phase and begin of "loop" phase
+    phase_ann.end();
+    phase_ann.begin("loop");
 
-        // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
+    // Create "iteration" attribute to export the iteration count
+    cali::Annotation iteration_ann("iteration");
         
-        for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration"
-            iteration_ann.set(i);
+    for (int i = 0; i < count; ++i) {
+        // Mark each loop iteration  
+        // The Annotation::Guard object will automatically "end" 
+        // the annotation at the end of the C++ scope
+        cali::Annotation::Guard 
+            g_iteration( iteration_ann.begin(i) );
 
-            // A Caliper snapshot taken at this point will contain
-            // { "loop", "iteration"=<i> }
+        // A Caliper snapshot taken at this point will contain
+        // { "loop", "iteration"=<i> }
 
-            // perform computation
-            t += delta_t;
-        }
-
-        // Clear the "iteration" attribute (otherwise, snapshots taken
-        // after the loop will still contain the "iteration" attribute)
-        iteration_ann.end();
+        // perform computation
+        t += delta_t;
     }
+
+    // Mark end of "loop" phase
+    phase_ann.end();
 }

@@ -79,40 +79,39 @@ C++ code, and exports the main loop's current iteration counter.
 
 int main(int argc, char* argv[])
 {
+    // Create annotation object for "phase" annotation
+    cali::Annotation phase_ann("phase");
+
     // Mark begin of "initialization" phase
-    cali::Annotation
-        init_ann = cali::Annotation("initialization").begin();
+    phase_ann.begin("initialization");
+
     // perform initialization tasks
     int count = 4;
-    // Mark end of "initialization" phase
-    init_ann.end();
+    double t = 0.0, delta_t = 1e-6;
 
-    if (count > 0) {
-        // Mark begin of "loop" phase. The scope guard will
-        // automatically end it at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_loop( cali::Annotation("loop").begin() );
+    // Mark end of "initialization" phase and begin of "loop" phase
+    phase_ann.end();
+    phase_ann.begin("loop");
 
-        double t = 0.0, delta_t = 1e-6;
-
-        // Create "iteration" attribute to export the iteration count
-        cali::Annotation iteration_ann("iteration");
+    // Create "iteration" attribute to export the iteration count
+    cali::Annotation iteration_ann("iteration");
         
-        for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration"
-            iteration_ann.set(i);
+    for (int i = 0; i < count; ++i) {
+        // Mark each loop iteration  
+        // The Annotation::Guard object will automatically "end" 
+        // the annotation at the end of the C++ scope
+        cali::Annotation::Guard 
+            g_iteration( iteration_ann.begin(i) );
 
-            // A Caliper snapshot taken at this point will contain
-            // { "loop", "iteration"=<i> }
+        // A Caliper snapshot taken at this point will contain
+        // { phase="loop", iteration=<i> }
 
-            // perform computation
-            t += delta_t;
-        }
-
-        // Clear the "iteration" attribute (otherwise, snapshots taken
-        // after the loop will still contain the last "iteration" value)
-        iteration_ann.end();
+        // perform computation
+        t += delta_t;
     }
+
+    // Mark end of "loop" phase
+    phase_ann.end();
 }
 ```
 
@@ -134,10 +133,11 @@ trigger and write snapshots whenever any or specific attributes are
 updated, generating a snapshot trace. A configuration profile can be
 selected with the `CALI_CONFIG_PROFILE` environment variable:
 
-    $ CALI_CONFIG_PROFILE=thread-trace ./cali-basic
-    == CALIPER: Registered pthread service
+    $ CALI_CONFIG_PROFILE=serial-trace ./cali-basic
+    == CALIPER: Registered event service
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
+    == CALIPER: Registered trace service
     == CALIPER: Initialized
     == CALIPER: Wrote 36 records.
     == CALIPER: Finished
@@ -151,21 +151,21 @@ directory.
 ### Analyze Data
 
 Use the `cali-query` tool to filter, aggregate, or print the recorded
-snapshots. For example, the following command will show us the time spent
-in the "initialization" phase, in the entire "loop" phase, and in each
-iteration of the example program: 
+snapshots. For example, we can use it to print the time spent in each timed 
+region in a table:
 
     $ ls *.cali
     160219-095419_5623_LQfNQTNgpqdM.cali
-    $ cali-query --table \
+    $ cali-query -s time.inclusive.duration --table \
           --print-attributes=iteration:loop:initialization:time.inclusive.duration \
           160219-095419_5623_LQfNQTNgpqdM.cali
-    initialization=true,time.inclusive.duration=202
-    iteration=0,loop=true,time.inclusive.duration=51
-    iteration=1,loop=true,time.inclusive.duration=24
-    iteration=2,loop=true,time.inclusive.duration=17
-    iteration=3,loop=true,time.inclusive.duration=24
-    loop=true,time.inclusive.duration=211
+      phase           iteration time.inclusive.duration
+      initialization                                100
+      loop                    0                      23
+      loop                    1                       9
+      loop                    2                       8
+      loop                    3                       8
+      loop                                          129
 
 ### Where to go from here?
 
