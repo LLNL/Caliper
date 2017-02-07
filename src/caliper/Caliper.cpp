@@ -520,9 +520,34 @@ Caliper::release_scope(Caliper::Scope* s)
 
 // --- Attribute interface
 
+/// Create an attribute
+/// 
+/// This function creates and returns an attribute key with the given name, type, and properties.
+/// Optionally, metadata can be added via attribute:value pairs.
+/// Attribute names must be unique. If an attribute with the given name already exists, the 
+/// existing attribute is returned.
+///
+/// Before a new attribute is created, the pre_create_attr_evt callback will be invoked, 
+/// which allows modifications of the user-provided parameters (such as the property flags).
+/// After a new attribute has been created, this function will invoke the create_attr_evt callback.
+/// If an attribute with the given name already exists, the callbacks will not be invoked.
+/// If two threads create an attribute with the same name simultaneously, the pre_create_attr_evt
+/// callback may be invoked on both threads, but create_attr_evt will only be invoked once.
+/// However, both threads will successfully return the new attribute.
+///
+/// This function is not signal safe.
+/// 
+/// \param name Name of the attribute
+/// \param type Type of the attribute
+/// \param prop Attribute property bitmap. Values of type cali_attr_properties combined with bitwise or.
+/// \param n_meta Number of metadata entries
+/// \param meta_attr Metadata attribute list. An array of n_meta attribute entries.
+/// \param meta_val Metadata values. An array of n_meta values.
+/// \return The created attribute.
+
 Attribute 
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
-                          int meta, const Attribute* meta_attr, const Variant* meta_val)
+                          int n_meta, const Attribute* meta_attr, const Variant* meta_val)
 {
     assert(mG != 0);
 
@@ -601,6 +626,11 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     return attr;
 }
 
+/// Find an attribute by name
+/// While it should be signal safe, we do not recommend using this function in a signal handler.
+/// \param name The attribute name
+/// \return Attribute object, or Attribute::invalid if not found.
+
 Attribute
 Caliper::get_attribute(const string& name) const
 {
@@ -622,6 +652,11 @@ Caliper::get_attribute(const string& name) const
 
     return Attribute::make_attribute(node);
 }
+
+/// Find attribute by id
+/// This function is signal safe.
+/// \param id The attribute id
+/// \return Attribute object, or Attribute::invalid if not found.
 
 Attribute 
 Caliper::get_attribute(cali_id_t id) const
@@ -650,6 +685,29 @@ Caliper::get_attributes() const
 
 // --- Snapshot interface
 
+/// Trigger and return a snapshot. 
+///
+/// This function triggers a snapshot and returns a snapshot record to the caller.
+/// The returned snapshot record contains the current blackboard contents, measurement 
+/// values provided by service modules, and the contents of the trigger_info list 
+/// provided by the caller.
+///
+/// The function invokes the snapshot callback, which instructs attached services to 
+/// take measurements (e.g., a timestamp) and add them to the returned record. The 
+/// caller-provided trigger_info list is passed to the snapshot callback.
+/// The returned snapshot record also contains contents of the current thread's and the  
+/// process-wide blackboard, as specified in the scopes flag.
+///
+/// The caller must provide a snapshot buffer with sufficient free space.
+///
+/// This function is signal safe.
+///
+/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer. 
+///                     Bitfield of cali_scope_t values combined with bitwise OR.
+/// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
+///                     callback, and added to the returned snapshot record.
+/// \param sbuf         Caller-provided snapshot record buffer in which the snapshot record is
+///                     returned. Must have sufficient space for the snapshot contents.
 void
 Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
@@ -671,6 +729,28 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
         if (scopes & s)
             scope(s)->blackboard.snapshot(sbuf);
 }
+
+/// Trigger and process a snapshot. 
+///
+/// This function triggers a snapshot and processes it. The snapshot contains the 
+/// current blackboard contents, measurement values provided by service modules, 
+/// and the contents of the trigger_info list provided by the caller.
+/// The complete snapshot is then passed to snapshot processing services registered
+/// with Caliper.
+///
+/// The function creates a snapshot record with measurements provided by the snapshot callbac, 
+/// the current thread's and/or processes' blackboard contents, as well as the contents of 
+/// the trigger_info list provided by the caller.
+///
+/// The function invokes the snapshot callback to obtain measurements.
+/// The complete snapshot if passed to the process_snapshot callback.  
+///
+/// This function is signal safe.
+///
+/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer. 
+///                     Bitfield of cali_scope_t values combined with bitwise OR.
+/// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
+///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
 void 
 Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
