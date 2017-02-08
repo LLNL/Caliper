@@ -407,10 +407,12 @@ int main(int argc, const char* argv[])
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
     std::vector<std::string> files = args.arguments();
+
+    if (files.empty())
+        files.push_back(""); // read from stdin if no files are given
     
     unsigned num_threads =
-        std::min<unsigned>(files.size(),
-                           std::stoul(args.get("threads", std::to_string(std::thread::hardware_concurrency()))));
+        std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
 
     std::cerr << "cali-query: processing " << files.size() << " files using "
               << num_threads << " thread" << (num_threads == 1 ? "." : "s.")  << std::endl;
@@ -432,7 +434,7 @@ int main(int argc, const char* argv[])
         
         for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write 
             Annotation::Guard 
-                g_s(Annotation("cali-query.stream").set(files[i].c_str()));
+                g_s(Annotation("cali-query.stream").set(files[i].empty() ? "stdin" : files[i].c_str()));
             
             CsvReader reader(files[i]);
             IdMap     idmap;

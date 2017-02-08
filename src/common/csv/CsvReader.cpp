@@ -37,6 +37,7 @@
 
 #include "CsvSpec.h"
 
+#include <iostream>
 #include <fstream>
 
 using namespace cali;
@@ -51,13 +52,22 @@ struct CsvReader::CsvReaderImpl
         { }
 
     bool read(function<void(const RecordMap&)> rec_handler) {
-        ifstream is(m_filename.c_str());
+        if (m_filename.empty()) {
+            // empty file: read from stdin
 
-        if (!is)
-            return false;
+            for (string line ; getline(std::cin, line); )
+                rec_handler(CsvSpec::read_record(line));
+        } else {
+            // read from file
 
-        for (string line ; getline(is, line); )
-            rec_handler(CsvSpec::read_record(line));
+            ifstream is(m_filename.c_str());
+
+            if (!is)
+                return false;
+
+            for (string line ; getline(is, line); )
+                rec_handler(CsvSpec::read_record(line));
+        }
 
         return true;
     }
