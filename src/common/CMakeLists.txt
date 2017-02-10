@@ -39,6 +39,10 @@ add_library(caliper-common
   $<TARGET_OBJECTS:c-util>
   ${CALIPER_COMMON_SOURCES})
 
+if (BUILD_TESTING)
+  add_subdirectory(test)
+endif()
+
 install(FILES ${CALIPER_COMMON_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 install(FILES ${CALIPER_UTIL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/util)
 

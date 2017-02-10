@@ -153,6 +153,7 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+add_subdirectory(ext)
 add_subdirectory(src)
 
 if (WITH_TEST_APPS)
