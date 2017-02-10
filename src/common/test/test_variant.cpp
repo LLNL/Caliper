@@ -14,6 +14,8 @@ TEST(Variant_Test, ConvertBool) {
     Variant v_in_3(0);
     Variant v_in_4(42);
     Variant v_in_5(std::string("bla"));
+    Variant v_in_6(std::string("0"));
+    Variant v_in_7(std::string("1"));
 
     bool ok = false;
 
@@ -35,6 +37,14 @@ TEST(Variant_Test, ConvertBool) {
 
     bool res_5 = v_in_5.to_bool(&ok);
     EXPECT_FALSE(ok);
+
+    bool res_6 = v_in_6.to_bool(&ok);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(res_6, false);
+
+    bool res_7 = v_in_7.to_bool(&ok);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(res_7, true);
 }
 
 // --- Test Variant pack/unpack
