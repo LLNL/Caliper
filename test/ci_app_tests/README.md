@@ -2,4 +2,4 @@ Automated continuous integration application tests for Caliper
 ========================
 
 This directory contains driver scripts and test cases for automated
-full application/workflow tests for continuous integration.
+continuous integration full application/workflow tests.

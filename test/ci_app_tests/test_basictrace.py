@@ -1,4 +1,4 @@
-# Basic smoke tests using the cali-basic example app
+# Basic smoke tests: create and read a simple trace 
 
 import unittest
 

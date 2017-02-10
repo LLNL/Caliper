@@ -5,7 +5,8 @@ include_directories("../../src/caliper")
 set(CALIPER_CI_CXX_TEST_APPS
   ci_test_basic)
 set(CALIPER_CI_C_TEST_APPS
-  ci_test_ann_c)
+  ci_test_c_ann
+  ci_test_c_snapshot)
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
@@ -21,6 +22,7 @@ endforeach()
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
   test_basictrace.py
+  test_c_api.py
   calipertest.py)
 
 foreach(file ${PYTHON_SCRIPTS})
@@ -29,3 +31,5 @@ foreach(file ${PYTHON_SCRIPTS})
       ${CMAKE_CURRENT_SOURCE_DIR}/${file} 
       ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
+
+add_test(NAME CI_app_tests COMMAND ${PYTHON_EXECUTABLE} -m unittest discover -p "test_*.py")

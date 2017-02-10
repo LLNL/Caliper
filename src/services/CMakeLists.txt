@@ -85,8 +85,6 @@ configure_file(
    ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
 )
 
-find_package(PythonInterp REQUIRED)
-
 add_custom_target(services.inc.cpp
   COMMAND ${PYTHON_EXECUTABLE} gen_services_inc.py
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
