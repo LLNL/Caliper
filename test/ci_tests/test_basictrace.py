@@ -8,11 +8,13 @@ class CaliperBasicTraceTest(unittest.TestCase):
     """ Caliper test case """
 
     def test_basic_trace(self):
-        target_cmd = [ 'cali-basic' ]
-        query_cmd  = [ '../src/tools/cali-query/cali-query', '-e' ]
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
-        caliper_config = { 'CALI_CONFIG_PROFILE'    : 'serial-trace', 
-                           'CALI_RECORDER_FILENAME' : 'stdout'        
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
         }
 
         query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
