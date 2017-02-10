@@ -165,7 +165,7 @@ Variant::to_bool(bool* okptr) const
     bool b  = m_value.v_bool;
     
     cali_attr_type type = m_type;
-    
+
     if (m_type == CALI_TYPE_INV && !m_string.empty()) {
         // try string
         {
@@ -491,16 +491,16 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
     size_t   p = 0;
     Variant  v;
     
-    uint64_t u_type = vldec_u64(buf, &p);
+    cali_attr_type type = static_cast<cali_attr_type>(vldec_u64(buf, &p));
 
-    if (u_type > CALI_MAXTYPE) {
+    if (type > CALI_MAXTYPE) {
         if (ok)
             *ok = false;
         
         return v;
     }
 
-    v.m_type = static_cast<cali_attr_type>(u_type);
+    v.m_type = type;
         
     switch (v.m_type) {
     case CALI_TYPE_INV:
@@ -542,6 +542,8 @@ Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
 
     if (inc)
         *inc += p;
+    if (ok)
+        *ok = true;
 
     return v;
 }
