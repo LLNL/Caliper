@@ -19,5 +19,6 @@ before_install:
 script:
   - mkdir build
   - cd build
-  - cmake -DCMAKE_CXX_COMPILER=`which g++` -DCMAKE_CXX_FLAGS="-std=c++11" ..
+  - cmake -DCMAKE_C_COMPILER=`which gcc` -DCMAKE_CXX_COMPILER=`which g++` ..
   - make -j8
+  - make test
