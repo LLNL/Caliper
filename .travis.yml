@@ -2,25 +2,14 @@ language: cpp
 sudo: false
 dist: trusty
 
-install:
-  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
-  - echo $CXX
-  - ${CXX} --version
-
-addons:
-  apt:
-    sources:
-      - llvm-toolchain-precise-3.7
-    packages:
-      - clang-3.7
-
 compiler: 
   - gcc
-  - clang
+#  Remove clang for now as the default clang++-3.5 segfaults on Caliper code :-/
+#  - clang
 
 script:
   - mkdir build-${CC}
   - cd build-${CC}
   - cmake -DCMAKE_C_COMPILER=`which $CC` -DCMAKE_CXX_COMPILER=`which $CXX` ..
-  - make -j8
+  - make -j4
   - make test
