@@ -52,6 +52,7 @@
 #include <pthread.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <limits>
 #include <mutex>

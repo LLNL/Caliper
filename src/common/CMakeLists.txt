@@ -12,13 +12,13 @@ set(CALIPER_COMMON_HEADERS
     SnapshotTextFormatter.h
     StringConverter.h
     Variant.h
-    cali_types.h)
+    cali_types.h
+    cali_variant.h)
 set(CALIPER_UTIL_HEADERS
     util/callback.hpp
     util/list.hpp
     util/split.hpp
-    util/lockfree-tree.hpp
-    util/shared_obj.hpp)
+    util/lockfree-tree.hpp)
 
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
@@ -31,7 +31,8 @@ set(CALIPER_COMMON_SOURCES
     SnapshotTextFormatter.cpp
     StringConverter.cpp
     Variant.cpp
-    cali_types.c)
+    cali_types.c
+    cali_variant.c)
 
 add_subdirectory(csv)
 add_subdirectory(c-util)

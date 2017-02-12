@@ -37,80 +37,15 @@
 
 #include "StringConverter.h"
 
-#include "c-util/vlenc.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <iterator>
-#include <map>
 #include <sstream>
-#include <vector>
 
 using namespace cali;
-using namespace std;
-
-Variant::Variant(cali_attr_type type, const void* data, std::size_t size)
-    : m_type { type }, m_size { size }
-{
-    switch (m_type) {
-    case CALI_TYPE_INV:
-        break;
-    case CALI_TYPE_USR:
-    case CALI_TYPE_STRING:
-        m_value.ptr = data;
-        break;
-    case CALI_TYPE_INT:
-        m_value.v_int    = *static_cast<const int64_t*>(data);
-        break;
-    case CALI_TYPE_ADDR:
-    case CALI_TYPE_UINT:
-        m_value.v_uint   = *static_cast<const uint64_t*>(data);
-        break;
-    case CALI_TYPE_DOUBLE:
-        m_value.v_double = *static_cast<const double*>(data);
-        break;
-    case CALI_TYPE_BOOL:
-        m_value.v_bool   = *static_cast<const bool*>(data);
-        break;
-    case CALI_TYPE_TYPE:
-        m_value.v_type   = *static_cast<const cali_attr_type*>(data);
-        break;
-    }
-}
-
-const void*
-Variant::data() const
-{
-    switch (m_type) {
-    case CALI_TYPE_USR:
-    case CALI_TYPE_STRING:
-        return m_value.ptr;
-        break;
-    case CALI_TYPE_INT:
-        return &m_value.v_int;
-        break;
-    case CALI_TYPE_ADDR:
-    case CALI_TYPE_UINT:
-        return &m_value.v_uint;
-        break;
-    case CALI_TYPE_DOUBLE:
-        return &m_value.v_double;
-        break;
-    case CALI_TYPE_BOOL:
-        return &m_value.v_bool;
-        break;
-    case CALI_TYPE_TYPE:
-        return &m_value.v_type;
-        break;        
-    default:
-        break;
-    }
-
-    return nullptr;
-}
 
 cali_id_t
 Variant::to_id(bool* okptr) const
@@ -124,124 +59,37 @@ Variant::to_id(bool* okptr) const
     return ok ? id : CALI_INV_ID;
 }
 
-bool
-Variant::to_bool(bool* okptr) const
-{
-    bool ok = false;
-    bool b  = m_value.v_bool;
-
-    ok = (m_type == CALI_TYPE_BOOL || m_type == CALI_TYPE_INT || m_type == CALI_TYPE_UINT);
-
-    if (okptr)
-        *okptr = ok;
-
-    switch (m_type) {
-    case CALI_TYPE_BOOL:
-        return b;
-    case CALI_TYPE_INT:
-        return m_value.v_int  != 0;
-    case CALI_TYPE_UINT:
-        return m_value.v_uint != 0;
-    default:
-        break;
-    }
-
-    return false;
-}
-
-int
-Variant::to_int(bool* okptr) const
-{
-    int               i = static_cast<int>(m_value.v_int);
-    cali_attr_type type = m_type;
-
-    bool ok = (type == CALI_TYPE_INT);
-
-    if (okptr)
-        *okptr = ok;
-
-    return ok ? i : 0;
-}
-
-uint64_t
-Variant::to_uint(bool* okptr) const
-{
-    uint64_t       uint = m_value.v_uint;
-    cali_attr_type type = m_type;
-
-    bool ok = (type == CALI_TYPE_UINT);
-
-    if (okptr)
-        *okptr = ok;
-
-    return ok ? uint : 0;
-}
-
-double
-Variant::to_double(bool* okptr) const
-{
-    double            d = m_value.v_double;
-    cali_attr_type type = m_type;
-
-    bool ok = (type == CALI_TYPE_DOUBLE || type == CALI_TYPE_INT || type == CALI_TYPE_UINT);
-
-    if (okptr)
-        *okptr = ok;
-
-    switch (type) {
-    case CALI_TYPE_DOUBLE:
-        return d;
-    case CALI_TYPE_INT:
-        return m_value.v_int;
-    case CALI_TYPE_UINT:
-        return m_value.v_uint;
-    default:
-        return 0;
-    }
-}
-
-cali_attr_type
-Variant::to_attr_type(bool* okptr) const
-{
-    cali_attr_type ret  = m_value.v_type;
-    cali_attr_type type = m_type;    
-
-    bool ok = (type == CALI_TYPE_TYPE);
-
-    if (okptr)
-        *okptr = ok;
-
-    return ok ? ret : CALI_TYPE_INV;
-}
-
 std::string
 Variant::to_string() const
 {
-    string ret;
+    std::string ret;
 
-    switch (m_type) {
+    switch (this->type()) {
     case CALI_TYPE_INV:
         break;
     case CALI_TYPE_USR:
     {
-        ostringstream os;
+        size_t size = this->size();
+        const void* ptr = data();
+            
+        std::ostringstream os;
 
-        copy(static_cast<const unsigned char*>(m_value.ptr), static_cast<const unsigned char*>(m_value.ptr) + m_size,
-             ostream_iterator<unsigned>(os << std::hex << setw(2) << setfill('0'), ":"));
+        std::copy(static_cast<const unsigned char*>(ptr), static_cast<const unsigned char*>(ptr) + size,
+                  std::ostream_iterator<unsigned>(os << std::hex << std::setw(2) << std::setfill('0'), ":"));
 
         ret = os.str();
     }
         break;
     case CALI_TYPE_INT:
-        ret = std::to_string(m_value.v_int);
+        ret = std::to_string(to_int());
         break;
     case CALI_TYPE_UINT:
-        ret = std::to_string(m_value.v_uint);
+        ret = std::to_string(to_uint());
         break;
     case CALI_TYPE_STRING:
     {
-        const char* str = static_cast<const char*>(m_value.ptr);
-        std::size_t len = m_size;
+        const char* str = static_cast<const char*>(data());
+        std::size_t len = size();
 
         if (len && str[len-1] == 0)
             --len;
@@ -251,110 +99,25 @@ Variant::to_string() const
         break;
     case CALI_TYPE_ADDR:
     {
-        ostringstream os;
-        os << std::hex << m_value.v_uint;
+        std::ostringstream os;
+        os << std::hex << to_uint();
         ret = os.str();
     }
         break;
     case CALI_TYPE_DOUBLE:
-        ret = std::to_string(m_value.v_double);
+        ret = std::to_string(to_double());
         break;
     case CALI_TYPE_BOOL:
-        ret = m_value.v_bool ? "true" : "false";
+        ret = to_bool() ? "true" : "false";
         break;
     case CALI_TYPE_TYPE:
     {
-        ret = cali_type2string(m_value.v_type);
+        ret = cali_type2string(to_attr_type());
     }
         break;
     }
 
     return ret;
-}
-
-size_t
-Variant::pack(unsigned char* buf) const
-{
-    size_t nbytes = 0;
-
-    nbytes += vlenc_u64(static_cast<uint64_t>(m_type), buf);
-
-    switch (m_type) {
-    case CALI_TYPE_INV:
-        break;    
-
-    case CALI_TYPE_USR:
-    case CALI_TYPE_STRING:
-        nbytes += vlenc_u64(m_size, buf+nbytes);
-    default:
-        nbytes += vlenc_u64(m_value.v_uint, buf+nbytes);
-        break;
-    }
-
-    return nbytes;
-}
-
-Variant
-Variant::unpack(const unsigned char* buf, size_t* inc, bool *ok)
-{
-    size_t   p = 0;
-    Variant  v;
-    
-    cali_attr_type type = static_cast<cali_attr_type>(vldec_u64(buf, &p));
-
-    if (type > CALI_MAXTYPE) {
-        if (ok)
-            *ok = false;
-        
-        return v;
-    }
-
-    v.m_type = type;
-        
-    switch (v.m_type) {
-    case CALI_TYPE_INV:
-        break;
-    case CALI_TYPE_USR:
-    case CALI_TYPE_STRING:
-        v.m_size         = static_cast<size_t>(vldec_u64(buf+p, &p));
-    default:
-        v.m_value.v_uint = vldec_u64(buf+p, &p);
-    }
-
-    // set size for default types
-    switch (v.m_type) {
-    case CALI_TYPE_INV:
-	v.m_size = 0;
-	break;
-    case CALI_TYPE_USR:
-    case CALI_TYPE_STRING:
-	break; // just here to avoid compiler warning
-    case CALI_TYPE_ADDR:
-	v.m_size = sizeof(uint64_t); // addresses are stored as uint64_t
-    case CALI_TYPE_BOOL:
-        v.m_size = sizeof(bool);
-        break;
-    case CALI_TYPE_INT:
-        v.m_size = sizeof(int64_t);
-        break;
-    case CALI_TYPE_UINT:
-        v.m_size = sizeof(uint64_t);
-        break;
-    case CALI_TYPE_DOUBLE:
-        v.m_size = sizeof(double);
-        break;
-    case CALI_TYPE_TYPE:
-        v.m_size = sizeof(cali_attr_type);
-        break;
-      break;
-    }
-
-    if (inc)
-        *inc += p;
-    if (ok)
-        *ok = true;
-
-    return v;
 }
 
 Variant
@@ -429,62 +192,7 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
     return ret;
 }
 
-bool cali::operator == (const Variant& lhs, const Variant& rhs)
-{
-    if (lhs.m_type != rhs.m_type)
-        return false;
-
-    switch (lhs.m_type) {
-    case CALI_TYPE_INV:
-        return true;
-    case CALI_TYPE_STRING:
-    case CALI_TYPE_USR:
-        if (lhs.m_size == rhs.m_size) {
-            if (lhs.m_value.ptr == rhs.m_value.ptr)
-                return true;
-            else
-                return 0 == memcmp(lhs.m_value.ptr, rhs.m_value.ptr, lhs.m_size);
-        }
-        return false;
-    case CALI_TYPE_BOOL:
-        return lhs.m_value.v_bool   == rhs.m_value.v_bool;
-    case CALI_TYPE_TYPE:
-        return lhs.m_value.v_type   == rhs.m_value.v_type;
-    case CALI_TYPE_DOUBLE:
-        return lhs.m_value.v_double == rhs.m_value.v_double;
-    case CALI_TYPE_INT:
-        return lhs.m_value.v_uint   == rhs.m_value.v_uint;
-    case CALI_TYPE_ADDR:
-    case CALI_TYPE_UINT:
-        return lhs.m_value.v_uint   == rhs.m_value.v_uint;
-    }
-}
-
-bool cali::operator < (const Variant& lhs, const Variant& rhs)
-{
-    if (lhs.m_type != rhs.m_type)
-        return lhs.m_type < rhs.m_type;
-
-    switch (lhs.m_type) {
-    case CALI_TYPE_STRING:
-        return strncmp(static_cast<const char*>(lhs.m_value.ptr),
-                       static_cast<const char*>(rhs.m_value.ptr), std::min(lhs.m_size, rhs.m_size)) < 0;
-    case CALI_TYPE_USR:
-        return memcmp(lhs.m_value.ptr, rhs.m_value.ptr, std::min(lhs.m_size, rhs.m_size)) < 0;
-    case CALI_TYPE_BOOL:
-        return lhs.m_value.v_bool   < rhs.m_value.v_bool;
-    case CALI_TYPE_TYPE:
-        return lhs.m_value.v_type   < rhs.m_value.v_type;
-    case CALI_TYPE_DOUBLE:
-        return lhs.m_value.v_double < rhs.m_value.v_double;
-    case CALI_TYPE_INT:
-        return lhs.m_value.v_int    < rhs.m_value.v_int;
-    default:
-        return lhs.m_value.v_uint   < rhs.m_value.v_uint;
-    }
-}
-
-ostream& cali::operator << (ostream& os, const Variant& v)
+std::ostream& cali::operator << (std::ostream& os, const Variant& v)
 {
     os << v.to_string();
     return os;

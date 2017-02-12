@@ -18,27 +18,27 @@ TEST(Variant_Test, FromString) {
         bool           ok;
         Variant        expected;
     } testcases[] = {
-        { CALI_TYPE_INV,    "42",              false, Variant() },
+        { CALI_TYPE_INV,    "42",    false, Variant() },
 
-        { CALI_TYPE_INT,    "42",              true,  Variant(static_cast<int>(42))  },
-        { CALI_TYPE_INT,    " -10 ",           true,  Variant(static_cast<int>(-10)) },
-        { CALI_TYPE_INT,    "bla",             false, Variant() },
+        { CALI_TYPE_INT,    "42",    true,  Variant(static_cast<int>(42))  },
+        { CALI_TYPE_INT,    " -10 ", true,  Variant(static_cast<int>(-10)) },
+        { CALI_TYPE_INT,    "bla",   false, Variant() },
         
-        { CALI_TYPE_STRING, teststr,           true,  Variant(CALI_TYPE_STRING, teststr, strlen(teststr)) },
-        { CALI_TYPE_STRING, "",                true,  Variant(CALI_TYPE_STRING, "", 0)  },
+        { CALI_TYPE_STRING, teststr, true,  Variant(CALI_TYPE_STRING, teststr, strlen(teststr)) },
+        { CALI_TYPE_STRING, "",      true,  Variant(CALI_TYPE_STRING, "", 0)  },
 
-        { CALI_TYPE_UINT,   "0",               true,  Variant(static_cast<unsigned>(0)) },
-        { CALI_TYPE_UINT,   "1337",            true,  Variant(static_cast<unsigned>(1337)) },
-        { CALI_TYPE_ADDR,   "ef10",            true,  Variant(CALI_TYPE_ADDR, &uval, sizeof(uval))   },
+        { CALI_TYPE_UINT,   "0",     true,  Variant(static_cast<uint64_t>(0)) },
+        { CALI_TYPE_UINT,   "1337",  true,  Variant(static_cast<uint64_t>(1337)) },
+        { CALI_TYPE_ADDR,   "ef10",  true,  Variant(CALI_TYPE_ADDR, &uval, sizeof(uval))   },
 
-        { CALI_TYPE_DOUBLE, "-1.0",            true,  Variant(static_cast<double>(-1.0)) },
+        { CALI_TYPE_DOUBLE, "-1.0",  true,  Variant(static_cast<double>(-1.0)) },
 
-        { CALI_TYPE_BOOL,   "false",           true,  Variant(false) },
-        { CALI_TYPE_BOOL,   "1",               true,  Variant(true)  },
-        { CALI_TYPE_BOOL,   "bla",             false, Variant()      },
+        { CALI_TYPE_BOOL,   "false", true,  Variant(false) },
+        { CALI_TYPE_BOOL,   "1",     true,  Variant(true)  },
+        { CALI_TYPE_BOOL,   "bla",   false, Variant()      },
 
-        { CALI_TYPE_TYPE,   "int",             true,  Variant(CALI_TYPE_INT) },
-        { CALI_TYPE_TYPE,   "bla",             false, Variant()      },
+        { CALI_TYPE_TYPE,   "int",   true,  Variant(CALI_TYPE_INT) },
+        { CALI_TYPE_TYPE,   "bla",   false, Variant()      },
 
         { CALI_TYPE_INV, 0, false, Variant() }
     };

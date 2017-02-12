@@ -45,6 +45,7 @@
 #include "Variant.h"
 
 #include <atomic>
+#include <cstring>
 
 // #define METADATATREE_BENCHMARK
 

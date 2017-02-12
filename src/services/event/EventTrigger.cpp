@@ -173,7 +173,7 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
         return;
 
     if (enable_snapshot_info) {
-        unsigned  lvl = 1;
+        uint64_t  lvl = 1;
         Variant v_lvl(lvl), v_p_lvl;
 
         // Use Caliper::exchange() to accelerate common-case of setting new hierarchy level to 1.
@@ -214,7 +214,7 @@ void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
         return;
 
     if (enable_snapshot_info) {
-        unsigned  lvl(1);
+        uint64_t  lvl(1);
         Variant v_lvl(lvl);
 
         // The level for set() is always 1
@@ -244,7 +244,7 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
         return;
 
     if (enable_snapshot_info) {
-        unsigned  lvl = 0;
+        uint64_t  lvl = 0;
         Variant v_lvl(lvl), v_p_lvl;
 
         // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
