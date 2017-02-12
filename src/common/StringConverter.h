@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,63 +30,37 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file RuntimeConfig.h
-/// RuntimeConfig definition
+/// \file StringConverter.h
+/// A class to convert strings into various other data types.
+/// This is primarily a convenience class to transparently replace
+/// cali::Variant's former string conversion capabilities.
+ 
+#pragma once
 
-#ifndef CALI_RUNTIMECONFIG_H
-#define CALI_RUNTIMECONFIG_H
-
-#include "StringConverter.h"
-
-#include "cali_types.h"
-
-#include <memory>
 #include <string>
 
 namespace cali
 {
 
-struct ConfigSetImpl;
-
-class ConfigSet 
-{
-    std::shared_ptr<ConfigSetImpl> mP;
-
-    ConfigSet(const std::shared_ptr<ConfigSetImpl>& p);
-
-    friend class RuntimeConfig;
+class StringConverter {
+    std::string m_str;
 
 public:
 
-    struct Entry {
-        const char*   key;         ///< Variable key
-        cali_attr_type type;        ///< Variable type
-        const char*   value;       ///< (Default) value as string
-        const char*   descr;       ///< One-line description
-        const char*   long_descr;  ///< Extensive, multi-line description
-    };
+    StringConverter()
+    : m_str()
+    { }
 
-    static constexpr Entry Terminator = { 0, CALI_TYPE_INV, 0, 0, 0 };
+    StringConverter(const std::string& str)
+        : m_str(str)
+    { }
 
-    constexpr ConfigSet() = default;
+    bool          to_bool(bool* okptr = nullptr) const;
 
-    StringConverter get(const char* key) const;
+    int           to_int(bool* okptr = nullptr)  const;
+    unsigned long to_uint(bool* okptr = nullptr) const;
+
+    std::string   to_string(bool* okptr = nullptr) const { return m_str; }
 };
-
-
-class RuntimeConfig
-{
-
-public:
-
-    static StringConverter get(const char* set, const char* key);
-    static void        preset(const char* key, const std::string& value);
-    static ConfigSet   init(const char* name, const ConfigSet::Entry* set);
-
-    static void print(std::ostream& os);
-
-}; // class RuntimeConfig
-
+    
 } // namespace cali
-
-#endif // CALI_RUNTIMECONFIG_H

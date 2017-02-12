@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,63 +30,90 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file RuntimeConfig.h
-/// RuntimeConfig definition
-
-#ifndef CALI_RUNTIMECONFIG_H
-#define CALI_RUNTIMECONFIG_H
+/// \file StringConverter.cpp
+/// StringConverter implementation
 
 #include "StringConverter.h"
 
-#include "cali_types.h"
+#include <algorithm>
+#include <cctype>
 
-#include <memory>
-#include <string>
-
-namespace cali
+bool
+cali::StringConverter::to_bool(bool* okptr) const
 {
+    bool ok  = false;
+    bool res = false;
+    
+    // try string
+    
+    {
+        std::string lower;
 
-struct ConfigSetImpl;
+        std::transform(m_str.begin(), m_str.end(), std::back_inserter(lower),
+                       ::tolower);
 
-class ConfigSet 
+        if (lower == "true" || lower == "t") {
+            ok  = true;
+            res = true;
+        } else if (lower == "false" || lower == "f") {
+            ok  = true;
+            res = false;
+        }
+    }
+
+    // try numeral
+    
+    if (!ok) {
+        try {
+            unsigned long i = std::stoul(m_str);
+            
+            res = (i != 0);
+            ok  = true;
+        } catch (...) {
+            ok  = false;
+        }
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return res;
+}
+
+int
+cali::StringConverter::to_int(bool* okptr) const
 {
-    std::shared_ptr<ConfigSetImpl> mP;
+    bool ok  = false;
+    int  res = 0;
 
-    ConfigSet(const std::shared_ptr<ConfigSetImpl>& p);
+    try {
+        res = std::stoi(m_str);
+        ok  = true;
+    } catch (...) {
+        ok  = false;
+    }
 
-    friend class RuntimeConfig;
+    if (okptr)
+        *okptr = ok;
 
-public:
+    return res;
+}
 
-    struct Entry {
-        const char*   key;         ///< Variable key
-        cali_attr_type type;        ///< Variable type
-        const char*   value;       ///< (Default) value as string
-        const char*   descr;       ///< One-line description
-        const char*   long_descr;  ///< Extensive, multi-line description
-    };
-
-    static constexpr Entry Terminator = { 0, CALI_TYPE_INV, 0, 0, 0 };
-
-    constexpr ConfigSet() = default;
-
-    StringConverter get(const char* key) const;
-};
-
-
-class RuntimeConfig
+unsigned long
+cali::StringConverter::to_uint(bool* okptr) const
 {
+    bool ok = false;
+    unsigned long res = 0;
 
-public:
+    try {
+        res = std::stoul(m_str);
+        ok  = true;
+    } catch (...) {
+        ok  = false;
+    }
 
-    static StringConverter get(const char* set, const char* key);
-    static void        preset(const char* key, const std::string& value);
-    static ConfigSet   init(const char* name, const ConfigSet::Entry* set);
+    if (okptr)
+        *okptr = ok;
 
-    static void print(std::ostream& os);
-
-}; // class RuntimeConfig
-
-} // namespace cali
-
-#endif // CALI_RUNTIMECONFIG_H
+    return res;    
+}

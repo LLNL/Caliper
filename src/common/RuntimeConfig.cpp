@@ -98,9 +98,9 @@ struct ConfigSetImpl
 
     // --- interface
 
-    Variant get(const char* key) const {
+    StringConverter get(const char* key) const {
         auto it = m_dict.find(key);
-        return (it == m_dict.end() ? Variant() : Variant(string(it->second.value)));
+        return (it == m_dict.end() ? StringConverter() : StringConverter(it->second.value));
     }
 
     void init(const char* name, const ConfigSet::Entry* list, const map<string, string>& profile) {
@@ -210,9 +210,9 @@ struct RuntimeConfigImpl
 
     // --- interface
 
-    Variant get(const char* set, const char* key) const {
+    StringConverter get(const char* set, const char* key) const {
         auto it = m_database.find(set);
-        return (it == m_database.end() ? Variant() : it->second->get(key));
+        return (it == m_database.end() ? StringConverter() : StringConverter(it->second->get(key)));
     }
 
     void preset(const char* key, const std::string& value) {
@@ -289,11 +289,11 @@ ConfigSet::ConfigSet(const shared_ptr<ConfigSetImpl>& p)
     : mP { p }
 { }
 
-Variant 
+StringConverter
 ConfigSet::get(const char* key) const 
 {
     if (!mP)
-        return Variant();
+        return std::string();
 
     return mP->get(key);
 }
@@ -303,7 +303,7 @@ ConfigSet::get(const char* key) const
 // --- RuntimeConfig public interface
 //
 
-Variant
+StringConverter
 RuntimeConfig::get(const char* set, const char* key)
 {
     return RuntimeConfigImpl::instance()->get(set, key);

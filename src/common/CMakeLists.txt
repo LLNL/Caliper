@@ -10,6 +10,7 @@ set(CALIPER_COMMON_HEADERS
     RecordMap.h
     RuntimeConfig.h
     SnapshotTextFormatter.h
+    StringConverter.h
     Variant.h
     cali_types.h)
 set(CALIPER_UTIL_HEADERS
@@ -28,6 +29,7 @@ set(CALIPER_COMMON_SOURCES
     RecordMap.cpp
     RuntimeConfig.cpp
     SnapshotTextFormatter.cpp
+    StringConverter.cpp
     Variant.cpp
     cali_types.c)
 

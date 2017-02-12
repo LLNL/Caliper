@@ -1,4 +1,5 @@
 set(CALIPER_COMMON_TEST_SOURCES
+  test_stringconverter.cpp
   test_variant.cpp)
 
 add_executable(test_caliper-common ${CALIPER_COMMON_TEST_SOURCES})
