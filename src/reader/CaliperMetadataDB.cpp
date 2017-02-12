@@ -108,6 +108,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     mutable mutex             m_attribute_lock;
 
     vector<const char*>       m_string_db;
+    mutable mutex             m_string_db_lock;
     
     void setup_bootstrap_nodes() {
         // Create initial nodes
@@ -178,6 +179,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             break;
         case CALI_TYPE_STRING:
             {
+                std::lock_guard<std::mutex>
+                    g(m_string_db_lock);
+                
                 auto it = std::upper_bound(m_string_db.begin(), m_string_db.end(),
                                            str.c_str(),
                                            [](const char* a, const char* b) { return strcmp(a, b) < 0; });
