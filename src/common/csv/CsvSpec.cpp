@@ -37,6 +37,7 @@
 
 #include <Record.h>
 #include <Log.h>
+#include <Variant.h>
 
 #include <vector>
 
@@ -123,7 +124,7 @@ struct CsvSpecImpl
                 os << (count++ ? "," : "") << entry.first;
             for (const auto &elem : entry.second) {
                 os << '=';
-                write_string(os, elem.to_string());
+                write_string(os, elem);
             }
         }
 
@@ -139,7 +140,7 @@ struct CsvSpecImpl
             vector<string> keyval = split(entry, '=', false);
 
             if (keyval.size() > 1) {
-                vector<Variant> data;
+                vector<std::string> data;
 
                 for (auto it = keyval.begin()+1; it != keyval.end(); ++it)
                     data.emplace_back(*it);

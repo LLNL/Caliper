@@ -104,7 +104,7 @@ public:
     Variant& operator = (const Variant& v) = default;
 
     bool empty() const  { 
-        return (m_type == CALI_TYPE_INV || m_size == 0) && m_string.empty(); 
+        return (m_type == CALI_TYPE_INV) && m_string.empty(); 
     };
     operator bool() const {
         return !empty();

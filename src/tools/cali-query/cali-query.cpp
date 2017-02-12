@@ -223,25 +223,6 @@ namespace
 
             push(db, node);
         }
-        
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec, RecordProcessFn push) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
-
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
-                    cali_id_t id = id_entry_it->second.front().to_id();
-
-                    if (id != CALI_INV_ID) {
-                        if (id < m_max_node)
-                            return;
-                        else
-                            m_max_node = id;
-                    }
-                }                
-            }
-
-            push(db, rec);
-        }
     };
 
     /// FilterStep helper struct

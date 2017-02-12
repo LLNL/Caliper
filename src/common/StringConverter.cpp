@@ -38,6 +38,15 @@
 #include <algorithm>
 #include <cctype>
 
+cali_id_t
+cali::StringConverter::to_id() const
+{
+    bool ok = false;
+    cali_id_t id = to_uint(&ok);
+
+    return ok ? id : CALI_INV_ID;
+}
+
 bool
 cali::StringConverter::to_bool(bool* okptr) const
 {

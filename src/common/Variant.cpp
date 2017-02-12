@@ -35,6 +35,8 @@
 
 #include "Variant.h"
 
+#include "StringConverter.h"
+
 #include "c-util/vlenc.h"
 
 #include <algorithm>

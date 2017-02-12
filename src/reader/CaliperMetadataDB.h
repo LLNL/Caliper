@@ -69,8 +69,6 @@ public:
     // --- I/O API 
     // 
 
-    bool        read(const char* filename);
-
     RecordMap   merge(const RecordMap& rec, IdMap& map);
     void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn);
 

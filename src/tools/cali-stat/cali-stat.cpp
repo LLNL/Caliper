@@ -43,6 +43,7 @@
 
 #include <ContextRecord.h>
 #include <Node.h>
+#include <StringConverter.h>
 
 #include <csv/CsvReader.h>
 
@@ -133,13 +134,13 @@ namespace
         }
         
         void process_snapshot(const CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            auto ref_entry_it = rec.find("ref");
+            auto ref_it = rec.find("ref");
 
-            int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
+            int ref = ref_it == rec.end() ? 0 : static_cast<int>(ref_it->second.size());
 
-            if (ref_entry_it != rec.end())
-                for ( const Variant& ref_node_id : ref_entry_it->second )
-                    for (const Node* node = db.node(ref_node_id.to_id()); node; node = node->parent()) {
+            if (ref_it != rec.end())
+                for ( const std::string& node_id_str : ref_it->second )
+                    for (const Node* node = db.node(StringConverter(node_id_str).to_id()); node; node = node->parent()) {
                         auto it = mS->reuse.find(node->attribute());
 
                         if (it != mS->reuse.end())
@@ -154,7 +155,7 @@ namespace
                 auto id_entry_it = rec.find("id");
 
                 if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    process_node(db, db.node(id_entry_it->second.front().to_id()));
+                    process_node(db, db.node(StringConverter(id_entry_it->second.front()).to_id()));
             } else if (type == "ctx")
                 process_snapshot(db, rec);
         }
@@ -265,8 +266,8 @@ namespace
             int ref_attr = 0;
             
             if (ref_entry_it != rec.end())
-                for ( const Variant& ref_node_id : ref_entry_it->second )
-                    for (const Node* node = db.node(ref_node_id.to_id()); node && node->id() != CALI_INV_ID; node = node->parent())
+                for ( const std::string& node_id_str : ref_entry_it->second )
+                    for (const Node* node = db.node(StringConverter(node_id_str).to_id()); node && node->id() != CALI_INV_ID; node = node->parent())
                         ++ref_attr;
                     
             mS->n_ref += ref;
@@ -281,10 +282,10 @@ namespace
             mS->size_snapshots += ref * 8;
             
             for (int i = 0; i < val; ++i) {
-                cali_attr_type type = db.get_attribute(attr_entry_it->second[i].to_id()).type();
+                cali_attr_type type = db.get_attribute(StringConverter(attr_entry_it->second[i]).to_id()).type();
 
                 mS->size_snapshots +=
-                    (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? val_entry_it->second[i].to_string().size() : 8);
+                    (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? val_entry_it->second[i].size() : 8);
             }
         }        
 
@@ -295,7 +296,7 @@ namespace
                 auto id_entry_it = rec.find("id");
 
                 if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    process_node(db, db.node(id_entry_it->second.front().to_id()));
+                    process_node(db, db.node(StringConverter(id_entry_it->second.front()).to_id()));
             } else if (type == "ctx")
                 process_snapshot(db, rec);
         }
@@ -318,7 +319,7 @@ namespace
                 auto id_entry_it = rec.find("id");
 
                 if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
-                    cali_id_t id = id_entry_it->second.front().to_id();
+                    cali_id_t id = StringConverter(id_entry_it->second.front()).to_id();
 
                     if (id != CALI_INV_ID) {
                         if (id < m_max_node)

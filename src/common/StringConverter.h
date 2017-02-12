@@ -37,6 +37,8 @@
  
 #pragma once
 
+#include "cali_types.h"
+
 #include <string>
 
 namespace cali
@@ -55,6 +57,8 @@ public:
         : m_str(str)
     { }
 
+    cali_id_t     to_id() const;
+    
     bool          to_bool(bool* okptr = nullptr) const;
 
     int           to_int(bool* okptr = nullptr)  const;
