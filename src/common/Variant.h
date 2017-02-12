@@ -38,8 +38,6 @@
 
 #include "cali_types.h"
 
-#include "util/shared_obj.hpp"
-
 #include <cstring>
 #include <string>
 #include <iostream>
@@ -51,8 +49,6 @@ class Variant
 {
     cali_attr_type m_type;
     std::size_t    m_size;
-
-    util::shared_obj<std::string> m_string;
 
     // need some sort of "managed/copied" and "unmanaged" pointers
     union Value {
@@ -72,10 +68,6 @@ public:
 
     Variant(const Variant& v) = default;
     Variant(Variant&& v) = default;
-
-    explicit Variant(const std::string& string)
-        : m_type { CALI_TYPE_INV }, m_size { 0 }, m_string { string }, m_value { 0 }
-        { }
 
     Variant(bool val)
         : m_type { CALI_TYPE_BOOL   }, m_size { sizeof(bool) }
@@ -104,7 +96,7 @@ public:
     Variant& operator = (const Variant& v) = default;
 
     bool empty() const  { 
-        return (m_type == CALI_TYPE_INV) && m_string.empty(); 
+        return m_type == CALI_TYPE_INV; 
     };
     operator bool() const {
         return !empty();
@@ -114,17 +106,11 @@ public:
     const void*    data() const;
     size_t         size() const { return m_size; }
 
-    cali_id_t      to_id(bool* okptr = nullptr);
     cali_id_t      to_id(bool* okptr = nullptr) const;
-    int            to_int(bool* okptr = nullptr);
     int            to_int(bool* okptr = nullptr) const;
-    uint64_t       to_uint(bool* okptr = nullptr);
     uint64_t       to_uint(bool* okptr = nullptr) const;
-    bool           to_bool(bool* okptr = nullptr);
     bool           to_bool(bool* okptr = nullptr) const;
-    double         to_double(bool* okptr = nullptr);
     double         to_double(bool* okptr = nullptr) const;
-    cali_attr_type to_attr_type(bool* okptr = nullptr);
     cali_attr_type to_attr_type(bool* okptr = nullptr) const;
 
     std::string    to_string() const;
@@ -132,7 +118,7 @@ public:
     size_t         pack(unsigned char* buf) const;
     static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok);
 
-    Variant        concretize(cali_attr_type type, bool* okptr) const;
+    static Variant from_string(cali_attr_type type, const char* str, bool* ok = nullptr);
     
     // vector<unsigned char> data() const;
 

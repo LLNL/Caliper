@@ -193,40 +193,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                 return Variant(CALI_TYPE_STRING, ptr, str.size());
             }
             break;
-        case CALI_TYPE_INT:
-            {
-                bool ok = false;
-                int  i  = StringConverter(str).to_int(&ok);
-
-                if (ok)
-                    ret = Variant(i);
-            }
-            break;
-        case CALI_TYPE_ADDR:
-        case CALI_TYPE_UINT:
-            {
-                bool ok = false;
-                unsigned long u = StringConverter(str).to_uint(&ok);
-
-                if (ok)
-                    ret = Variant(u);
-            }
-            break;
-        case CALI_TYPE_DOUBLE:
-            ret = Variant(std::stod(str));
-            break;
-        case CALI_TYPE_BOOL:
-            {
-                bool ok = false;
-                bool b  = StringConverter(str).to_bool(&ok);
-                
-                if (ok)
-                    ret = Variant(b);
-            }
-            break;
-        case CALI_TYPE_TYPE:
-            ret = Variant(cali_string2type(str.c_str()));
-            break;
+        default:
+            ret = Variant::from_string(type, str.c_str());
         }
 
         return ret;
@@ -457,7 +425,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         Attribute n_attr[2] = { attribute(Attribute::meta_attribute_keys().prop_attr_id),
                                 attribute(Attribute::meta_attribute_keys().name_attr_id) };
         Variant   n_data[2] = { Variant(prop),
-                                Variant(name) /* FIXME: Using explicit string rep */ }; 
+                                make_variant(CALI_TYPE_STRING, name) }; 
 
         Node* node = make_tree_entry(2, n_attr, n_data, parent);
 

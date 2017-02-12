@@ -8,43 +8,48 @@ using namespace cali;
 
 // Test some type conversions
 
-TEST(Variant_Test, ConvertBool) {
-    Variant v_in_1(std::string("tRue"));
-    Variant v_in_2(std::string("faLse"));
-    Variant v_in_3(0);
-    Variant v_in_4(42);
-    Variant v_in_5(std::string("bla"));
-    Variant v_in_6(std::string("0"));
-    Variant v_in_7(std::string("1"));
+TEST(Variant_Test, FromString) {
+    const char* teststr = "My wonderful test string";
+    uint64_t uval = 0xef10;
+    
+    const struct testcase_t {
+        cali_attr_type type;
+        const char*    str;
+        bool           ok;
+        Variant        expected;
+    } testcases[] = {
+        { CALI_TYPE_INV,    "42",              false, Variant() },
 
-    bool ok = false;
+        { CALI_TYPE_INT,    "42",              true,  Variant(static_cast<int>(42))  },
+        { CALI_TYPE_INT,    " -10 ",           true,  Variant(static_cast<int>(-10)) },
+        { CALI_TYPE_INT,    "bla",             false, Variant() },
+        
+        { CALI_TYPE_STRING, teststr,           true,  Variant(CALI_TYPE_STRING, teststr, strlen(teststr)) },
+        { CALI_TYPE_STRING, "",                true,  Variant(CALI_TYPE_STRING, "", 0)  },
 
-    bool res_1 = v_in_1.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_1, true);
+        { CALI_TYPE_UINT,   "0",               true,  Variant(static_cast<unsigned>(0)) },
+        { CALI_TYPE_UINT,   "1337",            true,  Variant(static_cast<unsigned>(1337)) },
+        { CALI_TYPE_ADDR,   "ef10",            true,  Variant(CALI_TYPE_ADDR, &uval, sizeof(uval))   },
 
-    bool res_2 = v_in_2.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_2, false);
+        { CALI_TYPE_DOUBLE, "-1.0",            true,  Variant(static_cast<double>(-1.0)) },
 
-    bool res_3 = v_in_3.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_3, false);
+        { CALI_TYPE_BOOL,   "false",           true,  Variant(false) },
+        { CALI_TYPE_BOOL,   "1",               true,  Variant(true)  },
+        { CALI_TYPE_BOOL,   "bla",             false, Variant()      },
 
-    bool res_4 = v_in_4.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_4, true);
+        { CALI_TYPE_TYPE,   "int",             true,  Variant(CALI_TYPE_INT) },
+        { CALI_TYPE_TYPE,   "bla",             false, Variant()      },
 
-    bool res_5 = v_in_5.to_bool(&ok);
-    EXPECT_FALSE(ok);
+        { CALI_TYPE_INV, 0, false, Variant() }
+    };
 
-    bool res_6 = v_in_6.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_6, false);
-
-    bool res_7 = v_in_7.to_bool(&ok);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(res_7, true);
+    for (const testcase_t* t = testcases; t->str; ++t) {
+        bool    ok = false;
+        Variant v(Variant::from_string(t->type, t->str, &ok));
+        
+        EXPECT_EQ(ok, t->ok) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
+        EXPECT_EQ(v, t->expected) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
+    }
 }
 
 // --- Test Variant pack/unpack

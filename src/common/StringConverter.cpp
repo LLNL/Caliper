@@ -108,14 +108,14 @@ cali::StringConverter::to_int(bool* okptr) const
     return res;
 }
 
-unsigned long
-cali::StringConverter::to_uint(bool* okptr) const
+uint64_t
+cali::StringConverter::to_uint(bool* okptr, int base) const
 {
     bool ok = false;
-    unsigned long res = 0;
+    uint64_t res = 0;
 
     try {
-        res = std::stoul(m_str);
+        res = std::stoull(m_str, nullptr, base);
         ok  = true;
     } catch (...) {
         ok  = false;
@@ -125,4 +125,23 @@ cali::StringConverter::to_uint(bool* okptr) const
         *okptr = ok;
 
     return res;    
+}
+
+double
+cali::StringConverter::to_double(bool* okptr) const
+{
+    bool   ok  = false;
+    double res = 0;
+
+    try {
+        res = std::stod(m_str);
+        ok  = true;
+    } catch (...) {
+        ok  = false;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return res;
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -40,6 +40,7 @@
 #include "Attribute.h"
 #include "ContextRecord.h"
 #include "Node.h"
+#include "StringConverter.h"
 
 #include "util/split.hpp"
 
@@ -58,35 +59,35 @@ struct Table::TableImpl
         Attribute   attr;
 
         bool        print; // used for hidden sort columns
-        
+
         Column(const std::string& n, std::size_t w, const Attribute& a, bool p)
             : name(n), max_width(w), attr(a), print(p)
             { }
     };
-        
+
     std::vector<Column>                     m_cols;
-    std::vector< std::vector<Variant> >     m_rows;
+    std::vector< std::vector<std::string> > m_rows;
 
     std::mutex                              m_col_lock;
     std::mutex                              m_row_lock;
-    
+
     bool                                    m_auto_column;
     std::size_t                             m_num_sort_columns;
-    
-    void parse(const std::string& field_string, const std::string& sort_string) {        
+
+    void parse(const std::string& field_string, const std::string& sort_string) {
         std::vector<std::string> fields;
 
         // fill sort columns
-        
+
         util::split(sort_string, ':', std::back_inserter(fields));
 
         for (const std::string& s : fields)
             if (s.size() > 0)
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, false);
-        
+
         m_num_sort_columns = m_cols.size();
         fields.clear();
-        
+
         // fill print columns
 
         if (field_string.empty()) {
@@ -102,7 +103,7 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
     }
 
-    void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {        
+    void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin()+m_num_sort_columns, m_cols.end(),
                                [attr_id](const Column& c) {
                                    return c.attr.id() == attr_id;
@@ -110,29 +111,29 @@ struct Table::TableImpl
 
         if (it != m_cols.end())
             return;
-        
+
         Attribute attr   = db.get_attribute(attr_id);
 
         if (attr == Attribute::invalid)
             return;
-        
+
         std::string name = attr.name();
 
         // Skip internal "cali." and ".event" attributes
         if (name.compare(0, 5, "cali." ) == 0 ||
             name.compare(0, 6, "event.") == 0)
             return;
-                
+
         m_cols.emplace_back(name, name.size(), attr, true);
     }
-    
+
     std::vector<Column> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_col_lock);
 
         // Auto-generate columns from attributes in the snapshots. Used if no
         // field list was given. Skips some internal attributes.
-        
+
         if (m_auto_column)
             for (Entry e : list) {
                 if (e.node()) {
@@ -152,40 +153,36 @@ struct Table::TableImpl
     }
 
     void add(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::vector<Column>  cols = update_columns(db, list);
-        std::vector<Variant> row(cols.size());
+        std::vector<Column> cols = update_columns(db, list);
+        std::vector<std::string> row(cols.size());
 
         bool active = false;
         bool update_max_width = false;
-        
+
         for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c) {
             if (cols[c].attr == Attribute::invalid)
                 continue;
 
-            Variant val;
+            std::string val;
             std::size_t width = 0;
-            
+
             for (Entry e : list) {
                 if (e.node()) {
                     std::string str;
-                    
+
                     for (const Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == cols[c].attr.id())
                             str = node->data().to_string().append(str.empty() ? "" : "/").append(str);
 
                     width = std::max(str.size(), width);
-                    bool ok = true;
-                    
-                    if (!str.empty()) 
-                        val = Variant(str).concretize(cols[c].attr.type(), &ok);
-                    if (!ok)
-                        val = Variant(str);
-                } else if (e.attribute() == cols[c].attr.id()) {
-                    bool ok;
-                    val = e.value().concretize(cols[c].attr.type(), &ok);
 
-                    if (!ok)
-                        val = e.value();
+                    if (!str.empty()) {
+                        val = str;
+                        break;
+                    }
+                } else if (e.attribute() == cols[c].attr.id()) {
+                    val = e.value().to_string();
+                    break;
                 }
             }
 
@@ -199,11 +196,11 @@ struct Table::TableImpl
                 }
             }
         }
-        
+
         if (active) {
             std::lock_guard<std::mutex>
                 g(m_row_lock);
-            
+
             m_rows.push_back(std::move(row));
         }
 
@@ -221,26 +218,28 @@ struct Table::TableImpl
         // NOTE: No locking, assume flush() runs serially
 
         // sort rows
+        // NOTE: This is REALLY slow (potentially converts strings to numbers on every comparison)
 
         for (std::vector<Column>::size_type c = 0; c < m_num_sort_columns; ++c)
             std::stable_sort(m_rows.begin(), m_rows.end(),
-                             [c](const std::vector<Variant>& lhs, const std::vector<Variant>& rhs){
+                             [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
                                  if (c >= lhs.size() || c >= rhs.size())
                                      return lhs.size() < rhs.size();
-                                 return lhs[c] < rhs[c];
+                                 cali_attr_type type = this->m_cols[c].attr.type();
+                                 return Variant::from_string(type, lhs[c].c_str()) < Variant::from_string(type, rhs[c].c_str());
                              });
-        
+
         const char whitespace[120+1] =
             "                                        "
             "                                        "
             "                                        ";
-            
+
         // print header
 
         for (const Column& col : m_cols)
             if (col.print)
                 os << col.name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.name.size()));
-        
+
         os << std::endl;
 
         // print rows
@@ -250,17 +249,17 @@ struct Table::TableImpl
                 if (!m_cols[c].print)
                     continue;
 
-                std::string    str = row[c].to_string();
+                std::string    str = row[c];
                 cali_attr_type t   = m_cols[c].attr.type();
                 bool           align_right = (t == CALI_TYPE_INT || t == CALI_TYPE_UINT || t == CALI_TYPE_DOUBLE);
                 std::size_t    len = m_cols[c].max_width-str.size();
-                
+
                 if (align_right)
                     os << whitespace+(120 - std::min<std::size_t>(120, len)) << str << ' ';
                 else
                     os << str << whitespace+(120 - std::min<std::size_t>(120, 1+len));
             }
-            
+
             os << std::endl;
         }
     }
@@ -278,7 +277,7 @@ Table::~Table()
     mP.reset();
 }
 
-void 
+void
 Table::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
