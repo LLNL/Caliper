@@ -453,21 +453,17 @@ bool
 cali_variant_eq(cali_variant_t lhs, cali_variant_t rhs)
 {
     if (lhs.type_and_size != rhs.type_and_size)
-        return false;
-    
-    uint64_t t = _EXTRACT_TYPE(lhs.type_and_size);
-    cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
+        return false;    
 
-    switch (type) {
+    switch ( _EXTRACT_TYPE(lhs.type_and_size) ) {
     case CALI_TYPE_USR:
     case CALI_TYPE_STRING:
         {
-            size_t size = (size_t) _EXTRACT_SIZE(lhs.type_and_size);
-
             if (lhs.value.unmanaged_ptr == rhs.value.unmanaged_ptr)
                 return true;
             else
-                return 0 == memcmp(lhs.value.unmanaged_ptr, rhs.value.unmanaged_ptr, size);
+                return 0 == memcmp(lhs.value.unmanaged_ptr, rhs.value.unmanaged_ptr, 
+                                   _EXTRACT_SIZE(lhs.type_and_size));
         }
         break;
     default:
