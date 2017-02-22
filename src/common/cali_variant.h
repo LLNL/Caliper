@@ -71,7 +71,14 @@ typedef struct {
 
 #define CALI_VARIANT_TYPE_MASK 0xFF
     
-
+/** \brief Test if variant is empty
+ */
+inline bool
+cali_variant_is_empty(cali_variant_t v)
+{
+    return 0 == v.type_and_size;
+}
+  
 /** \brief Return type of a variant  
  */
 cali_attr_type
@@ -86,7 +93,9 @@ cali_variant_get_size(cali_variant_t v);
  */
 const void*
 cali_variant_get_data(const cali_variant_t* v);
-    
+
+/** \brief Construct variant from type, pointer, and size 
+ */
 cali_variant_t
 cali_make_variant(cali_attr_type type, const void* ptr, size_t size);
 

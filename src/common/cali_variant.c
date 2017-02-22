@@ -45,6 +45,9 @@
 #define _EXTRACT_TYPE(type_and_size) ((type_and_size) & CALI_VARIANT_TYPE_MASK)
 #define _EXTRACT_SIZE(type_and_size) ((type_and_size) >> 8)
 
+extern inline bool
+cali_variant_is_empty(cali_variant_t v);
+
 cali_attr_type
 cali_variant_get_type(cali_variant_t v)
 {

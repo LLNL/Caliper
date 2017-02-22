@@ -198,32 +198,39 @@ TEST(C_Variant_Test, PackUnpack) {
     cali_variant_t v_7_bool_out = cali_variant_unpack(buf+pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_7 unpack (bool)");
 
+    EXPECT_FALSE(cali_variant_is_empty(v_1_int_out));
     EXPECT_EQ(cali_variant_get_type(v_1_int_out), CALI_TYPE_INT);
     EXPECT_EQ(cali_variant_to_int(v_1_int_out, NULL), val_1_int);
     EXPECT_TRUE(cali_variant_eq(v_1_int_in, v_1_int_out));
-    
+
+    EXPECT_FALSE(cali_variant_is_empty(v_2_uint_out));
     EXPECT_EQ(cali_variant_get_type(v_2_uint_out), CALI_TYPE_UINT);
     EXPECT_EQ(cali_variant_to_uint(v_2_uint_out, NULL), val_2_uint);
     EXPECT_TRUE(cali_variant_eq(v_2_uint_in, v_2_uint_out));
 
+    EXPECT_FALSE(cali_variant_is_empty(v_3_str_out));
     EXPECT_EQ(cali_variant_get_type(v_3_str_out), CALI_TYPE_STRING);
     EXPECT_EQ(cali_variant_get_size(v_3_str_out), strlen(val_3_str)+1);
     EXPECT_STREQ(static_cast<const char*>(cali_variant_get_data(&v_3_str_out)), val_3_str);
     EXPECT_TRUE(cali_variant_eq(v_3_str_in, v_3_str_out));
 
+    EXPECT_FALSE(cali_variant_is_empty(v_4_dbl_out));
     EXPECT_EQ(cali_variant_get_type(v_4_dbl_out), CALI_TYPE_DOUBLE);
     EXPECT_EQ(cali_variant_to_double(v_4_dbl_out, NULL), val_4_dbl);
     EXPECT_TRUE(cali_variant_eq(v_4_dbl_in, v_4_dbl_out));
 
+    EXPECT_TRUE(cali_variant_is_empty(v_5_inv_out));
     EXPECT_EQ(cali_variant_get_type(v_5_inv_out), CALI_TYPE_INV);
     EXPECT_TRUE(cali_variant_eq(v_5_inv_in, v_5_inv_out));
-
+    
+    EXPECT_FALSE(cali_variant_is_empty(v_6_type_out));
     EXPECT_EQ(cali_variant_get_type(v_6_type_out), CALI_TYPE_TYPE);
     EXPECT_EQ(cali_variant_to_type(v_6_type_out, NULL), val_6_type);
     EXPECT_TRUE(cali_variant_eq(v_6_type_in, v_6_type_out));
 
+    EXPECT_FALSE(cali_variant_is_empty(v_7_bool_out));
     EXPECT_EQ(cali_variant_get_type(v_7_bool_out), CALI_TYPE_BOOL);
     EXPECT_TRUE(cali_variant_to_bool(v_7_bool_out, NULL));
     EXPECT_EQ(cali_variant_to_uint(v_7_bool_in, NULL), cali_variant_to_uint(v_7_bool_out, NULL));
-    EXPECT_TRUE(cali_variant_eq(v_7_bool_in, v_7_bool_out));    
+    EXPECT_TRUE(cali_variant_eq(v_7_bool_in, v_7_bool_out));
 }
