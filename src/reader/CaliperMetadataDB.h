@@ -72,6 +72,8 @@ public:
     RecordMap   merge(const RecordMap& rec, IdMap& map);
     void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn);
 
+    const Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data, IdMap& map);
+    
     //
     // --- Query API
     //
