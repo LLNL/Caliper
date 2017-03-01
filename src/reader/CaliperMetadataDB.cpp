@@ -116,6 +116,13 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     vector<const char*>       m_string_db;
     mutable mutex             m_string_db_lock;
     
+    inline Node* node(cali_id_t id) const {
+        std::lock_guard<std::mutex>
+            g(m_node_lock);
+
+        return id < m_nodes.size() ? m_nodes[id] : nullptr;
+    }
+
     void setup_bootstrap_nodes() {
         // Create initial nodes
         
@@ -301,6 +308,20 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         }
 
         return node;
+    }
+
+    EntryList merge_snapshot(size_t n_nodes, const cali_id_t node_ids[],
+                             size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
+                             const IdMap& idmap) const
+    {
+        EntryList list;
+
+        for (size_t i = 0; i < n_nodes; ++i)
+            list.push_back(Entry(node(::map_id(node_ids[i], idmap)))); 
+        for (size_t i = 0; i < n_imm; ++i)
+            list.push_back(Entry(::map_id(attr_ids[i], idmap), values[i]));
+
+        return list;       
     }
 
     EntryList merge_ctx_record_to_list(const RecordMap& rec, IdMap& idmap) {
@@ -530,13 +551,18 @@ CaliperMetadataDB::merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t pr
     mP->merge_node(node_id, attr_id, prnt_id, v_data, idmap);
 }
 
+EntryList
+CaliperMetadataDB::merge_snapshot(size_t n_nodes, const cali_id_t node_ids[], 
+                                  size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
+                                  const IdMap& idmap) const
+{
+    return mP->merge_snapshot(n_nodes, node_ids, n_imm, attr_ids, values, idmap);
+}
+
 Node* 
 CaliperMetadataDB::node(cali_id_t id) const
 {
-    std::lock_guard<std::mutex>
-        g(mP->m_node_lock);
-
-    return (id < mP->m_nodes.size()) ? mP->m_nodes[id] : nullptr;
+    return mP->node(id);
 }
 
 Attribute
