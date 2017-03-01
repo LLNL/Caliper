@@ -388,7 +388,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return rec;
     }
 
-    void merge(CaliperMetadataDB* db, const RecordMap& rec, IdMap& idmap, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn) {
+    void merge(CaliperMetadataDB* db, const RecordMap& rec, IdMap& idmap, NodeProcessFn node_fn, SnapshotProcessFn snap_fn) {
         auto rec_name_it = rec.find("__rec");
 
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
@@ -534,7 +534,7 @@ CaliperMetadataDB::merge(const RecordMap& rec, IdMap& idmap)
 }
 
 void 
-CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn& node_fn, SnapshotProcessFn& snap_fn)
+CaliperMetadataDB::merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn)
 {
     mP->merge(this, rec, map, node_fn, snap_fn);
 }

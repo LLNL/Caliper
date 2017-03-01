@@ -77,7 +77,7 @@ public:
 
     /// Parses command-line options given by @arg argc and @argv.
     /// @return @arg argv[] index of first unknown option argument
-    int  parse(int argc, const char* argv[], int pos = 1);
+    int  parse(int argc, const char* const argv[], int pos = 1);
 
     // --- Retrieval
 

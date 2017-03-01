@@ -725,7 +725,7 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn& push)
+Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 {
     mP->flush(db, push);
 }

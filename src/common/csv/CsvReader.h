@@ -36,7 +36,7 @@
 #ifndef CALI_CSVREADER_H
 #define CALI_CSVREADER_H
 
-#include <RecordMap.h>
+#include "../RecordMap.h"
 
 #include <functional>
 #include <iostream>

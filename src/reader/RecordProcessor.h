@@ -56,12 +56,12 @@ namespace cali
 
     typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node)> 
         NodeProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node,NodeProcessFn&)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node,NodeProcessFn)> 
         NodeFilterFn;
 
     typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list)> 
         SnapshotProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list,SnapshotProcessFn&)> 
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list,SnapshotProcessFn)> 
         SnapshotFilterFn;
 
 } // namespace cali
