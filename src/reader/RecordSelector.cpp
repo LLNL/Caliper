@@ -204,7 +204,7 @@ RecordSelector::~RecordSelector()
 }
 
 void 
-RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn& push) const
+RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn push) const
 {
     if (mP->pass(db, list))
         push(db, list);

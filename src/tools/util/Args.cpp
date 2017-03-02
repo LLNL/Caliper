@@ -78,7 +78,7 @@ struct Args::ArgsImpl
         }
     }
 
-    int parse(int argc, const char* argv[], int pos) {
+    int parse(int argc, const char* const argv[], int pos) {
         if (argc <= pos)
             return pos;
 
@@ -269,7 +269,7 @@ void Args::add_table(const Table table[])
     mP->add_table(table);
 }
 
-int Args::parse(int argc, const char* argv[], int pos)
+int Args::parse(int argc, const char* const argv[], int pos)
 {
     return mP->parse(argc, argv, pos);
 }

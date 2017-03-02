@@ -56,7 +56,7 @@ public:
 
     ~RecordSelector();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList& node, SnapshotProcessFn&) const;
+    void operator()(CaliperMetadataAccessInterface&, const EntryList& node, SnapshotProcessFn) const;
 };
 
 } // namespace cali
