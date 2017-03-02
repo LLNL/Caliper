@@ -54,7 +54,7 @@ class CsvWriter
 
 public:
 
-    constexpr CsvWriter()
+    CsvWriter()
     { }
     
     CsvWriter(std::ostream& os);
