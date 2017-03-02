@@ -52,6 +52,7 @@
 
 #include <csv/CsvReader.h>
 #include <csv/CsvSpec.h>
+#include <csv/CsvWriter.h>
 
 #include <util/split.hpp>
 
@@ -122,82 +123,6 @@ namespace
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         Args::Table::Terminator
-    };
-
-    class WriteRecord {
-        struct StreamInfo {
-            ostream&      os;
-            std::mutex    os_lock;
-
-            StreamInfo(std::ostream& os_arg)
-                : os(os_arg)
-                { }
-        };
-
-        std::shared_ptr<StreamInfo> sI;
-        
-    public:
-        
-        WriteRecord(ostream& os)
-            : sI { new StreamInfo(os) }
-            { }
-
-        void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
-            std::lock_guard<std::mutex>
-                g(sI->os_lock);
-            
-            db.node(node->id())->write_path([this](const RecordDescriptor& r,
-                                                   const int* c,
-                                                   const Variant** d)
-                                            { CsvSpec::write_record(sI->os, r, c, d); });
-        }
-
-        void operator()(CaliperMetadataAccessInterface& db, const EntryList& list) {
-            std::vector<Variant> attr;
-            std::vector<Variant> vals;
-            std::vector<Variant> refs;
-
-            std::ostringstream os;
-            
-            auto write_fn = [&os](const RecordDescriptor& r,
-                                 const int* c,
-                                 const Variant** d)
-                { CsvSpec::write_record(os, r, c, d); };
-            
-            for (const Entry& e : list) {
-                if (e.node()) {                    
-                    db.node(e.node()->id())->write_path(write_fn);
-                    
-                    refs.push_back(Variant(e.node()->id()));
-                } else if (e.attribute() != CALI_INV_ID) {
-                    db.node(e.attribute())->write_path(write_fn);
-                    
-                    attr.push_back(Variant(e.attribute()));
-                    vals.push_back(e.value());
-                }
-            }
-
-            int           count[3] = { static_cast<int>(refs.size()),
-                                       static_cast<int>(attr.size()),
-                                       static_cast<int>(vals.size()) };
-            const Variant* data[3] = { &refs.front(), &attr.front(), &vals.front() };
-            
-            CsvSpec::write_record(os, ContextRecord::record_descriptor(), count, data);
-
-            if (!os.str().empty()) {
-                std::lock_guard<std::mutex>
-                    g(sI->os_lock);
-
-                sI->os << os.str();
-            }
-        }
-
-        void operator()(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
-            std::lock_guard<std::mutex>
-                g(sI->os_lock);
-            
-            sI->os << rec << endl;
-        }
     };
 
     /// A node record filter that filters redundant identical node records.
@@ -369,7 +294,7 @@ int main(int argc, const char* argv[])
         snap_writer = jsn_writer;
     }
     else {
-        WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
+        CsvWriter writer(fs.is_open() ? fs : cout);
 
         snap_writer = writer;
         node_proc   = writer;
