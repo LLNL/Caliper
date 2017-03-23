@@ -76,7 +76,7 @@ struct Loop::Impl {
     Impl(const char* name)
         : level(0) {
         iter_attr =
-            Caliper().create_attribute(std::string("iteration#") + name, CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+            Caliper().create_attribute(std::string("iteration#") + name, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
     }
 };
 

@@ -42,15 +42,21 @@
 #include "Annotation.h"
 #include "cali.h"
 
+#ifdef __cplusplus
 
-/// \brief C++ macro to mark a function
-#define CALI_CXX_MARK_FUNCTION cali::Function __cali_ann##__func__(__func__)
+/// \macro C++ macro to mark a function
+#define CALI_CXX_MARK_FUNCTION \
+    cali::Function __cali_ann##__func__(__func__)
 
 /// \macro Mark a loop in C++ 
-#define CALI_CXX_MARK_LOOP_BEGIN(id, name) cali::Loop __cali_loop_##id(name)
+#define CALI_CXX_MARK_LOOP_BEGIN(id, name) \
+    cali::Loop __cali_loop_##id(name)
 
-/// \brief C++ macro for a loop iteration
+/// \macro C++ macro for a loop iteration
 #define CALI_CXX_MARK_LOOP_ITERATION(id, iter) \
     cali::Loop::Iteration __cali_iter_##id ( __cali_loop_##id.iteration(iter) )
 
-#define CALI_CXX_MARK_LOOP_END(id) __cali_loop_##id.end()
+#define CALI_CXX_MARK_LOOP_END(id) \
+    __cali_loop_##id.end()
+
+#endif // __cplusplus
