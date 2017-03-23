@@ -11,6 +11,7 @@
 static const struct typemap_t {
   const char* str; cali_attr_type type;
 } typemap[] = { 
+  { "inv",    CALI_TYPE_INV    },
   { "usr",    CALI_TYPE_USR    },
   { "int",    CALI_TYPE_INT    },
   { "uint",   CALI_TYPE_UINT   },
@@ -25,7 +26,7 @@ static const struct typemap_t {
 const char*
 cali_type2string(cali_attr_type type)
 {
-  return (type >= 0 && type <= CALI_MAXTYPE ? typemap[type].str : "invalid");
+  return (type >= 0 && type <= CALI_MAXTYPE ? typemap[type].str : "inv");
 }
 
 cali_attr_type

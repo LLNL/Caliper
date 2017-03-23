@@ -170,11 +170,12 @@ struct RecordSelector::RecordSelectorImpl
         for (ClauseConfig& clause_conf : m_clauses) {
             Clause clause = check_and_update_clause(db, clause_conf);
 
-            if (clause.attr_id == CALI_INV_ID)
+            if (clause.attr_id == CALI_INV_ID) {
                 if (clause.negate)
                     continue;
                 else
                     return false;
+	    }
 
             bool m = false;
 
@@ -203,7 +204,7 @@ RecordSelector::~RecordSelector()
 }
 
 void 
-RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn& push) const
+RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn push) const
 {
     if (mP->pass(db, list))
         push(db, list);

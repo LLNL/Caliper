@@ -23,7 +23,7 @@ add_library(caliper-mpiwrap ${CALIPER_MPIWRAP_SOURCES})
 
 target_link_libraries(caliper-mpiwrap caliper-common)
 target_link_libraries(caliper-mpiwrap caliper)
-target_link_libraries(caliper-mpiwrap ${MPI_C_LIBRARIES})
+target_link_libraries(caliper-mpiwrap ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
 
 install(TARGETS caliper-mpiwrap
   EXPORT caliper

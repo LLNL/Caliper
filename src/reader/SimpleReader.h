@@ -53,7 +53,7 @@ namespace cali
 class CaliperMetadataDB;
 class CsvSpec;
 
-typedef std::map<std::string, Variant> ExpandedRecordMap;
+typedef std::map<std::string, std::string> ExpandedRecordMap;
 
 class SimpleReader
 {

@@ -52,6 +52,7 @@
 #include <pthread.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <limits>
 #include <mutex>
@@ -61,7 +62,7 @@
 using namespace cali;
 using namespace std;
 
-#define MAX_KEYLEN         128
+#define MAX_KEYLEN          32
 #define SNAP_MAX            80 // max snapshot size
 
 //
@@ -158,10 +159,13 @@ class AggregateDB {
     BlockAlloc<TrieNode>        m_trie;
     BlockAlloc<AggregateKernel> m_kernels;
 
+    Node                        m_aggr_root_node;
+    
     // we maintain some internal statistics
     size_t                   m_num_trie_entries;
     size_t                   m_num_kernel_entries;
     size_t                   m_num_dropped;
+    size_t                   m_num_skipped_keys;
     size_t                   m_max_keylen;
 
     //
@@ -198,6 +202,7 @@ class AggregateDB {
     static size_t            s_global_num_trie_blocks;
     static size_t            s_global_num_kernel_blocks;
     static size_t            s_global_num_dropped;
+    static size_t            s_global_num_skipped_keys;
     static size_t            s_global_max_keylen;
 
 
@@ -225,36 +230,57 @@ class AggregateDB {
 
             entry = m_trie.get(id, alloc);
         }
-
+        
         if (entry && entry->k_id == 0xFFFFFFFF) {
-            uint32_t id = static_cast<uint32_t>(m_num_kernel_entries + 1);
+            size_t num_ids = m_aggr_attributes.size();
 
-            m_num_kernel_entries += std::max<size_t>(1, m_aggr_attributes.size());
+            if (num_ids > 0) {
+                uint32_t first_id = static_cast<uint32_t>(m_num_kernel_entries + 1);
 
-            if (m_kernels.get(id, alloc) == 0)
-                return 0;
-            else
-                entry->k_id = id;
+                m_num_kernel_entries += num_ids;
+
+                for (unsigned i = 0; i < num_ids; ++i)
+                    if (m_kernels.get(first_id + i, alloc) == 0)
+                        return 0;
+
+                entry->k_id = first_id;
+            }
         }
 
         return entry;
     }
 
     void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c) {
-        // --- decode key
-
-        size_t    p = 0;
-        int       num_nodes = static_cast<int>(vldec_u64(key + p, &p));
-
         SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
+        // --- decode key
+
+        size_t    p = 0;
+
+        uint64_t  toc = vldec_u64(key+p, &p); // first entry is 2*num_nodes + (1 : w/ immediate, 0 : w/o immediate)
+        int       num_nodes = static_cast<int>(toc)/2;
+        
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
             snapshot.append(c->node(vldec_u64(key + p, &p)));
 
+        if (toc % 2 == 1) {
+            // there are immediate key entries
+
+            uint64_t imm_bitfield = vldec_u64(key+p, &p);
+
+            for (size_t k = 0; k < s_key_attribute_ids.size(); ++k)
+                if (imm_bitfield & (1 << k)) {
+                    uint64_t val = vldec_u64(key+p, &p);
+                    Variant  v(s_key_attributes[k].type(), &val, sizeof(uint64_t));
+
+                    snapshot.append(s_key_attribute_ids[k], v);
+                }
+        }
+
         // --- write aggregate entries
 
-        int       num_aggr_attr = 1; // limit to single aggregation attribute for now
+        int       num_aggr_attr = m_aggr_attributes.size();
 
         Variant   attr_vec[SNAP_MAX];
         Variant   data_vec[SNAP_MAX];
@@ -323,6 +349,7 @@ public:
         m_num_trie_entries   = 0;
         m_num_kernel_entries = 0;
         m_num_dropped        = 0;
+        m_num_skipped_keys   = 0;
         m_max_keylen         = 0;
     }
 
@@ -342,21 +369,34 @@ public:
         cali_id_t*  nodeid_vec = &key_node;
         uint64_t    n_nodes    = 0;
 
-        size_t      n_key_attr = s_key_attribute_names.size();
+        size_t      n_key_attr = 0;
+        cali_id_t*  key_attribute_ids = static_cast<cali_id_t*>(alloca(s_key_attribute_ids.size() * sizeof(cali_id_t)));
+
+        // create list of all valid key attribute ids
+        for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
+            if (s_key_attribute_ids[i] != CALI_INV_ID)
+                key_attribute_ids[n_key_attr++] = s_key_attribute_ids[i];
             
-        if (n_key_attr > 0) {
+        if (n_key_attr > 0 && sizes.n_nodes > 0) {
             // --- find out number of entries for each key attribute
             
             size_t* key_entries = static_cast<size_t*>(alloca(n_key_attr * sizeof(size_t)));
+            const Node* *start_nodes = static_cast<const Node**>(alloca(sizes.n_nodes * sizeof(const Node*)));
             
             memset(key_entries, 0, n_key_attr * sizeof(size_t));
+            memset(start_nodes, 0, sizes.n_nodes * sizeof(const Node*));
             
             for (size_t i = 0; i < sizes.n_nodes; ++i)
                 for (const Node* node = addr.node_entries[i]; node; node = node->parent())
                     for (size_t a = 0; a < n_key_attr; ++a)
-                        if (s_key_attribute_ids[a] != CALI_INV_ID &&
-                            s_key_attribute_ids[a] == node->attribute())
+                        if (key_attribute_ids[a] == node->attribute()) {
                             ++key_entries[a];
+
+                            // Save the snapshot nodes that lead to key nodes
+                            // to short-cut the subsequent loop a bit 
+                            if (!start_nodes[i])
+                                start_nodes[i] = node;
+                        }
 
             // --- make prefix sum
             
@@ -375,20 +415,19 @@ public:
                 memset(filled,   0, n_key_attr  * sizeof(size_t));
                 
                 for (size_t i = 0; i < sizes.n_nodes; ++i)
-                    for (const Node* node = addr.node_entries[i]; node; node = node->parent())
+                    for (const Node* node = start_nodes[i]; node; node = node->parent())
                         for (size_t a = 0; a < n_key_attr; ++a)
-                            if (s_key_attribute_ids[a] != CALI_INV_ID &&
-                                s_key_attribute_ids[a] == node->attribute())
+                            if (key_attribute_ids[a] == node->attribute())
                                 nodelist[key_entries[a] - (++filled[a])] = node;
                 
-                const Node* node = c->make_tree_entry(tot_entries, nodelist);
+                const Node* node = c->make_tree_entry(tot_entries, nodelist, &m_aggr_root_node);
 
                 if (node)
                     nodeid_vec[n_nodes++] = node->id();
                 else
                     Log(0).stream() << "aggregate: can't create node" << std::endl;
             }
-        } else {
+        } else if (s_key_attribute_ids.size() == 0) {
             // --- no key attributes set: take nodes in snapshot   
 
             nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
@@ -399,19 +438,70 @@ public:
 
             // --- sort to make unique keys
             std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
-        }
-
+        }        
+        
         //
         // --- encode key
         //
 
+        // key encoding is as follows:
+        //    - 1 u64: "toc" = 2 * num_nodes + (1 if immediate entries | 0 if no immediate entries)
+        //    - num_nodes u64: key node ids
+        //    - 1 u64: bitfield of indices in s_key_attributes that mark immediate key entries
+        //    - for each immediate entry, 1 u64 entry for the value 
+
+        // encode node key
+
+        unsigned char   node_key[MAX_KEYLEN];
+        size_t          node_key_len = 0;
+
+        for (size_t i = 0; i < n_nodes; ++i) {
+            size_t p = vlenc_u64(nodeid_vec[i], node_key + node_key_len);
+
+            if (node_key_len + p + 1 >= MAX_KEYLEN) {
+                ++m_num_skipped_keys;
+                break;
+            }
+
+            node_key_len += p;
+        }
+
+        // encode selected immediate key entries
+
+        unsigned char   imm_key[MAX_KEYLEN];
+        size_t          imm_key_len = 0;
+        uint64_t        imm_key_bitfield = 0;
+
+        for (size_t k = 0; k < s_key_attribute_ids.size(); ++k) 
+            for (size_t i = 0; i < sizes.n_immediate; ++i)
+                if (s_key_attribute_ids[k] == addr.immediate_attr[i]) {
+                    unsigned char buf[10];
+                    size_t        p = 0;
+
+                    p += vlenc_u64(*static_cast<const uint64_t*>(addr.immediate_data[i].data()), imm_key + imm_key_len);
+                    
+                    // check size and discard entry if it won't fit :(
+                    if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN) {
+                        ++m_num_skipped_keys;
+                        break;
+                    }
+
+                    imm_key_bitfield |= (1 << k);
+                    imm_key_len      += p;
+                }
+
         unsigned char   key[MAX_KEYLEN];
         size_t          pos = 0;
 
-        pos += vlenc_u64(n_nodes, key + pos);
+        pos += vlenc_u64(n_nodes * 2 + (imm_key_bitfield ? 1 : 0), key + pos);
+        memcpy(key+pos, node_key, node_key_len);
+        pos += node_key_len;
 
-        for (size_t i = 0; i < n_nodes && pos+10 < MAX_KEYLEN; ++i)
-            pos += vlenc_u64(nodeid_vec[i], key + pos);
+        if (imm_key_bitfield) {
+            pos += vlenc_u64(imm_key_bitfield, key+pos);
+            memcpy(key+pos, imm_key, imm_key_len);
+            pos += imm_key_len;
+        }
 
         m_max_keylen = std::max(pos, m_max_keylen);
 
@@ -458,20 +548,22 @@ public:
           m_retired(false),
           m_next(nullptr),
           m_prev(nullptr),
+          m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
           m_num_trie_entries(0),
           m_num_kernel_entries(0),
           m_num_dropped(0),
+          m_num_skipped_keys(0),
           m_max_keylen(0)
     {
         m_aggr_attributes.assign(s_aggr_attribute_names.size(), Attribute::invalid);
 
-        Log(2).stream() << "aggregate: creating aggregation database" << std::endl;
+        Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
 
         for (int a = 0; a < s_aggr_attribute_names.size(); ++a) {
             Attribute attr = c->get_attribute(s_aggr_attribute_names[a]);
 
             if (attr == Attribute::invalid)
-                Log(1).stream() << "aggregate: warning: aggregation attribute "
+                Log(1).stream() << "Aggregate: warning: aggregation attribute "
                                 << s_aggr_attribute_names[a]
                                 << " not found" << std::endl;
             else
@@ -538,6 +630,7 @@ public:
             s_global_num_kernel_entries += db->m_num_kernel_entries;
             s_global_num_trie_blocks    += db->m_trie.num_blocks();
             s_global_num_kernel_blocks  += db->m_kernels.num_blocks();
+            s_global_num_skipped_keys   += db->m_num_skipped_keys;
             s_global_num_dropped        += db->m_num_dropped;
             s_global_max_keylen = std::max(s_global_max_keylen, db->m_max_keylen);
             
@@ -565,7 +658,7 @@ public:
             }
         }
 
-        Log(1).stream() << "aggregate: flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << "Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
     static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
@@ -600,13 +693,29 @@ public:
         // No lock: hope that update is more-or-less atomic, and
         // consequences of invalid values are negligible
         if (it != s_key_attribute_names.end()) {
+            if (attr.store_as_value()) {
+                cali_attr_type type = attr.type();
+
+                if (type != CALI_TYPE_INT  &&
+                    type != CALI_TYPE_UINT &&
+                    type != CALI_TYPE_ADDR &&
+                    type != CALI_TYPE_BOOL &&   
+                    type != CALI_TYPE_TYPE) {
+                    Log(1).stream() << "Aggregate: warning: type " << cali_type2string(type)
+                                    << " in as-value attribute \"" << attr.name() 
+                                    << "\" is not supported in aggregation key and will be dropped." 
+                                    << std::endl;
+                    return;
+                }
+            }
+
             s_key_attributes[it-s_key_attribute_names.begin()]    = attr;
             s_key_attribute_ids[it-s_key_attribute_names.begin()] = attr.id();
         }
     }
     
     static void finish_cb(Caliper* c) {
-        Log(2).stream() << "aggregate: max key len " << s_global_max_keylen << ", "
+        Log(2).stream() << "Aggregate: max key len " << s_global_max_keylen << ", "
                         << s_global_num_kernel_entries << " entries, "
                         << s_global_num_trie_entries << " nodes, "
                         << s_global_num_trie_blocks + s_global_num_kernel_blocks << " blocks ("
@@ -615,9 +724,22 @@ public:
                         << " bytes reserved)"
                         << std::endl;
 
+        // report attribute keys we haven't found 
+        for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
+            if (s_key_attribute_ids[i] == CALI_INV_ID)
+                Log(1).stream() << "Aggregate: warning: key attribute \""
+                                << s_key_attribute_names[i]
+                                << "\" unused" << std::endl;
+
         if (s_global_num_dropped > 0)
-            Log(1).stream() << "aggregate: dropped " << s_global_num_dropped
+            Log(1).stream() << "Aggregate: dropped " << s_global_num_dropped
                             << " snapshots." << std::endl;
+        if (s_global_num_skipped_keys > 0)
+            Log(0).stream() << "Aggregate: warning: maximum key length exceeded " 
+                            << s_global_num_skipped_keys
+                            << (s_global_num_skipped_keys == 1 ? " time!" : " times!")
+                            << " Some key attributes could not be preserved."
+                            << " Reduce number of aggregation key entries." << std::endl;
     }
 
     static void create_statistics_attributes(Caliper* c) {
@@ -714,6 +836,7 @@ size_t         AggregateDB::s_global_num_kernel_entries = 0;
 size_t         AggregateDB::s_global_num_trie_blocks    = 0;
 size_t         AggregateDB::s_global_num_kernel_blocks  = 0;
 size_t         AggregateDB::s_global_num_dropped        = 0;
+size_t         AggregateDB::s_global_num_skipped_keys   = 0;
 size_t         AggregateDB::s_global_max_keylen         = 0;
 
 namespace cali

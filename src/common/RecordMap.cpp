@@ -42,7 +42,7 @@ std::string cali::get_record_type(const cali::RecordMap& rec)
     auto rec_entry_it = rec.find("__rec");
 
     if (rec_entry_it != rec.end() && !rec_entry_it->second.empty())
-        return rec_entry_it->second.front().to_string();
+        return rec_entry_it->second.front();
 
     return { };
 }

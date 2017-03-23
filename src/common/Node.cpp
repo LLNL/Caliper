@@ -89,15 +89,15 @@ void Node::write_path(WriteRecordFn fn)
 
 RecordMap Node::record() const
 {
-    RecordMap recmap = {
-        { "__rec",     { { CALI_TYPE_STRING, s_record.name, strlen(s_record.name) } } },
-        { "id",        { { id() }          } },
-        { "attr",      { { m_attribute }   } },
-        { "data",      { { m_data }        } },
-        { "parent",    { }                   } };
+    RecordMap rec;
+    
+    rec["__rec"].push_back(s_record.name);
+    rec["id"   ].push_back(std::to_string(id()));
+    rec["attr" ].push_back(std::to_string(m_attribute));
+    rec["data" ].push_back(m_data.to_string());
 
     if (parent() && parent()->id() != CALI_INV_ID)
-        recmap["parent"].push_back(Variant(parent()->id()));
+        rec["parent"].push_back(std::to_string(parent()->id()));
 
-    return recmap;
+    return rec;
 }

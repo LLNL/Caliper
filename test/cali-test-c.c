@@ -92,12 +92,12 @@ void test_metadata()
   cali_id_t meta_int_attr =
     cali_create_attribute("meta-int-attr",    CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
 
-  int64_t     meta_i = 77;
+  int         meta_i = 77;
   const char* meta_s = "metastring";
     
-  cali_id_t   meta_attr[2] = { meta_str_attr,  meta_int_attr   };
-  const void* meta_vals[2] = { meta_s,         &meta_i         };
-  size_t      meta_size[2] = { strlen(meta_s), sizeof(int64_t) };
+  cali_id_t   meta_attr[2] = { meta_str_attr,  meta_int_attr };
+  const void* meta_vals[2] = { meta_s,         &meta_i       };
+  size_t      meta_size[2] = { strlen(meta_s), sizeof(int)   };
 
   cali_id_t attr =
     cali_create_attribute_with_metadata("metatest.attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
@@ -122,15 +122,12 @@ void test_snapshot()
   cali_id_t event_val_attr =
     cali_create_attribute("myevent-value",  CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
-  int64_t     event_val = 42;
+  int         event_val = 42;
   const char* event_str = "myevent";
   
-  cali_id_t   event_attr[2] = { event_str_attr,
-                                event_val_attr  };
-  const void* event_data[2] = { event_str,
-                                &event_val      };
-  size_t      event_size[2] = { strlen(event_str),
-                                sizeof(int64_t) };
+  cali_id_t   event_attr[2] = { event_str_attr,    event_val_attr };
+  const void* event_data[2] = { event_str,         &event_val     };
+  size_t      event_size[2] = { strlen(event_str), sizeof(int)    };
 
   cali_push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD,
                      2, event_attr, event_data, event_size);

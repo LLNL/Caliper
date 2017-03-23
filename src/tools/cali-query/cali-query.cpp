@@ -52,6 +52,7 @@
 
 #include <csv/CsvReader.h>
 #include <csv/CsvSpec.h>
+#include <csv/CsvWriter.h>
 
 #include <util/split.hpp>
 
@@ -124,82 +125,6 @@ namespace
         Args::Table::Terminator
     };
 
-    class WriteRecord {
-        struct StreamInfo {
-            ostream&      os;
-            std::mutex    os_lock;
-
-            StreamInfo(std::ostream& os_arg)
-                : os(os_arg)
-                { }
-        };
-
-        std::shared_ptr<StreamInfo> sI;
-        
-    public:
-        
-        WriteRecord(ostream& os)
-            : sI { new StreamInfo(os) }
-            { }
-
-        void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
-            std::lock_guard<std::mutex>
-                g(sI->os_lock);
-            
-            db.node(node->id())->write_path([this](const RecordDescriptor& r,
-                                                   const int* c,
-                                                   const Variant** d)
-                                            { CsvSpec::write_record(sI->os, r, c, d); });
-        }
-
-        void operator()(CaliperMetadataAccessInterface& db, const EntryList& list) {
-            std::vector<Variant> attr;
-            std::vector<Variant> vals;
-            std::vector<Variant> refs;
-
-            std::ostringstream os;
-            
-            auto write_fn = [&os](const RecordDescriptor& r,
-                                 const int* c,
-                                 const Variant** d)
-                { CsvSpec::write_record(os, r, c, d); };
-            
-            for (const Entry& e : list) {
-                if (e.node()) {                    
-                    db.node(e.node()->id())->write_path(write_fn);
-                    
-                    refs.push_back(Variant(e.node()->id()));
-                } else if (e.attribute() != CALI_INV_ID) {
-                    db.node(e.attribute())->write_path(write_fn);
-                    
-                    attr.push_back(Variant(e.attribute()));
-                    vals.push_back(e.value());
-                }
-            }
-
-            int           count[3] = { static_cast<int>(refs.size()),
-                                       static_cast<int>(attr.size()),
-                                       static_cast<int>(vals.size()) };
-            const Variant* data[3] = { &refs.front(), &attr.front(), &vals.front() };
-            
-            CsvSpec::write_record(os, ContextRecord::record_descriptor(), count, data);
-
-            if (!os.str().empty()) {
-                std::lock_guard<std::mutex>
-                    g(sI->os_lock);
-
-                sI->os << os.str();
-            }
-        }
-
-        void operator()(CaliperMetadataDB& /* cb */, const RecordMap& rec) {
-            std::lock_guard<std::mutex>
-                g(sI->os_lock);
-            
-            sI->os << rec << endl;
-        }
-    };
-
     /// A node record filter that filters redundant identical node records.
     /// Redundant node records can occur when merging/unifying two streams.
     class FilterDuplicateNodes {
@@ -222,25 +147,6 @@ namespace
             }
 
             push(db, node);
-        }
-        
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec, RecordProcessFn push) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
-
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
-                    cali_id_t id = id_entry_it->second.front().to_id();
-
-                    if (id != CALI_INV_ID) {
-                        if (id < m_max_node)
-                            return;
-                        else
-                            m_max_node = id;
-                    }
-                }                
-            }
-
-            push(db, rec);
         }
     };
 
@@ -388,7 +294,7 @@ int main(int argc, const char* argv[])
         snap_writer = jsn_writer;
     }
     else {
-        WriteRecord writer = WriteRecord(fs.is_open() ? fs : cout);
+        CsvWriter writer(fs.is_open() ? fs : cout);
 
         snap_writer = writer;
         node_proc   = writer;
@@ -407,10 +313,12 @@ int main(int argc, const char* argv[])
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
     std::vector<std::string> files = args.arguments();
+
+    if (files.empty())
+        files.push_back(""); // read from stdin if no files are given
     
     unsigned num_threads =
-        std::min<unsigned>(files.size(),
-                           std::stoul(args.get("threads", std::to_string(std::thread::hardware_concurrency()))));
+        std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
 
     std::cerr << "cali-query: processing " << files.size() << " files using "
               << num_threads << " thread" << (num_threads == 1 ? "." : "s.")  << std::endl;
@@ -432,7 +340,7 @@ int main(int argc, const char* argv[])
         
         for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write 
             Annotation::Guard 
-                g_s(Annotation("cali-query.stream").set(files[i].c_str()));
+                g_s(Annotation("cali-query.stream").set(files[i].empty() ? "stdin" : files[i].c_str()));
             
             CsvReader reader(files[i]);
             IdMap     idmap;

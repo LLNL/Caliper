@@ -23,7 +23,7 @@ macro(add_caliper_service)
   set(CALIPER_SERVICE_NAMES "${CALIPER_SERVICE_NAMES} ${NEW_SERVICE}" PARENT_SCOPE)
 endmacro()
 # A macro to include service modules as object libs in the caliper runtime lib.
-# Used when service subdirectories needs additional includes etc. 
+# Used when service subdirectories needs additional includes etc.
 
 macro(add_service_objlib)
   if(${BUILD_SHARED_LIBS})
@@ -85,19 +85,23 @@ configure_file(
    ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
 )
 
-find_package(PythonInterp REQUIRED)
-
-add_custom_target(services.inc.cpp
+add_custom_command(
+  OUTPUT services.inc.cpp
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
   COMMAND ${PYTHON_EXECUTABLE} gen_services_inc.py
-  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   COMMENT "Generating services.inc.cpp"
 )
 
-# Build service management classes 
+add_custom_target(
+  gen-services ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/services.inc.cpp
+)
+
+# Build service management classes
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 
-add_dependencies(caliper-services services.inc.cpp)
+add_dependencies(caliper-services gen-services)
 
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)

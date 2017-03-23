@@ -49,6 +49,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <iterator>
 #include <mutex>
@@ -546,7 +547,7 @@ struct Aggregator::AggregatorImpl
 
             // need to convert the Variant to its actual type before saving
             bool    ok = true;
-            Variant v  = e.value().concretize(db.get_attribute(e.attribute()).type(), &ok);
+            Variant v  = e.value();
 
             if (!ok)
                 continue;
@@ -724,7 +725,7 @@ Aggregator::~Aggregator()
 }
 
 void 
-Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn& push)
+Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 {
     mP->flush(db, push);
 }

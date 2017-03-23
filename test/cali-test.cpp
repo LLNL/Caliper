@@ -34,6 +34,7 @@
 
 #include <Annotation.h>
 #include <Caliper.h>
+#include <SnapshotRecord.h>
 
 #include <cali_macros.h>
 
@@ -41,6 +42,7 @@
 #include <Variant.h>
 
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -199,6 +201,40 @@ void test_attr_prop_preset()
         g( cali::Annotation("test-prop-preset").set(true) );
 }
 
+void test_aggr_warnings()
+{
+    cali::Caliper c;
+
+    // create an immediate attribute with double type: should create warning if used in aggregation key
+    cali::Attribute d  = c.create_attribute("aw.dbl",   CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+
+    cali::Attribute i1 = c.create_attribute("aw.int.1", CALI_TYPE_INT,  CALI_ATTR_ASVALUE);
+    cali::Attribute i2 = c.create_attribute("aw.int.2", CALI_TYPE_INT,  CALI_ATTR_ASVALUE);
+    cali::Attribute i3 = c.create_attribute("aw.int.3", CALI_TYPE_INT,  CALI_ATTR_ASVALUE);
+    cali::Attribute i4 = c.create_attribute("aw.int.4", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+    cali::Attribute i5 = c.create_attribute("aw.int.5", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+
+    uint64_t largeval = 0xFFFFFFFFFFFFFFFF;
+
+    // make a snapshot with "-1, -2, -3" entries. this should cause the aggregation key 
+    // getting too long, as negative values aren't be compressed well currently
+    cali::Attribute attr[6] = { d, i1, i2, i3, i4, i5 };
+    cali::Variant   data[6] = { 
+        cali::Variant(1.0), 
+        cali::Variant(-1), 
+        cali::Variant(-2), 
+        cali::Variant(-3),
+        cali::Variant(CALI_TYPE_UINT, &largeval, sizeof(uint64_t)), 
+        cali::Variant(CALI_TYPE_UINT, &largeval, sizeof(uint64_t))
+    };
+
+    cali::SnapshotRecord::FixedSnapshotRecord<16> info_data;
+    cali::SnapshotRecord info(info_data);
+
+    c.make_entrylist(6, attr, data, info);
+    c.push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &info);
+}
+
 std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
 {
     const char* whitespace =
@@ -232,6 +268,7 @@ int main(int argc, char* argv[])
         { "uninitialized-annotation", test_uninitialized      },
         { "end-mismatch",             test_end_mismatch       },
         { "escaping",                 test_escaping           },
+        { "aggr-warnings",            test_aggr_warnings      },
         { "cross-scope",              test_cross_scope        },
         { "attribute-prop-preset",    test_attr_prop_preset   },
         { 0, 0 }

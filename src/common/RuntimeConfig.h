@@ -36,7 +36,9 @@
 #ifndef CALI_RUNTIMECONFIG_H
 #define CALI_RUNTIMECONFIG_H
 
-#include "Variant.h"
+#include "StringConverter.h"
+
+#include "cali_types.h"
 
 #include <memory>
 #include <string>
@@ -68,7 +70,7 @@ public:
 
     constexpr ConfigSet() = default;
 
-    Variant get(const char* key) const;
+    StringConverter get(const char* key) const;
 };
 
 
@@ -77,9 +79,9 @@ class RuntimeConfig
 
 public:
 
-    static Variant   get(const char* set, const char* key);
-    static void      preset(const char* key, const std::string& value);
-    static ConfigSet init(const char* name, const ConfigSet::Entry* set);
+    static StringConverter get(const char* set, const char* key);
+    static void        preset(const char* key, const std::string& value);
+    static ConfigSet   init(const char* name, const ConfigSet::Entry* set);
 
     static void print(std::ostream& os);
 

@@ -2,10 +2,12 @@ include_directories("..")
 
 set(CALIPER_CSV_SOURCES
     CsvReader.cpp
-    CsvSpec.cpp)
+    CsvSpec.cpp
+    CsvWriter.cpp)
 set(CALIPER_CSV_HEADERS
     CsvReader.h
-    CsvSpec.h)
+    CsvSpec.h
+    CsvWriter.h)
 
 add_library(caliper-csv OBJECT ${CALIPER_CSV_SOURCES})
 

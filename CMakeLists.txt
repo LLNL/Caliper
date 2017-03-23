@@ -28,10 +28,17 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
-option(WITH_TOOLS "Build Caliper tools" TRUE)
-option(WITH_TESTS "Build Caliper test apps" TRUE)
-option(WITH_DOCS  "Build Caliper documentation" FALSE)
-option(WITH_CUDA  "Enable Caliper CUDA services" FALSE)
+option(WITH_TOOLS     "Build Caliper tools" TRUE)
+option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
+option(WITH_DOCS      "Build Caliper documentation" FALSE)
+option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
+
+# configure testing explicitly rather than with include(CTest) - avoids some clutter
+option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
+
+if (BUILD_TESTING)
+  enable_testing()
+endif()
 
 if(WITH_CUDA)
    find_package(CUDA)
@@ -104,7 +111,7 @@ endif()
 
 # Find Python
 
-find_package(PythonLibs)
+find_package(PythonInterp REQUIRED)
 
 # Sampler is currently Linux-specific: check for Linux
 if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
@@ -146,9 +153,10 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 
+add_subdirectory(ext)
 add_subdirectory(src)
 
-if (WITH_TESTS)
+if (WITH_TEST_APPS)
   add_subdirectory(test)
 endif()
 if (WITH_DOCS)

@@ -47,6 +47,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <iterator>

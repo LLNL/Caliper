@@ -61,12 +61,12 @@ bool SimpleReader::nextSnapshot(ExpandedRecordMap &rec)
 
         record = metadb.merge(CsvSpec::read_record(line), idmap);
 
-        if (record["__rec"].at(0).to_string() == "ctx") {
+        if (record["__rec"].front() == "ctx") {
 
-            record = ContextRecord::unpack(record, std::bind(&CaliperMetadataDB::node, &metadb, std::placeholders::_1));
+            record = ContextRecord::unpack(record, metadb);
             
             for (auto attr : record) {
-                rec[attr.first] = attr.second.at(0);
+                rec[attr.first] = attr.second.front();
             }
 
             return true;

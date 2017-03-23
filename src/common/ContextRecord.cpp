@@ -35,7 +35,9 @@
 
 #include "ContextRecord.h"
 
+#include "CaliperMetadataAccessInterface.h"
 #include "Node.h"
+#include "StringConverter.h"
 
 using namespace cali;
 using namespace std;
@@ -43,19 +45,27 @@ using namespace std;
 namespace 
 {
     const char* RecordElements[] = { "ref", "attr", "data" };
+
+    inline cali_id_t
+    id_from_string(const std::string& str) {
+        bool ok = false;
+        cali_id_t id = StringConverter(str).to_uint(&ok);
+
+        return ok ? id : CALI_INV_ID;
+    }
 }
 
 const RecordDescriptor ContextRecord::s_record { 0x101, "ctx", 3, ::RecordElements };
 
 
 RecordMap
-ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)> get_node)
+ContextRecord::unpack(const RecordMap& rec, const CaliperMetadataAccessInterface& metadb)
 {
     RecordMap out;
 
     auto entry_it = rec.find("__rec");
 
-    if (entry_it == rec.end() || entry_it->second.empty() || entry_it->second.front().to_string() != "ctx")
+    if (entry_it == rec.end() || entry_it->second.empty() || entry_it->second.front() != "ctx")
         return out;
 
     // implicit entries: 
@@ -63,14 +73,14 @@ ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)
     entry_it = rec.find("ref");
 
     if (entry_it != rec.end())
-        for (const Variant& elem : entry_it->second) {
-            const Node* node = get_node(elem.to_id());
+        for (const std::string& str : entry_it->second) {
+            const Node* node = metadb.node(::id_from_string(str));
 
             for ( ; node && node->id() != CALI_INV_ID; node = node->parent() ) {
-                const Node* attr_node = get_node(node->attribute());
+                Attribute attr = metadb.get_attribute(node->attribute());
 
-                if (attr_node)
-                    out[attr_node->data().to_string()].push_back(node->data());
+                if (attr != Attribute::invalid)
+                    out[attr.name()].push_back(node->data().to_string());
             }
         }
 
@@ -81,10 +91,10 @@ ContextRecord::unpack(const RecordMap& rec, std::function<const Node*(cali_id_t)
         return out;
 
     for (unsigned i = 0; i < expl_entry_it->second.size() && i < data_entry_it->second.size(); ++i) {
-        const Node* attr_node = get_node(expl_entry_it->second[i].to_id());
+        Attribute attr = metadb.get_attribute(::id_from_string(expl_entry_it->second[i]));
 
-        if (attr_node)
-            out[attr_node->data().to_string()].push_back(data_entry_it->second[i]);
+        if (attr != Attribute::invalid)
+            out[attr.name()].push_back(data_entry_it->second[i]);
     }
 
     return out;

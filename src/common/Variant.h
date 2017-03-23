@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,109 +30,100 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file Variant.h
+/// \file Variant.h
 /// A variant datatype
 
-#ifndef CALI_VARIANT_H
-#define CALI_VARIANT_H
+#pragma once
 
 #include "cali_types.h"
+#include "cali_variant.h"
 
-#include "util/shared_obj.hpp"
-
-#include <cstring>
 #include <string>
 #include <iostream>
 
 namespace cali
 {
 
+    /// \brief Encapsulate values of various Caliper data types
+    ///
+    /// This class encapsulates data values in Caliper, and implements
+    /// most of the data type-specific functionality. It is a thin wrapper
+    /// around the `cali_variant_t` C data type.
+    ///
+    /// NOTE: This class does *not* do any sort of memory management:
+    /// strings and "blobs" are stored as unmanaged pointers. Users need
+    /// to make sure these pointers are valid while any variant
+    /// encapsulating them is being used.
+    
 class Variant 
 {
-    cali_attr_type m_type;
-    std::size_t    m_size;
-
-    util::shared_obj<std::string> m_string;
-
-    // need some sort of "managed/copied" and "unmanaged" pointers
-    union Value {
-        bool           v_bool;
-        double         v_double;
-        int64_t        v_int;
-        uint64_t       v_uint;
-        cali_attr_type v_type;
-        const void*    ptr;
-    }              m_value;
-
+    cali_variant_t m_v;
+    
 public:
 
-    Variant() 
-        : m_type { CALI_TYPE_INV }, m_size { 0 }
-        { }
-
-    Variant(const Variant& v) = default;
-    Variant(Variant&& v) = default;
-
-    explicit Variant(const std::string& string)
-        : m_type { CALI_TYPE_INV }, m_size { 0 }, m_string { string }, m_value { 0 }
-        { }
-
+    constexpr Variant()
+        : m_v { CALI_TYPE_INV, { .v_uint = 0 } } { }
+    
+    Variant(const cali_variant_t& v)
+        : m_v(v) { }
+    
     Variant(bool val)
-        : m_type { CALI_TYPE_BOOL   }, m_size { sizeof(bool) }
-        { m_value.v_bool = val; }
+        : m_v(cali_make_variant_from_bool(val))   { }
     Variant(int val)
-        : m_type { CALI_TYPE_INT    }, m_size { sizeof(int64_t) }
-        { m_value.v_int  = val; } 
+        : m_v(cali_make_variant_from_int(val))    { }
     Variant(double val)
-        : m_type { CALI_TYPE_DOUBLE }, m_size { sizeof(double) }
-        { m_value.v_double = val; }
-    Variant(unsigned val)
-        : m_type { CALI_TYPE_UINT   }, m_size { sizeof(uint64_t) }
-        { m_value.v_uint = val; }
-    Variant(cali_id_t val)
-        : m_type { CALI_TYPE_UINT   }, m_size { sizeof(uint64_t) }
-        { m_value.v_uint = val; }
+        : m_v(cali_make_variant_from_double(val)) { }
+    Variant(uint64_t val)
+        : m_v(cali_make_variant_from_uint(val))   { }
     Variant(cali_attr_type val)
-        : m_type { CALI_TYPE_TYPE   }, m_size { sizeof(cali_attr_type) }
-        { m_value.v_type = val; }
+        : m_v(cali_make_variant_from_type(val))   { }
 
-    Variant(cali_attr_type type, const void* data, std::size_t size);
-
-    ~Variant()
-        { }
-
-    Variant& operator = (const Variant& v) = default;
+    Variant(cali_attr_type type, const void* data, std::size_t size)
+    {
+        m_v = cali_make_variant(type, data, size);
+    }
 
     bool empty() const  { 
-        return (m_type == CALI_TYPE_INV || m_size == 0) && m_string.empty(); 
+        return (m_v.type_and_size & CALI_VARIANT_TYPE_MASK) == CALI_TYPE_INV;
     };
     operator bool() const {
         return !empty();
     }
 
-    cali_attr_type type() const { return m_type; }
-    const void*    data() const;
-    size_t         size() const { return m_size; }
+    cali_variant_t c_variant() const { return m_v; }
+    
+    cali_attr_type type() const { return cali_variant_get_type(m_v);  }
+    const void*    data() const { return cali_variant_get_data(&m_v); }
+    size_t         size() const { return cali_variant_get_size(m_v);  }
 
-    cali_id_t      to_id(bool* okptr = nullptr);
     cali_id_t      to_id(bool* okptr = nullptr) const;
-    int            to_int(bool* okptr = nullptr);
-    int            to_int(bool* okptr = nullptr) const;
-    uint64_t       to_uint(bool* okptr = nullptr);
-    uint64_t       to_uint(bool* okptr = nullptr) const;
-    bool           to_bool(bool* okptr = nullptr);
-    bool           to_bool(bool* okptr = nullptr) const;
-    double         to_double(bool* okptr = nullptr);
-    double         to_double(bool* okptr = nullptr) const;
-    cali_attr_type to_attr_type(bool* okptr = nullptr);
-    cali_attr_type to_attr_type(bool* okptr = nullptr) const;
-
+    int            to_int(bool* okptr = nullptr) const {
+        return cali_variant_to_int(m_v, okptr);
+    }
+    uint64_t       to_uint(bool* okptr = nullptr) const {
+        return cali_variant_to_uint(m_v, okptr);
+    }
+    bool           to_bool(bool* okptr = nullptr) const {
+        return cali_variant_to_bool(m_v, okptr);
+    }
+    double         to_double(bool* okptr = nullptr) const {
+        return cali_variant_to_double(m_v, okptr);
+    }
+    cali_attr_type to_attr_type(bool* okptr = nullptr) const {
+        return cali_variant_to_type(m_v, okptr);
+    }
+    
     std::string    to_string() const;
 
-    size_t         pack(unsigned char* buf) const;
-    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok);
+    size_t         pack(unsigned char* buf) const {
+        return cali_variant_pack(m_v, buf);
+    }
+    
+    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok) {
+        return Variant(cali_variant_unpack(buf, inc, ok));
+    }
 
-    Variant        concretize(cali_attr_type type, bool* okptr) const;
+    static Variant from_string(cali_attr_type type, const char* str, bool* ok = nullptr);
     
     // vector<unsigned char> data() const;
 
@@ -140,11 +131,15 @@ public:
     friend bool operator <  (const Variant& lhs, const Variant& rhs);
 };
 
-bool operator == (const Variant& lhs, const Variant& rhs);
-bool operator <  (const Variant& lhs, const Variant& rhs);
+inline bool operator == (const Variant& lhs, const Variant& rhs) {
+    return cali_variant_eq(lhs.m_v, rhs.m_v);
+}
+    
+inline bool operator <  (const Variant& lhs, const Variant& rhs) {
+    return (cali_variant_compare(lhs.m_v, rhs.m_v) < 0);
+}
 
 std::ostream& operator << (std::ostream& os, const Variant& v);
 
 } // namespace cali
 
-#endif

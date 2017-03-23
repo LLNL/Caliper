@@ -292,7 +292,7 @@ void timestamp_service_register(Caliper* c)
                             CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_SKIP_EVENTS,
                             1, &unit_attr, &usec_val);
 
-    c->set(timeoffs_attr, Variant(static_cast<unsigned>(0)));
+    c->set(timeoffs_attr, Variant(static_cast<uint64_t>(0)));
 
     // c->events().create_attr_evt.connect(&create_attr_cb);
     c->events().post_init_evt.connect(&post_init_cb);

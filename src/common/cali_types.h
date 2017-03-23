@@ -49,18 +49,18 @@ extern "C" {
 
 typedef uint64_t cali_id_t;
 
-#define CALI_INV_ID     0xFFFFFFFFFFFFFFFF
+#define CALI_INV_ID 0xFFFFFFFFFFFFFFFF
 
 typedef enum {
-  CALI_TYPE_INV    = -1,
-  CALI_TYPE_USR    = 0,
-  CALI_TYPE_INT    = 1,
-  CALI_TYPE_UINT   = 2,
-  CALI_TYPE_STRING = 3,
-  CALI_TYPE_ADDR   = 4,
-  CALI_TYPE_DOUBLE = 5,
-  CALI_TYPE_BOOL   = 6,
-  CALI_TYPE_TYPE   = 7
+  CALI_TYPE_INV    = 0,
+  CALI_TYPE_USR    = 1,
+  CALI_TYPE_INT    = 2,
+  CALI_TYPE_UINT   = 3,
+  CALI_TYPE_STRING = 4,
+  CALI_TYPE_ADDR   = 5,
+  CALI_TYPE_DOUBLE = 6,
+  CALI_TYPE_BOOL   = 7,
+  CALI_TYPE_TYPE   = 8
 } cali_attr_type;
 
 #define CALI_MAXTYPE CALI_TYPE_TYPE

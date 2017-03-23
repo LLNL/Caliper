@@ -86,7 +86,7 @@ struct Expand::ExpandImpl
     void print(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
         int nentry = 0;
 
-        for (auto const &entry : ContextRecord::unpack(rec, std::bind(&CaliperMetadataAccessInterface::node, &db, std::placeholders::_1))) {
+        for (auto const &entry : ContextRecord::unpack(rec, db)) {
             if (entry.second.empty())
                 continue;
             if ((!m_selected.empty() && m_selected.count(entry.first) == 0) || m_deselected.count(entry.first))
@@ -96,7 +96,7 @@ struct Expand::ExpandImpl
 
             int nelem = 0;
             for (auto it = entry.second.rbegin(); it != entry.second.rend(); ++it)
-                m_os << (nelem++ ? "/" : "") << (*it).to_string();
+                m_os << (nelem++ ? "/" : "") << *it;
         }
 
         if (nentry > 0)

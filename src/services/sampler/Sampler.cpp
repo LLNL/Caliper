@@ -42,6 +42,7 @@
 #include <RuntimeConfig.h>
 
 #include <cstdlib>
+#include <cstring>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>

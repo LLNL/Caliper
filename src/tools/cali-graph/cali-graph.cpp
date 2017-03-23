@@ -135,15 +135,6 @@ namespace
         void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
             print_node(db, node);
         }
-        
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
-
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    print_node(db, db.node(id_entry_it->second.front().to_id()));
-            }
-        }
     };
     
 

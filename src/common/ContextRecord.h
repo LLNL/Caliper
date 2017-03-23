@@ -47,8 +47,9 @@
 namespace cali
 {
 
+class CaliperMetadataAccessInterface;
 class Node;
-
+ 
 class ContextRecord
 {
     static const RecordDescriptor s_record;
@@ -57,7 +58,7 @@ public:
 
     static 
     RecordMap
-    unpack(const RecordMap& rec, std::function<const cali::Node*(cali_id_t)> get_node);
+    unpack(const RecordMap& rec, const CaliperMetadataAccessInterface& metadb);
 
     static const RecordDescriptor& record_descriptor() { return s_record; }
 };

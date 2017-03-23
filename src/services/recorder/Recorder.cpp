@@ -39,6 +39,7 @@
 #include <SnapshotRecord.h>
 
 #include <csv/CsvSpec.h>
+#include <csv/CsvWriter.h>
 
 #include <ContextRecord.h>
 #include <Log.h>
@@ -55,7 +56,6 @@
 #include <mutex>
 #include <fstream>
 #include <random>
-#include <set>
 #include <string>
 #include <sstream>
 
@@ -72,20 +72,16 @@ class Recorder
 
     enum class Stream { None, File, StdErr, StdOut };
 
-    ConfigSet   m_config;
+    ConfigSet     m_config;
 
-    bool        m_stream_initialized;
+    std::mutex    m_init_mutex;
+    bool          m_writer_initialized;
     
-    Stream      m_stream;
-    ofstream    m_ofstream;
-    std::string m_filename;
+    Stream        m_stream;
+    std::ofstream m_ofstream;
+    std::string   m_filename;
 
-    std::set<cali_id_t> m_written_nodes;
-    std::mutex  m_written_nodes_lock;
-
-    std::mutex  m_lock;
-
-    int         m_reccount;
+    CsvWriter     m_writer;
     
     // --- helpers
 
@@ -129,86 +125,54 @@ class Recorder
             m_stream = Stream::File;
         else {
             m_stream = it->second;
-            m_stream_initialized = true;
         }
     }
 
-    void init_stream() {
-        if (m_stream == Stream::File) {
-            std::string filename = m_filename;
-
-            if (filename.empty())
-                filename = create_filename();
-
-            string dirname = m_config.get("directory").to_string();
-            struct stat s = { 0 };
-
-            if (!dirname.empty()) {
-                if (stat(dirname.c_str(), &s) < 0)
-                    Log(0).stream() << "Warning: Could not open Caliper output directory " << dirname << endl;
-                else
-                    dirname += '/';
-            }
-
-            m_ofstream.open(dirname + filename);
-
-            if (!m_ofstream) {
-                Log(0).stream() << "Could not open recording file " << filename << endl;
-                m_stream = Stream::None;
-            } else
-                m_stream = Stream::File;
-        }
-
-        m_stream_initialized = true;
-    }
-    
-    std::ostream& get_stream() {
-        if (!m_stream_initialized)
-            init_stream();
-        
+    void init_writer() {
         switch (m_stream) {
+        case Stream::File:
+            {
+                std::string filename = m_filename;
+
+                if (filename.empty())
+                    filename = create_filename();
+
+                string dirname = m_config.get("directory").to_string();
+                struct stat s = { 0 };
+
+                if (!dirname.empty()) {
+                    if (stat(dirname.c_str(), &s) < 0) {
+                        Log(0).stream() << "Recorder: Error: Could not open output directory "
+                                        << dirname << std::endl;
+                        m_stream = Stream::None;
+                        return;
+                    } else
+                        dirname += '/';
+                }
+
+                m_ofstream.open(dirname + filename);
+
+                if (!m_ofstream) {
+                    Log(0).stream() << "Recorder: Error: Could not open recording file "
+                                    << filename << std::endl;
+                    m_stream = Stream::None;
+                } else {
+                    m_stream = Stream::File;
+                    m_writer = CsvWriter(m_ofstream);
+                }
+            }
+            break;        
         case Stream::StdOut:
-            return std::cout;
+            m_writer = CsvWriter(std::cout);
+            break;
         case Stream::StdErr:
-            return std::cerr;
-        default:
-            return m_ofstream;
-        }
-    }
-
-    // recursively write context tree branch and attributes for node with given id    
-    void write_node(Caliper* c, cali_id_t id, int level = 0) {
-        {
-            std::lock_guard<std::mutex>
-                g(m_written_nodes_lock);
-
-            if (m_written_nodes.count(id) > 0)
-                return;
+            m_writer = CsvWriter(std::cerr);
+            break;
+        case Stream::None:
+            break;
         }
 
-        Node* node = c->node(id);
-
-        if (!node)
-            return;
-        if (node->attribute() < node->id()) // special check for initial meta-attributes
-            write_node(c, node->attribute(), level+1);
-
-        Node* parent = node->parent();
-
-        if (parent && parent->id() != CALI_INV_ID)
-            write_node(c, parent->id(), level+1);
-
-        {
-            std::lock_guard<std::mutex>
-                g(m_written_nodes_lock);
-
-            if (m_written_nodes.count(id) > 0)
-                return;
-       
-            m_written_nodes.insert(id);
-        }
-            
-        node->push_record(write_record_cb);
+        m_writer_initialized = true;
     }
 
     void pre_flush(Caliper* c, const SnapshotRecord* flush_info) {
@@ -238,26 +202,27 @@ class Recorder
     }
 
     void flush_snapshot(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
+        {
+            std::lock_guard<std::mutex>
+                g(m_init_mutex);
+            
+            if (!m_writer_initialized)
+                init_writer();
+            if (m_stream == Stream::None)
+                return;
+        }
+        
         SnapshotRecord::Data   data = snapshot->data();
         SnapshotRecord::Sizes sizes = snapshot->size();
 
-        for (size_t i = 0; i < sizes.n_nodes; ++i)
-            write_node(c, data.node_entries[i]->id());
-        for (size_t i = 0; i < sizes.n_immediate; ++i)
-            write_node(c, data.immediate_attr[i]);
-
-        snapshot->push_record(write_record_cb);
-    }
-
-
-    static void write_record_cb(const RecordDescriptor& rec, const int* count, const Variant** data) {
-        if (!s_instance)
-            return;
-
-        std::lock_guard<std::mutex> g(s_instance->m_lock);
+        cali_id_t node_ids[128];
+        size_t    nn = std::min<size_t>(sizes.n_nodes, 128);
         
-        CsvSpec::write_record(s_instance->get_stream(), rec, count, data);
-        ++s_instance->m_reccount;
+        for (size_t i = 0; i < nn; ++i)
+            node_ids[i] = data.node_entries[i]->id();
+
+        m_writer.write_snapshot(*c, nn, node_ids,
+                                sizes.n_immediate, data.immediate_attr, data.immediate_data);
     }
 
     static void flush_snapshot_cb(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
@@ -275,21 +240,19 @@ class Recorder
     }
 
     static void finish_cb(Caliper* c) {
-        if (s_instance)
-            Log(1).stream() << "Recorder: Wrote " << s_instance->m_reccount << " records." << endl;
+        if (s_instance && s_instance->m_writer_initialized)
+            Log(1).stream() << "Recorder: Wrote " << s_instance->m_writer.num_written() << " records." << endl;
     }
     
     void register_callbacks(Caliper* c) {
-        c->events().write_record.connect(write_record_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
         c->events().flush_snapshot.connect(flush_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 
     Recorder(Caliper* c)
-        : m_config   { RuntimeConfig::init("recorder", s_configdata) },
-          m_stream_initialized { false },
-          m_reccount { 0 }
+        : m_config { RuntimeConfig::init("recorder", s_configdata) },
+          m_writer_initialized { false }
     { 
         init_recorder();
 

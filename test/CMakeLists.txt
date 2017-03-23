@@ -25,3 +25,8 @@ target_link_libraries(cali-test-c caliper)
 # target_link_libraries(cali-wrap caliper)
 
 target_link_libraries(cali-simplereader-test caliper-reader)
+
+if (BUILD_TESTING)
+  add_subdirectory(ci_app_tests)
+endif()
+

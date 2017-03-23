@@ -39,32 +39,22 @@
 int main(int argc, char* argv[])
 {
     CALI_CXX_MARK_FUNCTION;
-    
-    // Mark begin of "initialization" phase
-    cali::Annotation
-        init_ann = cali::Annotation("initialization").begin();
-    
-    // perform initialization tasks
+
     int count = 4;
-    // Mark end of "initialization" phase
-    init_ann.end();
-    if (count > 0) {
-        // Mark "loop"
-        double t = 0.0, delta_t = 1e-6;
 
-        CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
-        
-        for (int i = 0; i < count; ++i) {
-            // Export current iteration count under "iteration#mainloop"
-            CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
 
-            // A Caliper snapshot taken at this point will contain
-            // { "annotation.loop=mainloop", "iteration#mainloop"=<i> }
+    double t = 0, delta_t = 0.42;
 
-            // perform computation
-            t += delta_t;
-        }
+    for (int i = 0; i < count; ++i) {
+        // Mark each loop iteration  
+        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
-        CALI_CXX_MARK_LOOP_END(mainloop);
+        // A Caliper snapshot taken at this point will contain
+        // { "loop=mainloop", "mainloop.iteration"=<i> }
+
+        t += delta_t;
     }
+
+    CALI_CXX_MARK_LOOP_END(mainloop);
 }
