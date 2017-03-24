@@ -304,7 +304,7 @@ class AggregateDB {
 
         // --- write snapshot record
 
-        c->events().flush_snapshot(c, nullptr, &snapshot);
+        c->flush_snapshot(nullptr, &snapshot);
     }
 
     size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c) {
@@ -797,7 +797,7 @@ public:
         c->events().create_attr_evt.connect(create_attribute_cb);
         c->events().post_init_evt.connect(post_init_cb);
         c->events().process_snapshot.connect(process_snapshot_cb);
-        c->events().flush.connect(flush_cb);
+        c->events().flush_evt.connect(flush_cb);
         c->events().finish_evt.connect(finish_cb);
 
         Log(1).stream() << "Registered aggregation service" << std::endl;

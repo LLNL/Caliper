@@ -116,6 +116,8 @@ public:
             snapshot_cbvec;
         typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotRecord*)>
+            edit_snapshot_cbvec;
 
         typedef util::callback<void(Caliper*, const SnapshotRecord*)>
             flush_cbvec;
@@ -142,7 +144,8 @@ public:
         process_snapshot_cbvec process_snapshot;
 
         flush_cbvec            pre_flush_evt;
-        flush_cbvec            flush;
+        flush_cbvec            flush_evt;
+        edit_snapshot_cbvec    pre_flush_snapshot;
         process_snapshot_cbvec flush_snapshot;
         flush_cbvec            flush_finish_evt;
 
@@ -165,8 +168,9 @@ public:
     void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
     void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const SnapshotRecord* trigger_info);
-    
+    void      flush(const SnapshotRecord* flush_info);
+    void      flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* snapshot);
+
     // --- Annotation API
 
     cali_err  begin(const Attribute& attr, const Variant& data);

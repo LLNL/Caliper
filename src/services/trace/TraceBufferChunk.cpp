@@ -108,7 +108,7 @@ size_t TraceBufferChunk::flush(Caliper* c)
 
         // write snapshot                
 
-        c->events().flush_snapshot(c, nullptr, &snapshot);
+        c->flush_snapshot(nullptr, &snapshot);
     }
 
     written += m_nrec;            

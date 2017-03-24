@@ -637,8 +637,23 @@ Caliper::flush(const SnapshotRecord* input_flush_info)
     mG->process_scope->blackboard.snapshot(&flush_info);
 
     mG->events.pre_flush_evt(this, &flush_info);
-    mG->events.flush(this, &flush_info);
+    mG->events.flush_evt(this, &flush_info);
     mG->events.flush_finish_evt(this, &flush_info);
+}
+
+void
+Caliper::flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* in_snapshot)
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
+
+    snapshot.append(*in_snapshot);
+
+    mG->events.pre_flush_snapshot(this, in_snapshot, &snapshot);
+    mG->events.flush_snapshot(this, flush_info, &snapshot);
 }
 
 // --- Annotation interface
