@@ -47,8 +47,7 @@
 
 #include <Symtab.h>
 #include <LineInformation.h>
-#include <CodeObject.h>
-#include <InstructionDecoder.h>
+#include <Function.h>
 
 #include <algorithm>
 #include <iterator>
@@ -60,8 +59,6 @@ using namespace cali;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace InstructionAPI;
 
 namespace
 {
@@ -78,6 +75,9 @@ class SymbolLookup
     };
 
     ConfigSet m_config;
+
+    bool m_lookup_functions;
+    bool m_lookup_sourceloc;
 
     std::map<Attribute, SymbolAttributes> m_sym_attr_map;
     std::mutex m_sym_attr_mutex;
@@ -128,35 +128,65 @@ class SymbolLookup
                                std::vector<Attribute>& attr, 
                                std::vector<Variant>&   data) {
         std::vector<Statement*> statements;
-        bool ret = false;
+        SymtabAPI::Function* function = 0;
+
+        bool     ret_line = false;
+        bool     ret_func = false;
+
+        uint64_t offset   = e.value().to_uint();
 
         {
             std::lock_guard<std::mutex>
                 g(m_symtab_mutex);
 
-            ret = m_symtab->getSourceLines(statements, e.value().to_uint());
+            if (m_lookup_sourceloc)
+                ret_line = m_symtab->getSourceLines(statements, offset);
+            if (m_lookup_functions)
+                ret_func = m_symtab->getContainingFunction(offset, function);
+
             ++m_num_lookups;
         }
 
-        std::string filename = "UNKNOWN";
-        uint64_t    lineno   = 0;
+        if (m_lookup_sourceloc) {
+            std::string filename = "UNKNOWN";
+            uint64_t    lineno   = 0;
 
-        if (ret && statements.size() > 0) {
-            filename = statements.front()->getFile();
-            lineno   = statements.front()->getLine();
-        } else {
-            ++m_num_failed; // not locked, doesn't matter too much if it's slightly off
+            if (ret_line && statements.size() > 0) {
+                filename = statements.front()->getFile();
+                lineno   = statements.front()->getLine();
+            }
+
+            char* tmp_s = static_cast<char*>(mempool.allocate(filename.size()+1));
+            std::copy(filename.begin(), filename.end(), tmp_s);
+            tmp_s[filename.size()] = '\0';
+
+            attr.push_back(sym_attr.file_attr);
+            attr.push_back(sym_attr.line_attr);
+
+            data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
+            data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
         }
 
-        char* tmp = static_cast<char*>(mempool.allocate(filename.size()+1));
-        std::copy(filename.begin(), filename.end(), tmp);
-        tmp[filename.size()] = '\0';
+        if (m_lookup_functions) {
+            std::string funcname = "UNKNOWN";
 
-        attr.push_back(sym_attr.file_attr);
-        attr.push_back(sym_attr.line_attr);
+            if (ret_func && function) {
+                auto it = function->pretty_names_begin();
 
-        data.push_back(Variant(CALI_TYPE_STRING, tmp, filename.size()));
-        data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
+                if (it != function->pretty_names_end())
+                    funcname = *it;
+            }
+
+            char* tmp_f = static_cast<char*>(mempool.allocate(funcname.size()+1));
+            std::copy(funcname.begin(), funcname.end(), tmp_f);
+            tmp_f[funcname.size()] = '\0';
+
+            attr.push_back(sym_attr.func_attr);
+            data.push_back(Variant(CALI_TYPE_STRING, tmp_f, funcname.size()));
+        }
+
+        if ((m_lookup_functions && !ret_func) || (m_lookup_sourceloc && !ret_line))
+            ++m_num_failed; // not locked, doesn't matter too much if it's slightly off
     }
 
     void process_snapshot(Caliper* c, SnapshotRecord* snapshot) {
@@ -182,7 +212,6 @@ class SymbolLookup
         MemoryPool mempool(64 * 1024);
 
         // unpack nodes, check for address attributes, and perform symbol lookup
-
         for (auto it : sym_map) {
             Entry e = snapshot->get(it.first);
 
@@ -196,7 +225,6 @@ class SymbolLookup
         }
 
         // reverse vectors to restore correct hierarchical order
-
         std::reverse(attr.begin(), attr.end());
         std::reverse(data.begin(), data.end());
 
@@ -207,7 +235,7 @@ class SymbolLookup
 
     // some final log output; print warning if we didn't find an address attribute
     void finish_log(Caliper* c) {
-        Log(1).stream() << "symbollookup: Performed " 
+        Log(1).stream() << "Symbollookup: Performed " 
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
@@ -223,7 +251,7 @@ class SymbolLookup
                 }
 
                 if (!found) 
-                    Log(1).stream() << "symbollookup: Address attribute " 
+                    Log(1).stream() << "Symbollookup: Address attribute " 
                                     << attrname << " not found!" 
                                     << std::endl;
             }
@@ -264,6 +292,9 @@ class SymbolLookup
             util::split(m_config.get("attributes").to_string(), ':',
                         std::back_inserter(m_addr_attr_names));
 
+            m_lookup_functions = m_config.get("lookup_functions").to_bool();
+            m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();
+
             if (m_addr_attr_names.empty()) {
                 Log(1).stream() << "symbolookup: no address attributes given" << std::endl;
                 return;
@@ -293,6 +324,14 @@ const ConfigSet::Entry SymbolLookup::s_configdata[] = {
     { "attributes", CALI_TYPE_STRING, "",
       "List of address attributes for which to perform symbol lookup",
       "List of address attributes for which to perform symbol lookup",
+    },
+    { "lookup_functions", CALI_TYPE_BOOL, "true",
+      "Perform function name lookup",
+      "Perform function name lookup",
+    },
+    { "lookup_sourceloc", CALI_TYPE_BOOL, "true",
+      "Perform source location (filename/linenumber) lookup",
+      "Perform source location (filename/linenumber) lookup",
     },
     ConfigSet::Terminator
 };
