@@ -86,6 +86,13 @@ endif()
 #   message(STATUS "Mitos found")
 # endif()
 
+# Find dyninst
+find_package(Dyninst)
+if (Dyninst_FOUND)
+  set(CALIPER_HAVE_DYNINST TRUE)
+  list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
+endif()
+
 find_package(Threads)
 
 # Find OMPT header

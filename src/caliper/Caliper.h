@@ -116,7 +116,7 @@ public:
             snapshot_cbvec;
         typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
         typedef util::callback<void(Caliper*, const SnapshotRecord*)>

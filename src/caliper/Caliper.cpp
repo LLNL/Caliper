@@ -652,7 +652,7 @@ Caliper::flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* 
 
     snapshot.append(*in_snapshot);
 
-    mG->events.pre_flush_snapshot(this, in_snapshot, &snapshot);
+    mG->events.pre_flush_snapshot(this, &snapshot);
     mG->events.flush_snapshot(this, flush_info, &snapshot);
 }
 
