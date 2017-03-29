@@ -220,9 +220,25 @@ cali_end_byname(const char* attr_name);
   
 void
 cali_config_preset(const char* key, const char* value);
-  
+
+/*
+ * --- Macro annotation helper functions
+ */  
+
+/**
+ * Create a loop iteration attribute for CALI_MARK_LOOP_BEGIN.
+ * \param name User-defined name of the loop
+ */
+cali_id_t 
+cali_make_loop_iteration_attribute(const char* name);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+/* Include high-level annotation macros. 
+ * In C++, also includes Annotation.h header. 
+ */
+#include "cali_macros.h"
 
 #endif // CALI_CALI_H

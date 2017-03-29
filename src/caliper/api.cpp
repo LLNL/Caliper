@@ -38,12 +38,18 @@
 
 #include "cali_types.h"
 
+cali_id_t cali_class_code_attr_id = CALI_INV_ID;
+cali_id_t cali_function_attr_id   = CALI_INV_ID;
+cali_id_t cali_loop_attr_id       = CALI_INV_ID;
+cali_id_t cali_statement_attr_id  = CALI_INV_ID;
+
 namespace cali
 {
-    Attribute ann_type_code_attr;
+    Attribute class_code_attr;
     
-    Attribute ann_function_attr;
-    Attribute ann_loop_attr;
+    Attribute function_attr;
+    Attribute loop_attr;
+    Attribute statement_attr;
 
     void init_api_attributes(Caliper* c) {
         // --- attributes w/o metadata
@@ -53,34 +59,42 @@ namespace cali
             cali_attr_type type;
             int            prop;
             Attribute*     attr;
+            cali_id_t*     attr_id;
         } attr_info[] = {
-            { "annotation.type.code", CALI_TYPE_BOOL,   CALI_ATTR_SKIP_EVENTS,
-              &ann_type_code_attr
+            { "class.code", CALI_TYPE_BOOL,   CALI_ATTR_SKIP_EVENTS,
+              &class_code_attr, &cali_class_code_attr_id
             },
-            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0 }
+            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };
 
-        for (attr_info_t *p = attr_info; p->name; ++p)
+        for (attr_info_t *p = attr_info; p->name; ++p) {
             *(p->attr) =
                 c->create_attribute(p->name, p->type, p->prop);
+            *(p->attr_id) = (p->attr)->id();
+        }
 
         // --- code annotation attributes
 
         attr_info_t codeattr_info[] = {
             { "annotation.function",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &ann_function_attr
+              &function_attr,  &cali_function_attr_id
             },
             { "annotation.loop",      CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &ann_loop_attr
+              &loop_attr,      &cali_loop_attr_id
             },
-            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0 }
+            { "annotation.statement", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+              &statement_attr, &cali_statement_attr_id
+            },
+            { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };
 
         Variant v_true(true);
         
-        for (attr_info_t *p = codeattr_info; p->name; ++p)
+        for (attr_info_t *p = codeattr_info; p->name; ++p) {
             *(p->attr) =
                 c->create_attribute(p->name, p->type, p->prop,
-                                    1, &ann_type_code_attr, &v_true);
+                                    1, &class_code_attr, &v_true);
+            *(p->attr_id) = (p->attr)->id();
+        }
     }
 }

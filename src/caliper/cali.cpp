@@ -348,3 +348,18 @@ cali_config_preset(const char* key, const char* value)
 {
     RuntimeConfig::preset(key, value);
 }
+
+//
+// --- Helper functions for high-level macro interface
+// 
+
+/// \brief Make iteration attribute name for CALI_MARK_LOOP_BEGIN macro
+cali_id_t
+cali_make_loop_iteration_attribute(const char* name)
+{
+    char tmp[80] = "iteration#";
+    strncpy(tmp+10, name, 69);
+    tmp[79] = '\0';
+
+    return cali_create_attribute(tmp, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+}

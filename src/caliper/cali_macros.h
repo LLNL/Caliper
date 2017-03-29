@@ -39,24 +39,52 @@
  * Convenience macros for Caliper annotations
  */
 
-#include "Annotation.h"
-#include "cali.h"
-
 #ifdef __cplusplus
+
+#include "Annotation.h"
 
 /// \macro C++ macro to mark a function
 #define CALI_CXX_MARK_FUNCTION \
     cali::Function __cali_ann##__func__(__func__)
 
 /// \macro Mark a loop in C++ 
-#define CALI_CXX_MARK_LOOP_BEGIN(id, name) \
-    cali::Loop __cali_loop_##id(name)
+#define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) \
+    cali::Loop __cali_loop_##loop_id(name)
 
 /// \macro C++ macro for a loop iteration
-#define CALI_CXX_MARK_LOOP_ITERATION(id, iter) \
-    cali::Loop::Iteration __cali_iter_##id ( __cali_loop_##id.iteration(iter) )
+#define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
+    cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
 
-#define CALI_CXX_MARK_LOOP_END(id) \
-    __cali_loop_##id.end()
+#define CALI_CXX_MARK_LOOP_END(loop_id) \
+    __cali_loop_##loop_id.end()
 
 #endif // __cplusplus
+
+extern cali_id_t cali_function_attr_id;
+extern cali_id_t cali_loop_attr_id;
+extern cali_id_t cali_statement_attr_id;
+
+#define CALI_MARK_FUNCTION_BEGIN \
+    cali_begin_string(cali_function_attr_id, __func__)
+
+#define CALI_MARK_FUNCTION_END \
+    cali_end(cali_function_attr_id)
+
+#define CALI_MARK_LOOP_BEGIN(loop_id, name) \
+    cali_begin_string(cali_loop_attr_id, name); \
+    cali_id_t __cali_iter_##loop_id = \
+        cali_make_loop_iteration_attribute(name);
+
+#define CALI_MARK_LOOP_END(loop_id) \
+    cali_end(cali_loop_attr_id)
+
+#define CALI_MARK_ITERATION_BEGIN(loop_id, iter) \
+    cali_begin_int( __cali_iter_##loop_id, ((int) (iter)))
+
+#define CALI_MARK_ITERATION_END(loop_id) \
+    cali_end( __cali_iter_##loop_id )
+
+#define CALI_WRAP_STATEMENT(name, statement)     \
+    cali_begin_string(cali_statement_attr_id, name); \
+    statement; \
+    cali_end(cali_statement_attr_id);

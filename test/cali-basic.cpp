@@ -32,9 +32,7 @@
 
 // A minimal Caliper instrumentation demo 
 
-#include <Annotation.h>
-
-#include <cali_macros.h>
+#include <cali.h>
 
 int main(int argc, char* argv[])
 {

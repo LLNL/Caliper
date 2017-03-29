@@ -49,22 +49,20 @@ using namespace cali;
 
 namespace cali
 {
-    extern Attribute ann_type_code_attr;
-
-    extern Attribute ann_function_attr;
-    extern Attribute ann_loop_attr;
+    extern Attribute function_attr;
+    extern Attribute loop_attr;
 }
 
 // --- Pre-defined Function annotation class
 
 Function::Function(const char* name)
 {
-    Caliper().begin(ann_function_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
+    Caliper().begin(function_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
 }
 
 Function::~Function()
 {
-    Caliper().end(ann_function_attr);
+    Caliper().end(function_attr);
 }
         
 // --- Pre-defined loop annotation class
@@ -94,7 +92,7 @@ Loop::Iteration::~Iteration()
 Loop::Loop(const char* name)
     : pI(new Impl(name))
 {
-    if (Caliper().begin(ann_loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name))) == CALI_SUCCESS)
+    if (Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name))) == CALI_SUCCESS)
         ++pI->level;
 }
 
@@ -114,7 +112,7 @@ void
 Loop::end()
 {
     if (pI->level > 0) {
-        Caliper().end(ann_loop_attr);
+        Caliper().end(loop_attr);
         --(pI->level);
     }
 }
