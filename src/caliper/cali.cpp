@@ -102,6 +102,12 @@ cali_find_attribute(const char* name)
     return a.id();
 }
 
+cali_attr_type
+cali_attribute_type(cali_id_t attr_id)
+{
+    Attribute a = Caliper::instance().get_attribute(attr_id);
+    return attr.type();
+}
 
 //
 // --- Context interface
@@ -130,6 +136,16 @@ cali_push_snapshot(int scope, int n,
 
     c.make_entrylist(n, attr, data, trigger_info);
     c.push_snapshot(scope, &trigger_info);
+}
+
+size_t
+cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf,
+                           int n,
+                           const cali_id_t trigger_info_attr_list[],
+                           const void*     trigger_info_val_list[],
+                           const size_t    trigger_info_size_list[])
+{
+    
 }
 
 //

@@ -99,6 +99,21 @@ cali_create_attribute_with_metadata(const char*     name,
 cali_id_t
 cali_find_attribute  (const char* name);
 
+/**
+ * Return name of attribute with given ID
+ * \param attr_id Attribute id
+ * \return Attribute name, or NULL if `attr_id` is not a valid attribute ID
+ */
+const char*
+cali_attribute_name(cali_id_t attr_id);
+
+/**
+ * Return the type of the attribute with given ID
+ * \param attr_id Attribute id
+ * \return Attribute type, or CALI_TYPE_INV if `attr_id` is not a valid attribute ID
+ */
+cali_attr_type    
+cali_attribute_type(cali_id_t attr_id);
 
 /*
  * --- Snapshot ---------------------------------------------------------
@@ -113,13 +128,75 @@ cali_find_attribute  (const char* name);
  * \param trigger_info_val_list  Pointers to values of event info entries
  * \param trigger_info_size_list Sizes (in bytes) of event info entries
  */
-
 void
 cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
                    const void*     trigger_info_val_list[],
                    const size_t    trigger_info_size_list[]);
 
+/**
+ * Take a snapshot and write it into the user-provided buffer.
+ *
+ * This function can be safely called from a signal handler. However,
+ * it is not guaranteed to succeed. Specifically, the function will
+ * fail if the signal handler interrupts already running Caliper
+ * code.
+ * 
+ * The snapshot representation returned in `buf` is valid on the
+ * local process only, while Caliper is active (which is up until Caliper's 
+ * `finish_evt` callback is invoked).
+ *
+ * \param scope Indicates which scopes (process, thread, or task) the
+ *   snapshot should span
+ * \param len   Length of the provided snapshot buffer.
+ * \param buf   User-provided snapshot storage buffer.
+ * \param n     Number of event trigger info entries
+ * \param trigger_info_attr_list Attribute IDs of event info entries
+ * \param trigger_info_val_list  Pointers to values of event info entries
+ * \param trigger_info_size_list Sizes (in bytes) of event info entries
+ * \return Actual size of the snapshot representation. 
+ *   If this is larger than `len`, the provided buffer was too small and 
+ *   not all of the snapshot was returned.
+ *   If this is zero, no snapshot was taken.
+ */
+size_t
+cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf,
+                           int n,
+                           const cali_id_t trigger_info_attr_list[],
+                           const void*     trigger_info_val_list[],
+                           const size_t    trigger_info_size_list[]);
+
+/**
+ * Callback function definition for processing a single snapshot entry with 
+ * `cali_unpack_snapshot` or `cali_find_all_in_snapshot`. 
+ *
+ * \param arg User-defined argument, passed through by the parent function.
+ * \param attr_id The entry's attribute ID
+ * \param val The entry's value
+ * \return A non-zero return value tells the parent function to stop processing;
+ *   if the return value is zero it will continue.
+ */ 
+typedef int (*cali_entry_proc_fn)(void* arg, cali_id_t attr_id, cali_variant_t val);
+
+/**
+ * Unpack a previously obtained snapshot and process its 
+ * attribute:value entries with the given `proc_fn` callback function.
+ *
+ * This function is async-signal safe if `proc_fn` is async-signal safe.
+ *
+ * \param buf Snapshot buffer
+ * \param proc_fn Callback function to process individidual entries
+ * \param arg User-defined parameter passed to `proc_fn`  
+ */    
+void
+cali_unpack_snapshot(const unsigned char* buf, cali_entry_proc_fn proc_fn, void* arg);
+
+cali_variant_t 
+cali_find_first_in_snapshot(const unsigned char* buf, cali_id_t attr_id);
+
+void
+cali_find_all_in_snapshot(const unsigned char* buf, cali_entry_proc_fn proc_fn, void* arg);
+    
 /*
  * --- Instrumentation API -----------------------------------
  */
