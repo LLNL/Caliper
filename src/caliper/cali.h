@@ -146,15 +146,26 @@ cali_err
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
- * Remove innermost value for attribute \param attr from the blackboard.
+ * Remove innermost value for attribute `attr` from the blackboard.
  */
 
 cali_err
 cali_end  (cali_id_t   attr);
 
 /**
- * Change current innermost value on the blackboard for attribute \param attr 
- * to \param value with size \param size
+ * Remove innermost value for attribute `attr` from the blackboard.
+ * Creates a mismatch warning if the current value does not match `val`.
+ * Parameters:
+ * \param attr Attribute ID
+ * \param val  Expected value
+ */
+
+cali_err
+cali_safe_end_string(cali_id_t attr, const char* val);
+
+/**
+ * Change current innermost value on the blackboard for attribute `attr` 
+ * to value taken from `value` with size `size`
  */
 
 cali_err  

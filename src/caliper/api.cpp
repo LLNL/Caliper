@@ -42,6 +42,7 @@ cali_id_t cali_class_code_attr_id = CALI_INV_ID;
 cali_id_t cali_function_attr_id   = CALI_INV_ID;
 cali_id_t cali_loop_attr_id       = CALI_INV_ID;
 cali_id_t cali_statement_attr_id  = CALI_INV_ID;
+cali_id_t cali_annotation_attr_id = CALI_INV_ID;
 
 namespace cali
 {
@@ -50,6 +51,7 @@ namespace cali
     Attribute function_attr;
     Attribute loop_attr;
     Attribute statement_attr;
+    Attribute annotation_attr;
 
     void init_api_attributes(Caliper* c) {
         // --- attributes w/o metadata
@@ -77,13 +79,16 @@ namespace cali
 
         attr_info_t codeattr_info[] = {
             { "annotation.function",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &function_attr,  &cali_function_attr_id
+              &function_attr,   &cali_function_attr_id
             },
             { "annotation.loop",      CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &loop_attr,      &cali_loop_attr_id
+              &loop_attr,       &cali_loop_attr_id
             },
             { "annotation.statement", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &statement_attr, &cali_statement_attr_id
+              &statement_attr,  &cali_statement_attr_id
+            },
+            { "annotation",           CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+              &annotation_attr, &cali_annotation_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };

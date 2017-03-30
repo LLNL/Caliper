@@ -38,7 +38,9 @@ int main(int argc, char* argv[])
 {
     CALI_CXX_MARK_FUNCTION;
 
+    CALI_MARK_BEGIN("init");
     int count = 4;
+    CALI_MARK_END("init");
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
 
