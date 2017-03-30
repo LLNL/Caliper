@@ -378,6 +378,12 @@ cali_config_preset(const char* key, const char* value)
     RuntimeConfig::preset(key, value);
 }
 
+void
+cali_init()
+{
+    Caliper::instance();
+}
+
 //
 // --- Helper functions for high-level macro interface
 // 

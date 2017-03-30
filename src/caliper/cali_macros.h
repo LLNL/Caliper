@@ -66,12 +66,16 @@ extern cali_id_t cali_statement_attr_id;
 extern cali_id_t cali_annotation_attr_id;
 
 #define CALI_MARK_FUNCTION_BEGIN \
+    if (cali_function_attr_id == CALI_INV_ID) \
+        cali_init(); \
     cali_begin_string(cali_function_attr_id, __func__)
 
 #define CALI_MARK_FUNCTION_END \
-    cali_end(cali_function_attr_id)
+    cali_safe_end_string(cali_function_attr_id, __func__)
 
 #define CALI_MARK_LOOP_BEGIN(loop_id, name) \
+    if (cali_loop_attr_id == CALI_INV_ID) \
+        cali_init(); \
     cali_begin_string(cali_loop_attr_id, (name));       \
     cali_id_t __cali_iter_##loop_id = \
         cali_make_loop_iteration_attribute(name);
@@ -86,11 +90,15 @@ extern cali_id_t cali_annotation_attr_id;
     cali_end( __cali_iter_##loop_id )
 
 #define CALI_WRAP_STATEMENT(name, statement)     \
+    if (cali_statement_attr_id == CALI_INV_ID) \
+        cali_init(); \
     cali_begin_string(cali_statement_attr_id, (name));  \
     statement; \
     cali_end(cali_statement_attr_id);
 
 #define CALI_MARK_BEGIN(name) \
+    if (cali_annotation_attr_id == CALI_INV_ID) \
+        cali_init(); \
     cali_begin_string(cali_annotation_attr_id, (name))
 
 #define CALI_MARK_END(name) \

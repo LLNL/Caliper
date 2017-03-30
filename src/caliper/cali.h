@@ -219,7 +219,7 @@ cali_err
 cali_end_byname(const char* attr_name);
 
 /*
- * --- Runtime system configuration
+ * --- Runtime system configuration and management
  */
 
 /**
@@ -231,6 +231,20 @@ cali_end_byname(const char* attr_name);
   
 void
 cali_config_preset(const char* key, const char* value);
+
+/**
+ * Initialize Caliper.
+ * Typically, it is not necessary to initialize Caliper explicitly.
+ * Caliper will lazily initialize itself on the first Caliper API call.
+ * This function is used primarily by the Caliper annotation macros,
+ * to ensure that Caliper's pre-defined annotation attributes are 
+ * initialized.
+ * It can also be used to avoid high initialization costs in the first
+ * Caliper API call.
+ */
+
+void
+cali_init();
 
 /*
  * --- Macro annotation helper functions
