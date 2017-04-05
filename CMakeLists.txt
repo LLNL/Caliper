@@ -13,9 +13,6 @@ set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER
 
 # Add our module directory to the include path.
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
-include(FindLibunwind)
-include(FindPAPI)
-include(FindLibcurl)
 
 include(GNUInstallDirs)
 
@@ -31,7 +28,12 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 option(WITH_TOOLS     "Build Caliper tools" TRUE)
 option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
 option(WITH_DOCS      "Build Caliper documentation" FALSE)
+
 option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
+option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
+option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
+option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
+option(WITH_MPI       "Enable MPI" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -39,6 +41,12 @@ option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
 if (BUILD_TESTING)
   enable_testing()
 endif()
+
+# the RPATH to be used when installing, but only if it's not a system directory
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+endif("${isSystemDir}" STREQUAL "-1")
 
 if(WITH_CUDA)
    find_package(CUDA)
@@ -53,27 +61,30 @@ if(CALIPER_HAVE_TAU)
     list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
 endif()
 
-# the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
-endif("${isSystemDir}" STREQUAL "-1")
-
 # Find libunwind
-if (LIBUNWIND_FOUND)
-  set(CALIPER_HAVE_LIBUNWIND TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
+if (WITH_CALLPATH)
+  include(FindLibunwind)
+  if (LIBUNWIND_FOUND)
+    set(CALIPER_HAVE_LIBUNWIND TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
+  endif()
 endif()
 
-if (LIBCURL_FOUND)
-  set(CALIPER_HAVE_LIBCURL TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS ${LIBCURL_LIBRARY})
+if (WITH_NETOUT)
+  include(FindLibcurl)
+  if (LIBCURL_FOUND)
+    set(CALIPER_HAVE_LIBCURL TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBCURL_LIBRARY})
+  endif()
 endif()
 
 # Find PAPI
-if (PAPI_FOUND)
-  set(CALIPER_HAVE_PAPI TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
+if (WITH_PAPI)
+  include(FindPAPI)
+  if (PAPI_FOUND)
+    set(CALIPER_HAVE_PAPI TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
+  endif()
 endif()
 
 # Find Mitos
@@ -103,10 +114,11 @@ endif()
 
 # Find MPI
 
-find_package(MPI QUIET)
-
-if (MPI_C_FOUND)
-  set(CALIPER_HAVE_MPI TRUE)
+if (WITH_MPI)
+  find_package(MPI)
+  if (MPI_C_FOUND)
+    set(CALIPER_HAVE_MPI TRUE)
+  endif()
 endif()
 
 # Find Python
