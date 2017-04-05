@@ -120,6 +120,7 @@ Example: High-level annotation macros in C
      }
 
      CALI_MARK_LOOP_END(fooloop);
+                
      CALI_MARK_FUNCTION_END;
    }
 
@@ -132,27 +133,33 @@ Example: High-level annotation macros in C
 
      foo(count);
 
+     CALI_MARK_BEGIN("output");
+     printf("Done.\n");
+     CALI_MARK_END("output");
+
      CALI_MARK_FUNCTION_END;
    }
 
 In an event trace configuration, this program produces the following snapshot
 records: ::
 
-  function statement      loop              iteration#example.fooloop 
+  function statement      loop              annotation iteration#example.fooloop 
   main     
   main     example.init 
   main                    
   main/foo                
   main/foo                example.fooloop 
-  main/foo                example.fooloop                           0 
+  main/foo                example.fooloop                                      0 
   main/foo                example.fooloop                             
-  main/foo                example.fooloop                           1 
+  main/foo                example.fooloop                                      1 
   main/foo                example.fooloop                             
-  main/foo                example.fooloop                           2 
+  main/foo                example.fooloop                                      2 
   main/foo                example.fooloop                             
-  main/foo                example.fooloop                           3 
+  main/foo                example.fooloop                                      3 
   main/foo                example.fooloop                             
-  main/foo                                                              
+  main/foo
+  main
+  main                                    output
   main                                                                  
 
 Example: High-level annotation macros in C++
@@ -191,6 +198,10 @@ A C++ example producing the same output as above:
        int count = argc > 1 ? atoi(argv[1]) : 4 );
 
      foo(count);
+
+     CALI_MARK_BEGIN("output");
+     std::cout << "Done." << std::endl;
+     CALI_MARK_END("output");
    }
                 
 

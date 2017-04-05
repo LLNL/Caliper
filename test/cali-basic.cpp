@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
-        // { annotation.function="main", annotation.loop=mainloop", mainloop.iteration=<i> }
+        // { function="main", loop=mainloop", iteration#mainloop=<i> }
 
         t += delta_t;
     }
