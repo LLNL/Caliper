@@ -59,11 +59,19 @@ namespace
 #define MAX_COUNTERS 32
     
 struct PapiGlobalInfo {
-    std::vector<cali_id_t> counter_attrbs;
+    std::vector<cali_id_t> counter_delta_attrs;
+    std::vector<cali_id_t> counter_accum_attrs;
     std::vector<int>       counter_events;
+    bool                   record_delta;
+    bool                   record_accum;
 } global_info;
 
-pthread_key_t counter_array_key;
+struct ThreadInfo {
+    long long* accum_values;
+    bool       active;
+};
+
+pthread_key_t threadinfo_key;
 size_t        num_failed = 0;
     
 static const ConfigSet::Entry s_configdata[] = {
@@ -71,35 +79,55 @@ static const ConfigSet::Entry s_configdata[] = {
       "List of PAPI events to record",
       "List of PAPI events to record, separated by ','" 
     },
+    { "record_difference", CALI_TYPE_BOOL, "true",
+      "Record the counter value increases between subsequent snapshots.",
+      "Record the counter value increases between subsequent snapshots.\n"
+      "Stores counter increase since last snapshot in papi.EVENT_NAME."
+    },
+    { "accumulate", CALI_TYPE_BOOL, "false",
+      "Record accumulated counter values.",
+      "Record accumulated counter values.\n"
+      "Values will be saved in papi.accum.EVENT_NAME attributes"
+    },
     ConfigSet::Terminator
 };
 
     
-void destroy_counter_array(void* array)
+void destroy_thread_info(void* data)
 {
     PAPI_unregister_thread();
+
+    if (!data)
+        return;
+
+    ThreadInfo* info = static_cast<ThreadInfo*>(data);
     
-    delete[] static_cast<long long*>(array);
+    delete[] info->accum_values;
+    delete   info;
 }
     
-long long* get_counter_array(bool alloc, size_t num_counters)
+ThreadInfo* get_thread_info(bool alloc, size_t num_counters)
 {
-    long long* array = static_cast<long long*>(pthread_getspecific(counter_array_key));
+    ThreadInfo* info = static_cast<ThreadInfo*>(pthread_getspecific(threadinfo_key));
 
-    if (!array && alloc && num_counters > 0) {
-        array = new long long[num_counters];
-        
-        pthread_setspecific(counter_array_key, array);
+    if (!info && alloc && num_counters > 0) {
+        info = new ThreadInfo;
+
+        info->accum_values = new long long[num_counters];
+        info->active       = false;
+
+        pthread_setspecific(threadinfo_key, info);
 
         // Register thread and start counters on new thread
         
         PAPI_register_thread();
 
-        if (PAPI_start_counters(global_info.counter_events.data(), num_counters) != PAPI_OK)
-            Log(0).stream() << "PAPI counters failed to initialize!" << endl;
+        if (PAPI_start_counters(global_info.counter_events.data(), num_counters) == PAPI_OK &&
+            PAPI_read_counters(info->accum_values, num_counters)                 == PAPI_OK)
+            info->active = true;
     }
     
-    return array;
+    return info;
 }
     
 void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
@@ -108,29 +136,42 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
     if (num_counters < 1)
         return;
 
-    long long* counter_values = get_counter_array(!c->is_signal(), num_counters);
+    ThreadInfo* thread_info = get_thread_info(!c->is_signal(), num_counters);
 
-    if (!counter_values)
+    if (!thread_info || !thread_info->active) {
+        ++num_failed;
         return;
+    }
 
-    if (PAPI_accum_counters(counter_values, num_counters) != PAPI_OK) {
+    long long counter_values[MAX_COUNTERS];
+
+    if (PAPI_read_counters(counter_values, num_counters) != PAPI_OK) {
         ++num_failed;
         return;
     }
 
     Variant data[MAX_COUNTERS];
 
-    int m = std::min(static_cast<int>(num_counters), MAX_COUNTERS);
+    if (global_info.record_delta) {
+        for (int i = 0; i < num_counters; ++i)
+            data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
 
-    for (int i = 0; i < m; ++i)
-        data[i] = Variant(static_cast<uint64_t>(counter_values[i]));
+        snapshot->append(num_counters, global_info.counter_delta_attrs.data(), data);
+    }
 
-    snapshot->append(m, global_info.counter_attrbs.data(), data);
+    if (global_info.record_accum) {
+        for (int i = 0; i < num_counters; ++i) {
+            thread_info->accum_values[i] += counter_values[i];
+            data[i] = Variant(static_cast<uint64_t>(thread_info->accum_values[i]));
+        }
+
+        snapshot->append(num_counters, global_info.counter_accum_attrs.data(), data);
+    }
 }
 
 void papi_init(Caliper* c) {
     // start counters
-    get_counter_array(true, global_info.counter_events.size());
+    get_thread_info(true, global_info.counter_events.size());
 }
 
 void papi_finish(Caliper* c) {
@@ -154,12 +195,16 @@ void setup_events(Caliper* c, const string& eventstring)
         }
 
         if (global_info.counter_events.size() < MAX_COUNTERS) {
-            Attribute attr =
+            Attribute delta_attr =
                 c->create_attribute(string("papi.")+event, CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+            Attribute accum_attr = 
+                c->create_attribute(string("papi.accum.")+event, CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
             global_info.counter_events.push_back(code);
-            global_info.counter_attrbs.push_back(attr.id());
+            global_info.counter_delta_attrs.push_back(delta_attr.id());
+            global_info.counter_accum_attrs.push_back(accum_attr.id());
         } else
             Log(0).stream() << "Maximum number of PAPI counters exceeded; dropping \"" 
                             << event << '"' << endl;
@@ -183,18 +228,23 @@ void papi_register(Caliper* c) {
         return;
     }
 
-    setup_events(c, RuntimeConfig::init("papi", s_configdata).get("counters").to_string());
+    ConfigSet config = RuntimeConfig::init("papi", s_configdata);
+
+    setup_events(c, config.get("counters").to_string());
 
     if (global_info.counter_events.size() < 1) {
         Log(1).stream() << "No PAPI counters registered, dropping PAPI service" << endl;
         return;
     }
 
-    if (pthread_key_create(&counter_array_key, destroy_counter_array) != 0) {
+    if (pthread_key_create(&threadinfo_key, destroy_thread_info) != 0) {
         Log(0).stream() << "papi: error: pthread_key_create() failed" << std::endl;
         return;
     }
-    
+
+    global_info.record_delta = config.get("record_difference").to_bool();
+    global_info.record_accum = config.get("accumulate").to_bool();
+
     // add callback for Caliper::get_context() event
     c->events().post_init_evt.connect(&papi_init);
     c->events().finish_evt.connect(&papi_finish);
