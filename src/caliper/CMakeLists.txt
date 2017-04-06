@@ -7,7 +7,8 @@ set(CALIPER_HEADERS
     Caliper.h
     SnapshotRecord.h
     cali.h
-    cali_definitions.h)
+    cali_definitions.h
+    cali_macros.h)
 
 set(CALIPER_SOURCES
     Annotation.cpp
@@ -16,6 +17,7 @@ set(CALIPER_SOURCES
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
+    api.cpp
     cali.cpp)
 
 

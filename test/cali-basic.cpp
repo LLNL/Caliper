@@ -32,41 +32,29 @@
 
 // A minimal Caliper instrumentation demo 
 
-#include <Annotation.h>
+#include <cali.h>
 
 int main(int argc, char* argv[])
 {
-    // Create annotation object for "phase" annotation
-    cali::Annotation phase_ann("phase");
+    CALI_CXX_MARK_FUNCTION;
 
-    // Mark begin of "initialization" phase
-    phase_ann.begin("initialization");
-
-    // perform initialization tasks
+    CALI_MARK_BEGIN("init");
     int count = 4;
-    double t = 0.0, delta_t = 1e-6;
+    CALI_MARK_END("init");
 
-    // Mark end of "initialization" phase and begin of "loop" phase
-    phase_ann.end();
-    phase_ann.begin("loop");
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
 
-    // Create "iteration" attribute to export the iteration count
-    cali::Annotation iteration_ann("iteration");
-        
+    double t = 0, delta_t = 0.42;
+
     for (int i = 0; i < count; ++i) {
         // Mark each loop iteration  
-        // The Annotation::Guard object will automatically "end" 
-        // the annotation at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_iteration( iteration_ann.begin(i) );
+        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
-        // { "loop", "iteration"=<i> }
+        // { function="main", loop=mainloop", iteration#mainloop=<i> }
 
-        // perform computation
         t += delta_t;
     }
 
-    // Mark end of "loop" phase
-    phase_ann.end();
+    CALI_CXX_MARK_LOOP_END(mainloop);
 }

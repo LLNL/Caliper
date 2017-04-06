@@ -48,6 +48,8 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#include <util/split.hpp>
+
 #include <signal.h>
 
 #include <atomic>
@@ -56,6 +58,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -65,6 +68,10 @@
 using namespace cali;
 using namespace std;
 
+namespace cali
+{
+    extern void init_api_attributes(Caliper* c);
+}
 
 namespace
 {
@@ -177,6 +184,7 @@ struct Caliper::GlobalData
 
     mutable std::mutex     attribute_lock;
     map<string, Node*>     attribute_nodes;
+    map<string, int>       attribute_prop_presets;
 
     // are there new attributes since last snapshot recording? - temporary, will go away
     std::atomic<bool>      new_attributes;
@@ -231,7 +239,9 @@ struct Caliper::GlobalData
 
         pthread_key_create(&thread_scope_key, release_thread);
         pthread_setspecific(thread_scope_key, default_thread_scope);
-            
+
+        parse_attribute_property_presets();
+        
         // now it is safe to use the Caliper interface
 
         init();
@@ -259,10 +269,27 @@ struct Caliper::GlobalData
 
         return scope;
     }
+
+    void parse_attribute_property_presets() {
+        vector<string> attr_props;
+
+        util::split(config.get("attribute_properties").to_string(), ',', back_inserter(attr_props));
+
+        for (const string& s : attr_props) {
+            auto p = s.find_first_of('=');
+
+            if (p == string::npos)
+                continue;
+
+            int prop = cali_string2prop(s.substr(p+1).c_str());
+
+            attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
+        }
+    }
     
     void init() {
         Caliper c(this, default_thread_scope, default_task_scope);
-
+        
         // Create and set key & version attributes
 
         key_attr =
@@ -273,6 +300,8 @@ struct Caliper::GlobalData
             
         Services::register_services(&c);
 
+        init_api_attributes(&c);
+        
         Log(1).stream() << "Initialized" << endl;
 
         if (Log::verbosity() >= 3)
@@ -325,6 +354,19 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "Automatically merge attributes into a common context tree.\n"
       "Decreases the size of context records, but may increase\n"
       "the amount of metadata and reduce performance." 
+    },
+    { "attribute_properties", CALI_TYPE_STRING, "",
+      "List of attribute property presets",
+      "List of attribute property presets, in the form\n"
+      "  attr=prop1:prop2,attr2=prop1:prop2:prop3,attr3=prop1,...\n"
+      "Attribute property flags are:\n"
+      "  asvalue:       Store values directly in snapshot, not in context tree\n"
+      "  nomerge:       Create dedicated context tree branch, don't merge with other attributes\n"
+      "  process_scope: Process-scope attribute\n"
+      "  thread_scope:  Thread-scope attribute\n"
+      "  task_scope:    Task-scope attribute (currently not supported)\n"
+      "  skip_events:   Do not invoke callback functions for updates\n"
+      "  hidden:        Do not include this attribute in snapshots\n" 
     },
     ConfigSet::Terminator 
 };
@@ -482,11 +524,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     assert(mG != 0);
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-    
-    // Add default SCOPE_THREAD property if no other is set
-    if (!(prop & CALI_ATTR_SCOPE_PROCESS) && !(prop & CALI_ATTR_SCOPE_TASK))
-        prop |= CALI_ATTR_SCOPE_THREAD;
+        g(m_thread_scope->lock);    
 
     Node* node        = nullptr;
     bool  created_now = false;
@@ -504,7 +542,17 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     // Create attribute nodes
 
     if (!node) {
+        // Look for attribute properties in presets 
+        auto propit = mG->attribute_prop_presets.find(name);
+        if (propit != mG->attribute_prop_presets.end())
+            prop = propit->second;
+
         mG->events.pre_create_attr_evt(this, name, &type, &prop);
+        
+        // Add default SCOPE_THREAD property if no other is set
+        if (((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_PROCESS) &&
+            ((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_TASK))
+            prop |= CALI_ATTR_SCOPE_THREAD;
 
         assert(type >= 0 && type <= CALI_MAXTYPE);
         node = m_thread_scope->tree.type_node(type);
