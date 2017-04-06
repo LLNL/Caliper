@@ -194,6 +194,11 @@ void setup_events(Caliper* c, const string& eventstring)
             continue;
         }
 
+        // check if we have this event already
+        if (std::find(global_info.counter_events.begin(), global_info.counter_events.end(), 
+                      code) != global_info.counter_events.end())
+            continue;
+
         if (global_info.counter_events.size() < MAX_COUNTERS) {
             Attribute delta_attr =
                 c->create_attribute(string("papi.")+event, CALI_TYPE_UINT,
