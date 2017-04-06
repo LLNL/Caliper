@@ -3,7 +3,8 @@ include_directories("../../src/caliper")
 # build the C/C++ CI test apps
 
 set(CALIPER_CI_CXX_TEST_APPS
-  ci_test_basic)
+  ci_test_basic
+  ci_test_macros)
 set(CALIPER_CI_C_TEST_APPS
   ci_test_c_ann
   ci_test_c_snapshot)
