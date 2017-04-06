@@ -22,6 +22,11 @@ option(WITH_FORTRAN "Install Fortran interface and build test programs")
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 
+if (NOT BUILD_SHARED_LIBS)
+  # Try to find static libs first for static builds
+  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
+endif()
+
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 

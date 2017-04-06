@@ -46,6 +46,10 @@ usage_string = \
                   Default is \'pmpi_init_\'.  Wrappers compiled for PIC will guess the
                   right binding automatically (use -DPIC when you compile dynamic libs).
    -o file        Send output to a file instead of stdout.
+   -w             Do not print compiler warnings for deprecated MPI functions.
+                  This option will add macros around {{callfn}} to disable (and
+                  restore) the compilers diagnostic functions, if the compiler
+                  supports this functionality.
 
  by Todd Gamblin, tgamblin@llnl.gov
 '''
@@ -59,6 +63,7 @@ output_fortran_wrappers = False    # Don't print fortran wrappers by default
 output_guards = False              # Don't print reentry guards by default
 skip_headers = False               # Skip header information and defines (for non-C output)
 dump_prototypes = False            # Just exit and dump MPI protos if false.
+ignore_deprecated = False          # Do not print compiler warnings for deprecated MPI functions
 
 # Possible legal bindings for the fortran version of PMPI_Init()
 pmpi_init_bindings = ["PMPI_INIT", "pmpi_init", "pmpi_init_", "pmpi_init__"]
@@ -71,7 +76,7 @@ pmpi_init_bindings = ["PMPI_INIT", "pmpi_init", "pmpi_init_", "pmpi_init__"]
 rtypes = ['int', 'double', 'MPI_Aint' ]
 
 # If we find these strings in a declaration, exclude it from consideration.
-exclude_strings = [ "c2f", "f2c", "typedef" ]
+exclude_strings = [ "c2f", "f2c", "typedef", "MPI_T_", "MPI_Comm_spawn" ]
 
 # Regular expressions for start and end of declarations in mpi.h. These are
 # used to get the declaration strings out for parsing with formal_re below.
@@ -126,6 +131,33 @@ _EXTERN_C_ void pmpi_init(MPI_Fint *ierr);
 _EXTERN_C_ void PMPI_INIT(MPI_Fint *ierr);
 _EXTERN_C_ void pmpi_init_(MPI_Fint *ierr);
 _EXTERN_C_ void pmpi_init__(MPI_Fint *ierr);
+
+'''
+
+# Macros used to suppress MPI deprecation warnings.
+wrapper_diagnosics_macros = '''
+/* Macros to enable and disable compiler warnings for deprecated functions.
+ * These macros will be used to silent warnings about deprecated MPI functions,
+ * as these should be wrapped, even if they are deprecated.
+ *
+ * Note: The macros support GCC and clang compilers only. For other compilers
+ *       just add similar macros for your compiler.
+ */
+#if (defined(__GNUC__) && !defined(__clang__)) && \\
+  ((__GNUC__ == 4 && __GNUC_MINOR__ >= 6) || __GNUC__ > 4)
+#define  WRAP_MPI_CALL_PREFIX     \\
+  _Pragma("GCC diagnostic push"); \\
+  _Pragma("GCC diagnostic ignored \\"-Wdeprecated-declarations\\"");
+#define WRAP_MPI_CALL_POSTFIX _Pragma("GCC diagnostic pop");
+#elif defined(__clang__)
+#define  WRAP_MPI_CALL_PREFIX       \\
+  _Pragma("clang diagnostic push"); \\
+  _Pragma("clang diagnostic ignored \\"-Wdeprecated-declarations\\"");
+#define WRAP_MPI_CALL_POSTFIX _Pragma("clang diagnostic pop");
+#else
+#define WRAP_MPI_CALL_PREFIX
+#define WRAP_MPI_CALL_POSTFIX
+#endif
 
 '''
 
@@ -916,7 +948,11 @@ def fn(out, scope, args, children):
         fn_scope["ret_val"] = return_val
         fn_scope["returnVal"]  = fn_scope["ret_val"]  # deprecated name.
 
-        c_call = "%s = P%s(%s);" % (return_val, fn.name, ", ".join(fn.argNames()))
+        if ignore_deprecated:
+            c_call = "%s\n%s = P%s(%s);\n%s" % ("WRAP_MPI_CALL_PREFIX", return_val, fn.name, ", ".join(fn.argNames()), "WRAP_MPI_CALL_POSTFIX")
+        else:
+            c_call = "%s = P%s(%s);" % (return_val, fn.name, ", ".join(fn.argNames()))
+
         if fn_name == "MPI_Init" and output_fortran_wrappers:
             def callfn(out, scope, args, children):
                 # All this is to deal with fortran, since fortran's MPI_Init() function is different
@@ -1241,7 +1277,7 @@ output = sys.stdout
 output_filename = None
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fsgdc:o:i:I:")
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fsgdwc:o:i:I:")
 except getopt.GetoptError as err:
     sys.stderr.write(err + "\n")
     usage()
@@ -1251,6 +1287,7 @@ for opt, arg in opts:
     if opt == "-f": output_fortran_wrappers = True
     if opt == "-s": skip_headers = True
     if opt == "-g": output_guards = True
+    if opt == "-w": ignore_deprecated = True
     if opt == "-c": mpicc = arg
     if opt == "-o": output_filename = arg
     if opt == "-I":
@@ -1292,6 +1329,10 @@ try:
     if not skip_headers:
         output.write(wrapper_includes)
         if output_guards: output.write("static int in_wrapper = 0;\n")
+
+    # Print the macros for disabling MPI function deprecation warnings.
+    if ignore_deprecated:
+        output.write(wrapper_diagnosics_macros)
 
     # Parse each file listed on the command line and execute
     # it once it's parsed.
