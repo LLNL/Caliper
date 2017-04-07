@@ -87,7 +87,7 @@ cali_string2prop(const char* str)
     const char* pos = strstr(str, p->str);
     size_t      len = strlen(p->str);
 
-    if (pos && ((pos == str) || !isalnum(pos-1)) && !isalnum(pos[len]))
+    if (pos && ((pos == str) || !isalnum(*(pos-1))) && !isalnum(pos[len]))
       prop |= p->prop;
   }
 
