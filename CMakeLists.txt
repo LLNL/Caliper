@@ -37,6 +37,7 @@ option(WITH_DOCS      "Build Caliper documentation" FALSE)
 option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
+option(WITH_PERF_EVENT "Enable perf_event collection service (requires perf_event)" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 
@@ -92,15 +93,14 @@ if (WITH_PAPI)
   endif()
 endif()
 
-# Find Mitos
-
-# find_package(Mitos QUIET)
-# if(Mitos_FOUND)
-#   find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
-#   set(CALIPER_HAVE_MITOS TRUE)
-#   list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
-#   message(STATUS "Mitos found")
-# endif()
+# Find perf_event
+if (WITH_PERF_EVENT)
+  include(FindPerfEvent)
+  if (PerfEvent_FOUND)
+    set(CALIPER_HAVE_PERF_EVENT TRUE)
+    message(STATUS "perf_event detected, adding perf_event service")
+  endif()
+endif()
 
 find_package(Threads)
 
