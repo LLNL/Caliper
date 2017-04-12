@@ -138,7 +138,8 @@ namespace
                                       //tsmp.proc_parent->handler_fn_args,
                                       tsmp.containers[i].mmap_buf,
                                       tsmp.pgmsk);
-                std::cerr << "ip: " << tsmp.pes.ip << std::endl;
+                if(tsmp.pes.ip == 0)
+                    std::cerr << "OUCH" << std::endl;
             }
         }
 
