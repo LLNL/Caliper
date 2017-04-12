@@ -10,6 +10,7 @@
 #cmakedefine CALIPER_HAVE_SAMPLER
 #cmakedefine CALIPER_HAVE_NVVP
 #cmakedefine CALIPER_HAVE_TAU
+#cmakedefine CALIPER_HAVE_SCOREP
 #cmakedefine CALIPER_HAVE_VTUNE
 
 // Version information -- numerical and a version string
