@@ -22,6 +22,7 @@ set(CALIPER_UTIL_HEADERS
 
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
+    CaliperMetadataAccessInterface.cpp
     ContextRecord.cpp
     Entry.cpp
     Log.cpp

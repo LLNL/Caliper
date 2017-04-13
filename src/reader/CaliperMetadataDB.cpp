@@ -423,6 +423,19 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             Attribute::make_attribute(it->second);
     }
 
+    std::vector<Attribute> get_attributes() const {
+        std::lock_guard<std::mutex>
+            g(m_attribute_lock);
+
+        std::vector<Attribute> ret;
+        ret.reserve(m_attributes.size());
+
+        for (auto it : m_attributes)
+            ret.push_back(Attribute::make_attribute(it.second));
+
+        return ret;
+    }
+
     Node* make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0) {
         Node* node = nullptr;
 
@@ -575,6 +588,12 @@ Attribute
 CaliperMetadataDB::get_attribute(const std::string& name) const
 {
     return mP->attribute(name);
+}
+
+std::vector<Attribute>
+CaliperMetadataDB::get_attributes() const
+{
+    return mP->get_attributes();
 }
 
 Node*

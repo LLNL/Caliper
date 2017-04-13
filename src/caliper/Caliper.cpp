@@ -628,6 +628,22 @@ Caliper::get_attribute(cali_id_t id) const
     return Attribute::make_attribute(m_thread_scope->tree.node(id));
 }
 
+std::vector<Attribute>
+Caliper::get_attributes() const
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+    std::lock_guard<std::mutex>
+        g_a(mG->attribute_lock);
+
+    std::vector<Attribute> ret;
+    ret.reserve(mG->attribute_nodes.size());
+
+    for (auto it : mG->attribute_nodes)
+        ret.push_back(Attribute::make_attribute(it.second));
+
+    return ret;
+}
 
 // --- Snapshot interface
 
