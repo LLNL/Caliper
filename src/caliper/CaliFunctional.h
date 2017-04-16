@@ -204,7 +204,7 @@ struct WrappedFunction {
     template <typename... Args>
     auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
 
-        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name));
+        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name).getAnnot());
         return body(args...);
     }
     LB body;
