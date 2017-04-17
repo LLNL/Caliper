@@ -270,7 +270,7 @@ void timestamp_service_register(Caliper* c)
     record_phases    = config.get("inclusive_duration").to_bool();
 
     Attribute unit_attr = 
-        c->create_attribute("time.unit", CALI_TYPE_STRING);
+        c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
     Attribute aggr_class_attr = 
         c->get_attribute("class.aggregatable");
 

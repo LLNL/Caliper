@@ -55,9 +55,7 @@ namespace cali
     Attribute statement_attr;
     Attribute annotation_attr;
 
-    void init_api_attributes(Caliper* c) {
-        // --- attributes w/o metadata
-        
+    void init_attribute_classes(Caliper* c) {
         struct attr_info_t {
             const char*    name;
             cali_attr_type type;
@@ -69,7 +67,7 @@ namespace cali
               &class_nested_attr, &cali_class_nested_attr_id
             },
             { "class.aggregatable", CALI_TYPE_BOOL, CALI_ATTR_SKIP_EVENTS,
-              &class_nested_attr, &cali_class_aggregatable_attr_id
+              &class_aggregatable_attr, &cali_class_aggregatable_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };
@@ -79,10 +77,18 @@ namespace cali
                 c->create_attribute(p->name, p->type, p->prop);
             *(p->attr_id) = (p->attr)->id();
         }
+    }
 
+    void init_api_attributes(Caliper* c) {
         // --- code annotation attributes
 
-        attr_info_t codeattr_info[] = {
+        struct attr_info_t {
+            const char*    name;
+            cali_attr_type type;
+            int            prop;
+            Attribute*     attr;
+            cali_id_t*     attr_id;
+        } attr_info[] = {
             { "function",   CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
               &function_attr,   &cali_function_attr_id
             },
@@ -100,7 +106,7 @@ namespace cali
 
         Variant v_true(true);
         
-        for (attr_info_t *p = codeattr_info; p->name; ++p) {
+        for (attr_info_t *p = attr_info; p->name; ++p) {
             *(p->attr) =
                 c->create_attribute(p->name, p->type, p->prop,
                                     1, &class_nested_attr, &v_true);
