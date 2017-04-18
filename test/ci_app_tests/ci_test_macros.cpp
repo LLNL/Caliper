@@ -18,6 +18,7 @@ void foo()
 
         CALI_MARK_ITERATION_END(fooloop);
     }
+    CALI_MARK_LOOP_END(fooloop);
 
     CALI_MARK_FUNCTION_END;
 }

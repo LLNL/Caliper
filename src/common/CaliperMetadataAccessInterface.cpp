@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,55 +30,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file CaliperMetadataQueryInterface.h 
-/// Abstract Caliper metadata access interface
+/// \file CaliperMetadataQueryInterface.cpp
+/// Caliper metadata access interface implementation
 
-#pragma once
+#include "CaliperMetadataAccessInterface.h"
 
-#include "Attribute.h"
+using namespace cali;
 
-#include <cstddef>
-#include <vector>
-
-namespace cali
+std::vector<Attribute>
+CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const
 {
+    std::vector<Attribute> vec = get_attributes();
+    std::vector<Attribute> ret;
 
-class Node;
+    for (Attribute attr : vec)
+        if (!attr.get(meta).empty())
+            ret.push_back(attr);
 
-class CaliperMetadataAccessInterface
-{
-public:
-
-    // --- query operations
-
-    virtual Node*
-    node(cali_id_t) const = 0;
-
-    virtual Attribute 
-    get_attribute(cali_id_t id) const = 0;
-    virtual Attribute
-    get_attribute(const std::string& str) const = 0;
-
-    /// \brief Return all attributes
-    virtual std::vector<Attribute>
-    get_attributes() const = 0;
-
-    /// \brief Return all attributes that have a metadata entry \a meta, of any value
-    std::vector<Attribute>
-    find_attributes_with(const Attribute& meta) const;
-
-    // --- modifying operations
-
-    virtual Attribute
-    create_attribute(const std::string& name,
-                     cali_attr_type     type,
-                     int                prop = CALI_ATTR_DEFAULT,
-                     int                meta = 0,
-                     const Attribute*   meta_attr = nullptr,
-                     const Variant*     meta_data = nullptr) = 0;
-
-    virtual Node* 
-    make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0) = 0;
-};
-
+    return ret;
 }

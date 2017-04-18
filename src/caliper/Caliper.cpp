@@ -70,6 +70,7 @@ using namespace std;
 
 namespace cali
 {
+    extern void init_attribute_classes(Caliper* c);
     extern void init_api_attributes(Caliper* c);
 }
 
@@ -297,7 +298,9 @@ struct Caliper::GlobalData
             
         c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS),
               Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-            
+
+        init_attribute_classes(&c);
+
         Services::register_services(&c);
 
         init_api_attributes(&c);
@@ -628,6 +631,22 @@ Caliper::get_attribute(cali_id_t id) const
     return Attribute::make_attribute(m_thread_scope->tree.node(id));
 }
 
+std::vector<Attribute>
+Caliper::get_attributes() const
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+    std::lock_guard<std::mutex>
+        g_a(mG->attribute_lock);
+
+    std::vector<Attribute> ret;
+    ret.reserve(mG->attribute_nodes.size());
+
+    for (auto it : mG->attribute_nodes)
+        ret.push_back(Attribute::make_attribute(it.second));
+
+    return ret;
+}
 
 // --- Snapshot interface
 
