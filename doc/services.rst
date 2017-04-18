@@ -34,14 +34,20 @@ durations) of snapshots with a similar `key`, creating a profile.
 
 .. envvar:: CALI_AGGREGATE_ATTRIBUTES
 
-   Colon-separated list of aggregation attributes. The aggregate
+   Colon-separated list of aggregation attributes. The `aggregate`
    service aggregates values of aggregation attributes from all input
    snapshots with similar aggregation keys. Note that only attributes
    with the ``ASVALUE`` storage property can be aggregation
    attributes.
 
-   Default: ``time.inclusive.duration`` (Generates event-triggered
-   time profiles, if `event` and `timestamp` services are enabled)
+   By default, the aggregation service determines aggregatable 
+   attributes automatically. With this configuration variable,
+   the aggregation attributes can be set specifically (e.g., to
+   select a subset). When set to `none`, the `aggregate` service
+   will not aggregate any attributes, and only count the number of 
+   snapshots with similar keys.
+
+   Default: Empty (determine aggregation attributes automatically).
 
 Aggregation key
 ................................
