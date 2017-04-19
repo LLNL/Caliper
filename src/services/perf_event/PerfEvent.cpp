@@ -89,7 +89,7 @@ namespace
           "Event List",
           "List of events to sample, separated by ':'" 
         },
-        { "sample_attributes", CALI_TYPE_STRING, "ip:time:pid:tid:cpu",
+        { "sample_attributes", CALI_TYPE_STRING, "ip:time:tid:cpu",
           "Sample attributes",
           "Set of attributes to record for each sample, separated by ':'"
         },
@@ -103,6 +103,8 @@ namespace
 
 
     static __thread struct thread_sampler tsmp;
+    static __thread unsigned int num_good_samples = 0;
+    static __thread unsigned int num_bad_samples = 0;
 
     static int num_events;
     static unsigned int sampling_frequency;
@@ -138,8 +140,10 @@ namespace
                                       //tsmp.proc_parent->handler_fn_args,
                                       tsmp.containers[i].mmap_buf,
                                       tsmp.pgmsk);
-                if(tsmp.pes.ip == 0)
-                    std::cerr << "OUCH" << std::endl;
+                if(tsmp.pes.ip != 0)
+                    num_good_samples++;
+                else
+                    num_bad_samples++;
             }
         }
 
@@ -335,6 +339,16 @@ namespace
         }
     }
 
+    void release_scope_cb(Caliper* c, cali_context_scope_t scope) {
+        // TODO: end sampling, clean up
+    }
+
+    void finish_cb(Caliper* c) {
+        Log(1).stream() << "perf_event: processed " << num_good_samples << " samples ("
+                        << num_good_samples + num_bad_samples << " total, "
+                        << num_bad_samples << " dropped)." << endl;
+    }
+
     // Initialization handler
     void perf_event_register(Caliper* c) {
         config = RuntimeConfig::init("perf_event", s_configdata);
@@ -343,6 +357,7 @@ namespace
         setup_perf_event_attrs();
         
         c->events().create_scope_evt.connect(create_scope_cb);
+        c->events().finish_evt.connect(finish_cb);
 
         Log(1).stream() << "Registered perf_event service" << endl;
     }
