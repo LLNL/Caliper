@@ -34,21 +34,22 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
-#include <Args.h>
+#include "Args.h"
+#include "AttributeExtract.h"
 
-#include <Annotation.h>
+#include "Annotation.h"
 
-#include <Aggregator.h>
-#include <CaliperMetadataDB.h>
-#include <Expand.h>
-#include <Format.h>
-#include <RecordProcessor.h>
-#include <RecordSelector.h>
-#include <Table.h>
-#include <Json.h>
+#include "Aggregator.h"
+#include "CaliperMetadataDB.h"
+#include "Expand.h"
+#include "Format.h"
+#include "RecordProcessor.h"
+#include "RecordSelector.h"
+#include "Table.h"
+#include "Json.h"
 
-#include <ContextRecord.h>
-#include <Node.h>
+#include "ContextRecord.h"
+#include "Node.h"
 
 #include <csv/CsvReader.h>
 #include <csv/CsvSpec.h>
@@ -122,6 +123,10 @@ namespace
         },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
+        { "list-attributes", "list-attributes", 0, false,
+          "Extract and list attributes in Caliper stream instead of snapshot records",
+          nullptr
+        },
         Args::Table::Terminator
     };
 
@@ -309,6 +314,11 @@ int main(int argc, const char* argv[])
         snap_proc = ::SnapshotFilterStep(RecordSelector(select), snap_proc);
     else if (args.is_set("select"))
         cerr << "cali-query: Arguments required for --select" << endl;
+
+    if (args.is_set("list-attributes")) {
+        node_proc = AttributeExtract(snap_proc);
+        snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+    }
 
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 

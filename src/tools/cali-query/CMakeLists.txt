@@ -4,7 +4,8 @@ include_directories ("../util")
 include_directories ("../../caliper")
 
 set(CALIPER_QUERY_SOURCES
-    cali-query.cpp)
+  AttributeExtract.cpp
+  cali-query.cpp)
 
 add_executable(cali-query ${CALIPER_QUERY_SOURCES})
 
