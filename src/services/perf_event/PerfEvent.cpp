@@ -140,10 +140,8 @@ namespace
                                       //tsmp.proc_parent->handler_fn_args,
                                       tsmp.containers[i].mmap_buf,
                                       tsmp.pgmsk);
-                if(tsmp.pes.ip != 0)
-                    num_good_samples++;
-                else
-                    num_bad_samples++;
+                if(tsmp.pes.ip == 0)
+                    std::cerr << "OUCH" << std::endl;
             }
         }
 
@@ -344,9 +342,6 @@ namespace
     }
 
     void finish_cb(Caliper* c) {
-        Log(1).stream() << "perf_event: processed " << num_good_samples << " samples ("
-                        << num_good_samples + num_bad_samples << " total, "
-                        << num_bad_samples << " dropped)." << endl;
     }
 
     // Initialization handler
