@@ -561,7 +561,7 @@ CaliperMetadataDB::merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t pr
     if (v_data.type() == CALI_TYPE_STRING)
         v_data = mP->make_string_variant(static_cast<const char*>(value.data()), value.size());
     
-    mP->merge_node(node_id, attr_id, prnt_id, v_data, idmap);
+    return mP->merge_node(node_id, attr_id, prnt_id, v_data, idmap);
 }
 
 EntryList
