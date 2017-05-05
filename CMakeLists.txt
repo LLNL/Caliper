@@ -39,6 +39,7 @@ option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
+option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -130,12 +131,14 @@ endif()
 
 find_package(PythonInterp REQUIRED)
 
-# Sampler is currently Linux-specific: check for Linux
-if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
-  set(CALIPER_HAVE_SAMPLER TRUE)
-  # Linux PC sampler needs -lrt
-  list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
-  message(STATUS "Linux detected, adding sampler service")
+if (WITH_SAMPLER)
+  # Sampler is currently Linux-specific: check for Linux
+  if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
+    set(CALIPER_HAVE_SAMPLER TRUE)
+    # Linux PC sampler needs -lrt
+    list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
+    message(STATUS "Linux detected, adding sampler service")
+  endif()
 endif()
 
 # Create a config header file
