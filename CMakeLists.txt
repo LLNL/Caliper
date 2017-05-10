@@ -37,7 +37,7 @@ option(WITH_DOCS      "Build Caliper documentation" FALSE)
 option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
-option(WITH_PERF_EVENT "Enable perf_event collection service (requires perf_event)" TRUE)
+option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 
@@ -93,12 +93,18 @@ if (WITH_PAPI)
   endif()
 endif()
 
-# Find perf_event
-if (WITH_PERF_EVENT)
-  include(FindPerfEvent)
-  if (PerfEvent_FOUND)
-    set(CALIPER_HAVE_PERF_EVENT TRUE)
-    message(STATUS "perf_event detected, adding perf_event service")
+# Find libpfm
+if (WITH_LIBPFM)
+  include(FindLibpfm)
+  if(LIBPFM_FOUND)
+    message(STATUS "Found perfmon/pfmlib_perf_event.h in " ${LIBPFM_INCLUDE_DIR})
+    message(STATUS "Found libpfm.so in " ${LIBPFM_LIBRARY})
+    set(CALIPER_HAVE_LIBPFM TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBPFM_LIBRARY})
+  else()
+    message(STATUS "Could not find libpfm header. \
+      use -DLIBPFM_INSTALL=<path to libpfm src directory> \
+      e.g. -DLIBPFM_INSTALL=~/papi/src/libpfm4")
   endif()
 endif()
 
