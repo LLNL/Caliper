@@ -47,6 +47,7 @@ namespace cali
 {
     Attribute mpifn_attr   { Attribute::invalid };
     Attribute mpirank_attr { Attribute::invalid };
+    Attribute mpisize_attr { Attribute::invalid };
 
     bool      mpi_enabled  { false };
 
@@ -81,6 +82,9 @@ void mpi_register(Caliper* c)
         c->create_attribute("mpi.function", CALI_TYPE_STRING);
     mpirank_attr = 
         c->create_attribute("mpi.rank", CALI_TYPE_INT, 
+                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+    mpisize_attr = 
+        c->create_attribute("mpi.size", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
     mpi_enabled = true;
