@@ -111,9 +111,13 @@ namespace
           "Sample attributes",
           "Comma-separated list of attributes to record for each sample"
         },
-        { "frequency", CALI_TYPE_UINT, "10000",
+        { "frequency", CALI_TYPE_UINT, "4000",
           "Sampling frequency",
           "Number of samples per second to collect (approximately)."
+        },
+        { "precise_ip", CALI_TYPE_UINT, "0",
+          "Use Precise IP?",
+          "Requests precise IP for supporting architecture (e.g. PEBS). May be 0, 1, or 2."
         },
         ConfigSet::Terminator
     };
@@ -122,8 +126,8 @@ namespace
     /*
      * Service configuration variables
      */
-    static int num_events;
     static unsigned int sampling_frequency;
+    static unsigned int precise_ip;
     static std::string events_string;
     static std::vector<uint64_t> events;
 
@@ -253,6 +257,7 @@ namespace
         fds[0].hw.sample_type = sample_attributes;
         fds[0].hw.sample_freq = sampling_frequency;
         fds[0].hw.read_format = 0;
+        fds[0].hw.precise_ip = precise_ip;
 
         fds[0].fd = fd = perf_event_open(&fds[0].hw, gettid(), -1, -1, 0);
         if (fd == -1)
@@ -356,8 +361,8 @@ namespace
         }
 
         sampling_frequency = config.get("frequency").to_uint();
-        num_events = events.size();
 
+        precise_ip = config.get("precise_ip").to_uint();
     }
 
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
