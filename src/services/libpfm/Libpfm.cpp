@@ -64,25 +64,18 @@ extern "C"
     #include "perf_util.h"
 }
 
-#define MAX_THR  128
-
-/*
- *  the following definitions come
- *  from the F_SETOWN_EX patch from Peter Zijlstra
- * Check out: http://lkml.org/lkml/2009/8/4/128
- */
 #ifndef F_SETOWN_EX
-#define F_SETOWN_EX	15
-#define F_GETOWN_EX	16
+    #define F_SETOWN_EX	    15
+    #define F_GETOWN_EX	    16
 
-#define F_OWNER_TID	0
-#define F_OWNER_PID	1
-#define F_OWNER_PGRP	2
+    #define F_OWNER_TID	    0
+    #define F_OWNER_PID	    1
+    #define F_OWNER_PGRP	2
 
-struct f_owner_ex {
-    int	type;
-    pid_t	pid;
-};
+    struct f_owner_ex {
+        int	type;
+        pid_t	pid;
+    };
 #endif
 
 using namespace cali;
@@ -112,11 +105,11 @@ namespace
     static const ConfigSet::Entry s_configdata[] = {
         { "event_list", CALI_TYPE_STRING, "cycles",
           "Event List",
-          "List of events to sample, separated by ':'" 
+          "Comma-separated list of events to sample"
         },
-        { "sample_attributes", CALI_TYPE_STRING, "ip:time:tid:cpu",
+        { "sample_attributes", CALI_TYPE_STRING, "ip,time,tid,cpu",
           "Sample attributes",
-          "Set of attributes to record for each sample, separated by ':'"
+          "Comma-separated list of attributes to record for each sample"
         },
         { "frequency", CALI_TYPE_UINT, "10000",
           "Sampling frequency",
@@ -131,7 +124,7 @@ namespace
      */
     static int num_events;
     static unsigned int sampling_frequency;
-    static std::vector<std::string> events_strvec;
+    static std::string events_string;
     static std::vector<uint64_t> events;
 
     static std::vector<std::string> sample_attributes_strvec;
@@ -193,7 +186,6 @@ namespace
         fd = info->si_fd;
         tid = gettid();
 
-        // TODO: figure out which fd
         ov = &fdmap[fd];
 
         /*
@@ -225,9 +217,9 @@ namespace
         perf_display_sample(fdx, 1, fdx->id, &ehdr, stderr);
 
         /*
-         * Skip buffer TODO: (do we have to do this?)
+         * Skip buffer (unnecessary?)
          */
-        perf_skip_buffer(fdx+0, ehdr.size);
+        // perf_skip_buffer(fdx+0, ehdr.size);
 
         /*
          * re-arm period, next notification after wakeup_events
@@ -247,7 +239,7 @@ namespace
 
         fds = NULL;
         num_fds = 0;
-        ret = perf_setup_list_events("cycles", &fds, &num_fds);
+        ret = perf_setup_list_events(events_string.c_str(), &fds, &num_fds);
         if (ret || !num_fds)
             errx(1, "cannot monitor event");
 
@@ -258,8 +250,8 @@ namespace
 
         /* notify after 1 sample */
         fds[0].hw.wakeup_events = 1;
-        fds[0].hw.sample_type = PERF_SAMPLE_IP | PERF_SAMPLE_TID;
-        fds[0].hw.sample_period = sampling_frequency; // TODO frequency not period
+        fds[0].hw.sample_type = sample_attributes;
+        fds[0].hw.sample_freq = sampling_frequency;
         fds[0].hw.read_format = 0;
 
         fds[0].fd = fd = perf_event_open(&fds[0].hw, gettid(), -1, -1, 0);
@@ -354,16 +346,11 @@ namespace
     static void parse_configset() {
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        events_strvec.clear();
-        std::string event_list_string = config.get("event_list").to_string();
-        util::split(event_list_string, ':', back_inserter(events_strvec));
-        for(auto event_str : events_strvec) {
-            events.push_back(std::stoull(event_str, 0, 16));
-        }
+        events_string = config.get("event_list").to_string();
 
         sample_attributes_strvec.clear();
         std::string sample_attributes_string = config.get("sample_attributes").to_string();
-        util::split(sample_attributes_string, ':', back_inserter(sample_attributes_strvec));
+        util::split(sample_attributes_string, ',', back_inserter(sample_attributes_strvec));
         for(auto sample_attribute_str : sample_attributes_strvec) {
             sample_attributes |= sample_attribute_map[sample_attribute_str];
         }
@@ -381,10 +368,14 @@ namespace
     }
 
     void release_scope_cb(Caliper* c, cali_context_scope_t scope) {
-        // TODO: end sampling, clean up
+        // TODO: how to stop sampling on this particular thread?
+        // int ret = ioctl(???, PERF_EVENT_IOC_DISABLE, 0);
+        // if (ret)
+            // err(1, "cannot stop");
     }
 
     void finish_cb(Caliper* c) {
+        pfm_terminate();
     }
 
     // Initialization handler
