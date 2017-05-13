@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,31 +30,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+/// \file CaliperMetadataQueryInterface.cpp
+/// Caliper metadata access interface implementation
 
-#include <cali.h>
+#include "CaliperMetadataAccessInterface.h"
 
-int main(int argc, char* argv[])
+using namespace cali;
+
+std::vector<Attribute>
+CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const
 {
-    CALI_CXX_MARK_FUNCTION;
+    std::vector<Attribute> vec = get_attributes();
+    std::vector<Attribute> ret;
 
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
+    for (Attribute attr : vec)
+        if (!attr.get(meta).empty())
+            ret.push_back(attr);
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
-
-    double t = 0, delta_t = 0.42;
-
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
-
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
-
-        t += delta_t;
-    }
-
-    CALI_CXX_MARK_LOOP_END(mainloop);
+    return ret;
 }

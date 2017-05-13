@@ -46,7 +46,6 @@
 
 #include <utility>
 
-
 namespace cali
 {
 
@@ -196,13 +195,15 @@ public:
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 
+    std::vector<Attribute> get_attributes() const;
+
     Attribute create_attribute(const std::string& name,
                                cali_attr_type     type,
                                int                prop = CALI_ATTR_DEFAULT,
                                int                meta = 0,
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
-
+    
     /// \brief return node by id
     Node*     node(cali_id_t id) const;
 

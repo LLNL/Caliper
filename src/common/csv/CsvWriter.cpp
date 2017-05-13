@@ -64,6 +64,9 @@ struct CsvWriter::CsvWriterImpl
     
     void recursive_write_node(const CaliperMetadataAccessInterface& db, cali_id_t id)
     {
+        if (id < 11) // don't write the hard-coded metadata nodes
+            return;
+
         {
             std::lock_guard<std::mutex>
                 g(m_written_nodes_lock);
@@ -76,13 +79,21 @@ struct CsvWriter::CsvWriterImpl
 
         if (!node)
             return;
-        if (node->attribute() < node->id()) // special check for initial meta-attributes
-            recursive_write_node(db, node->attribute());
+
+        recursive_write_node(db, node->attribute());
 
         Node* parent = node->parent();
 
         if (parent && parent->id() != CALI_INV_ID)
             recursive_write_node(db, parent->id());
+
+        {
+            std::lock_guard<std::mutex>
+                g(m_os_lock);
+            
+            CsvSpec::write_record(m_os, node->record());
+            ++m_num_written;
+        }
 
         {
             std::lock_guard<std::mutex>
@@ -92,14 +103,6 @@ struct CsvWriter::CsvWriterImpl
                 return;
        
             m_written_nodes.insert(id);
-        }
-
-        {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
-            
-            CsvSpec::write_record(m_os, node->record());
-            ++m_num_written;
         }
     }
 

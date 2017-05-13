@@ -30,31 +30,32 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+/// \file AttributeExtract.h
+/// \brief A class to extract attributes as snapshots
 
-#include <cali.h>
+#pragma once
 
-int main(int argc, char* argv[])
+#include "RecordProcessor.h"
+
+#include <memory>
+
+namespace cali
 {
-    CALI_CXX_MARK_FUNCTION;
 
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
+/// This class is a node processor that converts attribute nodes into a snapshot record,
+/// and forwards them to a snapshot processor
+class AttributeExtract
+{
+    struct AttributeExtractImpl;
+    std::shared_ptr<AttributeExtractImpl> mP;
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
+public:
 
-    double t = 0, delta_t = 0.42;
+    AttributeExtract(SnapshotProcessFn snap_fn);
 
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
+    ~AttributeExtract();
 
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
+    void operator()(CaliperMetadataAccessInterface&, const Node*);
+};
 
-        t += delta_t;
-    }
-
-    CALI_CXX_MARK_LOOP_END(mainloop);
 }

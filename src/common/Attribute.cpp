@@ -104,6 +104,19 @@ Attribute::get(const Attribute& attr) const
     return Variant();
 }
 
+std::ostream&
+cali::operator << (std::ostream& os, const Attribute& a)
+{
+    char buf[256];
+
+    cali_prop2string(a.properties(), buf, 256);
+
+    return os << "{ \"id\" : " << a.id()
+              << ", \"name\" : \"" << a.name() << "\""
+              << ", \"type\" : \"" << cali_type2string(a.type()) << "\""
+              << ", \"properties\" : \"" << buf << "\" }";
+}
+
 const MetaAttributeIDs MetaAttributeIDs::invalid { CALI_INV_ID, CALI_INV_ID, CALI_INV_ID };
 const MetaAttributeIDs Attribute::s_keys { 8, 9, 10 };
 

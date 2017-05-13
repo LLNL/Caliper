@@ -75,7 +75,7 @@ cali_push_snapshot(int scope, int n,
 }
 
 //
-// --- Annotationc interface
+// --- Annotation interface
 //
 
 cali_err
@@ -178,4 +178,13 @@ cali_err
 cali_end_byname(const char* attr_name)
 {
     return CALI_SUCCESS;
+}
+
+//
+// --- Runtime system configuration
+//
+
+void
+cali_config_preset(const char* key, const char* value)
+{
 }

@@ -32,87 +32,74 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * *********************************************************************************************/
 
+#pragma once
+
 /** 
- * \file cali_types.h 
- * Context annotation library typedefs
+ * \file cali_macros.h 
+ * Convenience macros for Caliper annotations
  */
 
-#ifndef CALI_CALI_TYPES_H
-#define CALI_CALI_TYPES_H
-
-#include <stddef.h>
-#include <stdint.h>
-
 #ifdef __cplusplus
-extern "C" {
-#endif
 
-typedef uint64_t cali_id_t;
+#include "Annotation.h"
 
-#define CALI_INV_ID 0xFFFFFFFFFFFFFFFF
+/// \macro C++ macro to mark a function
+#define CALI_CXX_MARK_FUNCTION \
+    cali::Function __cali_ann##__func__(__func__)
 
-typedef enum {
-  CALI_TYPE_INV    = 0,
-  CALI_TYPE_USR    = 1,
-  CALI_TYPE_INT    = 2,
-  CALI_TYPE_UINT   = 3,
-  CALI_TYPE_STRING = 4,
-  CALI_TYPE_ADDR   = 5,
-  CALI_TYPE_DOUBLE = 6,
-  CALI_TYPE_BOOL   = 7,
-  CALI_TYPE_TYPE   = 8
-} cali_attr_type;
+/// \macro Mark a loop in C++ 
+#define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) \
+    cali::Loop __cali_loop_##loop_id(name)
 
-#define CALI_MAXTYPE CALI_TYPE_TYPE
+/// \macro C++ macro for a loop iteration
+#define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
+    cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
 
-const char* 
-cali_type2string(cali_attr_type);
+#define CALI_CXX_MARK_LOOP_END(loop_id) \
+    __cali_loop_##loop_id.end()
 
-cali_attr_type 
-cali_string2type(const char*);
+#endif // __cplusplus
 
-typedef enum {
-  CALI_ATTR_DEFAULT       =  0,
-  CALI_ATTR_ASVALUE       =  1,
-  CALI_ATTR_NOMERGE       =  2,
-  CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */ 
-  CALI_ATTR_SCOPE_THREAD  = 20, 
-  CALI_ATTR_SCOPE_TASK    = 24,
-  CALI_ATTR_SKIP_EVENTS   = 64,
-  CALI_ATTR_HIDDEN        = 128
-} cali_attr_properties;
+extern cali_id_t cali_function_attr_id;
+extern cali_id_t cali_loop_attr_id;
+extern cali_id_t cali_statement_attr_id;
+extern cali_id_t cali_annotation_attr_id;
 
-#define CALI_ATTR_SCOPE_MASK 60
+#define CALI_MARK_FUNCTION_BEGIN \
+    if (cali_function_attr_id == CALI_INV_ID) \
+        cali_init(); \
+    cali_begin_string(cali_function_attr_id, __func__)
 
-/**
- * Provides descriptive string of given attribute property flags, separated with ':'
- * \param  prop Attribute property flag
- * \param  buf  Buffer to write string to
- * \param  len  Length of string buffer
- * \return      -1 if provided buffer is too short; length of written string otherwise
- */  
-int
-cali_prop2string(int prop, char* buf, size_t len);
+#define CALI_MARK_FUNCTION_END \
+    cali_safe_end_string(cali_function_attr_id, __func__)
 
-int
-cali_string2prop(const char*);
-  
-typedef enum {
-  CALI_OP_SUM = 1,
-  CALI_OP_MIN = 2,
-  CALI_OP_MAX = 3
-} cali_op;
+#define CALI_MARK_LOOP_BEGIN(loop_id, name) \
+    if (cali_loop_attr_id == CALI_INV_ID) \
+        cali_init(); \
+    cali_begin_string(cali_loop_attr_id, (name));       \
+    cali_id_t __cali_iter_##loop_id = \
+        cali_make_loop_iteration_attribute(name);
 
-typedef enum {
-  CALI_SUCCESS = 0,
-  CALI_EBUSY,
-  CALI_ELOCKED,
-  CALI_EINV,
-  CALI_ETYPE
-} cali_err;
+#define CALI_MARK_LOOP_END(loop_id) \
+    cali_end(cali_loop_attr_id)
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+#define CALI_MARK_ITERATION_BEGIN(loop_id, iter) \
+    cali_begin_int( __cali_iter_##loop_id, ((int) (iter)))
 
-#endif // CALI_CALI_TYPES_H
+#define CALI_MARK_ITERATION_END(loop_id) \
+    cali_end( __cali_iter_##loop_id )
+
+#define CALI_WRAP_STATEMENT(name, statement)     \
+    if (cali_statement_attr_id == CALI_INV_ID) \
+        cali_init(); \
+    cali_begin_string(cali_statement_attr_id, (name));  \
+    statement; \
+    cali_end(cali_statement_attr_id);
+
+#define CALI_MARK_BEGIN(name) \
+    if (cali_annotation_attr_id == CALI_INV_ID) \
+        cali_init(); \
+    cali_begin_string(cali_annotation_attr_id, (name))
+
+#define CALI_MARK_END(name) \
+    cali_safe_end_string(cali_annotation_attr_id, (name))

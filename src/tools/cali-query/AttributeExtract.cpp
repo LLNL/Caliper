@@ -30,31 +30,50 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+#include "AttributeExtract.h"
 
-#include <cali.h>
+#include "CaliperMetadataAccessInterface.h"
+#include "Node.h"
 
-int main(int argc, char* argv[])
+using namespace cali;
+
+struct AttributeExtract::AttributeExtractImpl
 {
-    CALI_CXX_MARK_FUNCTION;
+    SnapshotProcessFn      m_snap_fn;
+    Attribute              m_id_attr;
 
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
+    static const cali_id_t s_attr_id; // The "attribute" attribute id
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
+    void process_node(CaliperMetadataAccessInterface& db, const Node* node) {
+        if (node->attribute() != s_attr_id)
+            return;
 
-    double t = 0, delta_t = 0.42;
+        if (m_id_attr == Attribute::invalid)
+            m_id_attr = db.create_attribute("attribute.id", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
+        EntryList list { Entry(node), Entry(m_id_attr, node->id()) };
 
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
-
-        t += delta_t;
+        m_snap_fn(db, list);
     }
 
-    CALI_CXX_MARK_LOOP_END(mainloop);
+    AttributeExtractImpl(SnapshotProcessFn snap_fn)
+        : m_snap_fn(snap_fn),
+          m_id_attr(Attribute::invalid)
+        { }
+};
+
+const cali_id_t AttributeExtract::AttributeExtractImpl::s_attr_id = 8;
+
+AttributeExtract::AttributeExtract(SnapshotProcessFn snap_fn)
+    : mP { new AttributeExtractImpl(snap_fn) } 
+{ }
+
+AttributeExtract::~AttributeExtract()
+{
+    mP.reset();
+}
+
+void AttributeExtract::operator()(CaliperMetadataAccessInterface& db, const Node* node)
+{
+    mP->process_node(db, node);
 }

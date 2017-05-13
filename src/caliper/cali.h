@@ -146,15 +146,26 @@ cali_err
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
- * Remove innermost value for attribute \param attr from the blackboard.
+ * Remove innermost value for attribute `attr` from the blackboard.
  */
 
 cali_err
 cali_end  (cali_id_t   attr);
 
 /**
- * Change current innermost value on the blackboard for attribute \param attr 
- * to \param value with size \param size
+ * Remove innermost value for attribute `attr` from the blackboard.
+ * Creates a mismatch warning if the current value does not match `val`.
+ * Parameters:
+ * \param attr Attribute ID
+ * \param val  Expected value
+ */
+
+cali_err
+cali_safe_end_string(cali_id_t attr, const char* val);
+
+/**
+ * Change current innermost value on the blackboard for attribute `attr` 
+ * to value taken from `value` with size `size`
  */
 
 cali_err  
@@ -207,8 +218,52 @@ cali_set_string_byname(const char* attr_name, const char* val);
 cali_err
 cali_end_byname(const char* attr_name);
 
+/*
+ * --- Runtime system configuration and management
+ */
+
+/**
+ * Add a value to Caliper's runtime configuration system.
+ * Note: only effective _before_ the Caliper runtime system is initialized.
+ * \param key   Configuration key (e.g., CALI_SERVICES_ENABLE)
+ * \param value Configuration value 
+ */
+  
+void
+cali_config_preset(const char* key, const char* value);
+
+/**
+ * Initialize Caliper.
+ * Typically, it is not necessary to initialize Caliper explicitly.
+ * Caliper will lazily initialize itself on the first Caliper API call.
+ * This function is used primarily by the Caliper annotation macros,
+ * to ensure that Caliper's pre-defined annotation attributes are 
+ * initialized.
+ * It can also be used to avoid high initialization costs in the first
+ * Caliper API call.
+ */
+
+void
+cali_init();
+
+/*
+ * --- Macro annotation helper functions
+ */  
+
+/**
+ * Create a loop iteration attribute for CALI_MARK_LOOP_BEGIN.
+ * \param name User-defined name of the loop
+ */
+cali_id_t 
+cali_make_loop_iteration_attribute(const char* name);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+/* Include high-level annotation macros. 
+ * In C++, also includes Annotation.h header. 
+ */
+#include "cali_macros.h"
 
 #endif // CALI_CALI_H

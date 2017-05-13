@@ -423,6 +423,19 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             Attribute::make_attribute(it->second);
     }
 
+    std::vector<Attribute> get_attributes() const {
+        std::lock_guard<std::mutex>
+            g(m_attribute_lock);
+
+        std::vector<Attribute> ret;
+        ret.reserve(m_attributes.size());
+
+        for (auto it : m_attributes)
+            ret.push_back(Attribute::make_attribute(it.second));
+
+        return ret;
+    }
+
     Node* make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0) {
         Node* node = nullptr;
 
@@ -548,7 +561,7 @@ CaliperMetadataDB::merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t pr
     if (v_data.type() == CALI_TYPE_STRING)
         v_data = mP->make_string_variant(static_cast<const char*>(value.data()), value.size());
     
-    mP->merge_node(node_id, attr_id, prnt_id, v_data, idmap);
+    return mP->merge_node(node_id, attr_id, prnt_id, v_data, idmap);
 }
 
 EntryList
@@ -575,6 +588,12 @@ Attribute
 CaliperMetadataDB::get_attribute(const std::string& name) const
 {
     return mP->attribute(name);
+}
+
+std::vector<Attribute>
+CaliperMetadataDB::get_attributes() const
+{
+    return mP->get_attributes();
 }
 
 Node*

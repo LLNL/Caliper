@@ -36,6 +36,9 @@
 #include <Caliper.h>
 #include <SnapshotRecord.h>
 
+#include <cali_macros.h>
+
+#include <RuntimeConfig.h>
 #include <Variant.h>
 
 #include <cstdlib>
@@ -192,6 +195,12 @@ void test_cross_scope()
     end_foo_op();
 }
 
+void test_attr_prop_preset()
+{
+    cali::Annotation::Guard
+        g( cali::Annotation("test-prop-preset").set(true) );
+}
+
 void test_aggr_warnings()
 {
     cali::Caliper c;
@@ -245,6 +254,10 @@ std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
 
 int main(int argc, char* argv[])
 {
+    cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
+
+    CALI_CXX_MARK_FUNCTION;
+        
     const struct testcase_info_t {
         const char*  name;
         void        (*fn)();
@@ -257,9 +270,10 @@ int main(int argc, char* argv[])
         { "escaping",                 test_escaping           },
         { "aggr-warnings",            test_aggr_warnings      },
         { "cross-scope",              test_cross_scope        },
+        { "attribute-prop-preset",    test_attr_prop_preset   },
         { 0, 0 }
     };
-
+    
     {
         cali::Annotation::Guard
             g( cali::Annotation("cali-test").begin("checking") );

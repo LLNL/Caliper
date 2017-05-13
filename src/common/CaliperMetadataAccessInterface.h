@@ -38,6 +38,7 @@
 #include "Attribute.h"
 
 #include <cstddef>
+#include <vector>
 
 namespace cali
 {
@@ -57,6 +58,14 @@ public:
     get_attribute(cali_id_t id) const = 0;
     virtual Attribute
     get_attribute(const std::string& str) const = 0;
+
+    /// \brief Return all attributes
+    virtual std::vector<Attribute>
+    get_attributes() const = 0;
+
+    /// \brief Return all attributes that have a metadata entry \a meta, of any value
+    std::vector<Attribute>
+    find_attributes_with(const Attribute& meta) const;
 
     // --- modifying operations
 

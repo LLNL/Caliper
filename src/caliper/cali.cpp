@@ -38,7 +38,9 @@
 #include "Caliper.h"
 #include "SnapshotRecord.h"
 
-#include <Variant.h>
+#include "Log.h"
+#include "RuntimeConfig.h"
+#include "Variant.h"
 
 #include <cstring>
 #include <unordered_map>
@@ -236,6 +238,34 @@ cali_set_string(cali_id_t attr_id, const char* val)
     return c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
 }
 
+cali_err
+cali_safe_end_string(cali_id_t attr_id, const char* val)
+{
+    cali_err  ret  = CALI_SUCCESS;
+
+    Caliper   c;
+    Attribute attr = c.get_attribute(attr_id);
+
+    if (attr.type() != CALI_TYPE_STRING)
+        ret = CALI_ETYPE;
+
+    Variant v = c.get(attr).value();
+
+    if (v.type() == CALI_TYPE_STRING && 
+        0 == strncmp(static_cast<const char*>(v.data()), val, v.size())) {
+        c.end(attr);
+    } else {
+        // FIXME: Replace log output with smart error tracker
+        Log(1).stream() << "begin/end marker mismatch: Trying to end " 
+                        << attr.name() << "=" << val
+                        << " but current value for " 
+                        << attr.name() << " is \"" << v.to_string() << "\""
+                        << std::endl;
+    }
+    
+    return ret;    
+}
+
 //
 // --- By-name annotation interface 
 //
@@ -340,4 +370,31 @@ cali_end_byname(const char* attr_name)
     Attribute attr = c.get_attribute(attr_name);
 
     return c.end(attr);
+}
+
+void
+cali_config_preset(const char* key, const char* value)
+{
+    RuntimeConfig::preset(key, value);
+}
+
+void
+cali_init()
+{
+    Caliper::instance();
+}
+
+//
+// --- Helper functions for high-level macro interface
+// 
+
+/// \brief Make iteration attribute name for CALI_MARK_LOOP_BEGIN macro
+cali_id_t
+cali_make_loop_iteration_attribute(const char* name)
+{
+    char tmp[80] = "iteration#";
+    strncpy(tmp+10, name, 69);
+    tmp[79] = '\0';
+
+    return cali_create_attribute(tmp, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 }

@@ -47,6 +47,75 @@
 using namespace std;
 using namespace cali;
 
+namespace cali
+{
+    extern Attribute function_attr;
+    extern Attribute loop_attr;
+}
+
+// --- Pre-defined Function annotation class
+
+Function::Function(const char* name)
+{
+    Caliper().begin(function_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
+}
+
+Function::~Function()
+{
+    Caliper().end(function_attr);
+}
+        
+// --- Pre-defined loop annotation class
+
+struct Loop::Impl {
+    Attribute iter_attr;
+    int       level;
+    
+    Impl(const char* name)
+        : level(0) {
+        iter_attr =
+            Caliper().create_attribute(std::string("iteration#") + name, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    }
+};
+
+Loop::Iteration::Iteration(const Impl* p, int i)
+    : pI(p)
+{
+    Caliper().begin(p->iter_attr, Variant(i));
+}
+
+Loop::Iteration::~Iteration()
+{
+    Caliper().end(pI->iter_attr);
+}
+
+Loop::Loop(const char* name)
+    : pI(new Impl(name))
+{
+    if (Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name))) == CALI_SUCCESS)
+        ++pI->level;
+}
+
+Loop::~Loop()
+{
+    end();
+    delete pI;
+}
+
+Loop::Iteration
+Loop::iteration(int i)
+{
+    return Iteration(pI, i);
+}
+
+void
+Loop::end()
+{
+    if (pI->level > 0) {
+        Caliper().end(loop_attr);
+        --(pI->level);
+    }
+}
 
 // --- Annotation implementation object
 
