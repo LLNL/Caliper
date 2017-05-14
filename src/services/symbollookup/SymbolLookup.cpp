@@ -48,6 +48,7 @@
 #include <Symtab.h>
 #include <LineInformation.h>
 #include <Function.h>
+#include <AddrLookup.h>
 
 #include <algorithm>
 #include <iterator>
@@ -84,8 +85,8 @@ class SymbolLookup
 
     std::vector<std::string> m_addr_attr_names;
 
-    Symtab* m_symtab;
-    std::mutex m_symtab_mutex;
+    AddressLookup* m_lookup;
+    std::mutex     m_lookup_mutex;
 
     unsigned m_num_lookups;
     unsigned m_num_failed;
@@ -133,16 +134,24 @@ class SymbolLookup
         bool     ret_line = false;
         bool     ret_func = false;
 
-        uint64_t offset   = e.value().to_uint();
+        uint64_t address  = e.value().to_uint();
 
         {
             std::lock_guard<std::mutex>
-                g(m_symtab_mutex);
+                g(m_lookup_mutex);
 
-            if (m_lookup_sourceloc)
-                ret_line = m_symtab->getSourceLines(statements, offset);
-            if (m_lookup_functions)
-                ret_func = m_symtab->getContainingFunction(offset, function);
+            if (!m_lookup)
+                return;
+
+            Symtab* symtab;
+            Offset  offset;
+
+            bool ret = m_lookup->getOffset(address, symtab, offset);
+
+            if (ret && m_lookup_sourceloc)
+                ret_line = symtab->getSourceLines(statements, offset);
+            if (ret && m_lookup_functions)
+                ret_func = symtab->getContainingFunction(offset, function);
 
             ++m_num_lookups;
         }
@@ -190,7 +199,7 @@ class SymbolLookup
     }
 
     void process_snapshot(Caliper* c, SnapshotRecord* snapshot) {
-        if (!m_symtab || m_sym_attr_map.empty())
+        if (m_sym_attr_map.empty())
             return;
 
         // make local symbol attribute map copy for threadsafe access
@@ -199,7 +208,7 @@ class SymbolLookup
 
         {
             std::lock_guard<std::mutex>
-                g(m_symtab_mutex);
+                g(m_sym_attr_mutex);
 
             sym_map = m_sym_attr_map;
         }
@@ -257,6 +266,21 @@ class SymbolLookup
             }
     }
 
+    void init_lookup() {
+        std::lock_guard<std::mutex> 
+            g(m_lookup_mutex);
+
+        if (!m_lookup) {
+            m_lookup = AddressLookup::createAddressLookup();
+
+            if (!m_lookup)
+                Log(0).stream() << "Symbollookup: Could not create address lookup object"
+                                << std::endl;
+
+            m_lookup->refresh();
+        }
+    }
+
     static void create_attr_cb(Caliper* c, const Attribute& attr) {
         s_instance->check_attribute(c, attr);
     }
@@ -270,6 +294,10 @@ class SymbolLookup
         }
     }
 
+    static void pre_flush_cb(Caliper*, const SnapshotRecord*) {
+        s_instance->init_lookup();
+    }
+
     static void pre_flush_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
         s_instance->process_snapshot(c, snapshot);
     }
@@ -281,13 +309,14 @@ class SymbolLookup
     void register_callbacks(Caliper* c) {
         c->events().post_init_evt.connect(post_init_cb);
         c->events().create_attr_evt.connect(create_attr_cb);
+        c->events().pre_flush_evt.connect(pre_flush_cb);
         c->events().pre_flush_snapshot.connect(pre_flush_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 
     SymbolLookup(Caliper* c)
         : m_config(RuntimeConfig::init("symbollookup", s_configdata)),
-          m_symtab(0)
+          m_lookup(0)
         {
             util::split(m_config.get("attributes").to_string(), ':',
                         std::back_inserter(m_addr_attr_names));
@@ -300,15 +329,9 @@ class SymbolLookup
                 return;
             }
 
-            // Reading exe file seems stupid, we should be able to read directly from memory.
-            if (Symtab::openFile(m_symtab, "/proc/self/exe") != 0) {
-                register_callbacks(c);
-                Log(1).stream() << "Registered symbollookup service" 
-                                << std::endl;
-            } else {
-                Log(1).stream() << "symbollookup: Unable to read symbol table - skipping" 
-                                << std::endl;
-            }
+            register_callbacks(c);
+
+            Log(1).stream() << "Registered symbollookup service" << std::endl;
         }
 
 public:
