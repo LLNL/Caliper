@@ -40,6 +40,7 @@ option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRU
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
+option(WITH_DYNINST   "Enable dyninst (for symbollookup service" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -104,10 +105,12 @@ endif()
 # endif()
 
 # Find dyninst
-find_package(Dyninst)
-if (Dyninst_FOUND)
-  set(CALIPER_HAVE_DYNINST TRUE)
-  list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
+if (WITH_DYNINST)
+  find_package(Dyninst)
+  if (Dyninst_FOUND)
+    set(CALIPER_HAVE_DYNINST TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
+  endif()
 endif()
 
 find_package(Threads)
