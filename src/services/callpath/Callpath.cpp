@@ -156,8 +156,12 @@ void callpath_service_register(Caliper* c)
     use_addr    = config.get("use_address").to_bool();
     skip_frames = config.get("skip_frames").to_uint();
 
+    Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+    Variant v_true(true);
+
     callpath_addr_attr = 
-        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   CALI_ATTR_SKIP_EVENTS);
+        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   CALI_ATTR_SKIP_EVENTS,
+                            1, &symbol_class_attr, &v_true);
     callpath_name_attr = 
         c->create_attribute("callpath.regname", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);    
 

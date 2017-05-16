@@ -209,6 +209,10 @@ namespace
     {
         config = RuntimeConfig::init("sampler", s_configdata);
 
+
+        Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+        Variant v_true(true);
+
         timer_attr =
             c->create_attribute("cali.sampler.timer", CALI_TYPE_ADDR,
                                 CALI_ATTR_SCOPE_THREAD |
@@ -219,7 +223,8 @@ namespace
             c->create_attribute("cali.sampler.pc", CALI_TYPE_ADDR,
                                 CALI_ATTR_SCOPE_THREAD |
                                 CALI_ATTR_SKIP_EVENTS  |
-                                CALI_ATTR_ASVALUE);
+                                CALI_ATTR_ASVALUE,
+                                1, &symbol_class_attr, &v_true);
 
         sampler_attr_id = sampler_attr.id();
 

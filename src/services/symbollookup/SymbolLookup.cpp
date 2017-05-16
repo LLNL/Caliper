@@ -95,15 +95,7 @@ class SymbolLookup
     // --- methods
     //
 
-    void check_attribute(Caliper* c, const Attribute& attr) {
-        auto it = std::find(m_addr_attr_names.begin(), m_addr_attr_names.end(), 
-                            attr.name());
-
-        if (it == m_addr_attr_names.end())
-            return;
-
-        // it's an address attribute, create symbol attributes for it and add it to the map
-
+    void make_symbol_attributes(Caliper* c, const Attribute& attr) {
         struct SymbolAttributes sym_attribs;
 
         sym_attribs.file_attr = 
@@ -122,6 +114,30 @@ class SymbolLookup
         m_sym_attr_map.insert(std::make_pair(attr, sym_attribs));
     }
 
+    void check_attributes(Caliper* c) {
+        std::vector<Attribute> vec;
+
+        if (m_addr_attr_names.empty()) {
+            vec = c->find_attributes_with(c->get_attribute("class.symboladdress"));
+        } else {
+            for (const std::string& s : m_addr_attr_names) {
+                Attribute attr = c->get_attribute(s);
+
+                if (attr != Attribute::invalid)
+                    vec.push_back(attr);
+                else 
+                    Log(0).stream() << "Symbollookup: Address attribute \""
+                                    << s << "\" not found!" << std::endl;
+            }
+        }
+
+        if (vec.empty())
+            Log(1).stream() << "Symbollookup: No address attributes found." 
+                            << std::endl;
+
+        for (const Attribute& a : vec)
+            make_symbol_attributes(c, a);
+    }
     
     void add_symbol_attributes(const Entry& e, 
                                const SymbolAttributes& sym_attr,
@@ -248,22 +264,6 @@ class SymbolLookup
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
-
-        if (m_addr_attr_names.size() != m_sym_attr_map.size())
-            for (const std::string& attrname : m_addr_attr_names) {
-                Attribute attr = c->get_attribute(attrname);
-                bool found = false;
-
-                if (attr != Attribute::invalid) {
-                    auto it = m_sym_attr_map.find(attr);
-                    found = (it != m_sym_attr_map.end());
-                }
-
-                if (!found) 
-                    Log(1).stream() << "Symbollookup: Address attribute " 
-                                    << attrname << " not found!" 
-                                    << std::endl;
-            }
     }
 
     void init_lookup() {
@@ -281,20 +281,8 @@ class SymbolLookup
         }
     }
 
-    static void create_attr_cb(Caliper* c, const Attribute& attr) {
-        s_instance->check_attribute(c, attr);
-    }
-
-    static void post_init_cb(Caliper* c) {
-        for (const std::string& s : s_instance->m_addr_attr_names) {
-            Attribute attr = c->get_attribute(s);
-
-            if (attr != Attribute::invalid)
-                s_instance->check_attribute(c, attr);
-        }
-    }
-
-    static void pre_flush_cb(Caliper*, const SnapshotRecord*) {
+    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
+        s_instance->check_attributes(c);
         s_instance->init_lookup();
     }
 
@@ -307,8 +295,6 @@ class SymbolLookup
     }
 
     void register_callbacks(Caliper* c) {
-        c->events().post_init_evt.connect(post_init_cb);
-        c->events().create_attr_evt.connect(create_attr_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
         c->events().pre_flush_snapshot.connect(pre_flush_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
@@ -323,11 +309,6 @@ class SymbolLookup
 
             m_lookup_functions = m_config.get("lookup_functions").to_bool();
             m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();
-
-            if (m_addr_attr_names.empty()) {
-                Log(1).stream() << "symbolookup: no address attributes given" << std::endl;
-                return;
-            }
 
             register_callbacks(c);
 
