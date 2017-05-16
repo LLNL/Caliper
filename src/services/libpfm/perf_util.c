@@ -770,6 +770,359 @@ display_lost(perf_event_desc_t *hw, perf_event_desc_t *fds, int num_fds, FILE *f
 	return lost.lost;
 }
 
+
+int
+perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s)
+{
+    perf_event_desc_t *hw;
+    struct { uint32_t pid, tid; } pid;
+    struct { uint64_t value, id; } grp;
+    uint64_t time_enabled, time_running;
+    size_t sz;
+    uint64_t type, fmt;
+    uint64_t val64;
+    const char *str;
+    int ret, e;
+
+    if (!fds || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
+        return -1;
+
+    sz = ehdr->size - sizeof(*ehdr);
+
+    hw = fds+idx;
+
+    type = hw->hw.sample_type;
+    fmt  = hw->hw.read_format;
+
+    if (type & PERF_SAMPLE_IDENTIFIER) {
+        ret = perf_read_buffer_64(hw, &s->sample_id);
+        if (ret) {
+            warnx("cannot read ID");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_IP) {
+        ret = perf_read_buffer_64(hw, &s->ip);
+        if (ret) {
+            warnx("cannot read IP");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_TID) {
+        ret = perf_read_buffer(hw, &pid, sizeof(pid));
+        if (ret) {
+            warnx( "cannot read PID");
+            return -1;
+        }
+        s->pid = pid.pid;
+        s->tid = pid.tid;
+        sz -= sizeof(pid);
+    }
+
+    if (type & PERF_SAMPLE_TIME) {
+        ret = perf_read_buffer_64(hw, &s->time);
+        if (ret) {
+            warnx( "cannot read time");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_ADDR) {
+        ret = perf_read_buffer_64(hw, &s->addr);
+        if (ret) {
+            warnx( "cannot read addr");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_ID) {
+        ret = perf_read_buffer_64(hw, &s->id);
+        if (ret) {
+            warnx( "cannot read id");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_STREAM_ID) {
+        ret = perf_read_buffer_64(hw, &s->stream_id);
+        if (ret) {
+            warnx( "cannot read stream_id");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_CPU) {
+        struct { uint32_t cpu, reserved; } cpu;
+        ret = perf_read_buffer(hw, &cpu, sizeof(cpu));
+        if (ret) {
+            warnx( "cannot read cpu");
+            return -1;
+        }
+        s->cpu = cpu.cpu;
+        sz -= sizeof(cpu);
+    }
+
+    if (type & PERF_SAMPLE_PERIOD) {
+        ret = perf_read_buffer_64(hw, &s->period);
+        if (ret) {
+            warnx( "cannot read period");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    /* struct read_format {
+     * 	{ u64		value;
+     * 	  { u64		time_enabled; } && PERF_FORMAT_ENABLED
+     * 	  { u64		time_running; } && PERF_FORMAT_RUNNING
+     * 	  { u64		id;           } && PERF_FORMAT_ID
+     * 	} && !PERF_FORMAT_GROUP
+     *
+     * 	{ u64		nr;
+     * 	  { u64		time_enabled; } && PERF_FORMAT_ENABLED
+     * 	  { u64		time_running; } && PERF_FORMAT_RUNNING
+     * 	  { u64		value;
+     * 	    { u64	id;           } && PERF_FORMAT_ID
+     * 	  }		cntr[nr];
+     * 	} && PERF_FORMAT_GROUP
+     * };
+     */
+    if (type & PERF_SAMPLE_READ) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        uint64_t values[3];
+        uint64_t nr;
+
+        if (fmt & PERF_FORMAT_GROUP) {
+            ret = perf_read_buffer_64(hw, &nr);
+            if (ret) {
+                warnx( "cannot read nr");
+                return -1;
+            }
+
+            sz -= sizeof(nr);
+
+            time_enabled = time_running = 1;
+
+            if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+                ret = perf_read_buffer_64(hw, &time_enabled);
+                if (ret) {
+                    warnx( "cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_enabled);
+            }
+
+            if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+                ret = perf_read_buffer_64(hw, &time_running);
+                if (ret) {
+                    warnx( "cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_running);
+            }
+
+            values[1] = time_enabled;
+            values[2] = time_running;
+            while(nr--) {
+                grp.id = -1;
+                ret = perf_read_buffer_64(hw, &grp.value);
+                if (ret) {
+                    warnx( "cannot read group value");
+                    return -1;
+                }
+                sz -= sizeof(grp.value);
+
+                if (fmt & PERF_FORMAT_ID) {
+                    ret = perf_read_buffer_64(hw, &grp.id);
+                    if (ret) {
+                        warnx( "cannot read leader id");
+                        return -1;
+                    }
+                    sz -= sizeof(grp.id);
+                }
+
+                e = perf_id2event(fds, num_fds, grp.id);
+                if (e == -1)
+                    str = "unknown sample event";
+                else
+                    str = fds[e].name;
+
+                values[0] = grp.value;
+                grp.value = perf_scale(values);
+            }
+        } else {
+            time_enabled = time_running = 0;
+            /*
+             * this program does not use FORMAT_GROUP when there is only one event
+             */
+            ret = perf_read_buffer_64(hw, &val64);
+            if (ret) {
+                warnx( "cannot read value");
+                return -1;
+            }
+            sz -= sizeof(val64);
+
+            if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
+                ret = perf_read_buffer_64(hw, &time_enabled);
+                if (ret) {
+                    warnx( "cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_enabled);
+            }
+
+            if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
+                ret = perf_read_buffer_64(hw, &time_running);
+                if (ret) {
+                    warnx( "cannot read timing info");
+                    return -1;
+                }
+                sz -= sizeof(time_running);
+            }
+            if (fmt & PERF_FORMAT_ID) {
+                ret = perf_read_buffer_64(hw, &val64);
+                if (ret) {
+                    warnx( "cannot read leader id");
+                    return -1;
+                }
+                sz -= sizeof(val64);
+            }
+
+            values[0] = val64;
+            values[1] = time_enabled;
+            values[2] = time_running;
+            val64 = perf_scale(values);
+
+            // fprintf(fp, "\t%'"PRIu64" %s %s\n",
+            //         val64, fds[0].name,
+            //         time_running != time_enabled ? ", scaled":"");
+        }
+    }
+
+    if (type & PERF_SAMPLE_CALLCHAIN) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        uint64_t nr, ip;
+
+        ret = perf_read_buffer_64(hw, &nr);
+        if (ret) {
+            warnx( "cannot read callchain nr");
+            return -1;
+        }
+        sz -= sizeof(nr);
+
+        while(nr--) {
+            ret = perf_read_buffer_64(hw, &ip);
+            if (ret) {
+                warnx( "cannot read ip");
+                return -1;
+            }
+            sz -= sizeof(ip);
+        }
+    }
+
+    if (type & PERF_SAMPLE_RAW) {
+        ret = __perf_handle_raw(hw);
+        if (ret == -1)
+            return -1;
+        sz -= ret;
+    }
+
+    if (type & PERF_SAMPLE_BRANCH_STACK) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        // ret = perf_display_branch_stack(hw, fp);
+        // sz -= ret;
+    }
+
+    if (type & PERF_SAMPLE_REGS_USER) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        // ret = perf_display_regs_user(hw, fp);
+        // sz -= ret;
+    }
+
+    if (type & PERF_SAMPLE_STACK_USER) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        // ret = perf_display_stack_user(hw, fp);
+        // sz -= ret;
+    }
+
+    if (type & PERF_SAMPLE_WEIGHT) {
+        ret = perf_read_buffer_64(hw, &s->weight);
+        if (ret) {
+            warnx( "cannot read weight");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_DATA_SRC) {
+        ret = perf_read_buffer_64(hw, &s->data_src);
+        if (ret) {
+            warnx( "cannot read data src");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+    if (type & PERF_SAMPLE_TRANSACTION) {
+        ret = perf_read_buffer_64(hw, &s->transaction);
+        if (ret) {
+            warnx( "cannot read txn");
+            return -1;
+        }
+        sz -= sizeof(val64);
+    }
+
+    if (type & PERF_SAMPLE_REGS_INTR) {
+
+        // TODO: This
+        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
+        return -1;
+
+        // ret = perf_display_regs_intr(hw, fp);
+        // sz -= ret;
+    }
+
+    /*
+     * if we have some data left, it is because there is more
+     * than what we know about. In fact, it is more complicated
+     * because we may have the right size but wrong layout. But
+     * that's the best we can do.
+     */
+    if (sz) {
+        warnx("did not correctly parse sample leftover=%zu", sz);
+        perf_skip_buffer(hw, sz);
+    }
+
+    return 0;
+}
+
 void
 display_exit(perf_event_desc_t *hw, FILE *fp)
 {

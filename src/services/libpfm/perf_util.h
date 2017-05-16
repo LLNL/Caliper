@@ -45,6 +45,36 @@ typedef struct {
 	char *fstr; /* fstr from library, must be freed */
 } perf_event_desc_t;
 
+typedef struct perf_event_sample
+{
+	//struct perf_event_header header;
+	uint64_t   sample_id;           /* if PERF_SAMPLE_IDENTIFIER */
+	uint64_t   ip;                  /* if PERF_SAMPLE_IP */
+	uint32_t   pid, tid;            /* if PERF_SAMPLE_TID */
+	uint64_t   time;                /* if PERF_SAMPLE_TIME */
+	uint64_t   addr;                /* if PERF_SAMPLE_ADDR */
+	uint64_t   id;                  /* if PERF_SAMPLE_ID */
+	uint64_t   stream_id;           /* if PERF_SAMPLE_STREAM_ID */
+	uint32_t   cpu, res;            /* if PERF_SAMPLE_CPU */
+	uint64_t   period;              /* if PERF_SAMPLE_PERIOD */
+	//struct read_format v;         /* if PERF_SAMPLE_READ */
+	//uint64_t   nr;                  /* if PERF_SAMPLE_CALLCHAIN */
+	//uint64_t  *ips;                 /* if PERF_SAMPLE_CALLCHAIN */
+	//uint32_t   raw_size;            /* if PERF_SAMPLE_RAW */
+	//char      *raw_data;            /* if PERF_SAMPLE_RAW */
+	//uint64_t   bnr;                 /* if PERF_SAMPLE_BRANCH_STACK */
+	//struct perf_branch_entry *lbr; /* if PERF_SAMPLE_BRANCH_STACK */
+	//uint64_t   abi;                 /* if PERF_SAMPLE_REGS_USER */
+	//uint64_t  *regs;                /* if PERF_SAMPLE_REGS_USER */
+	//uint64_t   stack_size;          /* if PERF_SAMPLE_STACK_USER */
+	//char      *stack_data;          /* if PERF_SAMPLE_STACK_USER */
+	//uint64_t   dyn_size;            /* if PERF_SAMPLE_STACK_USER */
+	uint64_t   weight;              /* if PERF_SAMPLE_WEIGHT */
+	uint64_t   data_src;            /* if PERF_SAMPLE_DATA_SRC */
+	uint64_t   transaction;         /* if PERF_SAMPLE_TRANSACTION */
+} perf_event_sample_t;
+
+
 /* handy shortcut */
 #define PERF_FORMAT_SCALE (PERF_FORMAT_TOTAL_TIME_ENABLED|PERF_FORMAT_TOTAL_TIME_RUNNING)
 
@@ -157,6 +187,7 @@ perf_is_group_leader(perf_event_desc_t *fds, int idx)
 
 extern int perf_get_group_nevents(perf_event_desc_t *fds, int num, int leader);
 extern int perf_display_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, FILE *fp);
+extern int perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s);
 extern uint64_t display_lost(perf_event_desc_t *hw, perf_event_desc_t *fds, int num_fds, FILE *fp);
 extern void display_exit(perf_event_desc_t *hw, FILE *fp);
 extern void display_freq(int mode, perf_event_desc_t *hw, FILE *fp);
