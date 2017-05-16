@@ -22,15 +22,15 @@ set(CALIPER_SOURCES
 
 
 add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services> ${CALIPER_SERVICES_LIBS})
-target_link_libraries(caliper caliper-common)
-target_link_libraries(caliper ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(caliper PUBLIC caliper-common)
+target_link_libraries(caliper PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
-  target_link_libraries(caliper ${_extlib})
+  target_link_libraries(caliper PRIVATE ${_extlib})
 endforeach()
 
 # Add reader lib to runtime (for report service)
-target_link_libraries(caliper caliper-reader)
+target_link_libraries(caliper PUBLIC caliper-reader)
 
 install(FILES ${CALIPER_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
