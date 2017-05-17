@@ -125,6 +125,10 @@ namespace
           "Use Precise IP?",
           "Requests precise IP for supporting architectures (e.g. PEBS). May be 0, 1, or 2."
         },
+        { "config1", CALI_TYPE_UINT, "0",
+          "Extra event configuration",
+          "Specifies extra event configuration value for supported events (e.g. PEBS latency threshold)"
+        },
         ConfigSet::Terminator
     };
 
@@ -134,6 +138,7 @@ namespace
     int num_attributes = 0;
     static unsigned int sampling_period;
     static unsigned int precise_ip;
+    static unsigned int config1;
     static std::string events_string;
     static std::vector<uint64_t> events;
 
@@ -339,6 +344,7 @@ namespace
         fds[0].hw.sample_period = sampling_period;
         fds[0].hw.read_format = 0;
         fds[0].hw.precise_ip = precise_ip;
+        fds[0].hw.config1 = config1;
 
         fds[0].fd = fd = perf_event_open(&fds[0].hw, gettid(), -1, -1, 0);
         if (fd == -1)
@@ -466,6 +472,8 @@ namespace
         sampling_period = config.get("period").to_uint();
 
         precise_ip = config.get("precise_ip").to_uint();
+
+        config1 = config.get("config1").to_uint();
     }
 
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
