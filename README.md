@@ -4,13 +4,13 @@ Caliper: Context Annotation Library (for Performance)
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 
 Caliper is a program instrumentation and performance measurement
-framework. It provides performance data collection mechanisms and a
-source-code annotation API for a variety of use cases, e.g.,
-performance profiling, tracing, monitoring, and auto-tuning. Features
-include:
+framework. It provides data collection mechanisms and a source-code
+annotation API for a variety of performance engineering use cases,
+e.g., performance profiling, tracing, monitoring, and
+auto-tuning. Features include:
 
 * Low-overhead source-code annotation API for C, C++ and Fortran
-* Flexible key:value data data model: capture application-specific
+* Flexible key:value data model: capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
   models
