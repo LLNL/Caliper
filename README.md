@@ -3,13 +3,20 @@ Caliper: Context Annotation Library (for Performance)
 
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 
-Caliper is a generic context annotation system. It serves as an
-abstraction layer between applications and performance tools,
-providing a clean and easy-to-use interface for application developers
-to express application semantics in a tool-agnostic way.
-These annotations can then be used for a variety of performance
-engineering use cases (e.g., performance monitoring,
-profiling, tracing, and auto-tuning). 
+Caliper is a program instrumentation and performance measurement
+framework. It provides performance data collection mechanisms and a
+source-code annotation API for a variety of use cases, e.g.,
+performance profiling, tracing, monitoring, and auto-tuning. Features
+include:
+
+* Low-overhead source-code annotation API for C, C++ and Fortran
+* Flexible key:value data data model: capture application-specific
+  features for performance analysis
+* Fully threadsafe implementation, support for parallel programming
+  models
+* Synchronous and asynchronous data collection (sampling)
+* Runtime-configurable performance data recording toolbox: combine 
+  independent building blocks for custom analysis tasks
 
 Released under a BSD license, `LLNL-CODE-678900`. 
 See `LICENSE` file for details.
@@ -57,61 +64,54 @@ annotations, measurement data providers, and snapshot configurations
 can be flexibly combined to support a wide range of performance
 analysis or monitoring use cases. 
 
-
 ### Build and link annotated programs
 
 To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper.so).
 
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib64 -lcaliper
 
 
 ### Source-code annotation
 
 Caliper provides source-code annotation APIs for C, C++, and Fortran.
 
-The following example marks "initialization" and "loop" phases in a
-C++ code, and exports the main loop's current iteration counter.
+The following example marks "initialization" and "mainloop" phases in
+a C++ code, and exports the main loop's current iteration counter.
 
 ```C++
-#include <Annotation.h>
+#include <caliper/cali.h>
 
 int main(int argc, char* argv[])
 {
-    // Create annotation object for "phase" annotation
-    cali::Annotation phase_ann("phase");
+    // Mark this function
+    CALI_CXX_MARK_FUNCTION;
 
-    // Mark begin of "initialization" phase
-    phase_ann.begin("initialization");
-
+    // Mark the "intialization" phase
+    CALI_MARK_BEGIN("initialization");
     // perform initialization tasks
     int count = 4;
     double t = 0.0, delta_t = 1e-6;
+    CALI_MARK_END("initialization");
 
-    // Mark end of "initialization" phase and begin of "loop" phase
-    phase_ann.end();
-    phase_ann.begin("loop");
-
-    // Create "iteration" attribute to export the iteration count
-    cali::Annotation iteration_ann("iteration");
+    // Mark the loop 
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
         
     for (int i = 0; i < count; ++i) {
         // Mark each loop iteration  
-        // The Annotation::Guard object will automatically "end" 
-        // the annotation at the end of the C++ scope
-        cali::Annotation::Guard 
-            g_iteration( iteration_ann.begin(i) );
+        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
-        // { phase="loop", iteration=<i> }
+        // { "function" : "main"
+        //   "loop"     : "mainloop"
+        //   "iteration#mainloop" : <i> }
 
         // perform computation
         t += delta_t;
     }
 
-    // Mark end of "loop" phase
-    phase_ann.end();
+    CALI_CXX_MARK_LOOP_END(mainloop);
 }
 ```
 
@@ -151,21 +151,21 @@ directory.
 ### Analyze Data
 
 Use the `cali-query` tool to filter, aggregate, or print the recorded
-snapshots. For example, we can use it to print the time spent in each timed 
-region in a table:
+snapshots. For example, we can use it to print the time spent in each
+timed region in a table:
 
     $ ls *.cali
     160219-095419_5623_LQfNQTNgpqdM.cali
     $ cali-query -s time.inclusive.duration --table \
-          --print-attributes=iteration:loop:initialization:time.inclusive.duration \
           160219-095419_5623_LQfNQTNgpqdM.cali
-      phase           iteration time.inclusive.duration
-      initialization                                100
-      loop                    0                      23
-      loop                    1                       9
-      loop                    2                       8
-      loop                    3                       8
-      loop                                          129
+    function phase          loop      iter..loop time.inc..ation
+    main     initialization                                  100
+    main                    mainloop           0              23
+    main                    mainloop           1               9
+    main                    mainloop           2               6
+    main                    mainloop           3               8
+    main                    mainloop                          78
+    main                                                     258
 
 ### Where to go from here?
 
