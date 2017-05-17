@@ -429,9 +429,9 @@ namespace
     }
 
     static int end_thread_sampling() {
-        // int ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
-        // if (ret)
-        //     err(1, "cannot stop");
+        int ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+        if (ret)
+            err(1, "cannot stop");
     }
 
     static void parse_configset(Caliper* c) {
