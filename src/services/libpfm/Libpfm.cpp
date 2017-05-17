@@ -481,6 +481,13 @@ namespace {
         }
     }
 
+    void post_init_cb(Caliper* c) {
+        // Run on master thread initialization
+        setup_thread_events();
+        setup_thread_pointers();
+        begin_thread_sampling();
+    }
+
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
         if (scope == CALI_SCOPE_THREAD) {
             setup_thread_events();
@@ -517,6 +524,7 @@ namespace {
         setup_process_signals();
         
         c->events().create_scope_evt.connect(create_scope_cb);
+        c->events().post_init_evt.connect(post_init_cb);
         c->events().finish_evt.connect(finish_cb);
 
         Log(1).stream() << "Registered libpfm service" << endl;
