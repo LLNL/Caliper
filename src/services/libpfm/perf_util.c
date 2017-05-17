@@ -775,6 +775,7 @@ int
 perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s)
 {
     perf_event_desc_t *hw;
+    struct { uint32_t pid, tid; } pid;
     struct { uint64_t value, id; } grp;
     uint64_t time_enabled, time_running;
     size_t sz;
@@ -783,7 +784,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     const char *str;
     int ret, e;
 
-    if (!fds || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
+    if (!fds || !s || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
         return -1;
 
     sz = ehdr->size - sizeof(*ehdr);
@@ -794,25 +795,32 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     fmt  = hw->hw.read_format;
 
     if (type & PERF_SAMPLE_IDENTIFIER) {
-        ret = perf_read_buffer_64(hw, &s->sample_id);
-        if (ret) {
-            warnx("cannot read ID");
-            return -1;
-        }
-        sz -= sizeof(val64);
-    }
-
-    if (type & PERF_SAMPLE_IP) {
-        ret = perf_read_buffer_64(hw, &s->ip);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx("cannot read IP");
             return -1;
         }
+        s->id = val64;
+        sz -= sizeof(val64);
+    }
+    /*
+     * the sample_type information is laid down
+     * based on the PERF_RECORD_SAMPLE format specified
+     * in the libpfm.h header file.
+     * That order is different from the enum perf_event_sample_format
+     */
+    if (type & PERF_SAMPLE_IP) {
+        const char *xtra = " ";
+        ret = perf_read_buffer_64(hw, &val64);
+        if (ret) {
+            warnx("cannot read IP");
+            return -1;
+        }
+        s->ip = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_TID) {
-        struct { uint32_t pid, tid; } pid;
         ret = perf_read_buffer(hw, &pid, sizeof(pid));
         if (ret) {
             warnx( "cannot read PID");
@@ -824,38 +832,42 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     }
 
     if (type & PERF_SAMPLE_TIME) {
-        ret = perf_read_buffer_64(hw, &s->time);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read time");
             return -1;
         }
+        s->time = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_ADDR) {
-        ret = perf_read_buffer_64(hw, &s->addr);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read addr");
             return -1;
         }
+        s->addr = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_ID) {
-        ret = perf_read_buffer_64(hw, &s->id);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read id");
             return -1;
         }
+        s->id = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_STREAM_ID) {
-        ret = perf_read_buffer_64(hw, &s->stream_id);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read stream_id");
             return -1;
         }
+        s->stream_id = val64;
         sz -= sizeof(val64);
     }
 
@@ -867,16 +879,17 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             return -1;
         }
         s->cpu = cpu.cpu;
-        s->res = 0;
+        s->res = cpu.reserved;
         sz -= sizeof(cpu);
     }
 
     if (type & PERF_SAMPLE_PERIOD) {
-        ret = perf_read_buffer_64(hw, &s->period);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read period");
             return -1;
         }
+        s->period = val64;
         sz -= sizeof(val64);
     }
 
@@ -897,11 +910,6 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
      * };
      */
     if (type & PERF_SAMPLE_READ) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
         uint64_t values[3];
         uint64_t nr;
 
@@ -934,6 +942,8 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
                 sz -= sizeof(time_running);
             }
 
+            // fprintf(fp, "ENA=%'"PRIu64" RUN=%'"PRIu64" NR=%"PRIu64"\n", time_enabled, time_running, nr);
+
             values[1] = time_enabled;
             values[2] = time_running;
             while(nr--) {
@@ -962,6 +972,12 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
 
                 values[0] = grp.value;
                 grp.value = perf_scale(values);
+
+                // fprintf(fp, "\t%'"PRIu64" %s (%"PRIu64"%s)\n",
+                //         grp.value, str,
+                //         grp.id,
+                //         time_running != time_enabled ? ", scaled":"");
+
             }
         } else {
             time_enabled = time_running = 0;
@@ -1001,6 +1017,8 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
                 sz -= sizeof(val64);
             }
 
+            // fprintf(fp, "ENA=%'"PRIu64" RUN=%'"PRIu64"\n", time_enabled, time_running);
+
             values[0] = val64;
             values[1] = time_enabled;
             values[2] = time_running;
@@ -1013,11 +1031,6 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     }
 
     if (type & PERF_SAMPLE_CALLCHAIN) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
         uint64_t nr, ip;
 
         ret = perf_read_buffer_64(hw, &nr);
@@ -1033,7 +1046,10 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
                 warnx( "cannot read ip");
                 return -1;
             }
+
             sz -= sizeof(ip);
+
+            // fprintf(fp, "\t0x%"PRIx64"\n", ip);
         }
     }
 
@@ -1045,69 +1061,52 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     }
 
     if (type & PERF_SAMPLE_BRANCH_STACK) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
         // ret = perf_display_branch_stack(hw, fp);
-        // sz -= ret;
+        sz -= ret;
     }
 
     if (type & PERF_SAMPLE_REGS_USER) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
         // ret = perf_display_regs_user(hw, fp);
-        // sz -= ret;
+        sz -= ret;
     }
 
     if (type & PERF_SAMPLE_STACK_USER) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
         // ret = perf_display_stack_user(hw, fp);
-        // sz -= ret;
+        sz -= ret;
     }
 
     if (type & PERF_SAMPLE_WEIGHT) {
-        ret = perf_read_buffer_64(hw, &s->weight);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read weight");
             return -1;
         }
+        s->weight = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_DATA_SRC) {
-        ret = perf_read_buffer_64(hw, &s->data_src);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read data src");
             return -1;
         }
+        s->data_src = val64;
         sz -= sizeof(val64);
     }
     if (type & PERF_SAMPLE_TRANSACTION) {
-        ret = perf_read_buffer_64(hw, &s->transaction);
+        ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             warnx( "cannot read txn");
             return -1;
         }
+        s->transaction = val64;
         sz -= sizeof(val64);
     }
 
     if (type & PERF_SAMPLE_REGS_INTR) {
-
-        // TODO: This
-        warnx("PERF_SAMPLE_READ unsupported! Skipping.");
-        return -1;
-
-        // ret = perf_display_regs_intr(hw, fp);
-        // sz -= ret;
+        //ret = perf_display_regs_intr(hw, fp);
+        sz -= ret;
     }
 
     /*

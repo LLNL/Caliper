@@ -86,8 +86,6 @@ using namespace std;
 
 namespace 
 {
-    Attribute dummy_attr      { Attribute::invalid } ;
-
     ConfigSet config;
 
 #define MAX_THR  128
@@ -95,10 +93,6 @@ namespace
 
     cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = { CALI_INV_ID };
     size_t libpfm_attribute_types[MAX_ATTRIBUTES];
-
-    int num_samples = 0;
-    int num_processed_samples = 0;
-    static __thread perf_event_sample_t sample;
 
     std::map<std::string, uint64_t> sample_attribute_map = {
         {"ip",          PERF_SAMPLE_IP},
@@ -123,9 +117,9 @@ namespace
           "Sample attributes",
           "Comma-separated list of attributes to record for each sample"
         },
-        { "frequency", CALI_TYPE_UINT, "4000",
-          "Sampling frequency",
-          "Number of samples per second to collect (approximately)."
+        { "period", CALI_TYPE_UINT, "20000000",
+          "Sampling period",
+          "Period of events until a sample is generated."
         },
         { "precise_ip", CALI_TYPE_UINT, "0",
           "Use Precise IP?",
@@ -138,7 +132,7 @@ namespace
      * Service configuration variables
      */
     int num_attributes = 0;
-    static unsigned int sampling_frequency;
+    static unsigned int sampling_period;
     static unsigned int precise_ip;
     static std::string events_string;
     static std::vector<uint64_t> events;
@@ -150,37 +144,49 @@ namespace
      * libpfm sampling variables
      */
 
-    struct over_args {
+    struct thread_state {
+        thread_state() {
+            memset(this, 0, sizeof(thread_state));
+        }
+        int id;
         int fd;
         pid_t tid;
         perf_event_desc_t *fds;
+
+        int signals_received;
+        int samples_produced;
+        int mismatches;
+        int null_events;
+        int null_cali_instances;
     };
 
-    over_args fd2ov[MAX_THR];
+    thread_state thread_states[MAX_THR];
+
+    static __thread perf_event_sample_t sample;
+
+    static __thread int thread_id;
+    static __thread perf_event_desc_t *fds;
+    static __thread int num_fds;
 
     static int signum = SIGIO;
     static int buffer_pages = 1;
-    int fown;
 
-    static __thread int myid;
-    static __thread perf_event_desc_t *fds;
-    static __thread int num_fds;
+    static std::mutex id_mutex;
+    static int num_threads = 0;
 
     static pid_t gettid(void)
     {
         return (pid_t)syscall(__NR_gettid);
     }
 
-    static void sigusr1_handler(int sig, siginfo_t *info, void *context)
-    {
-    }
-
     static void sample_handler()
     {
         Caliper c = Caliper::sigsafe_instance();
 
-        if (!c)
+        if (!c) {
+            thread_states[thread_id].null_cali_instances++;
             return;
+        }
 
         Variant data[MAX_ATTRIBUTES];
 
@@ -239,87 +245,98 @@ namespace
 
         c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
 
-        ++num_processed_samples;
+        thread_states[thread_id].samples_produced++;
     }
 
     static void sigio_handler(int sig, siginfo_t *info, void *extra)
     {
         perf_event_desc_t *fdx;
         struct perf_event_header ehdr;
-        over_args *ov;
+        thread_state *ts;
         int fd, i, ret;
+        bool skip = false;
         pid_t tid;
 
-        ++num_samples;
+        ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+        if (ret)
+            err(1, "cannot stop sampling for handling");
+
+        thread_states[thread_id].signals_received++;
 
         fd = info->si_fd;
         tid = gettid();
 
-        for(i=0; i < MAX_THR; i++)
-            if (fd2ov[i].fd == fd)
+        for(i=0; i < MAX_THR; i++) {
+            if (thread_states[i].fd == fd) {
                 break;
-
-        if (i == MAX_THR) {
-            warnx("bad info.si_fd: %d NEQ %d", fd, fd2ov[myid].fd);
+            }
         }
 
-        ov = &fd2ov[i];
+        if (i == MAX_THR) {
+            warnx("bad info.si_fd: %d NEQ %d", fd, thread_states[thread_id].fd);
+        }
 
-        if (tid != ov->tid) {
-            //mismatch[myid]++;
-            warnx("MISMATCH");
-            fdx = ov->fds;
+        ts = &thread_states[i];
+
+        if (tid != ts->tid) {
+            thread_states[thread_id].mismatches++;
+            fdx = ts->fds;
+            skip = true;
         } else {
             fdx = fds;
         }
 
         if (fdx) {
-
             // Read header
             ret = perf_read_buffer(fdx + 0, &ehdr, sizeof(ehdr));
             if (ret) {
                 warnx("cannot read event header");
             }
 
-            // Read sample
-            ret = perf_read_sample(fdx, 1, fdx->id, &ehdr, &sample);
-            if (ret) {
-                warnx("cannot read sample");
-            }
+            if (skip) {
+                // Consume only (don't record a different threads data on this thread)
+                perf_skip_buffer(fdx + 0, ehdr.size);
+            } else {
+                // Read and record
+                //ret = perf_display_sample(fdx, 1, fdx->id, &ehdr, stderr);
+                ret = perf_read_sample(fdx, 1, fdx->id, &ehdr, &sample);
+                if (ret) {
+                    warnx("cannot read sample");
+                }
 
-            //sample_handler();
+                // fprintf(stderr, "CPU: %d, IP: %d PID: %d TID: %d TIME: %d\n",
+                //     sample.cpu, sample.ip, sample.pid, sample.tid, sample.time);
+                sample_handler();
+            }
+        } else {
+            thread_states[thread_id].null_events++;
         }
 
         // Reset
         ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
-        if (ret)
+        if (ret) {
             err(1, "cannot refresh");
+        }
     }
 
     static void setup_thread_events() {
-        std::mutex id_mutex;
-        struct over_args *ov;
+        struct thread_state *ts;
         struct f_owner_ex fown_ex;
-        size_t pgsz;
-        int ret, fd, flags, utid = 0;
+        int ret, fd, flags;
+        size_t pgsz = sysconf(_SC_PAGESIZE);
 
-        id_mutex.lock();
-        myid = utid++;
-        id_mutex.unlock();
-
+        // Get perf_event from string
         fds = NULL;
         num_fds = 0;
         ret = perf_setup_list_events(events_string.c_str(), &fds, &num_fds);
         if (ret || !num_fds)
             errx(1, "cannot monitor event");
 
-        pgsz = sysconf(_SC_PAGESIZE);
-        ov = &fd2ov[myid];
-
+        // Set up perf_event
         fds[0].hw.disabled = 1;
         fds[0].hw.wakeup_events = 1;
         fds[0].hw.sample_type = sample_attributes;
-        fds[0].hw.sample_freq = sampling_frequency;
+        fds[0].hw.sample_period = sampling_period;
         fds[0].hw.read_format = 0;
         fds[0].hw.precise_ip = precise_ip;
 
@@ -327,25 +344,33 @@ namespace
         if (fd == -1)
             err(1, "cannot attach event %s", fds[0].name);
 
-        ov->fd = fd;
-        ov->tid = gettid();
-        ov->fds = fds;
+        // Get unique thread id
+        id_mutex.lock();
+        thread_id = num_threads++;
+        id_mutex.unlock();
 
+        // Set thread state
+        ts = &thread_states[thread_id];
+        ts->id = thread_id;
+        ts->fd = fd;
+        ts->tid = gettid();
+        ts->fds = fds;
+
+        // Set up perf_event file descriptor to signal this thread
         flags = fcntl(fd, F_GETFL, 0);
         if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
             err(1, "fcntl SETFL failed");
 
         fown_ex.type = F_OWNER_TID;
         fown_ex.pid  = gettid();
-        ret = fcntl(fd,
-                    (fown ? F_SETOWN_EX : F_SETOWN),
-                    (fown ? (unsigned long)&fown_ex: (unsigned long)gettid()));
+        ret = fcntl(fd, F_SETOWN_EX, (unsigned long)&fown_ex);
         if (ret)
             err(1, "fcntl SETOWN failed");
 
         if (fcntl(fd, F_SETSIG, signum) < 0)
             err(1, "fcntl SETSIG failed");
 
+        // Create mmap buffer for samples
         fds[0].buf = mmap(NULL, (buffer_pages + 1)* pgsz, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
         if (fds[0].buf == MAP_FAILED)
             err(1, "cannot mmap buffer");
@@ -357,16 +382,6 @@ namespace
         struct sigaction sa;
         sigset_t set, oldsig, newsig;
         int ret, i;
-
-        memset(&sa, 0, sizeof(sa));
-        sigemptyset(&set);
-
-        sa.sa_sigaction = sigusr1_handler;
-        sa.sa_mask = set;
-        sa.sa_flags = SA_SIGINFO;
-
-        if (sigaction(SIGUSR1, &sa, NULL) != 0)
-            errx(1, "sigaction failed");
 
         memset(&sa, 0, sizeof(sa));
         sigemptyset(&set);
@@ -408,9 +423,9 @@ namespace
     }
 
     static int end_thread_sampling() {
-        int ret = ioctl(fd2ov[myid].fd, PERF_EVENT_IOC_DISABLE, 0);
-        if (ret)
-            err(1, "cannot stop");
+        // int ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+        // if (ret)
+        //     err(1, "cannot stop");
     }
 
     static void parse_configset(Caliper* c) {
@@ -448,7 +463,7 @@ namespace
             ++num_attributes;
         }
 
-        sampling_frequency = config.get("frequency").to_uint();
+        sampling_period = config.get("period").to_uint();
 
         precise_ip = config.get("precise_ip").to_uint();
     }
@@ -469,10 +484,15 @@ namespace
     void finish_cb(Caliper* c) {
         pfm_terminate();
 
-        Log(1).stream() << "libpfm: processed " << num_processed_samples
-                        << " samples ("  << num_samples
-                        << " total, "    << num_samples - num_processed_samples
-                        << " dropped)."  << std::endl;
+        Log(1).stream() << "libpfm thread stats:" << std::endl;
+        for (int i=0; i<num_threads; i++) {
+            Log(1).stream() << "thread " << i
+                            << "\tsignals received: " << thread_states[i].signals_received
+                            << "\tsamples produced: " << thread_states[i].samples_produced
+                            << "\tmismatches: " << thread_states[i].mismatches
+                            << "\tnull events: " << thread_states[i].null_events
+                            << "\tnull cali instances: " << thread_states[i].null_cali_instances << std::endl;
+        }
     }
 
     // Initialization handler
