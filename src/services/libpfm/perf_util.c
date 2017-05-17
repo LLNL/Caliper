@@ -775,7 +775,6 @@ int
 perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s)
 {
     perf_event_desc_t *hw;
-    struct { uint32_t pid, tid; } pid;
     struct { uint64_t value, id; } grp;
     uint64_t time_enabled, time_running;
     size_t sz;
@@ -813,6 +812,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     }
 
     if (type & PERF_SAMPLE_TID) {
+        struct { uint32_t pid, tid; } pid;
         ret = perf_read_buffer(hw, &pid, sizeof(pid));
         if (ret) {
             warnx( "cannot read PID");
@@ -867,6 +867,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             return -1;
         }
         s->cpu = cpu.cpu;
+        s->res = 0;
         sz -= sizeof(cpu);
     }
 

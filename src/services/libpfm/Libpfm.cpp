@@ -45,6 +45,8 @@
 
 #include <util/split.hpp>
 
+#include <mutex>
+
 #include <sys/time.h>
 #include <sys/types.h>
 #include <err.h>
@@ -88,9 +90,11 @@ namespace
 
     ConfigSet config;
 
+#define MAX_THR  128
 #define MAX_ATTRIBUTES 12 // Number of available attributes below
 
     cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = { CALI_INV_ID };
+    size_t libpfm_attribute_types[MAX_ATTRIBUTES];
 
     int num_samples = 0;
     int num_processed_samples = 0;
@@ -109,22 +113,6 @@ namespace
         {"transaction", PERF_SAMPLE_TRANSACTION},
         {"data_src",    PERF_SAMPLE_DATA_SRC}
     };
-
-    std::map<uint64_t, size_t> attribute_offset_map = {
-            {PERF_SAMPLE_IP,            (uint64_t*)&(sample.ip)          - (uint64_t*)&sample},
-            {PERF_SAMPLE_ID,            (uint64_t*)&(sample.sample_id)   - (uint64_t*)&sample},
-            {PERF_SAMPLE_STREAM_ID,     (uint64_t*)&(sample.stream_id)   - (uint64_t*)&sample},
-            {PERF_SAMPLE_TIME,          (uint64_t*)&(sample.time)        - (uint64_t*)&sample},
-            {PERF_SAMPLE_TID,           (uint64_t*)&(sample.tid)         - (uint64_t*)&sample},
-            {PERF_SAMPLE_PERIOD,        (uint64_t*)&(sample.period)      - (uint64_t*)&sample},
-            {PERF_SAMPLE_CPU,           (uint64_t*)&(sample.cpu)         - (uint64_t*)&sample},
-            {PERF_SAMPLE_ADDR,          (uint64_t*)&(sample.addr)        - (uint64_t*)&sample},
-            {PERF_SAMPLE_WEIGHT,        (uint64_t*)&(sample.weight)      - (uint64_t*)&sample},
-            {PERF_SAMPLE_TRANSACTION,   (uint64_t*)&(sample.transaction) - (uint64_t*)&sample},
-            {PERF_SAMPLE_DATA_SRC,      (uint64_t*)&(sample.data_src)    - (uint64_t*)&sample}
-    };
-
-    std::map<cali_id_t, size_t> active_attribute_offset_map;
 
     static const ConfigSet::Entry s_configdata[] = {
         { "event_list", CALI_TYPE_STRING, "cycles",
@@ -168,7 +156,7 @@ namespace
         perf_event_desc_t *fds;
     };
 
-    std::map<int, over_args> fdmap;
+    over_args fd2ov[MAX_THR];
 
     static int signum = SIGIO;
     static int buffer_pages = 1;
@@ -196,17 +184,62 @@ namespace
 
         Variant data[MAX_ATTRIBUTES];
 
-        int attribute_index = 0;
-        for(auto attribute_id : libpfm_attributes)
-        {
-            size_t offset = active_attribute_offset_map[attribute_id];
-            uint64_t value = ((uint64_t*)&sample)[offset];
+        uint64_t value;
+        cali_id_t attribute_id;
+        size_t attribute_type;
+        for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
+
+            attribute_id = libpfm_attributes[attribute_index];
+            attribute_type = libpfm_attribute_types[attribute_index];
+
+            switch (attribute_type) {
+
+                case (PERF_SAMPLE_IP):
+                    value = sample.ip;
+                    break;
+                case (PERF_SAMPLE_ID):
+                    value = sample.id;
+                    break;
+                case (PERF_SAMPLE_STREAM_ID):
+                    value = sample.stream_id;
+                    break;
+                case (PERF_SAMPLE_TIME):
+                    value = sample.time;
+                    break;
+                case (PERF_SAMPLE_TID):
+                    value = sample.tid;
+                    break;
+                case (PERF_SAMPLE_PERIOD):
+                    value = sample.period;
+                    break;
+                case (PERF_SAMPLE_CPU):
+                    value = sample.cpu;
+                    break;
+                case (PERF_SAMPLE_ADDR):
+                    value = sample.addr;
+                    break;
+                case (PERF_SAMPLE_WEIGHT):
+                    value = sample.weight;
+                    break;
+                case (PERF_SAMPLE_TRANSACTION):
+                    value = sample.transaction;
+                    break;
+                case (PERF_SAMPLE_DATA_SRC):
+                    value = sample.data_src;
+                    break;
+                default:
+                    warnx("Attribute unrecognized!");
+                    return;
+            }
+
             data[attribute_index] = Variant(static_cast<uint64_t>(value));
-        };
+        }
 
         SnapshotRecord trigger_info(num_attributes, libpfm_attributes, data);
 
         c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
+
+        ++num_processed_samples;
     }
 
     static void sigio_handler(int sig, siginfo_t *info, void *extra)
@@ -219,14 +252,22 @@ namespace
 
         ++num_samples;
 
-        // Get the perf_event file descriptor and thread
         fd = info->si_fd;
         tid = gettid();
 
-        ov = &fdmap[fd];
+        for(i=0; i < MAX_THR; i++)
+            if (fd2ov[i].fd == fd)
+                break;
+
+        if (i == MAX_THR) {
+            warnx("bad info.si_fd: %d NEQ %d", fd, fd2ov[myid].fd);
+        }
+
+        ov = &fd2ov[i];
 
         if (tid != ov->tid) {
-            // mismatch
+            //mismatch[myid]++;
+            warnx("MISMATCH");
             fdx = ov->fds;
         } else {
             fdx = fds;
@@ -237,20 +278,17 @@ namespace
             // Read header
             ret = perf_read_buffer(fdx + 0, &ehdr, sizeof(ehdr));
             if (ret) {
-                errx(1, "cannot read event header");
+                warnx("cannot read event header");
             }
 
             // Read sample
-            ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample);
+            ret = perf_read_sample(fdx, 1, fdx->id, &ehdr, &sample);
             if (ret) {
-                errx(1, "cannot read sample");
+                warnx("cannot read sample");
             }
 
-            sample_handler();
-
-            ++num_processed_samples;
+            //sample_handler();
         }
-
 
         // Reset
         ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
@@ -258,13 +296,16 @@ namespace
             err(1, "cannot refresh");
     }
 
-    /*
-     * Set up signals for thread
-     */
-    static void setup_thread() {
+    static void setup_thread_events() {
+        std::mutex id_mutex;
+        struct over_args *ov;
         struct f_owner_ex fown_ex;
         size_t pgsz;
-        int ret, fd, flags;
+        int ret, fd, flags, utid = 0;
+
+        id_mutex.lock();
+        myid = utid++;
+        id_mutex.unlock();
 
         fds = NULL;
         num_fds = 0;
@@ -273,11 +314,9 @@ namespace
             errx(1, "cannot monitor event");
 
         pgsz = sysconf(_SC_PAGESIZE);
+        ov = &fd2ov[myid];
 
-        /* do not enable now */
         fds[0].hw.disabled = 1;
-
-        /* notify after 1 sample */
         fds[0].hw.wakeup_events = 1;
         fds[0].hw.sample_type = sample_attributes;
         fds[0].hw.sample_freq = sampling_frequency;
@@ -288,8 +327,9 @@ namespace
         if (fd == -1)
             err(1, "cannot attach event %s", fds[0].name);
 
-        struct over_args ov = {fd, gettid(), fds};
-        fdmap[fd] = ov;
+        ov->fd = fd;
+        ov->tid = gettid();
+        ov->fds = fds;
 
         flags = fcntl(fd, F_GETFL, 0);
         if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
@@ -313,7 +353,7 @@ namespace
         fds[0].pgmsk = (buffer_pages * pgsz) - 1;
     }
 
-    static int setup_signals() {
+    static int setup_process_signals() {
         struct sigaction sa;
         sigset_t set, oldsig, newsig;
         int ret, i;
@@ -367,6 +407,12 @@ namespace
             err(1, "cannot refresh");
     }
 
+    static int end_thread_sampling() {
+        int ret = ioctl(fd2ov[myid].fd, PERF_EVENT_IOC_DISABLE, 0);
+        if (ret)
+            err(1, "cannot stop");
+    }
+
     static void parse_configset(Caliper* c) {
         config = RuntimeConfig::init("libpfm", s_configdata);
 
@@ -396,8 +442,8 @@ namespace
             uint64_t attribute_bits = sample_attribute_map[sample_attribute_str];
             sample_attributes |= attribute_bits;
 
-            // Map id to offset
-            active_attribute_offset_map[attribute_id] = attribute_offset_map[attribute_bits];
+            // Record type of attribute
+            libpfm_attribute_types[num_attributes] = attribute_bits;
 
             ++num_attributes;
         }
@@ -409,16 +455,15 @@ namespace
 
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
         if (scope == CALI_SCOPE_THREAD) {
-            setup_thread();
+            setup_thread_events();
             begin_thread_sampling();
         }
     }
 
     void release_scope_cb(Caliper* c, cali_context_scope_t scope) {
-        // TODO: how to stop sampling on this particular thread?
-        // int ret = ioctl(???, PERF_EVENT_IOC_DISABLE, 0);
-        // if (ret)
-            // err(1, "cannot stop");
+        if (scope == CALI_SCOPE_THREAD) {
+            end_thread_sampling();
+        }
     }
 
     void finish_cb(Caliper* c) {
@@ -435,7 +480,7 @@ namespace
         config = RuntimeConfig::init("libpfm", s_configdata);
 
         parse_configset(c);
-        setup_signals();
+        setup_process_signals();
         
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().finish_evt.connect(finish_cb);
