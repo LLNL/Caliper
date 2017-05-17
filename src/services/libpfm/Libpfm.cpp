@@ -84,52 +84,52 @@ extern "C"
 using namespace cali;
 using namespace std;
 
-namespace 
-{
+namespace {
     ConfigSet config;
 
 #define MAX_THR  128
 #define MAX_ATTRIBUTES 12 // Number of available attributes below
 
-    cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = { CALI_INV_ID };
-    size_t libpfm_attribute_types[MAX_ATTRIBUTES];
+    static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
+    static size_t libpfm_attribute_types[MAX_ATTRIBUTES];
+    static __thread uint64_t *sample_attribute_pointers[MAX_ATTRIBUTES];
 
-    std::map<std::string, uint64_t> sample_attribute_map = {
-        {"ip",          PERF_SAMPLE_IP},
-        {"id",          PERF_SAMPLE_ID},
-        {"stream_id",   PERF_SAMPLE_STREAM_ID},
-        {"time",        PERF_SAMPLE_TIME},
-        {"tid",         PERF_SAMPLE_TID},
-        {"period",      PERF_SAMPLE_PERIOD},
-        {"cpu",         PERF_SAMPLE_CPU},
-        {"addr",        PERF_SAMPLE_ADDR},
-        {"weight",      PERF_SAMPLE_WEIGHT},
-        {"transaction", PERF_SAMPLE_TRANSACTION},
-        {"data_src",    PERF_SAMPLE_DATA_SRC}
+    std::map <std::string, uint64_t> sample_attribute_map = {
+            {"ip",          PERF_SAMPLE_IP},
+            {"id",          PERF_SAMPLE_ID},
+            {"stream_id",   PERF_SAMPLE_STREAM_ID},
+            {"time",        PERF_SAMPLE_TIME},
+            {"tid",         PERF_SAMPLE_TID},
+            {"period",      PERF_SAMPLE_PERIOD},
+            {"cpu",         PERF_SAMPLE_CPU},
+            {"addr",        PERF_SAMPLE_ADDR},
+            {"weight",      PERF_SAMPLE_WEIGHT},
+            {"transaction", PERF_SAMPLE_TRANSACTION},
+            {"data_src",    PERF_SAMPLE_DATA_SRC}
     };
 
     static const ConfigSet::Entry s_configdata[] = {
-        { "event_list", CALI_TYPE_STRING, "cycles",
-          "Event List",
-          "Comma-separated list of events to sample"
-        },
-        { "sample_attributes", CALI_TYPE_STRING, "ip,time,tid,cpu",
-          "Sample attributes",
-          "Comma-separated list of attributes to record for each sample"
-        },
-        { "period", CALI_TYPE_UINT, "20000000",
-          "Sampling period",
-          "Period of events until a sample is generated."
-        },
-        { "precise_ip", CALI_TYPE_UINT, "0",
-          "Use Precise IP?",
-          "Requests precise IP for supporting architectures (e.g. PEBS). May be 0, 1, or 2."
-        },
-        { "config1", CALI_TYPE_UINT, "0",
-          "Extra event configuration",
-          "Specifies extra event configuration value for supported events (e.g. PEBS latency threshold)"
-        },
-        ConfigSet::Terminator
+            {"event_list", CALI_TYPE_STRING, "cycles",
+             "Event List",
+             "Comma-separated list of events to sample"
+            },
+            {"sample_attributes", CALI_TYPE_STRING, "ip,time,tid,cpu",
+             "Sample attributes",
+             "Comma-separated list of attributes to record for each sample"
+            },
+            {"period", CALI_TYPE_UINT, "20000000",
+             "Sampling period",
+             "Period of events until a sample is generated."
+            },
+            {"precise_ip", CALI_TYPE_UINT, "0",
+             "Use Precise IP?",
+             "Requests precise IP for supporting architectures (e.g. PEBS). May be 0, 1, or 2."
+            },
+            {"config1", CALI_TYPE_UINT, "0",
+             "Extra event configuration",
+             "Specifies extra event configuration value for supported events (e.g. PEBS latency threshold)"
+            },
+            ConfigSet::Terminator
     };
 
     /*
@@ -140,9 +140,9 @@ namespace
     static unsigned int precise_ip;
     static unsigned int config1;
     static std::string events_string;
-    static std::vector<uint64_t> events;
+    static std::vector <uint64_t> events;
 
-    static std::vector<std::string> sample_attributes_strvec;
+    static std::vector <std::string> sample_attributes_strvec;
     static uint64_t sample_attributes = 0;
 
     /*
@@ -153,6 +153,7 @@ namespace
         thread_state() {
             memset(this, 0, sizeof(thread_state));
         }
+
         int id;
         int fd;
         pid_t tid;
@@ -179,13 +180,11 @@ namespace
     static std::mutex id_mutex;
     static int num_threads = 0;
 
-    static pid_t gettid(void)
-    {
-        return (pid_t)syscall(__NR_gettid);
+    static pid_t gettid(void) {
+        return (pid_t) syscall(__NR_gettid);
     }
 
-    static void sample_handler()
-    {
+    static void sample_handler() {
         Caliper c = Caliper::sigsafe_instance();
 
         if (!c) {
@@ -195,55 +194,10 @@ namespace
 
         Variant data[MAX_ATTRIBUTES];
 
-        uint64_t value;
-        cali_id_t attribute_id;
-        size_t attribute_type;
+        uint64_t *vptr;
         for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
-
-            attribute_id = libpfm_attributes[attribute_index];
-            attribute_type = libpfm_attribute_types[attribute_index];
-
-            switch (attribute_type) {
-
-                case (PERF_SAMPLE_IP):
-                    value = sample.ip;
-                    break;
-                case (PERF_SAMPLE_ID):
-                    value = sample.id;
-                    break;
-                case (PERF_SAMPLE_STREAM_ID):
-                    value = sample.stream_id;
-                    break;
-                case (PERF_SAMPLE_TIME):
-                    value = sample.time;
-                    break;
-                case (PERF_SAMPLE_TID):
-                    value = sample.tid;
-                    break;
-                case (PERF_SAMPLE_PERIOD):
-                    value = sample.period;
-                    break;
-                case (PERF_SAMPLE_CPU):
-                    value = sample.cpu;
-                    break;
-                case (PERF_SAMPLE_ADDR):
-                    value = sample.addr;
-                    break;
-                case (PERF_SAMPLE_WEIGHT):
-                    value = sample.weight;
-                    break;
-                case (PERF_SAMPLE_TRANSACTION):
-                    value = sample.transaction;
-                    break;
-                case (PERF_SAMPLE_DATA_SRC):
-                    value = sample.data_src;
-                    break;
-                default:
-                    warnx("Attribute unrecognized!");
-                    return;
-            }
-
-            data[attribute_index] = Variant(static_cast<uint64_t>(value));
+            vptr = sample_attribute_pointers[attribute_index];
+            data[attribute_index] = Variant(static_cast<uint64_t>(*vptr));
         }
 
         SnapshotRecord trigger_info(num_attributes, libpfm_attributes, data);
@@ -253,8 +207,7 @@ namespace
         thread_states[thread_id].samples_produced++;
     }
 
-    static void sigio_handler(int sig, siginfo_t *info, void *extra)
-    {
+    static void sigio_handler(int sig, siginfo_t *info, void *extra) {
         perf_event_desc_t *fdx;
         struct perf_event_header ehdr;
         thread_state *ts;
@@ -271,7 +224,7 @@ namespace
         fd = info->si_fd;
         tid = gettid();
 
-        for(i=0; i < MAX_THR; i++) {
+        for (i = 0; i < MAX_THR; i++) {
             if (thread_states[i].fd == fd) {
                 break;
             }
@@ -368,8 +321,8 @@ namespace
             err(1, "fcntl SETFL failed");
 
         fown_ex.type = F_OWNER_TID;
-        fown_ex.pid  = gettid();
-        ret = fcntl(fd, F_SETOWN_EX, (unsigned long)&fown_ex);
+        fown_ex.pid = gettid();
+        ret = fcntl(fd, F_SETOWN_EX, (unsigned long) &fown_ex);
         if (ret)
             err(1, "fcntl SETOWN failed");
 
@@ -377,7 +330,7 @@ namespace
             err(1, "fcntl SETSIG failed");
 
         // Create mmap buffer for samples
-        fds[0].buf = mmap(NULL, (buffer_pages + 1)* pgsz, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+        fds[0].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (fds[0].buf == MAP_FAILED)
             err(1, "cannot mmap buffer");
 
@@ -423,7 +376,7 @@ namespace
     }
 
     static int begin_thread_sampling() {
-        int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH , 1);
+        int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH, 1);
         if (ret == -1)
             err(1, "cannot refresh");
     }
@@ -434,7 +387,7 @@ namespace
             err(1, "cannot stop");
     }
 
-    static void parse_configset(Caliper* c) {
+    static void parse_configset(Caliper *c) {
         config = RuntimeConfig::init("libpfm", s_configdata);
 
         events_string = config.get("event_list").to_string();
@@ -444,7 +397,7 @@ namespace
         std::string sample_attributes_string = config.get("sample_attributes").to_string();
         util::split(sample_attributes_string, ',', back_inserter(sample_attributes_strvec));
 
-        for(auto sample_attribute_str : sample_attributes_strvec) {
+        for (auto sample_attribute_str : sample_attributes_strvec) {
 
             // Create Caliper attribute
             std::string attribute_name = "libpfm." + sample_attribute_str;
@@ -476,9 +429,62 @@ namespace
         config1 = config.get("config1").to_uint();
     }
 
+    static void setup_thread_pointers() {
+
+        uint64_t value;
+        cali_id_t attribute_id;
+        size_t attribute_type;
+        for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
+
+            attribute_id = libpfm_attributes[attribute_index];
+            attribute_type = libpfm_attribute_types[attribute_index];
+
+            switch (attribute_type) {
+
+                case (PERF_SAMPLE_IP):
+                    sample_attribute_pointers[attribute_index] = &sample.ip;
+                    break;
+                case (PERF_SAMPLE_ID):
+                    sample_attribute_pointers[attribute_index] = &sample.id;
+                    break;
+                case (PERF_SAMPLE_STREAM_ID):
+                    sample_attribute_pointers[attribute_index] = &sample.stream_id;
+                    break;
+                case (PERF_SAMPLE_TIME):
+                    sample_attribute_pointers[attribute_index] = &sample.time;
+                    break;
+                case (PERF_SAMPLE_TID):
+                    sample_attribute_pointers[attribute_index] = &sample.tid;
+                    break;
+                case (PERF_SAMPLE_PERIOD):
+                    sample_attribute_pointers[attribute_index] = &sample.period;
+                    break;
+                case (PERF_SAMPLE_CPU):
+                    sample_attribute_pointers[attribute_index] = &sample.cpu;
+                    break;
+                case (PERF_SAMPLE_ADDR):
+                    sample_attribute_pointers[attribute_index] = &sample.addr;
+                    break;
+                case (PERF_SAMPLE_WEIGHT):
+                    sample_attribute_pointers[attribute_index] = &sample.weight;
+                    break;
+                case (PERF_SAMPLE_TRANSACTION):
+                    sample_attribute_pointers[attribute_index] = &sample.transaction;
+                    break;
+                case (PERF_SAMPLE_DATA_SRC):
+                    sample_attribute_pointers[attribute_index] = &sample.data_src;
+                    break;
+                default:
+                    errx(1, "Attribute unrecognized!");
+                    return;
+            }
+        }
+    }
+
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
         if (scope == CALI_SCOPE_THREAD) {
             setup_thread_events();
+            setup_thread_pointers();
             begin_thread_sampling();
         }
     }

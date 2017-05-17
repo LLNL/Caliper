@@ -50,12 +50,12 @@ typedef struct perf_event_sample
 	//struct perf_event_header header;
 	uint64_t   sample_id;           /* if PERF_SAMPLE_IDENTIFIER */
 	uint64_t   ip;                  /* if PERF_SAMPLE_IP */
-	uint32_t   pid, tid;            /* if PERF_SAMPLE_TID */
+	uint64_t   pid, tid;            /* if PERF_SAMPLE_TID */
 	uint64_t   time;                /* if PERF_SAMPLE_TIME */
 	uint64_t   addr;                /* if PERF_SAMPLE_ADDR */
 	uint64_t   id;                  /* if PERF_SAMPLE_ID */
 	uint64_t   stream_id;           /* if PERF_SAMPLE_STREAM_ID */
-	uint32_t   cpu, res;            /* if PERF_SAMPLE_CPU */
+	uint64_t   cpu, res;            /* if PERF_SAMPLE_CPU */
 	uint64_t   period;              /* if PERF_SAMPLE_PERIOD */
 	//struct read_format v;         /* if PERF_SAMPLE_READ */
 	//uint64_t   nr;                  /* if PERF_SAMPLE_CALLCHAIN */
