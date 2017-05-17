@@ -76,7 +76,7 @@ static const ConfigSet::Entry s_configdata[] = {
       "Record region addresses for call path",
       "Record region addresses for call path"
     },
-    { "skip_frames", CALI_TYPE_UINT, "10",
+    { "skip_frames", CALI_TYPE_UINT, "0",
       "Skip this number of stack frames",
       "Skip this number of stack frames.\n"
       "Avoids recording stack frames within the caliper library"
@@ -142,12 +142,6 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord*)
     }
 }
 
-} // namespace 
-
-
-namespace cali
-{
-
 void callpath_service_register(Caliper* c)
 {
     config = RuntimeConfig::init("callpath", s_configdata);
@@ -170,6 +164,10 @@ void callpath_service_register(Caliper* c)
     Log(1).stream() << "Registered callpath service" << endl;
 }
 
-CaliperService callpath_service = { "callpath", callpath_service_register };
+} // namespace 
 
+
+namespace cali
+{
+    CaliperService callpath_service = { "callpath", ::callpath_service_register };
 } // namespace cali
