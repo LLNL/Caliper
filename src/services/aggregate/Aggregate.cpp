@@ -80,8 +80,6 @@ class AggregateDB {
     AggregateDB*             m_next;
     AggregateDB*             m_prev;
 
-    std::vector<Attribute>   m_aggr_attributes;
-
     // the actual aggregation db
 
     struct AggregateKernel  {
@@ -183,6 +181,7 @@ class AggregateDB {
     static vector<cali_id_t> s_key_attribute_ids;
     static vector<Attribute> s_key_attributes;
     static vector<string>    s_key_attribute_names;
+    static vector<Attribute> s_aggr_attributes;
     static vector<string>    s_aggr_attribute_names;
     static vector<StatisticsAttributes>
                              s_stats_attributes;
@@ -232,7 +231,7 @@ class AggregateDB {
         }
         
         if (entry && entry->k_id == 0xFFFFFFFF) {
-            size_t num_ids = m_aggr_attributes.size();
+            size_t num_ids = s_aggr_attributes.size();
 
             if (num_ids > 0) {
                 uint32_t first_id = static_cast<uint32_t>(m_num_kernel_entries + 1);
@@ -280,7 +279,7 @@ class AggregateDB {
 
         // --- write aggregate entries
 
-        int       num_aggr_attr = m_aggr_attributes.size();
+        int       num_aggr_attr = s_aggr_attributes.size();
 
         Variant   attr_vec[SNAP_MAX];
         Variant   data_vec[SNAP_MAX];
@@ -304,7 +303,7 @@ class AggregateDB {
 
         // --- write snapshot record
 
-        c->events().flush_snapshot(c, nullptr, &snapshot);
+        c->flush_snapshot(nullptr, &snapshot);
     }
 
     size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c) {
@@ -338,6 +337,87 @@ class AggregateDB {
         }
 
         return num_written;
+    }
+
+    static void init_aggregation_attributes(Caliper* c, const std::vector<std::string>& aggr_attr_names) {
+        // Init aggregation attributes
+
+        if (aggr_attr_names.empty()) {
+            // find all attributes of class "class.aggregatable"
+
+            s_aggr_attributes = 
+                c->find_attributes_with(c->get_attribute("class.aggregatable"));
+        } else if (aggr_attr_names.front() != "none") {
+            for (const std::string& name : aggr_attr_names) {
+                Attribute attr = c->get_attribute(name);
+
+                if (attr == Attribute::invalid) {
+                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \"" 
+                                    << name
+                                    << "\" not found." 
+                                    << std::endl;
+
+                    continue;
+                }
+
+                cali_attr_type type = attr.type();
+
+                if (!(type == CALI_TYPE_INT  || 
+                      type == CALI_TYPE_UINT || 
+                      type == CALI_TYPE_DOUBLE)) {
+                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \""
+                                    << name << "\" has invalid type \"" 
+                                    << cali_type2string(type) << "\""
+                                    << std::endl;
+
+                    continue;
+                }
+
+                s_aggr_attributes.push_back(attr);
+            }
+        }
+
+        // Create the derived statistics attributes
+
+        s_stats_attributes.resize(s_aggr_attributes.size());
+
+        for (size_t i = 0; i < s_aggr_attributes.size(); ++i) {
+            std::string name = s_aggr_attributes[i].name();
+
+            s_stats_attributes[i].min_attr =
+                c->create_attribute(std::string("aggregate.min#") + name,
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+            s_stats_attributes[i].max_attr =
+                c->create_attribute(std::string("aggregate.max#") + name,
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+            s_stats_attributes[i].sum_attr =
+                c->create_attribute(std::string("aggregate.sum#") + name,
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+        }
+
+        s_count_attribute =
+            c->create_attribute("aggregate.count",
+                                CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+    }
+
+    static bool init_static_data() {
+        s_list_lock.unlock();
+
+        s_config = RuntimeConfig::init("aggregate", s_configdata);
+
+        util::split(s_config.get("key").to_string(), ':',
+                    std::back_inserter(s_key_attribute_names));
+
+        s_key_attribute_ids.assign(s_key_attribute_names.size(), CALI_INV_ID);
+        s_key_attributes.assign(s_key_attribute_names.size(), Attribute::invalid);
+        
+        if (pthread_key_create(&s_aggregate_db_key, retire) != 0) {
+            Log(0).stream() << "aggregate: error: pthread_key_create() failed"
+                            << std::endl;
+            return false;
+        }
+
+        return true;
     }
 
 public:
@@ -522,9 +602,9 @@ public:
 
         ++entry->count;
 
-        for (size_t a = 0; a < m_aggr_attributes.size(); ++a)
+        for (size_t a = 0; a < s_aggr_attributes.size(); ++a)
             for (size_t i = 0; i < sizes.n_immediate; ++i)
-                if (addr.immediate_attr[i] == m_aggr_attributes[a].id()) {
+                if (addr.immediate_attr[i] == s_aggr_attributes[a].id()) {
                     AggregateKernel* k = m_kernels.get(entry->k_id + a, !c->is_signal());
 
                     if (k)
@@ -555,20 +635,7 @@ public:
           m_num_skipped_keys(0),
           m_max_keylen(0)
     {
-        m_aggr_attributes.assign(s_aggr_attribute_names.size(), Attribute::invalid);
-
         Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
-
-        for (int a = 0; a < s_aggr_attribute_names.size(); ++a) {
-            Attribute attr = c->get_attribute(s_aggr_attribute_names[a]);
-
-            if (attr == Attribute::invalid)
-                Log(1).stream() << "Aggregate: warning: aggregation attribute "
-                                << s_aggr_attribute_names[a]
-                                << " not found" << std::endl;
-            else
-                m_aggr_attributes[a] = attr;
-        }
 
         // initialize first block
         m_trie.get(0, true);
@@ -671,9 +738,6 @@ public:
     }
 
     static void post_init_cb(Caliper* c) {
-        // Initialize master-thread aggregation DB
-        acquire(c, true);
-
         // Update key attributes
         for (unsigned i = 0; i < s_key_attribute_names.size(); ++i) {
             Attribute attr = c->get_attribute(s_key_attribute_names[i]);
@@ -683,6 +747,17 @@ public:
                 s_key_attribute_ids[i] = attr.id();
             }
         }
+
+        // Initialize aggregation attributes
+        std::vector<std::string> names;
+
+        util::split(s_config.get("attributes").to_string(), ':',
+                    std::back_inserter(names));
+
+        init_aggregation_attributes(c, names);
+
+        // Initialize master-thread aggregation DB
+        acquire(c, true);
     }
 
     static void create_attribute_cb(Caliper* c, const Attribute& attr) {
@@ -742,48 +817,6 @@ public:
                             << " Reduce number of aggregation key entries." << std::endl;
     }
 
-    static void create_statistics_attributes(Caliper* c) {
-        s_stats_attributes.resize(s_aggr_attribute_names.size());
-
-        for (size_t i = 0; i < s_aggr_attribute_names.size(); ++i) {
-            s_stats_attributes[i].min_attr =
-                c->create_attribute(std::string("aggregate.min#") + s_aggr_attribute_names[i],
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-            s_stats_attributes[i].max_attr =
-                c->create_attribute(std::string("aggregate.max#") + s_aggr_attribute_names[i],
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-            s_stats_attributes[i].sum_attr =
-                c->create_attribute(std::string("aggregate.sum#") + s_aggr_attribute_names[i],
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-        }
-
-        s_count_attribute =
-            c->create_attribute("aggregate.count",
-                                CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-    }
-
-    static bool init_static_data() {
-        s_list_lock.unlock();
-
-        s_config = RuntimeConfig::init("aggregate", s_configdata);
-
-        util::split(s_config.get("attributes").to_string(), ':',
-                    std::back_inserter(s_aggr_attribute_names));
-        util::split(s_config.get("key").to_string(), ':',
-                    std::back_inserter(s_key_attribute_names));
-
-        s_key_attribute_ids.assign(s_key_attribute_names.size(), CALI_INV_ID);
-        s_key_attributes.assign(s_key_attribute_names.size(), Attribute::invalid);
-        
-        if (pthread_key_create(&s_aggregate_db_key, retire) != 0) {
-            Log(0).stream() << "aggregate: error: pthread_key_create() failed"
-                            << std::endl;
-            return false;
-        }
-
-        return true;
-    }
-
     static void aggregate_register(Caliper* c) {
         if (!AggregateDB::init_static_data()) {
             Log(0).stream() << "aggregate: disabling aggregation service"
@@ -792,12 +825,10 @@ public:
             return;
         }
 
-        AggregateDB::create_statistics_attributes(c);
-
         c->events().create_attr_evt.connect(create_attribute_cb);
         c->events().post_init_evt.connect(post_init_cb);
         c->events().process_snapshot.connect(process_snapshot_cb);
-        c->events().flush.connect(flush_cb);
+        c->events().flush_evt.connect(flush_cb);
         c->events().finish_evt.connect(finish_cb);
 
         Log(1).stream() << "Registered aggregation service" << std::endl;
@@ -806,13 +837,15 @@ public:
 };
 
 const ConfigSet::Entry AggregateDB::s_configdata[] = {
-    { "attributes",   CALI_TYPE_STRING, "time.inclusive.duration",
+    { "attributes",   CALI_TYPE_STRING, "",
       "List of attributes to be aggregated",
-      "List of attributes to be aggregated" },
+      "List of attributes to be aggregated."
+      "If specified, only aggregate the given attributes."
+      "By default, aggregate all aggregatable attributes." },
     { "key",   CALI_TYPE_STRING, "",
       "List of attributes in the aggregation key",
       "List of attributes in the aggregation key."
-      "If specified, only aggregate over the given attributes." },
+      "If specified, only group by the given attributes." },
     ConfigSet::Terminator
 };
 
@@ -822,7 +855,7 @@ Attribute      AggregateDB::s_count_attribute = Attribute::invalid;
 
 vector<string> AggregateDB::s_key_attribute_names;
 vector<Attribute> AggregateDB::s_key_attributes;
-vector<string> AggregateDB::s_aggr_attribute_names;
+vector<Attribute> AggregateDB::s_aggr_attributes;
 vector<cali_id_t> AggregateDB::s_key_attribute_ids;
 vector<AggregateDB::StatisticsAttributes> AggregateDB::s_stats_attributes;
 

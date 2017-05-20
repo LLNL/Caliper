@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,75 +30,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  MpiWrap.cpp
-///@brief Caliper MPI service
+/// \file CaliperMetadataQueryInterface.cpp
+/// Caliper metadata access interface implementation
 
-#include "../CaliperService.h"
-
-#include <Caliper.h>
-
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "CaliperMetadataAccessInterface.h"
 
 using namespace cali;
-using namespace std;
 
-namespace cali
+std::vector<Attribute>
+CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const
 {
-    Attribute mpifn_attr   { Attribute::invalid };
-    Attribute mpirank_attr { Attribute::invalid };
-    Attribute mpisize_attr { Attribute::invalid };
+    std::vector<Attribute> vec = get_attributes();
+    std::vector<Attribute> ret;
 
-    bool      mpi_enabled  { false };
+    for (Attribute attr : vec)
+        if (!attr.get(meta).empty())
+            ret.push_back(attr);
 
-    string    mpi_whitelist_string;
-    string    mpi_blacklist_string;
+    return ret;
 }
-
-namespace
-{
-
-ConfigSet        config;
-
-ConfigSet::Entry configdata[] = {
-    { "whitelist", CALI_TYPE_STRING, "", 
-      "List of MPI functions to instrument", 
-      "Colon-separated list of MPI functions to instrument.\n"
-      "If set, only whitelisted MPI functions will be instrumented.\n"
-      "By default, all MPI functions are instrumented." 
-    },
-    { "blacklist", CALI_TYPE_STRING, "",
-      "List of MPI functions to filter",
-      "Colon-separated list of functions to blacklist." 
-    },
-    ConfigSet::Terminator
-};
-
-void mpi_register(Caliper* c)
-{
-    config = RuntimeConfig::init("mpi", configdata);
-
-    mpifn_attr   = 
-        c->create_attribute("mpi.function", CALI_TYPE_STRING);
-    mpirank_attr = 
-        c->create_attribute("mpi.rank", CALI_TYPE_INT, 
-                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
-    mpisize_attr = 
-        c->create_attribute("mpi.size", CALI_TYPE_INT, 
-                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
-
-    mpi_enabled = true;
-
-    mpi_whitelist_string = config.get("whitelist").to_string();
-    mpi_blacklist_string = config.get("blacklist").to_string();
-
-    Log(1).stream() << "Registered MPI service" << endl;
-}
-
-} // anonymous namespace 
-
-
-namespace cali 
-{
-    CaliperService mpi_service = { "mpi", ::mpi_register };
-} // namespace cali

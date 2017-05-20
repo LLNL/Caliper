@@ -46,7 +46,6 @@
 
 #include <utility>
 
-
 namespace cali
 {
 
@@ -116,6 +115,8 @@ public:
             snapshot_cbvec;
         typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
+        typedef util::callback<void(Caliper*,SnapshotRecord*)>
+            edit_snapshot_cbvec;
 
         typedef util::callback<void(Caliper*, const SnapshotRecord*)>
             flush_cbvec;
@@ -142,7 +143,8 @@ public:
         process_snapshot_cbvec process_snapshot;
 
         flush_cbvec            pre_flush_evt;
-        flush_cbvec            flush;
+        flush_cbvec            flush_evt;
+        edit_snapshot_cbvec    pre_flush_snapshot;
         process_snapshot_cbvec flush_snapshot;
         flush_cbvec            flush_finish_evt;
 
@@ -165,8 +167,9 @@ public:
     void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
     void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const SnapshotRecord* trigger_info);
-    
+    void      flush(const SnapshotRecord* flush_info);
+    void      flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* snapshot);
+
     // --- Annotation API
 
     cali_err  begin(const Attribute& attr, const Variant& data);
@@ -192,13 +195,15 @@ public:
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 
+    std::vector<Attribute> get_attributes() const;
+
     Attribute create_attribute(const std::string& name,
                                cali_attr_type     type,
                                int                prop = CALI_ATTR_DEFAULT,
                                int                meta = 0,
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
-
+    
     /// \brief return node by id
     Node*     node(cali_id_t id) const;
 

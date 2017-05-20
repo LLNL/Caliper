@@ -76,7 +76,7 @@ static const ConfigSet::Entry s_configdata[] = {
       "Record region addresses for call path",
       "Record region addresses for call path"
     },
-    { "skip_frames", CALI_TYPE_UINT, "10",
+    { "skip_frames", CALI_TYPE_UINT, "0",
       "Skip this number of stack frames",
       "Skip this number of stack frames.\n"
       "Avoids recording stack frames within the caliper library"
@@ -142,12 +142,6 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord*)
     }
 }
 
-} // namespace 
-
-
-namespace cali
-{
-
 void callpath_service_register(Caliper* c)
 {
     config = RuntimeConfig::init("callpath", s_configdata);
@@ -156,8 +150,12 @@ void callpath_service_register(Caliper* c)
     use_addr    = config.get("use_address").to_bool();
     skip_frames = config.get("skip_frames").to_uint();
 
+    Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+    Variant v_true(true);
+
     callpath_addr_attr = 
-        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   CALI_ATTR_SKIP_EVENTS);
+        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   CALI_ATTR_SKIP_EVENTS,
+                            1, &symbol_class_attr, &v_true);
     callpath_name_attr = 
         c->create_attribute("callpath.regname", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);    
 
@@ -166,6 +164,10 @@ void callpath_service_register(Caliper* c)
     Log(1).stream() << "Registered callpath service" << endl;
 }
 
-CaliperService callpath_service = { "callpath", callpath_service_register };
+} // namespace 
 
+
+namespace cali
+{
+    CaliperService callpath_service = { "callpath", ::callpath_service_register };
 } // namespace cali

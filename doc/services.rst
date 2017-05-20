@@ -34,14 +34,20 @@ durations) of snapshots with a similar `key`, creating a profile.
 
 .. envvar:: CALI_AGGREGATE_ATTRIBUTES
 
-   Colon-separated list of aggregation attributes. The aggregate
+   Colon-separated list of aggregation attributes. The `aggregate`
    service aggregates values of aggregation attributes from all input
    snapshots with similar aggregation keys. Note that only attributes
    with the ``ASVALUE`` storage property can be aggregation
    attributes.
 
-   Default: ``time.inclusive.duration`` (Generates event-triggered
-   time profiles, if `event` and `timestamp` services are enabled)
+   By default, the aggregation service determines aggregatable 
+   attributes automatically. With this configuration variable,
+   the aggregation attributes can be set specifically (e.g., to
+   select a subset). When set to `none`, the `aggregate` service
+   will not aggregate any attributes, and only count the number of 
+   snapshots with similar keys.
+
+   Default: Empty (determine aggregation attributes automatically).
 
 Aggregation key
 ................................
@@ -454,6 +460,34 @@ This configuration will create the following report output: ::
 Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
+
+Symbollookup
+--------------------------------
+
+The symbollookup service provides function name, source file, and
+source line number lookup for binary program addresses from, e.g.,
+stack unwinding or program counter sampling. The symbol lookup takes
+place during snapshot buffer flushes. It appends symbol attributes for
+each address attribute to the snapshots being flushed. For an address
+attribute ``address``, the function, file, and line number will be
+added in ``source.function#address``, ``source.file#address``, and
+``source.line#address`` attributes, respectively. If a symbol lookup
+was unsuccessful for any reason, the value is set to `UNKNOWN`.
+
+.. envvar:: CALI_SYMBOLLOOKUP_ATTRIBUTES
+
+   Explicitly select address attributes for which to perform symbol
+   lookups. Colon-separated list. Default: empty, selects address
+   attributes automatically via `class.symboladdress` attribute class.
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS
+
+   Perform function name lookup. `TRUE` or `FALSE`, default `TRUE`.
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
+
+   Perform source file and line number lookup. `TRUE` or `FALSE`,
+   default `TRUE`.
 
 Textlog
 --------------------------------

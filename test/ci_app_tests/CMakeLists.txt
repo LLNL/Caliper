@@ -3,6 +3,7 @@ include_directories("../../src/caliper")
 # build the C/C++ CI test apps
 
 set(CALIPER_CI_CXX_TEST_APPS
+  ci_test_aggregate
   ci_test_basic
   ci_test_macros)
 set(CALIPER_CI_C_TEST_APPS
@@ -22,6 +23,7 @@ endforeach()
 
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
+  test_aggregate.py
   test_basictrace.py
   test_c_api.py
   calipertest.py)

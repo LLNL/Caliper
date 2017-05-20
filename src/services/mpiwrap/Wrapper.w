@@ -18,6 +18,7 @@ namespace cali
 {
     extern Attribute   mpifn_attr;
     extern Attribute   mpirank_attr;
+    extern Attribute   mpisize_attr;
 
     extern bool        mpi_enabled;
 
@@ -106,6 +107,10 @@ namespace
     if (mpi_enabled) {
         ::setup_filter();
 
+        int size;
+        PMPI_Comm_size(MPI_COMM_WORLD, &size);
+
+        c.set(mpisize_attr, Variant(size));
         c.set(mpirank_attr, Variant(rank));
     }
 }{{endfn}}

@@ -186,6 +186,9 @@ void setup_events(Caliper* c, const string& eventstring)
 
     util::split(eventstring, ',', back_inserter(events));
 
+    Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
+    Variant   v_true(true);
+
     for (string& event : events) {
         int code;
 
@@ -202,10 +205,15 @@ void setup_events(Caliper* c, const string& eventstring)
         if (global_info.counter_events.size() < MAX_COUNTERS) {
             Attribute delta_attr =
                 c->create_attribute(string("papi.")+event, CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_THREAD | 
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    1, &aggr_class_attr, &v_true);
             Attribute accum_attr = 
                 c->create_attribute(string("papi.accum.")+event, CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_THREAD | 
+                                    CALI_ATTR_SKIP_EVENTS);
 
             global_info.counter_events.push_back(code);
             global_info.counter_delta_attrs.push_back(delta_attr.id());

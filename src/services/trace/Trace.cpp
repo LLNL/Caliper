@@ -313,7 +313,7 @@ namespace
         }        
         
         c->events().process_snapshot.connect(&process_snapshot_cb);
-        c->events().flush.connect(&flush_cb);
+        c->events().flush_evt.connect(&flush_cb);
         c->events().finish_evt.connect(&finish_cb);
 
         // Initialize trace buffer on master thread

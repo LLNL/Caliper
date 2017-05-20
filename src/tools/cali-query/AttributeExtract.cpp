@@ -30,75 +30,50 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  MpiWrap.cpp
-///@brief Caliper MPI service
+#include "AttributeExtract.h"
 
-#include "../CaliperService.h"
-
-#include <Caliper.h>
-
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "CaliperMetadataAccessInterface.h"
+#include "Node.h"
 
 using namespace cali;
-using namespace std;
 
-namespace cali
+struct AttributeExtract::AttributeExtractImpl
 {
-    Attribute mpifn_attr   { Attribute::invalid };
-    Attribute mpirank_attr { Attribute::invalid };
-    Attribute mpisize_attr { Attribute::invalid };
+    SnapshotProcessFn      m_snap_fn;
+    Attribute              m_id_attr;
 
-    bool      mpi_enabled  { false };
+    static const cali_id_t s_attr_id; // The "attribute" attribute id
 
-    string    mpi_whitelist_string;
-    string    mpi_blacklist_string;
-}
+    void process_node(CaliperMetadataAccessInterface& db, const Node* node) {
+        if (node->attribute() != s_attr_id)
+            return;
 
-namespace
-{
+        if (m_id_attr == Attribute::invalid)
+            m_id_attr = db.create_attribute("attribute.id", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
-ConfigSet        config;
+        EntryList list { Entry(node), Entry(m_id_attr, node->id()) };
 
-ConfigSet::Entry configdata[] = {
-    { "whitelist", CALI_TYPE_STRING, "", 
-      "List of MPI functions to instrument", 
-      "Colon-separated list of MPI functions to instrument.\n"
-      "If set, only whitelisted MPI functions will be instrumented.\n"
-      "By default, all MPI functions are instrumented." 
-    },
-    { "blacklist", CALI_TYPE_STRING, "",
-      "List of MPI functions to filter",
-      "Colon-separated list of functions to blacklist." 
-    },
-    ConfigSet::Terminator
+        m_snap_fn(db, list);
+    }
+
+    AttributeExtractImpl(SnapshotProcessFn snap_fn)
+        : m_snap_fn(snap_fn),
+          m_id_attr(Attribute::invalid)
+        { }
 };
 
-void mpi_register(Caliper* c)
+const cali_id_t AttributeExtract::AttributeExtractImpl::s_attr_id = 8;
+
+AttributeExtract::AttributeExtract(SnapshotProcessFn snap_fn)
+    : mP { new AttributeExtractImpl(snap_fn) } 
+{ }
+
+AttributeExtract::~AttributeExtract()
 {
-    config = RuntimeConfig::init("mpi", configdata);
-
-    mpifn_attr   = 
-        c->create_attribute("mpi.function", CALI_TYPE_STRING);
-    mpirank_attr = 
-        c->create_attribute("mpi.rank", CALI_TYPE_INT, 
-                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
-    mpisize_attr = 
-        c->create_attribute("mpi.size", CALI_TYPE_INT, 
-                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
-
-    mpi_enabled = true;
-
-    mpi_whitelist_string = config.get("whitelist").to_string();
-    mpi_blacklist_string = config.get("blacklist").to_string();
-
-    Log(1).stream() << "Registered MPI service" << endl;
+    mP.reset();
 }
 
-} // anonymous namespace 
-
-
-namespace cali 
+void AttributeExtract::operator()(CaliperMetadataAccessInterface& db, const Node* node)
 {
-    CaliperService mpi_service = { "mpi", ::mpi_register };
-} // namespace cali
+    mP->process_node(db, node);
+}
