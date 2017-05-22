@@ -399,22 +399,37 @@ namespace {
 
         for (auto sample_attribute_str : sample_attributes_strvec) {
 
-            // Create Caliper attribute
             std::string attribute_name = "libpfm." + sample_attribute_str;
-
-            Attribute new_attribute = c->create_attribute(attribute_name,
-                                                          CALI_TYPE_ADDR,
-                                                          CALI_ATTR_ASVALUE
-                                                          | CALI_ATTR_SCOPE_THREAD
-                                                          | CALI_ATTR_SKIP_EVENTS);
-
-            // Add to attribute ids
-            cali_id_t attribute_id = new_attribute.id();
-            libpfm_attributes[num_attributes] = attribute_id;
 
             // Add to sample attributes for perf_event
             uint64_t attribute_bits = sample_attribute_map[sample_attribute_str];
             sample_attributes |= attribute_bits;
+
+            Attribute new_attribute;
+
+            if (attribute_bits == PERF_SAMPLE_IP) {
+
+                // Register IP attribute for symbol lookup
+                Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+                Variant v_true(true);
+
+                new_attribute = c->create_attribute(attribute_name,
+                                                    CALI_TYPE_ADDR,
+                                                    CALI_ATTR_ASVALUE
+                                                    | CALI_ATTR_SCOPE_THREAD
+                                                    | CALI_ATTR_SKIP_EVENTS,
+                                                    1, &symbol_class_attr, &v_true);
+            } else {
+                new_attribute = c->create_attribute(attribute_name,
+                                                    CALI_TYPE_ADDR,
+                                                    CALI_ATTR_ASVALUE
+                                                    | CALI_ATTR_SCOPE_THREAD
+                                                    | CALI_ATTR_SKIP_EVENTS);
+            }
+
+            // Add to attribute ids
+            cali_id_t attribute_id = new_attribute.id();
+            libpfm_attributes[num_attributes] = attribute_id;
 
             // Record type of attribute
             libpfm_attribute_types[num_attributes] = attribute_bits;
