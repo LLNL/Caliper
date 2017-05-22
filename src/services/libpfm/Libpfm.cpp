@@ -87,7 +87,7 @@ using namespace std;
 namespace {
     ConfigSet config;
 
-#define MAX_THR  128
+#define MAX_THR  4096
 #define MAX_ATTRIBUTES 12 // Number of available attributes below
 
     static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
