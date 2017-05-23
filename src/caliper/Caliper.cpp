@@ -586,8 +586,8 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         node = m_thread_scope->tree.type_node(type);
         assert(node);
 
-        if (meta > 0)
-            node = m_thread_scope->tree.get_path(meta, meta_attr, meta_val, node);
+        if (n_meta > 0)
+            node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
 
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
         Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
@@ -666,6 +666,11 @@ Caliper::get_attribute(cali_id_t id) const
     return Attribute::make_attribute(m_thread_scope->tree.node(id));
 }
 
+/// Get all attributes.
+/// This function is not signal safe.
+/// \param id The attribute id
+/// \return   A vector that containing all attribute objects
+
 std::vector<Attribute>
 Caliper::get_attributes() const
 {
@@ -743,7 +748,7 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
 /// the trigger_info list provided by the caller.
 ///
 /// The function invokes the snapshot callback to obtain measurements.
-/// The complete snapshot if passed to the process_snapshot callback.  
+/// The fully assembled snapshot record is then passed to the process_snapshot callback.  
 ///
 /// This function is signal safe.
 ///
@@ -768,6 +773,17 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }
 
+/// Flush aggregation and / or trace buffers.
+///
+/// Flushes trace buffers and / or the aggregation database in the trace and aggregation
+/// services, respectively. This will empty the trace/aggregation buffers and
+/// forward all buffered snapshot records to output services, e.g., report and recorder.
+///
+/// This function will invoke the pre_flush, flush, and flush_finish callbacks.
+/// This function is not signal safe.
+///
+/// \param input_flush_info User-provided flush context information. Currently unused.
+
 void
 Caliper::flush(const SnapshotRecord* input_flush_info)
 {
@@ -788,6 +804,16 @@ Caliper::flush(const SnapshotRecord* input_flush_info)
     mG->events.flush_finish_evt(this, &flush_info);
 }
 
+/// Flush a snapshot record.
+///
+/// Forwards the snapshot record to output services (e.g., report or recorder).
+/// Invokes the pre_flush_snapshot and flush_snapshot callbacks.
+///
+/// This function is not signal safe.
+///
+/// \param flush_info  User-provided flush information.
+/// \param in_snapshot Snapshot record to be flushed.
+
 void
 Caliper::flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* in_snapshot)
 {
@@ -804,6 +830,20 @@ Caliper::flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* 
 }
 
 // --- Annotation interface
+
+/// Push attribute:value pair on blackboard.
+///
+/// Adds the given attribute/value pair on the blackboard. Appends
+/// the value to any previous values of the same attribute,
+/// creating a hierarchy.
+///
+/// This function invokes pre_begin/post_begin callbacks, unless the
+/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key
+/// \param data Value to set
 
 cali_err 
 Caliper::begin(const Attribute& attr, const Variant& data)
@@ -836,6 +876,15 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     return ret;
 }
+
+/// Pop/remove top-most entry with given attribute from blackboard.
+///
+/// This function invokes the pre_end/post_end callbacks, unless the
+/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key.
 
 cali_err 
 Caliper::end(const Attribute& attr)
@@ -886,6 +935,19 @@ Caliper::end(const Attribute& attr)
     return ret;
 }
 
+/// Set attribute:value pair on blackboard.
+///
+/// Set the given attribute/value pair on the blackboard. Overwrites
+/// the previous values of the same attribute.
+///
+/// This function invokes pre_set/post_set callbacks, unless the
+/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key
+/// \param data Value to set
+
 cali_err 
 Caliper::set(const Attribute& attr, const Variant& data)
 {
@@ -918,6 +980,20 @@ Caliper::set(const Attribute& attr, const Variant& data)
 
     return ret;
 }
+
+/// Set a list of values for attribute `attr` blackboard.
+///
+/// Sets the given values on the blackboard. Overwrites
+/// the previous values of the same attribute.
+///
+/// This function invokes pre_set/post_set callbacks, unless the
+/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key
+/// \param n    Number of values in list
+/// \param data List (array) of values
 
 cali_err 
 Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
@@ -957,6 +1033,15 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
 
 // --- Query
 
+/// Retrieve entry for the given attribute key from the blackboard
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key.
+///
+/// \return The top-most entry on the blackboard for the given attribute key.
+///         An empty Entry object if this attribute is not set.
+
 Entry
 Caliper::get(const Attribute& attr) 
 {
@@ -980,6 +1065,15 @@ Caliper::get(const Attribute& attr)
 
 // --- Generic entry API
 
+/// Create a snapshot record (entry list) from the given attribute:value pairs
+///
+/// This function is signal-safe.
+///
+/// \param n      Number of elements in attribute/value lists
+/// \param attr   Attribute list
+/// \param value  Value list
+/// \param list   Output record. Must be large enough to hold all entries.
+
 void
 Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list) 
 {
@@ -997,6 +1091,15 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
     if (node)
         list.append(node);
 }
+
+/// Create an Entry structure from the given attribute:value pair.
+///
+/// This function is signal safe.
+///
+/// \param attr  Attribute key
+/// \param value Value
+///
+/// \retrun Entry object. 
 
 Entry 
 Caliper::make_entry(const Attribute& attr, const Variant& value) 
@@ -1017,6 +1120,17 @@ Caliper::make_entry(const Attribute& attr, const Variant& value)
     return entry;
 }
 
+/// Return a context tree path for the key:value pairs from a given list of
+/// nodes.
+///
+/// This function is signal safe.
+///
+/// \param n Number of nodes in node list
+/// \param nodelist List of nodes to take key:value pairs from
+/// \param parent   Construct path off this parent node
+///
+/// \return Node pointing to the end of the new path
+
 Node*
 Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
@@ -1025,6 +1139,13 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 
     return m_thread_scope->tree.get_path(n, nodelist, parent);
 }
+
+/// Return the node with the given id.
+/// Note: currently, this involves a linear search!
+///
+/// This function is signal safe.
+///
+/// \return The node. Null if the node was not found.
 
 Node*
 Caliper::node(cali_id_t id) const
@@ -1041,6 +1162,16 @@ Caliper::events()
     return mG->events;
 }
 
+/// Exchange value on the blackboard. Atomically updates value for given
+/// attribute key and returns the previous value.
+///
+/// This function is signal safe.
+///
+/// \param attr Attribute key. Must have AS_VALUE attribute property.
+/// \param data The new value.
+///
+/// \return The previous value for the given key.
+
 Variant
 Caliper::exchange(const Attribute& attr, const Variant& data)
 {
@@ -1055,11 +1186,31 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 // --- Caliper constructor & singleton API
 //
 
+/// Construct a Caliper instance object.
+/// \see instance()
+
 Caliper::Caliper()
     : mG(0), m_thread_scope(0), m_task_scope(0)
 {
     *this = Caliper::instance();
 }
+
+/// Construct a Caliper instance object.
+///
+/// The Caliper instance object provides access to the Caliper API.
+/// Internally, Caliper maintains a variety of thread-local data structures.
+/// The instance object caches access to these structures. As a result,
+/// one cannot share Caliper instance objects between threads.
+/// We recommend to use Caliper instance objects only within a function context,
+/// (on the stack).
+///
+/// For use within signal handlers, use `sigsafe_instance()`.
+/// \see sigsafe_instance()
+///
+/// Caliper will initialize itself in the first instance object request on a
+/// process.
+/// 
+/// \return Caliper instance object
 
 Caliper
 Caliper::instance()
@@ -1082,6 +1233,15 @@ Caliper::instance()
 
     return Caliper(GlobalData::sG, GlobalData::sG->acquire_thread_scope());
 }
+
+/// Construct a signal-safe Caliper instance object.
+///
+/// A signal-safe Caliper instance object will have a flag set to instruct
+/// the API and services that only signal-safe operations can be used.
+///
+/// \see instance()
+///
+/// \return Caliper instance object
 
 Caliper
 Caliper::sigsafe_instance()
