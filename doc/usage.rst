@@ -33,54 +33,55 @@ The annotation commands fulfill two functions:
 The specific action performed is determined by a runtime configuration
 profile. By default, the annotations perform no actions other than
 updating the Caliper-internal *blackboard* buffer.
-    
+
 The following example marks "initialization" and "loop" phases in a
 C++ code, and exports the main loop's current iteration counter.
 
 .. code-block:: c++
                 
-    #include <Annotation.h>
+    #include <caliper/cali.h>
 
     int main(int argc, char* argv[])
     {
-        // Mark begin of "initialization" phase
-        cali::Annotation
-            init_ann = cali::Annotation("initialization").begin();
+        // Mark this function
+        CALI_CXX_MARK_FUNCTION;
+
+        // Mark the "intialization" phase
+        CALI_MARK_BEGIN("initialization");
         // perform initialization tasks
         int count = 4;
-        // Mark end of "initialization" phase
-        init_ann.end();
+        double t = 0.0, delta_t = 1e-6;
+        CALI_MARK_END("initialization");
 
-        if (count > 0) {
-            // Mark begin of "loop" phase. The scope guard will
-            // automatically end it at the end of the C++ scope
-            cali::Annotation::Guard 
-                g_loop( cali::Annotation("loop").begin() );
+        // Mark the loop 
+        CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
 
-            // Create "iteration" attribute to export the iteration count
-            cali::Annotation iteration_ann("iteration");
+        for (int i = 0; i < count; ++i) {
+            // Mark each loop iteration  
+            CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
-            for (int i = 0; i < count; ++i) {
-                // Export current iteration count under "iteration"
-                iteration_ann.set(i);
+            // A Caliper snapshot taken at this point will contain
+            // { "function" : "main"
+            //   "loop"     : "mainloop"
+            //   "iteration#mainloop" : <i> }
 
-                // A Caliper snapshot taken at this point will contain
-                // { "loop", "iteration"=<i> }
-            }
-
-            // Clear the "iteration" attribute (otherwise, snapshots taken
-            // after the loop will still contain the last "iteration" value)
-            iteration_ann.end();
+            // perform computation
+            t += delta_t;
         }
-    }
 
-See :doc:`api` for examples in C and Fortran.
+        CALI_CXX_MARK_LOOP_END(mainloop);
+    }
 
 Caliper-enabled tools will now be able to access the information
 provided by the source-code annotations at runtime by taking
 snapshots. The source-code annotations also provide hooks to enable
 various runtime actions in built-in Caliper service modules, such as
 triggering snapshots or writing traces.
+
+In addition to the high-level macro API shown above, Caliper also
+provides lower-level C, C++, and Fortran APIs that can be used to
+define application-specific attributes.  See :doc:`api` for examples
+in C and Fortran.
 
 Build and link Caliper programs
 --------------------------------
@@ -89,7 +90,7 @@ To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper) and infrastructure libraries (libcaliper-common). ::
   
-    CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
+    CALIPER_LIBS = -L$(CALIPER_DIR)/lib64 -lcaliper
 
 See :doc:`link` for more information.
 
@@ -132,20 +133,20 @@ in the "initialization" phase, in the entire "loop" phase, and in each
 iteration of the example program: 
 
 .. code-block:: sh
-                
+
     $ ls *.cali
     160219-095419_5623_LQfNQTNgpqdM.cali
-    $ cali-query --table \
-          --print-attributes=initialization:loop:iteration:time.inclusive.duration \
+    $ cali-query -s time.inclusive.duration --table \
           160219-095419_5623_LQfNQTNgpqdM.cali
-    initialization loop iteration time.inclusive.duration
-    true                                             4437
-                   true
-                   true         0                     179
-                   true         1                      14
-                   true         2                      11
-                   true         3                      12
-                   true                               435 
+    function phase          loop      iter..loop time.inc..ation
+    main     initialization                                  100
+    main                    mainloop           0              23
+    main                    mainloop           1               9
+    main                    mainloop           2               6
+    main                    mainloop           3               8
+    main                    mainloop                          78
+    main                                                     258
+
 
 Where to go from here?
 --------------------------------
