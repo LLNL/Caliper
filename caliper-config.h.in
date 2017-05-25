@@ -13,6 +13,7 @@
 #cmakedefine CALIPER_HAVE_VTUNE
 #cmakedefine CALIPER_HAVE_DYNINST
 #cmakedefine CALIPER_HAVE_GOTCHA
+#cmakedefine CALIPER_HAVE_CUPTI
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@
