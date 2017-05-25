@@ -53,6 +53,751 @@
 <h1>Annotation API<a class="headerlink" href="#annotation-api" title="Permalink to this headline">¶</a></h1>
 <p>Caliper provides source-code instrumentation APIs for C and C++ to
 create and access Caliper context attributes.</p>
+<div class="section" id="high-level-annotation-macros">
+<h2>High-level annotation macros<a class="headerlink" href="#high-level-annotation-macros" title="Permalink to this headline">¶</a></h2>
+<p>For most source-code markup use cases, we recommend using Caliper&#8217;s
+annotation macros. They provide the easiest way to annotate functions,
+loops, statements, and user-defined source-code regions.</p>
+<dl class="macro">
+<dt id="c.CALI_MARK_FUNCTION_BEGIN">
+<code class="descname">CALI_MARK_FUNCTION_BEGIN</code><a class="headerlink" href="#c.CALI_MARK_FUNCTION_BEGIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="macro">
+<dt id="c.CALI_MARK_FUNCTION_END">
+<code class="descname">CALI_MARK_FUNCTION_END</code><a class="headerlink" href="#c.CALI_MARK_FUNCTION_END" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark begin and end of a function. The annotations must be placed at
+the top and on <em>all</em> function exit points, respectively. Will
+export the annotated functions by name in the pre-defined <cite>function</cite>
+attribute.</p>
+<p>For C++ codes, we recommend using <a class="reference internal" href="#c.CALI_CXX_MARK_FUNCTION" title="CALI_CXX_MARK_FUNCTION"><code class="xref c c-macro docutils literal"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code></a>
+instead.</p>
+</dd></dl>
+
+<dl class="macro">
+<dt id="c.CALI_CXX_MARK_FUNCTION">
+<code class="descname">CALI_CXX_MARK_FUNCTION</code><a class="headerlink" href="#c.CALI_CXX_MARK_FUNCTION" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark begin and end of a function. Should be placed at the top of the
+function, and will automatically &#8220;close&#8221; the function at any return
+point. Will export the annotated function by name in the pre-defined
+<cite>function</cite> attribute. Only available in C++.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_LOOP_BEGIN">
+<code class="descname">CALI_MARK_LOOP_BEGIN</code><span class="sig-paren">(</span>loop_id, name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_BEGIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_LOOP_END">
+<code class="descname">CALI_MARK_LOOP_END</code><span class="sig-paren">(</span>loop_id<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_END" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark begin and end of a loop. Will export the user-provided loop name
+in the pre-defined <cite>loop</cite> attribute.</p>
+<p>The macros should be placed before and after the loop of interest.
+Users must ensure proper begin/end matching: If the surrounding
+function can be exited from within the loop (e.g., from a <cite>return</cite>
+statement within the loop), an exit marker must be placed there
+as well.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>loop_id</strong> &#8211; Alphanumerical identifier. Must be unique within the
+surrounding scope.</li>
+<li><strong>name</strong> &#8211; The loop name which will be exported to the <cite>loop</cite>
+attribute. This macro argument must be convertible
+into a <cite>const char*</cite>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_ITERATION_BEGIN">
+<code class="descname">CALI_MARK_ITERATION_BEGIN</code><span class="sig-paren">(</span>loop_id, iteration<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_BEGIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_ITERATION_END">
+<code class="descname">CALI_MARK_ITERATION_END</code><span class="sig-paren">(</span>loop_id<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_END" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark begin and end of a loop iteration. The loop must be
+annotated with the loop annotation macros
+(<a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a> / <a class="reference internal" href="#c.CALI_MARK_LOOP_END" title="CALI_MARK_LOOP_END"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_END()</span></code></a>).</p>
+<p>The macros should be placed at the top and bottom of the loop body.
+If an iteration can be left prematurely (e.g., from a <cite>continue</cite>,
+<cite>break</cite>, or <cite>return</cite> statement), an end marker must be placed there
+as well.</p>
+<p>The iteration number will be exported in the attribute <cite>iteration#name</cite>,
+where <cite>name</cite> is the loop name given to <a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>loop_id</strong> &#8211; Loop identifier, must match the identifier given to
+<a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a>.</li>
+<li><strong>iteration</strong> &#8211; Current iteration number. This macro argument must be
+convertible to <cite>int</cite>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_BEGIN">
+<code class="descname">CALI_MARK_BEGIN</code><span class="sig-paren">(</span>name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_BEGIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_MARK_END">
+<code class="descname">CALI_MARK_END</code><span class="sig-paren">(</span>name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_END" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mark begin and end of a user-defined code region. The macros should be
+placed around the code region of interest. The user-provided region name
+will be exported in the pre-defined <cite>annotation</cite> attribute.</p>
+<p>Users must ensure proper nesting: Each region <cite>begin</cite> must be
+matched by a corresponding <cite>end</cite> in the correct order.  Regions may
+be nested within another, but they cannot overlap partially.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; The user-defined region name. Must be convertible into
+a <cite>const char*</cite>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.CALI_WRAP_STATEMENT">
+<code class="descname">CALI_WRAP_STATEMENT</code><span class="sig-paren">(</span>name, statement<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_WRAP_STATEMENT" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#8220;Wraps&#8221; Caliper annotations around a C/C++ statement, or group of statments.
+The user-provided name will be exported to the <cite>statement</cite> attribute.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; The user-defined region name. Must be convertible into
+a <cite>const char*</cite>.</li>
+<li><strong>statement</strong> &#8211; C/C++ statement(s) that should be wrapped. The
+statements must complete within the wrapped
+region, that is, they cannot branch out of the
+macro (e.g.  with <cite>goto</cite>, <cite>continue</cite>, <cite>break</cite>, or
+<cite>return</cite>).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<div class="section" id="example-high-level-annotation-macros-in-c">
+<h3>Example: High-level annotation macros in C<a class="headerlink" href="#example-high-level-annotation-macros-in-c" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
+<span class="cp">#include &lt;stdlib.h&gt;</span>
+
+<span class="kt">int</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">CALI_MARK_FUNCTION_BEGIN</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span> <span class="cm">/* Must mark _all_ function exit points! */</span>
+    <span class="k">return</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">CALI_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">fooloop</span><span class="p">,</span> <span class="s">&quot;example.fooloop&quot;</span><span class="p">);</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">CALI_MARK_ITERATION_BEGIN</span><span class="p">(</span><span class="n">fooloop</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+
+    <span class="n">CALI_MARK_ITERATION_END</span><span class="p">(</span><span class="n">fooloop</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">CALI_MARK_LOOP_END</span><span class="p">(</span><span class="n">fooloop</span><span class="p">);</span>
+
+  <span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+  <span class="n">CALI_MARK_FUNCTION_BEGIN</span><span class="p">;</span>
+
+  <span class="n">CALI_WRAP_STATEMENT</span><span class="p">(</span> <span class="s">&quot;example.init&quot;</span><span class="p">,</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">?</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">:</span> <span class="mi">4</span> <span class="p">);</span>
+
+  <span class="n">foo</span><span class="p">(</span><span class="n">count</span><span class="p">);</span>
+
+  <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;output&quot;</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">&quot;Done.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+  <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;output&quot;</span><span class="p">);</span>
+
+  <span class="n">CALI_MARK_FUNCTION_END</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In an event trace configuration, this program produces the following snapshot
+records:</p>
+<div class="highlight-python"><div class="highlight"><pre>function statement      loop              annotation iteration#example.fooloop
+main
+main     example.init
+main
+main/foo
+main/foo                example.fooloop
+main/foo                example.fooloop                                      0
+main/foo                example.fooloop
+main/foo                example.fooloop                                      1
+main/foo                example.fooloop
+main/foo                example.fooloop                                      2
+main/foo                example.fooloop
+main/foo                example.fooloop                                      3
+main/foo                example.fooloop
+main/foo
+main
+main                                    output
+main
+</pre></div>
+</div>
+</div>
+<div class="section" id="id1">
+<h3>Example: High-level annotation macros in C++<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>A C++ example producing the same output as above:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
+<span class="cp">#include &lt;cstdlib&gt;</span>
+
+<span class="kt">int</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span><span class="p">;</span>
+
+  <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">fooloop</span><span class="p">,</span> <span class="s">&quot;example.fooloop&quot;</span><span class="p">);</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">fooloop</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+
+    <span class="c1">// ... do work ...</span>
+  <span class="p">}</span>
+
+  <span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">fooloop</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+  <span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
+
+  <span class="n">CALI_WRAP_STATEMENT</span><span class="p">(</span> <span class="s">&quot;example.init&quot;</span><span class="p">,</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="n">argc</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">?</span> <span class="n">atoi</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">:</span> <span class="mi">4</span> <span class="p">);</span>
+
+  <span class="n">foo</span><span class="p">(</span><span class="n">count</span><span class="p">);</span>
+
+  <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;output&quot;</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Done.&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+  <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;output&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="c-annotation-api">
+<h2>C++ annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>cali::Annotation</cite> class provides the C++ instrumentation interface.</p>
+<dl class="class">
+<dt id="_CPPv2N4cali10AnnotationE">
+<span id="cali::Annotation"></span><em class="property">class </em><code class="descclassname">cali::</code><code class="descname">Annotation</code><a class="headerlink" href="#_CPPv2N4cali10AnnotationE" title="Permalink to this definition">¶</a></dt>
+<dd><p>#include &lt;caliper/Annotation.h&gt;</p>
+<p>Instrumentation interface to add and manipulate context attributes</p>
+<p>The Annotation class is the primary source-code instrumentation interface
+for Caliper. Annotation objects provide access to named Caliper context
+attributes. If the referenced attribute key does not exist yet, it will be
+created automatically.</p>
+<p>Example:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">phase_ann</span><span class="p">(</span><span class="s">&quot;myprogram.phase&quot;</span><span class="p">);</span>
+
+<span class="n">phase_ann</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Initialization&quot;</span><span class="p">);</span>
+  <span class="c1">// ...</span>
+<span class="n">phase_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>This example creates an annotation object for attributes with the
+<code class="docutils literal"><span class="pre">myprogram.phase</span></code> key, and uses the <a class="reference internal" href="#_CPPv2N4cali10Annotation5beginEi" title="cali::Annotation::begin"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::begin()</span></code></a> and
+<a class="reference internal" href="#_CPPv2N4cali10Annotation3endEv" title="cali::Annotation::end"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::end()</span></code></a> methods to mark a section of code where
+that attribute is set to &#8220;Initialization&#8221;.</p>
+<p>Note that the access to attributes through Annotation
+objects is not exclusive: two different Annotation objects can reference and
+update the same context attribute.</p>
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation10AnnotationEPKci">
+<span id="cali::Annotation::Annotation__cCP.i"></span><code class="descclassname"></code><code class="descname">Annotation</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>name</em>, int <em>properties</em> = 0<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructor. Constructs an annotation object to manipulate
+attributes. If no attribute key with the given name exists yet,
+it will be created on the first invocation of a <code class="docutils literal"><span class="pre">begin</span></code> or
+<code class="docutils literal"><span class="pre">set</span></code> call.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>const char* name</strong> &#8211; Attribute name.</li>
+<li><strong>int properties</strong> &#8211; Properties given to the attribute when it is created. A combination of <a class="reference internal" href="#c.cali_attr_properties" title="cali_attr_properties"><code class="xref c c-type docutils literal"><span class="pre">cali_attr_properties</span></code></a> flags combined using a bitwise <code class="docutils literal"><span class="pre">or</span></code>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation5beginEi">
+<span id="cali::Annotation::begin__i"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N4cali10Annotation5beginEd">
+<span id="cali::Annotation::begin__double"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEd" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N4cali10Annotation5beginEPKc">
+<span id="cali::Annotation::begin__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEPKc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new value for the referenced attribute to the blackboard.
+If there is already a value for the referenced attribute on the
+blackboard, the new value will be stacked on top.</p>
+<p>Overloaded variants are provided for integer, floating point,
+and string values. The value must match the type of the
+referenced attribute key; e.g., string values can only be
+assigned to attributes of type <a class="reference internal" href="#c.CALI_TYPE_STRING" title="CALI_TYPE_STRING"><code class="xref c c-macro docutils literal"><span class="pre">CALI_TYPE_STRING</span></code></a>.  The type
+of a not-yet-existing attribute is defined by the first call to
+<code class="docutils literal"><span class="pre">begin</span></code> or <code class="docutils literal"><span class="pre">set</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Reference to the Annotation object, which can be used to build a <cite>Guard</cite> scope guard object.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation5beginEv">
+<span id="cali::Annotation::begin"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>This &#8216;value-less&#8217; variant can be used for marking named code
+regions without having to set a specific value. Internally, this
+will create boolean-type attribute and set it to <code class="docutils literal"><span class="pre">true</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t">
+<span id="cali::Annotation::begin__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic version.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>cali_attr_type type</strong> &#8211; Value datatype</li>
+<li><strong>void* ptr</strong> &#8211; Address of value</li>
+<li><strong>uint64_t size</strong> &#8211; Object size</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation3setEi">
+<span id="cali::Annotation::set__i"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEi" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N4cali10Annotation3setEd">
+<span id="cali::Annotation::set__double"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEd" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N4cali10Annotation3setEPKc">
+<span id="cali::Annotation::set__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEPKc" title="Permalink to this definition">¶</a></dt>
+<dt id="_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t">
+<span id="cali::Annotation::set__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="cali::Annotation::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set value for the referenced attribute on the blackboard.</p>
+<p>Works like <a class="reference internal" href="#_CPPv2N4cali10Annotation5beginEi" title="cali::Annotation::begin"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::begin()</span></code></a>, except instead
+of stacking a new value on top of an existing one, <code class="docutils literal"><span class="pre">set</span></code>
+overwrites the existing value.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="_CPPv2N4cali10Annotation3endEv">
+<span id="cali::Annotation::end"></span>void <code class="descclassname"></code><code class="descname">end</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3endEv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="c-and-fortran-annotation-api">
+<h2>C and Fortran annotation API<a class="headerlink" href="#c-and-fortran-annotation-api" title="Permalink to this headline">¶</a></h2>
+<p>Like the C++ <code class="xref cpp cpp-class docutils literal"><span class="pre">Annotation</span></code> class, the C/Fortran API provides
+<code class="docutils literal"><span class="pre">begin/set/end</span></code> functions to add, overwrite, and remove attribute
+values from the blackboard.</p>
+<p>The Fortran API is a thin wrapper around the C API. Fortran subroutine
+names and semantics are identical to the respective C versions.</p>
+<dl class="function">
+<dt id="c.cali_create_attribute">
+cali_id_t <code class="descname">cali_create_attribute</code><span class="sig-paren">(</span>const char*<em>&nbsp;name</em>, <a class="reference internal" href="#c.cali_attr_type" title="cali_attr_type">cali_attr_type</a><em>&nbsp;type</em>, int<em>&nbsp;properties</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_create_attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an attribute key using the given name, type, and properties,
+and return its ID. If an attribute with the given name already
+exists, return its ID instead.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>char* name</strong> (<em>const</em>) &#8211; Attribute name</li>
+<li><strong>type</strong> (<a class="reference internal" href="#c.cali_attr_type" title="cali_attr_type"><em>cali_attr_type</em></a>) &#8211; Attribute type</li>
+<li><strong>properties</strong> (<em>int</em>) &#8211; Attribute properties. A combination of <a class="reference internal" href="#c.cali_attr_properties" title="cali_attr_properties"><code class="xref c c-type docutils literal"><span class="pre">cali_attr_properties</span></code></a> flags combined using a bitwise <code class="docutils literal"><span class="pre">or</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Attribute ID of the newly created attribute, or already existing attribute with the given name.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Fortran signature:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_create_attribute(name, type, properties, id)
+  character(len=*),        intent(in)  :: name
+  integer,                 intent(in)  :: type
+  integer,                 intent(in)  :: properties
+  integer(kind=C_INT64_T), intent(out) :: id
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_begin_double">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_double</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_double" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_begin_int">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_int</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_int" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_begin_string">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_string</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new value for attribute with the given ID to the blackboard.
+If there is already a value for the referenced attribute on the
+blackboard, the new value will be stacked on top.</p>
+<p>Variants are provided for integer, floating point,
+and string values. The value must match the type of the
+referenced attribute key; e.g., string values can only be
+assigned to attributes with type <code class="docutils literal"><span class="pre">CALI_TYPE_STRING</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
+<li><strong>val</strong> &#8211; Value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Fortran signatures:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  character(len=*),            intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_int(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer,                     intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_double(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  real*8,                      intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_begin">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin" title="Permalink to this definition">¶</a></dt>
+<dd><p>This &#8216;value-less&#8217; variant can be used for marking named code
+regions without having to set a specific value. Internally, this
+will set a boolean-type attribute to <code class="docutils literal"><span class="pre">true</span></code>.</p>
+<p>Fortran signature:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin(id, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_set_double">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_double</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_double" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_set_int">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_int</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_int" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_set_string">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_string</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set value for the referenced attribute on the blackboard.</p>
+<p>These functions work like their corresponding <code class="docutils literal"><span class="pre">begin</span></code> variants,
+except instead of stacking a new value on top of an existing one,
+<code class="docutils literal"><span class="pre">set</span></code> overwrites the existing value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
+<li><strong>val</strong> &#8211; Value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Fortran signatures:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_set_string(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  character(len=*),            intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_int(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer,                     intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_double(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  real*8,                      intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_set">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const void*<em>&nbsp;ptr</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic version. This function allows setting values for attributes
+with data types other than integer, string, or double; in
+particular user-defined raw data (<cite>CALI_TYPE_USR</cite>).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
+<li><strong>ptr</strong> (<em>void*</em>) &#8211; Address of value</li>
+<li><strong>size</strong> (<em>size_t</em>) &#8211; Size of value in bytes.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag; <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>This function is not yet implemented in Fortran.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_end">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
+<p>Fortran signature:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_end(id, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="c.cali_begin_double_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_double_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_double_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_begin_int_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_int_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_int_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_begin_string_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_string_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_string_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_begin_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_set_double_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_double_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_double_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_set_int_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_int_byname</code><span class="sig-paren">(</span>const char* attr_name int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_int_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_set_string_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_string_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_string_byname" title="Permalink to this definition">¶</a></dt>
+<dt id="c.cali_end_byname">
+<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end_byname" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal"><span class="pre">_byname</span></code> convenience functions reference attributes directly
+through their name. If no attribute key with the given name exists
+yet, it will be created. Thus, the following examples produce the
+same result:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">cali_id_t</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span>
+  <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
+
+<span class="n">cali_set_int</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-c"><div class="highlight"><pre><span class="n">cali_set_int_byname</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>As the <code class="docutils literal"><span class="pre">_byname</span></code> variants do perform an extra string lookup, it
+is better to use the by-ID lookup variants for performance-critical
+sections.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>char* attr_name</strong> (<em>const</em>) &#8211; Attribute name</li>
+<li><strong>val</strong> &#8211; Value</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Fortran signatures:</p>
+<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string_byname
+  character(len=*), intent(in) :: attr_name
+  character(len=*), intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_int_byname
+  character(len=*), intent(in) :: attr_name
+  integer,          intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_double_byname
+  character(len=*), intent(in) :: attr_name
+  real*8,           intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_string_byname
+  character(len=*), intent(in) :: attr_name
+  character(len=*), intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_int_byname
+  character(len=*), intent(in) :: attr_name
+  integer,          intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_double_byname
+  character(len=*), intent(in) :: attr_name
+  real*8,           intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_end_byname
+  character(len=*), intent(in) :: attr_name
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="section" id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>The following examples demonstrate basic Caliper source-code
+annotations in C and Fortran. Similar to the C++ example in
+<a class="reference internal" href="usage.html"><em>Getting started</em></a>, they mark <em>initialization</em> and <em>loop</em> phases in a
+program, and export the main loop&#8217;s iteration counter in the
+<em>iteration</em> attribute.</p>
+<p>C:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="cm">/* Mark &quot;initialization&quot; phase */</span>
+  <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
+  <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+  <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="cm">/* Mark &quot;loop&quot; phase */</span>
+    <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
+
+    <span class="cm">/* Create iteration counter attribute with CALI_ATTR_ASVALUE property */</span>
+    <span class="kt">cali_id_t</span> <span class="n">iter_attr</span> <span class="o">=</span>
+      <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_ASVALUE</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+      <span class="cm">/* Update iteration counter attribute */</span>
+      <span class="n">cali_set_int</span><span class="p">(</span><span class="n">iter_attr</span><span class="p">,</span> <span class="n">loop</span><span class="p">);</span>
+
+      <span class="cm">/* A Caliper snapshot taken at this point will contain</span>
+<span class="cm">       * { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }</span>
+<span class="cm">       */</span>
+
+      <span class="cm">/* perform computation */</span>
+    <span class="p">}</span>
+
+    <span class="cm">/* Clear the iteration counter attribute (otherwise, snapshots taken</span>
+<span class="cm">     * after the loop will still contain the last iteration value)</span>
+<span class="cm">     */</span>
+    <span class="n">cali_end</span><span class="p">(</span><span class="n">iter_attr</span><span class="p">);</span>
+
+    <span class="cm">/* End &quot;loop&quot; phase */</span>
+    <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Fortran:</p>
+<div class="highlight-python"><div class="highlight"><pre>program testf03
+  use Caliper
+
+  implicit none
+
+  integer                    :: cali_ret
+  integer(kind(CALI_INV_ID)) :: iter_attr
+  integer                    :: i, count
+
+  ! Mark &quot;initialization&quot; phase
+  call cali_begin_byname(&#39;initialization&#39;)
+  count = 4
+  call cali_end_byname(&#39;initialization&#39;)
+
+  if (count .gt. 0) then
+     ! Mark &quot;loop&quot; phase
+     call cali_begin_byname(&#39;loop&#39;)
+
+     ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
+     call cali_create_attribute(&#39;iteration&#39;, CALI_TYPE_INT, &amp;
+          CALI_ATTR_ASVALUE, iter_attr)
+
+     do i = 1,count
+        ! Update iteration counter attribute
+        call cali_set_int(iter_attr, i)
+
+        ! A Caliper snapshot taken at this point will contain
+        ! { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }
+
+        ! perform calculation
+     end do
+
+     ! Clear the iteration counter attribute (otherwise, snapshots taken
+     ! after the loop will still contain the last iteration value)
+     call cali_end(iter_attr, cali_ret)
+
+     ! Checking return value (not required, but good style)
+     if (cali_ret .ne. CALI_SUCCESS) then
+        print *, &quot;cali_end returned with&quot;, cali_ret
+     end if
+
+     ! End &quot;loop&quot; phase
+     call cali_end_byname(&#39;loop&#39;)
+  end if
+end program testf03
+</pre></div>
+</div>
+</div>
+</div>
 <div class="section" id="constants-and-types">
 <h2>Constants and types<a class="headerlink" href="#constants-and-types" title="Permalink to this headline">¶</a></h2>
 <dl class="macro">
@@ -179,496 +924,6 @@ that does not exist.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="c-annotation-api">
-<h2>C++ annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>cali::Annotation</cite> class provides the C++ instrumentation interface.</p>
-<dl class="class">
-<dt id="_CPPv2N4cali10AnnotationE">
-<span id="cali::Annotation"></span><em class="property">class </em><code class="descclassname">cali::</code><code class="descname">Annotation</code><a class="headerlink" href="#_CPPv2N4cali10AnnotationE" title="Permalink to this definition">¶</a></dt>
-<dd><p>#include &lt;Annotation.h&gt;</p>
-<p>Instrumentation interface to add and manipulate context attributes</p>
-<p>The Annotation class is the primary source-code instrumentation interface
-for Caliper. Annotation objects provide access to named Caliper context
-attributes. If the referenced attribute key does not exist yet, it will be
-created automatically.</p>
-<p>Example:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">phase_ann</span><span class="p">(</span><span class="s">&quot;myprogram.phase&quot;</span><span class="p">);</span>
-
-<span class="n">phase_ann</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Initialization&quot;</span><span class="p">);</span>
-  <span class="c1">// ...</span>
-<span class="n">phase_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
-</pre></div>
-</div>
-<p>This example creates an annotation object for attributes with the
-<code class="docutils literal"><span class="pre">myprogram.phase</span></code> key, and uses the <a class="reference internal" href="#_CPPv2N4cali10Annotation5beginEi" title="cali::Annotation::begin"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::begin()</span></code></a> and
-<a class="reference internal" href="#_CPPv2N4cali10Annotation3endEv" title="cali::Annotation::end"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::end()</span></code></a> methods to mark a section of code where
-that attribute is set to &#8220;Initialization&#8221;.</p>
-<p>Note that the access to attributes through Annotation
-objects is not exclusive: two different Annotation objects can reference and
-update the same context attribute.</p>
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation10AnnotationEPKci">
-<span id="cali::Annotation::Annotation__cCP.i"></span><code class="descclassname"></code><code class="descname">Annotation</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>name</em>, int <em>properties</em> = 0<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation10AnnotationEPKci" title="Permalink to this definition">¶</a></dt>
-<dd><p>Constructor. Constructs an annotation object to manipulate
-attributes. If no attribute key with the given name exists yet,
-it will be created on the first invocation of a <code class="docutils literal"><span class="pre">begin</span></code> or
-<code class="docutils literal"><span class="pre">set</span></code> call.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>const char* name</strong> &#8211; Attribute name.</li>
-<li><strong>int properties</strong> &#8211; Properties given to the attribute when it is created. A combination of <a class="reference internal" href="#c.cali_attr_properties" title="cali_attr_properties"><code class="xref c c-type docutils literal"><span class="pre">cali_attr_properties</span></code></a> flags combined using a bitwise <code class="docutils literal"><span class="pre">or</span></code>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation5beginEi">
-<span id="cali::Annotation::begin__i"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N4cali10Annotation5beginEd">
-<span id="cali::Annotation::begin__double"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEd" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N4cali10Annotation5beginEPKc">
-<span id="cali::Annotation::begin__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEPKc" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add new value for the referenced attribute to the blackboard.
-If there is already a value for the referenced attribute on the
-blackboard, the new value will be stacked on top.</p>
-<p>Overloaded variants are provided for integer, floating point,
-and string values. The value must match the type of the
-referenced attribute key; e.g., string values can only be
-assigned to attributes of type <a class="reference internal" href="#c.CALI_TYPE_STRING" title="CALI_TYPE_STRING"><code class="xref c c-macro docutils literal"><span class="pre">CALI_TYPE_STRING</span></code></a>.  The type
-of a not-yet-existing attribute is defined by the first call to
-<code class="docutils literal"><span class="pre">begin</span></code> or <code class="docutils literal"><span class="pre">set</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Reference to the Annotation object, which can be used to build a <cite>Guard</cite> scope guard object.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation5beginEv">
-<span id="cali::Annotation::begin"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginEv" title="Permalink to this definition">¶</a></dt>
-<dd><p>This &#8216;value-less&#8217; variant can be used for marking named code
-regions without having to set a specific value. Internally, this
-will create boolean-type attribute and set it to <code class="docutils literal"><span class="pre">true</span></code>.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t">
-<span id="cali::Annotation::begin__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">begin</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation5beginE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generic version.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>cali_attr_type type</strong> &#8211; Value datatype</li>
-<li><strong>void* ptr</strong> &#8211; Address of value</li>
-<li><strong>uint64_t size</strong> &#8211; Object size</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation3setEi">
-<span id="cali::Annotation::set__i"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>int <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEi" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N4cali10Annotation3setEd">
-<span id="cali::Annotation::set__double"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>double <em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEd" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N4cali10Annotation3setEPKc">
-<span id="cali::Annotation::set__cCP"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span><em class="property">const</em> char *<em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setEPKc" title="Permalink to this definition">¶</a></dt>
-<dt id="_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t">
-<span id="cali::Annotation::set__cali_attr_type.voidP.uint64_t"></span><a class="reference internal" href="#_CPPv2N4cali10AnnotationE" title="cali::Annotation">Annotation</a> &amp;<code class="descclassname"></code><code class="descname">set</code><span class="sig-paren">(</span>cali_attr_type <em>type</em>, void *<em>ptr</em>, uint64_t <em>size</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3setE14cali_attr_typePv8uint64_t" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set value for the referenced attribute on the blackboard.</p>
-<p>Works like <a class="reference internal" href="#_CPPv2N4cali10Annotation5beginEi" title="cali::Annotation::begin"><code class="xref cpp cpp-func docutils literal"><span class="pre">cali::Annotation::begin()</span></code></a>, except instead
-of stacking a new value on top of an existing one, <code class="docutils literal"><span class="pre">set</span></code>
-overwrites the existing value.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="_CPPv2N4cali10Annotation3endEv">
-<span id="cali::Annotation::end"></span>void <code class="descclassname"></code><code class="descname">end</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv2N4cali10Annotation3endEv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="c-and-fortran-annotation-api">
-<h2>C and Fortran annotation API<a class="headerlink" href="#c-and-fortran-annotation-api" title="Permalink to this headline">¶</a></h2>
-<p>Like the C++ <code class="xref cpp cpp-class docutils literal"><span class="pre">Annotation</span></code> class, the C/Fortran API provides
-<code class="docutils literal"><span class="pre">begin/set/end</span></code> functions to add, overwrite, and remove attribute
-values from the blackboard.</p>
-<p>The Fortran API is a thin wrapper around the C API. Fortran subroutine
-names and semantics are identical to the respective C versions.</p>
-<dl class="function">
-<dt id="c.cali_create_attribute">
-cali_id_t <code class="descname">cali_create_attribute</code><span class="sig-paren">(</span>const char*<em>&nbsp;name</em>, <a class="reference internal" href="#c.cali_attr_type" title="cali_attr_type">cali_attr_type</a><em>&nbsp;type</em>, int<em>&nbsp;properties</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_create_attribute" title="Permalink to this definition">¶</a></dt>
-<dd><p>Create an attribute key using the given name, type, and properties,
-and return its ID. If an attribute with the given name already
-exists, return its ID instead.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>char* name</strong> (<em>const</em>) &#8211; Attribute name</li>
-<li><strong>type</strong> (<a class="reference internal" href="#c.cali_attr_type" title="cali_attr_type"><em>cali_attr_type</em></a>) &#8211; Attribute type</li>
-<li><strong>properties</strong> (<em>int</em>) &#8211; Attribute properties. A combination of <a class="reference internal" href="#c.cali_attr_properties" title="cali_attr_properties"><code class="xref c c-type docutils literal"><span class="pre">cali_attr_properties</span></code></a> flags combined using a bitwise <code class="docutils literal"><span class="pre">or</span></code>.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Attribute ID of the newly created attribute, or already existing attribute with the given name.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p>Fortran signature:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>        <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="n">name</span>
-  <span class="n">integer</span><span class="p">,</span>                 <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="nb">type</span>
-  <span class="n">integer</span><span class="p">,</span>                 <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span>  <span class="p">::</span> <span class="n">properties</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_begin_double">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_double</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_double" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_begin_int">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_int</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_int" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_begin_string">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_string</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add new value for attribute with the given ID to the blackboard.
-If there is already a value for the referenced attribute on the
-blackboard, the new value will be stacked on top.</p>
-<p>Variants are provided for integer, floating point,
-and string values. The value must match the type of the
-referenced attribute key; e.g., string values can only be
-assigned to attributes with type <code class="docutils literal"><span class="pre">CALI_TYPE_STRING</span></code>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
-<li><strong>val</strong> &#8211; Value</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p>Fortran signatures:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin_string</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>            <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_begin_int</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">integer</span><span class="p">,</span>                     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_begin_double</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>                      <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_begin">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin" title="Permalink to this definition">¶</a></dt>
-<dd><p>This &#8216;value-less&#8217; variant can be used for marking named code
-regions without having to set a specific value. Internally, this
-will set a boolean-type attribute to <code class="docutils literal"><span class="pre">true</span></code>.</p>
-<p>Fortran signature:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_set_double">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_double</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_double" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_set_int">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_int</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_int" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_set_string">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_string</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_string" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set value for the referenced attribute on the blackboard.</p>
-<p>These functions work like their corresponding <code class="docutils literal"><span class="pre">begin</span></code> variants,
-except instead of stacking a new value on top of an existing one,
-<code class="docutils literal"><span class="pre">set</span></code> overwrites the existing value.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
-<li><strong>val</strong> &#8211; Value</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p>Fortran signatures:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_set_string</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span>            <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_set_int</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">integer</span><span class="p">,</span>                     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_set_double</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>                      <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_set">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em>, const void*<em>&nbsp;ptr</em>, size_t<em>&nbsp;size</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generic version. This function allows setting values for attributes
-with data types other than integer, string, or double; in
-particular user-defined raw data (<cite>CALI_TYPE_USR</cite>).</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>attr</strong> (<em>cali_id_t</em>) &#8211; Attribute ID</li>
-<li><strong>ptr</strong> (<em>void*</em>) &#8211; Address of value</li>
-<li><strong>size</strong> (<em>size_t</em>) &#8211; Size of value in bytes.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag; <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p>This function is not yet implemented in Fortran.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_end">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
-<p>Fortran signature:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_end</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="n">C_INT64_T</span><span class="p">),</span>     <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="nb">id</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.cali_begin_double_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_double_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_double_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_begin_int_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_int_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_int_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_begin_string_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_string_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_string_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_begin_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_begin_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_begin_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_set_double_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_double_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, double<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_double_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_set_int_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_int_byname</code><span class="sig-paren">(</span>const char* attr_name int<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_int_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_set_string_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_set_string_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em>, const char*<em>&nbsp;val</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_set_string_byname" title="Permalink to this definition">¶</a></dt>
-<dt id="c.cali_end_byname">
-<a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end_byname</code><span class="sig-paren">(</span>const char*<em>&nbsp;attr_name</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end_byname" title="Permalink to this definition">¶</a></dt>
-<dd><p>The <code class="docutils literal"><span class="pre">_byname</span></code> convenience functions reference attributes directly
-through their name. If no attribute key with the given name exists
-yet, it will be created. Thus, the following examples produce the
-same result:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">cali_id_t</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span>
-  <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
-
-<span class="n">cali_set_int</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
-</pre></div>
-</div>
-<div class="highlight-c"><div class="highlight"><pre><span class="n">cali_set_int_byname</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
-</pre></div>
-</div>
-<p>As the <code class="docutils literal"><span class="pre">_byname</span></code> variants do perform an extra string lookup, it
-is better to use the by-ID lookup variants for performance-critical
-sections.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>char* attr_name</strong> (<em>const</em>) &#8211; Attribute name</li>
-<li><strong>val</strong> &#8211; Value</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Error flag. <code class="docutils literal"><span class="pre">CALI_SUCCESS</span></code> if no error.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p>Fortran signatures:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">subroutine</span> <span class="n">cali_begin_string_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_begin_int_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">integer</span><span class="p">,</span>          <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_begin_double_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>           <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_set_string_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_set_int_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">integer</span><span class="p">,</span>          <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_set_double_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">real</span><span class="o">*</span><span class="mi">8</span><span class="p">,</span>           <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">val</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-
-<span class="n">subroutine</span> <span class="n">cali_end_byname</span>
-  <span class="n">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=*</span><span class="p">),</span> <span class="n">intent</span><span class="p">(</span><span class="ow">in</span><span class="p">)</span> <span class="p">::</span> <span class="n">attr_name</span>
-  <span class="n">integer</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="n">CALI_SUCCESS</span><span class="p">)),</span> <span class="n">intent</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">optional</span> <span class="p">::</span> <span class="n">err</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<div class="section" id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
-<p>The following examples demonstrate basic Caliper source-code
-annotations in C and Fortran. Similar to the C++ example in
-<a class="reference internal" href="usage.html"><span class="doc">Getting started</span></a>, they mark <em>initialization</em> and <em>loop</em> phases in a
-program, and export the main loop&#8217;s iteration counter in the
-<em>iteration</em> attribute.</p>
-<p>C:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
-
-<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-  <span class="cm">/* Mark &quot;initialization&quot; phase */</span>
-  <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
-  <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-  <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
-
-  <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-    <span class="cm">/* Mark &quot;loop&quot; phase */</span>
-    <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
-
-    <span class="cm">/* Create iteration counter attribute with CALI_ATTR_ASVALUE property */</span>
-    <span class="kt">cali_id_t</span> <span class="n">iter_attr</span> <span class="o">=</span>
-      <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_ASVALUE</span><span class="p">);</span>
-
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-      <span class="cm">/* Update iteration counter attribute */</span>
-      <span class="n">cali_set_int</span><span class="p">(</span><span class="n">iter_attr</span><span class="p">,</span> <span class="n">loop</span><span class="p">);</span>
-
-      <span class="cm">/* A Caliper snapshot taken at this point will contain</span>
-<span class="cm">       * { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }</span>
-<span class="cm">       */</span>
-
-      <span class="cm">/* perform computation */</span>
-    <span class="p">}</span>
-
-    <span class="cm">/* Clear the iteration counter attribute (otherwise, snapshots taken</span>
-<span class="cm">     * after the loop will still contain the last iteration value)</span>
-<span class="cm">     */</span>
-    <span class="n">cali_end</span><span class="p">(</span><span class="n">iter_attr</span><span class="p">);</span>
-
-    <span class="cm">/* End &quot;loop&quot; phase */</span>
-    <span class="n">cali_end_byname</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>Fortran:</p>
-<div class="highlight-default"><div class="highlight"><pre>program testf03
-  use Caliper
-
-  implicit none
-
-  integer                    :: cali_ret
-  integer(kind(CALI_INV_ID)) :: iter_attr
-  integer                    :: i, count
-
-  ! Mark &quot;initialization&quot; phase
-  call cali_begin_byname(&#39;initialization&#39;)
-  count = 4
-  call cali_end_byname(&#39;initialization&#39;)
-
-  if (count .gt. 0) then
-     ! Mark &quot;loop&quot; phase
-     call cali_begin_byname(&#39;loop&#39;)
-
-     ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
-     call cali_create_attribute(&#39;iteration&#39;, CALI_TYPE_INT, &amp;
-          CALI_ATTR_ASVALUE, iter_attr)
-
-     do i = 1,count
-        ! Update iteration counter attribute
-        call cali_set_int(iter_attr, i)
-
-        ! A Caliper snapshot taken at this point will contain
-        ! { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }
-
-        ! perform calculation
-     end do
-
-     ! Clear the iteration counter attribute (otherwise, snapshots taken
-     ! after the loop will still contain the last iteration value)
-     call cali_end(iter_attr, cali_ret)
-
-     ! Checking return value (not required, but good style)
-     if (cali_ret .ne. CALI_SUCCESS) then
-        print *, &quot;cali_end returned with&quot;, cali_ret
-     end if
-
-     ! End &quot;loop&quot; phase
-     call cali_end_byname(&#39;loop&#39;)
-  end if
-end program testf03
-</pre></div>
-</div>
-</div>
-</div>
 <div class="section" id="c-control-api">
 <h2>C control API<a class="headerlink" href="#c-control-api" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -734,7 +989,7 @@ the generated snapshot, but not retained on the blackboard.</p>
 </div>
 <p>This example program will generate a snapshot with (at least) the
 following contents:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">push_snapshot_example</span><span class="o">=</span><span class="n">true</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">intarg</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">strarg</span><span class="o">=</span><span class="n">MySnapshot</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">push_snapshot_example</span><span class="o">=</span><span class="n">true</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">intarg</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">strarg</span><span class="o">=</span><span class="n">MySnapshot</span>
 </pre></div>
 </div>
 </div>
@@ -752,12 +1007,17 @@ following contents:</p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Annotation API</a><ul>
-<li><a class="reference internal" href="#constants-and-types">Constants and types</a></li>
+<li><a class="reference internal" href="#high-level-annotation-macros">High-level annotation macros</a><ul>
+<li><a class="reference internal" href="#example-high-level-annotation-macros-in-c">Example: High-level annotation macros in C</a></li>
+<li><a class="reference internal" href="#id1">Example: High-level annotation macros in C++</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#c-annotation-api">C++ annotation API</a></li>
 <li><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
 <li><a class="reference internal" href="#examples">Examples</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#constants-and-types">Constants and types</a></li>
 <li><a class="reference internal" href="#c-control-api">C control API</a></li>
 </ul>
 </li>
@@ -784,6 +1044,9 @@ following contents:</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -807,7 +1070,7 @@ following contents:</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

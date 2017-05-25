@@ -51,76 +51,94 @@
             
   <div class="section" id="getting-started">
 <h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p>Caliper provides annotation APIs for marking source-code regions or
-exporting arbitrary data in the form of key:value attributes. Caliper
-makes this data accessible to tools.</p>
-<p>Moreover, Caliper contains built-in <em>service</em> modules for basic
-measurement and recording tasks.  For example, Caliper can be
-configured to trigger <em>snapshots</em> of the provided
-information. Optionally, measurement data, e.g. timestamps, can be
-added to the snapshots. Source-code annotations and Caliper service
-modules can be flexibly combined to support a wide range of
-performance analysis or monitoring use cases.</p>
+<p>Caliper is an abstraction layer for a variety of performance
+engineering tasks, such as tracing, profiling, monitoring, or on-line
+adaptation. Caliper provides</p>
+<ul class="simple">
+<li>Annotation APIs for marking source-code regions or
+exporting arbitrary data in the form of key:value attributes.
+Annotations can be added (and removed) independent of each other;
+Caliper will automatically combine information from different
+annotations.</li>
+<li>Built-in <em>service</em> modules, which provide measurement data
+(e.g., timestamps), or perform specific functions such as
+recording profiles or traces.</li>
+</ul>
+<p>Source-code annotations and Caliper service modules can be flexibly
+combined to support a wide range of performance engineering use cases.
+Specific actions to be performed (e.g., creating a trace or profile)
+can be specified in a configuration profile at runtime.</p>
 <div class="section" id="source-code-annotations">
 <h2>Source-code annotations<a class="headerlink" href="#source-code-annotations" title="Permalink to this headline">¶</a></h2>
-<p>Adding Caliper source-code annotations is easy.</p>
+<p>Caliper provides annotation APIs for C, C++, and Fortran.
+The annotation commands fulfill two functions:</p>
+<ol class="arabic simple">
+<li>They provide contextual information, such as the name of a code
+region or an iteration number.</li>
+<li>They serve as hooks for additional actions (e.g., taking
+performance measurements).</li>
+</ol>
+<p>The specific action performed is determined by a runtime configuration
+profile. By default, the annotations perform no actions other than
+updating the Caliper-internal <em>blackboard</em> buffer.</p>
 <p>The following example marks &#8220;initialization&#8221; and &#8220;loop&#8221; phases in a
 C++ code, and exports the main loop&#8217;s current iteration counter.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;Annotation.h&gt;</span>
+<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
 
 <span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
-    <span class="c1">// Mark begin of &quot;initialization&quot; phase</span>
-    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span>
-        <span class="n">init_ann</span> <span class="o">=</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">();</span>
+    <span class="c1">// Mark this function</span>
+    <span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
+
+    <span class="c1">// Mark the &quot;intialization&quot; phase</span>
+    <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
     <span class="c1">// perform initialization tasks</span>
     <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-    <span class="c1">// Mark end of &quot;initialization&quot; phase</span>
-    <span class="n">init_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+    <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kt">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
+    <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// Mark begin of &quot;loop&quot; phase. The scope guard will</span>
-        <span class="c1">// automatically end it at the end of the C++ scope</span>
-        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
-            <span class="n">g_loop</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">()</span> <span class="p">);</span>
+    <span class="c1">// Mark the loop</span>
+    <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="s">&quot;mainloop&quot;</span><span class="p">);</span>
 
-        <span class="c1">// Create &quot;iteration&quot; attribute to export the iteration count</span>
-        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">iteration_ann</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Mark each loop iteration</span>
+        <span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
 
-        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-            <span class="c1">// Export current iteration count under &quot;iteration&quot;</span>
-            <span class="n">iteration_ann</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+        <span class="c1">// A Caliper snapshot taken at this point will contain</span>
+        <span class="c1">// { &quot;function&quot; : &quot;main&quot;</span>
+        <span class="c1">//   &quot;loop&quot;     : &quot;mainloop&quot;</span>
+        <span class="c1">//   &quot;iteration#mainloop&quot; : &lt;i&gt; }</span>
 
-            <span class="c1">// A Caliper snapshot taken at this point will contain</span>
-            <span class="c1">// { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }</span>
-        <span class="p">}</span>
-
-        <span class="c1">// Clear the &quot;iteration&quot; attribute (otherwise, snapshots taken</span>
-        <span class="c1">// after the loop will still contain the last &quot;iteration&quot; value)</span>
-        <span class="n">iteration_ann</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+        <span class="c1">// perform computation</span>
+        <span class="n">t</span> <span class="o">+=</span> <span class="kt">delta_t</span><span class="p">;</span>
     <span class="p">}</span>
+
+    <span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="api.html"><span class="doc">Annotation API</span></a> for examples in C and Fortran.</p>
 <p>Caliper-enabled tools will now be able to access the information
 provided by the source-code annotations at runtime by taking
 snapshots. The source-code annotations also provide hooks to enable
 various runtime actions in built-in Caliper service modules, such as
 triggering snapshots or writing traces.</p>
+<p>In addition to the high-level macro API shown above, Caliper also
+provides lower-level C, C++, and Fortran APIs that can be used to
+define application-specific attributes.  See <a class="reference internal" href="api.html"><em>Annotation API</em></a> for examples
+in C and Fortran.</p>
 </div>
 <div class="section" id="build-and-link-caliper-programs">
 <h2>Build and link Caliper programs<a class="headerlink" href="#build-and-link-caliper-programs" title="Permalink to this headline">¶</a></h2>
 <p>To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper) and infrastructure libraries (libcaliper-common).</p>
-<div class="highlight-default"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib -lcaliper
+<div class="highlight-python"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib64 -lcaliper
 </pre></div>
 </div>
-<p>See <a class="reference internal" href="link.html"><span class="doc">Linking Caliper programs</span></a> for more information.</p>
+<p>See <a class="reference internal" href="link.html"><em>Linking Caliper programs</em></a> for more information.</p>
 </div>
-<div class="section" id="running-caliper-programs">
-<h2>Running Caliper programs<a class="headerlink" href="#running-caliper-programs" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="configuring-and-running-caliper-programs">
+<h2>Configuring and Running Caliper programs<a class="headerlink" href="#configuring-and-running-caliper-programs" title="Permalink to this headline">¶</a></h2>
 <p>By default, Caliper annotation commands perform no actions other than
 updating a Caliper-internal <em>blackboard buffer</em> . However, we can
 connect a Caliper-enabled third-party tool to the program, or enable
@@ -153,27 +171,31 @@ in the &#8220;initialization&#8221; phase, in the entire &#8220;loop&#8221; phas
 iteration of the example program:</p>
 <div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>ls *.cali
 160219-095419_5623_LQfNQTNgpqdM.cali
-<span class="nv">$ </span>cali-query -e <span class="se">\</span>
-      --print-attributes<span class="o">=</span>iteration:loop:initialization:time.inclusive.duration <span class="se">\</span>
+<span class="nv">$ </span>cali-query -s time.inclusive.duration --table <span class="se">\</span>
       160219-095419_5623_LQfNQTNgpqdM.cali
-<span class="nv">initialization</span><span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>202
-<span class="nv">iteration</span><span class="o">=</span>0,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>51
-<span class="nv">iteration</span><span class="o">=</span>1,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>24
-<span class="nv">iteration</span><span class="o">=</span>2,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>17
-<span class="nv">iteration</span><span class="o">=</span>3,loop<span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>24
-<span class="nv">loop</span><span class="o">=</span><span class="nb">true</span>,time.inclusive.duration<span class="o">=</span>211
+<span class="k">function</span> phase          loop      iter..loop time.inc..ation
+main     initialization                                  100
+main                    mainloop           <span class="m">0</span>              23
+main                    mainloop           <span class="m">1</span>               9
+main                    mainloop           <span class="m">2</span>               6
+main                    mainloop           <span class="m">3</span>               8
+main                    mainloop                          78
+main                                                     258
 </pre></div>
 </div>
 </div>
 <div class="section" id="where-to-go-from-here">
 <h2>Where to go from here?<a class="headerlink" href="#where-to-go-from-here" title="Permalink to this headline">¶</a></h2>
-<p>Caliper allows a great amount of flexibility and control in utilizing
-source-code annotations. Much of Caliper&#8217;s functionality is
-implemented by built-in &#8220;services&#8221;, which can be enabled or disabled
-as needed. Refer to the <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> section to learn about
-functionality they provide.  Finally, the <a class="reference internal" href="api.html"><span class="doc">Annotation API</span></a> section in the
-documentation provides reference documentation for Caliper&#8217;s C, C++,
-and Fortran annotation APIs.</p>
+<p>The <a class="reference internal" href="concepts.html"><em>Concepts</em></a> section explains Caliper&#8217;s underlying concepts
+better.</p>
+<p>Much of Caliper&#8217;s functionality is implemented by built-in &#8220;services&#8221;,
+which can be enabled or disabled as needed. Refer to the
+<a class="reference internal" href="services.html"><em>Caliper services</em></a> section to learn about functionality they provide.</p>
+<p>The <a class="reference internal" href="api.html"><em>Annotation API</em></a> section in the documentation provides reference
+documentation for Caliper&#8217;s C, C++, and Fortran annotation APIs.
+Finally, the <a class="reference internal" href="tools.html"><em>Caliper Tools</em></a> section documents the command-line tools
+used to analyze and export the data streams produced by Caliper&#8217;s
+tracing and profiling services.</p>
 </div>
 </div>
 
@@ -191,7 +213,7 @@ and Fortran annotation APIs.</p>
 <li><a class="reference internal" href="#">Getting started</a><ul>
 <li><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
 <li><a class="reference internal" href="#build-and-link-caliper-programs">Build and link Caliper programs</a></li>
-<li><a class="reference internal" href="#running-caliper-programs">Running Caliper programs</a></li>
+<li><a class="reference internal" href="#configuring-and-running-caliper-programs">Configuring and Running Caliper programs</a></li>
 <li><a class="reference internal" href="#analyzing-data">Analyzing Data</a></li>
 <li><a class="reference internal" href="#where-to-go-from-here">Where to go from here?</a></li>
 </ul>
@@ -219,6 +241,9 @@ and Fortran annotation APIs.</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -242,7 +267,7 @@ and Fortran annotation APIs.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

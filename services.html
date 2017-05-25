@@ -58,7 +58,7 @@ services allows you to quickly assemble recording solutions for a wide
 range of usage scenarios.</p>
 <p>You can enable the services required for your measurement with the
 <code class="docutils literal"><span class="pre">CALI_SERVICES_ENABLE</span></code> configuration variable, e.g.:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">export</span> <span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">trace</span>
+<div class="highlight-python"><div class="highlight"><pre>export CALI_SERVICES_ENABLE=event:recorder:trace
 </pre></div>
 </div>
 <p>to create event-triggered context traces for an application.</p>
@@ -80,13 +80,18 @@ property are key attributes).</p>
 <dl class="envvar">
 <dt id="envvar-CALI_AGGREGATE_ATTRIBUTES">
 <code class="descname">CALI_AGGREGATE_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_AGGREGATE_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
-<dd><p>Colon-separated list of aggregation attributes. The aggregate
+<dd><p>Colon-separated list of aggregation attributes. The <cite>aggregate</cite>
 service aggregates values of aggregation attributes from all input
 snapshots with similar aggregation keys. Note that only attributes
 with the <code class="docutils literal"><span class="pre">ASVALUE</span></code> storage property can be aggregation
 attributes.</p>
-<p>Default: <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code> (Generates event-triggered
-time profiles, if <cite>event</cite> and <cite>timestamp</cite> services are enabled)</p>
+<p>By default, the aggregation service determines aggregatable
+attributes automatically. With this configuration variable,
+the aggregation attributes can be set specifically (e.g., to
+select a subset). When set to <cite>none</cite>, the <cite>aggregate</cite> service
+will not aggregate any attributes, and only count the number of
+snapshots with similar keys.</p>
+<p>Default: Empty (determine aggregation attributes automatically).</p>
 </dd></dl>
 
 <div class="section" id="aggregation-key">
@@ -142,20 +147,20 @@ key will not appear in the aggregate snapshot records.</p>
 the aggregation key contains the <cite>function</cite>, <cite>loop.id</cite>, and
 <cite>iteration</cite> attributes, the <cite>aggregate</cite> service will generate the
 following aggregate snapshots :</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">0</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">1</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">2</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">2</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">0</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">1</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">2</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">iteration</span><span class="o">=</span><span class="mi">3</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+<div class="highlight-python"><div class="highlight"><pre>loop.id=A  iteration=0  function=foo  aggregate.count=2
+loop.id=A  iteration=1  function=foo  aggregate.count=2
+loop.id=A  iteration=2  function=foo  aggregate.count=2
+loop.id=B  iteration=0  function=foo  aggregate.count=1
+loop.id=B  iteration=1  function=foo  aggregate.count=1
+loop.id=B  iteration=2  function=foo  aggregate.count=1
+loop.id=B  iteration=3  function=foo  aggregate.count=1
 </pre></div>
 </div>
 <p>Removing the <cite>iteration</cite> attribute from the aggregation key will
 collapse input snapshots with different iteration values into a
 single aggregate snapshot:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">6</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span><span class="o">=</span><span class="mi">4</span>
+<div class="highlight-python"><div class="highlight"><pre>loop.id=A  function=foo  aggregate.count=6
+loop.id=B  function=foo  aggregate.count=4
 </pre></div>
 </div>
 </div>
@@ -193,14 +198,14 @@ annotations of interest in the aggregation key (e.g.,
 </pre></div>
 </div>
 <p>The resulting file has the following contents:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">A</span>  <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=foo  aggregate.count=6</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">min</span><span class="c">#time.inclusive.duration=25</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">max</span><span class="c">#time.inclusive.duration=26</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">sum</span><span class="c">#time.inclusice.duration=151</span>
-<span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=foo  aggregate.count=4</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">min</span><span class="c">#time.inclusive.duration=25</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">max</span><span class="c">#time.inclusive.duration=26</span>
-  <span class="n">aggregate</span><span class="o">.</span><span class="n">sum</span><span class="c">#time.inclusice.duration=102</span>
+<div class="highlight-python"><div class="highlight"><pre>loop.id=A  event.end#function=foo  aggregate.count=6
+  aggregate.min#time.inclusive.duration=25
+  aggregate.max#time.inclusive.duration=26
+  aggregate.sum#time.inclusice.duration=151
+loop.id=B  event.end#function=foo  aggregate.count=4
+  aggregate.min#time.inclusive.duration=25
+  aggregate.max#time.inclusive.duration=26
+  aggregate.sum#time.inclusice.duration=102
 </pre></div>
 </div>
 </div>
@@ -281,14 +286,14 @@ never trigger snapshots.</p>
 <p>Snapshots triggered by the event service include an attribute which
 describes the event that triggered the snapshot, in the following
 form:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.&lt;</span><span class="n">begin</span><span class="o">|</span><span class="nb">set</span><span class="o">|</span><span class="n">end</span><span class="o">&gt;</span><span class="c">#&lt;attribute name&gt;=&lt;value&gt;</span>
+<div class="highlight-python"><div class="highlight"><pre>event.&lt;begin|set|end&gt;#&lt;attribute name&gt;=&lt;value&gt;
 </pre></div>
 </div>
 <p>For example, a snapshot triggered by the call
 <code class="docutils literal"><span class="pre">cali_set_int_byname(&quot;my.iteration&quot;,</span> <span class="pre">42);</span></code> includes the attribute
 <cite>event.set#my.iteration=42</cite> to describe the triggering event.</p>
 <p>The following example shows the snapshots generated by the example
-program in <a class="reference internal" href="usage.html"><span class="doc">Getting started</span></a>:</p>
+program in <a class="reference internal" href="usage.html"><em>Getting started</em></a>:</p>
 <div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:trace
 <span class="nv">$ </span>./test/cali-basic
 <span class="nv">$ </span>cali-query -e 150819-113409_40027_W5Z0mWvoJUyn.cali
@@ -388,15 +393,29 @@ whitelisted functions.</p>
 </div>
 <div class="section" id="recorder">
 <h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
-<p>The recorder service writes Caliper I/O records into a file.</p>
+<p>The recorder service writes Caliper snapshot records into a file
+using a custom text-based I/O format. These files can be read
+with the <cite>cali-query</cite> tool.</p>
+<p>Writing occurs during a flush phase, which prompts snapshot-buffering
+services (in particular, the <cite>trace</cite> or <cite>aggregate</cite> services) to push
+out buffered snapshot records for writing. A flush phase can take
+several seconds and significantly disrupt program performance. By
+default, Caliper initiates a flush at the end of the program
+execution.</p>
 <p>You can also set the directory and filename that should be used;
 by default, the recorder service will auto-generate a
 file name.</p>
 <dl class="envvar">
-<dt id="envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)">
-<code class="descname">CALI_RECORDER_FILENAME=(stdout|stderr|filename)</code><a class="headerlink" href="#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)" title="Permalink to this definition">¶</a></dt>
-<dd><p>File name for context trace. May be set to <code class="docutils literal"><span class="pre">stdout</span></code> or <code class="docutils literal"><span class="pre">stderr</span></code>
+<dt id="envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filenamepattern)">
+<code class="descname">CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)</code><a class="headerlink" href="#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filenamepattern)" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name of the output file. May be set to <code class="docutils literal"><span class="pre">stdout</span></code> or <code class="docutils literal"><span class="pre">stderr</span></code>
 to print to the standard output or error streams, respectively.</p>
+<p>The file name string can contain fields, denoted by <code class="docutils literal"><span class="pre">%attribute_name%</span></code>,
+which will be replaced with attribute values. For example, in an MPI
+program with the <cite>mpi</cite> service enabled, the string <code class="docutils literal"><span class="pre">caliper-%mpi.rank%.cali</span></code>
+will create files <code class="docutils literal"><span class="pre">caliper-0.cali</span></code>, <code class="docutils literal"><span class="pre">caliper-1.cali</span></code>, etc. for each
+mpi rank. For this to work, the attributes named in the fields need to
+be set on the blackboard during the flush phase.</p>
 <p>Default: not set, auto-generates a unique file name.</p>
 </dd></dl>
 
@@ -406,6 +425,106 @@ to print to the standard output or error streams, respectively.</p>
 <dd><p>Directory to write context trace files to. The directory must exist,
 Caliper does not create it. Default: not set, use current working
 directory.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="report">
+<h2>Report<a class="headerlink" href="#report" title="Permalink to this headline">¶</a></h2>
+<p>The report service prints a tabular, human-readable report of the
+collected snapshots. Similar to the <cite>recorder</cite> service, this report is
+generated and printed in a flush phase, typically at the end of the
+program execution. In contrast, the <cite>textlog</cite> service prints snapshots
+at the moment they are taken.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_REPORT_FILENAME">
+<code class="descname">CALI_REPORT_FILENAME</code><a class="headerlink" href="#envvar-CALI_REPORT_FILENAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>File name of the output file. May be set to <code class="docutils literal"><span class="pre">stdout</span></code> or <code class="docutils literal"><span class="pre">stderr</span></code>
+to print to the standard output or error streams, respectively.</p>
+<p>Similar to the <cite>recorder</cite> service, the file name may contain fields
+which will be substituted by attribute values (see <cite>recorder</cite>
+service description), for example to create xindividual
+<code class="docutils literal"><span class="pre">report-0.txt</span></code>, <code class="docutils literal"><span class="pre">report-1.txt</span></code> etc. files for each rank in a
+multi-process program.</p>
+<p>Default: stdout</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_REPORT_ATTRIBUTES">
+<code class="descname">CALI_REPORT_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_REPORT_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Colon-separated list of attribute names. Selects which attributes
+in the snapshots should be printed (i.e., the table columns).</p>
+<p>Default: empty; all attributes in the snapshots will be printed.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_REPORT_FILTER">
+<code class="descname">CALI_REPORT_FILTER</code><a class="headerlink" href="#envvar-CALI_REPORT_FILTER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Selects which snapshots to print (i.e., the table rows). This is a
+colon-seeparated list of filter specifications of the form
+<code class="docutils literal"><span class="pre">attribute</span> <span class="pre">name</span></code> (selects snapshots which contain this attribute,
+with any value), or <code class="docutils literal"><span class="pre">attribute</span> <span class="pre">name=value</span></code> (selects snapshots
+where the attribute is set to the given value).</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_REPORT_SORT_BY">
+<code class="descname">CALI_REPORT_SORT_BY</code><a class="headerlink" href="#envvar-CALI_REPORT_SORT_BY" title="Permalink to this definition">¶</a></dt>
+<dd><p>A colon-separated list of attributes to sort snapshots (rows) by.</p>
+</dd></dl>
+
+<p>Example: Consider the following report configuration and list of
+flushed snapshots:</p>
+<div class="highlight-python"><div class="highlight"><pre>CALI_REPORT_FILTER=phase=loop
+CALI_REPORT_ATTRIBUTES=function:time.duration
+CALI_REPORT_SORT_BY=time.duration
+
+phase=init,function=foo,time.duration=42
+phase=loop,function=foo,time.duration=2000
+phase=loop,function=bar,time.duration=12
+phase=loop,function=foo,time.duration=100
+</pre></div>
+</div>
+<p>This configuration will create the following report output:</p>
+<div class="highlight-python"><div class="highlight"><pre>function time.duration
+bar                 12
+foo                100
+foo               2000
+</pre></div>
+</div>
+<p>Only snapshots where <code class="docutils literal"><span class="pre">phase=loop</span></code> are selected (due to the filter
+configuration), and the <code class="docutils literal"><span class="pre">function</span></code> and <code class="docutils literal"><span class="pre">time.duration</span></code> attributes
+are printed, in ascending order of <code class="docutils literal"><span class="pre">time.duration</span></code>.</p>
+</div>
+<div class="section" id="symbollookup">
+<h2>Symbollookup<a class="headerlink" href="#symbollookup" title="Permalink to this headline">¶</a></h2>
+<p>The symbollookup service provides function name, source file, and
+source line number lookup for binary program addresses from, e.g.,
+stack unwinding or program counter sampling. The symbol lookup takes
+place during snapshot buffer flushes. It appends symbol attributes for
+each address attribute to the snapshots being flushed. For an address
+attribute <code class="docutils literal"><span class="pre">address</span></code>, the function, file, and line number will be
+added in <code class="docutils literal"><span class="pre">source.function#address</span></code>, <code class="docutils literal"><span class="pre">source.file#address</span></code>, and
+<code class="docutils literal"><span class="pre">source.line#address</span></code> attributes, respectively. If a symbol lookup
+was unsuccessful for any reason, the value is set to <cite>UNKNOWN</cite>.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_SYMBOLLOOKUP_ATTRIBUTES">
+<code class="descname">CALI_SYMBOLLOOKUP_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explicitly select address attributes for which to perform symbol
+lookups. Colon-separated list. Default: empty, selects address
+attributes automatically via <cite>class.symboladdress</cite> attribute class.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS">
+<code class="descname">CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform function name lookup. <cite>TRUE</cite> or <cite>FALSE</cite>, default <cite>TRUE</cite>.</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC">
+<code class="descname">CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform source file and line number lookup. <cite>TRUE</cite> or <cite>FALSE</cite>,
+default <cite>TRUE</cite>.</p>
 </dd></dl>
 
 </div>
@@ -573,6 +692,8 @@ is full, another chunk of this size is added. Default: 2 (MiB).</p>
 <li><a class="reference internal" href="#debug">Debug</a></li>
 <li><a class="reference internal" href="#mpi">MPI</a></li>
 <li><a class="reference internal" href="#recorder">Recorder</a></li>
+<li><a class="reference internal" href="#report">Report</a></li>
+<li><a class="reference internal" href="#symbollookup">Symbollookup</a></li>
 <li><a class="reference internal" href="#textlog">Textlog</a></li>
 <li><a class="reference internal" href="#timestamp">Timestamp</a></li>
 <li><a class="reference internal" href="#trace">Trace</a></li>
@@ -601,6 +722,9 @@ is full, another chunk of this size is added. Default: 2 (MiB).</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -624,7 +748,7 @@ is full, another chunk of this size is added. Default: 2 (MiB).</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

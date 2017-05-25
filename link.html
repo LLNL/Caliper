@@ -55,7 +55,7 @@
 to link it with the Caliper runtime library, which resides in
 <code class="docutils literal"><span class="pre">libcaliper.so</span></code>. An example link command for a C++ program built
 with g++ could look like this:</p>
-<div class="highlight-default"><div class="highlight"><pre>CALIPER_DIR  = /path/to/caliper/installation
+<div class="highlight-python"><div class="highlight"><pre>CALIPER_DIR  = /path/to/caliper/installation
 
 g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper
 </pre></div>
@@ -73,7 +73,7 @@ multi-process friendly, e.g. by reducing log output on most ranks. The
 wrapper library <em>is</em> required to use Caliper&#8217;s MPI service.</p>
 <p>To use the wrapper library, add it before the Caliper libraries in a
 link command:</p>
-<div class="highlight-default"><div class="highlight"><pre>mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
+<div class="highlight-python"><div class="highlight"><pre>mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
 </pre></div>
 </div>
 </div>
@@ -85,7 +85,7 @@ directory. This way, we avoid potential incompatibilities between
 compilers used to build Caliper and the target program.
 We recommend to simply add the Caliper module to the target
 program. An example Makefile may look like this:</p>
-<div class="highlight-default"><div class="highlight"><pre>F90         = gfortran
+<div class="highlight-python"><div class="highlight"><pre>F90         = gfortran
 
 CALIPER_DIR = /path/to/caliper/installation
 OBJECTS     = main.o
@@ -104,11 +104,11 @@ caliper.o : $(CALIPER_DIR)/share/fortran/caliper.f90
 </div>
 <p>Note that it is necessary to link in the C++ standard library as
 well. With <code class="docutils literal"><span class="pre">gfortran</span></code>, add <code class="docutils literal"><span class="pre">-lstdc++</span></code>:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">gfortran</span> <span class="o">-</span><span class="n">o</span> <span class="n">target</span><span class="o">-</span><span class="n">program</span> <span class="o">*.</span><span class="n">o</span> <span class="o">-</span><span class="n">L</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">caliper</span><span class="o">/</span><span class="n">lib</span> <span class="o">-</span><span class="n">lcaliper</span> <span class="o">-</span><span class="n">lstdc</span><span class="o">++</span>
+<div class="highlight-python"><div class="highlight"><pre>gfortran -o target-program *.o -L/path/to/caliper/lib -lcaliper -lstdc++
 </pre></div>
 </div>
 <p>With Intel <code class="docutils literal"><span class="pre">ifort</span></code>, you can use the <code class="docutils literal"><span class="pre">-cxxlib</span></code> option:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">ifort</span> <span class="o">-</span><span class="n">o</span> <span class="n">target</span><span class="o">-</span><span class="n">program</span> <span class="o">*.</span><span class="n">o</span> <span class="o">-</span><span class="n">cxxlib</span> <span class="o">-</span><span class="n">L</span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">caliper</span><span class="o">/</span><span class="n">lib</span> <span class="o">-</span><span class="n">lcaliper</span>
+<div class="highlight-python"><div class="highlight"><pre>ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib -lcaliper
 </pre></div>
 </div>
 <p>The wrapper module uses Fortran 2003 C bindings. Thus, it requires a
@@ -157,6 +157,9 @@ integrate it with Fortran 77 codes.</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -180,7 +183,7 @@ integrate it with Fortran 77 codes.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

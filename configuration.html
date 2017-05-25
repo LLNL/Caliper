@@ -91,10 +91,10 @@ configuration files with the <cite>CALI_CONFIG_FILE</cite> variable. Note that
 <p>The configuration files use a simple <cite>&lt;VARIABLE&gt;=&lt;VALUE&gt;</cite>
 syntax. Lines starting with <cite>#</cite> are interpreted as comments.
 Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># My configuration</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span><span class="p">:</span><span class="n">mpi</span>
-<span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span><span class="p">:</span><span class="n">MPI_Barrier</span>
-<span class="n">CALI_TIMER_TIMESTAMP</span><span class="o">=</span><span class="n">true</span>
+<div class="highlight-python"><div class="highlight"><pre># My configuration
+CALI_SERVICES_ENABLE=event:recorder:timestamp:mpi
+CALI_MPI_WHITELIST=MPI_Allreduce:MPI_Barrier
+CALI_TIMER_TIMESTAMP=true
 </pre></div>
 </div>
 <p>When multiple definitions of the same variable are given, the last
@@ -113,17 +113,17 @@ any specific profile are inserted into the default profile. Caliper
 will use the profile given by the <cite>CALI_CONFIG_PROFILE</cite> variable, or
 the default profile if none is set.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">CALI_CONFIG_PROFILE</span><span class="o">=</span><span class="n">callstack</span><span class="o">-</span><span class="n">trace</span>
+<div class="highlight-python"><div class="highlight"><pre>CALI_CONFIG_PROFILE=callstack-trace
 
-<span class="c"># [callstack-trace]</span>
-<span class="c"># A trace with call-path info</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">callpath</span><span class="p">:</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span>
-<span class="n">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="n">true</span>
+# [callstack-trace]
+# A trace with call-path info
+CALI_SERVICES_ENABLE=callpath:event:recorder:timestamp
+CALI_CALLPATH_USE_NAME=true
 
-<span class="c"># [hwc-trace]</span>
-<span class="c"># A trace with PAPI hardware counters</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">papi</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span>
-<span class="n">CALI_PAPI_COUNTERS</span><span class="o">=</span><span class="n">PAPI_FP_OPS</span>
+# [hwc-trace]
+# A trace with PAPI hardware counters
+CALI_SERVICES_ENABLE=event:papi:recorder:timestamp
+CALI_PAPI_COUNTERS=PAPI_FP_OPS
 </pre></div>
 </div>
 <p>This file defines two configuration profiles, <em>callstack-trace</em> and
@@ -161,7 +161,7 @@ cases. Currently, the following profiles are defined:</p>
 </table>
 <p>Configuration profiles, including built-in profiles, can be
 extended. For example, the following configuration file</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># [mpi-trace]</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># [mpi-trace]</span>
 <span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span>
 </pre></div>
 </div>
@@ -225,7 +225,7 @@ of metadata and reduce performance.</p>
 </dd></dl>
 
 <p>Many Caliper services define additional configuration variables. See
-<a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for a list of Caliper services and their
+<a class="reference internal" href="services.html"><em>Caliper services</em></a> for a list of Caliper services and their
 configuration.</p>
 </div>
 </div>
@@ -275,6 +275,9 @@ configuration.</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -298,7 +301,7 @@ configuration.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

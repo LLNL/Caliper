@@ -150,8 +150,10 @@
   <dt><a href="api.html#c.cali_create_attribute">cali_create_attribute (C function)</a>
   </dt>
 
-  </dl></td>
-  <td style="width: 33%" valign="top"><dl>
+      
+  <dt><a href="api.html#c.CALI_CXX_MARK_FUNCTION">CALI_CXX_MARK_FUNCTION (C macro)</a>
+  </dt>
+
       
   <dt><a href="api.html#c.CALI_EINV">CALI_EINV (C macro)</a>
   </dt>
@@ -168,12 +170,46 @@
   <dt><a href="api.html#c.cali_err">cali_err (C type)</a>
   </dt>
 
+  </dl></td>
+  <td style="width: 33%" valign="top"><dl>
       
   <dt><a href="api.html#c.CALI_ETYPE">CALI_ETYPE (C macro)</a>
   </dt>
 
       
   <dt><a href="api.html#c.CALI_INV_ID">CALI_INV_ID (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_BEGIN">CALI_MARK_BEGIN (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_END">CALI_MARK_END (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_FUNCTION_BEGIN">CALI_MARK_FUNCTION_BEGIN (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_FUNCTION_END">CALI_MARK_FUNCTION_END (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_ITERATION_BEGIN">CALI_MARK_ITERATION_BEGIN (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_ITERATION_END">CALI_MARK_ITERATION_END (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_LOOP_BEGIN">CALI_MARK_LOOP_BEGIN (C function)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_MARK_LOOP_END">CALI_MARK_LOOP_END (C function)</a>
   </dt>
 
       
@@ -242,6 +278,10 @@
 
       
   <dt><a href="api.html#c.CALI_TYPE_USR">CALI_TYPE_USR (C macro)</a>
+  </dt>
+
+      
+  <dt><a href="api.html#c.CALI_WRAP_STATEMENT">CALI_WRAP_STATEMENT (C function)</a>
   </dt>
 
   </dl></td>
@@ -317,11 +357,39 @@
   </dt>
 
         
-  <dt><a href="services.html#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename)">CALI_RECORDER_FILENAME=(stdout|stderr|filename)</a>
+  <dt><a href="services.html#envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filenamepattern)">CALI_RECORDER_FILENAME=(stdout|stderr|filenamepattern)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_REPORT_ATTRIBUTES">CALI_REPORT_ATTRIBUTES</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_REPORT_FILENAME">CALI_REPORT_FILENAME</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_REPORT_FILTER">CALI_REPORT_FILTER</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_REPORT_SORT_BY">CALI_REPORT_SORT_BY</a>
   </dt>
 
         
   <dt><a href="configuration.html#envvar-CALI_SERVICES_ENABLE=(service1:service2:...)">CALI_SERVICES_ENABLE=(service1:service2:...)</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_SYMBOLLOOKUP_ATTRIBUTES">CALI_SYMBOLLOOKUP_ATTRIBUTES</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS">CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS</a>
+  </dt>
+
+        
+  <dt><a href="services.html#envvar-CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC">CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC</a>
   </dt>
 
         
@@ -401,6 +469,9 @@
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -418,7 +489,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

@@ -107,7 +107,7 @@ create an attribute to track the call stack:</p>
 </div>
 <p>Assuming we take a snapshot with each update of the <code class="docutils literal"><span class="pre">callstack</span></code>
 attribute, we will get the following sequence:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">bar</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span>
@@ -215,6 +215,9 @@ to add measurements such as timestamps to a snapshot.</p>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -238,7 +241,7 @@ to add measurements such as timestamps to a snapshot.</p>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
     </div>
   </body>
 </html>

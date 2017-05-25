@@ -4,85 +4,207 @@ Annotation API
 Caliper provides source-code instrumentation APIs for C and C++ to
 create and access Caliper context attributes. 
 
-Constants and types
+High-level annotation macros
 --------------------------------
 
-.. c:macro:: CALI_INV_ID
+For most source-code markup use cases, we recommend using Caliper's
+annotation macros. They provide the easiest way to annotate functions,
+loops, statements, and user-defined source-code regions.
 
-   Indicates an invalid (attribute) ID value.
+.. c:macro:: CALI_MARK_FUNCTION_BEGIN
+.. c:macro:: CALI_MARK_FUNCTION_END
+             
+   Mark begin and end of a function. The annotations must be placed at
+   the top and on *all* function exit points, respectively. Will
+   export the annotated functions by name in the pre-defined `function`
+   attribute.
 
-.. c:type:: cali_attr_type
+   For C++ codes, we recommend using :c:macro:`CALI_CXX_MARK_FUNCTION`
+   instead. 
 
-   Defines the datatype of attributes.
+.. c:macro:: CALI_CXX_MARK_FUNCTION
 
-   .. c:macro:: CALI_TYPE_INV
-      Indicates an undefined type
-   .. c:macro:: CALI_TYPE_USR
-      A user-defined type.
-   .. c:macro:: CALI_TYPE_INT 
-                CALI_TYPE_UINT 
-                CALI_TYPE_STRING 
-                CALI_TYPE_ADDR 
-                CALI_TYPE_DOUBLE 
-                CALI_TYPE_BOOL 
-                CALI_TYPE_TYPE
-      
-.. c:type:: cali_attr_properties
+   Mark begin and end of a function. Should be placed at the top of the
+   function, and will automatically "close" the function at any return
+   point. Will export the annotated function by name in the pre-defined
+   `function` attribute. Only available in C++.
 
-   Attribute property flags. Attribute properties can be defined by
-   combining the following property flags using bitwise ``or``:
+.. c:function:: CALI_MARK_LOOP_BEGIN(loop_id, name)
+.. c:function:: CALI_MARK_LOOP_END(loop_id)                
 
-   .. c:macro:: CALI_ATTR_DEFAULT
+   Mark begin and end of a loop. Will export the user-provided loop name
+   in the pre-defined `loop` attribute.
+
+   The macros should be placed before and after the loop of interest.
+   Users must ensure proper begin/end matching: If the surrounding
+   function can be exited from within the loop (e.g., from a `return`
+   statement within the loop), an exit marker must be placed there
+   as well.
+
+   :param loop_id: Alphanumerical identifier. Must be unique within the
+                   surrounding scope.
+   :param name: The loop name which will be exported to the `loop`
+                attribute. This macro argument must be convertible
+                into a `const char*`.
+
+.. c:function:: CALI_MARK_ITERATION_BEGIN(loop_id, iteration)
+.. c:function:: CALI_MARK_ITERATION_END(loop_id)
+
+   Mark begin and end of a loop iteration. The loop must be
+   annotated with the loop annotation macros
+   (:c:func:`CALI_MARK_LOOP_BEGIN()` / :c:func:`CALI_MARK_LOOP_END()`).
+
+   The macros should be placed at the top and bottom of the loop body.
+   If an iteration can be left prematurely (e.g., from a `continue`, 
+   `break`, or `return` statement), an end marker must be placed there
+   as well.
+
+   The iteration number will be exported in the attribute `iteration#name`,
+   where `name` is the loop name given to :c:func:`CALI_MARK_LOOP_BEGIN()`.
+
+   :param loop_id: Loop identifier, must match the identifier given to
+                   :c:func:`CALI_MARK_LOOP_BEGIN()`.
+   :param iteration: Current iteration number. This macro argument must be
+                     convertible to `int`.
+
+.. c:function:: CALI_MARK_BEGIN(name)
+.. c:function:: CALI_MARK_END(name)
+
+   Mark begin and end of a user-defined code region. The macros should be
+   placed around the code region of interest. The user-provided region name
+   will be exported in the pre-defined `annotation` attribute.
+
+   Users must ensure proper nesting: Each region `begin` must be
+   matched by a corresponding `end` in the correct order.  Regions may
+   be nested within another, but they cannot overlap partially.
+
+   :param name: The user-defined region name. Must be convertible into
+                a `const char*`.
+
+.. c:function:: CALI_WRAP_STATEMENT(name, statement)
+
+   "Wraps" Caliper annotations around a C/C++ statement, or group of statments.
+   The user-provided name will be exported to the `statement` attribute.
+
+   :param name: The user-defined region name. Must be convertible into
+                a `const char*`.
+   :param statement: C/C++ statement(s) that should be wrapped. The
+                     statements must complete within the wrapped
+                     region, that is, they cannot branch out of the
+                     macro (e.g.  with `goto`, `continue`, `break`, or
+                     `return`).
+
+Example: High-level annotation macros in C
+............................................
+
+.. code-block:: c
+
+   #include <caliper/cali.h>
+   #include <stdlib.h>
+
+   int foo(int count)
+   {
+     CALI_MARK_FUNCTION_BEGIN;
+
+     if (count == 0) {
+       CALI_MARK_FUNCTION_END; /* Must mark _all_ function exit points! */
+       return;
+     }
                 
-      Default attribute flags. Selects :c:macro:`CALI_ATTR_SCOPE_THREAD`
-      
-   .. c:macro:: CALI_ATTR_ASVALUE
+     CALI_MARK_LOOP_BEGIN(fooloop, "example.fooloop");
 
-      By default, all attributes are stored in the generalized context
-      tree. Attributes with this flag will instead be stored
-      explicitly as ``key:value`` pairs on the blackboard and in
-      snapshot records.
+     for (int i = 0; i < count; ++i) {
+       CALI_MARK_ITERATION_BEGIN(fooloop, i);
 
-   .. c:macro:: CALI_ATTR_NOMERGE
+       CALI_MARK_ITERATION_END(fooloop);
+     }
 
-      By default, attributes are merged into a single generalized
-      context tree. Attributes with this flag will be placed in a tree
-      of their own.
+     CALI_MARK_LOOP_END(fooloop);
+                
+     CALI_MARK_FUNCTION_END;
+   }
 
-   .. c:macro:: CALI_ATTR_SCOPE_PROCESS
-                CALI_ATTR_SCOPE_THREAD
-                CALI_ATTR_SCOPE_TASK
+   int main(int argc, char* argv[])
+   {
+     CALI_MARK_FUNCTION_BEGIN;
 
-      Define the scope of the attribute. These flags are mutually
-      exclusive.
+     CALI_WRAP_STATEMENT( "example.init",
+       int count = argc > 1 ? atoi(argv[1]) : 4 );
 
-   .. c:macro:: CALI_ATTR_SKIP_EVENTS
+     foo(count);
 
-      Skip executing Caliper's event callback functions when updating
-      this attribute.
+     CALI_MARK_BEGIN("output");
+     printf("Done.\n");
+     CALI_MARK_END("output");
 
-   .. c:macro:: CALI_ATTR_HIDDEN
+     CALI_MARK_FUNCTION_END;
+   }
 
-      Do not export this attribute into snapshot records.
+In an event trace configuration, this program produces the following snapshot
+records: ::
 
-.. c:type:: cali_err
+  function statement      loop              annotation iteration#example.fooloop 
+  main     
+  main     example.init 
+  main                    
+  main/foo                
+  main/foo                example.fooloop 
+  main/foo                example.fooloop                                      0 
+  main/foo                example.fooloop                             
+  main/foo                example.fooloop                                      1 
+  main/foo                example.fooloop                             
+  main/foo                example.fooloop                                      2 
+  main/foo                example.fooloop                             
+  main/foo                example.fooloop                                      3 
+  main/foo                example.fooloop                             
+  main/foo
+  main
+  main                                    output
+  main                                                                  
 
-   Error flag.
+Example: High-level annotation macros in C++
+............................................
 
-   .. c:macro:: CALI_SUCCESS
+A C++ example producing the same output as above:
 
-      Successful execution; no error.
+.. code-block:: c++
 
-   .. c:macro:: CALI_EINV
+   #include <caliper/cali.h>
+   #include <cstdlib>
 
-      Invalid function input parameter, e.g. providing an attribute ID
-      that does not exist.
+   int foo(int count)
+   {
+     CALI_CXX_MARK_FUNCTION;
 
-   .. c:macro:: CALI_ETYPE
+     if (count == 0)
+       return;
+                
+     CALI_CXX_MARK_LOOP_BEGIN(fooloop, "example.fooloop");
 
-      Type mismatch, e.g. trying to assign an integer value to a
-      :c:macro:`CALI_TYPE_STRING` attribute.
-   
+     for (int i = 0; i < count; ++i) {
+       CALI_CXX_MARK_LOOP_ITERATION(fooloop, i);
+
+       // ... do work ...
+     }
+
+     CALI_CXX_MARK_LOOP_END(fooloop);
+   }
+
+   int main(int argc, char* argv[])
+   {
+     CALI_CXX_MARK_FUNCTION;
+
+     CALI_WRAP_STATEMENT( "example.init",
+       int count = argc > 1 ? atoi(argv[1]) : 4 );
+
+     foo(count);
+
+     CALI_MARK_BEGIN("output");
+     std::cout << "Done." << std::endl;
+     CALI_MARK_END("output");
+   }
+                
+
 C++ annotation API
 --------------------------------
 
@@ -90,7 +212,7 @@ The `cali::Annotation` class provides the C++ instrumentation interface.
 
 .. cpp:class:: cali::Annotation
 
-   #include <Annotation.h>
+   #include <caliper/Annotation.h>
 
    Instrumentation interface to add and manipulate context attributes
 
@@ -481,7 +603,87 @@ Fortran: ::
     end if
   end program testf03
 
+  
+Constants and types
+--------------------------------
 
+.. c:macro:: CALI_INV_ID
+
+   Indicates an invalid (attribute) ID value.
+
+.. c:type:: cali_attr_type
+
+   Defines the datatype of attributes.
+
+   .. c:macro:: CALI_TYPE_INV
+      Indicates an undefined type
+   .. c:macro:: CALI_TYPE_USR
+      A user-defined type.
+   .. c:macro:: CALI_TYPE_INT 
+                CALI_TYPE_UINT 
+                CALI_TYPE_STRING 
+                CALI_TYPE_ADDR 
+                CALI_TYPE_DOUBLE 
+                CALI_TYPE_BOOL 
+                CALI_TYPE_TYPE
+      
+.. c:type:: cali_attr_properties
+
+   Attribute property flags. Attribute properties can be defined by
+   combining the following property flags using bitwise ``or``:
+
+   .. c:macro:: CALI_ATTR_DEFAULT
+                
+      Default attribute flags. Selects :c:macro:`CALI_ATTR_SCOPE_THREAD`
+      
+   .. c:macro:: CALI_ATTR_ASVALUE
+
+      By default, all attributes are stored in the generalized context
+      tree. Attributes with this flag will instead be stored
+      explicitly as ``key:value`` pairs on the blackboard and in
+      snapshot records.
+
+   .. c:macro:: CALI_ATTR_NOMERGE
+
+      By default, attributes are merged into a single generalized
+      context tree. Attributes with this flag will be placed in a tree
+      of their own.
+
+   .. c:macro:: CALI_ATTR_SCOPE_PROCESS
+                CALI_ATTR_SCOPE_THREAD
+                CALI_ATTR_SCOPE_TASK
+
+      Define the scope of the attribute. These flags are mutually
+      exclusive.
+
+   .. c:macro:: CALI_ATTR_SKIP_EVENTS
+
+      Skip executing Caliper's event callback functions when updating
+      this attribute.
+
+   .. c:macro:: CALI_ATTR_HIDDEN
+
+      Do not export this attribute into snapshot records.
+
+.. c:type:: cali_err
+
+   Error flag.
+
+   .. c:macro:: CALI_SUCCESS
+
+      Successful execution; no error.
+
+   .. c:macro:: CALI_EINV
+
+      Invalid function input parameter, e.g. providing an attribute ID
+      that does not exist.
+
+   .. c:macro:: CALI_ETYPE
+
+      Type mismatch, e.g. trying to assign an integer value to a
+      :c:macro:`CALI_TYPE_STRING` attribute.
+
+         
 C control API
 --------------------------------
 
