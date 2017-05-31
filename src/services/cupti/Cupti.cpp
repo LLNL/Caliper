@@ -89,36 +89,11 @@ namespace
     {
         ++cb_count;
 
-        const struct callback_translate {
-            CUpti_CallbackId id;
-            const char*      name;
-            size_t           len;
-        } callbacks[] = {
-            { CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020,            
-              "cudaLaunch", 11
-            },
-            { CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020, 
-              "cudaDeviceSynchronize", 22
-            },
-            { CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020,
-              "cudaMemcpy", 11
-            },
-            { 0, "UNKNOWN", 8 },
-            { 0, 0, 0 }
-        };
-
-        const callback_translate* cbtrans = callbacks;
-
-        for ( ; cbtrans->name && cbtrans->id != cbid; ++cbtrans)
-            ;
-
-        if (!cbtrans->name)
-            --cbtrans;
-
         Caliper c;
 
         if (cbInfo->callbackSite == CUPTI_API_ENTER)
-            c.begin(cupti_info.evt_attr, Variant(CALI_TYPE_STRING, cbtrans->name, cbtrans->len));
+            c.begin(cupti_info.evt_attr, 
+                    Variant(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName)));
         else if (cbInfo->callbackSite == CUPTI_API_EXIT)
             c.end(cupti_info.evt_attr);
     }
