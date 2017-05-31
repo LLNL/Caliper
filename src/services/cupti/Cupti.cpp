@@ -40,7 +40,17 @@
 #include <Log.h>
 #include <RuntimeConfig.h>
 
+#include <util/split.hpp>
+
 #include <cupti.h>
+
+#include <iterator>
+#include <vector>
+
+namespace cali
+{
+    extern Attribute class_nested_attr;
+}
 
 using namespace cali;
 
@@ -52,11 +62,29 @@ namespace
 
     ConfigSet              config;
     const ConfigSet::Entry configdata[] = {
+        { "callback_domains", CALI_TYPE_STRING, "runtime:driver",
+          "List of CUDA callback domains to capture",
+          "List of CUDA callback domains to capture. Possible values:\n"
+          "  runtime :  Capture CUDA runtime API calls\n"
+          "  driver  :  Capture CUDA driver calls"
+          "  none    :  Don't capture callbacks"
+        },
         ConfigSet::Terminator
     };
 
+    const struct CallbackDomainInfo {
+        CUpti_CallbackDomain domain;
+        const char* name;
+    } callback_domains[] = {
+        { CUPTI_CB_DOMAIN_RUNTIME_API, "runtime" },
+        { CUPTI_CB_DOMAIN_DRIVER_API,  "driver"  },
+        { CUPTI_CB_DOMAIN_INVALID,     "none"    },
+        { CUPTI_CB_DOMAIN_INVALID,     0         }
+    };
+
     struct CuptiServiceInfo {
-        Attribute evt_attr;
+        Attribute runtime_attr;
+        Attribute driver_attr;
     }                      cupti_info;
 
     CUpti_SubscriberHandle subscriber;
@@ -89,13 +117,25 @@ namespace
     {
         ++cb_count;
 
-        Caliper c;
+        Caliper   c;
+        Attribute attr;
 
-        if (cbInfo->callbackSite == CUPTI_API_ENTER)
-            c.begin(cupti_info.evt_attr, 
-                    Variant(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName)));
-        else if (cbInfo->callbackSite == CUPTI_API_EXIT)
-            c.end(cupti_info.evt_attr);
+        switch (domain) {
+        case CUPTI_CB_DOMAIN_RUNTIME_API:
+            attr = cupti_info.runtime_attr;
+            break;
+        case CUPTI_CB_DOMAIN_DRIVER_API:
+            attr = cupti_info.driver_attr;
+            break;
+        default:
+            return;
+        }
+
+        if (cbInfo->callbackSite == CUPTI_API_ENTER) {
+            Variant v_fname(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName));
+            c.begin(attr, v_fname);
+        } else if (cbInfo->callbackSite == CUPTI_API_EXIT)
+            c.end(attr);
     }
 
     void
@@ -109,8 +149,57 @@ namespace
     void 
     post_init_cb(Caliper* c)
     {
-        cupti_info.evt_attr = 
-            c->create_attribute("cupti.runtime", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);        
+        Variant v_true(true);
+
+        cupti_info.runtime_attr = 
+            c->create_attribute("cupti.runtimeAPI", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                                1, &class_nested_attr, &v_true);
+        cupti_info.driver_attr =
+            c->create_attribute("cupti.driverAPI", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                                1, &class_nested_attr, &v_true);
+    }
+
+    bool 
+    register_callback_domains() 
+    {
+        CUptiResult res = 
+            cuptiSubscribe(&subscriber, 
+                           (CUpti_CallbackFunc) cupti_callback, 
+                           &cupti_info);
+
+        if (res != CUPTI_SUCCESS) {
+            print_cupti_error(Log(0).stream(), res, "cuptiSubscribe");
+            return false;
+        }
+
+        std::vector<std::string> cb_domain_names;
+
+        util::split(config.get("callback_domains").to_string(), ':', 
+                    std::back_inserter(cb_domain_names));
+
+        for (const std::string& s : cb_domain_names) {
+            const CallbackDomainInfo* cbinfo = callback_domains;
+
+            for ( ; cbinfo->name && s != cbinfo->name; ++cbinfo)
+                ;
+
+            if (!cbinfo->name) {
+                Log(0).stream() << "cupti: warning: Unknown callback domain \"" 
+                                << s << "\"" << std::endl;
+                continue;
+            }
+
+            if (cbinfo->domain != CUPTI_CB_DOMAIN_INVALID) {
+                res = cuptiEnableDomain(1, subscriber, cbinfo->domain);
+
+                if (res != CUPTI_SUCCESS) {
+                    print_cupti_error(Log(0).stream(), res, "cuptiSubscribe");
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     void 
@@ -119,25 +208,11 @@ namespace
         config = RuntimeConfig::init("cupti", configdata);
         cb_count = 0;
 
-        CUptiResult res = 
-            cuptiSubscribe(&subscriber, 
-                           (CUpti_CallbackFunc) cupti_callback, 
-                           &cupti_info);
-
-        if (res != CUPTI_SUCCESS) {
-            print_cupti_error(Log(0).stream(), res, "cuptiSubscribe");
+        if (!register_callback_domains())
             return;
-        }
 
         c->events().post_init_evt.connect(&post_init_cb);
         c->events().finish_evt.connect(&finish_cb);
-
-        res = cuptiEnableDomain(1, subscriber, CUPTI_CB_DOMAIN_RUNTIME_API);
-
-        if (res != CUPTI_SUCCESS) {
-            print_cupti_error(Log(0).stream(), res, "cuptiSubscribe");
-            return;            
-        }
 
         Log(1).stream() << "Registered cupti service" << std::endl;
     }
