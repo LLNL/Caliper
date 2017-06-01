@@ -106,7 +106,7 @@ cali_attr_type
 cali_attribute_type(cali_id_t attr_id)
 {
     Attribute a = Caliper::instance().get_attribute(attr_id);
-    return attr.type();
+    return a.type();
 }
 
 //

@@ -43,6 +43,7 @@
 #include "cali_definitions.h"
 
 #include "cali_types.h"
+#include "cali_variant.h"
 
 #include <stddef.h> /* size_t */
 
@@ -182,20 +183,29 @@ typedef int (*cali_entry_proc_fn)(void* arg, cali_id_t attr_id, cali_variant_t v
  * Unpack a previously obtained snapshot and process its 
  * attribute:value entries with the given `proc_fn` callback function.
  *
- * This function is async-signal safe if `proc_fn` is async-signal safe.
+ * \note This function is async-signal safe if `proc_fn` is async-signal safe.
  *
  * \param buf Snapshot buffer
+ * \param bytes_read Number of bytes read from buf (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
  * \param arg User-defined parameter passed to `proc_fn`  
  */    
 void
-cali_unpack_snapshot(const unsigned char* buf, cali_entry_proc_fn proc_fn, void* arg);
+cali_unpack_snapshot(const unsigned char* buf,
+                     size_t*              bytes_read,
+                     cali_entry_proc_fn   proc_fn,
+                     void*                userdata);
 
 cali_variant_t 
-cali_find_first_in_snapshot(const unsigned char* buf, cali_id_t attr_id);
+cali_find_first_in_snapshot(const unsigned char* buf,
+                            size_t*              bytes_read,
+                            cali_id_t            attr_id);
 
 void
-cali_find_all_in_snapshot(const unsigned char* buf, cali_entry_proc_fn proc_fn, void* arg);
+cali_find_all_in_snapshot(const unsigned char* buf,
+                          size_t*              bytes_read,
+                          cali_entry_proc_fn   proc_fn,
+                          void*                userdata);
     
 /*
  * --- Instrumentation API -----------------------------------

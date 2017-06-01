@@ -1,10 +1,11 @@
 include_directories("../common")
-include_directories ("../services")
+include_directories("../services")
 
 set(CALIPER_HEADERS
     Annotation.h
     CaliFunctional.h
     Caliper.h
+    CompressedSnapshotRecord.h
     SnapshotRecord.h
     cali.h
     cali_definitions.h
@@ -13,6 +14,7 @@ set(CALIPER_HEADERS
 set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
+    CompressedSnapshotRecord.cpp
     ContextBuffer.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
@@ -28,6 +30,10 @@ target_link_libraries(caliper PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper PRIVATE ${_extlib})
 endforeach()
+
+if (BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 # Add reader lib to runtime (for report service)
 target_link_libraries(caliper PUBLIC caliper-reader)
