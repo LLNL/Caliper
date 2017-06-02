@@ -41,6 +41,7 @@ option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" TRUE)
+option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -111,6 +112,13 @@ if (WITH_DYNINST)
     set(CALIPER_HAVE_DYNINST TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
   endif()
+endif()
+
+if (WITH_GOTCHA)
+  set(CALIPER_HAVE_GOTCHA TRUE)
+  set(GOTCHA_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-build/include)
+  set(GOTCHA_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-build/lib/libgotcha.so)
+  list(APPEND CALIPER_EXTERNAL_LIBS ${GOTCHA_LIBRARY})
 endif()
 
 find_package(Threads)

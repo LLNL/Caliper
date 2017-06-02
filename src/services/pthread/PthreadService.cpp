@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  PthreadService.cpp
-///@brief Service for pthreads-based threading runtimes
+///\file  PthreadService.cpp
+///\brief Service for pthreads-based threading runtimes
 
 #include "../CaliperService.h"
 
@@ -42,52 +42,60 @@
 #include <cstdlib>
 #include <pthread.h>
 
+#include <gotcha/gotcha.h>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
 
-pthread_key_t thread_env_key;
+int (*orig_pthread_create)(pthread_t*, const pthread_attr_t*, void*(*)(void*), void*) = NULL;
 
-void release_scope(void* ctx)
+Attribute id_attr = Attribute::invalid;
+
+struct wrapper_args {
+    void* (*fn)(void*);
+    void* arg;
+};
+
+// Wrapper for the user-provided thread start function.
+// We wrap the original thread start function to create Caliper thread scope
+// on the new child thread.
+void*
+thread_wrapper(void *arg)
 {
-    Caliper c = Caliper::instance();
+    uint64_t id = static_cast<uint64_t>(pthread_self());
 
-    if (c)
-        c.release_scope(static_cast<Caliper::Scope*>(ctx));
+    Caliper::instance().set(id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
+
+    wrapper_args* wrap = static_cast<wrapper_args*>(arg);
+    void* ret = (*(wrap->fn))(wrap->arg);
+
+    delete wrap;
+    return ret;
 }
 
-void save_scope(Caliper::Scope* s)
+// Wrapper for pthread_create()
+int
+cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
+                            void *(*fn)(void*), void* arg)
 {
-    pthread_setspecific(thread_env_key, s);
+    return (*orig_pthread_create)(thread, attr, thread_wrapper, new wrapper_args({ fn, arg }));
 }
 
-Caliper::Scope*
-get_thread_scope(Caliper* c, bool alloc)
+// Initialization routine.
+void 
+pthreadservice_initialize(Caliper* c)
 {
-    Caliper::Scope* ctxbuf = static_cast<Caliper::Scope*>(pthread_getspecific(thread_env_key));
+    id_attr = c->create_attribute("pthread.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
-    if (alloc && !ctxbuf) {
-        ctxbuf = c->create_scope(CALI_SCOPE_THREAD);
-        save_scope(ctxbuf);
-    }
+    struct gotcha_binding_t pthread_binding[] = { 
+        { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create }
+    };
 
-    return ctxbuf;
-}
+    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t), "Caliper");
 
-/// Initialization routine. 
-/// Create the thread-local storage key, register the environment callback, and 
-/// map current (initialization) thread to default environment
-void pthreadservice_initialize(Caliper* c)
-{
-    pthread_key_create(&thread_env_key, &release_scope);
-    save_scope(c->default_scope(CALI_SCOPE_THREAD));
-
-    c->set_scope_callback(CALI_SCOPE_THREAD, &get_thread_scope);
-
-    Log(1).stream() << "Registered pthread service" << endl;
+    Log(1).stream() << "Registered pthread service" << std::endl;
 }
 
 } // namespace [anonymous]
