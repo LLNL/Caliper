@@ -193,7 +193,7 @@ namespace
                 res = cuptiEnableDomain(1, subscriber, cbinfo->domain);
 
                 if (res != CUPTI_SUCCESS) {
-                    print_cupti_error(Log(0).stream(), res, "cuptiSubscribe");
+                    print_cupti_error(Log(0).stream(), res, "cuptiEnableDomain");
                     return false;
                 }
             }
