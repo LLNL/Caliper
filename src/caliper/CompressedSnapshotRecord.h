@@ -10,6 +10,8 @@
 namespace cali
 {
 
+class SnapshotRecord;
+    
 class CaliperMetadataAccessInterface;
 class Node;
 
@@ -31,6 +33,8 @@ class CompressedSnapshotRecordView
     size_t m_imm_pos;    ///< Start position of immediate entries
     size_t m_imm_len;    ///< Length of immediate entries
 
+    Entry  unpack_next_entry(const CaliperMetadataAccessInterface* c, size_t& n, size_t& pos);
+    
     // CompressedSnapshotRecord can use this constructor to build an in-place view
     // without parsing the record representation first
     CompressedSnapshotRecordView(const unsigned char* buffer,
@@ -73,6 +77,17 @@ public:
     
     std::vector<Entry>
     to_entrylist(const CaliperMetadataAccessInterface* c) const;
+
+    template<class EntryProcFn>
+    void
+    unpack(const CaliperMetadataAccessInterface* c, EntryProcFn fn) {
+        size_t n   = 0;
+        size_t pos = 1;
+
+        while (n < m_num_nodes + m_num_imm)
+            if (!fn(unpack_next_entry(c, n, pos)))
+                return;
+    }
     
     void
     push_record(WriteRecordFn fn) const;
@@ -138,6 +153,9 @@ public:
     size_t
     append(size_t n, const Entry entrylist[]);
 
+    size_t
+    append(const SnapshotRecord* rec);
+    
     CompressedSnapshotRecordView
     view() const {
         return CompressedSnapshotRecordView(m_buffer,
@@ -148,4 +166,4 @@ public:
     }
 };
 
-}
+} // namespace cali

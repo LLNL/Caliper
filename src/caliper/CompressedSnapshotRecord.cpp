@@ -3,6 +3,8 @@
 
 #include "CompressedSnapshotRecord.h"
 
+#include "SnapshotRecord.h"
+
 #include "CaliperMetadataAccessInterface.h"
 #include "ContextRecord.h"
 #include "Entry.h"
@@ -63,6 +65,32 @@ CompressedSnapshotRecordView::CompressedSnapshotRecordView(const unsigned char* 
 
     m_imm_len = pos - m_imm_pos;
     *inc += pos;
+}
+
+Entry
+CompressedSnapshotRecordView::unpack_next_entry(const CaliperMetadataAccessInterface* c, size_t& n, size_t& pos)
+{
+    if (n == 0)
+        pos = 1;
+    
+    if (n < m_num_nodes) {
+        ++n;
+        return Entry(c->node(vldec_u64(m_buffer+pos, &pos)));
+    }
+
+    if (n == m_num_nodes)
+        pos = m_imm_pos + 1;
+
+    if (n < m_num_nodes + m_num_imm) {
+        ++n;
+
+        cali_id_t attr = vldec_u64(m_buffer+pos, &pos);
+        Variant   data = Variant::unpack(m_buffer+pos, &pos, nullptr);
+
+        return Entry(attr, data);
+    }
+
+    return Entry::empty;
 }
 
 /// \brief Unpack node entries
@@ -301,6 +329,21 @@ CompressedSnapshotRecord::append(size_t n, const Entry entrylist[])
 
     skipped += append(nn, nodes);
     skipped += append(ni, attr, data);
+
+    return skipped;
+}
+
+/// \brief Append snapshot record
+size_t
+CompressedSnapshotRecord::append(const SnapshotRecord* rec)
+{
+    size_t skipped = 0;
+
+    SnapshotRecord::Sizes size = rec->size();
+    SnapshotRecord::Data  data = rec->data();
+
+    skipped += append(size.n_nodes, data.node_entries);
+    skipped += append(size.n_immediate, data.immediate_attr, data.immediate_data);
 
     return skipped;
 }
