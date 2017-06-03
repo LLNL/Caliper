@@ -36,9 +36,11 @@
 #include "cali.h"
 
 #include "Caliper.h"
+#include "CompressedSnapshotRecord.h"
 #include "SnapshotRecord.h"
 
 #include "Log.h"
+#include "Node.h"
 #include "RuntimeConfig.h"
 #include "Variant.h"
 
@@ -139,13 +141,108 @@ cali_push_snapshot(int scope, int n,
 }
 
 size_t
-cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf,
-                           int n,
-                           const cali_id_t trigger_info_attr_list[],
-                           const void*     trigger_info_val_list[],
-                           const size_t    trigger_info_size_list[])
+cali_sigsafe_pull_snapshot(int scopes, size_t len, unsigned char* buf)
 {
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return 0;
+
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
+    SnapshotRecord snapshot(snapshot_buffer);
+
+    c.pull_snapshot(scopes, nullptr, &snapshot);
+
+    CompressedSnapshotRecord rec(len, buf);
+    rec.append(&snapshot);
+
+    return rec.needed_len();
+}
+
+//
+// --- Snapshot parsing
+//
+
+namespace
+{
+    // Helper operator to unpack entries from
+    // CompressedSnapshotRecordView::unpack()
     
+    class UnpackEntryOp {
+        void*              m_arg;
+        cali_entry_proc_fn m_fn;
+
+    public:
+
+        UnpackEntryOp(cali_entry_proc_fn fn, void* user_arg)
+            : m_arg(user_arg), m_fn(fn)
+        { }
+
+        inline bool operator()(const Entry& e) {
+            if (e.is_immediate()) {
+                if ((*m_fn)(m_arg, e.attribute(), e.value().c_variant()) == 0)
+                    return false;
+            } else {
+                for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent())
+                    if ((*m_fn)(m_arg, node->attribute(), node->data().c_variant()) == 0)
+                        return false;
+            }
+
+            return true;
+        }
+    };
+}
+
+void
+cali_unpack_snapshot(const unsigned char* buf,
+                     size_t*              bytes_read,
+                     cali_entry_proc_fn   proc_fn,
+                     void*                user_arg)
+{
+    size_t pos = 0;    
+    ::UnpackEntryOp op(proc_fn, user_arg);
+
+    // FIXME: Need sigsafe instance? Only does read-only
+    // node-by-id lookup though, so we should be safe
+    Caliper c;
+
+    CompressedSnapshotRecordView(buf, &pos).unpack(&c, op);
+
+    if (bytes_read)
+        *bytes_read += pos;
+}
+
+cali_variant_t
+cali_find_first_in_snapshot(const unsigned char* buf,
+                            size_t*              bytes_read,
+                            cali_id_t            attr_id)
+{
+    size_t  pos = 0;
+    Variant res;
+
+    Caliper c;
+
+    CompressedSnapshotRecordView(buf, &pos).unpack(&c, [&res,attr_id](const Entry& e) {
+            if (e.is_immediate()) {
+                if (e.attribute() == attr_id) {
+                    res = e.value();
+                    return false;
+                }
+            } else {
+                for (const Node* node = e.node(); node; node = node->parent())
+                    if (node->attribute() == attr_id) {
+                        res = node->data();
+                        return false;
+                    }
+            }
+
+            return true;
+        });
+
+    if (bytes_read)
+        *bytes_read += pos;
+
+    return res.c_variant();
 }
 
 //

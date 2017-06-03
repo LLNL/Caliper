@@ -1,4 +1,5 @@
 set(CALIPER_TEST_SOURCES
+  test_c_snapshot.cpp
   test_compressedsnapshotrecord.cpp)
 
 add_executable(test_caliper ${CALIPER_TEST_SOURCES})

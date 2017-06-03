@@ -151,33 +151,25 @@ cali_push_snapshot(int scope, int n,
  *   snapshot should span
  * \param len   Length of the provided snapshot buffer.
  * \param buf   User-provided snapshot storage buffer.
- * \param n     Number of event trigger info entries
- * \param trigger_info_attr_list Attribute IDs of event info entries
- * \param trigger_info_val_list  Pointers to values of event info entries
- * \param trigger_info_size_list Sizes (in bytes) of event info entries
  * \return Actual size of the snapshot representation. 
  *   If this is larger than `len`, the provided buffer was too small and 
  *   not all of the snapshot was returned.
  *   If this is zero, no snapshot was taken.
  */
 size_t
-cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf,
-                           int n,
-                           const cali_id_t trigger_info_attr_list[],
-                           const void*     trigger_info_val_list[],
-                           const size_t    trigger_info_size_list[]);
+cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
  * Callback function definition for processing a single snapshot entry with 
  * `cali_unpack_snapshot` or `cali_find_all_in_snapshot`. 
  *
- * \param arg User-defined argument, passed through by the parent function.
+ * \param user_arg User-defined argument, passed through by the parent function.
  * \param attr_id The entry's attribute ID
  * \param val The entry's value
- * \return A non-zero return value tells the parent function to stop processing;
- *   if the return value is zero it will continue.
+ * \return A zero return value tells the parent function to stop processing;
+ *   otherwise it will continue.
  */ 
-typedef int (*cali_entry_proc_fn)(void* arg, cali_id_t attr_id, cali_variant_t val);
+typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
 
 /**
  * Unpack a previously obtained snapshot and process its 
@@ -186,15 +178,16 @@ typedef int (*cali_entry_proc_fn)(void* arg, cali_id_t attr_id, cali_variant_t v
  * \note This function is async-signal safe if `proc_fn` is async-signal safe.
  *
  * \param buf Snapshot buffer
- * \param bytes_read Number of bytes read from buf (i.e., length of the snapshot)
+ * \param bytes_read Number of bytes read from the buffer
+ *   (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
- * \param arg User-defined parameter passed to `proc_fn`  
+ * \param user_arg User-defined parameter passed to `proc_fn`  
  */    
 void
 cali_unpack_snapshot(const unsigned char* buf,
                      size_t*              bytes_read,
                      cali_entry_proc_fn   proc_fn,
-                     void*                userdata);
+                     void*                user_arg);
 
 cali_variant_t 
 cali_find_first_in_snapshot(const unsigned char* buf,
