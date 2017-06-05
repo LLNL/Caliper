@@ -1,7 +1,9 @@
 #include "MockupMetadataDB.h"
 
 #include "../cali.h"
+#include "../Caliper.h"
 #include "../CompressedSnapshotRecord.h"
+#include "../SnapshotRecord.h"
 
 #include "Node.h"
 
@@ -16,8 +18,8 @@ using namespace cali;
 namespace
 {
     struct entry_data_t {
-        cali_id_t      attr_id;
-        cali_variant_t val;
+        cali_id_t attr_id;
+        Variant   val;
     };
     
     struct UnpackSnapshotTestData {
@@ -33,13 +35,12 @@ namespace
 
     int test_entry_proc_op(void* user_arg, cali_id_t attr_id, cali_variant_t val) {
         UnpackSnapshotTestData* arg = static_cast<UnpackSnapshotTestData*>(user_arg);
-
-        ++arg->visit_count;
         
         if (arg->max_visit_count >= 0 && arg->visit_count >= arg->max_visit_count)
             return 0; // quit
 
         arg->entries.push_back(entry_data_t({ attr_id, val }));
+        ++arg->visit_count;
 
         return 1;
     }
@@ -89,4 +90,227 @@ TEST(C_Snapshot_Test, UnpackImmediates) {
                                         << attr_in[i] << "," << data_in[i]
                                         << ") not found!" << std::endl;
     }
+}
+
+TEST(C_Snapshot_Test, Unpack) {
+    // Mixed node/immediate record unpack test. Modifies a Caliper instance.
+    
+    Caliper c;
+    
+    Attribute node_str_attr =
+        c.create_attribute("unpack.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute node_int_attr =
+        c.create_attribute("unpack.node.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_int_attr =
+        c.create_attribute("unpac.val.int", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    Variant node_str_1(CALI_TYPE_STRING, "My wonderful unpack test string", 32);
+    Variant node_str_2(CALI_TYPE_STRING, "My other unpack test string", 27);
+
+    Variant node_int_1(42);
+    Variant node_int_2(1337);
+
+    Variant val_int_1(2020);
+    Variant val_int_2(1212);
+
+    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
+
+    Attribute attr_in[] = {
+        node_str_attr,
+        node_int_attr,
+        val_int_attr,
+        node_str_attr,
+        val_int_attr,
+        node_int_attr
+    };
+    Variant data_in[] = {
+        node_str_1,
+        node_int_1,
+        val_int_1,
+        node_str_2,
+        val_int_2,
+        node_int_2
+    };
+
+    c.make_entrylist(6, attr_in, data_in, snapshot);
+
+    ASSERT_EQ(snapshot.size().n_nodes, 1);
+    ASSERT_EQ(snapshot.size().n_immediate, 2);
+
+    CompressedSnapshotRecord rec;
+
+    ASSERT_EQ(rec.append(&snapshot), 0);
+
+    {
+        // do a full unpack
+        
+        UnpackSnapshotTestData t1;
+        size_t bytes_read = 0;
+
+        cali_unpack_snapshot(rec.data(), &bytes_read, ::test_entry_proc_op, &t1);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t1.visit_count, 6);
+        EXPECT_EQ(t1.entries.size(), 6);
+
+        for (int i = 0; i < 6; ++i) {
+            auto it = std::find_if(t1.entries.begin(), t1.entries.end(),
+                                   [i,attr_in,data_in](const entry_data_t& e) {
+                                       return (attr_in[i].id() == e.attr_id && data_in[i] == e.val);
+                                   });
+
+            EXPECT_NE(it, t1.entries.end()) << " entry ("
+                                            << attr_in[i] << "," << data_in[i]
+                                            << ") not found!" << std::endl;        
+        }
+    }
+
+    {
+        // do a partial unpack (quit after 2 entries)
+
+        UnpackSnapshotTestData t2;
+        size_t bytes_read = 0;
+        
+        t2.max_visit_count = 2;
+    
+        cali_unpack_snapshot(rec.data(), &bytes_read, ::test_entry_proc_op, &t2);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t2.visit_count, 2);
+        EXPECT_EQ(t2.entries.size(), 2);
+
+        for (entry_data_t e : t2.entries) {
+            // just check values
+            int p = 0;
+            
+            for ( ; p < 6 && data_in[p] != e.val; ++p)
+                ;
+
+            EXPECT_LT(p, 6) << " entry (" << e.attr_id << "," << e.val << ") not found!";
+        }
+    }
+}
+
+TEST(C_Snapshot_Test, PullSnapshot) {
+    // Pull a snapshot with the C interface. Modifies the Caliper instance.
+
+    Caliper c;
+
+    Attribute node_str_attr =
+        c.create_attribute("pull.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute node_int_attr =
+        c.create_attribute("pull.node.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_int_attr =
+        c.create_attribute("pull.val.int", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_dbl_attr =
+        c.create_attribute("pull.val.dbl", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+
+    Variant node_str_1(CALI_TYPE_STRING, "My wonderful pull test string", 30);
+    Variant node_str_2(CALI_TYPE_STRING, "My other pull test string", 25);
+
+    Variant node_int_1(42);
+    Variant node_int_2(1337);
+
+    Variant val_int_1(2020);
+    Variant val_dbl_2(0.25);
+
+    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
+
+    Attribute attr_in[] = {
+        node_str_attr,
+        node_int_attr,
+        val_int_attr,
+        node_str_attr,
+        val_dbl_attr,
+        node_int_attr
+    };
+    Variant data_in[] = {
+        node_str_1,
+        node_int_1,
+        val_int_1,
+        node_str_2,
+        val_dbl_2,
+        node_int_2
+    };
+
+    const int count = 6;
+
+    for (int p = 0; p < count; ++p)
+        c.begin(attr_in[p], data_in[p]);
+
+    {
+        // full snapshot
+        
+        const size_t bufsize = 512;
+        unsigned char buf[512];
+
+        size_t ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+
+        ASSERT_NE(ret, 0);
+        ASSERT_LE(ret, bufsize);
+    
+        UnpackSnapshotTestData t1;
+        size_t bytes_read = 0;
+
+        cali_unpack_snapshot(buf, &bytes_read, ::test_entry_proc_op, &t1);
+
+        EXPECT_EQ(ret, bytes_read);
+
+        EXPECT_GE(t1.visit_count, count);
+        EXPECT_GE(t1.entries.size(), count);
+
+        for (int i = 0; i < count; ++i) {
+            auto it = std::find_if(t1.entries.begin(), t1.entries.end(),
+                                   [i,attr_in,data_in](const entry_data_t& e) {
+                                       return (attr_in[i].id() == e.attr_id && data_in[i] == e.val);
+                                   });
+
+            EXPECT_NE(it, t1.entries.end()) << " entry ("
+                                            << attr_in[i] << "," << data_in[i]
+                                            << ") not found!" << std::endl;        
+        }        
+    }
+
+    {
+        // case with too small buffer
+
+        const size_t bufsize = 4;
+        unsigned char buf[512];
+
+        size_t ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+
+        ASSERT_NE(ret, 0);
+        EXPECT_GT(ret, bufsize);
+
+        UnpackSnapshotTestData t2;
+        size_t bytes_read = 0;
+
+        cali_unpack_snapshot(buf, &bytes_read, ::test_entry_proc_op, &t2);
+
+        EXPECT_GE(t2.visit_count, 0);
+        EXPECT_LT(t2.visit_count, count);
+
+        // now the correctly sized buffer again
+
+        ASSERT_LE(ret, 512);
+
+        ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, ret, buf);
+
+        ASSERT_NE(ret, 0);
+        ASSERT_LT(ret, 512);
+
+        UnpackSnapshotTestData t3;
+
+        cali_unpack_snapshot(buf, &bytes_read, ::test_entry_proc_op, &t3);
+
+        EXPECT_GE(t3.visit_count, count);
+        EXPECT_GE(t3.entries.size(), count);
+    }
+    
+    for (int p = count-1; p >= 0; --p)
+        c.end(attr_in[p]);
 }

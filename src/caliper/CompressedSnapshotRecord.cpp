@@ -228,7 +228,7 @@ CompressedSnapshotRecord::append(size_t n, const Node* const node_vec[])
             len += vlenc_u64(node_vec[i]->id(), tmp+len);
 
         // size check, copy to actual buffer
-        if (m_num_nodes+blk < 128 && m_imm_pos+m_imm_len+len < m_buffer_len) {
+        if (m_num_nodes+blk < 128 && m_imm_pos+m_imm_len+len <= m_buffer_len) {
             ::save_memmove(m_buffer+m_imm_pos+len, m_buffer+m_imm_pos, m_imm_len);
             memcpy(m_buffer+1, tmp, len);
 
@@ -270,7 +270,7 @@ CompressedSnapshotRecord::append(size_t n, const cali_id_t attr_vec[], const Var
         }
 
         // size check, copy to actual buffer
-        if (m_num_imm+blk < 128 && m_imm_pos+m_imm_len+len < m_buffer_len) {
+        if (m_num_imm+blk < 128 && m_imm_pos+m_imm_len+len <= m_buffer_len) {
             memcpy(m_buffer+m_imm_pos+m_imm_len, tmp, len);
 
             m_imm_len += len;

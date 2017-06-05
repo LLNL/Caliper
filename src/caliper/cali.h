@@ -172,8 +172,9 @@ cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf);
 typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
 
 /**
- * Unpack a previously obtained snapshot and process its 
- * attribute:value entries with the given `proc_fn` callback function.
+ * Unpack a snapshot that was previously obtained on the same process
+ * and examine its attribute:value entries with the given `proc_fn` 
+ * callback function.
  *
  * \note This function is async-signal safe if `proc_fn` is async-signal safe.
  *
