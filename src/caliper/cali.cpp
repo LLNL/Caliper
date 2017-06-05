@@ -141,7 +141,7 @@ cali_push_snapshot(int scope, int n,
 }
 
 size_t
-cali_sigsafe_pull_snapshot(int scopes, size_t len, unsigned char* buf)
+cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
 {
     Caliper c = Caliper::sigsafe_instance();
 
@@ -191,6 +191,32 @@ namespace
             return true;
         }
     };
+
+    class UnpackAttributeEntryOp {
+        void*              m_arg;
+        cali_entry_proc_fn m_fn;
+        cali_id_t          m_id;
+
+    public:
+
+        UnpackAttributeEntryOp(cali_id_t id, cali_entry_proc_fn fn, void* user_arg)
+            : m_arg(user_arg), m_fn(fn), m_id(id)
+        { }
+
+        inline bool operator()(const Entry& e) {            
+            if (e.is_immediate() && e.attribute() == m_id) {
+                if ((*m_fn)(m_arg, e.attribute(), e.value().c_variant()) == 0)
+                    return false;
+            } else {
+                for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent())
+                    if (node->attribute() == m_id)
+                        if ((*m_fn)(m_arg, node->attribute(), node->data().c_variant()) == 0)
+                            return false;
+            }
+
+            return true;
+        }        
+    };
 }
 
 void
@@ -214,8 +240,8 @@ cali_unpack_snapshot(const unsigned char* buf,
 
 cali_variant_t
 cali_find_first_in_snapshot(const unsigned char* buf,
-                            size_t*              bytes_read,
-                            cali_id_t            attr_id)
+                            cali_id_t            attr_id,
+                            size_t*              bytes_read)
 {
     size_t  pos = 0;
     Variant res;
@@ -243,6 +269,41 @@ cali_find_first_in_snapshot(const unsigned char* buf,
         *bytes_read += pos;
 
     return res.c_variant();
+}
+
+void
+cali_find_all_in_snapshot(const unsigned char* buf,
+                          cali_id_t            attr_id,
+                          size_t*              bytes_read,
+                          cali_entry_proc_fn   proc_fn,
+                          void*                user_arg)
+{
+    size_t pos = 0;    
+    ::UnpackAttributeEntryOp op(attr_id, proc_fn, user_arg);
+
+    // FIXME: Need sigsafe instance? Only does read-only
+    // node-by-id lookup though, so we should be safe
+    Caliper c;
+
+    CompressedSnapshotRecordView(buf, &pos).unpack(&c, op);
+
+    if (bytes_read)
+        *bytes_read += pos;
+}
+
+//
+// --- Blackboard access interface
+//
+
+cali_variant_t
+cali_get(cali_id_t attr_id)
+{
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return cali_make_empty_variant();
+
+    return c.get(c.get_attribute(attr_id)).value().c_variant();
 }
 
 //

@@ -248,7 +248,7 @@ TEST(C_Snapshot_Test, PullSnapshot) {
         const size_t bufsize = 512;
         unsigned char buf[512];
 
-        size_t ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+        size_t ret = cali_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
 
         ASSERT_NE(ret, 0);
         ASSERT_LE(ret, bufsize);
@@ -281,7 +281,7 @@ TEST(C_Snapshot_Test, PullSnapshot) {
         const size_t bufsize = 4;
         unsigned char buf[512];
 
-        size_t ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+        size_t ret = cali_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
 
         ASSERT_NE(ret, 0);
         EXPECT_GT(ret, bufsize);
@@ -298,7 +298,7 @@ TEST(C_Snapshot_Test, PullSnapshot) {
 
         ASSERT_LE(ret, 512);
 
-        ret = cali_sigsafe_pull_snapshot(CALI_SCOPE_THREAD, ret, buf);
+        ret = cali_pull_snapshot(CALI_SCOPE_THREAD, ret, buf);
 
         ASSERT_NE(ret, 0);
         ASSERT_LT(ret, 512);
@@ -313,4 +313,211 @@ TEST(C_Snapshot_Test, PullSnapshot) {
     
     for (int p = count-1; p >= 0; --p)
         c.end(attr_in[p]);
+}
+
+TEST(C_Snapshot_Test, FindFirstInSnapshot) {
+     // Mixed node/immediate record unpack test. Modifies a Caliper instance.
+    
+    Caliper c;
+    
+    Attribute node_str_attr =
+        c.create_attribute("findfirst.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute node_int_attr =
+        c.create_attribute("findfirst.node.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_int_attr =
+        c.create_attribute("findfirst.val.int", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    Variant node_str_1(CALI_TYPE_STRING, "My wonderful unpack test string", 32);
+    Variant node_str_2(CALI_TYPE_STRING, "My other unpack test string", 27);
+
+    Variant node_int_1(42);
+    Variant node_int_2(1337);
+
+    Variant val_int_1(2020);
+    Variant val_int_2(1212);
+
+    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
+
+    Attribute attr_in[] = {
+        node_str_attr,
+        node_int_attr,
+        val_int_attr,
+        node_str_attr,
+        val_int_attr,
+        node_int_attr
+    };
+    Variant data_in[] = {
+        node_str_1,
+        node_int_1,
+        val_int_1,
+        node_str_2,
+        val_int_2,
+        node_int_2
+    };
+
+    c.make_entrylist(6, attr_in, data_in, snapshot);
+
+    ASSERT_EQ(snapshot.size().n_nodes, 1);
+    ASSERT_EQ(snapshot.size().n_immediate, 2);
+
+    CompressedSnapshotRecord rec;
+
+    ASSERT_EQ(rec.append(&snapshot), 0);
+    
+    UnpackSnapshotTestData t1;
+    size_t bytes_read = 0;
+
+    cali_variant_t val = cali_find_first_in_snapshot(rec.data(), node_str_attr.id(), &bytes_read);
+
+    EXPECT_EQ(bytes_read, rec.size());
+    EXPECT_EQ(Variant(val), node_str_2);
+
+    bytes_read = 0;
+    val = cali_find_first_in_snapshot(rec.data(), node_int_attr.id(), &bytes_read);
+
+    EXPECT_EQ(bytes_read, rec.size());
+    EXPECT_EQ(Variant(val), node_int_2);
+
+    bytes_read = 0;
+    val = cali_find_first_in_snapshot(rec.data(), val_int_attr.id(), &bytes_read);
+
+    EXPECT_EQ(bytes_read, rec.size());
+    EXPECT_EQ(Variant(val), val_int_1);
+
+    // a non-existing attribute
+
+    bytes_read = 0;
+    val = cali_find_first_in_snapshot(rec.data(), CALI_INV_ID, &bytes_read);
+
+    EXPECT_EQ(bytes_read, rec.size());
+    EXPECT_TRUE(Variant(val).empty());    
+}
+
+TEST(C_Snapshot_Test, FindAllInSnapshot) {
+    // Mixed node/immediate record unpack test. Modifies a Caliper instance.
+    
+    Caliper c;
+    
+    Attribute node_str_attr =
+        c.create_attribute("findall.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute node_int_attr =
+        c.create_attribute("findall.node.int", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_int_attr =
+        c.create_attribute("findall.val.int", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    Variant node_str_1(CALI_TYPE_STRING, "My wonderful findall test string", 33);
+    Variant node_str_2(CALI_TYPE_STRING, "My other findall test string", 28);
+
+    Variant node_int_1(42);
+    Variant node_int_2(1337);
+
+    Variant val_int_1(2020);
+    Variant val_int_2(1212);
+
+    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
+
+    Attribute attr_in[] = {
+        node_str_attr,
+        node_int_attr,
+        val_int_attr,
+        node_str_attr,
+        val_int_attr,
+        node_int_attr
+    };
+    Variant data_in[] = {
+        node_str_1,
+        node_int_1,
+        val_int_1,
+        node_str_2,
+        val_int_2,
+        node_int_2
+    };
+
+    c.make_entrylist(6, attr_in, data_in, snapshot);
+
+    ASSERT_EQ(snapshot.size().n_nodes, 1);
+    ASSERT_EQ(snapshot.size().n_immediate, 2);
+
+    CompressedSnapshotRecord rec;
+
+    ASSERT_EQ(rec.append(&snapshot), 0);
+
+    {
+        UnpackSnapshotTestData t1;
+        size_t bytes_read = 0;
+
+        cali_find_all_in_snapshot(rec.data(), node_str_attr.id(), &bytes_read, ::test_entry_proc_op, &t1);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t1.visit_count, 2);
+        ASSERT_EQ(t1.entries.size(), 2);
+
+        EXPECT_EQ(t1.entries[0].val, node_str_2);
+        EXPECT_EQ(t1.entries[1].val, node_str_1);
+    }
+
+    {
+        UnpackSnapshotTestData t2;
+        size_t bytes_read = 0;
+
+        cali_find_all_in_snapshot(rec.data(), node_int_attr.id(), &bytes_read, ::test_entry_proc_op, &t2);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t2.visit_count, 2);
+        ASSERT_EQ(t2.entries.size(), 2);
+
+        EXPECT_EQ(t2.entries[0].val, node_int_2);
+        EXPECT_EQ(t2.entries[1].val, node_int_1);
+    }
+
+    {
+        UnpackSnapshotTestData t3;
+        size_t bytes_read = 0;
+
+        cali_find_all_in_snapshot(rec.data(), val_int_attr.id(), &bytes_read, ::test_entry_proc_op, &t3);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t3.visit_count, 2);
+        ASSERT_EQ(t3.entries.size(), 2);
+
+        EXPECT_EQ(t3.entries[0].val, val_int_1);
+        EXPECT_EQ(t3.entries[1].val, val_int_2);
+    }
+
+    {
+        // empty
+        
+        UnpackSnapshotTestData t4;
+        size_t bytes_read = 0;
+
+        cali_find_all_in_snapshot(rec.data(), CALI_INV_ID, &bytes_read, ::test_entry_proc_op, &t4);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t4.visit_count, 0);
+        EXPECT_EQ(t4.entries.size(), 0);
+    }
+
+    
+    {
+        // quit after 1st
+        
+        UnpackSnapshotTestData t5;
+        t5.max_visit_count = 1;
+        size_t bytes_read = 0;
+
+        cali_find_all_in_snapshot(rec.data(), node_int_attr.id(), &bytes_read, ::test_entry_proc_op, &t5);
+
+        EXPECT_EQ(bytes_read, rec.size());
+
+        EXPECT_EQ(t5.visit_count, 1);
+        ASSERT_EQ(t5.entries.size(), 1);
+
+        EXPECT_EQ(t5.entries[0].val, node_int_2);
+    }
 }

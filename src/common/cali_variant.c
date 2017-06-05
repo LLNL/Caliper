@@ -48,6 +48,9 @@
 extern inline bool
 cali_variant_is_empty(cali_variant_t v);
 
+extern inline cali_variant_t
+cali_make_empty_variant();
+
 cali_attr_type
 cali_variant_get_type(cali_variant_t v)
 {

@@ -8,6 +8,16 @@
 // --- test variant creation
 //
 
+TEST(C_Variant_Test, CreateEmptyVariant) {
+    cali_variant_t v = cali_make_empty_variant();
+    
+    EXPECT_TRUE(cali_variant_is_empty(v));
+    
+    EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_INV);
+    EXPECT_EQ(cali_variant_get_size(v), 0);
+    EXPECT_EQ(cali_variant_get_data(&v), nullptr);
+}
+
 TEST(C_Variant_Test, CreateIntVariant) {
     int val = -42;
 

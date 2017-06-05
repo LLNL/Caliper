@@ -70,6 +70,13 @@ typedef struct {
 } cali_variant_t;
 
 #define CALI_VARIANT_TYPE_MASK 0xFF
+
+inline cali_variant_t
+cali_make_empty_variant()
+{
+    cali_variant_t v = { 0, { .v_uint = 0 } };
+    return v;
+}
     
 /** \brief Test if variant is empty
  */

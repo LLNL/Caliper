@@ -157,7 +157,7 @@ cali_push_snapshot(int scope, int n,
  *   If this is zero, no snapshot was taken.
  */
 size_t
-cali_sigsafe_pull_snapshot(int scope, size_t len, unsigned char* buf);
+cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
  * Callback function definition for processing a single snapshot entry with 
@@ -190,16 +190,61 @@ cali_unpack_snapshot(const unsigned char* buf,
                      cali_entry_proc_fn   proc_fn,
                      void*                user_arg);
 
+/**
+ * Return top-most value for attribute ID `attr_id` from a snapshot that was
+ * previously obtained on the same process.
+ *
+ * \note This function is async-signal safe
+ *
+ * \param buf Snapshot buffer
+ * \param attr_id Attribute id
+ * \param bytes_read Number of bytes read from the buffer
+ *   (i.e., length of the snapshot)
+ * \return The top-most stacked value for the given attribute ID, or an empty
+ *   variant if none was found
+ */    
+
 cali_variant_t 
 cali_find_first_in_snapshot(const unsigned char* buf,
-                            size_t*              bytes_read,
-                            cali_id_t            attr_id);
+                            cali_id_t            attr_id,
+                            size_t*              bytes_read);
+
+/**
+ * Run all entries with attribute `attr_id` in a snapshot that was previously 
+ * obtained on the same process through the given `proc_fn` callback function.
+ *
+ * \note This function is async-signal safe if `proc_fn` is async-signal safe.
+ *
+ * \param buf Snapshot buffer
+ * \param attr_id Attribute to read from snapshot
+ * \param bytes_read Number of bytes read from the buffer
+ *   (i.e., length of the snapshot)
+ * \param proc_fn Callback function to process individidual entries
+ * \param user_arg User-defined parameter passed to `proc_fn`  
+ */    
 
 void
 cali_find_all_in_snapshot(const unsigned char* buf,
+                          cali_id_t            attr_id,
                           size_t*              bytes_read,
                           cali_entry_proc_fn   proc_fn,
                           void*                userdata);
+
+/*
+ * --- Blackboard access API ---------------------------------
+ */
+
+/**
+ * Return top-most value for attribute `attr_id` from the blackboard.
+ *
+ * \note This function is async-signal safe.
+ *
+ * \param attr_id Attribute ID to find
+ * \return The top-most stacked value on the blackboard for the given
+ *    attribute ID, or an empty variant if it was not found
+ */
+cali_variant_t
+cali_get(cali_id_t attr_id);
     
 /*
  * --- Instrumentation API -----------------------------------
