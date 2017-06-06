@@ -2,6 +2,7 @@ Caliper: Context Annotation Library (for Performance)
 ==========================================
 
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
+[![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
 Caliper is a program instrumentation and performance measurement
 framework. It provides data collection mechanisms and a source-code
