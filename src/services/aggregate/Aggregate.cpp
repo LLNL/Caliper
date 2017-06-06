@@ -788,7 +788,13 @@ public:
             s_key_attribute_ids[it-s_key_attribute_names.begin()] = attr.id();
         }
     }
-    
+
+    static void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
+        // create new aggregation DB on thread
+        if (scope == CALI_SCOPE_THREAD)
+            acquire(c, true);
+    }
+
     static void finish_cb(Caliper* c) {
         Log(2).stream() << "Aggregate: max key len " << s_global_max_keylen << ", "
                         << s_global_num_kernel_entries << " entries, "
@@ -827,6 +833,7 @@ public:
 
         c->events().create_attr_evt.connect(create_attribute_cb);
         c->events().post_init_evt.connect(post_init_cb);
+        c->events().create_scope_evt.connect(create_scope_cb);
         c->events().process_snapshot.connect(process_snapshot_cb);
         c->events().flush_evt.connect(flush_cb);
         c->events().finish_evt.connect(finish_cb);

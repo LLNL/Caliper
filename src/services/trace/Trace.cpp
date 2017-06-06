@@ -290,7 +290,13 @@ namespace
         else
             Log(0).stream() << "trace: error: unknown buffer policy \"" << polname << "\"" << endl;
     }
-    
+
+    void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
+        // init trace buffer on new threads
+        if (scope == CALI_SCOPE_THREAD)
+            acquire_tbuf(true);
+    }
+
     void finish_cb(Caliper* c) {
         if (dropped_snapshots > 0)
             Log(1).stream() << "Trace: dropped " << dropped_snapshots << " snapshots." << endl;
@@ -312,6 +318,7 @@ namespace
             return;
         }        
         
+        c->events().create_scope_evt.connect(&create_scope_cb);
         c->events().process_snapshot.connect(&process_snapshot_cb);
         c->events().flush_evt.connect(&flush_cb);
         c->events().finish_evt.connect(&finish_cb);
