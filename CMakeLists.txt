@@ -116,9 +116,8 @@ endif()
 
 if (WITH_GOTCHA)
   set(CALIPER_HAVE_GOTCHA TRUE)
-  set(GOTCHA_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-build/include)
-  set(GOTCHA_LIBRARY ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-build/lib/libgotcha.so)
-  list(APPEND CALIPER_EXTERNAL_LIBS ${GOTCHA_LIBRARY})
+  set(GOTCHA_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-download/gotcha-src/include)
+  list(APPEND CALIPER_EXTERNAL_LIBS gotcha)
 endif()
 
 find_package(Threads)
