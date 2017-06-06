@@ -74,6 +74,16 @@ Attribute::name() const
     return std::string();
 }
 
+const char*
+Attribute::name_c_str() const
+{
+    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+        if (node->attribute() == s_keys.name_attr_id)
+            return static_cast<const char*>(node->data().data());
+
+    return nullptr;
+}
+
 cali_attr_type
 Attribute::type() const 
 {

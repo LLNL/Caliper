@@ -111,6 +111,12 @@ cali_attribute_type(cali_id_t attr_id)
     return a.type();
 }
 
+const char*
+cali_attribute_name(cali_id_t attr_id)
+{
+    return Caliper::instance().get_attribute(attr_id).name_c_str();
+}
+
 //
 // --- Context interface
 //

@@ -70,6 +70,8 @@ public:
     cali_id_t      id() const;
 
     std::string    name() const;
+    const char*    name_c_str() const;
+    
     cali_attr_type type() const;
 
     int            properties() const;
