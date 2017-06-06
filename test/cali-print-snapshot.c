@@ -95,12 +95,19 @@ snapshot()
      * Take a snapshot, and store it in our buffer
      */
 
-    unsigned char buffer[512];        
-    size_t len = cali_pull_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, 512, buffer);
+    unsigned char buffer[80];        
+    size_t len = cali_pull_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, 80, buffer);
 
-    if (len > 512) /* Our buffer is too small (very unlikely) */
+    if (len == 0) {
+        fprintf(stderr, "Could not obtain snapshot!\n");
+        return;
+    }
+    if (len > 80) {
+        /* Our buffer is too small (very unlikely) */
         fprintf(stderr, "Snapshot buffer too small! Need %lu bytes.\n", len);
-
+        return;
+    }
+    
     size_t bytes_read = 0;
 
     /* 
