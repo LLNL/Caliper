@@ -7,9 +7,15 @@ compiler:
 #  Remove clang for now as the default clang++-3.5 segfaults on Caliper code :-/
 #  - clang
 
+env:
+  - COVERAGE=t  
+
 script:
   - mkdir build-${CC}
   - cd build-${CC}
-  - cmake -DCMAKE_C_COMPILER=`which $CC` -DCMAKE_CXX_COMPILER=`which $CXX` ..
+  - cmake -DCMAKE_C_COMPILER=`which $CC` -DCMAKE_CXX_COMPILER=`which $CXX` -DCMAKE_C_FLAGS="-coverage" -DCMAKE_CXX_FLAGS="-coverage" ..
   - make -j4
   - make test
+
+after_success:
+  - if [[ -n "${COVERAGE}" ]] ; then bash <(curl -s https://codecov.io/bash) ; fi
