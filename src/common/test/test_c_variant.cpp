@@ -56,10 +56,19 @@ TEST(C_Variant_Test, CreateDoubleVariant) {
     double val = 42.42;
 
     cali_variant_t v = cali_make_variant_from_double(val);
-
+    bool ok = false;
+    
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_DOUBLE);
-    EXPECT_EQ(cali_variant_to_double(v, NULL), val);
+    EXPECT_EQ(cali_variant_to_double(v, &ok), val);
+    EXPECT_TRUE(ok);
     EXPECT_EQ(cali_variant_get_size(v), sizeof(double));
+
+    ok = false;
+    EXPECT_EQ(cali_variant_to_int(v, &ok), 42);
+    EXPECT_TRUE(ok);
+    ok = false;
+    EXPECT_EQ(cali_variant_to_uint(v, &ok), 42);
+    EXPECT_TRUE(ok);
 }
 
 TEST(C_Variant_Test, CreateStringVariant) {

@@ -203,6 +203,7 @@ cali_variant_to_int(cali_variant_t v, bool* okptr)
         break;
     case CALI_TYPE_DOUBLE:
         ret = (int) v.value.v_double;
+        break;
     case CALI_TYPE_BOOL:
         ret = (int) v.value.v_bool;
         break;
@@ -253,11 +254,12 @@ cali_variant_to_uint(cali_variant_t v, bool* okptr)
         break;
     case CALI_TYPE_DOUBLE:
         ret = (uint64_t) v.value.v_double;
+        break;
     case CALI_TYPE_BOOL:
-        ret = (int) v.value.v_bool;
+        ret = (uint64_t) v.value.v_bool;
         break;
     case CALI_TYPE_TYPE:
-        ret = (int) v.value.v_type;
+        ret = (uint64_t) v.value.v_type;
         break;
     }
 
