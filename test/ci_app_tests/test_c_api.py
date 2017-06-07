@@ -25,9 +25,9 @@ class CaliperCAPITest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
         self.assertTrue(calitest.has_snapshot_with_attributes(
-            snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
+            snapshots, {'event.end#phase': 'loop', 'phase': 'loop'}))
         self.assertTrue(calitest.has_snapshot_with_attributes(
-            snapshots, {'event.end#iteration': 3, 'iteration': 3, 'phase': 'loop'}))
+            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
 
     def test_c_ann_snapshot(self):
         target_cmd = [ './ci_test_c_snapshot' ]
@@ -44,7 +44,7 @@ class CaliperCAPITest(unittest.TestCase):
 
         self.assertTrue(len(snapshots) >= 4)
         self.assertTrue(calitest.has_snapshot_with_attributes(
-            snapshots, {'ci_test_c': 'snapshot', 'string_arg': 'teststring', 'int_arg': 42 }))
+            snapshots, {'ci_test_c': 'snapshot', 'string_arg': 'teststring', 'int_arg': '42' }))
 
 if __name__ == "__main__":
     unittest.main()

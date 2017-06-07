@@ -34,12 +34,12 @@ class CaliperAggregationTest(unittest.TestCase):
             snapshots, {
                 'event.end#function': 'foo', 
                 'loop.id': 'A',
-                'aggregate.count': 6 }))
+                'aggregate.count': '6' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
                 'loop.id': 'B',
-                'aggregate.count': 4 }))
+                'aggregate.count': '4' }))
 
     def test_aggregate_value_key(self):
         target_cmd = [ './ci_test_aggregate' ]
@@ -58,13 +58,13 @@ class CaliperAggregationTest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
-                'iteration': 1,
-                'aggregate.count': 3 }))
+                'iteration': '1',
+                'aggregate.count': '3' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
-                'iteration': 3,
-                'aggregate.count': 1 }))
+                'iteration': '3',
+                'aggregate.count': '1' }))
 
     def test_aggregate_attributes(self):
         target_cmd = [ './ci_test_aggregate' ]

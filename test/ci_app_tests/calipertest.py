@@ -77,7 +77,18 @@ def get_snapshots_from_text(query_output):
 
 def has_snapshot_with_attributes(snapshots, attrs):
     """ Test if a snapshot with the given subset of attributes exists """
-    return any( set(attrs).issubset(set(s)) for s in snapshots )
+
+    def dict_contains(a, b):
+        for k in b.keys():
+            if (a.get(k) != b.get(k)):
+                return False
+        return True
+
+    for s in snapshots:
+        if (dict_contains(s, attrs)):
+            return True
+
+    return False
     
 def has_snapshot_with_keys(snapshots, keys):
     """ Test if a snapshot with the given subset of keys exists """
