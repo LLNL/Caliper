@@ -6,7 +6,7 @@
 #cmakedefine CALIPER_HAVE_LIBUNWIND
 #cmakedefine CALIPER_HAVE_LIBCURL
 #cmakedefine CALIPER_HAVE_PAPI
-#cmakedefine CALIPER_HAVE_MITOS
+#cmakedefine CALIPER_HAVE_LIBPFM
 #cmakedefine CALIPER_HAVE_SAMPLER
 #cmakedefine CALIPER_HAVE_NVVP
 #cmakedefine CALIPER_HAVE_TAU

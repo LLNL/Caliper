@@ -12,6 +12,8 @@ add_executable(cali-basic-c cali-basic-c.c)
 add_executable(cali-test-c cali-test-c.c)
 add_executable(cali-print-snapshot cali-print-snapshot.c)
 
+add_executable(cali-throughput-pthread cali-throughput-pthread.cpp)
+
 add_executable(cali-simplereader-test cali-simplereader-test.cpp)
 
 set_target_properties(cali-basic-c PROPERTIES LINKER_LANGUAGE CXX)
@@ -23,6 +25,7 @@ target_link_libraries(cali-basic caliper)
 target_link_libraries(cali-basic-c caliper)
 target_link_libraries(cali-test-c caliper)
 target_link_libraries(cali-print-snapshot caliper)
+target_link_libraries(cali-throughput-pthread caliper caliper-tools-util)
 # target_link_libraries(cali-wrap caliper)
 
 target_link_libraries(cali-simplereader-test caliper-reader)

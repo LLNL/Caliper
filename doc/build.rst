@@ -34,7 +34,7 @@ have additional dependencies:
 +============+==============================+========================+
 |callpath    | Call path information        | libunwind              |
 +------------+------------------------------+------------------------+
-|mitos       | Linux perf-event data        | Mitos library          |
+|libpfm      | Linux perf_event sampling    | Libpfm / Linux OS      |
 +------------+------------------------------+------------------------+
 |mpi         | MPI rank and function calls  | MPI                    |
 +------------+------------------------------+------------------------+

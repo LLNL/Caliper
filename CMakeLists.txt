@@ -37,6 +37,7 @@ option(WITH_DOCS      "Build Caliper documentation" FALSE)
 option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
+option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
@@ -95,15 +96,20 @@ if (WITH_PAPI)
   endif()
 endif()
 
-# Find Mitos
-
-# find_package(Mitos QUIET)
-# if(Mitos_FOUND)
-#   find_package(Dyninst REQUIRED SymtabAPI InstructionAPI ParseAPI)
-#   set(CALIPER_HAVE_MITOS TRUE)
-#   list(APPEND CALIPER_EXTERNAL_LIBS mitos hwloc symtabAPI instructionAPI parseAPI)
-#   message(STATUS "Mitos found")
-# endif()
+# Find libpfm
+if (WITH_LIBPFM)
+  include(FindLibpfm)
+  if(LIBPFM_FOUND)
+    message(STATUS "Found perfmon/pfmlib_perf_event.h in " ${LIBPFM_INCLUDE_DIR})
+    message(STATUS "Found libpfm.so in " ${LIBPFM_LIBRARY})
+    set(CALIPER_HAVE_LIBPFM TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBPFM_LIBRARY})
+  else()
+    message(STATUS "Could not find libpfm header. \
+      use -DLIBPFM_INSTALL=<path to libpfm src directory> \
+      e.g. -DLIBPFM_INSTALL=~/papi/src/libpfm4")
+  endif()
+endif()
 
 # Find dyninst
 if (WITH_DYNINST)

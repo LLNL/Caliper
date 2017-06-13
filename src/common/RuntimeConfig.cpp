@@ -66,7 +66,7 @@ namespace
         "# [time-profile]\n"
         "CALI_SERVICES_ENABLE=aggregate:event:recorder:timestamp\n"
         "# [load-sampling]\n"
-        "CALI_SERVICES_ENABLE=event:recorder:timestamp:mitos\n"
+        "CALI_SERVICES_ENABLE=event:recorder:timestamp:libpfm\n"
         "CALI_LOG_VERBOSITY=2\n";
 
     string config_var_name(const string& name, const string& key) {
