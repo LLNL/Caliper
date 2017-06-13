@@ -202,7 +202,7 @@ namespace {
 
         SnapshotRecord trigger_info(num_attributes, libpfm_attributes, data);
 
-        c.push_snapshot(CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 
         thread_states[thread_id].samples_produced++;
     }
@@ -373,18 +373,26 @@ namespace {
             if (ret)
                 err(1, "sigprocmask failed");
         }
+
+        return ret;
     }
 
     static int begin_thread_sampling() {
         int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH, 1);
+
         if (ret == -1)
             err(1, "cannot refresh");
+
+        return ret;
     }
 
     static int end_thread_sampling() {
         int ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+
         if (ret)
             err(1, "cannot stop");
+
+        return ret;
     }
 
     static void parse_configset(Caliper *c) {
