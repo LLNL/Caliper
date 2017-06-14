@@ -66,8 +66,16 @@ namespace
           "List of CUDA callback domains to capture",
           "List of CUDA callback domains to capture. Possible values:\n"
           "  runtime :  Capture CUDA runtime API calls\n"
-          "  driver  :  Capture CUDA driver calls"
+          "  driver  :  Capture CUDA driver calls\n"
           "  none    :  Don't capture callbacks"
+        },
+        { "record_symbol", CALI_TYPE_BOOL, "true",
+          "Record symbol name (kernel) for CUPTI callbacks",
+          "Record symbol name (kernel) for CUPTI callbacks"
+        },
+        { "record_context", CALI_TYPE_BOOL, "true",
+          "Record CUDA context ID",
+          "Record CUDA context ID"
         },
         ConfigSet::Terminator
     };
@@ -76,15 +84,20 @@ namespace
         CUpti_CallbackDomain domain;
         const char* name;
     } callback_domains[] = {
-        { CUPTI_CB_DOMAIN_RUNTIME_API, "runtime" },
-        { CUPTI_CB_DOMAIN_DRIVER_API,  "driver"  },
-        { CUPTI_CB_DOMAIN_INVALID,     "none"    },
-        { CUPTI_CB_DOMAIN_INVALID,     0         }
+        { CUPTI_CB_DOMAIN_RUNTIME_API, "runtime"  },
+        { CUPTI_CB_DOMAIN_DRIVER_API,  "driver"   },
+        { CUPTI_CB_DOMAIN_INVALID,     "none"     },
+        { CUPTI_CB_DOMAIN_INVALID,     0          }
     };
 
     struct CuptiServiceInfo {
         Attribute runtime_attr;
         Attribute driver_attr;
+        Attribute context_attr;
+        Attribute symbol_attr;
+
+        bool      record_context;
+        bool      record_symbol;
     }                      cupti_info;
 
     CUpti_SubscriberHandle subscriber;
@@ -131,11 +144,28 @@ namespace
             return;
         }
 
+        if (cupti_info.record_context) {
+            uint64_t ctx = cbInfo->contextUid;
+            Entry    e   = c.get(cupti_info.context_attr);
+
+            if (e.is_empty() || e.value().to_uint() != ctx)
+                c.set(cupti_info.context_attr, Variant(ctx));
+        }
+
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
+            if (cupti_info.record_symbol && cbInfo->symbolName) {
+                Variant v_sname(CALI_TYPE_STRING, cbInfo->symbolName, strlen(cbInfo->symbolName));
+                c.set(cupti_info.symbol_attr, v_sname);
+            }
+
             Variant v_fname(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName));
             c.begin(attr, v_fname);
-        } else if (cbInfo->callbackSite == CUPTI_API_EXIT)
+        } else if (cbInfo->callbackSite == CUPTI_API_EXIT) {
             c.end(attr);
+            
+            if (cupti_info.record_symbol && cbInfo->symbolName)
+                c.end(cupti_info.symbol_attr);
+        }
     }
 
     void
@@ -157,6 +187,14 @@ namespace
         cupti_info.driver_attr =
             c->create_attribute("cupti.driverAPI", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
                                 1, &class_nested_attr, &v_true);
+        
+        cupti_info.context_attr = 
+            c->create_attribute("cupti.contextID", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        cupti_info.symbol_attr = 
+            c->create_attribute("cupti.symbolName", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+
+        cupti_info.record_context = config.get("record_context").to_bool();
+        cupti_info.record_symbol = config.get("record_symbol").to_bool();
     }
 
     bool 
