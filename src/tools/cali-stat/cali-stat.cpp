@@ -33,9 +33,9 @@
 /// @file cali-stat.cpp
 /// A tool that quantifies Caliper stream contents
 
-#include "../util/Args.h"
-
 #include "caliper/Annotation.h"
+
+#include "caliper/tools-util/Args.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"

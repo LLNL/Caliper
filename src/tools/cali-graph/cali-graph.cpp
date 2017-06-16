@@ -33,7 +33,7 @@
 /// @file cali-graph.cpp
 /// A tool to print Caliper generalized context trees as graphviz files
 
-#include "../util/Args.h"
+#include "caliper/tools-util/Args.h"
 
 #include "caliper/Annotation.h"
 

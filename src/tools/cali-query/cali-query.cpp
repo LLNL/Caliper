@@ -34,8 +34,9 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
-#include "../util/Args.h"
 #include "AttributeExtract.h"
+
+#include "caliper/tools-util/Args.h"
 
 #include "caliper/Annotation.h"
 

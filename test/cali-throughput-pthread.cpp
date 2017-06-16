@@ -34,7 +34,7 @@
 // Multi-threaded caliper throughput benchmark
 //
 
-#include "../src/tools/util/Args.h"
+#include "caliper/tools-util/Args.h"
 
 #include <caliper/Annotation.h>
 #include <caliper/Caliper.h>
