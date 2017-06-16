@@ -33,7 +33,7 @@
 /// \brief MetadataTree.cpp
 /// MetadataTree implementation
 
-#include "caliper-config.h"
+#include "caliper/caliper-config.h"
 
 #include "MetadataTree.h"
 
