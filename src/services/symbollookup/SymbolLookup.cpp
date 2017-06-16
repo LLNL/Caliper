@@ -241,7 +241,7 @@ class SymbolLookup
             Entry e = snapshot->get(it.first);
 
             if (e.node()) {
-                for (const Node* node = e.node(); node; node = node->parent()) 
+                for (const cali::Node* node = e.node(); node; node = node->parent()) 
                     if (node->attribute() == it.first.id())
                         add_symbol_attributes(Entry(node), it.second, mempool, attr, data);
             } else if (e.is_immediate()) {
