@@ -187,7 +187,7 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
   FILES_MATCHING PATTERN "*.hpp")
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
+install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 # Create pkg-confic .pc file
