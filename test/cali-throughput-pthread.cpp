@@ -36,10 +36,10 @@
 
 #include "../src/tools/util/Args.h"
 
-#include <Annotation.h>
-#include <Caliper.h>
+#include <caliper/Annotation.h>
+#include <caliper/Caliper.h>
 
-#include <Variant.h>
+#include <caliper/common/Variant.h>
 
 #include <chrono>
 #include <iostream>

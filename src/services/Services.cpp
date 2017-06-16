@@ -33,16 +33,16 @@
 /// @file Services.cpp
 /// Services class implementation
 
-#include "caliper-config.h"
+#include "caliper/caliper-config.h"
 
 #include "Services.h"
 
 #include "CaliperService.h"
 
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <iterator>

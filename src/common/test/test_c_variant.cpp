@@ -1,4 +1,4 @@
-#include "../cali_variant.h"
+#include "caliper/common/cali_variant.h"
 
 #include "gtest/gtest.h"
 

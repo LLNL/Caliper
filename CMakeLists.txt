@@ -176,7 +176,19 @@ endif()
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
-  ${PROJECT_BINARY_DIR}/caliper-config.h)
+  ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h)
+
+# Include and install header files
+include_directories(${PROJECT_BINARY_DIR}/include)
+include_directories(include)
+
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+  FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+  FILES_MATCHING PATTERN "*.hpp")
+
+install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 # Create pkg-confic .pc file
 set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
@@ -198,9 +210,6 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 install(EXPORT caliper
   DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
-
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

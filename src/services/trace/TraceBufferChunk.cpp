@@ -32,15 +32,15 @@
 
 #include "TraceBufferChunk.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <ContextRecord.h>
-#include <Log.h>
-#include <Node.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include <c-util/vlenc.h>
+#include "caliper/common/c-util/vlenc.h"
 
 #define SNAP_MAX 80
 

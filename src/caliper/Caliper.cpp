@@ -34,21 +34,22 @@
 /// Caliper main class
 ///
 
-#include "caliper-config.h"
+#include "caliper/caliper-config.h"
 
-#include "Caliper.h"
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
+
 #include "ContextBuffer.h"
-#include "SnapshotRecord.h"
 #include "MetadataTree.h"
 
-#include <Services.h>
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include <ContextRecord.h>
-#include <Node.h>
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/util/split.hpp"
 
-#include <util/split.hpp>
+#include "../services/Services.h"
 
 #include <signal.h>
 

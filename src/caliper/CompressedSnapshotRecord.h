@@ -1,9 +1,9 @@
 /// \file  CompressedSnapshotRecord.h
 /// \brief CompressedSnapshotRecord class
 
-#include "Entry.h"
-#include "Record.h"
-#include "Variant.h"
+#include "caliper/common/Entry.h"
+#include "caliper/common/Record.h"
+#include "caliper/common/Variant.h"
 
 #include <vector>
 

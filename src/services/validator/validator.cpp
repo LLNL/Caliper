@@ -34,7 +34,7 @@
 /// @brief Caliper NVVP service
 
 #include "../common/ToolWrapper.h"
-#include "./common/filters/RegexFilter.h"
+#include "caliper/common/filters/RegexFilter.h"
 #include <cstdio>
 #include <vector>
 namespace cali {

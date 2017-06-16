@@ -33,12 +33,12 @@
 /// \file Annotation.cpp
 /// Annotation interface
 
-#include "Annotation.h"
+#include "caliper/Annotation.h"
 
-#include "Caliper.h"
+#include "caliper/Caliper.h"
 
-#include <Log.h>
-#include <Variant.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/Variant.h"
 
 #include <atomic>
 #include <cstring>

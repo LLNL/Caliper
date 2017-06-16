@@ -33,14 +33,14 @@
 /// @file CaliperMetadataDB.cpp
 /// CaliperMetadataDB class definition
 
-#include "CaliperMetadataDB.h"
+#include "caliper/reader/CaliperMetadataDB.h"
 
-#include <csv/CsvReader.h>
+#include "caliper/common/csv/CsvReader.h"
 
-#include <Log.h>
-#include <Node.h>
-#include <RecordMap.h>
-#include <StringConverter.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RecordMap.h"
+#include "caliper/common/StringConverter.h"
 
 #include <algorithm>
 #include <cassert>

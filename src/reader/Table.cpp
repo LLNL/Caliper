@@ -33,16 +33,16 @@
 /// @file Table.cpp
 /// Print human-readable table
 
-#include "Table.h"
+#include "caliper/reader/Table.h"
 
-#include "CaliperMetadataAccessInterface.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
-#include "Attribute.h"
-#include "ContextRecord.h"
-#include "Node.h"
-#include "StringConverter.h"
+#include "caliper/common/Attribute.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/StringConverter.h"
 
-#include "util/split.hpp"
+#include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <iterator>

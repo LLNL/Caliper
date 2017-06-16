@@ -33,11 +33,11 @@
 /// @file ContextRecord.cpp
 /// ContextRecord implementation
 
-#include "ContextRecord.h"
+#include "caliper/common/ContextRecord.h"
 
-#include "CaliperMetadataAccessInterface.h"
-#include "Node.h"
-#include "StringConverter.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/StringConverter.h"
 
 using namespace cali;
 using namespace std;

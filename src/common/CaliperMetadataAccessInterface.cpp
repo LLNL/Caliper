@@ -33,7 +33,7 @@
 /// \file CaliperMetadataQueryInterface.cpp
 /// Caliper metadata access interface implementation
 
-#include "CaliperMetadataAccessInterface.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
 using namespace cali;
 

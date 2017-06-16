@@ -35,19 +35,19 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <ContextRecord.h>
-#include <Log.h>
-#include <Node.h>
-#include <RuntimeConfig.h>
-#include <Variant.h>
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/Variant.h"
 
-#include <c-util/vlenc.h>
+#include "caliper/common/c-util/vlenc.h"
 
-#include <util/spinlock.hpp>
-#include <util/split.hpp>
+#include "caliper/common/util/spinlock.hpp"
+#include "caliper/common/util/split.hpp"
 
 #include <pthread.h>
 

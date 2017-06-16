@@ -33,9 +33,9 @@
 /// \file SnapshotRecord.cpp
 /// SnapshotRecord class definition
 
-#include "SnapshotRecord.h"
+#include "caliper/SnapshotRecord.h"
 
-#include "Node.h"
+#include "caliper/common/Node.h"
 
 #include <iostream>
 

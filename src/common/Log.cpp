@@ -33,8 +33,8 @@
 /// @file Log.cpp
 /// Log class implementation
 
-#include "Log.h"
-#include "RuntimeConfig.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include <memory>
 #include <map>

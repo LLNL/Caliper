@@ -37,13 +37,13 @@
 
 #include "TraceBufferChunk.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include <util/spinlock.hpp>
+#include "caliper/common/util/spinlock.hpp"
 
 #include <pthread.h>
 

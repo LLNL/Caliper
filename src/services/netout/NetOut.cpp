@@ -4,14 +4,15 @@
 #include "../CaliperService.h"
 
 #include <curl/curl.h>
-#include <Caliper.h>
-#include <SnapshotRecord.h>
-#include <SnapshotTextFormatter.h>
 
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <util/split.hpp>
+#include "caliper/common/SnapshotTextFormatter.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+
+#include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <fstream>

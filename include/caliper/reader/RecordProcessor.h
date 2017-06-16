@@ -30,38 +30,39 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Json.h
-/// Json output formatter declarations
+///@file RecordProcessor.h
+///RecordProcessor declarations
 
-#ifndef CALI_JSON_H
-#define CALI_JSON_H
+#ifndef CALI_RECORDPROCESSOR_H
+#define CALI_RECORDPROCESSOR_H
 
-#include "RecordMap.h"
-#include "RecordProcessor.h"
+#include "../common/Entry.h"
+#include "../common/RecordMap.h"
 
-#include <iostream>
-#include <memory>
+#include <functional>
+#include <vector>
 
 namespace cali
 {
+    class CaliperMetadataAccessInterface;
 
-class CaliperMetadataAccessInterface;
+    typedef std::vector<Entry> 
+        EntryList;
 
-class Json 
-{
-    struct JsonImpl;
-    std::shared_ptr<JsonImpl> mP;
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec)> 
+        RecordProcessFn;
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec, RecordProcessFn)> 
+        RecordFilterFn;
 
-public:
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node)> 
+        NodeProcessFn;
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node,NodeProcessFn)> 
+        NodeFilterFn;
 
-    Json(const std::string& fields);
-
-    ~Json();
-
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
-
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
-};
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list)> 
+        SnapshotProcessFn;
+    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list,SnapshotProcessFn)> 
+        SnapshotFilterFn;
 
 } // namespace cali
 

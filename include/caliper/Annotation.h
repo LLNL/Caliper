@@ -40,7 +40,7 @@
 #ifndef CALI_ANNOTATION_H
 #define CALI_ANNOTATION_H
 
-#include "cali_types.h"
+#include "common/cali_types.h"
 
 namespace cali
 {

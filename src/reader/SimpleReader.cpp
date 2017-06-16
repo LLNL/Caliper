@@ -33,9 +33,9 @@
 /// @file SimpleReader.cpp
 /// A high-level API for parsing cali files
 
-#include <ContextRecord.h>
+#include "caliper/reader/SimpleReader.h"
 
-#include "SimpleReader.h"
+#include "caliper/common/ContextRecord.h"
 
 using namespace cali;
 using namespace std;

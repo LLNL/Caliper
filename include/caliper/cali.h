@@ -42,8 +42,8 @@
 
 #include "cali_definitions.h"
 
-#include "cali_types.h"
-#include "cali_variant.h"
+#include "common/cali_types.h"
+#include "common/cali_variant.h"
 
 #include <stddef.h> /* size_t */
 

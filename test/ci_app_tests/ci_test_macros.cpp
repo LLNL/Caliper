@@ -1,6 +1,6 @@
 // --- Caliper continuous integration test app for basic trace test
 
-#include "cali.h"
+#include "caliper/cali.h"
 
 // test C macros
 

@@ -33,7 +33,7 @@
 /// \file cali.c
 /// Caliper C interface stub implementation
 
-#include <cali.h>
+#include "caliper/cali.h"
 
 //
 // --- Attribute interface

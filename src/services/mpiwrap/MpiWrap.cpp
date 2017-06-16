@@ -35,10 +35,10 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
+#include "caliper/Caliper.h"
 
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
 using namespace cali;
 using namespace std;

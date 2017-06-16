@@ -35,13 +35,13 @@
 
 #include "ContextBuffer.h"
 
-#include "SnapshotRecord.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <Attribute.h>
-#include <ContextRecord.h>
-#include <Node.h>
+#include "caliper/common/Attribute.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
 
-#include <util/spinlock.hpp>
+#include "caliper/common/util/spinlock.hpp"
 
 #include <algorithm>
 #include <cassert>

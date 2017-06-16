@@ -33,9 +33,8 @@
 /// @file CsvReader.cpp
 /// CsvReader implementation
 
-#include "CsvReader.h"
-
-#include "CsvSpec.h"
+#include "caliper/common/csv/CsvReader.h"
+#include "caliper/common/csv/CsvSpec.h"
 
 #include <iostream>
 #include <fstream>

@@ -1,8 +1,8 @@
 /// @file Entry.cpp
 /// Entry class definition
 
-#include "Entry.h"
-#include "Node.h"
+#include "caliper/common/Entry.h"
+#include "caliper/common/Node.h"
 
 #include <functional>
 

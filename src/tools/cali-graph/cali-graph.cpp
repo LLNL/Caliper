@@ -33,19 +33,19 @@
 /// @file cali-graph.cpp
 /// A tool to print Caliper generalized context trees as graphviz files
 
-#include <Args.h>
+#include "../util/Args.h"
 
-#include <Annotation.h>
+#include "caliper/Annotation.h"
 
-#include <Aggregator.h>
-#include <CaliperMetadataDB.h>
-#include <RecordProcessor.h>
+#include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliperMetadataDB.h"
+#include "caliper/reader/RecordProcessor.h"
 
-#include <Node.h>
+#include "caliper/common/Node.h"
 
-#include <csv/CsvReader.h>
+#include "caliper/common/csv/CsvReader.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <fstream>
 #include <iostream>

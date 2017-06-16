@@ -32,7 +32,7 @@
 
 ///@file cali-simplereader-test.cpp
 
-#include <SimpleReader.h>
+#include <caliper/reader/SimpleReader.h>
 using namespace cali;
 
 #include <string>

@@ -33,7 +33,7 @@
 /// \file Annotation.cpp
 /// Annotation stub interface
 
-#include <Annotation.h>
+#include "caliper/Annotation.h"
 
 
 using namespace cali;

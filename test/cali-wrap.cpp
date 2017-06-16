@@ -32,9 +32,9 @@
 
 // A minimal Caliper instrumentation demo 
 
-#include <Annotation.h>
+#include <caliper/Annotation.h>
 #include <math.h>
-#include <CaliFunctional.h>
+#include <caliper/CaliFunctional.h>
 
 int doWork(int* inArray, int size){
     int reduce_var = 0;

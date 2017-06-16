@@ -35,9 +35,9 @@
 
 #include "MemoryPool.h"
 
-#include <RuntimeConfig.h>
+#include "caliper/common/RuntimeConfig.h"
 
-#include <util/spinlock.hpp>
+#include "caliper/common/util/spinlock.hpp"
 
 #include <algorithm>
 #include <cstring>

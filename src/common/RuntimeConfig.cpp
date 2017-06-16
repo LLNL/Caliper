@@ -33,9 +33,9 @@
 /// @file RuntimeConfig.cpp
 /// RuntimeConfig class implementation
 
-#include "RuntimeConfig.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include "util/split.hpp"
+#include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <cctype>

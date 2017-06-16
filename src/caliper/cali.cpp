@@ -33,16 +33,17 @@
 /// \file cali.cpp
 /// Caliper C interface implementation
 
-#include "cali.h"
+#include "caliper/cali.h"
 
-#include "Caliper.h"
 #include "CompressedSnapshotRecord.h"
-#include "SnapshotRecord.h"
 
-#include "Log.h"
-#include "Node.h"
-#include "RuntimeConfig.h"
-#include "Variant.h"
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
+
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/Variant.h"
 
 #include <cstring>
 #include <unordered_map>

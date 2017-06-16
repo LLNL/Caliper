@@ -1,6 +1,6 @@
 // Caliper continuous integration test app for C snapshot interface
 
-#include <cali.h>
+#include "caliper/cali.h"
 
 #include <string.h>
 

@@ -3,7 +3,7 @@
  * Context annotation library type conversion functions
  */
 
-#include "cali_types.h"
+#include "caliper/common/cali_types.h"
 
 #include <ctype.h>
 #include <string.h>

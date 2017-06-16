@@ -36,9 +36,9 @@
  *  \brief cali_variant_t definition
  */
 
-#include "cali_variant.h"
+#include "caliper/common/cali_variant.h"
 
-#include "c-util/vlenc.h"
+#include "caliper/common/c-util/vlenc.h"
 
 #include <string.h>
 

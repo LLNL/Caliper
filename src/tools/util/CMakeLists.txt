@@ -1,11 +1,7 @@
 set(CALIPER_TOOLS_UTIL_SOURCES
     Args.cpp)
-set(CALIPER_TOOLS_UTIL_HEADERS
-    Args.h)
 
 add_library(caliper-tools-util ${CALIPER_TOOLS_UTIL_SOURCES})
-
-install(FILES ${CALIPER_TOOLS_UTIL_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
 install(TARGETS caliper-tools-util 
   EXPORT caliper

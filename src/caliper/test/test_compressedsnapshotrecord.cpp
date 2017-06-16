@@ -2,7 +2,7 @@
 
 #include "MockupMetadataDB.h"
 
-#include "Node.h"
+#include "caliper/common/Node.h"
 
 #include <gtest/gtest.h>
 

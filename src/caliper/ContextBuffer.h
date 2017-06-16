@@ -36,8 +36,8 @@
 #ifndef CALI_CONTEXTBUFFER_H
 #define CALI_CONTEXTBUFFER_H
 
-#include "Record.h"
-#include "Variant.h"
+#include "caliper/common/Record.h"
+#include "caliper/common/Variant.h"
 
 #include <iostream>
 #include <memory>

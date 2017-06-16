@@ -35,14 +35,14 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <RuntimeConfig.h>
-#include <ContextRecord.h>
-#include <Log.h>
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Log.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <pthread.h>
 

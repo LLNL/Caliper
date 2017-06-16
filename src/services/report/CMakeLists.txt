@@ -1,5 +1,3 @@
-include_directories(../../reader)
-
 set(CALIPER_REPORT_SOURCES
     Report.cpp)
 

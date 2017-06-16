@@ -1,6 +1,6 @@
 // --- Caliper continuous integration test app for C annotation interface
 
-#include <cali.h>
+#include "caliper/cali.h"
 
 int main()
 {

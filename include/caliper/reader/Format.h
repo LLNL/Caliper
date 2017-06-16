@@ -30,39 +30,37 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file RecordProcessor.h
-///RecordProcessor declarations
+///@file Format.h
+/// Format output formatter declarations
 
-#ifndef CALI_RECORDPROCESSOR_H
-#define CALI_RECORDPROCESSOR_H
+#ifndef CALI_FORMAT_H
+#define CALI_FORMAT_H
 
-#include "Entry.h"
-#include "RecordMap.h"
+#include "RecordProcessor.h"
 
-#include <functional>
-#include <vector>
+#include "../common/RecordMap.h"
+
+#include <iostream>
+#include <memory>
 
 namespace cali
 {
-    class CaliperMetadataAccessInterface;
 
-    typedef std::vector<Entry> 
-        EntryList;
+class CaliperMetadataAccessInterface;
 
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec)> 
-        RecordProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec, RecordProcessFn)> 
-        RecordFilterFn;
+class Format 
+{
+    struct FormatImpl;
+    std::shared_ptr<FormatImpl> mP;
 
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node)> 
-        NodeProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node,NodeProcessFn)> 
-        NodeFilterFn;
+public:
 
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list)> 
-        SnapshotProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const EntryList& list,SnapshotProcessFn)> 
-        SnapshotFilterFn;
+    Format(std::ostream& os, const std::string& formatstr, const std::string& titlestr);
+
+    ~Format();
+
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+};
 
 } // namespace cali
 

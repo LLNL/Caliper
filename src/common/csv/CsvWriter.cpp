@@ -33,13 +33,13 @@
 /// \file CsvWriter.cpp
 /// CsvWriter implementation
 
-#include "CsvWriter.h"
+#include "caliper/common/csv/CsvWriter.h"
 
-#include "CsvSpec.h"
+#include "caliper/common/csv/CsvSpec.h"
 
-#include "../CaliperMetadataAccessInterface.h"
-#include "../ContextRecord.h"
-#include "../Node.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
 
 #include <mutex>
 #include <set>

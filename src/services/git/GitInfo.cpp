@@ -35,13 +35,13 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
+#include "caliper/Caliper.h"
 
-#include <Log.h>
-#include <RuntimeConfig.h>
-#include <Variant.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/Variant.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <sys/utsname.h>
 #include <time.h>

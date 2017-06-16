@@ -33,14 +33,14 @@
 /// @file RecordSelector.cpp
 /// RecordSelector implementation
 
-#include "RecordSelector.h"
+#include "caliper/reader/RecordSelector.h"
 
-#include "CaliperMetadataAccessInterface.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
-#include <Attribute.h>
-#include <Node.h>
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <iostream>
 #include <iterator>

@@ -36,17 +36,17 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <Format.h>
-#include <RecordSelector.h>
-#include <Table.h>
+#include "caliper/reader/Format.h"
+#include "caliper/reader/RecordSelector.h"
+#include "caliper/reader/Table.h"
 
-#include <Log.h>
-#include <Node.h>
-#include <RuntimeConfig.h>
-#include <SnapshotTextFormatter.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/SnapshotTextFormatter.h"
 
 #include <iostream>
 #include <fstream>

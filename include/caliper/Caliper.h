@@ -37,12 +37,12 @@
 
 #include "cali_definitions.h"
 
-#include "Attribute.h"
-#include "CaliperMetadataAccessInterface.h"
-#include "Entry.h"
-#include "Record.h"
-#include "Variant.h"
-#include "util/callback.hpp"
+#include "common/Attribute.h"
+#include "common/CaliperMetadataAccessInterface.h"
+#include "common/Entry.h"
+#include "common/Record.h"
+#include "common/Variant.h"
+#include "common/util/callback.hpp"
 
 #include <utility>
 

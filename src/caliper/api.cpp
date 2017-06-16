@@ -33,10 +33,11 @@
 /// \file api.cpp
 /// Initialization of API attributes and static variables
 
-#include "Attribute.h"
-#include "Caliper.h"
+#include "caliper/Caliper.h"
 
-#include "cali_types.h"
+#include "caliper/common/Attribute.h"
+
+#include "caliper/common/cali_types.h"
 
 cali_id_t cali_class_nested_attr_id = CALI_INV_ID;
 cali_id_t cali_class_aggregatable_attr_id = CALI_INV_ID;

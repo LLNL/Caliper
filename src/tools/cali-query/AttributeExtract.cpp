@@ -32,8 +32,8 @@
 
 #include "AttributeExtract.h"
 
-#include "CaliperMetadataAccessInterface.h"
-#include "Node.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/common/Node.h"
 
 using namespace cali;
 

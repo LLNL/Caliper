@@ -36,10 +36,10 @@
 #ifndef CALI_SIMPLEREADER_H
 #define CALI_SIMPLEREADER_H
 
-#include "csv/CsvSpec.h"
+#include "../common/csv/CsvSpec.h"
 
-#include "RecordMap.h"
-#include "Variant.h"
+#include "../common/RecordMap.h"
+#include "../common/Variant.h"
 
 #include "CaliperMetadataDB.h"
 

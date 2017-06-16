@@ -39,7 +39,7 @@
 #include "Annotation.h"
 #include "cali_definitions.h"
 
-#include "Variant.h"
+#include "common/Variant.h"
 
 #include <cstring>
 #include <iostream>

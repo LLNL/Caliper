@@ -39,10 +39,10 @@
 
 #include "MemoryPool.h"
 
-#include "Attribute.h"
-#include "Node.h"
-#include "RuntimeConfig.h"
-#include "Variant.h"
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/Variant.h"
 
 #include <atomic>
 #include <cstring>

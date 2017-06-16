@@ -1,15 +1,19 @@
 #ifndef CALI_TOOL_WRAPPER_HPP
 #define CALI_TOOL_WRAPPER_HPP
-#include "../CaliperService.h"
-#include <caliper-config.h>
-#include <Caliper.h>
-#include <iostream>
-#include <Log.h>
-#include <RuntimeConfig.h>
 
-#include "common/filters/Filter.h"
-#include "common/filters/DefaultFilter.h"
-#include "common/filters/RegexFilter.h"
+#include "../CaliperService.h"
+
+#include "caliper/caliper-config.h"
+#include "caliper/Caliper.h"
+
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+
+#include "caliper/common/filters/Filter.h"
+#include "caliper/common/filters/DefaultFilter.h"
+#include "caliper/common/filters/RegexFilter.h"
+
+#include <iostream>
 
 namespace cali {
 

@@ -35,17 +35,17 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <csv/CsvSpec.h>
-#include <csv/CsvWriter.h>
+#include "caliper/common/csv/CsvSpec.h"
+#include "caliper/common/csv/CsvWriter.h"
 
-#include <ContextRecord.h>
-#include <Log.h>
-#include <Node.h>
-#include <RuntimeConfig.h>
-#include <SnapshotTextFormatter.h>
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/SnapshotTextFormatter.h"
 
 #include <sys/stat.h>
 #include <unistd.h>

@@ -1,6 +1,6 @@
 // --- Caliper continuous integration test app for basic trace test
 
-#include <Annotation.h>
+#include "caliper/Annotation.h"
 
 int main() 
 {

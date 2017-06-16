@@ -35,15 +35,15 @@
 
 #include "../CaliperService.h"
 
-#include "Caliper.h"
-#include "MemoryPool.h"
-#include "SnapshotRecord.h"
+#include "caliper/Caliper.h"
+#include "../../caliper/MemoryPool.h"
+#include "caliper/SnapshotRecord.h"
 
-#include "Log.h"
-#include "Node.h"
-#include "RuntimeConfig.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
 
-#include "util/split.hpp"
+#include "caliper/common/util/split.hpp"
 
 #include <Symtab.h>
 #include <LineInformation.h>

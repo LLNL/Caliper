@@ -1,6 +1,3 @@
-include_directories("../../common")
-include_directories("../../caliper")
-
 include_directories(${MPI_C_INCLUDE_PATH})
 
 set(WRAP ${CMAKE_CURRENT_SOURCE_DIR}/wrap.py)

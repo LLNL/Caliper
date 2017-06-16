@@ -35,11 +35,11 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <Log.h>
-#include <RuntimeConfig.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include <cstdlib>
 #include <cstring>

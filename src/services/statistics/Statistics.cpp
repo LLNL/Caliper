@@ -35,9 +35,9 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
+#include "caliper/Caliper.h"
 
-#include <Log.h>
+#include "caliper/common/Log.h"
 
 #include <atomic>
 

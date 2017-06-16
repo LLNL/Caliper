@@ -33,9 +33,9 @@
 /// @file Variant.cpp
 /// Variant datatype implementation
 
-#include "Variant.h"
+#include "caliper/common/Variant.h"
 
-#include "StringConverter.h"
+#include "caliper/common/StringConverter.h"
 
 #include <algorithm>
 #include <cctype>

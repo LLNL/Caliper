@@ -30,11 +30,40 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Record.cpp
-///Record class definition
+///@file Table.h
+/// Table output formatter declarations
 
-#include "Record.h"
+#ifndef CALI_TABLE_H
+#define CALI_TABLE_H
 
-using namespace cali;
-using namespace std;
+#include "RecordProcessor.h"
 
+#include "../common/RecordMap.h"
+
+#include <iostream>
+#include <memory>
+
+namespace cali
+{
+
+class CaliperMetadataAccessInterface;
+
+class Table 
+{
+    struct TableImpl;
+    std::shared_ptr<TableImpl> mP;
+
+public:
+
+    Table(const std::string& fields, const std::string& sort_fields);
+
+    ~Table();
+
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
+};
+
+} // namespace cali
+
+#endif

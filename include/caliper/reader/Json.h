@@ -30,14 +30,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Table.h
-/// Table output formatter declarations
+///@file Json.h
+/// Json output formatter declarations
 
-#ifndef CALI_TABLE_H
-#define CALI_TABLE_H
+#ifndef CALI_JSON_H
+#define CALI_JSON_H
 
-#include "RecordMap.h"
 #include "RecordProcessor.h"
+
+#include "../common/RecordMap.h"
 
 #include <iostream>
 #include <memory>
@@ -47,16 +48,16 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
-class Table 
+class Json 
 {
-    struct TableImpl;
-    std::shared_ptr<TableImpl> mP;
+    struct JsonImpl;
+    std::shared_ptr<JsonImpl> mP;
 
 public:
 
-    Table(const std::string& fields, const std::string& sort_fields);
+    Json(const std::string& fields);
 
-    ~Table();
+    ~Json();
 
     void operator()(CaliperMetadataAccessInterface&, const EntryList&);
 

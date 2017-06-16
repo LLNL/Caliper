@@ -1,8 +1,5 @@
-include_directories("../common")
-include_directories("../caliper")
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 # A macro to include service module source files in the caliper runtime lib
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 macro(add_service_sources)
   file(RELATIVE_PATH _relpath "${CMAKE_SOURCE_DIR}/src/services" "${CMAKE_CURRENT_SOURCE_DIR}")

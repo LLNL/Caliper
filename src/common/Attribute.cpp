@@ -33,9 +33,9 @@
 /// @file Attribute.cpp
 /// Attribute class implementation
 
-#include "Attribute.h"
+#include "caliper/common/Attribute.h"
 
-#include "Node.h"
+#include "caliper/common/Node.h"
 
 using namespace cali;
 using namespace std;

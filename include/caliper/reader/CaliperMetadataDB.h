@@ -38,9 +38,9 @@
 
 #include "RecordProcessor.h"
 
-#include "Attribute.h"
-#include "CaliperMetadataAccessInterface.h"
-#include "RecordMap.h"
+#include "../common/Attribute.h"
+#include "../common/CaliperMetadataAccessInterface.h"
+#include "../common/RecordMap.h"
 
 #include <map>
 #include <memory>

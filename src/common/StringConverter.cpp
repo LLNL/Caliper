@@ -33,7 +33,7 @@
 /// \file StringConverter.cpp
 /// StringConverter implementation
 
-#include "StringConverter.h"
+#include "caliper/common/StringConverter.h"
 
 #include <algorithm>
 #include <cctype>

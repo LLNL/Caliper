@@ -33,7 +33,7 @@
 ///@file Query.cpp
 /// Query interface implementation
 
-#include "RecordMap.h"
+#include "caliper/common/RecordMap.h"
 
 #include <iostream>
 

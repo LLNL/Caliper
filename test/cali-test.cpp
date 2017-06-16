@@ -32,14 +32,13 @@
 
 // A basic Caliper instrumentation demo / test file
 
-#include <Annotation.h>
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include <caliper/cali.h>
 
-#include <cali_macros.h>
+#include <caliper/Caliper.h>
+#include <caliper/SnapshotRecord.h>
 
-#include <RuntimeConfig.h>
-#include <Variant.h>
+#include <caliper/common/RuntimeConfig.h>
+#include <caliper/common/Variant.h>
 
 #include <cstdlib>
 #include <cstring>

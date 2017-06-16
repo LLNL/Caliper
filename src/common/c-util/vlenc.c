@@ -25,7 +25,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "vlenc.h"
+#include "caliper/common/c-util/vlenc.h"
 
 extern inline size_t
 vlenc_u64(uint64_t val, unsigned char* buf);

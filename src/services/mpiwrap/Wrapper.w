@@ -1,10 +1,10 @@
 
-#include <Caliper.h>
+#include "caliper/Caliper.h"
 
-#include <Log.h>
-#include <Variant.h>
+#include "caliper/common/Log.h"
+#include "caliper/common/Variant.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <mpi.h>
 

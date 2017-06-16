@@ -3,14 +3,14 @@
 
 #include "CompressedSnapshotRecord.h"
 
-#include "SnapshotRecord.h"
+#include "caliper/SnapshotRecord.h"
 
-#include "CaliperMetadataAccessInterface.h"
-#include "ContextRecord.h"
-#include "Entry.h"
-#include "Node.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Entry.h"
+#include "caliper/common/Node.h"
 
-#include "c-util/vlenc.h"
+#include "caliper/common/c-util/vlenc.h"
 
 #include <algorithm>
 #include <cstring>

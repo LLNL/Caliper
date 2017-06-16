@@ -1,7 +1,7 @@
 #ifndef CALI_SERVICES_FILTER_HXX_
 #define CALI_SERVICES_FILTER_HXX_
 
-#include "Caliper.h"
+#include "caliper/Caliper.h"
 
 class Filter {
 protected:

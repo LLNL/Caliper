@@ -35,11 +35,11 @@
 
 #include "../CaliperService.h"
 
-#include <Caliper.h>
-#include <SnapshotRecord.h>
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <csv/CsvSpec.h>
-#include <Log.h>
+#include "caliper/common/csv/CsvSpec.h"
+#include "caliper/common/Log.h"
 
 #include <mutex>
 

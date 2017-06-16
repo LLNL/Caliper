@@ -1,8 +1,3 @@
-include_directories ("../../common")
-include_directories ("../../reader")
-include_directories ("../util")
-include_directories ("../../caliper")
-
 set(CALIPER_STAT_SOURCES
     cali-stat.cpp)
 

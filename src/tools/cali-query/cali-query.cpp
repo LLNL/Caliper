@@ -34,28 +34,27 @@
 /// @file cali-query.cpp
 /// A basic tool for Caliper metadata queries
 
-#include "Args.h"
+#include "../util/Args.h"
 #include "AttributeExtract.h"
 
-#include "Annotation.h"
+#include "caliper/Annotation.h"
 
-#include "Aggregator.h"
-#include "CaliperMetadataDB.h"
-#include "Expand.h"
-#include "Format.h"
-#include "RecordProcessor.h"
-#include "RecordSelector.h"
-#include "Table.h"
-#include "Json.h"
+#include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliperMetadataDB.h"
+#include "caliper/reader/Expand.h"
+#include "caliper/reader/Format.h"
+#include "caliper/reader/RecordProcessor.h"
+#include "caliper/reader/RecordSelector.h"
+#include "caliper/reader/Table.h"
+#include "caliper/reader/Json.h"
 
-#include "ContextRecord.h"
-#include "Node.h"
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
 
-#include <csv/CsvReader.h>
-#include <csv/CsvSpec.h>
-#include <csv/CsvWriter.h>
+#include "caliper/common/csv/CsvReader.h"
+#include "caliper/common/csv/CsvWriter.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <atomic>
 #include <fstream>

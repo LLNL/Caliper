@@ -33,21 +33,21 @@
 /// @file cali-stat.cpp
 /// A tool that quantifies Caliper stream contents
 
-#include <Args.h>
+#include "../util/Args.h"
 
-#include <Annotation.h>
+#include "caliper/Annotation.h"
 
-#include <Aggregator.h>
-#include <CaliperMetadataDB.h>
-#include <RecordProcessor.h>
+#include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliperMetadataDB.h"
+#include "caliper/reader/RecordProcessor.h"
 
-#include <ContextRecord.h>
-#include <Node.h>
-#include <StringConverter.h>
+#include "caliper/common/ContextRecord.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/StringConverter.h"
 
-#include <csv/CsvReader.h>
+#include "caliper/common/csv/CsvReader.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <fstream>
 #include <iostream>

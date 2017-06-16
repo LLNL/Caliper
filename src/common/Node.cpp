@@ -33,7 +33,7 @@
 /// @file Node.cpp
 /// Node class implementation
 
-#include "Node.h"
+#include "caliper/common/Node.h"
 
 #include <cstring>
 

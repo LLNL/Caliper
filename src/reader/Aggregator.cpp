@@ -33,19 +33,19 @@
 /// @file Aggregator.cpp
 /// Aggregator implementation
 
-#include "Aggregator.h"
+#include "caliper/reader/Aggregator.h"
 
-#include "CaliperMetadataAccessInterface.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
-#include <Attribute.h>
-#include <Log.h>
-#include <Node.h>
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
 
-#include <cali_types.h>
+#include "caliper/common/cali_types.h"
 
-#include <c-util/vlenc.h>
+#include "caliper/common/c-util/vlenc.h"
 
-#include <util/split.hpp>
+#include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <cassert>

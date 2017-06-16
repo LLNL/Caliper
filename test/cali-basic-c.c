@@ -3,7 +3,7 @@
  * Caliper C interface test
  */
 
-#include <cali.h>
+#include <caliper/cali.h>
 
 #include <stdlib.h>
 

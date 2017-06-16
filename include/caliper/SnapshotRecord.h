@@ -35,9 +35,9 @@
 
 #pragma once
 
-#include "Attribute.h"
-#include "ContextRecord.h"
-#include "Entry.h"
+#include "common/Attribute.h"
+#include "common/ContextRecord.h"
+#include "common/Entry.h"
 
 #include <algorithm>
 

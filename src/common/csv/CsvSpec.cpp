@@ -33,11 +33,11 @@
 /// @file CsvSpec.cpp
 /// CsvSpec implementation
 
-#include "CsvSpec.h"
+#include "caliper/common/csv/CsvSpec.h"
 
-#include <Record.h>
-#include <Log.h>
-#include <Variant.h>
+#include "caliper/common/Record.h"
+#include "caliper/common/Log.h"
+#include "caliper/common/Variant.h"
 
 #include <vector>
 
