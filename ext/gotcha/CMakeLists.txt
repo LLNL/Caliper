@@ -20,7 +20,7 @@ if (result)
   message(FATAL_ERROR "Build step for gotcha failed: ${result}")
 endif()
 
-# Add gotcha directories. Defines gtest and gtest-main targets.
+# Add gotcha directories. Defines gotcha targets.
 add_subdirectory(
   ${CMAKE_CURRENT_BINARY_DIR}/gotcha-download/gotcha-src
   ${CMAKE_CURRENT_BINARY_DIR}/gotcha-download/gotcha-build)
