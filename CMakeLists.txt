@@ -2,7 +2,7 @@
 # Caliper
 #
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.1)
 project (caliper)
 
 # Version information
@@ -124,6 +124,7 @@ endif()
 if (WITH_DYNINST)
   find_package(Dyninst)
   if (Dyninst_FOUND)
+    message(STATUS "Found Dyninst in " ${Dyninst_DIR})
     set(CALIPER_HAVE_DYNINST TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
   endif()
@@ -135,7 +136,9 @@ if (WITH_GOTCHA)
   list(APPEND CALIPER_EXTERNAL_LIBS gotcha)
 endif()
 
-find_package(Threads)
+# pthread handling
+set(THREADS_PREFER_PTHREAD_FLAG On)
+find_package(Threads REQUIRED)
 
 # Find OMPT header
 find_path(OMPT_INCLUDE_DIR ompt.h

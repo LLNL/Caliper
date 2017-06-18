@@ -11,7 +11,7 @@ set(CALIPER_SOURCES
 
 add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services> ${CALIPER_SERVICES_LIBS})
 target_link_libraries(caliper PUBLIC caliper-common)
-target_link_libraries(caliper PRIVATE ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(caliper PRIVATE Threads::Threads)
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper PRIVATE ${_extlib})

@@ -21,7 +21,7 @@ target_link_libraries(cali-basic caliper)
 target_link_libraries(cali-basic-c caliper)
 target_link_libraries(cali-test-c caliper)
 target_link_libraries(cali-print-snapshot caliper)
-target_link_libraries(cali-throughput-pthread caliper caliper-tools-util)
+target_link_libraries(cali-throughput-pthread caliper caliper-tools-util Threads::Threads)
 # target_link_libraries(cali-wrap caliper)
 
 target_link_libraries(cali-simplereader-test caliper-reader)
