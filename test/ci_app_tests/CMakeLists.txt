@@ -10,6 +10,10 @@ set(CALIPER_CI_C_TEST_APPS
   ci_test_c_ann
   ci_test_c_snapshot)
 
+if (CALIPER_HAVE_GOTCHA)
+  list(APPEND CALIPER_CI_CXX_TEST_APPS ci_test_thread)
+endif()
+
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
   target_link_libraries(${app} caliper)
@@ -27,6 +31,11 @@ set(PYTHON_SCRIPTS
   test_basictrace.py
   test_c_api.py
   calipertest.py)
+
+if (CALIPER_HAVE_GOTCHA)
+  target_link_libraries(ci_test_thread Threads::Threads)
+  list(APPEND PYTHON_SCRIPTS test_thread.py)
+endif()
 
 foreach(file ${PYTHON_SCRIPTS})
   add_custom_target(${file} ALL
