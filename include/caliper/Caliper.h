@@ -102,7 +102,7 @@ public:
     struct Events {
         typedef util::callback<void(Caliper*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type*,int*)>
+        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type,int*,Node**)>
             pre_create_attr_cbvec;                        
         typedef util::callback<void(Caliper*,const Attribute&,const Variant&)>
             update_cbvec;
@@ -181,7 +181,10 @@ public:
 
     // --- Direct metadata / data access API
 
-    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list);
+    void      make_entrylist(size_t n, 
+                             const Attribute attr[], 
+                             const Variant   data[], 
+                             SnapshotRecord& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
     // --- Query API
@@ -207,8 +210,11 @@ public:
     /// \brief return node by id
     Node*     node(cali_id_t id) const;
 
-    /// \brief Get or create new tree path with data from given nodes in given order 
+    /// \brief Get or create tree path with data from given nodes in given order 
     Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
+
+    /// \brief Get or create tree entry with given attribute/value pair
+    Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
     // --- Caliper API access
 

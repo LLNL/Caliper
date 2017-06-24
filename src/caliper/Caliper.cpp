@@ -571,24 +571,27 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     // Create attribute nodes
 
     if (!node) {
+        // Get type node
+        assert(type >= 0 && type <= CALI_MAXTYPE);
+        node = m_thread_scope->tree.type_node(type);
+        assert(node);
+
+        // Add metadata nodes.
+        if (n_meta > 0)
+            node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
+
         // Look for attribute properties in presets 
         auto propit = mG->attribute_prop_presets.find(name);
         if (propit != mG->attribute_prop_presets.end())
             prop = propit->second;
 
-        mG->events.pre_create_attr_evt(this, name, &type, &prop);
+        // Run pre-attribute creation callbacks. This may add additional to our parent node.
+        mG->events.pre_create_attr_evt(this, name, type, &prop, &node);
         
         // Add default SCOPE_THREAD property if no other is set
         if (((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_PROCESS) &&
             ((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_TASK))
             prop |= CALI_ATTR_SCOPE_THREAD;
-
-        assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = m_thread_scope->tree.type_node(type);
-        assert(node);
-
-        if (n_meta > 0)
-            node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
 
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
         Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
@@ -1139,6 +1142,29 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
         g(m_thread_scope->lock);
 
     return m_thread_scope->tree.get_path(n, nodelist, parent);
+}
+
+/// Return a context tree path for the given key:value pairs.
+///
+/// \note This function is signal safe.
+///
+/// \param n Number of nodes in node list
+/// \param attr   Attribute. Cannot have the AS VALUE property.
+/// \param data   Value 
+/// \param parent Construct path off this parent node
+///
+/// \return Node pointing to the end of the new path
+
+Node*
+Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  parent)
+{
+    if (attr.store_as_value())
+        return nullptr;
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    return m_thread_scope->tree.get_path(1, &attr, &data, parent);
 }
 
 /// Return the node with the given id.

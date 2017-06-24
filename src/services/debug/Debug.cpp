@@ -51,7 +51,7 @@ namespace
 
 mutex dbg_mutex;
 
-void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type* type, int* prop)
+void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type type, int* prop, Node** node)
 {
     char buf[256];
 
@@ -59,7 +59,7 @@ void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type* typ
     
     lock_guard<mutex> lock(dbg_mutex);
     Log(2).stream() << "Event: pre_create_attr (name=" << name
-                    << ", type=" << cali_type2string(*type)
+                    << ", type=" << cali_type2string(type)
                     << ", prop=" << buf << ")" << endl;
 }
     
