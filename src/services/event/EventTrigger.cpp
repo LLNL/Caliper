@@ -93,7 +93,6 @@ Attribute                trigger_level_attr { Attribute::invalid };
 
 Attribute                event_info_attr    { Attribute::invalid };
 
-
 EventAttributes
 make_event_attributes(Caliper* c, const std::string& name, cali_attr_type type, int prop)
 {

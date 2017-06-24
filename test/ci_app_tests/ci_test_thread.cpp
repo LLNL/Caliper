@@ -20,15 +20,15 @@ int main()
 {
     CALI_CXX_MARK_FUNCTION;
 
-    int       thread_ids[2] = { 42, 1337 };
-    pthread_t thread[2];
+    int       thread_ids[4] = { 16, 25, 36, 49 };
+    pthread_t thread[4];
 
     cali::Annotation("local", CALI_ATTR_DEFAULT).set(99);
     cali::Annotation("global", CALI_ATTR_SCOPE_PROCESS).set(999);
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < 4; ++i)
         pthread_create(&thread[i], NULL, thread_proc, &thread_ids[i]);
 
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < 4; ++i)
         pthread_join(thread[i], NULL);
 }
