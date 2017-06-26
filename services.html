@@ -636,7 +636,7 @@ to be enabled for this feature.</p>
 <div class="section" id="trace">
 <h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
 <p>The trace service creates an I/O record for each snapshot. With the
-<code class="docutils literal"><span class="pre">recorder</span></code> sercice enabled, this will create a snapshot trace file.</p>
+<code class="docutils literal"><span class="pre">recorder</span></code> service enabled, this will create a snapshot trace file.</p>
 <p>The trace service maintains per-thread snapshot buffers. By default,
 trace buffers will grow automatically. This behavior can be changed by
 setting a <em>buffer policy</em>. There are three options:</p>
@@ -655,16 +655,99 @@ performance.</dd>
 <code class="descname">CALI_TRACE_BUFFER_SIZE</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_SIZE" title="Permalink to this definition">¶</a></dt>
 <dd><p>Size of the trace buffer, in Megabytes. With the <cite>grow</cite> buffer
 policy, this is the size of a trace buffer <em>chunk</em>: When the buffer
-is full, another chunk of this size is added. Default: 2 (MiB).</p>
+is full, another chunk of this size is added.</p>
+<p>Default: 2 (MiB).</p>
 </dd></dl>
 
 <dl class="envvar">
 <dt id="envvar-CALI_TRACE_BUFFER_POLICY">
 <code class="descname">CALI_TRACE_BUFFER_POLICY</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_POLICY" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the trace buffer policy (see above). Either <cite>grow</cite>, <cite>stop</cite>, or
-<cite>flush</cite>. Default: <cite>grow</cite>.</p>
+<cite>flush</cite>.</p>
+<p>Default: <cite>grow</cite>.</p>
 </dd></dl>
 
+</div>
+<div class="section" id="libpfm">
+<h2>Libpfm<a class="headerlink" href="#libpfm" title="Permalink to this headline">¶</a></h2>
+<p>The libpfm service performs per-thread event-based sampling. The user
+may configure the event upon which to sample, the values to record for
+each sample, and the sampling period.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_LIBPFM_EVENT_LIST">
+<code class="descname">CALI_LIBPFM_EVENT_LIST</code><a class="headerlink" href="#envvar-CALI_LIBPFM_EVENT_LIST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comma-separated list of events to sample. Event names are resolved
+through libpfm, and may include software and hardware events (see
+libpfm&#8217;s showevtinfo tool
+<a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
+to obtain a list of events available on a particular system).</p>
+<p>Default: cycles</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LIBPFM_SAMPLE_ATTRIBUTES">
+<code class="descname">CALI_LIBPFM_SAMPLE_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_LIBPFM_SAMPLE_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comma-separated list of attributes to record for each sample.</p>
+<dl class="docutils">
+<dt>Available entries are:</dt>
+<dd><p class="first">ip             Instruction pointer
+id             Sample id
+stream_id      Stream id
+time           Timestamp
+tid            Thread id
+period         Current sampling period
+cpu            CPU
+transaction    Type of transaction
+addr           Data address*
+weight         Latency*
+data_src       Encoding for memory resource (L1, L2, DRAM etc.)*</p>
+<p class="last">*available only for certain events.</p>
+</dd>
+</dl>
+<p>Default: ip,time,tid,cpu</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LIBPFM_PERIOD">
+<code class="descname">CALI_LIBPFM_PERIOD</code><a class="headerlink" href="#envvar-CALI_LIBPFM_PERIOD" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sampling period. When set to a value N, a sample will be recorded
+after every N number of events has occurred.</p>
+<p>Default: 20000000</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LIBPFM_PRECISE_IP">
+<code class="descname">CALI_LIBPFM_PRECISE_IP</code><a class="headerlink" href="#envvar-CALI_LIBPFM_PRECISE_IP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether to set (precise) for events that support precise ip. Some
+events require (precise) to be set, for others it is optional (see
+output of libpfm&#8217;s showevtinfo tool
+<a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
+to determine when it is available or required).</p>
+<p>May be set to either 0, 1, or 2.</p>
+<p>Default: 0</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_LIBPFM_CONFIG1">
+<code class="descname">CALI_LIBPFM_CONFIG1</code><a class="headerlink" href="#envvar-CALI_LIBPFM_CONFIG1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extra event configuration. Some events require an additional
+parameter to configure behavior, such as latency threshold (see
+output of libpfm&#8217;s showevtinfo tool
+<a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
+to determine when it is available or required).</p>
+<p>Default: 0</p>
+</dd></dl>
+
+<p>The following example shows how to configure PEBS memory access sampling
+with a latency threshold (available on SandyBridge, IvyBridge,
+Haswell):</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LIBPFM_EVENT_LIST</span><span class="o">=</span>MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LIBPFM_PERIOD</span><span class="o">=</span>100
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LIBPFM_PRECISE_IP</span><span class="o">=</span>2
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LIBPFM_CONFIG1</span><span class="o">=</span>100
+<span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LIBPFM_SAMPLE_ATTRIBUTES</span><span class="o">=</span>ip,time,tid,cpu,addr,weight
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -697,6 +780,7 @@ is full, another chunk of this size is added. Default: 2 (MiB).</p>
 <li><a class="reference internal" href="#textlog">Textlog</a></li>
 <li><a class="reference internal" href="#timestamp">Timestamp</a></li>
 <li><a class="reference internal" href="#trace">Trace</a></li>
+<li><a class="reference internal" href="#libpfm">Libpfm</a></li>
 </ul>
 </li>
 </ul>
