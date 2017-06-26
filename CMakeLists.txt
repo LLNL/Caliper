@@ -71,7 +71,7 @@ if(WITH_CUPTI)
   if (CUPTI_FOUND)
     set(CALIPER_HAVE_CUPTI TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS ${CUPTI_LIBRARY})
-  endif()
+  endif()  
 endif()
 
 if(CALIPER_HAVE_TAU)

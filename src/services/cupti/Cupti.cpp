@@ -44,6 +44,8 @@
 #include "caliper/common/util/split.hpp"
 
 #include <cupti.h>
+#include <nvToolsExt.h>
+#include <generated_nvtx_meta.h>
 
 #include <iterator>
 #include <vector>
@@ -63,13 +65,14 @@ namespace
 
     ConfigSet              config;
     const ConfigSet::Entry configdata[] = {
-        { "callback_domains", CALI_TYPE_STRING, "runtime:driver",
+        { "callback_domains", CALI_TYPE_STRING, "runtime:sync",
           "List of CUDA callback domains to capture",
           "List of CUDA callback domains to capture. Possible values:\n"
           "  runtime  :  Capture CUDA runtime API calls\n"
           "  driver   :  Capture CUDA driver calls\n"
           "  resource :  Capture CUDA resource creation events\n"
           "  sync     :  Capture CUDA synchronization events\n"
+          "  nvtx     :  Capture NVidia NVTX annotations\n"
           "  none     :  Don't capture callbacks"
         },
         { "record_symbol", CALI_TYPE_BOOL, "true",
@@ -91,6 +94,7 @@ namespace
         { CUPTI_CB_DOMAIN_DRIVER_API,  "driver"   },
         { CUPTI_CB_DOMAIN_RESOURCE,    "resource" },
         { CUPTI_CB_DOMAIN_SYNCHRONIZE, "sync"     },
+        { CUPTI_CB_DOMAIN_NVTX,        "nvtx"     },
         { CUPTI_CB_DOMAIN_INVALID,     "none"     },
         { CUPTI_CB_DOMAIN_INVALID,     0          }
     };
@@ -100,6 +104,7 @@ namespace
         Attribute driver_attr;
         Attribute resource_attr;
         Attribute sync_attr;
+        Attribute nvtx_range_attr;
 
         Attribute context_attr;
         Attribute symbol_attr;
@@ -112,9 +117,11 @@ namespace
 
     CUpti_SubscriberHandle subscriber;
 
+    unsigned               num_cb;
     unsigned               num_api_cb;
     unsigned               num_resource_cb;
     unsigned               num_sync_cb;
+    unsigned               num_nvtx_cb;
 
     //
     // --- Helper functions
@@ -282,12 +289,63 @@ namespace
         }
     }
 
+    void
+    handle_nvtx(CUpti_CallbackId cbid, CUpti_NvtxData* cbInfo)
+    {
+        ++num_nvtx_cb;
+
+        const void* p = cbInfo->functionParams;
+
+        switch (cbid) {
+        case CUPTI_CBID_NVTX_nvtxRangePushA:
+        {
+            const char* msg =
+                static_cast<const nvtxRangePushA_params*>(p)->message;
+
+            Caliper().begin(cupti_info.nvtx_range_attr,
+                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+        }
+        break;
+        case CUPTI_CBID_NVTX_nvtxRangePushEx:
+        {
+            const char* msg =
+                static_cast<const nvtxRangePushEx_params*>(p)->eventAttrib->message.ascii;
+
+            Caliper().begin(cupti_info.nvtx_range_attr,
+                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+        }
+        break;
+        case CUPTI_CBID_NVTX_nvtxRangePop:
+            Caliper().end(cupti_info.nvtx_range_attr);
+            break;
+        case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
+        {
+            // TODO: Use domain-specific attribute
+
+            const char* msg =
+                static_cast<const nvtxDomainRangePushEx_params*>(p)->core.eventAttrib->message.ascii;
+
+            Caliper().begin(cupti_info.nvtx_range_attr,
+                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+        }
+        break;
+        case CUPTI_CBID_NVTX_nvtxDomainRangePop:
+            // TODO: Use domain-specific attribute
+            Caliper().end(cupti_info.nvtx_range_attr);
+            break;
+        default:
+            ;
+        }
+    }
+
     void CUPTIAPI
     cupti_callback(void* userdata,
                    CUpti_CallbackDomain domain,
                    CUpti_CallbackId     cbid,
                    void* cbInfo)
     {
+        ++num_cb;
+
         switch (domain) {
         case CUPTI_CB_DOMAIN_RESOURCE:
             handle_resource(static_cast<CUpti_CallbackIdResource>(cbid),
@@ -305,8 +363,11 @@ namespace
             handle_callback(cbid, static_cast<CUpti_CallbackData*>(cbInfo),
                             cupti_info.driver_attr);
             break;
+        case CUPTI_CB_DOMAIN_NVTX:
+            handle_nvtx(cbid, static_cast<CUpti_NvtxData*>(cbInfo));
+            break;
         default:
-            ;
+            Log(2).stream() << "cupti: Unknown callback domain " << domain << std::endl;
         }
 
         return;
@@ -315,10 +376,13 @@ namespace
     void
     finish_cb(Caliper* c)
     {
-        Log(2).stream() << "cupti: processed "
+        Log(2).stream() << "Cupti: processed "
                         << num_api_cb      << " API callbacks, "
                         << num_resource_cb << " resource callbacks, "
-                        << num_sync_cb     << " sync callbacks" << std::endl;
+                        << num_sync_cb     << " sync callbacks, "
+                        << num_nvtx_cb     << " nvtx callbacks ("
+                        << num_cb          << " total)."
+                        << std::endl;
 
         cuptiUnsubscribe(subscriber);
         cuptiFinalize();
@@ -339,6 +403,9 @@ namespace
             c->create_attribute("cupti.event.resource", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         cupti_info.sync_attr =
             c->create_attribute("cupti.event.sync", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        cupti_info.nvtx_range_attr =
+            c->create_attribute("nvtx.range",       CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                                1, &class_nested_attr, &v_true);
 
         cupti_info.context_attr =
             c->create_attribute("cupti.contextID",  CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
@@ -391,7 +458,8 @@ namespace
                     return false;
                 }
 
-                Log(2).stream() << "cupti: enabled \"" << cbinfo->name << "\" callback domain."
+                Log(2).stream() << "cupti: enabled \""
+                                << cbinfo->name << "\" callback domain."
                                 << std::endl;
             }
         }
@@ -404,9 +472,11 @@ namespace
     {
         config = RuntimeConfig::init("cupti", configdata);
 
+        num_cb          = 0;
         num_api_cb      = 0;
         num_resource_cb = 0;
         num_sync_cb     = 0;
+        num_nvtx_cb     = 0;
 
         if (!register_callback_domains())
             return;
