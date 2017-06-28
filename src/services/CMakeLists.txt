@@ -30,6 +30,8 @@ macro(add_service_objlib)
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
 
+add_subdirectory(common)
+
 # Service subdirectories
 
 add_subdirectory(aggregate)

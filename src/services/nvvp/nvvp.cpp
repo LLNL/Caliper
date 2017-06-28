@@ -30,39 +30,29 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file  NVVP.cpp
-/// @brief Caliper NVVP service
+/// \file  NVVP.cpp
+/// \brief Caliper NVidia profiler annotation binding
 
-#include "../common/ToolWrapper.h"
+#include "../common/AnnotationBinding.h"
 
-#include "caliper/common/filters/RegexFilter.h"
-
-#include "nvToolsExt.h"
-
-#include <map>
-
-const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
-const int num_colors = sizeof(colors)/sizeof(uint32_t);
-static int color_id = 0;
+#include <nvToolsExt.h>
 
 namespace cali {
 
+class NVVPWrapper : public ToolWrapper 
+{
+    static const uint32_t colors[] = { 
+        0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 
+        0x0000ffff, 0x00ff0000, 0x00ffffff 
+    };
+    
+    std::map<cali_id_t, nvtxRangeId_t> nvtx_ranges;
 
-class NVVPWrapper : public ToolWrapper {
-  private:
-    static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
+public:
 
-  public:
-    virtual void initialize(){
-    }
+    const char* service_tag() const { return "nvvp"; }
 
-    virtual std::string service_name() { 
-      return "NVVP service";
-    }
-    virtual std::string service_tag(){
-      return "nvvp";
-    }
-    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+    void on_begin(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
@@ -78,7 +68,7 @@ class NVVPWrapper : public ToolWrapper {
       nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
     }
 
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+    void on_end(Caliper* c, const Attribute& attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
@@ -89,10 +79,6 @@ class NVVPWrapper : public ToolWrapper {
     }
 };
 
-CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper>};
-
-std::map<std::string, nvtxRangeId_t> NVVPWrapper::nvtx_ranges;
-
+CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper> };
 
 }
-

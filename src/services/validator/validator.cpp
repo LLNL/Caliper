@@ -33,44 +33,55 @@
 /// @file  NVVP.cpp
 /// @brief Caliper NVVP service
 
-#include "../common/ToolWrapper.h"
+#include "../common/AnnotationBinding.h"
+
 #include "caliper/common/filters/RegexFilter.h"
+
 #include <cstdio>
 #include <vector>
-namespace cali {
 
+namespace cali 
+{
 
-class Validator : public ToolWrapper {
+class Caliper;
+
+class Validator : public AnnotationBinding {
   private:
      std::vector<std::string> regionTracker;
      bool isValidlyNested;
      FILE* logFile;
+
   public:
+
     void registerBadAnnotation(const Attribute& attr, const Variant& value, const std::string& error = "UNSPECIFIED"){
         fprintf(logFile,"%lu ; %s ; %s\n",attr.id(),value.to_string().c_str(),error.c_str()); 
     }
-    virtual void initialize(){
+
+    virtual void initialize(Caliper*) {
         isValidlyNested=true;
         logFile = fopen("AnnotationLog.err","w");
     }
 
-    virtual std::string service_name() { 
+    virtual std::string service_name() const { 
       return "Annotation Validator Service";
     }
-    virtual std::string service_tag(){
+
+    virtual const char* service_tag() const {
       return "validator";
     }
+
     virtual void finalize(){
         fclose(logFile);
     }
-    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
+
+    virtual void on_begin(Caliper* c, const Attribute &attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
       regionTracker.push_back(name);
     }
 
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
+    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value){
       std::stringstream ss;
       ss << attr.name() << "=" << value.to_string();
       std::string name = ss.str();
@@ -82,7 +93,6 @@ class Validator : public ToolWrapper {
     }
 };
 
-CaliperService validator_service { "validator", &setCallbacks<Validator>};
+CaliperService validator_service { "validator", AnnotationBinding::make_binding<Validator> };
 
 }
-
