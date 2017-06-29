@@ -5,6 +5,7 @@ include_directories("../../src/caliper")
 set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
+  ci_test_binding
   ci_test_macros
   ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
