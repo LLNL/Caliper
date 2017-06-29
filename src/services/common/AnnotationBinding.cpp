@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -36,6 +36,8 @@
 #include "AnnotationBinding.h"
 
 #include "caliper/common/Node.h"
+#include "caliper/common/Log.h"
+
 #include "caliper/common/util/split.hpp"
 #include "caliper/common/filters/RegexFilter.h"
 
@@ -47,7 +49,7 @@ using namespace cali;
 
 //
 // --- Static data
-// 
+//
 
 const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
     { "regex_filter", CALI_TYPE_STRING, "",
@@ -56,7 +58,7 @@ const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
     },
     { "trigger_attributes", CALI_TYPE_STRING, "",
       "List of attributes that trigger the annotation binding",
-      "List of attributes that trigger the annotation binding"    
+      "List of attributes that trigger the annotation binding"
     },
     { "", CALI_TYPE_BOOL, "true",
       "Whether the condition of the filter says what to include or what to exclude",
@@ -75,11 +77,11 @@ AnnotationBinding::~AnnotationBinding()
     delete m_filter;
 }
 
-void 
-AnnotationBinding::pre_create_attr_cb(Caliper*           c, 
-                                      const std::string& name, 
-                                      cali_attr_type     type, 
-                                      int*               prop, 
+void
+AnnotationBinding::pre_create_attr_cb(Caliper*           c,
+                                      const std::string& name,
+                                      cali_attr_type     type,
+                                      int*               prop,
                                       Node**             node)
 {
     if (*prop & CALI_ATTR_SKIP_EVENTS)
@@ -96,7 +98,7 @@ AnnotationBinding::pre_create_attr_cb(Caliper*           c,
         if (!n)
             return;
     } else {
-        if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(), 
+        if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(),
                       name) == m_trigger_attr_names.end())
             return;
     }
@@ -104,12 +106,18 @@ AnnotationBinding::pre_create_attr_cb(Caliper*           c,
     // Add the binding marker for this attribute
 
     Variant v_true(true);
-
     *node = c->make_tree_entry(m_marker_attr, v_true, *node);
+
+    // Invoke derived functions
+
+    on_create_attribute(c, name, type, prop, node);
+
+    Log(2).stream() << "Adding " << this->service_tag()
+                    << " bindings for attribute \"" << name << "\"" << std::endl;
 }
 
-void 
-AnnotationBinding::begin_cb(Caliper* c, const Attribute& attr, const Variant& value) 
+void
+AnnotationBinding::begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
@@ -117,12 +125,12 @@ AnnotationBinding::begin_cb(Caliper* c, const Attribute& attr, const Variant& va
         return;
     if (m_filter && !m_filter->filter(attr, value))
         return;
-    
+
     this->on_begin(c, attr, value);
 }
 
-void 
-AnnotationBinding::end_cb(Caliper* c, const Attribute& attr, const Variant& value) 
+void
+AnnotationBinding::end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
@@ -134,8 +142,8 @@ AnnotationBinding::end_cb(Caliper* c, const Attribute& attr, const Variant& valu
     this->on_end(c, attr, value);
 }
 
-void 
-AnnotationBinding::pre_initialize(Caliper* c) 
+void
+AnnotationBinding::pre_initialize(Caliper* c)
 {
     const char* tag = service_tag();
 
@@ -150,7 +158,7 @@ AnnotationBinding::pre_initialize(Caliper* c)
     std::string marker_attr_name("cali.binding.");
     marker_attr_name.append(tag);
 
-    m_marker_attr = 
+    m_marker_attr =
         c->create_attribute(marker_attr_name, CALI_TYPE_BOOL,
                             CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
 }

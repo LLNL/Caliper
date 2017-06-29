@@ -66,11 +66,11 @@ class Validator : public AnnotationBinding {
       return "Annotation Validator Service";
     }
 
-    virtual const char* service_tag() const {
-      return "validator";
+    const char* service_tag() const {
+        return "validator";
     }
 
-    virtual void finalize(){
+    virtual void finalize(Caliper*) {
         fclose(logFile);
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -35,50 +35,123 @@
 
 #include "../common/AnnotationBinding.h"
 
+#include "caliper/common/Attribute.h"
+
 #include <nvToolsExt.h>
 
-namespace cali {
+#include <atomic>
+#include <cassert>
+#include <map>
+#include <mutex>
 
-class NVVPWrapper : public ToolWrapper 
+namespace cali
 {
-    static const uint32_t colors[] = { 
-        0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 
-        0x0000ffff, 0x00ff0000, 0x00ffffff 
-    };
-    
-    std::map<cali_id_t, nvtxRangeId_t> nvtx_ranges;
+
+extern Attribute class_nested_attr;
+
+class NVVPBinding : public AnnotationBinding
+{
+    static const uint32_t s_colors[];
+    static const int      s_num_colors = 7;
+
+    Attribute             m_color_attr;
+    std::atomic<int>      m_color_id;
+
+    std::map<cali_id_t, nvtxDomainHandle_t> m_domain_map;
+    std::mutex            m_domain_mutex;
 
 public:
 
-    const char* service_tag() const { return "nvvp"; }
-
-    void on_begin(Caliper* c, const Attribute &attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-
-      color_id = (color_id+1)%num_colors;
-      nvtxEventAttributes_t eventAttrib = {0};
-      eventAttrib.version = NVTX_VERSION;
-      eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-      eventAttrib.colorType = NVTX_COLOR_ARGB;
-      eventAttrib.color = colors[color_id];
-      eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
-      eventAttrib.message.ascii = name.c_str();
-      nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
+    void initialize(Caliper* c) {
+        m_color_attr =
+            c->create_attribute("nvtx.color", CALI_TYPE_UINT,
+                                CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
     }
 
-    void on_end(Caliper* c, const Attribute& attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      if (nvtx_ranges.find(name) != nvtx_ranges.end()) {
-        nvtxRangeId_t r = nvtx_ranges[name];
-        nvtxRangeEnd(r);
-      }
+    const char* service_tag() const { return "nvvp"; }
+
+    void on_create_attribute(Caliper* c, const std::string& name, cali_attr_type, int*, Node** node) {
+        // Set the color flag
+        Variant v_color(static_cast<uint64_t>(s_colors[m_color_id++ % s_num_colors]));
+
+        assert(m_color_attr != Attribute::invalid);
+
+         *node = c->make_tree_entry(m_color_attr, v_color, *node);
+    }
+
+    void on_begin(Caliper*, const Attribute &attr, const Variant& value) {
+        Variant  v_color = attr.get(m_color_attr);
+        uint32_t color   =
+            v_color.empty() ? s_colors[0] : static_cast<uint32_t>(v_color.to_uint());
+
+        nvtxEventAttributes_t eventAttrib = { 0 };
+
+        eventAttrib.version       = NVTX_VERSION;
+        eventAttrib.size          = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+        eventAttrib.colorType     = NVTX_COLOR_ARGB;
+        eventAttrib.color         = color;
+        eventAttrib.messageType   = NVTX_MESSAGE_TYPE_ASCII;
+        eventAttrib.message.ascii =
+            (value.type() == CALI_TYPE_STRING ? static_cast<const char*>(value.data()) : value.to_string().c_str());
+
+        // For properly nested attributes, just use default push/pop.
+        // For other attributes, create a domain.
+
+        if (attr.get(class_nested_attr) == Variant(true)) {
+            nvtxRangePushEx(&eventAttrib);
+        } else {
+            nvtxDomainHandle_t domain;
+
+            {
+                std::lock_guard<std::mutex>
+                    g(m_domain_mutex);
+
+                auto it = m_domain_map.find(attr.id());
+
+                if (it == m_domain_map.end()) {
+                    domain = nvtxDomainCreateA(attr.name().c_str());
+                    m_domain_map.insert(std::make_pair(attr.id(), domain));
+                } else {
+                    domain = it->second;
+                }
+            }
+
+            nvtxDomainRangePushEx(domain, &eventAttrib);
+        }
+    }
+
+    void on_end(Caliper*, const Attribute& attr, const Variant& value) {
+        if (attr.get(class_nested_attr) == Variant(true)) {
+            nvtxRangePop();
+        } else {
+            nvtxDomainHandle_t domain;
+
+            {
+                std::lock_guard<std::mutex>
+                    g(m_domain_mutex);
+
+                auto it = m_domain_map.find(attr.id());
+
+                if (it == m_domain_map.end()) {
+                    Log(0).stream() << "nvvp: on_end(): error: domain for attribute "
+                                    << attr.name()
+                                    << " not found!" << std::endl;
+                    return;
+                }
+
+                domain = it->second;
+            }
+
+            nvtxDomainRangePop(domain);
+        }
     }
 };
 
-CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper> };
+const uint32_t NVVPBinding::s_colors[] = {
+    0x0000cc00, 0x000000cc, 0x00cccc00, 0x00cc00cc,
+    0x0000cccc, 0x00cc0000, 0x00cccccc
+};
 
-}
+CaliperService nvvp_service { "nvvp", &AnnotationBinding::make_binding<NVVPBinding> };
+
+} // namespace cali

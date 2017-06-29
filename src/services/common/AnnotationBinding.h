@@ -71,6 +71,14 @@ protected:
 
     void pre_initialize(Caliper* c);
 
+    virtual void on_create_attribute(Caliper*,const std::string&, cali_attr_type, int*, Node**) { }
+
+    virtual void on_begin(Caliper* c, const Attribute& attr, const Variant& value) { }
+    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value)   { }
+
+    virtual void initialize(Caliper* c) { }
+    virtual void finalize(Caliper* c)   { }
+
 public:
 
     AnnotationBinding()
@@ -82,18 +90,16 @@ public:
 
     virtual const char* service_tag() const = 0;
 
-    virtual void initialize(Caliper* c) { }
-    virtual void finalize(Caliper* c)   { }
-
-    virtual void on_begin(Caliper* c, const Attribute& attr, const Variant& value) { }
-    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value)   { }
-
     template <class BindingT>
     static void make_binding(Caliper* c) {
         BindingT* binding = new BindingT();
         binding->pre_initialize(c);
         binding->initialize(c);
 
+        c->events().pre_create_attr_evt.connect(
+            [binding](Caliper* c, const std::string& name, cali_attr_type type, int* prop, Node** node){
+                binding->pre_create_attr_cb(c, name, type, prop, node);
+            });
         c->events().pre_begin_evt.connect([binding](Caliper* c,const Attribute& attr,const Variant& value){
                 binding->begin_cb(c,attr,value);
             });
@@ -101,7 +107,7 @@ public:
                 binding->end_cb(c,attr,value);
             });
         c->events().finish_evt.connect([binding](Caliper* c){
-                binding->finalize();
+                binding->finalize(c);
                 delete binding;
             });
 

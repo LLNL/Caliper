@@ -34,7 +34,7 @@ option(WITH_TOOLS     "Build Caliper tools" TRUE)
 option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
 option(WITH_DOCS      "Build Caliper documentation" FALSE)
 
-option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
+option(WITH_NVVP      "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
@@ -58,20 +58,25 @@ if("${isSystemDir}" STREQUAL "-1")
    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 endif("${isSystemDir}" STREQUAL "-1")
 
-if(WITH_CUDA)
-   find_package(CUDA)
-   include_directories(${CUDA_INCLUDE_DIRS})
-   find_library(NVVP_LIBRARY NAME libnvToolsExt.so PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+if(WITH_NVVP)
+   find_package(CUDA REQUIRED)
+
+   find_library(NVTX_LIBRARY
+     NAME libnvToolsExt.so
+     PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+
+   message(STATUS "NVidia tools extension library found in " ${NVTX_LIBRARY})
    set(CALIPER_HAVE_NVVP ON)
-   list(APPEND CALIPER_EXTERNAL_LIBS ${NVVP_LIBRARY})
+   list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
 endif()
 
 if(WITH_CUPTI)
+  find_package(CUDA REQUIRED)
   include(FindCUPTI)
   if (CUPTI_FOUND)
     set(CALIPER_HAVE_CUPTI TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS ${CUPTI_LIBRARY})
-  endif()  
+  endif()
 endif()
 
 if(CALIPER_HAVE_TAU)
@@ -185,9 +190,9 @@ configure_file(
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.hpp")
 
 install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
