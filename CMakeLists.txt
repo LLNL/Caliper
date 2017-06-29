@@ -34,7 +34,7 @@ option(WITH_TOOLS     "Build Caliper tools" TRUE)
 option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
 option(WITH_DOCS      "Build Caliper documentation" FALSE)
 
-option(WITH_NVVP      "Enable NVidia profiler bindings (requires CUDA)" FALSE)
+option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
@@ -58,7 +58,7 @@ if("${isSystemDir}" STREQUAL "-1")
    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
 endif("${isSystemDir}" STREQUAL "-1")
 
-if(WITH_NVVP)
+if(WITH_NVPROF)
    find_package(CUDA REQUIRED)
 
    find_library(NVTX_LIBRARY
@@ -66,7 +66,7 @@ if(WITH_NVVP)
      PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
 
    message(STATUS "NVidia tools extension library found in " ${NVTX_LIBRARY})
-   set(CALIPER_HAVE_NVVP ON)
+   set(CALIPER_HAVE_NVPROF ON)
    list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
 endif()
 

@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file  NVVP.cpp
+/// \file  NVProf.cpp
 /// \brief Caliper NVidia profiler annotation binding
 
 #include "../common/AnnotationBinding.h"
@@ -49,7 +49,7 @@ namespace cali
 
 extern Attribute class_nested_attr;
 
-class NVVPBinding : public AnnotationBinding
+class NVProfBinding : public AnnotationBinding
 {
     static const uint32_t s_colors[];
     static const int      s_num_colors = 7;
@@ -147,11 +147,11 @@ public:
     }
 };
 
-const uint32_t NVVPBinding::s_colors[] = {
+const uint32_t NVProfBinding::s_colors[] = {
     0x0000cc00, 0x000000cc, 0x00cccc00, 0x00cc00cc,
     0x0000cccc, 0x00cc0000, 0x00cccccc
 };
 
-CaliperService nvvp_service { "nvvp", &AnnotationBinding::make_binding<NVVPBinding> };
+CaliperService nvprof_service { "nvprof", &AnnotationBinding::make_binding<NVProfBinding> };
 
 } // namespace cali
