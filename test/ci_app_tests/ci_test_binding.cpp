@@ -13,6 +13,7 @@ using namespace cali;
 class TestBinding : public AnnotationBinding
 {
     Attribute   m_my_attr;
+    Attribute   m_prop_attr;
     static bool s_verbose;
 
 public:
@@ -23,12 +24,23 @@ public:
 
     void initialize(Caliper* c) {
         m_my_attr = 
-            c->create_attribute("testbinding", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        m_prop_attr =
+            c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
+    }
+
+    void on_create_attribute(Caliper* c, const std::string& name, cali_attr_type, int*, Node** node) {
+        if (s_verbose)
+            std::cout << "TestBinding::on_create_attribute(" << name << ")" << std::endl;
+
+        *node = c->make_tree_entry(m_prop_attr, Variant(4242), *node);
     }
 
     void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
+
+        assert(attr.get(m_prop_attr) == Variant(4242));
 
         std::string s(attr.name());
         s.append("=").append(value.to_string());
