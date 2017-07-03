@@ -6,6 +6,7 @@ set(CALIPER_READER_SOURCES
     RecordSelector.cpp
     SimpleReader.cpp
     Table.cpp
+    TreeFormatter.cpp
     Json.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
