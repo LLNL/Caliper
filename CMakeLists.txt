@@ -22,11 +22,6 @@ option(WITH_FORTRAN "Install Fortran interface and build test programs")
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 
-if (NOT BUILD_SHARED_LIBS)
-  # Try to find static libs first for static builds
-  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
-endif()
-
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
@@ -52,11 +47,18 @@ if (BUILD_TESTING)
   enable_testing()
 endif()
 
-# the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
-endif("${isSystemDir}" STREQUAL "-1")
+if (BUILD_SHARED_LIBS)
+  # the RPATH to be used when installing, but only if it's not a system directory
+  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
+  if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+  endif("${isSystemDir}" STREQUAL "-1")
+else()
+  # Try to find static libs first for static builds
+  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
+  # Disable rpaths
+  set(CMAKE_SKIP_RPATH TRUE)
+endif(BUILD_SHARED_LIBS)
 
 if(WITH_NVPROF)
    find_package(CUDA REQUIRED)
