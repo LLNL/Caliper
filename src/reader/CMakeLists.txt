@@ -5,6 +5,7 @@ set(CALIPER_READER_SOURCES
     CaliperMetadataDB.cpp
     RecordSelector.cpp
     SimpleReader.cpp
+    SnapshotTree.cpp
     Table.cpp
     TreeFormatter.cpp
     Json.cpp)

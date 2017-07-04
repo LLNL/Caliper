@@ -1,5 +1,7 @@
-/// @file atomic-tree.hpp
-/// @brief Intrusive tree template class
+/// \file atomic-tree.hpp
+/// \brief Intrusive tree template class
+
+#pragma once
 
 #include <atomic>
 #include <iterator>

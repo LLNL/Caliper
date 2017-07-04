@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -35,18 +35,17 @@
 
 #include "caliper/reader/TreeFormatter.h"
 
+#include "caliper/reader/SnapshotTree.h"
+
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
 #include "caliper/common/Attribute.h"
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
-#include "caliper/common/StringConverter.h"
 
 #include "caliper/common/util/split.hpp"
 
 #include <algorithm>
 #include <cassert>
-#include <functional>
 #include <iterator>
 #include <mutex>
 #include <utility>
@@ -55,169 +54,6 @@ using namespace cali;
 
 namespace
 {
-
-//
-// --- OutputTree class
-//
-
-class OutputTreeNode : public util::LockfreeIntrusiveTree<OutputTreeNode> 
-{
-    util::LockfreeIntrusiveTree<OutputTreeNode>::Node m_treenode;
-
-    Attribute m_label_key;
-    Variant   m_label_value;
-
-    bool      m_empty;
-
-    std::map<cali::Attribute, cali::Variant> m_attributes;
-
-    void add_attribute(const cali::Attribute& attr, const cali::Variant& value) {
-        m_attributes[attr] = value;
-        m_empty = false;
-    }
-
-public:
-
-    OutputTreeNode(const Attribute& label_key, const Variant& label_val, bool empty = true)
-        : util::LockfreeIntrusiveTree<OutputTreeNode>(this, &OutputTreeNode::m_treenode), 
-          m_label_key(label_key), 
-          m_label_value(label_val), 
-          m_empty(empty)
-    { }
-
-    Attribute label_key()   const { return m_label_key;   }
-    Variant   label_value() const { return m_label_value; } 
-
-    bool      is_empty()    const { return m_empty;       }
-
-    bool label_equals(const Attribute& key, const Variant& value) const {
-        return m_label_key == key && m_label_value == value;
-    }
-
-    const std::map<cali::Attribute, cali::Variant>& attributes() const {
-        return m_attributes;
-    }
-
-    friend class OutputTree;
-};    
-
-/// \brief Construct a tree structure from a snapshot record stream
-class OutputTree
-{
-    OutputTreeNode* m_root;
-
-    void recursive_delete(OutputTreeNode* node) {
-        if (node) {
-            node = node->first_child();
-
-            while (node) {
-                ::OutputTreeNode* tmp = node->next_sibling();
-
-                recursive_delete(node);
-
-                delete node;
-                node = tmp;
-            }
-        }
-    }
-    
-public:
-
-    OutputTree()
-        : m_root(new OutputTreeNode(Attribute::invalid, Variant(), true))
-    { }
-
-    OutputTree(const Attribute& attr, const Variant& value)
-        : m_root(new OutputTreeNode(attr, value, true))
-    { } 
-
-
-    ~OutputTree() {
-        recursive_delete(m_root);
-    }
-
-    const OutputTreeNode* add(const CaliperMetadataAccessInterface& db, 
-                              const EntryList& list,
-                              std::function<bool(const Attribute&,const Variant&)> is_path)
-    {
-        std::vector< std::pair<Attribute, Variant> > path;
-        std::map<Attribute, Variant> attributes;
-
-        //
-        // helper function to distinguish path and attribute entries
-        //
-
-        auto push_entry = [&](cali_id_t attr_id, const Variant& val){
-            Attribute attr = db.get_attribute(attr_id);
-
-            if (attr == Attribute::invalid)
-                return;
-
-            if (is_path(attr, val))
-                path.push_back(std::make_pair(attr, val));
-            else {
-                if (attributes.count(attr) == 0)
-                    attributes.insert(std::make_pair(attr, val));
-            }   
-        };
-
-        //
-        // unpack snapshot; distinguish path and attribute entries
-        //
-
-        for (const Entry& e : list)
-            if (e.is_immediate())
-                push_entry(e.attribute(), e.value());
-            else
-                for (const Node* node = e.node(); node; node = node->parent())
-                    if (node->id() != CALI_INV_ID)
-                        push_entry(node->attribute(), node->data());
-
-        if (path.empty())
-            return nullptr;
-
-        //
-        // find / make path to the node
-        //
-
-        OutputTreeNode* node = m_root;
-
-        for (auto it = path.rbegin(); it != path.rend(); ++it) {
-            OutputTreeNode* child = node->first_child();
-
-            for ( ; child && !child->label_equals((*it).first, (*it).second); child = child->next_sibling())
-                ;
-
-            if (!child) {
-                child = new OutputTreeNode((*it).first, (*it).second, true /* empty */);
-                node->append(child);
-            }
-
-            node = child;
-        }
-
-        assert(node);
-
-        if (!(node->is_empty())) {
-            assert(node->parent());
-
-            // create a new node if the existing one is not empty
-            node->parent()->append(new OutputTreeNode(node->label_key(), 
-                                                      node->label_value(), 
-                                                      false));
-        }
-
-        //
-        // add the attributes
-        // 
-
-        node->m_attributes = std::move(attributes);
-
-        return node;
-    }
-
-    const OutputTreeNode* root() const { return m_root; }
-};
 
 const char whitespace[120+1] =
     "                                        "
@@ -241,7 +77,7 @@ inline std::ostream& pad_left (std::ostream& os, const std::string& str, std::si
 
 struct TreeFormatter::TreeFormatterImpl
 {
-    ::OutputTree             m_tree;
+    SnapshotTree             m_tree;
 
     std::vector<std::string> m_attribute_column_names;
     std::map<Attribute, int> m_attribute_column_widths;
@@ -289,8 +125,8 @@ struct TreeFormatter::TreeFormatterImpl
     void add(const CaliperMetadataAccessInterface& db, const EntryList& list) {
         auto path_keys = get_path_keys(db);
 
-        const OutputTreeNode* node = 
-            m_tree.add(db, list, [&path_keys](const Attribute& attr, const Variant&){
+        const SnapshotTreeNode* node = 
+            m_tree.add_snapshot(db, list, [&path_keys](const Attribute& attr, const Variant&){
                     return (std::find(std::begin(path_keys), std::end(path_keys), 
                                       attr) != std::end(path_keys));
                 });
@@ -303,7 +139,7 @@ struct TreeFormatter::TreeFormatterImpl
         {
             int len = node->label_value().to_string().size();
 
-            for (const OutputTreeNode* n = node; n && n->label_key() != Attribute::invalid; n = n->parent())
+            for (const SnapshotTreeNode* n = node; n && n->label_key() != Attribute::invalid; n = n->parent())
                 len += 2;
 
             m_path_column_width = std::max(m_path_column_width, len);
@@ -320,7 +156,7 @@ struct TreeFormatter::TreeFormatterImpl
         }
     }
 
-    void recursive_print_nodes(const ::OutputTreeNode* node, 
+    void recursive_print_nodes(const SnapshotTreeNode* node, 
                                int level, 
                                const std::vector<Attribute>& attributes, 
                                std::ostream& os)
@@ -412,7 +248,7 @@ struct TreeFormatter::TreeFormatterImpl
         // print tree nodes
         //
 
-        const ::OutputTreeNode* node = m_tree.root();
+        const SnapshotTreeNode* node = m_tree.root();
 
         if (node)
             for (node = node->first_child(); node; node = node->next_sibling())
