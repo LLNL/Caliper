@@ -901,19 +901,19 @@ Caliper::end(const Attribute& attr)
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->blackboard;
 
-    Variant val;
+    Entry  e = get(attr);
+
+    if (e.is_empty())
+        return CALI_ESTACK;
 
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
     // invoke callbacks
-    if (!attr.skip_events()) {
-        Entry e = get(attr);
-
-        if (!e.is_empty()) // prevent callbacks in end-before-begin situations 
+    if (!attr.skip_events())
+        if (!e.is_empty()) // prevent executing events for 
             mG->events.pre_end_evt(this, attr, e.value());
-    }
-    
+
     if (attr.store_as_value())
         ret = sb->unset(attr);
     else {
@@ -934,7 +934,7 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_end_evt(this, attr, val);
+        mG->events.post_end_evt(this, attr, e.value());
 
     return ret;
 }

@@ -35,6 +35,7 @@
 
 #include "caliper/SnapshotRecord.h"
 
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
 #include <iostream>
@@ -110,6 +111,24 @@ SnapshotRecord::get(const Attribute& attr) const
     }
 
     return Entry::empty;
+}
+
+std::map< Attribute, std::vector<Variant> >
+SnapshotRecord::unpack(CaliperMetadataAccessInterface& db)
+{
+    std::map< Attribute, std::vector<Variant> > rec;
+
+    // unpack node entries 
+    for (int i = 0; i < m_sizes.n_nodes; ++i)
+        for (const cali::Node* node = m_node_array[i]; node; node = node->parent())
+            if (node->attribute() != CALI_INV_ID)
+                rec[db.get_attribute(node->attribute())].push_back(node->data());
+
+    // unpack immediate entries
+    for (int i = 0; i < m_sizes.n_immediate; ++i)
+        rec[db.get_attribute(m_attr_array[i])].push_back(m_data_array[i]);
+
+    return rec;
 }
 
 void

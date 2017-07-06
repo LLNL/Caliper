@@ -30,69 +30,264 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file  NVVP.cpp
-/// @brief Caliper NVVP service
+/// \file  validator.cpp
+/// \brief Caliper annotation nesting validator
 
 #include "../common/AnnotationBinding.h"
 
-#include "caliper/common/filters/RegexFilter.h"
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
-#include <cstdio>
+#include "caliper/common/Log.h"
+
+#include <atomic>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <sstream>
 #include <vector>
 
-namespace cali 
+using namespace cali;
+
+
+namespace cali
+{
+    extern Attribute class_nested_attr;
+}
+
+
+namespace
 {
 
-class Caliper;
+std::ostream& print_snapshot(Caliper* c, std::ostream& os) 
+{
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord snapshot(snapshot_data);
 
-class Validator : public AnnotationBinding {
-  private:
-     std::vector<std::string> regionTracker;
-     bool isValidlyNested;
-     FILE* logFile;
+    c->pull_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);
 
-  public:
+    std::map< Attribute, std::vector<Variant> > rec = snapshot.unpack(*c);
 
-    void registerBadAnnotation(const Attribute& attr, const Variant& value, const std::string& error = "UNSPECIFIED"){
-        fprintf(logFile,"%lu ; %s ; %s\n",attr.id(),value.to_string().c_str(),error.c_str()); 
+    os << "{ ";
+
+    int ca = 0;
+
+    for ( auto const &p : rec ) {
+        os << (ca++ > 0 ? ", " : "") << "\"" << p.first.name() << "\"=\"";
+
+        int cv = 0;
+        for ( auto const &v : p.second )
+            os << (cv++ > 0 ? "/" : "") << v.to_string();
+
+        os << "\"";
     }
 
-    virtual void initialize(Caliper*) {
-        isValidlyNested=true;
-        logFile = fopen("AnnotationLog.err","w");
+    return os << " }";
+}
+
+
+class StackValidator 
+{
+    std::map< Attribute, std::vector<Variant> > m_region_stack;
+    bool m_error_found;
+
+public:
+
+    bool check_begin(const Attribute& attr, const Variant& value) {
+        if (m_error_found)
+            return true;
+
+        Attribute key = 
+            (attr.get(class_nested_attr) == Variant(true) ? class_nested_attr : attr);
+
+        m_region_stack[key].push_back(value);
+
+        return false;
     }
 
-    virtual std::string service_name() const { 
-      return "Annotation Validator Service";
+    bool check_end(Caliper* c, const Attribute& attr, const Variant& value) {
+        if (m_error_found)
+            return true;
+
+        Attribute key = 
+            (attr.get(class_nested_attr) == Variant(true) ? class_nested_attr : attr);
+
+        auto it = m_region_stack.find(key);
+
+        if (it == m_region_stack.end() || it->second.empty()) {
+            // We currently can't actually check this situation because
+            // the Caliper runtime prevents events being executed in
+            // "empty stack" situations :-/
+
+            m_error_found = true;
+
+            print_snapshot(c,
+                Log(0).stream() << "validator: end(\"" 
+                                << attr.name() << "\"=\"" << value.to_string() << "\") "
+                                << " has no matching begin().\n    context: " ) 
+                << std::endl;
+        } else {
+            // For nested-class attributes we'd technically have to check the 
+            // input attribute, too (in case the values are equal but the 
+            // attributes are not) but this case is hopefully unlikely enough.
+
+            Variant v_expect = it->second.back();
+            it->second.pop_back();
+
+            if (!(value == v_expect)) {
+                m_error_found = true;
+
+                print_snapshot(c,
+                    Log(0).stream() << "validator: incorrect nesting: trying to end \""
+                                    << attr.name() << "\"=\"" << value.to_string() 
+                                    << "\" but current value is \"" 
+                                    << v_expect.to_string() << "\".\n    context: " )
+                    << std::endl;
+            }
+        }
+
+        return m_error_found;
     }
 
-    const char* service_tag() const {
-        return "validator";
+    bool check_final() {
+        for (auto const &p : m_region_stack) {
+            if (p.second.size() > 0) {
+                std::ostringstream os;
+
+                os << "validator: Regions not closed: "
+                   << p.first.name() << "=";
+
+                int cv = 0;
+                for (auto const &v : p.second) 
+                    os << (cv++ > 0 ? "/" : "") << v;
+
+                Log(0).stream() << os.str() << std::endl;
+
+                m_error_found = true;
+            }
+        }
+
+        return m_error_found;
     }
 
-    virtual void finalize(Caliper*) {
-        fclose(logFile);
+    StackValidator()
+        : m_error_found(false)
+        { }
+}; // class StackValidator
+
+
+StackValidator*   proc_stack = nullptr;
+std::mutex        proc_stack_mutex;
+
+pthread_key_t     threadinfo_key;
+
+std::atomic<int>  global_errors;
+
+
+void destroy_thread_info(void* data)
+{
+    if (!data)
+        return;
+
+    StackValidator* v = static_cast<StackValidator*>(data);
+
+    v->check_final();
+    delete v;
+}
+
+StackValidator* get_thread_info()
+{
+    StackValidator* v = static_cast<StackValidator*>(pthread_getspecific(threadinfo_key));
+
+    if (!v) {
+        v = new StackValidator;
+
+        pthread_setspecific(threadinfo_key, v);
     }
 
-    virtual void on_begin(Caliper* c, const Attribute &attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      regionTracker.push_back(name);
+    return v;
+}
+
+
+void finalize_cb(Caliper*) 
+{
+    {
+        std::lock_guard<std::mutex>
+            g(proc_stack_mutex);
+
+        if (proc_stack->check_final())
+            ++global_errors;
+
+        delete proc_stack;
+        proc_stack = nullptr;
     }
 
-    virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      if(name!=regionTracker[regionTracker.size()-1]){
-          std::cout<<"BAD REGION NESTING ON "<<name<<std::endl;
-          isValidlyNested=false;
-          registerBadAnnotation(attr, value, "BAD NESTING");
-      }
+    StackValidator* v = get_thread_info();
+
+    if (v && v->check_final())
+        ++global_errors;
+
+    if (global_errors.load() > 0)
+        Log(0).stream() << "validator: Annotation nesting errors found" 
+                        << std::endl;
+    else
+        Log(1).stream() << "validator: No annotation nesting errors found" 
+                        << std::endl;
+}
+
+void begin_cb(Caliper* c, const Attribute &attr, const Variant& value) 
+{
+    if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex>
+            g(proc_stack_mutex);
+
+        if (proc_stack->check_begin(attr, value))
+            ++global_errors;
+    } else {
+        StackValidator* v = get_thread_info();
+
+        if (v && v->check_begin(attr, value))
+            ++global_errors;
     }
-};
+}
 
-CaliperService validator_service { "validator", AnnotationBinding::make_binding<Validator> };
+void end_cb(Caliper* c, const Attribute& attr, const Variant& value) 
+{
+    if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
+        std::lock_guard<std::mutex>
+            g(proc_stack_mutex);
 
+        if (proc_stack->check_end(c, attr, value))
+            ++global_errors;
+    } else {
+        StackValidator* v = get_thread_info();
+
+        if (v && v->check_end(c, attr, value))
+            ++global_errors;
+    }
+}
+
+void validator_register(Caliper* c) 
+{
+    if (pthread_key_create(&threadinfo_key, destroy_thread_info) != 0) {
+        Log(0).stream() << "validator: error: Could not create thread info" << std::endl;
+        return;
+    }
+
+    proc_stack = new StackValidator;
+    global_errors.store(0);
+
+    c->events().finish_evt.connect(&finalize_cb);
+    c->events().pre_begin_evt.connect(&begin_cb);
+    c->events().pre_end_evt.connect(&end_cb);
+
+    Log(1).stream() << "Registered validator service." << std::endl;
+}
+
+} // namespace [anonymous]
+
+
+namespace cali
+{
+    CaliperService validator_service { "validator", ::validator_register };
 }

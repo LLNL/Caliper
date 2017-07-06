@@ -40,9 +40,13 @@
 #include "common/Entry.h"
 
 #include <algorithm>
+#include <map>
+#include <vector>
 
 namespace cali
 {
+
+class CaliperMetadataAccessInterface;
 
 // Snapshots are fixed-size, stack-allocated objects that can be used in 
 // a signal handler  
@@ -124,6 +128,8 @@ public:
     }    
 
     Entry get(const Attribute&) const;
+
+    std::map< cali::Attribute, std::vector<cali::Variant> > unpack(CaliperMetadataAccessInterface&);
     
     void push_record(WriteRecordFn fn) const;
 
