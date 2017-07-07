@@ -41,8 +41,9 @@ option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRU
 option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
+option(WITH_MPIT      "Enable MPI-T" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
-option(WITH_DYNINST   "Enable dyninst (for symbollookup service" TRUE)
+option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
@@ -159,6 +160,14 @@ if (WITH_MPI)
   find_package(MPI)
   if (MPI_C_FOUND)
     set(CALIPER_HAVE_MPI TRUE)
+  endif()
+endif()
+
+# Find MPIT - As of now, rely on finding MPI
+if (WITH_MPIT)
+  find_package(MPI)
+  if (MPI_C_FOUND)
+    set(CALIPER_HAVE_MPIT TRUE)
   endif()
 endif()
 
