@@ -131,8 +131,8 @@ struct SnapshotTree::SnapshotTreeImpl
 
             // create a new node if the existing one is not empty
             node->parent()->append(new SnapshotTreeNode(node->label_key(), 
-                                                      node->label_value(), 
-                                                      false));
+                                                        node->label_value(), 
+                                                        false));
         }
 
         //
