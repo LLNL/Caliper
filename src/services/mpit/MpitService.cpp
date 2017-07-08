@@ -54,7 +54,6 @@ ConfigSet        config;
 ConfigSet::Entry configdata[] = {
     ConfigSet::Terminator
 };
-}
 
 void mpit_register(Caliper *c)
 { 
@@ -69,5 +68,5 @@ void mpit_register(Caliper *c)
 
 namespace cali 
 {
-    CaliperService mpi_service = { "mpit", ::mpit_register };
+    CaliperService mpit_service = { "mpit", ::mpit_register };
 } // namespace cali
