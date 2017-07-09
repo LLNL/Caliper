@@ -47,6 +47,7 @@
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 #include "caliper/reader/Table.h"
+#include "caliper/reader/TreeFormatter.h"
 #include "caliper/reader/Json.h"
 
 #include "caliper/common/ContextRecord.h"
@@ -110,7 +111,11 @@ namespace
           "STRING"
         }, 
         { "table", "table", 't', false,
-          "Print given attributes in human-readable table form",
+          "Print attributes in human-readable table form",
+          nullptr
+        },
+        { "tree" , "tree", 'T', true,
+          "Print records in the hierarchy of the given attribute(s)",
           "ATTRIBUTES"
         },
         { "json", "json", 'j', false,
@@ -273,6 +278,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
+    TreeFormatter     trx_writer(args.get("tree"), args.get("attributes"));
     Table             tbl_writer(args.get("attributes"), args.get("sort"));
     Json              jsn_writer(args.get("attributes"));
 
@@ -292,6 +298,8 @@ int main(int argc, const char* argv[])
         }
         
         snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
+    } else if (args.is_set("tree"))  {
+        snap_writer = trx_writer;
     } else if (args.is_set("table")) {        
         snap_writer = tbl_writer;
     } 
@@ -365,7 +373,7 @@ int main(int argc, const char* argv[])
     //
     // --- Fill thread vector and process
     //
-     
+
     for (unsigned t = 0; t < num_threads; ++t)
         threads.emplace_back(thread_fn, t);
 
@@ -380,8 +388,10 @@ int main(int argc, const char* argv[])
 
     aggregate.flush(metadb, snap_writer);
 
-    if (args.is_set("table"))
+    if (args.is_set("tree"))
+        trx_writer.flush(metadb, fs.is_open() ? fs : cout);
+    else if (args.is_set("table"))
         tbl_writer.flush(metadb, fs.is_open() ? fs : cout);
-    if (args.is_set("json"))
+    else if (args.is_set("json"))
         jsn_writer.flush(metadb, fs.is_open() ? fs : cout);
 }
