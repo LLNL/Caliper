@@ -6,6 +6,7 @@ set(CALIPER_COMMON_SOURCES
     Log.cpp
     Node.cpp
     RecordMap.cpp
+    ReportInfrastructure.cpp
     RuntimeConfig.cpp
     SnapshotTextFormatter.cpp
     StringConverter.cpp
