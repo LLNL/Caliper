@@ -50,12 +50,6 @@
 using namespace cali;
 
 
-namespace cali
-{
-    extern Attribute class_nested_attr;
-}
-
-
 namespace
 {
 
@@ -86,6 +80,8 @@ std::ostream& print_snapshot(Caliper* c, std::ostream& os)
 }
 
 
+Attribute class_nested_attr;
+
 class StackValidator 
 {
     std::map< Attribute, std::vector<Variant> > m_region_stack;
@@ -97,10 +93,14 @@ public:
         if (m_error_found)
             return true;
 
-        Attribute key = 
-            (attr.get(class_nested_attr) == Variant(true) ? class_nested_attr : attr);
+        m_region_stack[attr].push_back(value);
 
-        m_region_stack[key].push_back(value);
+        if (attr.is_nested()) {
+            cali_id_t   id = attr.id();
+            Variant   v_id(CALI_TYPE_UINT, &id, sizeof(cali_id_t));
+
+            m_region_stack[class_nested_attr].push_back(Variant(attr.id()));
+        }
 
         return false;
     }
@@ -109,10 +109,7 @@ public:
         if (m_error_found)
             return true;
 
-        Attribute key = 
-            (attr.get(class_nested_attr) == Variant(true) ? class_nested_attr : attr);
-
-        auto it = m_region_stack.find(key);
+        auto it = m_region_stack.find(attr);
 
         if (it == m_region_stack.end() || it->second.empty()) {
             // We currently can't actually check this situation because
@@ -127,21 +124,38 @@ public:
                                 << " has no matching begin().\n    context: " ) 
                 << std::endl;
         } else {
-            // For nested-class attributes we'd technically have to check the 
-            // input attribute, too (in case the values are equal but the 
-            // attributes are not) but this case is hopefully unlikely enough.
+            Variant v_stack_attr;
 
-            Variant v_expect = it->second.back();
+            if (attr.is_nested()) {
+                auto n_it = m_region_stack.find(class_nested_attr);
+
+                if (n_it != m_region_stack.end() && !n_it->second.empty()) {
+                    v_stack_attr = n_it->second.back();
+                    n_it->second.pop_back();
+                }
+            }
+
+            Variant v_stack_val = it->second.back();
             it->second.pop_back();
 
-            if (!(value == v_expect)) {
+            if (attr.is_nested() && attr.id() != v_stack_attr.to_id()) {
+                m_error_found = true;
+
+                print_snapshot(c,
+                               Log(0).stream() << "validator: incorrect nesting: trying to end \""
+                               << attr.name() << "\"=\"" << value.to_string() 
+                               << "\" but current attribute is \"" 
+                               << c->get_attribute(v_stack_attr.to_id()).name() 
+                               << "\".\n    context: " )
+                        << std::endl;
+            } else if (!(value == v_stack_val)) {
                 m_error_found = true;
 
                 print_snapshot(c,
                     Log(0).stream() << "validator: incorrect nesting: trying to end \""
                                     << attr.name() << "\"=\"" << value.to_string() 
                                     << "\" but current value is \"" 
-                                    << v_expect.to_string() << "\".\n    context: " )
+                                    << v_stack_val.to_string() << "\".\n    context: " )
                     << std::endl;
             }
         }
@@ -182,7 +196,6 @@ std::mutex        proc_stack_mutex;
 pthread_key_t     threadinfo_key;
 
 std::atomic<int>  global_errors;
-
 
 void destroy_thread_info(void* data)
 {
@@ -273,6 +286,9 @@ void validator_register(Caliper* c)
         Log(0).stream() << "validator: error: Could not create thread info" << std::endl;
         return;
     }
+
+    class_nested_attr = 
+        c->create_attribute("validator.nested", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
     proc_stack = new StackValidator;
     global_errors.store(0);

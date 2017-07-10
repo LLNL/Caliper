@@ -43,8 +43,6 @@
 
 #include <iterator>
 
-extern cali_id_t cali_class_nested_attr_id;
-
 using namespace cali;
 
 //
@@ -89,13 +87,7 @@ AnnotationBinding::pre_create_attr_cb(Caliper*           c,
 
     if (m_trigger_attr_names.empty()) {
         // By default, enable binding only for class.nested attributes
-
-        const Node* n = *node;
-
-        for ( ; n && n->attribute() != cali_class_nested_attr_id; n = n->parent())
-            ;
-
-        if (!n)
+        if (!(*prop & CALI_ATTR_NESTED))
             return;
     } else {
         if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(),

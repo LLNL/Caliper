@@ -77,15 +77,14 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'cali.attribute.name' : 'function',
-                'cali.attribute.prop' : '20',
+                'cali.attribute.prop' : '276',
                 'cali.attribute.type' : 'string' }))
 
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'cali.attribute.name' : 'annotation',
                 'cali.attribute.prop' : '12',
-                'cali.attribute.type' : 'string',
-                'class.nested'        : 'true' }))
+                'cali.attribute.type' : 'string' }))
 
 if __name__ == "__main__":
     unittest.main()
