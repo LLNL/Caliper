@@ -33,6 +33,8 @@
 /// \file  Report.cpp
 /// \brief Generates text reports from Caliper snapshots on flush() events 
 
+#ifndef CALIPER_COMMON_REPORTINFRASTRUCTURE_HPP
+#define CALIPER_COMMON_REPORTINFRASTRUCTURE_HPP
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
@@ -56,12 +58,21 @@ namespace cali
 {
 namespace reporting
 {
-
+    class FilePointerOStream : public std::basic_ostream<char>{
+        FILE* m_fp;
+      public:
+        FilePointerOStream(FILE* fp) : m_fp(fp) {}
+        FILE* getFP(){ return m_fp;}
+    };
+    FilePointerOStream& operator<<(FilePointerOStream& stream, const char* in){
+      fprintf(stream.getFP(),"%s", in);
+      return stream;
+    }
     class Reporter {
-        using output_stream_type = std::ostream;
+        using output_stream_type = std::ostream*;
         Table          m_table_writer;
         RecordSelector m_selector;
-        output_stream_type& m_output_stream;
+        output_stream_type m_output_stream;
 
         std::vector<Entry> make_entrylist(Caliper* c, const SnapshotRecord* snapshot) {
             std::vector<Entry> list;
@@ -86,10 +97,10 @@ namespace reporting
         }
 
         void flush(Caliper* c, const SnapshotRecord* flush_info) {
-            m_table_writer.flush(*c, m_output_stream);
+            m_table_writer.flush(*c, *m_output_stream);
         }
-
-        Reporter(output_stream_type& out, const std::string& attributes, const std::string& sort, const std::string& filter, Caliper c = Caliper::instance()) :
+        public:
+        Reporter(output_stream_type out, const std::string& attributes, const std::string& sort, const std::string& filter, Caliper c = Caliper::instance()) :
               m_output_stream(out),
               m_table_writer(attributes,
                              sort),
@@ -135,6 +146,10 @@ namespace reporting
         //    Log(1).stream() << "Registered report service" << std::endl;
         //}
     };
-
+    Reporter* createReporter(const char* name){
+      FILE* fp = fopen(name,"w");
+      return new Reporter(new FilePointerOStream(fp),"","","");
+    }
 } // namespace reporting
 } // namespace cali
+#endif 

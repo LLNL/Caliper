@@ -6,6 +6,7 @@ set(CALIPER_SOURCES
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
+    ReportInfrastructure.cpp
     api.cpp
     cali.cpp)
 
