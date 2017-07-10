@@ -39,30 +39,27 @@
 using namespace cali;
 using namespace std;
 
-namespace cali
+namespace
 {
     vector<Attribute> mpit_pvar_attr   { Attribute::invalid };
 
     bool      mpit_enabled  { false };
-}
 
-namespace
-{
+	ConfigSet        config;
 
-ConfigSet        config;
+	ConfigSet::Entry configdata[] = {
+    	ConfigSet::Terminator
+	};
 
-ConfigSet::Entry configdata[] = {
-    ConfigSet::Terminator
-};
-
-void mpit_register(Caliper *c)
-{ 
-    config = RuntimeConfig::init("mpit", configdata);
+	/*Register the service and initalize the MPI-T interface*/
+	void mpit_register(Caliper *c)
+	{	 
+    	config = RuntimeConfig::init("mpit", configdata);
     
-    mpit_enabled = true; 
+    	mpit_enabled = true; 
     
-    Log(1).stream() << "Registered MPIT service" << endl;
-}
+    	Log(1).stream() << "Registered MPIT service" << endl;
+	}
 
 } // anonymous namespace 
 
