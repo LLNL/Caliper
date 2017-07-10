@@ -58,18 +58,17 @@ namespace cali
 {
 namespace reporting
 {
-    class FilePointerOStream : public std::basic_ostream<char>{
-        FILE* m_fp;
-      public:
-        FilePointerOStream(FILE* fp) : m_fp(fp) {}
-        FILE* getFP(){ return m_fp;}
-    };
-    FilePointerOStream& operator<<(FilePointerOStream& stream, const char* in){
-            std::cout<<"OOPS\n";
-      fprintf(stream.getFP(),"%s", in);
-      return stream;
-    }
     
+    class FileBufferStream : public std::basic_streambuf<char>{
+      FILE* fp;
+      public:
+      FileBufferStream(FILE* m_fp) : fp(m_fp) {}
+      virtual int_type overflow(int_type ch){
+        fputc((char)ch, fp);
+        return 0;
+      }
+    };
+
     class Reporter {
         using output_stream_type = std::ostream*;
         Caliper m_cali;
@@ -154,12 +153,13 @@ namespace reporting
         //}
     };
     //DEBUG: TODO: DELETE: @DABOEHME DON'T LET THIS MERGE
-    Reporter* createReporter(const char* name){
-      FILE* fp = fopen(name,"w");
-      return new Reporter(new FilePointerOStream(fp),"","","");
-    }
     Reporter* createReporter(std::ostream& foo){
       return new Reporter(&foo,"","","");
+    }
+    Reporter* createReporter(FILE* fp){
+      FileBufferStream* fbuf = new FileBufferStream(fp);
+      std::ostream* new_stream = new std::ostream(fbuf);
+      return new Reporter(new_stream, "", "","");
     }
 } // namespace reporting
 } // namespace cali

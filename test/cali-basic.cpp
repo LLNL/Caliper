@@ -37,7 +37,8 @@
 
 int main(int argc, char* argv[])
 {
-    auto foo = cali::reporting::createReporter("DOGS");
+    FILE* fp = fopen("DOGS","w");
+    auto foo = cali::reporting::createReporter(fp);
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("init");
