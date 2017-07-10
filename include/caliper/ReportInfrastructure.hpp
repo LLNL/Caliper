@@ -65,14 +65,17 @@ namespace reporting
         FILE* getFP(){ return m_fp;}
     };
     FilePointerOStream& operator<<(FilePointerOStream& stream, const char* in){
+            std::cout<<"OOPS\n";
       fprintf(stream.getFP(),"%s", in);
       return stream;
     }
+    
     class Reporter {
         using output_stream_type = std::ostream*;
+        Caliper m_cali;
+        output_stream_type m_output_stream;
         Table          m_table_writer;
         RecordSelector m_selector;
-        output_stream_type m_output_stream;
 
         std::vector<Entry> make_entrylist(Caliper* c, const SnapshotRecord* snapshot) {
             std::vector<Entry> list;
@@ -100,7 +103,11 @@ namespace reporting
             m_table_writer.flush(*c, *m_output_stream);
         }
         public:
+        void report(){
+          m_table_writer.flush(m_cali, *m_output_stream);
+        }
         Reporter(output_stream_type out, const std::string& attributes, const std::string& sort, const std::string& filter, Caliper c = Caliper::instance()) :
+              m_cali(c),
               m_output_stream(out),
               m_table_writer(attributes,
                              sort),
@@ -146,9 +153,13 @@ namespace reporting
         //    Log(1).stream() << "Registered report service" << std::endl;
         //}
     };
+    //DEBUG: TODO: DELETE: @DABOEHME DON'T LET THIS MERGE
     Reporter* createReporter(const char* name){
       FILE* fp = fopen(name,"w");
       return new Reporter(new FilePointerOStream(fp),"","","");
+    }
+    Reporter* createReporter(std::ostream& foo){
+      return new Reporter(&foo,"","","");
     }
 } // namespace reporting
 } // namespace cali

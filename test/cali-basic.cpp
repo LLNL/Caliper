@@ -33,9 +33,11 @@
 // A minimal Caliper instrumentation demo 
 
 #include <caliper/cali.h>
+#include <caliper/ReportInfrastructure.hpp>
 
 int main(int argc, char* argv[])
 {
+    auto foo = cali::reporting::createReporter("DOGS");
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("init");
@@ -57,4 +59,5 @@ int main(int argc, char* argv[])
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);
+    foo->report();
 }
