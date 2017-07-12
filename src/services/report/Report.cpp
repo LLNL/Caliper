@@ -86,7 +86,7 @@ namespace
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
             SnapshotProcessFn fn(m_table_writer);
 
-            m_selector(*c, make_entrylist(c, snapshot), fn);
+            m_selector(*c, snapshot->to_entrylist(), fn);
         }
 
         void flush(Caliper* c, const SnapshotRecord* flush_info) {
@@ -100,7 +100,7 @@ namespace
                 SnapshotTextFormatter formatter(filename);
                 std::ostringstream    fnamestr;
 
-                formatter.print(fnamestr, c, make_entrylist(c, flush_info));
+                formatter.print(fnamestr, c, flush_info->to_entrylist());
 
                 std::ofstream fs(fnamestr.str());
 

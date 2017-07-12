@@ -113,6 +113,19 @@ SnapshotRecord::get(const Attribute& attr) const
     return Entry::empty;
 }
 
+std::vector<Entry> 
+SnapshotRecord::to_entrylist() const
+{
+    std::vector<Entry> vec(m_sizes.n_nodes + m_sizes.n_immediate);
+
+    for (size_t i = 0; i < m_sizes.n_nodes; ++i)
+        vec.push_back(Entry(m_node_array[i]));
+    for (size_t i = 0; i < m_sizes.n_immediate; ++i)
+        vec.push_back(Entry(m_attr_array[i], m_data_array[i]));
+
+    return vec;
+}
+
 std::map< Attribute, std::vector<Variant> >
 SnapshotRecord::unpack(CaliperMetadataAccessInterface& db)
 {

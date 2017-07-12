@@ -129,6 +129,8 @@ public:
 
     Entry get(const Attribute&) const;
 
+    std::vector<Entry> to_entrylist() const;
+
     std::map< cali::Attribute, std::vector<cali::Variant> > unpack(CaliperMetadataAccessInterface&);
     
     void push_record(WriteRecordFn fn) const;
