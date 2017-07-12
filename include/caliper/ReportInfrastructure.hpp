@@ -105,6 +105,14 @@ namespace reporting
         void report(){
           m_table_writer.flush(m_cali, *m_output_stream);
         }
+        void connectCaliper(){
+                m_cali.events().flush_snapshot.connect([=](Caliper* c, const SnapshotRecord* toss, const SnapshotRecord* snapshot){
+                  this->process_snapshot(c,snapshot);
+                });
+                m_cali.events().flush_finish_evt.connect([=](Caliper* c, const SnapshotRecord* snapshot){
+                  this->flush(c,snapshot);
+                });
+        }
         Reporter(output_stream_type out, const std::string& attributes, const std::string& sort, const std::string& filter, Caliper c = Caliper::instance()) :
               m_cali(c),
               m_output_stream(out),
@@ -113,28 +121,33 @@ namespace reporting
               m_selector(filter)
                 
             {
-                c.events().flush_snapshot.connect([=](Caliper* c, const SnapshotRecord* toss, const SnapshotRecord* snapshot){
-                  this->process_snapshot(c,snapshot);
-                });
-                c.events().flush_finish_evt.connect([=](Caliper* c, const SnapshotRecord* snapshot){
-                  this->flush(c,snapshot);
-                });
+                connectCaliper();
             }
+        Reporter(std::ostream& out, std::string attributes = "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance() ) : 
+              m_cali(c),
+              m_output_stream(&out),
+              m_table_writer(attributes,
+                             sort),
+              m_selector(filter)
+        {
+                connectCaliper();
+        }
+
+        Reporter(FILE* fp, std::string attributes= "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance()) :
+              m_cali(c),
+              m_output_stream(new std::ostream(new FileBufferStream(fp))),
+              m_table_writer(attributes,
+                             sort),
+              m_selector(filter)
+        {
+          connectCaliper();
+        }
 
         ~Reporter()
             { }
 
     };
 
-    Reporter* createReporter(std::ostream& foo, std::string attributes = "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance() ){
-      return new Reporter(&foo,attributes, sort, filter, c);
-    }
-
-    Reporter* createReporter(FILE* fp, std::string attributes= "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance()){
-      FileBufferStream* fbuf = new FileBufferStream(fp);
-      std::ostream* new_stream = new std::ostream(fbuf);
-      return createReporter(*new_stream,attributes, sort, filter, c);
-    }
 
 } // namespace reporting
 } // namespace cali
