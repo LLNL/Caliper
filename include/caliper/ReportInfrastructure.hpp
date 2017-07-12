@@ -103,7 +103,7 @@ namespace reporting
         }
         public:
         void report(){
-          m_table_writer.flush(m_cali, *m_output_stream);
+          m_cali.flush(NULL);
         }
         void connectCaliper(){
                 m_cali.events().flush_snapshot.connect([=](Caliper* c, const SnapshotRecord* toss, const SnapshotRecord* snapshot){
