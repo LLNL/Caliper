@@ -121,46 +121,21 @@ namespace reporting
                 });
             }
 
-        //
-        // --- callback functions
-        // 
-
-        //static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        //    if (!s_instance)
-        //        return;
-
-        //    s_instance->process_snapshot(c, snapshot);
-        //}
-
-        //static void flush_finish_cb(Caliper* c, const SnapshotRecord* flush_info) {
-        //    if (!s_instance)
-        //        return;
-
-        //    s_instance->flush(c, flush_info);
-        //}
-
-
         ~Reporter()
             { }
 
-        //static void create(Caliper* c) {
-        //    s_instance.reset(new Reporter);
-
-        //    c->events().flush_snapshot.connect(flush_snapshot_cb);
-        //    c->events().flush_finish_evt.connect(flush_finish_cb);
-
-        //    Log(1).stream() << "Registered report service" << std::endl;
-        //}
     };
-    //DEBUG: TODO: DELETE: @DABOEHME DON'T LET THIS MERGE
-    Reporter* createReporter(std::ostream& foo){
-      return new Reporter(&foo,"","","");
+
+    Reporter* createReporter(std::ostream& foo, std::string attributes = "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance() ){
+      return new Reporter(&foo,attributes, sort, filter, c);
     }
-    Reporter* createReporter(FILE* fp){
+
+    Reporter* createReporter(FILE* fp, std::string attributes= "", std::string sort= "", std::string filter= "", Caliper c = Caliper::instance()){
       FileBufferStream* fbuf = new FileBufferStream(fp);
       std::ostream* new_stream = new std::ostream(fbuf);
-      return new Reporter(new_stream, "", "","");
+      return createReporter(*new_stream,attributes, sort, filter, c);
     }
+
 } // namespace reporting
 } // namespace cali
 #endif 
