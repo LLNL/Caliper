@@ -785,6 +785,8 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
+    mG->events.pre_flush_evt(this, flush_info);
+
     if (mG->events.postprocess_snapshot.empty()) { 
         mG->events.flush_evt(this, flush_info, proc_fn);
     } else {

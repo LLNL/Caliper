@@ -148,6 +148,7 @@ public:
         snapshot_cbvec         snapshot;
         process_snapshot_cbvec process_snapshot;
 
+        write_cbvec            pre_flush_evt;
         flush_cbvec            flush_evt;
 
         edit_snapshot_cbvec    postprocess_snapshot;
