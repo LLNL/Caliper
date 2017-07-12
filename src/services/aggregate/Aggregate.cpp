@@ -249,7 +249,8 @@ class AggregateDB {
         return entry;
     }
 
-    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c) {
+    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c,
+                                   Caliper::SnapshotProcessFn proc_fn) {
         SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
@@ -303,10 +304,10 @@ class AggregateDB {
 
         // --- write snapshot record
 
-        c->flush_snapshot(nullptr, &snapshot);
+        proc_fn(&snapshot);
     }
 
-    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c) {
+    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c, Caliper::SnapshotProcessFn proc_fn) {
         if (!entry)
             return 0;
 
@@ -315,7 +316,7 @@ class AggregateDB {
         // --- write current entry if it represents a snapshot
 
         if (entry->count > 0)
-            write_aggregated_snapshot(key, entry, c);
+            write_aggregated_snapshot(key, entry, c, proc_fn);
 
         num_written += (entry->count > 0 ? 1 : 0);
 
@@ -333,7 +334,7 @@ class AggregateDB {
             TrieNode* e  = m_trie.get(entry->next[i], false);
             next_key[n]  = static_cast<unsigned char>(i);
 
-            num_written += recursive_flush(n+1, next_key, e, c);
+            num_written += recursive_flush(n+1, next_key, e, c, proc_fn);
         }
 
         return num_written;
@@ -612,11 +613,11 @@ public:
                 }
     }
 
-    size_t flush(Caliper* c) {
+    size_t flush(Caliper* c, Caliper::SnapshotProcessFn proc_fn) {
         TrieNode*     entry = m_trie.get(0, false);
         unsigned char key   = 0;
 
-        return recursive_flush(0, &key, entry, c);
+        return recursive_flush(0, &key, entry, c, proc_fn);
     }
 
     bool stopped() const {
@@ -676,7 +677,7 @@ public:
         db->m_retired.store(true);
     }
 
-    static void flush_cb(Caliper* c, const SnapshotRecord*) {
+    static void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotProcessFn proc_fn) {
         AggregateDB* db = nullptr;
 
         {
@@ -691,7 +692,7 @@ public:
 
         while (db) {
             db->m_stopped.store(true);
-            num_written += db->flush(c);
+            num_written += db->flush(c, proc_fn);
 
             s_global_num_trie_entries   += db->m_num_trie_entries;
             s_global_num_kernel_entries += db->m_num_kernel_entries;

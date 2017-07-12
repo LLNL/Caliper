@@ -35,14 +35,13 @@
 
 #pragma once
 
-#include "caliper/common/cali_types.h"
+#include "caliper/Caliper.h"
 
 #include <cstring>
 
 
 namespace cali
 {
-    class Caliper;
     class SnapshotRecord;
 }
 
@@ -69,7 +68,7 @@ namespace trace
         void   append(TraceBufferChunk* chunk);
         void   reset();
 
-        size_t flush(cali::Caliper* c);
+        size_t flush(cali::Caliper* c, cali::Caliper::SnapshotProcessFn proc_fn);
 
         void   save_snapshot(const cali::SnapshotRecord* s);
         bool   fits(const cali::SnapshotRecord* s) const;

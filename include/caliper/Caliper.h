@@ -96,6 +96,10 @@ public:
     Caliper& operator = (const Caliper&) = default;
 
     bool is_signal() const { return m_is_signal; };
+
+    // --- Typedefs
+
+    typedef std::function<bool(const SnapshotRecord*)> SnapshotProcessFn;
     
     // --- Events
 
@@ -118,8 +122,10 @@ public:
         typedef util::callback<void(Caliper*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*, const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotProcessFn)>
             flush_cbvec;
+        typedef util::callback<void(Caliper*,const SnapshotRecord*)>
+            write_cbvec;
         typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
             write_record_cbvec;
                                     
@@ -142,11 +148,13 @@ public:
         snapshot_cbvec         snapshot;
         process_snapshot_cbvec process_snapshot;
 
-        flush_cbvec            pre_flush_evt;
         flush_cbvec            flush_evt;
-        edit_snapshot_cbvec    pre_flush_snapshot;
-        process_snapshot_cbvec flush_snapshot;
-        flush_cbvec            flush_finish_evt;
+
+        edit_snapshot_cbvec    postprocess_snapshot;
+
+        write_cbvec            pre_write_evt;
+        process_snapshot_cbvec write_snapshot;
+        write_cbvec            post_write_evt;
 
         write_record_cbvec     write_record;
     };
@@ -167,8 +175,10 @@ public:
     void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
     void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const SnapshotRecord* flush_info);
-    void      flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* snapshot);
+    // --- Flush and I/O API
+
+    void      flush(const SnapshotRecord* flush_info, SnapshotProcessFn proc_fn);
+    void      flush_and_write(const SnapshotRecord* flush_info);
 
     // --- Annotation API
 

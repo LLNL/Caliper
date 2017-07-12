@@ -180,14 +180,9 @@ namespace
             
         case BufferPolicy::Flush:
         {
-            std::lock_guard<std::mutex>
-                g(global_flush_lock);            
+            Log(1).stream() << "Trace buffer full: flushing." << std::endl;
 
-            Log(1).stream() << "Trace buffer full: flushed "
-                            << tbuf->chunks->flush(c)
-                            << " snapshots." << endl;
-
-            c->events().flush_finish_evt(c, nullptr);
+            c->flush_and_write(nullptr);
             
             return tbuf;
         }
@@ -213,7 +208,7 @@ namespace
         tbuf->chunks->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, const SnapshotRecord*) {
+    void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotProcessFn proc_fn) {
         std::lock_guard<std::mutex>
             g(global_flush_lock);
 
@@ -245,7 +240,7 @@ namespace
                 aggregate_info.used     += info.used;
             }
             
-            num_written += tbuf->chunks->flush(c);
+            num_written += tbuf->chunks->flush(c, proc_fn);
             tbuf->stopped.store(false);
             
             if (tbuf->retired.load()) {

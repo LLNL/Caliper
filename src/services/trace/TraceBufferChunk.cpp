@@ -75,7 +75,7 @@ void TraceBufferChunk::reset()
 }
 
 
-size_t TraceBufferChunk::flush(Caliper* c)
+size_t TraceBufferChunk::flush(Caliper* c, Caliper::SnapshotProcessFn proc_fn)
 {
     size_t written = 0;
 
@@ -108,7 +108,7 @@ size_t TraceBufferChunk::flush(Caliper* c)
 
         // write snapshot                
 
-        c->flush_snapshot(nullptr, &snapshot);
+        proc_fn(&snapshot);
     }
 
     written += m_nrec;            
@@ -119,7 +119,7 @@ size_t TraceBufferChunk::flush(Caliper* c)
     // 
             
     if (m_next) {
-        written += m_next->flush(c);
+        written += m_next->flush(c, proc_fn);
         delete m_next;
         m_next = 0;
     }
