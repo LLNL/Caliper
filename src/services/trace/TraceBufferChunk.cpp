@@ -75,7 +75,7 @@ void TraceBufferChunk::reset()
 }
 
 
-size_t TraceBufferChunk::flush(Caliper* c, Caliper::SnapshotProcessFn proc_fn)
+size_t TraceBufferChunk::flush(Caliper* c, Caliper::SnapshotFlushFn proc_fn)
 {
     size_t written = 0;
 

@@ -780,7 +780,7 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
 
 /// \brief Flush aggregation/trace buffer contents.
 void
-Caliper::flush(const SnapshotRecord* flush_info, SnapshotProcessFn proc_fn)
+Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);

@@ -99,7 +99,7 @@ public:
 
     // --- Typedefs
 
-    typedef std::function<bool(const SnapshotRecord*)> SnapshotProcessFn;
+    typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
     
     // --- Events
 
@@ -122,7 +122,7 @@ public:
         typedef util::callback<void(Caliper*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotProcessFn)>
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotFlushFn)>
             flush_cbvec;
         typedef util::callback<void(Caliper*,const SnapshotRecord*)>
             write_cbvec;
@@ -177,7 +177,7 @@ public:
 
     // --- Flush and I/O API
 
-    void      flush(const SnapshotRecord* flush_info, SnapshotProcessFn proc_fn);
+    void      flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
     void      flush_and_write(const SnapshotRecord* flush_info);
 
     // --- Annotation API

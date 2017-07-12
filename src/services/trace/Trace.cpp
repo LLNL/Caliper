@@ -208,7 +208,7 @@ namespace
         tbuf->chunks->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotProcessFn proc_fn) {
+    void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotFlushFn proc_fn) {
         std::lock_guard<std::mutex>
             g(global_flush_lock);
 

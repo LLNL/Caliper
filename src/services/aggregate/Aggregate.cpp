@@ -250,7 +250,7 @@ class AggregateDB {
     }
 
     void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c,
-                                   Caliper::SnapshotProcessFn proc_fn) {
+                                   Caliper::SnapshotFlushFn proc_fn) {
         SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
@@ -307,7 +307,7 @@ class AggregateDB {
         proc_fn(&snapshot);
     }
 
-    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c, Caliper::SnapshotProcessFn proc_fn) {
+    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, Caliper* c, Caliper::SnapshotFlushFn proc_fn) {
         if (!entry)
             return 0;
 
@@ -613,7 +613,7 @@ public:
                 }
     }
 
-    size_t flush(Caliper* c, Caliper::SnapshotProcessFn proc_fn) {
+    size_t flush(Caliper* c, Caliper::SnapshotFlushFn proc_fn) {
         TrieNode*     entry = m_trie.get(0, false);
         unsigned char key   = 0;
 
@@ -677,7 +677,7 @@ public:
         db->m_retired.store(true);
     }
 
-    static void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotProcessFn proc_fn) {
+    static void flush_cb(Caliper* c, const SnapshotRecord*, Caliper::SnapshotFlushFn proc_fn) {
         AggregateDB* db = nullptr;
 
         {
