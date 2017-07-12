@@ -86,7 +86,7 @@ namespace
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
             SnapshotProcessFn fn(m_table_writer);
 
-            m_selector(*c, make_entrylist(c, snapshot), fn);
+            m_selector(*c, snapshot->to_entrylist(), fn);
         }
 
         void flush(Caliper* c, const SnapshotRecord* flush_info) {
@@ -100,7 +100,7 @@ namespace
                 SnapshotTextFormatter formatter(filename);
                 std::ostringstream    fnamestr;
 
-                formatter.print(fnamestr, c, make_entrylist(c, flush_info));
+                formatter.print(fnamestr, c, flush_info->to_entrylist());
 
                 std::ofstream fs(fnamestr.str());
 
@@ -146,8 +146,8 @@ namespace
         static void create(Caliper* c) {
             s_instance.reset(new Report);
 
-            c->events().flush_snapshot.connect(flush_snapshot_cb);
-            c->events().flush_finish_evt.connect(flush_finish_cb);
+            c->events().write_snapshot.connect(flush_snapshot_cb);
+            c->events().post_write_evt.connect(flush_finish_cb);
 
             Log(1).stream() << "Registered report service" << std::endl;
         }

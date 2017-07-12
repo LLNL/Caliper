@@ -39,8 +39,7 @@
 
 #include "caliper/common/cali_types.h"
 
-cali_id_t cali_class_nested_attr_id = CALI_INV_ID;
-cali_id_t cali_class_aggregatable_attr_id = CALI_INV_ID;
+cali_id_t cali_class_aggregatable_attr_id  = CALI_INV_ID;
 cali_id_t cali_class_symboladdress_attr_id = CALI_INV_ID;
 cali_id_t cali_function_attr_id     = CALI_INV_ID;
 cali_id_t cali_loop_attr_id         = CALI_INV_ID;
@@ -49,7 +48,6 @@ cali_id_t cali_annotation_attr_id   = CALI_INV_ID;
 
 namespace cali
 {
-    Attribute class_nested_attr;
     Attribute class_aggregatable_attr;
     Attribute class_symboladdress_attr;
     
@@ -66,9 +64,6 @@ namespace cali
             Attribute*     attr;
             cali_id_t*     attr_id;
         } attr_info[] = {
-            { "class.nested", CALI_TYPE_BOOL, CALI_ATTR_SKIP_EVENTS,
-              &class_nested_attr, &cali_class_nested_attr_id
-            },
             { "class.aggregatable", CALI_TYPE_BOOL, CALI_ATTR_SKIP_EVENTS,
               &class_aggregatable_attr, &cali_class_aggregatable_attr_id
             },
@@ -95,16 +90,16 @@ namespace cali
             Attribute*     attr;
             cali_id_t*     attr_id;
         } attr_info[] = {
-            { "function",   CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+            { "function",   CALI_TYPE_STRING, CALI_ATTR_NESTED,
               &function_attr,   &cali_function_attr_id
             },
-            { "loop",       CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+            { "loop",       CALI_TYPE_STRING, CALI_ATTR_NESTED,
               &loop_attr,       &cali_loop_attr_id
             },
-            { "statement",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+            { "statement",  CALI_TYPE_STRING, CALI_ATTR_NESTED,
               &statement_attr,  &cali_statement_attr_id
             },
-            { "annotation", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+            { "annotation", CALI_TYPE_STRING, CALI_ATTR_NESTED,
               &annotation_attr, &cali_annotation_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
@@ -113,9 +108,7 @@ namespace cali
         Variant v_true(true);
         
         for (attr_info_t *p = attr_info; p->name; ++p) {
-            *(p->attr) =
-                c->create_attribute(p->name, p->type, p->prop,
-                                    1, &class_nested_attr, &v_true);
+            *(p->attr)    = c->create_attribute(p->name, p->type, p->prop);
             *(p->attr_id) = (p->attr)->id();
         }
     }

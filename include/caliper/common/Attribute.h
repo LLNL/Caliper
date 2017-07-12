@@ -92,6 +92,9 @@ public:
     bool is_hidden() const {
         return properties() & CALI_ATTR_HIDDEN;
     }
+    bool is_nested() const {
+        return properties() & CALI_ATTR_NESTED;
+    }
 
     Variant        get(const Attribute& attr) const;
     

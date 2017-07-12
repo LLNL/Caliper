@@ -33,8 +33,8 @@
  * *********************************************************************************************/
 
 /** 
- * \file cali_types.h 
- * Context annotation library typedefs
+ * \file  cali_types.h 
+ * \brief Context annotation library typedefs
  */
 
 #ifndef CALI_CALI_TYPES_H
@@ -51,41 +51,67 @@ typedef uint64_t cali_id_t;
 
 #define CALI_INV_ID 0xFFFFFFFFFFFFFFFF
 
+/**
+ * \brief Data type of an attribute.
+ */
 typedef enum {
-  CALI_TYPE_INV    = 0,
-  CALI_TYPE_USR    = 1,
-  CALI_TYPE_INT    = 2,
-  CALI_TYPE_UINT   = 3,
-  CALI_TYPE_STRING = 4,
-  CALI_TYPE_ADDR   = 5,
-  CALI_TYPE_DOUBLE = 6,
-  CALI_TYPE_BOOL   = 7,
-  CALI_TYPE_TYPE   = 8
+  CALI_TYPE_INV    = 0, /**< Invalid type               */
+  CALI_TYPE_USR    = 1, /**< User-defined type (pointer to binary data) */
+  CALI_TYPE_INT    = 2, /**< 64-bit signed integer      */
+  CALI_TYPE_UINT   = 3, /**< 64-bit unsigned integer    */
+  CALI_TYPE_STRING = 4, /**< String (\a char*)          */
+  CALI_TYPE_ADDR   = 5, /**< 64-bit address             */
+  CALI_TYPE_DOUBLE = 6, /**< Double-precision floating point type */
+  CALI_TYPE_BOOL   = 7, /**< C or C++ boolean           */
+  CALI_TYPE_TYPE   = 8  /**< Instance of cali_attr_type */
 } cali_attr_type;
 
 #define CALI_MAXTYPE CALI_TYPE_TYPE
 
+/**
+ * \brief 
+ */
 const char* 
-cali_type2string(cali_attr_type);
+cali_type2string(cali_attr_type type);
 
 cali_attr_type 
-cali_string2type(const char*);
+cali_string2type(const char* str);
 
+/**
+ * \brief Attribute property flags.
+ *
+ * These flags control how the caliper runtime system handles the associated
+ * attributes.   
+ */
 typedef enum {
   CALI_ATTR_DEFAULT       =  0,
   CALI_ATTR_ASVALUE       =  1,
   CALI_ATTR_NOMERGE       =  2,
+
   CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */ 
   CALI_ATTR_SCOPE_THREAD  = 20, 
   CALI_ATTR_SCOPE_TASK    = 24,
+
+  /** \brief Skip event callbacks for blackboard updates with this attribute */
   CALI_ATTR_SKIP_EVENTS   = 64,
-  CALI_ATTR_HIDDEN        = 128
+
+  /** \brief Do not include this attribute in snapshots */
+  CALI_ATTR_HIDDEN        = 128,
+
+  /** \brief Begin/end calls are properly aligned with the call stack.
+   * 
+   * Indicates that \a begin/end calls for this attribute are correctly
+   * nested with the call stack and other NESTED attributes.
+   * That is, an active region of a NESTED attribute does not 
+   * partially overlap function calls or other NESTED attribute regions.
+   */
+  CALI_ATTR_NESTED        = 256
 } cali_attr_properties;
 
 #define CALI_ATTR_SCOPE_MASK 60
 
 /**
- * Provides descriptive string of given attribute property flags, separated with ':'
+ * \brief  Provides descriptive string of given attribute property flags, separated with ':'
  * \param  prop Attribute property flag
  * \param  buf  Buffer to write string to
  * \param  len  Length of string buffer

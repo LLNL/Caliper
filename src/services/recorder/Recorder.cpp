@@ -245,8 +245,8 @@ class Recorder
     }
     
     void register_callbacks(Caliper* c) {
-        c->events().pre_flush_evt.connect(pre_flush_cb);
-        c->events().flush_snapshot.connect(flush_snapshot_cb);
+        c->events().pre_write_evt.connect(pre_flush_cb);
+        c->events().write_snapshot.connect(flush_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 

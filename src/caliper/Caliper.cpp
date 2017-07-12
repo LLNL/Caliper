@@ -102,7 +102,7 @@ namespace
         Caliper c = Caliper::instance();
 
         if (c) {
-            c.flush(nullptr);
+            c.flush_and_write(nullptr);
             c.events().finish_evt(&c);
 
             c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
@@ -777,7 +777,34 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
     mG->events.process_snapshot(this, trigger_info, &sbuf);
 }
 
-/// Flush aggregation and / or trace buffers.
+
+/// \brief Flush aggregation/trace buffer contents.
+void
+Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    mG->events.pre_flush_evt(this, flush_info);
+
+    if (mG->events.postprocess_snapshot.empty()) { 
+        mG->events.flush_evt(this, flush_info, proc_fn);
+    } else {
+        mG->events.flush_evt(this, flush_info, 
+                             [this,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
+                                 SnapshotRecord::FixedSnapshotRecord<80> data;
+                                 SnapshotRecord snapshot(data);
+
+                                 snapshot.append(*input_snapshot);
+
+                                 mG->events.postprocess_snapshot(this, &snapshot);
+                                 return proc_fn(&snapshot);
+                             });
+    }
+}
+
+
+/// Forward aggregation/trace buffer contents to output services.
 ///
 /// Flushes trace buffers and / or the aggregation database in the trace and aggregation
 /// services, respectively. This will empty the trace/aggregation buffers and
@@ -789,7 +816,7 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
 /// \param input_flush_info User-provided flush context information. Currently unused.
 
 void
-Caliper::flush(const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
@@ -803,35 +830,17 @@ Caliper::flush(const SnapshotRecord* input_flush_info)
     m_thread_scope->blackboard.snapshot(&flush_info);
     mG->process_scope->blackboard.snapshot(&flush_info);
 
-    mG->events.pre_flush_evt(this, &flush_info);
-    mG->events.flush_evt(this, &flush_info);
-    mG->events.flush_finish_evt(this, &flush_info);
+    mG->events.pre_write_evt(this, &flush_info);
+
+    flush(&flush_info, 
+          [this,&flush_info](const SnapshotRecord* snapshot){
+              mG->events.write_snapshot(this, &flush_info, snapshot);
+              return true;
+          });
+
+    mG->events.post_write_evt(this, &flush_info);
 }
 
-/// Flush a snapshot record.
-///
-/// Forwards the snapshot record to output services (e.g., report or recorder).
-/// Invokes the pre_flush_snapshot and flush_snapshot callbacks.
-///
-/// This function is not signal safe.
-///
-/// \param flush_info  User-provided flush information.
-/// \param in_snapshot Snapshot record to be flushed.
-
-void
-Caliper::flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* in_snapshot)
-{
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
-
-    snapshot.append(*in_snapshot);
-
-    mG->events.pre_flush_snapshot(this, &snapshot);
-    mG->events.flush_snapshot(this, flush_info, &snapshot);
-}
 
 // --- Annotation interface
 

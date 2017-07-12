@@ -425,17 +425,14 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
     cali_err  ret  = CALI_SUCCESS;
 
     Caliper   c;
-    Attribute attr = c.get_attribute(attr_id);
 
-    if (attr.type() != CALI_TYPE_STRING)
+    Attribute attr = c.get_attribute(attr_id);
+    Variant   v    = c.get(attr).value();
+
+    if (attr.type() != CALI_TYPE_STRING || v.type() != CALI_TYPE_STRING)
         ret = CALI_ETYPE;
 
-    Variant v = c.get(attr).value();
-
-    if (v.type() == CALI_TYPE_STRING && 
-        0 == strncmp(static_cast<const char*>(v.data()), val, v.size())) {
-        c.end(attr);
-    } else {
+    if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size())) {
         // FIXME: Replace log output with smart error tracker
         Log(1).stream() << "begin/end marker mismatch: Trying to end " 
                         << attr.name() << "=" << val
@@ -443,7 +440,9 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
                         << attr.name() << " is \"" << v.to_string() << "\""
                         << std::endl;
     }
-    
+
+    c.end(attr);
+
     return ret;    
 }
 

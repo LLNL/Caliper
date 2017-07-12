@@ -50,11 +50,6 @@
 #include <iterator>
 #include <vector>
 
-namespace cali
-{
-    extern Attribute class_nested_attr;
-}
-
 using namespace cali;
 
 namespace
@@ -394,18 +389,15 @@ namespace
         Variant v_true(true);
 
         cupti_info.runtime_attr =
-            c->create_attribute("cupti.runtimeAPI", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-                                1, &class_nested_attr, &v_true);
+            c->create_attribute("cupti.runtimeAPI", CALI_TYPE_STRING, CALI_ATTR_NESTED);
         cupti_info.driver_attr =
-            c->create_attribute("cupti.driverAPI",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-                                1, &class_nested_attr, &v_true);
+            c->create_attribute("cupti.driverAPI",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
         cupti_info.resource_attr =
             c->create_attribute("cupti.event.resource", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         cupti_info.sync_attr =
             c->create_attribute("cupti.event.sync", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         cupti_info.nvtx_range_attr =
-            c->create_attribute("nvtx.range",       CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-                                1, &class_nested_attr, &v_true);
+            c->create_attribute("nvtx.range",       CALI_TYPE_STRING, CALI_ATTR_NESTED);
 
         cupti_info.context_attr =
             c->create_attribute("cupti.contextID",  CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);

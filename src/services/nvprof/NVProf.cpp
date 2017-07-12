@@ -47,8 +47,6 @@
 namespace cali
 {
 
-extern Attribute class_nested_attr;
-
 class NVProfBinding : public AnnotationBinding
 {
     static const uint32_t s_colors[];
@@ -97,7 +95,7 @@ public:
         // For properly nested attributes, just use default push/pop.
         // For other attributes, create a domain.
 
-        if (attr.get(class_nested_attr) == Variant(true)) {
+        if (attr.is_nested()) {
             nvtxRangePushEx(&eventAttrib);
         } else {
             nvtxDomainHandle_t domain;
@@ -121,7 +119,7 @@ public:
     }
 
     void on_end(Caliper*, const Attribute& attr, const Variant& value) {
-        if (attr.get(class_nested_attr) == Variant(true)) {
+        if (attr.is_nested()) {
             nvtxRangePop();
         } else {
             nvtxDomainHandle_t domain;

@@ -6,12 +6,8 @@
 #include <iostream>
 #include <cstring>
 
-namespace cali
-{
-    extern Attribute class_nested_attr;
-}
-
 using namespace cali;
+
 
 namespace 
 {
@@ -19,16 +15,15 @@ namespace
 void* mismatch_thread_fn(void*)
 {
     Caliper c;
-    Variant v_true(true);
 
     Attribute tA = 
-        c.create_attribute("mismatch-thread.A", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD, 
-                           1, &class_nested_attr, &v_true);
+        c.create_attribute("mismatch-thread.A", CALI_TYPE_INT, 
+                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_NESTED);
     Attribute tN = 
         c.create_attribute("mismatch-thread.N", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD);
     Attribute tB = 
-        c.create_attribute("mismatch-thread.B", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD, 
-                           1, &class_nested_attr, &v_true);
+        c.create_attribute("mismatch-thread.B", CALI_TYPE_INT, 
+                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_NESTED);
 
     c.begin(tA, Variant(16));
     c.begin(tN, Variant(25));
@@ -56,13 +51,13 @@ void test_nesting_procscope()
     Variant v_true(true);
 
     Attribute tA = 
-        c.create_attribute("mismatch-process.A", CALI_TYPE_INT, CALI_SCOPE_PROCESS, 
-                           1, &class_nested_attr, &v_true);
+        c.create_attribute("mismatch-process.A", CALI_TYPE_INT, 
+                           CALI_SCOPE_PROCESS | CALI_ATTR_NESTED);
     Attribute tN = 
         c.create_attribute("mismatch-process.N", CALI_TYPE_INT, CALI_SCOPE_PROCESS);
     Attribute tB = 
-        c.create_attribute("mismatch-process.B", CALI_TYPE_INT, CALI_SCOPE_PROCESS, 
-                           1, &class_nested_attr, &v_true);
+        c.create_attribute("mismatch-process.B", CALI_TYPE_INT, 
+                           CALI_SCOPE_PROCESS | CALI_ATTR_NESTED);
 
     c.begin(tA, Variant(16));
     c.begin(tN, Variant(25));
