@@ -77,9 +77,11 @@ endif()
 add_subdirectory(trace)
 if (CALIPER_HAVE_MPI)
   add_subdirectory(mpiwrap)
+
 if (CALIPER_HAVE_MPIT)
   add_subdirectory(mpit)
 endif()
+
 endif()
 if (CALIPER_HAVE_OMPT)
   add_subdirectory(ompt)

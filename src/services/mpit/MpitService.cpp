@@ -34,6 +34,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include <mpi.h>
+
 #include <vector>
 
 using namespace cali;
@@ -51,14 +53,46 @@ namespace
     	ConfigSet::Terminator
 	};
 
+	MPI_T_pvar_session pvar_session;
+
 	/*Register the service and initalize the MPI-T interface*/
 	void mpit_register(Caliper *c)
-	{	 
+	{	
+	    int thread_provided, return_val, num_pvars;
+
     	config = RuntimeConfig::init("mpit", configdata);
     
-    	mpit_enabled = true; 
+		/* Initialize MPI_T */
+		return_val = MPI_T_init_thread(MPI_THREAD_SINGLE, &thread_provided);
+
+		if (return_val != MPI_SUCCESS) 
+		{
+			Log(0).stream() << "MPI_T_init_thread ERROR: " << return_val << ". MPIT service disabled." << endl;
+			return;
+		} 
+		else 
+		{
+		/* Track a performance pvar session */
+			return_val = MPI_T_pvar_session_create(&pvar_session);
+			if (return_val != MPI_SUCCESS) {
+			    Log(0).stream() << "MPI_T_pvar_session_create ERROR: " << return_val << ". MPIT service disabled." << endl;
+			    return;
+		    }  
+ 		}
+    	
+		mpit_enabled = true; 
     
     	Log(1).stream() << "Registered MPIT service" << endl;
+		
+		/* Get the number of pvars exported by the implmentation */
+		return_val = MPI_T_pvar_get_num(&num_pvars);
+		if (return_val != MPI_SUCCESS)
+		{
+			perror("MPI_T_pvar_get_num ERROR:");
+			Log(0).stream() << "MPI_T_pvar_get_num ERROR: " << return_val << endl;
+		    return;
+  		}
+
 	}
 
 } // anonymous namespace 
