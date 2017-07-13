@@ -171,7 +171,7 @@ public:
     /// in a snapshot record belongs to the tree path or not.
     typedef std::function<bool(const Attribute&,const Variant&)> IsPathPredicateFn;
 
-    /// Add given snapshot record to the tree.
+    /// \brief Add given snapshot record to the tree.
     ///
     /// Insert a given snapshot record to the tree. This function
     /// unpacks each (attribute,value) pair in the snapshot record,

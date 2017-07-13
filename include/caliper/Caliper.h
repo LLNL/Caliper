@@ -54,7 +54,8 @@ namespace cali
 class Node;    
 class SnapshotRecord;
     
-/// @class Caliper
+/// \class Caliper
+/// \brief The main interface for the caliper runtime system
 
 class Caliper : public CaliperMetadataAccessInterface
 {

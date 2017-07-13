@@ -567,7 +567,6 @@ cali_init()
 // --- Helper functions for high-level macro interface
 // 
 
-/// \brief Make iteration attribute name for CALI_MARK_LOOP_BEGIN macro
 cali_id_t
 cali_make_loop_iteration_attribute(const char* name)
 {

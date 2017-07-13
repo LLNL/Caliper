@@ -102,7 +102,7 @@ class Annotation
 public:
 
     /// \brief Constructor. Creates an annotation object to manipulate 
-    ///    the context attribute \c name. 
+    ///    the context attribute \a name. 
 
     Annotation(const char* name, int opt = 0);
 
@@ -113,7 +113,7 @@ public:
     Annotation& operator = (const Annotation&);
 
     
-    /// \brief Scope guard to automatically \c end() an annotation at the end of
+    /// \brief Scope guard to automatically end() an annotation at the end of
     ///   the C++ scope.
 
     class Guard {
@@ -132,7 +132,7 @@ public:
     // Keep AutoScope name for backward compatibility
     typedef Guard AutoScope;
 
-    /// \name \c begin() overloads
+    /// \name begin() overloads
     /// \{
 
     Annotation& begin();
@@ -144,7 +144,7 @@ public:
     Annotation& begin(const Variant& data);
 
     /// \}
-    /// \name \c set() overloads
+    /// \name set() overloads
     /// \{
 
     Annotation& set(int data);
@@ -154,12 +154,8 @@ public:
     Annotation& set(const Variant& data);
 
     /// \}
-    /// \name \c end()
-    /// \{
 
     void end();
-
-    /// \}
 };
 
 } // namespace cali
