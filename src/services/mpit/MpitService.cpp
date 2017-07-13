@@ -41,9 +41,12 @@
 using namespace cali;
 using namespace std;
 
+#define NAME_LEN 1024
+
 namespace
 {
     vector<Attribute> mpit_pvar_attr   { Attribute::invalid };
+	vector<MPI_T_pvar_handle> pvar_handles;
 
     bool      mpit_enabled  { false };
 
@@ -54,11 +57,42 @@ namespace
 	};
 
 	MPI_T_pvar_session pvar_session;
+	int num_pvars = 0;
+
+	/*Allocate handles for pvars*/
+	void mpit_allocate_pvar_handles() {
+		int current_num_pvars, return_val;
+		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN];
+		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
+		MPI_Datatype datatype;
+		MPI_T_enum enumtype;
+
+		desc_len = name_len = NAME_LEN;
+		/* Get the number of pvars exported by the implementation */
+		return_val = MPI_T_pvar_get_num(&current_num_pvars);
+		if (return_val != MPI_SUCCESS)
+		{
+			perror("MPI_T_pvar_get_num ERROR:");
+			Log(0).stream() << "MPI_T_pvar_get_num ERROR: " << return_val << endl;
+		    return;
+		}
+
+		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
+
+		for(int index=num_pvars; index < current_num_pvars; index++) {
+			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &var_class, &datatype, &enumtype, 
+								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
+
+			Log(0).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
+		}
+		::num_pvars = current_num_pvars;
+	}
+
 
 	/*Register the service and initalize the MPI-T interface*/
 	void mpit_register(Caliper *c)
 	{	
-	    int thread_provided, return_val, num_pvars;
+	    int thread_provided, return_val;
 
     	config = RuntimeConfig::init("mpit", configdata);
     
@@ -84,15 +118,7 @@ namespace
     
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
-		/* Get the number of pvars exported by the implmentation */
-		return_val = MPI_T_pvar_get_num(&num_pvars);
-		if (return_val != MPI_SUCCESS)
-		{
-			perror("MPI_T_pvar_get_num ERROR:");
-			Log(0).stream() << "MPI_T_pvar_get_num ERROR: " << return_val << endl;
-		    return;
-  		}
-
+		mpit_allocate_pvar_handles();
 	}
 
 } // anonymous namespace 
