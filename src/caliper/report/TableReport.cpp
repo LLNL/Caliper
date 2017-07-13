@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,31 +30,59 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+/// \file  TableReport.cpp
+/// \brief Generates text reports from Caliper snapshots on flush() events 
 
-#include <caliper/cali.h>
+#include "caliper/report/TableReport.h"
 
-int main(int argc, char* argv[])
+#include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
+
+using namespace cali;
+using namespace cali::report;
+
+
+void TableReport::report()
 {
-    CALI_CXX_MARK_FUNCTION;
+    Caliper c;
+    SnapshotProcessFn snap_fn(m_table_formatter);
 
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
+    c.flush(nullptr, 
+            [this,&c,snap_fn](const SnapshotRecord* snapshot){
+                m_selector(c, snapshot->to_entrylist(), snap_fn);
+                return true;
+            });
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
-
-    double t = 0, delta_t = 0.42;
-
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
-
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
-
-        t += delta_t;
-    }
-
-    CALI_CXX_MARK_LOOP_END(mainloop);
+    m_table_formatter.flush(c, *m_output_stream);
 }
+
+TableReport::TableReport(output_stream_type out, 
+                         const std::string& attributes, 
+                         const std::string& sort, 
+                         const std::string& filter)
+    : m_output_stream(out),
+      m_table_formatter(attributes, sort),
+      m_selector(filter)
+{ }
+
+TableReport::TableReport(std::ostream&      out, 
+                         const char*        attributes, 
+                         const char*        sort, 
+                         const char*        filter)
+    : m_output_stream(&out),
+      m_table_formatter(attributes, sort),
+      m_selector(filter)
+{ }
+
+TableReport::TableReport(FILE*              fp, 
+                         const char*        attributes, 
+                         const char*        sort, 
+                         const char*        filter)
+    : m_output_stream(new std::ostream(new FileBufferStream(fp))),
+      m_table_formatter(attributes, sort),
+      m_selector(filter)
+{ }
+
+TableReport::~TableReport()
+{ }
+

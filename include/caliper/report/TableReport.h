@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,31 +30,69 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+/// \file  TableReport.h
+/// \brief Generates text reports from Caliper snapshots on flush() events 
 
-#include <caliper/cali.h>
+#pragma once
 
-int main(int argc, char* argv[])
+#include "caliper/reader/RecordSelector.h"
+#include "caliper/reader/Table.h"
+
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+namespace cali
 {
-    CALI_CXX_MARK_FUNCTION;
 
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
+namespace report
+{
+    
+    class FileBufferStream : public std::basic_streambuf<char> {
+        FILE* m_fp;
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
+    public:
 
-    double t = 0, delta_t = 0.42;
+        FileBufferStream(FILE* fp) 
+            : m_fp(fp) { }
 
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
+        virtual int_type overflow(int_type ch) {
+            fputc((char)ch, m_fp);
+            return 0;
+        }
+    };
 
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
+    class TableReport {
+        using output_stream_type = std::ostream*;
 
-        t += delta_t;
-    }
+        output_stream_type m_output_stream;
+        Table              m_table_formatter;
+        RecordSelector     m_selector;
 
-    CALI_CXX_MARK_LOOP_END(mainloop);
-}
+    public:
+
+        TableReport(output_stream_type out, 
+                    const std::string& attributes, 
+                    const std::string& sort, 
+                    const std::string& filter);
+
+        TableReport(std::ostream&      out, 
+                    const char*        attributes = "", 
+                    const char*        sort = "", 
+                    const char*        filter = "");
+
+        TableReport(FILE*              fp, 
+                    const char*        attributes = "", 
+                    const char*        sort = "", 
+                    const char*        filter = "");
+
+        ~TableReport();
+
+        void report();
+    };
+
+} // namespace report
+
+} // namespace cali
+
