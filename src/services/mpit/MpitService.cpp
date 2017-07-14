@@ -79,6 +79,8 @@ namespace
 		}
 
 		pvar_handles.reserve(current_num_pvars);
+		pvar_count.reserve(current_num_pvars);
+
 		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
@@ -86,13 +88,28 @@ namespace
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
 			
 			/* allocate a pvar handle that will be used later */
-			return_val = MPI_T_pvar_handle_alloc(mpit_pvar_session, index, NULL, &pvar_handles[index], &pvar_count[index]);
+			return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handles.data())[index], &(pvar_count.data())[index]);
 			if (return_val != MPI_SUCCESS)
 			{
 				Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
 		    	return;
   			}
+		   
+		   /*Non-continuous variables need to be started before being read. If this is not done
+		   *TODO:Currently, the MVAPICH and MPICH implementations error out if non-continuous PVARs are not started before being read.
+		   *Check if this is expected behaviour from an MPI implementation. No mention of the need to do this from a clients perspective in the 3.1 standard.*/
+		   if(continuous == 0) 
+		   {
+		       return_val = MPI_T_pvar_start(pvar_session, pvar_handles[index]);
 
+		   		if (return_val != MPI_SUCCESS) 
+				{
+					Log(0).stream() << "MPI_T_pvar_start ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
+					return;
+    			}
+
+			}
+			
 			Log(0).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
 		}
 		::num_pvars = current_num_pvars;
