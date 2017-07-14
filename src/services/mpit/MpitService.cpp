@@ -47,6 +47,7 @@ namespace
 {
     vector<Attribute> mpit_pvar_attr   { Attribute::invalid };
 	vector<MPI_T_pvar_handle> pvar_handles;
+	vector<int> pvar_count;
 
     bool      mpit_enabled  { false };
 
@@ -77,11 +78,20 @@ namespace
 		    return;
 		}
 
+		pvar_handles.reserve(current_num_pvars);
 		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &var_class, &datatype, &enumtype, 
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
+			
+			/* allocate a pvar handle that will be used later */
+			return_val = MPI_T_pvar_handle_alloc(mpit_pvar_session, index, NULL, &pvar_handles[index], &pvar_count[index]);
+			if (return_val != MPI_SUCCESS)
+			{
+				Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
+		    	return;
+  			}
 
 			Log(0).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
 		}
