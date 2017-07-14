@@ -123,14 +123,21 @@ struct TreeFormatter::TreeFormatterImpl
     }
 
     void add(const CaliperMetadataAccessInterface& db, const EntryList& list) {
-        auto path_keys = get_path_keys(db);
+        const SnapshotTreeNode* node = nullptr;
 
-        const SnapshotTreeNode* node = 
-            m_tree.add_snapshot(db, list, [&path_keys](const Attribute& attr, const Variant&){
+        if (m_path_key_names.empty()) {
+            node = m_tree.add_snapshot(db, list, [](const Attribute& attr,const Variant&){
+                    return attr.is_nested();
+                });
+        } else { 
+            auto path_keys = get_path_keys(db);
+
+            node = m_tree.add_snapshot(db, list, [&path_keys](const Attribute& attr, const Variant&){
                     return (std::find(std::begin(path_keys), std::end(path_keys), 
                                       attr) != std::end(path_keys));
                 });
-
+        }
+        
         if (!node)
             return;
 

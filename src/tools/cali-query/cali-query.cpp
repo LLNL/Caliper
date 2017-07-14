@@ -114,8 +114,12 @@ namespace
           "Print attributes in human-readable table form",
           nullptr
         },
-        { "tree" , "tree", 'T', true,
-          "Print records in the hierarchy of the given attribute(s)",
+        { "tree" , "tree", 'T', false,
+          "Print records in a tree based on the hierarchy of the selected path attributes",
+          nullptr
+        },
+        { "path-attributes", "path-attributes", 0, true,
+          "Select the path attributes for tree printers",
           "ATTRIBUTES"
         },
         { "json", "json", 'j', false,
@@ -278,7 +282,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    TreeFormatter     trx_writer(args.get("tree"), args.get("attributes"));
+    TreeFormatter     trx_writer(args.get("path-attributes"), args.get("attributes"));
     Table             tbl_writer(args.get("attributes"), args.get("sort"));
     Json              jsn_writer(args.get("attributes"));
 
