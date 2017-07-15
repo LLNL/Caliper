@@ -1,7 +1,7 @@
 /// \file CompressedSnapshotRecord.cc
 /// Experimental compressed snapshot record representation
 
-#include "CompressedSnapshotRecord.h"
+#include "caliper/common/CompressedSnapshotRecord.h"
 
 #include "caliper/SnapshotRecord.h"
 

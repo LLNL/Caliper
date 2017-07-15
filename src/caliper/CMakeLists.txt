@@ -1,7 +1,6 @@
 set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
-    CompressedSnapshotRecord.cpp
     ContextBuffer.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp

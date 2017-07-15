@@ -1,11 +1,10 @@
 #include "MockupMetadataDB.h"
 
-#include "../CompressedSnapshotRecord.h"
-
 #include "caliper/cali.h"
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
+#include "caliper/common/CompressedSnapshotRecord.h"
 #include "caliper/common/Node.h"
 
 #include <gtest/gtest.h>
