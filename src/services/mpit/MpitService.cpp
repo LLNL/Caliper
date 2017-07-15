@@ -42,14 +42,17 @@ using namespace cali;
 using namespace std;
 
 #define NAME_LEN 1024
+#define SOME_BIG_ENOUGH_VALUE 1024
 
 namespace
 {
-    vector<Attribute> mpit_pvar_attr   { Attribute::invalid };
-	vector<MPI_T_pvar_handle> pvar_handles;
+    vector<cali_id_t> mpit_pvar_attr;
+	vector<MPI_T_pvar_handle> pvar_handle;
 	vector<int> pvar_count;
+	vector<MPI_Datatype> pvar_type;
 
     bool      mpit_enabled  { false };
+	void 	  *buffer;
 
 	ConfigSet        config;
 
@@ -60,8 +63,64 @@ namespace
 	MPI_T_pvar_session pvar_session;
 	int num_pvars = 0;
 
-	/*Allocate handles for pvars*/
-	void mpit_allocate_pvar_handles() {
+	void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+
+		int size;
+
+		Log(0).stream() << "Snapshot callback has been invoked..." << endl;
+
+		for(int index=0; index < num_pvars; index++) {
+			MPI_T_pvar_read(pvar_session, pvar_handle[index], &buffer);
+		}
+	}
+
+	void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
+	    Attribute attr;
+		switch(datatype)
+		{
+			case MPI_COUNT:
+			case MPI_UNSIGNED:
+			case MPI_UNSIGNED_LONG:
+			case MPI_UNSIGNED_LONG_LONG:
+			{
+				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SKIP_EVENTS);
+				break;
+			}
+			case MPI_INT:
+			{
+				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SKIP_EVENTS);
+				break;
+			}
+			case MPI_CHAR:
+			{
+				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SKIP_EVENTS);
+				break;
+			}
+			case MPI_DOUBLE:
+			{
+				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
+                                    CALI_ATTR_ASVALUE      | 
+                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SKIP_EVENTS);
+				break;
+			}
+		}
+
+		mpit_pvar_attr.push_back(attr.id());
+	}
+
+
+	/*Allocate handles for pvars and create attributes*/
+	void mpit_allocate_pvar_handles(Caliper *c) {
 		int current_num_pvars, return_val;
 		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN];
 		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
@@ -78,8 +137,10 @@ namespace
 		    return;
 		}
 
-		pvar_handles.reserve(current_num_pvars);
+		pvar_handle.reserve(current_num_pvars);
+		pvar_type.reserve(current_num_pvars);
 		pvar_count.reserve(current_num_pvars);
+		mpit_pvar_attr.reserve(current_num_pvars);
 
 		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
@@ -88,19 +149,21 @@ namespace
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
 			
 			/* allocate a pvar handle that will be used later */
-			return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handles.data())[index], &(pvar_count.data())[index]);
+			return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
 			if (return_val != MPI_SUCCESS)
 			{
 				Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
 		    	return;
   			}
-		   
+
+		    pvar_type[index] = datatype; 
+
 		   /*Non-continuous variables need to be started before being read. If this is not done
 		   *TODO:Currently, the MVAPICH and MPICH implementations error out if non-continuous PVARs are not started before being read.
 		   *Check if this is expected behaviour from an MPI implementation. No mention of the need to do this from a clients perspective in the 3.1 standard.*/
 		   if(continuous == 0) 
 		   {
-		       return_val = MPI_T_pvar_start(pvar_session, pvar_handles[index]);
+		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index]);
 
 		   		if (return_val != MPI_SUCCESS) 
 				{
@@ -110,9 +173,14 @@ namespace
 
 			}
 			
-			Log(0).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
+			string s(pvar_name);
+			create_attribute_for_pvar(c, index, s, datatype);
+			Log(2).stream() << "PVAR at index " << index << " has an attribute associated with it" << endl;
+			
+			Log(2).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
 		}
 		::num_pvars = current_num_pvars;
+		
 	}
 
 
@@ -120,6 +188,7 @@ namespace
 	void mpit_register(Caliper *c)
 	{	
 	    int thread_provided, return_val;
+		buffer = (void*)malloc(sizeof(unsigned long long int)*SOME_BIG_ENOUGH_VALUE); 
 
     	config = RuntimeConfig::init("mpit", configdata);
     
@@ -145,7 +214,9 @@ namespace
     
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
-		mpit_allocate_pvar_handles();
+		mpit_allocate_pvar_handles(c);
+		c->events().snapshot.connect(&snapshot_cb);
+		
 	}
 
 } // anonymous namespace 
