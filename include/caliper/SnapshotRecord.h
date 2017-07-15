@@ -31,7 +31,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file SnapshotRecord.h
-/// Snapshot SnapshotRecord class
+/// \brief Snapshot record representation.
 
 #pragma once
 
@@ -50,6 +50,8 @@ class CaliperMetadataAccessInterface;
 
 // Snapshots are fixed-size, stack-allocated objects that can be used in 
 // a signal handler  
+
+/// \brief Snapshot record representation.
 
 class SnapshotRecord 
 {    
@@ -129,9 +131,11 @@ public:
 
     Entry get(const Attribute&) const;
 
-    std::vector<Entry> to_entrylist() const;
+    std::vector<Entry> 
+    to_entrylist() const;
 
-    std::map< cali::Attribute, std::vector<cali::Variant> > unpack(CaliperMetadataAccessInterface&);
+    std::map< cali::Attribute, std::vector<cali::Variant> > 
+    unpack(CaliperMetadataAccessInterface&) const;
     
     void push_record(WriteRecordFn fn) const;
 

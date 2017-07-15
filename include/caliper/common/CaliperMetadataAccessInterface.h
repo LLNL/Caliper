@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file CaliperMetadataQueryInterface.h 
-/// Abstract Caliper metadata access interface
+/// \file CaliperMetadataAccessInterface.h 
+/// \brief Abstract Caliper metadata access interface
 
 #pragma once
 
@@ -44,6 +44,8 @@ namespace cali
 {
 
 class Node;
+
+/// \brief Abstract base class for a Caliper metadata database.
 
 class CaliperMetadataAccessInterface
 {

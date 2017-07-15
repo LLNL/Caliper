@@ -127,7 +127,7 @@ SnapshotRecord::to_entrylist() const
 }
 
 std::map< Attribute, std::vector<Variant> >
-SnapshotRecord::unpack(CaliperMetadataAccessInterface& db)
+SnapshotRecord::unpack(CaliperMetadataAccessInterface& db) const
 {
     std::map< Attribute, std::vector<Variant> > rec;
 

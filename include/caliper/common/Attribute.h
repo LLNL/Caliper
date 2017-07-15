@@ -32,7 +32,7 @@
 
 /** 
  * \file Attribute.h 
- * Attribute class declaration
+ * \brief Attribute class declaration
  */
 
 #ifndef CALI_ATTRIBUTE_H
@@ -58,6 +58,14 @@ struct MetaAttributeIDs {
     static const MetaAttributeIDs invalid;
 };    
 
+/// \brief Encapsulate an attribute key.
+///
+/// All attribute meta-information (e.g., type, property flags, name) is
+/// stored in the context tree. An attribute key is a context tree 
+/// reference to a \a cali.attribute.name node. This class encapsulates
+/// an attribute key node and provides access to the attribute's
+/// metadata.
+
 class Attribute
 {
 
@@ -76,6 +84,8 @@ public:
 
     int            properties() const;
 
+    /// \brief Return the context tree node pointer that represents 
+    ///   this attribute key.
     const Node*    node() const {
         return m_node;
     }

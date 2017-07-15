@@ -174,24 +174,45 @@ public:
 
     // --- Snapshot API
 
+    /// \name Snapshot API
+    /// \{
+
     void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
     void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
     // --- Flush and I/O API
+
+    /// \}
+    /// \name Flush and I/O
+    /// \{
 
     void      flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
     void      flush_and_write(const SnapshotRecord* flush_info);
 
     // --- Annotation API
 
+    /// \}
+    /// \name Annotation API
+    /// \{
+
     cali_err  begin(const Attribute& attr, const Variant& data);
     cali_err  end(const Attribute& attr);
     cali_err  set(const Attribute& attr, const Variant& data);
     cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
 
+    /// \}
+    /// \name Blackboard access
+    /// \{
+
     Variant   exchange(const Attribute& attr, const Variant& data);
 
+    Entry     get(const Attribute& attr);
+
     // --- Direct metadata / data access API
+
+    /// \}
+    /// \name Explicit snapshot record manipulation
+    /// \{
 
     void      make_entrylist(size_t n, 
                              const Attribute attr[], 
@@ -199,11 +220,11 @@ public:
                              SnapshotRecord& list);
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
-    // --- Query API
-
-    Entry     get(const Attribute& attr);
-
     // --- Metadata Access Interface
+
+    /// \}
+    /// \name Context tree manipulation and metadata access
+    /// \{
 
     size_t    num_attributes() const;
 
@@ -219,7 +240,7 @@ public:
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
     
-    /// \brief return node by id
+    /// \brief Return node by id
     Node*     node(cali_id_t id) const;
 
     /// \brief Get or create tree path with data from given nodes in given order 
@@ -227,6 +248,8 @@ public:
 
     /// \brief Get or create tree entry with given attribute/value pair
     Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
+
+    /// \}
 
     // --- Caliper API access
 

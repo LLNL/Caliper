@@ -70,7 +70,7 @@ class CaliperMetadataDB;
  * \param comm MPI communicator.
  */
     
-void
+void 
 aggregate_over_mpi(CaliperMetadataDB& db, Aggregator& a, MPI_Comm comm);
 
 } /* namespace cali */

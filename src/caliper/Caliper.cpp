@@ -638,7 +638,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 /// \return Attribute object, or Attribute::invalid if not found.
 
 Attribute
-Caliper::get_attribute(const string& name) const
+Caliper::get_attribute(const std::string& name) const
 {
     assert(mG != 0);
 
@@ -674,7 +674,6 @@ Caliper::get_attribute(cali_id_t id) const
 
 /// \brief Get all attributes.
 /// \note This function is _not_ signal safe.
-/// \param id The attribute id
 /// \return   A vector that containing all attribute objects
 
 std::vector<Attribute>
@@ -1107,14 +1106,18 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         list.append(node);
 }
 
-/// \brief Create an Entry structure from the given attribute:value pair.
+/// \brief Create an Entry object from the given attribute:value pair.
+///
+/// Creates an Entry object from the given (attribute, value) pair with 
+/// either reference or immediate representation, depending on the storage
+/// type of \a attr. 
 ///
 /// This function is signal safe.
 ///
 /// \param attr  Attribute key
 /// \param value Value
 ///
-/// \retrun Entry object. 
+/// \return Entry object. 
 
 Entry 
 Caliper::make_entry(const Attribute& attr, const Variant& value) 
@@ -1159,7 +1162,6 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 ///
 /// \note This function is signal safe.
 ///
-/// \param n Number of nodes in node list
 /// \param attr   Attribute. Cannot have the AS VALUE property.
 /// \param data   Value 
 /// \param parent Construct path off this parent node

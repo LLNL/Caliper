@@ -1,4 +1,4 @@
-/// \file atomic-tree.hpp
+/// \file lockfree-tree.hpp
 /// \brief Intrusive tree template class
 
 #pragma once
@@ -8,6 +8,8 @@
 
 namespace util
 {
+
+/// \brief A thread-safe tree class that allows lockfree appending of nodes.
 
 template<typename T> 
 class LockfreeIntrusiveTree {

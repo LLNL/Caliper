@@ -34,7 +34,7 @@
 
 /** 
  * \file cali.h 
- * Context annotation library public C interface
+ * \brief C API for Caliper.
  */
 
 #ifndef CALI_CALI_H
@@ -52,7 +52,30 @@ extern "C" {
 #endif
 
 /*
+ * --- Type definitions ------------------------------------------------
+ */
+
+/**
+ * \brief Callback function to process a snapshot entry.
+ *
+ * Callback function definition for processing a single snapshot entry with 
+ * cali_unpack_snapshot() or cali_find_all_in_snapshot(). 
+ *
+ * \param user_arg User-defined argument, passed through by the parent function.
+ * \param attr_id The entry's attribute ID
+ * \param val The entry's value
+ * \return A zero return value tells the parent function to stop processing;
+ *   otherwise it will continue.
+ */ 
+typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
+
+/*
  * --- Attributes ------------------------------------------------------
+ */
+
+/**
+ * \name Attribute management
+ * \{
  */
 
 /**
@@ -118,8 +141,17 @@ cali_attribute_name(cali_id_t attr_id);
 cali_attr_type    
 cali_attribute_type(cali_id_t attr_id);
 
+/**
+ * \} 
+ */
+
 /*
  * --- Snapshot ---------------------------------------------------------
+ */
+
+/**
+ * \name Taking snapshots
+ * \{
  */
 
 /**
@@ -163,29 +195,37 @@ size_t
 cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
- * Callback function definition for processing a single snapshot entry with 
- * cali_unpack_snapshot() or cali_find_all_in_snapshot(). 
- *
- * \param user_arg User-defined argument, passed through by the parent function.
- * \param attr_id The entry's attribute ID
- * \param val The entry's value
- * \return A zero return value tells the parent function to stop processing;
- *   otherwise it will continue.
- */ 
-typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
+ * \}
+ * \name Processing snapshot contents
+ * \{
+ */
 
 /**
+ * \brief Unpack a snapshot buffer.
+ *
  * Unpack a snapshot that was previously obtained on the same process
  * and examine its attribute:value entries with the given \a proc_fn 
  * callback function.
  *
- * \note This function is async-signal safe if \a proc_fn is async-signal safe.
+ * The function will invoke \a proc_fn repeatedly, once for each
+ * unpacked entry. \a proc_fn should return a non-zero value if it
+ * wants to continue processing, otherwise processing will stop. Note
+ * that snapshot processing cannot be re-started from a partially read
+ * snapshot buffer position: the buffer has to be read again from the
+ * beginning.
+ *
+ * Hierarchical values will be given to \a proc_fn in top-down order.
+ *
+ * \note This function is async-signal safe if \a proc_fn is
+ *   async-signal safe.
  *
  * \param buf Snapshot buffer
  * \param bytes_read Number of bytes read from the buffer
  *   (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
- * \param user_arg User-defined parameter passed to \a proc_fn
+ * \param user_arg User-defined parameter passed through to \a proc_fn
+ *
+ * \sa cali_pull_snapshot, cali_entry_proc_fn
  */    
 void
 cali_unpack_snapshot(const unsigned char* buf,
@@ -224,7 +264,7 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param bytes_read Number of bytes read from the buffer
  *   (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
- * \param user_arg User-defined parameter passed to `proc_fn`  
+ * \param userdata User-defined parameter passed to `proc_fn`  
  */    
 
 void
@@ -234,8 +274,17 @@ cali_find_all_in_snapshot(const unsigned char* buf,
                           cali_entry_proc_fn   proc_fn,
                           void*                userdata);
 
+/**
+ * \}
+ */
+
 /*
  * --- Blackboard access API ---------------------------------
+ */
+
+/**
+ * \name Blackboard access
+ * \{
  */
 
 /**
@@ -249,9 +298,18 @@ cali_find_all_in_snapshot(const unsigned char* buf,
  */
 cali_variant_t
 cali_get(cali_id_t attr_id);
+
+/**
+ * \}
+ */
     
 /*
  * --- Instrumentation API -----------------------------------
+ */
+
+/**
+ * \name Low-level source-code annotation API
+ * \{
  */
 
 /**
@@ -283,10 +341,11 @@ cali_err
 cali_end  (cali_id_t   attr);
 
 /**
- * \brief Remove innermost value for attribute `attr` from the blackboard.
+ * \brief Remove innermost value for attribute \a attr from the blackboard.
  *
- * Creates a mismatch warning if the current value does not match `val`.
- * Parameters:
+ * Creates a mismatch warning if the current value does not match \a val.
+ * This function is primarily used by the high-level annotation API.
+ *
  * \param attr Attribute ID
  * \param val  Expected value
  */
@@ -348,6 +407,10 @@ cali_set_string_byname(const char* attr_name, const char* val);
 
 cali_err
 cali_end_byname(const char* attr_name);
+
+/**
+ * \}
+ */
 
 /*
  * --- Runtime system configuration and management

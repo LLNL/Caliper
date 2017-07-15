@@ -31,8 +31,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /** 
- * @file node.h 
- * Node class declaration
+ * \file Node.h 
+ * \brief Context tree node class.
  */
 
 #ifndef CALI_NODE_H
@@ -55,6 +55,10 @@ namespace cali
 //
 // --- Node base class 
 //
+
+/// \brief A context tree node.
+///
+/// Represents a context tree node and its (attribute key, value) pair.
 
 class Node : public IdType, public util::LockfreeIntrusiveTree<Node> 
 {
@@ -95,14 +99,16 @@ public:
     bool      check_written()   { return m_written.exchange(true); }
     void      write_path(WriteRecordFn recfn);
     
-    /// @name Serialization API
-    /// @{
+    /// \name Serialization API
+    /// \{
 
     void      push_record(WriteRecordFn recfn) const;
     
     static const RecordDescriptor& record_descriptor() { return s_record; }
 
     RecordMap record() const;
+
+    /// \}
 };
 
 } // namespace cali
