@@ -30,8 +30,15 @@ import shlex
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    'breathe',
 ]
+
+# Import doxygen docs in sphinx
+breathe_projects = {
+    'caliper':'@CMAKE_BINARY_DIR@/doc/doxygen/xml',
+}
+
+breathe_default_project = 'caliper'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['sphinx_templates']
