@@ -9,7 +9,7 @@
 //
 //  * Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list // //    conditions and the disclaimer (as noted below) in the documentation and/or other materials
+//  * Redistributions in binary form must reproduce the above copyright notice, this list of
 //    conditions and the disclaimer (as noted below) in the documentation and/or other materials
 //    provided with the distribution.
 //  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
@@ -27,9 +27,11 @@
 //
 /// @file MpitService.cpp
 /// @brief Caliper MPIT service
+
 #include "../CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
@@ -43,6 +45,7 @@ using namespace std;
 
 #define NAME_LEN 1024
 #define SOME_BIG_ENOUGH_VALUE 1024
+#define MAX_COUNT 10
 
 namespace
 {
@@ -52,7 +55,7 @@ namespace
 	vector<MPI_Datatype> pvar_type;
 
     bool      mpit_enabled  { false };
-	void 	  *buffer;
+	void 	 *buffer;
 
 	ConfigSet        config;
 
@@ -60,7 +63,7 @@ namespace
     	ConfigSet::Terminator
 	};
 
-	MPI_T_pvar_session pvar_session;
+	static MPI_T_pvar_session pvar_session;
 	int num_pvars = 0;
 
 	void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
@@ -70,7 +73,42 @@ namespace
 		Log(0).stream() << "Snapshot callback has been invoked..." << endl;
 
 		for(int index=0; index < num_pvars; index++) {
-			MPI_T_pvar_read(pvar_session, pvar_handle[index], &buffer);
+			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
+			switch(pvar_type[index])
+			{
+				
+				case MPI_COUNT:
+				case MPI_UNSIGNED:
+				case MPI_UNSIGNED_LONG:
+				case MPI_UNSIGNED_LONG_LONG:
+				{
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
+					
+					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					break;
+				}
+				case MPI_INT:
+				{
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_INT, buffer, pvar_count[index]));
+					
+					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					break;
+				}
+				case MPI_CHAR:
+				{
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_STRING, buffer, pvar_count[index]));
+					
+					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					break;
+				}
+				case MPI_DOUBLE:
+				{
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
+					
+					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					break;
+				}
+			}
 		}
 	}
 
@@ -149,6 +187,7 @@ namespace
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
 			
 			/* allocate a pvar handle that will be used later */
+			pvar_count[index] = 0;
 			return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
 			if (return_val != MPI_SUCCESS)
 			{
@@ -188,9 +227,9 @@ namespace
 	void mpit_register(Caliper *c)
 	{	
 	    int thread_provided, return_val;
-		buffer = (void*)malloc(sizeof(unsigned long long int)*SOME_BIG_ENOUGH_VALUE); 
 
     	config = RuntimeConfig::init("mpit", configdata);
+		buffer = (void*)malloc(sizeof(unsigned long long int)*SOME_BIG_ENOUGH_VALUE); 
     
 		/* Initialize MPI_T */
 		return_val = MPI_T_init_thread(MPI_THREAD_SINGLE, &thread_provided);
