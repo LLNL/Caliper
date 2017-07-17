@@ -50,6 +50,7 @@ static const struct propmap_t {
   { "task_scope",    CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK  },
   { "skip_events",   CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS },
   { "hidden",        CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN      },
+  { "nested",        CALI_ATTR_NESTED,        CALI_ATTR_NESTED      },
   { 0, CALI_ATTR_DEFAULT, CALI_ATTR_DEFAULT }
 };
 
