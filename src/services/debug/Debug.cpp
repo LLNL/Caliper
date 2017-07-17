@@ -38,8 +38,8 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/csv/CsvSpec.h"
 #include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
 
 #include <mutex>
 
@@ -58,7 +58,7 @@ void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type type
     cali_prop2string(*prop, buf, 256);
     
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_create_attr (name=" << name
+    Log(1).stream() << "Event: pre_create_attr (name=" << name
                     << ", type=" << cali_type2string(type)
                     << ", prop=" << buf << ")" << endl;
 }
@@ -66,25 +66,25 @@ void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type type
 void create_attr_cb(Caliper* c, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
+    Log(1).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
 }
 
 void begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
 }
 
 void end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << "Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
 }
 
 void set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << "Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
 }
 
 const char* scopestrings[] = { "", "process", "thread", "", "task" };
@@ -122,37 +122,52 @@ string format_triggerinfo(const Entry* entry)
 void create_scope_cb(Caliper* c, cali_context_scope_t scope)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: create_scope (scope=" << scope2string(scope) << ")" << endl;
+    Log(1).stream() << "Event: create_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
 void release_scope_cb(Caliper* c, cali_context_scope_t scope)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
+    Log(1).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
 }
 
 void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord*)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
+    Log(1).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
                     << ")" << endl;
 }
 
+std::ostream& print_snapshot_record(std::ostream& os, const SnapshotRecord* s)
+{
+    os << "{ references: ";
+    
+    int c = 0;
+    for (size_t i = 0; i < s->num_nodes(); ++i)
+        os << (c++ > 0 ? "," : "") << s->data().node_entries[i]->id();
+
+    os << "; immediate: ";
+    
+    c = 0;
+    for (size_t i = 0; i < s->num_immediate(); ++i)
+        os << (c++ > 0 ? "," : "")
+           << s->data().immediate_attr[i] << ":"
+           << s->data().immediate_data[i];
+
+    return (os << " }");
+}
+    
 void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* sbuf)
 {
-    lock_guard<mutex> lock(dbg_mutex);
+    lock_guard<mutex> lock(dbg_mutex);    
 
-    auto write_rec_fn = [](const RecordDescriptor& rec, const int count[], const Variant* data[]) {
-        CsvSpec::write_record(Log(2).stream() << "Event: process_snapshot: ", rec, count, data);
-    };
-
-    sbuf->push_record(write_rec_fn);
+    print_snapshot_record( Log(1).stream() << "Event: process_snapshot: ", sbuf ) << std::endl;
 }
 
 void finish_cb(Caliper* c)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(2).stream() << "Event: finish" << endl;
+    Log(1).stream() << "Event: finish" << endl;
 }
 
 void debug_service_register(Caliper* c)

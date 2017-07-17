@@ -321,27 +321,6 @@ struct Caliper::GlobalData
 
         return key_attr;
     }
-
-    // temporary - will go away
-    void
-    write_new_attribute_nodes(WriteRecordFn write_rec) {
-        if (new_attributes.exchange(false)) {
-            std::lock_guard<std::mutex>
-                g(attribute_lock);
-
-            // special handling for bootstrap nodes: write all nodes in-order
-            if (!bootstrap_nodes_written.exchange(true))
-                for (cali_id_t id = 0; id <= type_attr.id(); ++id) {
-                    Node* node = default_thread_scope->tree.node(id);
-
-                    if (node && !node->check_written())
-                        node->push_record(write_rec);
-                }
-            
-            for (auto &p : attribute_nodes)
-                p.second->write_path(write_rec);
-        }
-    }
 };
 
 // --- static member initialization

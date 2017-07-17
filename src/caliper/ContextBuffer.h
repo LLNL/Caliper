@@ -79,12 +79,6 @@ public:
     void     snapshot(SnapshotRecord* sbuf) const;
 
     /// @}
-    /// @name Serialization API
-    /// @{
-
-    void     push_record(WriteRecordFn fn) const;
-
-    /// @}
     /// @name Statistics
     /// @{
 

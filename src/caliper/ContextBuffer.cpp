@@ -38,7 +38,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Attribute.h"
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 
 #include "caliper/common/util/spinlock.hpp"
@@ -283,19 +282,6 @@ struct ContextBuffer::ContextBufferImpl
             sbuf->append(m_num_nodes, nodeptr, n, attrptr, dataptr);
     }
 
-    void push_record(WriteRecordFn fn) {
-        std::lock_guard<util::spinlock> lock(m_lock);
-
-        int               n[3] = { static_cast<int>(m_num_nodes), 
-                                   static_cast<int>(m_attr.size()-m_num_hidden-m_num_nodes),
-                                   static_cast<int>(m_data.size()-m_num_hidden-m_num_nodes) };
-        const Variant* data[3] = { m_data.data(), 
-                                   m_attr.data() + m_num_nodes + m_num_hidden, 
-                                   m_data.data() + m_num_nodes + m_num_hidden };
-
-        fn(ContextRecord::record_descriptor(), n, data);
-    }
-
     std::ostream& print_statistics(std::ostream& os) const {
         os << "Blackboard buffer: max " << m_max_entries << " entries";
 
@@ -350,11 +336,6 @@ cali_err ContextBuffer::unset(const Attribute& attr)
 void ContextBuffer::snapshot(SnapshotRecord* sbuf) const
 {
     mP->snapshot(sbuf);
-}
-
-void ContextBuffer::push_record(WriteRecordFn fn) const
-{
-    mP->push_record(fn);
 }
 
 std::ostream& ContextBuffer::print_statistics(std::ostream& os) const

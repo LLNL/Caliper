@@ -129,6 +129,9 @@ public:
         return addr;
     }    
 
+    std::size_t num_nodes() const     { return m_sizes.n_nodes;     }
+    std::size_t num_immediate() const { return m_sizes.n_immediate; }
+    
     Entry get(const Attribute&) const;
 
     std::vector<Entry> 
@@ -136,8 +139,6 @@ public:
 
     std::map< cali::Attribute, std::vector<cali::Variant> > 
     unpack(CaliperMetadataAccessInterface&) const;
-    
-    void push_record(WriteRecordFn fn) const;
 
 private:
     

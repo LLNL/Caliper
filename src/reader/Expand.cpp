@@ -39,7 +39,6 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
 #include "caliper/common/Attribute.h"
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 
 #include "caliper/common/util/split.hpp"
@@ -81,26 +80,6 @@ struct Expand::ExpandImpl
             else
                 m_selected.insert(s);
         }
-    }
-
-    void print(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-        int nentry = 0;
-
-        for (auto const &entry : ContextRecord::unpack(rec, db)) {
-            if (entry.second.empty())
-                continue;
-            if ((!m_selected.empty() && m_selected.count(entry.first) == 0) || m_deselected.count(entry.first))
-                continue;
-
-            m_os << (nentry++ ? "," : "") << entry.first << "=";
-
-            int nelem = 0;
-            for (auto it = entry.second.rbegin(); it != entry.second.rend(); ++it)
-                m_os << (nelem++ ? "/" : "") << *it;
-        }
-
-        if (nentry > 0)
-            m_os << endl;
     }
 
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -166,12 +145,6 @@ Expand::Expand(ostream& os, const string& field_string)
 Expand::~Expand()
 {
     mP.reset();
-}
-
-void
-Expand::operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) const
-{
-    mP->print(db, rec);
 }
 
 void 

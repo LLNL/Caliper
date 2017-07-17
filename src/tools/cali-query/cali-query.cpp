@@ -164,22 +164,6 @@ namespace
         }
     };
 
-    /// FilterStep helper struct
-    /// Basically the chain link in the processing chain.
-    /// Passes result of @param m_filter_fn to @param m_push_fn
-    struct FilterStep {
-        RecordFilterFn  m_filter_fn; ///< This processing step
-        RecordProcessFn m_push_fn;   ///< Next processing step
-
-        FilterStep(RecordFilterFn filter_fn, RecordProcessFn push_fn) 
-            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
-            { }
-
-        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            m_filter_fn(db, rec, m_push_fn);
-        }
-    };
-
     /// SnapshotFilterStep helper struct
     /// Basically the chain link in the processing chain.
     /// Passes result of @param m_filter_fn to @param m_push_fn

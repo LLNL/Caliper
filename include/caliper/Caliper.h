@@ -127,8 +127,6 @@ public:
             flush_cbvec;
         typedef util::callback<void(Caliper*,const SnapshotRecord*)>
             write_cbvec;
-        typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
-            write_record_cbvec;
                                     
         pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
@@ -157,8 +155,6 @@ public:
         write_cbvec            pre_write_evt;
         process_snapshot_cbvec write_snapshot;
         write_cbvec            post_write_evt;
-
-        write_record_cbvec     write_record;
     };
 
     Events&   events();

@@ -59,7 +59,6 @@ public:
 
     ~Expand();
 
-    void operator()(CaliperMetadataAccessInterface&, const RecordMap&) const;
     void operator()(CaliperMetadataAccessInterface&, const EntryList&) const;
 };
 
