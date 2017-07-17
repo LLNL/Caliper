@@ -70,7 +70,7 @@ namespace
 
 		int size;
 
-		Log(0).stream() << "Snapshot callback has been invoked..." << endl;
+		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
 		for(int index=0; index < num_pvars; index++) {
 			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
@@ -84,28 +84,28 @@ namespace
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
 					
-					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					Log(3).stream() << "Index and Value: " << index << " " << ((unsigned long long int *)buffer)[0] << endl;
 					break;
 				}
 				case MPI_INT:
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_INT, buffer, pvar_count[index]));
 					
-					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					Log(3).stream() << "Index and Value: " <<  index << " " << ((int *)buffer)[0] << endl;
 					break;
 				}
 				case MPI_CHAR:
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_STRING, buffer, pvar_count[index]));
 					
-					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					Log(3).stream() << "Index and Value: " <<  index << "  " << ((char *)buffer)[0] << endl;
 					break;
 				}
 				case MPI_DOUBLE:
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
-					Log(2).stream() << "ATTR and COUNT " <<  mpit_pvar_attr[index] << " " << pvar_count[index] << endl;
+					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
 					break;
 				}
 			}
@@ -154,13 +154,14 @@ namespace
 		}
 
 		mpit_pvar_attr.push_back(attr.id());
+		Log(1).stream() << "Attribute created with name: " << attr.name() << endl;
 	}
 
 
 	/*Allocate handles for pvars and create attributes*/
 	void mpit_allocate_pvar_handles(Caliper *c) {
 		int current_num_pvars, return_val;
-		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN];
+		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
 		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
 		MPI_Datatype datatype;
 		MPI_T_enum enumtype;
@@ -183,6 +184,8 @@ namespace
 		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
+			desc_len = name_len = NAME_LEN;
+
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &var_class, &datatype, &enumtype, 
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
 			
@@ -214,9 +217,7 @@ namespace
 			
 			string s(pvar_name);
 			create_attribute_for_pvar(c, index, s, datatype);
-			Log(2).stream() << "PVAR at index " << index << " has an attribute associated with it" << endl;
 			
-			Log(2).stream() << "PVAR at index " << index << " has name: " << pvar_name << endl;
 		}
 		::num_pvars = current_num_pvars;
 		
