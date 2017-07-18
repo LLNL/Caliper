@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Aggregator.h
-/// Aggregator declarations
+/// \file Aggregator.h
+/// \brief Defines the Aggregator class
 
 #ifndef CALI_AGGREGATOR_H
 #define CALI_AGGREGATOR_H
@@ -46,6 +46,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Post-processing aggregator
+/// \ingroup ReaderAPI
+    
 class Aggregator 
 {
     struct AggregatorImpl;

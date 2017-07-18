@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file SimpleReader.h
-///SimpleReader declarations
+/// \file SimpleReader.h
+/// \brief SimpleReader declarations
 
 #ifndef CALI_SIMPLEREADER_H
 #define CALI_SIMPLEREADER_H
@@ -55,6 +55,9 @@ class CsvSpec;
 
 typedef std::map<std::string, std::string> ExpandedRecordMap;
 
+/// \brief Read .cali file and provide expanded snapshot records
+/// \ingroup ReaderAPI
+    
 class SimpleReader
 {
     private:

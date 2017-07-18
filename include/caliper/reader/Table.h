@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Table.h
-/// Table output formatter declarations
+/// \file Table.h
+/// \brief Table output formatter
 
 #ifndef CALI_TABLE_H
 #define CALI_TABLE_H
@@ -48,6 +48,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Print a set of snapshot records in a human-readable table
+/// \ingroup ReaderAPI
+    
 class Table 
 {
     struct TableImpl;

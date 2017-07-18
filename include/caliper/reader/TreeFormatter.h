@@ -31,7 +31,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file TreeFormatter.h
-/// TreeFormatter output formatter declarations
+/// \brief TreeFormatter output formatter
 
 #pragma once
 
@@ -47,6 +47,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Print a set of snapshot records in a tree 
+/// \ingroup ReaderAPI
+    
 class TreeFormatter 
 {
     struct TreeFormatterImpl;

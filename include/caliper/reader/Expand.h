@@ -48,6 +48,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Prints expanded snapshot records in CSV form
+/// \ingroup ReaderAPI
+    
 class Expand 
 {
     struct ExpandImpl;

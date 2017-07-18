@@ -32,19 +32,6 @@
 
 /// \file  SnapshotTree.h
 /// \brief Classes to organize a set of snapshots in tree form
-///
-/// A snapshot tree organizes Caliper snapshot records in a tree based
-/// on the context tree hierarchy information in one or more entries
-/// in the record. This hierarchy information comes from nested
-/// `begin`/`end` regions, or from list assignments. Typical examples
-/// are nested annotations, or call paths determined by stack
-/// unwinding.
-///
-/// To build a snapshot tree, users must select one or more _path_
-/// attributes from each snapshot record. The `SnapshotTree` class
-/// merges paths from multiple snapshot records to form a tree. The
-/// non-path snapshot record entries are added as _attributes_ to the
-/// record's snapshot tree node.
 
 #pragma once
 
@@ -69,7 +56,7 @@ class CaliperMetadataAccessInterface;
 // --- SnapshotTree class
 //
 
-/// A Snapshot tree node
+/// \brief A Snapshot tree node
 ///
 /// A snapshot tree node represents a node in the snapshot tree.
 /// The node contains the key/value of the path attribute, and - if
@@ -95,7 +82,9 @@ class CaliperMetadataAccessInterface;
 /// for (SnapshotTreeNode* node = ... ; node; node = node->parent())
 ///     std::cout << node->label_value().to_string() << " ";
 /// ```
-
+/// \sa SnapshotTree
+/// \ingroup ReaderAPI
+    
 class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
 {
     util::LockfreeIntrusiveTree<SnapshotTreeNode>::Node m_treenode;
@@ -121,22 +110,22 @@ class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
 
 public:
 
-    /// Return the label attribute key.
+    /// \brief Return the label attribute key.
     Attribute label_key()   const { return m_label_key;   }
-    /// Return the label value.
+    /// \brief Return the label value.
     Variant   label_value() const { return m_label_value; }
 
-    /// Return `false` if the node represents a snapshot record,
-    /// otherwise (i.e., if the node is empty) return `true`.
+    /// \brief Return `false` if the node represents a snapshot record,
+    ///   otherwise (i.e., if the node is empty) return `true`.
     bool      is_empty()    const { return m_empty;       }
 
-    /// Return `true` if the label equals the given (\a key,\a value) pair.
+    /// \brief Return `true` if the label equals the given (\a key,\a value) pair.
     bool label_equals(const Attribute& key, const Variant& value) const {
         return m_label_key == key && m_label_value == value;
     }
 
-    /// Access the non-path attributes of the snapshot associated
-    /// with this node.
+    /// \brief Access the non-path attributes of the snapshot associated
+    ///   with this node.
     const std::map<cali::Attribute, cali::Variant>& attributes() const {
         return m_attributes;
     }
@@ -149,9 +138,24 @@ public:
 // --- SnapshotTree
 //
 
-/// \class SnapshotTree
 /// \brief Build up and access a snapshot tree
-
+///
+/// A snapshot tree organizes Caliper snapshot records in a tree based
+/// on the context tree hierarchy information in one or more entries
+/// in the record. This hierarchy information comes from nested
+/// `begin`/`end` regions, or from list assignments. Typical examples
+/// are nested annotations, or call paths determined by stack
+/// unwinding.
+///
+/// To build a snapshot tree, users must select one or more _path_
+/// attributes from each snapshot record. The SnapshotTree class
+/// merges paths from multiple snapshot records to form a tree. The
+/// non-path snapshot record entries are added as _attributes_ to the
+/// record's snapshot tree node.
+///
+/// \sa SnapshotTreeNode
+/// \ingroup ReaderAPI
+    
 class SnapshotTree
 {
     struct SnapshotTreeImpl;
@@ -159,10 +163,10 @@ class SnapshotTree
 
 public:
 
-    /// Constructor. Creates a default root node.
+    /// \brief Creates a default root node.
     SnapshotTree();
 
-    /// Constructor. Create root node with label (\a attr, \a value).
+    /// \brief Create root node with label (\a attr, \a value).
     SnapshotTree(const Attribute& attr, const Variant& value);
 
     ~SnapshotTree();
@@ -192,7 +196,7 @@ public:
                  const EntryList&  list,
                  IsPathPredicateFn is_path);
 
-    /// Return the snapshot tree's root node.
+    /// \brief Return the snapshot tree's root node.
     const SnapshotTreeNode*
     root() const;
 };

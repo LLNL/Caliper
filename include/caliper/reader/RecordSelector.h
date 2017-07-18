@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file RecordSelector.h
-///RecordProcessor declarations
+/// \file RecordSelector.h
+/// \brief Defines RecordSelector
 
 #ifndef CALI_RECORDSELECTOR_H
 #define CALI_RECORDSELECTOR_H
@@ -45,6 +45,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Filter for snapshot records
+/// \ingroup ReaderAPI
+    
 class RecordSelector 
 {
     struct RecordSelectorImpl;

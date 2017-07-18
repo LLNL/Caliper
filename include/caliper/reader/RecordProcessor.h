@@ -30,8 +30,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file RecordProcessor.h
-///RecordProcessor declarations
+/// \file RecordProcessor.h
+/// \brief Various type definitions for the reader API
+/// \ingroup ReaderAPI
 
 #ifndef CALI_RECORDPROCESSOR_H
 #define CALI_RECORDPROCESSOR_H

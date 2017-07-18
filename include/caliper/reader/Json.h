@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Json.h
-/// Json output formatter declarations
+/// \file Json.h
+/// Json output formatter
 
 #ifndef CALI_JSON_H
 #define CALI_JSON_H
@@ -48,6 +48,8 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Prints snapshot records as JSON
+/// \ingroup ReaderAPI
 class Json 
 {
     struct JsonImpl;

@@ -68,6 +68,8 @@ class CaliperMetadataDB;
  *    records, and receives the result on rank 0. Other ranks may 
  *    receive partial results.
  * \param comm MPI communicator.
+ *
+ * \ingroup ReaderAPI
  */
     
 void 

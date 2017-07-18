@@ -48,6 +48,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Prints snapshot records using a user-defined format string
+/// \ingroup ReaderAPI
+    
 class Format 
 {
     struct FormatImpl;
