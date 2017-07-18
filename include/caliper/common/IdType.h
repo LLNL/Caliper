@@ -31,8 +31,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /** 
- * @file attribute.h 
- * Attribute class declaration
+ * \file IdType.h 
+ * \brief IdType class declaration
  */
 
 #ifndef CALI_IDTYPE_H
@@ -43,6 +43,8 @@
 
 namespace cali
 {
+
+/// \brief Base class for something with a unique numeric ID. 
 
 class IdType {
     cali_id_t m_id;

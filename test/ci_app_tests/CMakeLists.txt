@@ -5,19 +5,22 @@ include_directories("../../src/caliper")
 set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
-  ci_test_macros)
+  ci_test_binding
+  ci_test_macros
+  ci_test_nesting
+  ci_test_postprocess_snapshot
+  ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
   ci_test_c_ann
   ci_test_c_snapshot)
-
-if (CALIPER_HAVE_GOTCHA)
-  list(APPEND CALIPER_CI_CXX_TEST_APPS ci_test_thread)
-endif()
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
   target_link_libraries(${app} caliper)
 endforeach()
+
+target_link_libraries(ci_test_thread  Threads::Threads)
+target_link_libraries(ci_test_nesting Threads::Threads)
 
 foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
@@ -30,11 +33,11 @@ set(PYTHON_SCRIPTS
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
+  test_thread.py
   calipertest.py)
 
 if (CALIPER_HAVE_GOTCHA)
-  target_link_libraries(ci_test_thread Threads::Threads)
-  list(APPEND PYTHON_SCRIPTS test_thread.py)
+  list(APPEND PYTHON_SCRIPTS test_pthread.py)
 endif()
 
 foreach(file ${PYTHON_SCRIPTS})

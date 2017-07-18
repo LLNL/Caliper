@@ -12,7 +12,7 @@ class CaliperThreadTest(unittest.TestCase):
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'thread-trace',
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -20,14 +20,18 @@ class CaliperThreadTest(unittest.TestCase):
         query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = calitest.get_snapshots_from_text(query_output)
 
-        self.assertTrue(len(snapshots) > 8)
+        self.assertTrue(len(snapshots) >= 16)
 
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, {'local', 'global', 'function'}))
-        self.assertTrue(calitest.has_snapshot_with_keys(
-            snapshots, {'my_thread_id', 'pthread.id'}))
+        self.assertFalse(calitest.has_snapshot_with_keys(
+            snapshots, {'local', 'my_thread_id' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
-            snapshots, {'my_thread_id' : '42', 
+            snapshots, {'my_thread_id' : '16', 
+                        'function'     : 'thread_proc', 
+                        'global'       : '999' }))
+        self.assertTrue(calitest.has_snapshot_with_attributes(
+            snapshots, {'my_thread_id' : '49', 
                         'function'     : 'thread_proc', 
                         'global'       : '999' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(

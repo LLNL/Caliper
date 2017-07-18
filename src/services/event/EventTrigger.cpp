@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -44,6 +44,7 @@
 #include "caliper/common/util/split.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 #include <map>
 #include <mutex>
@@ -54,14 +55,14 @@ using namespace cali;
 using namespace std;
 
 
-namespace 
+namespace
 {
 
 const ConfigSet::Entry   configdata[] = {
     { "trigger", CALI_TYPE_STRING, "",
       "List of attributes that trigger measurement snapshots.",
       "Colon-separated list of attributes that trigger measurement snapshots.\n"
-      "If empty, all user attributes trigger measurement snapshots." 
+      "If empty, all user attributes trigger measurement snapshots."
     },
     { "enable_snapshot_info", CALI_TYPE_BOOL, "true",
       "Enable snapshot info records",
@@ -82,11 +83,6 @@ struct EventAttributes {
     Attribute lvl_attr;
 };
 
-typedef std::map<cali_id_t, EventAttributes> AttributeMap;
-
-std::mutex               event_attributes_lock;
-AttributeMap             event_attributes_map;
-
 std::vector<std::string> trigger_attr_names;
 
 Attribute                trigger_begin_attr { Attribute::invalid };
@@ -95,26 +91,11 @@ Attribute                trigger_set_attr   { Attribute::invalid };
 
 Attribute                trigger_level_attr { Attribute::invalid };
 
-    
-void pre_create_attribute_cb(Caliper* c, const std::string& name, cali_attr_type* type, int* prop)
+Attribute                event_info_attr    { Attribute::invalid };
+
+EventAttributes
+make_event_attributes(Caliper* c, const std::string& name, cali_attr_type type, int prop)
 {
-    if (trigger_attr_names.empty() || *prop & CALI_ATTR_SKIP_EVENTS)
-        return;
-
-    // add SKIP_EVENTS property to all non-trigger attributes
-    
-    std::vector<std::string>::iterator it =
-        std::find(trigger_attr_names.begin(), trigger_attr_names.end(), name);
-    
-    if (it == trigger_attr_names.end())
-        *prop |= CALI_ATTR_SKIP_EVENTS;
-}
-
-void create_attribute_cb(Caliper* c, const Attribute& attr)
-{
-    if (attr.skip_events())
-        return;
-
     EventAttributes event_attributes;
 
     struct evt_attr_setup_t {
@@ -127,52 +108,72 @@ void create_attribute_cb(Caliper* c, const Attribute& attr)
     };
 
     for ( evt_attr_setup_t setup : evt_attr_setup ) {
-        std::string name = setup.prefix;
-        name.append(attr.name());
+        std::string s = setup.prefix;
+        s.append(name);
 
         *(setup.attr_ptr) =
-            c->create_attribute(name, attr.type(), attr.properties() | CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute(s, type, prop | CALI_ATTR_SKIP_EVENTS);
     }
-        
-    std::string name = "cali.lvl.";
-    name.append(std::to_string(attr.id()));
 
-    event_attributes.lvl_attr = 
-        c->create_attribute(name, CALI_TYPE_INT, 
-                            CALI_ATTR_ASVALUE     | 
-                            CALI_ATTR_HIDDEN      | 
-                            CALI_ATTR_SKIP_EVENTS | 
-                            (attr.properties() & CALI_ATTR_SCOPE_MASK));
+    std::string s = "cali.lvl#";
+    s.append(name);
 
-    std::lock_guard<std::mutex>
-        g(event_attributes_lock);
-        
-    event_attributes_map.insert(std::make_pair(attr.id(), event_attributes));
+    event_attributes.lvl_attr =
+        c->create_attribute(s, CALI_TYPE_INT,
+                            CALI_ATTR_ASVALUE     |
+                            CALI_ATTR_HIDDEN      |
+                            CALI_ATTR_SKIP_EVENTS |
+                            (prop & CALI_ATTR_SCOPE_MASK));
+
+    return event_attributes;
 }
 
-bool get_event_attributes(const Attribute& attr, EventAttributes& evt_attr)
+void
+pre_create_attribute_cb(Caliper* c, const std::string& name, cali_attr_type type, int* prop,  Node** node)
 {
-    std::lock_guard<std::mutex>
-        g(event_attributes_lock);
+    if (*prop & CALI_ATTR_SKIP_EVENTS)
+        return;
 
-    auto it = event_attributes_map.find(attr.id());
+    std::vector<std::string>::iterator it =
+        std::find(trigger_attr_names.begin(), trigger_attr_names.end(), name);
 
-    if (it != event_attributes_map.end()) {
-        evt_attr = it->second;
-        return true;
+    if (trigger_attr_names.size() > 0 && it == trigger_attr_names.end()) {
+        // Add SKIP_EVENTS property to all non-trigger attributes
+        *prop |= CALI_ATTR_SKIP_EVENTS;
+    } else if (enable_snapshot_info) {
+        // Make and append derived event attributes
+        EventAttributes evt_attr   = make_event_attributes(c, name, type, *prop);
+        cali_id_t       evt_ids[4] = { evt_attr.begin_attr.id(),
+                                       evt_attr.set_attr.id(),
+                                       evt_attr.end_attr.id(),
+                                       evt_attr.lvl_attr.id() };
+
+        Variant v_events(CALI_TYPE_USR, evt_ids, sizeof(evt_ids));
+
+        *node = c->make_tree_entry(event_info_attr, v_events, *node);
+
+        assert(*node);
     }
-
-    return false;
 }
 
 void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    EventAttributes event_attr;
-
-    if (!get_event_attributes(attr, event_attr))
-        return;
-
     if (enable_snapshot_info) {
+        Variant v_ids = attr.get(event_info_attr);
+
+        assert(!v_ids.empty());
+
+        const cali_id_t* evt_info_attr_ids =
+            static_cast<const cali_id_t*>(v_ids.data());
+
+        assert(evt_info_attr_ids != nullptr);
+
+        Attribute begin_attr = c->get_attribute(evt_info_attr_ids[0]);
+        Attribute lvl_attr   = c->get_attribute(evt_info_attr_ids[3]);
+
+        assert(begin_attr != Attribute::invalid);
+        assert(lvl_attr   != Attribute::invalid);
+
         uint64_t  lvl = 1;
         Variant v_lvl(lvl), v_p_lvl;
 
@@ -183,18 +184,18 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
         // when two threads update a process-scope attribute.
         // Can fix that with a more general c->update(update_fn) function
 
-        v_p_lvl = c->exchange(event_attr.lvl_attr, v_lvl);
+        v_p_lvl = c->exchange(lvl_attr, v_lvl);
         lvl     = v_p_lvl.to_uint();
 
         if (lvl > 0) {
             v_lvl = Variant(++lvl);
-            c->set(event_attr.lvl_attr, v_lvl);
+            c->set(lvl_attr, v_lvl);
         }
 
         // Construct the trigger info entry
 
-        Attribute attrs[3] = { trigger_level_attr, trigger_begin_attr, event_attr.begin_attr };
-        Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
+        Attribute attrs[3] = { trigger_level_attr, trigger_begin_attr, begin_attr };
+        Variant    vals[3] = { v_lvl, Variant(attr.id()), value };
 
         SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
         SnapshotRecord trigger_info(trigger_info_data);
@@ -208,23 +209,30 @@ void event_begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    EventAttributes event_attr;
-
-    if (!get_event_attributes(attr, event_attr))
-        return;
-
     if (enable_snapshot_info) {
+        Variant v_ids = attr.get(event_info_attr);
+
+        assert(!v_ids.empty());
+
+        const cali_id_t* evt_info_attr_ids =
+            static_cast<const cali_id_t*>(v_ids.data());
+
+        assert(evt_info_attr_ids != nullptr);
+
+        Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
+        Attribute lvl_attr = c->get_attribute(evt_info_attr_ids[3]);
+
         uint64_t  lvl(1);
         Variant v_lvl(lvl);
 
         // The level for set() is always 1
         // FIXME: ... except for set_path()??
-        c->set(event_attr.lvl_attr, v_lvl);
+        c->set(lvl_attr, v_lvl);
 
         // Construct the trigger info entry
 
-        Attribute attrs[3] = { trigger_level_attr, trigger_set_attr, event_attr.set_attr };
-        Variant   vals[3]  = { v_lvl, Variant(attr.id()), value };
+        Attribute attrs[3] = { trigger_level_attr, trigger_set_attr, set_attr };
+        Variant    vals[3] = { v_lvl, Variant(attr.id()), value };
 
         SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
         SnapshotRecord trigger_info(trigger_info_data);
@@ -238,32 +246,39 @@ void event_set_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 {
-    EventAttributes event_attr;
-
-    if (!get_event_attributes(attr, event_attr))
-        return;
-
     if (enable_snapshot_info) {
+        Variant v_ids = attr.get(event_info_attr);
+
+        assert(!v_ids.empty());
+
+        const cali_id_t* evt_info_attr_ids =
+            static_cast<const cali_id_t*>(v_ids.data());
+
+        assert(evt_info_attr_ids != nullptr);
+
+        Attribute end_attr = c->get_attribute(evt_info_attr_ids[2]);
+        Attribute lvl_attr = c->get_attribute(evt_info_attr_ids[3]);
+
         uint64_t  lvl = 0;
         Variant v_lvl(lvl), v_p_lvl;
 
         // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
         // If previous level was > 1, we need to update it again
 
-        v_p_lvl = c->exchange(event_attr.lvl_attr, v_lvl);
+        v_p_lvl = c->exchange(lvl_attr, v_lvl);
 
         if (v_p_lvl.empty())
             return;
-        
+
         lvl     = v_p_lvl.to_uint();
 
         if (lvl > 1)
-            c->set(event_attr.lvl_attr, Variant(--lvl));
+            c->set(lvl_attr, Variant(--lvl));
 
         // Construct the trigger info entry with previous level
 
-        Attribute attrs[3] = { trigger_level_attr, trigger_end_attr, event_attr.end_attr };
-        Variant   vals[3]  = { v_p_lvl, Variant(attr.id()), value };
+        Attribute attrs[3] = { trigger_level_attr, trigger_end_attr, end_attr };
+        Variant    vals[3] = { v_p_lvl, Variant(attr.id()), value };
 
         SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
         SnapshotRecord trigger_info(trigger_info_data);
@@ -277,13 +292,11 @@ void event_end_cb(Caliper* c, const Attribute& attr, const Variant& value)
 
 void event_trigger_register(Caliper* c)
 {
-    event_attributes_lock.unlock();
-    
     // parse the configuration & set up triggers
 
     config = RuntimeConfig::init("event", configdata);
 
-    util::split(config.get("trigger").to_string(), ':', 
+    util::split(config.get("trigger").to_string(), ':',
                 std::back_inserter(trigger_attr_names));
 
     enable_snapshot_info = config.get("enable_snapshot_info").to_bool();
@@ -291,20 +304,30 @@ void event_trigger_register(Caliper* c)
     // register trigger events
 
     if (enable_snapshot_info) {
-        trigger_begin_attr = 
-            c->create_attribute("cali.snapshot.event.begin", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        trigger_set_attr = 
-            c->create_attribute("cali.snapshot.event.set",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        trigger_end_attr = 
-            c->create_attribute("cali.snapshot.event.end",   CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-        trigger_level_attr = 
-            c->create_attribute("cali.snapshot.event.attr.level", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        trigger_begin_attr =
+            c->create_attribute("cali.event.begin",
+                                CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        trigger_set_attr =
+            c->create_attribute("cali.event.set",
+                                CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        trigger_end_attr =
+            c->create_attribute("cali.event.end",
+                                CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        trigger_level_attr =
+            c->create_attribute("cali.event.attr.level",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_HIDDEN);
+        event_info_attr =
+            c->create_attribute("cali.event.attr.ids",
+                                CALI_TYPE_USR,
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_HIDDEN);
     }
 
     // register callbacks
 
     c->events().pre_create_attr_evt.connect(&pre_create_attribute_cb);
-    c->events().create_attr_evt.connect(&create_attribute_cb);
 
     c->events().pre_begin_evt.connect(&event_begin_cb);
     c->events().pre_set_evt.connect(&event_set_cb);

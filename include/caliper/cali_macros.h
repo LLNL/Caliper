@@ -43,15 +43,26 @@
 
 #include "Annotation.h"
 
-/// \macro C++ macro to mark a function
+/// \brief C++ macro to mark a function
 #define CALI_CXX_MARK_FUNCTION \
     cali::Function __cali_ann##__func__(__func__)
 
-/// \macro Mark a loop in C++ 
+/// \brief Mark a loop in C++ 
 #define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) \
     cali::Loop __cali_loop_##loop_id(name)
 
-/// \macro C++ macro for a loop iteration
+/// \brief C++ macro for a loop iteration
+///
+/// Create a C++ annotation for a loop iteration. The loop must be marked
+/// with CALI_CXX_MARK_LOOP_BEGIN and CALI_CXX_MARK_LOOP_END.
+/// This will export the loop's iteration count given in \a iter in an
+/// attribute named \c iteration\#name, where \a name is the loop name
+/// given in CALI_CXX_MARK_LOOP_BEGIN.
+/// The macro should be placed at the beginning of the loop block. The
+/// annotation will be closed automatically.
+///
+/// \param loop_id The loop identifier given to CALI_CXX_MARK_LOOP_BEGIN
+/// \param iter    The iteration number
 #define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
     cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
 

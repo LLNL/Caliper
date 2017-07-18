@@ -1,7 +1,7 @@
 /// \file CompressedSnapshotRecord.cc
 /// Experimental compressed snapshot record representation
 
-#include "CompressedSnapshotRecord.h"
+#include "caliper/common/CompressedSnapshotRecord.h"
 
 #include "caliper/SnapshotRecord.h"
 
@@ -143,41 +143,6 @@ CompressedSnapshotRecordView::to_entrylist(const CaliperMetadataAccessInterface*
     }
 
     return list;
-}
-
-void
-CompressedSnapshotRecordView::push_record(WriteRecordFn fn) const
-{
-    std::vector<Variant> node_v, attr_v, data_v;
-
-    node_v.reserve(m_num_nodes);
-
-    {
-        size_t pos = 1;
-
-        for (size_t i = 0; i < m_num_nodes; ++i)
-            node_v.push_back(Variant(vldec_u64(m_buffer+pos, &pos)));
-    }
-
-    attr_v.reserve(m_num_imm);
-    data_v.reserve(m_num_imm);
-
-    {
-        size_t pos = m_imm_pos + 1;
-
-        for (size_t i = 0; i < m_num_imm; ++i) {
-            attr_v.push_back(vldec_u64(m_buffer+pos, &pos));
-            data_v.push_back(Variant::unpack(m_buffer+pos, &pos, nullptr));
-        }
-    }
-
-    int num_nodes = static_cast<int>(m_num_nodes);
-    int num_imm   = static_cast<int>(m_num_imm);
-
-    int                     n[3] = { num_nodes,     num_imm,       num_imm       };
-    const cali::Variant* data[3] = { node_v.data(), attr_v.data(), data_v.data() };
-
-    fn(ContextRecord::record_descriptor(), n, data);
 }
 
 

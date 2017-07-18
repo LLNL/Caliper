@@ -22,11 +22,6 @@ option(WITH_FORTRAN "Install Fortran interface and build test programs")
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 
-if (NOT BUILD_SHARED_LIBS)
-  # Try to find static libs first for static builds
-  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
-endif()
-
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
@@ -34,7 +29,7 @@ option(WITH_TOOLS     "Build Caliper tools" TRUE)
 option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
 option(WITH_DOCS      "Build Caliper documentation" FALSE)
 
-option(WITH_CUDA      "Enable Caliper CUDA services" FALSE)
+option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
 option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRUE)
@@ -53,21 +48,33 @@ if (BUILD_TESTING)
   enable_testing()
 endif()
 
-# the RPATH to be used when installing, but only if it's not a system directory
-list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
-if("${isSystemDir}" STREQUAL "-1")
-   set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
-endif("${isSystemDir}" STREQUAL "-1")
+if (BUILD_SHARED_LIBS)
+  # the RPATH to be used when installing, but only if it's not a system directory
+  list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
+  if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+  endif("${isSystemDir}" STREQUAL "-1")
+else()
+  # Try to find static libs first for static builds
+  list(INSERT CMAKE_FIND_LIBRARY_SUFFIXES 0 .a)
+  # Disable rpaths
+  set(CMAKE_SKIP_RPATH TRUE)
+endif(BUILD_SHARED_LIBS)
 
-if(WITH_CUDA)
-   find_package(CUDA)
-   include_directories(${CUDA_INCLUDE_DIRS})
-   find_library(NVVP_LIBRARY NAME libnvToolsExt.so PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
-   set(CALIPER_HAVE_NVVP ON)
-   list(APPEND CALIPER_EXTERNAL_LIBS ${NVVP_LIBRARY})
+if(WITH_NVPROF)
+   find_package(CUDA REQUIRED)
+
+   find_library(NVTX_LIBRARY
+     NAME libnvToolsExt.so
+     PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
+
+   message(STATUS "NVidia tools extension library found in " ${NVTX_LIBRARY})
+   set(CALIPER_HAVE_NVPROF ON)
+   list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
 endif()
 
 if(WITH_CUPTI)
+  find_package(CUDA REQUIRED)
   include(FindCUPTI)
   if (CUPTI_FOUND)
     set(CALIPER_HAVE_CUPTI TRUE)
@@ -196,9 +203,9 @@ configure_file(
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} 
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.hpp")
 
 install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
@@ -231,6 +238,9 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
 add_subdirectory(ext)
 add_subdirectory(src)
 
+if (CALIPER_HAVE_MPI)
+  add_subdirectory(mpi)
+endif()
 if (WITH_TEST_APPS)
   add_subdirectory(test)
 endif()

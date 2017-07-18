@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Args.h
-///Argument parsing 
+/// \file Args.h
+/// \brief Parse command line arguments.
 
 #ifndef UTIL_ARGS_H
 #define UTIL_ARGS_H
@@ -43,6 +43,8 @@
 
 namespace util
 {
+
+/// \brief Parse command-line arguments.
 
 class Args {
     struct ArgsImpl;
@@ -75,8 +77,8 @@ public:
 
     // --- Parse
 
-    /// Parses command-line options given by @arg argc and @argv.
-    /// @return @arg argv[] index of first unknown option argument
+    /// Parses command-line options given by \a argc and \a argv.
+    /// \return \a argv[] index of first unknown option argument
     int  parse(int argc, const char* const argv[], int pos = 1);
 
     // --- Retrieval

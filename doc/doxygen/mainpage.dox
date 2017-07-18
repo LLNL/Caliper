@@ -1,0 +1,7 @@
+/// \mainpage The Caliper API reference.
+///
+/// \section main_cxx C++ API
+/// See namespace \ref cali
+///
+/// \section main_c C API
+/// See cali.h

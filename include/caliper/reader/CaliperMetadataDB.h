@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file CaliperMetadataDB
-/// CaliperMetadataDB class declaration
+/// \file CaliperMetadataDB.h
+/// \brief CaliperMetadataDB class declaration
 
 #ifndef CALI_CALIPERMETADATADB_H
 #define CALI_CALIPERMETADATADB_H
@@ -53,6 +53,8 @@ class Node;
 class Variant;
     
 typedef std::map<cali_id_t, cali_id_t> IdMap;
+
+/// \brief Maintains a context tree and provides metadata information.
 
 class CaliperMetadataDB : public CaliperMetadataAccessInterface
 {

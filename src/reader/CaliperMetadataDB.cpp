@@ -294,10 +294,16 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         Variant   v_data;
 
         {
-            auto it = rec.find("data");
+            Attribute attr = attribute(::map_id(attr_id, idmap));
 
-            if (it != rec.end() && !it->second.empty())
-                v_data = make_variant(attribute(::map_id(attr_id, idmap)).type(), it->second.front());
+            if (attr.is_hidden()) { // skip reading data from hidden entries
+                v_data = Variant(CALI_TYPE_USR, nullptr, 0);
+            } else {
+                auto it = rec.find("data");
+
+                if (it != rec.end() && !it->second.empty())
+                    v_data = make_variant(attr.type(), it->second.front());
+            }
         }
 
         const Node* node = merge_node(node_id, attr_id, prnt_id, v_data, idmap);

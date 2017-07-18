@@ -1,5 +1,5 @@
 include_directories(${CUPTI_INCLUDE_DIR})
-include_directories(${CUDA_INCLUDE_DIR})
+include_directories(${CUDA_INCLUDE_DIRS})
 
 set(CALIPER_CUPTI_SOURCES
   Cupti.cpp)
