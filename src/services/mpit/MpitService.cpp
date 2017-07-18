@@ -74,84 +74,64 @@ namespace
 
 		for(int index=0; index < num_pvars; index++) {
 			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
-			switch(pvar_type[index])
-			{
 				
-				case MPI_COUNT:
-				case MPI_UNSIGNED:
-				case MPI_UNSIGNED_LONG:
-				case MPI_UNSIGNED_LONG_LONG:
+				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((unsigned long long int *)buffer)[0] << endl;
-					break;
 				}
-				case MPI_INT:
+				else if((pvar_type[index] == MPI_INT))
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_INT, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " <<  index << " " << ((int *)buffer)[0] << endl;
-					break;
 				}
-				case MPI_CHAR:
+				else if((pvar_type[index] == MPI_CHAR))
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_STRING, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " <<  index << "  " << ((char *)buffer)[0] << endl;
-					break;
 				}
-				case MPI_DOUBLE:
+				else if((pvar_type[index] == MPI_DOUBLE))
 				{
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
-					break;
 				}
-			}
 		}
 	}
 
 	void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
 	    Attribute attr;
-		switch(datatype)
-		{
-			case MPI_COUNT:
-			case MPI_UNSIGNED:
-			case MPI_UNSIGNED_LONG:
-			case MPI_UNSIGNED_LONG_LONG:
+			if((datatype == MPI_COUNT) || (datatype == MPI_UNSIGNED) || (datatype == MPI_UNSIGNED_LONG) || (datatype == MPI_UNSIGNED_LONG_LONG))
 			{
 				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE      | 
                                     CALI_ATTR_SCOPE_PROCESS | 
                                     CALI_ATTR_SKIP_EVENTS);
-				break;
 			}
-			case MPI_INT:
+			else if(datatype == MPI_INT)
 			{
 				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
                                     CALI_ATTR_ASVALUE      | 
                                     CALI_ATTR_SCOPE_PROCESS | 
                                     CALI_ATTR_SKIP_EVENTS);
-				break;
 			}
-			case MPI_CHAR:
+			else if(datatype == MPI_CHAR)
 			{
 				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
                                     CALI_ATTR_ASVALUE      | 
                                     CALI_ATTR_SCOPE_PROCESS | 
                                     CALI_ATTR_SKIP_EVENTS);
-				break;
 			}
-			case MPI_DOUBLE:
+			else if(datatype == MPI_DOUBLE)
 			{
 				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE      | 
                                     CALI_ATTR_SCOPE_PROCESS | 
                                     CALI_ATTR_SKIP_EVENTS);
-				break;
 			}
-		}
 
 		mpit_pvar_attr.push_back(attr.id());
 		Log(1).stream() << "Attribute created with name: " << attr.name() << endl;
