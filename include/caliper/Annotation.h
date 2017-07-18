@@ -44,9 +44,12 @@
 
 namespace cali
 {
-
+    
 class Variant;
 
+/// \addtogroup AnnotationAPI
+/// \{
+    
 /// \brief Pre-defined function annotation class
     
 class Function
@@ -158,6 +161,8 @@ public:
     void end();
 };
 
+/// \} // AnnotationAPI group
+    
 } // namespace cali
 
 #endif
