@@ -47,15 +47,20 @@ using namespace std;
 #define SOME_BIG_ENOUGH_VALUE 1024
 #define MAX_COUNT 10
 
+namespace cali
+{
+	bool mpit_enabled { false };
+    vector<cali_id_t> mpit_pvar_attr;
+}
+
 namespace
 {
-    vector<cali_id_t> mpit_pvar_attr;
+	void 	 *buffer;
+	
 	vector<MPI_T_pvar_handle> pvar_handle;
 	vector<int> pvar_count;
 	vector<MPI_Datatype> pvar_type;
-
-    bool      mpit_enabled  { false };
-	void 	 *buffer;
+	MPI_T_pvar_session pvar_session;
 
 	ConfigSet        config;
 
@@ -63,7 +68,6 @@ namespace
     	ConfigSet::Terminator
 	};
 
-	static MPI_T_pvar_session pvar_session;
 	int num_pvars = 0;
 
 	void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
@@ -134,12 +138,18 @@ namespace
 			}
 
 		mpit_pvar_attr.push_back(attr.id());
-		Log(1).stream() << "Attribute created with name: " << attr.name() << endl;
+		Log(2).stream() << "Attribute created with name: " << attr.name() << endl;
 	}
 
+	void print_all_pvar_handles() {
+		Log(0).stream() << "Session: " << pvar_session << endl;
+		for(int i=0; i < num_pvars; i++) {
+			Log(0).stream() << "Index " << i << " has handle: " << pvar_handle[i] << endl;
+		}
+	}
 
 	/*Allocate handles for pvars and create attributes*/
-	void mpit_allocate_pvar_handles(Caliper *c) {
+	void do_mpit_allocate_pvar_handles(Caliper *c) {
 		int current_num_pvars, return_val;
 		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
 		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
@@ -156,10 +166,10 @@ namespace
 		    return;
 		}
 
-		pvar_handle.reserve(current_num_pvars);
-		pvar_type.reserve(current_num_pvars);
-		pvar_count.reserve(current_num_pvars);
-		mpit_pvar_attr.reserve(current_num_pvars);
+		pvar_handle.resize(current_num_pvars, 0);
+		pvar_type.resize(current_num_pvars);
+		pvar_count.resize(current_num_pvars, 0);
+		mpit_pvar_attr.resize(current_num_pvars);
 
 		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
@@ -199,7 +209,7 @@ namespace
 			create_attribute_for_pvar(c, index, s, datatype);
 			
 		}
-		::num_pvars = current_num_pvars;
+		num_pvars = current_num_pvars;
 		
 	}
 
@@ -234,9 +244,10 @@ namespace
     
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
-		mpit_allocate_pvar_handles(c);
+		do_mpit_allocate_pvar_handles(c);
+		//print_all_pvar_handles();
 		c->events().snapshot.connect(&snapshot_cb);
-		
+
 	}
 
 } // anonymous namespace 
@@ -244,4 +255,13 @@ namespace
 namespace cali 
 {
     CaliperService mpit_service = { "mpit", ::mpit_register };
+
+	/*Thin wrapper function to invoke pvar allocation function from another module*/
+	void mpit_allocate_pvar_handles() {
+		Caliper c;
+		::do_mpit_allocate_pvar_handles(&c);
+		//::print_all_pvar_handles();
+		c.events().snapshot.connect(&(::snapshot_cb));
+	}
 } // namespace cali
+

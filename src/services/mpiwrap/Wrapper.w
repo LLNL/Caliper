@@ -21,9 +21,13 @@ namespace cali
     extern Attribute   mpisize_attr;
 
     extern bool        mpi_enabled;
+    extern bool        mpit_enabled;
 
     extern std::string mpi_whitelist_string;
     extern std::string mpi_blacklist_string;
+	
+	extern void mpit_allocate_pvar_handles();
+
 }
 
 using namespace cali;
@@ -112,7 +116,14 @@ namespace
 
         c.set(mpisize_attr, Variant(size));
         c.set(mpirank_attr, Variant(rank));
+		
     }
+
+	if(mpit_enabled) {
+		Log(0).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
+		//mpit_allocate_pvar_handles();
+	}
+
 }{{endfn}}
 
 // Wrap all MPI functions
