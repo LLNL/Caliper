@@ -120,8 +120,8 @@ namespace
     }
 
 	if(mpit_enabled) {
-		Log(0).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
-		//mpit_allocate_pvar_handles();
+		Log(1).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
+		mpit_allocate_pvar_handles();
 	}
 
 }{{endfn}}

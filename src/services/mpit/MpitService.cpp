@@ -137,15 +137,8 @@ namespace
                                     CALI_ATTR_SKIP_EVENTS);
 			}
 
-		mpit_pvar_attr.push_back(attr.id());
+		mpit_pvar_attr[index] = attr.id();
 		Log(2).stream() << "Attribute created with name: " << attr.name() << endl;
-	}
-
-	void print_all_pvar_handles() {
-		Log(0).stream() << "Session: " << pvar_session << endl;
-		for(int i=0; i < num_pvars; i++) {
-			Log(0).stream() << "Index " << i << " has handle: " << pvar_handle[i] << endl;
-		}
 	}
 
 	/*Allocate handles for pvars and create attributes*/
@@ -171,7 +164,7 @@ namespace
 		pvar_count.resize(current_num_pvars, 0);
 		mpit_pvar_attr.resize(current_num_pvars);
 
-		Log(0).stream() << "Num PVARs exported: " << current_num_pvars << endl;
+		Log(1).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
 			desc_len = name_len = NAME_LEN;
@@ -245,7 +238,6 @@ namespace
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
 		do_mpit_allocate_pvar_handles(c);
-		//print_all_pvar_handles();
 		c->events().snapshot.connect(&snapshot_cb);
 
 	}
@@ -260,8 +252,6 @@ namespace cali
 	void mpit_allocate_pvar_handles() {
 		Caliper c;
 		::do_mpit_allocate_pvar_handles(&c);
-		//::print_all_pvar_handles();
-		c.events().snapshot.connect(&(::snapshot_cb));
 	}
 } // namespace cali
 
