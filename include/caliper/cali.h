@@ -308,6 +308,8 @@ cali_get(cali_id_t attr_id);
  */
 
 /**
+ * \addtogroup AnnotationAPI
+ * \{
  * \name Low-level source-code annotation API
  * \{
  */
@@ -409,7 +411,8 @@ cali_err
 cali_end_byname(const char* attr_name);
 
 /**
- * \}
+ * \} // name
+ * \} // addtogroup 
  */
 
 /*

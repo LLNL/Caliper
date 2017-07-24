@@ -36,7 +36,7 @@ Contents
    build
    usage
    concepts
-   api
+   AnnotationAPI
    link
    configuration
    services

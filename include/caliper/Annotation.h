@@ -95,6 +95,27 @@ public:
 
     
 /// \brief Instrumentation interface to add and manipulate context attributes
+///
+/// The Annotation class is the primary source-code instrumentation interface
+/// for %Caliper. %Annotation objects provide access to named %Caliper context 
+/// attributes. If the referenced attribute does not exist yet, it will be 
+/// created automatically.
+///
+/// Example:
+/// \code
+/// cali::Annotation phase_ann("myprogram.phase");
+///
+/// phase_ann.begin("Initialization");
+///   // ...
+/// phase_ann.end();
+/// \endcode
+/// This example creates an annotation object for the \c myprogram.phase 
+/// attribute, and uses the \c begin()/end() methods to mark a section 
+/// of code where that attribute is set to "Initialization".
+///
+/// \note Access to the underlying named context attribute through
+/// %Annotation objects is not exclusive: multiple %Annotation objects
+/// can reference and update the same context attribute.
 
 class Annotation 
 {
@@ -104,9 +125,12 @@ class Annotation
 
 public:
 
-    /// \brief Constructor. Creates an annotation object to manipulate 
-    ///    the context attribute \a name. 
-
+    /// \brief Creates an annotation object to manipulate 
+    ///   the context attribute with the given \a name. 
+    /// 
+    /// \param name The attribute name
+    /// \param opt  %Attribute flags. Bitwise OR combination 
+    ///   of \ref cali_attr_properties values.
     Annotation(const char* name, int opt = 0);
 
     Annotation(const Annotation&);
@@ -116,8 +140,18 @@ public:
     Annotation& operator = (const Annotation&);
 
     
-    /// \brief Scope guard to automatically end() an annotation at the end of
+    /// \brief Scope guard to automatically close an annotation at the end of
     ///   the C++ scope.
+    ///
+    /// Example:
+    /// \code
+    ///   int var = 42;
+    ///   while (condition) {
+    ///     cali::Annotation::Guard 
+    ///       g( cali::Annotation("myvar").set(var) ); 
+    ///     // Sets "myvar=<var>" and automatically closes it at the end of the loop
+    ///   }
+    /// \endcode
 
     class Guard {
         Impl* pI;
@@ -140,24 +174,46 @@ public:
 
     Annotation& begin();
 
+    /// \brief Begin <em>name</em>=<em>data</em> region for the associated 
+    ///    context attribute.
+    ///
+    /// Marks begin of the <em>name</em>=<em>data</em> region, where
+    /// \a name is the attribute name given in
+    /// cali::Annotation::Annotation(). The new value will be nested
+    /// under already open regions for the \a name context attribute.
     Annotation& begin(int data);
+    /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(double data);
+    /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(const char* data);
     Annotation& begin(cali_attr_type type, void* data, uint64_t size);
+    /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(const Variant& data);
 
     /// \}
     /// \name set() overloads
     /// \{
 
+    /// \brief Set <em>name</em>=<em>data</em> for the associated 
+    ///    context attribute.
+    ///
+    /// Exports <em>name</em>=<em>data</em>, where \a name is the
+    /// attribute name given in cali::Annotation::Annotation(). The
+    /// top-most prior open value for the \a name context attribute,
+    /// if any, will be overwritten.
     Annotation& set(int data);
+    /// \copydoc cali::Annotation::set(int)
     Annotation& set(double data);
+    /// \copydoc cali::Annotation::set(int)
     Annotation& set(const char* data);
     Annotation& set(cali_attr_type type, void* data, uint64_t size);
+    /// \copydoc cali::Annotation::set(int)
     Annotation& set(const Variant& data);
 
     /// \}
 
+    /// \brief Close top-most open region for the associated 
+    ///   context attribute.
     void end();
 };
 
