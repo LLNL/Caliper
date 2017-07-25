@@ -76,7 +76,7 @@ namespace
 
 		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
-		for(int index=0; index < num_pvars; index++) {
+		for(int index=0; index < num_pvars && pvar_count[index] != -1; index++) {
 			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
 				
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
@@ -143,11 +143,16 @@ namespace
 
 	/*Allocate handles for pvars and create attributes*/
 	void do_mpit_allocate_pvar_handles(Caliper *c) {
-		int current_num_pvars, return_val;
+		int current_num_pvars, return_val, thread_provided;
 		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
 		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
 		MPI_Datatype datatype;
 		MPI_T_enum enumtype;
+		MPI_Comm comm = MPI_COMM_WORLD;
+		int rank;
+
+		int temp; 
+		MPI_T_pvar_handle handle;
 
 		desc_len = name_len = NAME_LEN;
 		/* Get the number of pvars exported by the implementation */
@@ -173,8 +178,29 @@ namespace
 								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
 			
 			/* allocate a pvar handle that will be used later */
-			pvar_count[index] = 0;
-			return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+			pvar_count[index] = -1;
+			Log(0).stream() << "Value of some variables: " << pvar_name << " " << bind << " " << pvar_desc << " " << current_num_pvars << endl;
+
+			switch (bind) {
+				case MPI_T_BIND_NO_OBJECT:
+				{
+					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
+					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+					break;
+				}
+				case MPI_T_BIND_MPI_COMM:
+				{
+					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_COMM" << endl;
+					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+					break;
+				}
+				case MPI_T_BIND_MPI_WIN:
+				{
+					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_WIN. Not doing anything here." << endl;
+					continue;
+				}
+			}
+
 			if (return_val != MPI_SUCCESS)
 			{
 				Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
@@ -237,7 +263,7 @@ namespace
     
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
-		do_mpit_allocate_pvar_handles(c);
+		//do_mpit_allocate_pvar_handles(c);
 		c->events().snapshot.connect(&snapshot_cb);
 
 	}
