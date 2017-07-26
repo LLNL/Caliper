@@ -1,15 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(libgotcha NONE)
+project(sos NONE)
 
 include(ExternalProject)
 ExternalProject_Add(libsos
-  GIT_REPOSITORY    "https://github.com/cdwdirect/sos_flow.git"
+  GIT_REPOSITORY    "https://github.com/DavidPoliakoff/sos_flow.git"
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/sos-download/sos-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/sos-download/sos-build"
-  CMAKE_ARGS        ""
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND     ""
-  INSTALL_COMMAND   ""
-  TEST_COMMAND      ""
+  INSTALL_DIR       ""
+  CMAKE_ARGS        "-DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX};-DSOSD_CLOUD_SYNC_WITH_EVPATH=OFF;-DSOSD_CLOUD_SYNC_WITH_MPI=ON"
 )
