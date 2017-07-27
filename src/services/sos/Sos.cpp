@@ -138,8 +138,9 @@ class SosService
           auto search = attr_to_sos_type.find(iter.first.id());
           if(search != attr_to_sos_type.end()){
             for(auto item : iter.second){
-              const char* stringData = item.to_string().c_str();
-              std::cout<<stringData;
+              //auto rawData = variantValue(item);
+              std::string inner_string = item.to_string();
+              const char* stringData = inner_string.c_str();
               SOS_pack(sos_publication_handle,iter.first.name().c_str(),SOS_VAL_TYPE_STRING,(void*)stringData);
             }
           }
