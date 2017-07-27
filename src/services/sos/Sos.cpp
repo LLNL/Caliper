@@ -65,7 +65,8 @@ class SosService
     typedef std::map<cali_id_t, Attribute> TriggerAttributeMap;
     TriggerAttributeMap         trigger_attr_map;
     std::vector<std::string>    trigger_attr_names;
-    
+    // TODO: determine if this is necessary
+    int                         pub_count; 
     SnapshotTextFormatter       formatter;
 
     enum class Stream { None, File, StdErr, StdOut };
@@ -84,75 +85,36 @@ class SosService
     SOS_pub *sos_publication_handle;
     typedef std::map<cali_id_t, SOS_val_type> AttrIdPackTypeMap;
     AttrIdPackTypeMap attr_to_sos_type;
-    std::string 
-    create_default_formatstring(const std::vector<std::string>& attr_names) {
-        if (attr_names.size() < 1)
-            return "%time.inclusive.duration%";
 
-        int name_sizes = 0;
-
-        for (const std::string& s : attr_names)
-            name_sizes += s.size();
-
-        int w = max<int>(0, (80-10-name_sizes-2*attr_names.size()) / attr_names.size());
-
-        std::ostringstream os;
-
-        for (const std::string& s : attr_names)
-            os << s << "=%[" << w << "]" << s << "% ";
-
-        os << "%[8r]time.inclusive.duration%";
-
-        return os.str();
-    }
-
-    void init_stream() {
-        string filename = config.get("filename").to_string();
-
-        const map<string, Stream> strmap { 
-            { "none",   Stream::None   },
-            { "stdout", Stream::StdOut },
-            { "stderr", Stream::StdErr } };
-
-        auto it = strmap.find(filename);
-
-        if (it == strmap.end()) {
-            m_ofstream.open(filename);
-
-            if (!m_ofstream)
-                Log(0).stream() << "Could not open text log file " << filename << endl;
-            else
-                m_stream = Stream::File;
-        } else
-            m_stream = it->second;
-    }
-
-    std::ostream& get_stream() {
-        switch (m_stream) {
-        case Stream::StdOut:
-            return std::cout;
-        case Stream::StdErr:
-            return std::cerr;
-        default:
-            return m_ofstream;
-        }
+    static std::pair<bool,SOS_val_type> sos_type_for_cali_type(cali::Attribute attr){
+      switch( attr.type() ){
+        case CALI_TYPE_INV: return std::make_pair(false,SOS_VAL_TYPE_BYTES); 
+        case CALI_TYPE_USR: return std::make_pair(false,SOS_VAL_TYPE_BYTES); 
+        case CALI_TYPE_TYPE: return std::make_pair(false,SOS_VAL_TYPE_BYTES); 
+        case CALI_TYPE_INT: return std::make_pair(true,SOS_VAL_TYPE_INT); 
+        case CALI_TYPE_UINT: return std::make_pair(true,SOS_VAL_TYPE_INT); 
+        case CALI_TYPE_STRING: return std::make_pair(true,SOS_VAL_TYPE_STRING); 
+        case CALI_TYPE_ADDR: return std::make_pair(true,SOS_VAL_TYPE_INT); 
+        case CALI_TYPE_DOUBLE: return std::make_pair(true,SOS_VAL_TYPE_INT); 
+        case CALI_TYPE_BOOL: return std::make_pair(true,SOS_VAL_TYPE_INT); 
+      }
     }
 
     void create_attribute(Caliper* c, const Attribute& attr) {
         if (attr.skip_events())
             return;
-
-        std::vector<std::string>::iterator it = 
-            find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
-
-        if (it != trigger_attr_names.end()) {
-            std::lock_guard<std::mutex> lock(trigger_attr_mutex);
-            trigger_attr_map.insert(std::make_pair(attr.id(), attr));
+        std::pair<bool,SOS_val_type> validAndType = sos_type_for_cali_type(attr);
+        if(validAndType.first){
+          attr_to_sos_type.insert(std::make_pair(attr.id(), validAndType.second));
         }
     }
 
+    const void* variantValue(Variant in){
+      cali_variant_t inner_variant = in.c_variant();
+      return cali_variant_get_data(&inner_variant);
+    }
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
-        // operate only on cali.snapshot.event.end attributes for now
+        //// operate only on cali.snapshot.event.end attributes for now
         if (!trigger_info)
             return;
 
@@ -174,28 +136,36 @@ class SosService
             if (it != trigger_attr_map.end())
                 trigger_attr = it->second;
         }
-
         if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
-        std::vector<Entry> entrylist;
+        auto unpacked = snapshot->unpack(*c);
+        for(std::pair<const Attribute,std::vector<Variant>> & iter : unpacked){
+          auto search = attr_to_sos_type.find(iter.first.id());
+          if(search != attr_to_sos_type.end()){
+            for(auto item : iter.second){
+              auto rawData = variantValue(item);
+              SOS_pack(sos_publication_handle,iter.first.name().c_str(),search->second,&rawData);
+            }
+          }
+        }
+        SOS_publish(sos_publication_handle);
+        //SnapshotRecord::Sizes size = snapshot->size();
+        //SnapshotRecord::Data  data = snapshot->data();
 
-        SnapshotRecord::Sizes size = snapshot->size();
-        SnapshotRecord::Data  data = snapshot->data();
+        //for (size_t n = 0; n < size.n_nodes; ++n)
+        //    entrylist.push_back(Entry(data.node_entries[n]));
+        //for (size_t n = 0; n < size.n_immediate; ++n)
+        //    entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
 
-        for (size_t n = 0; n < size.n_nodes; ++n)
-            entrylist.push_back(Entry(data.node_entries[n]));
-        for (size_t n = 0; n < size.n_immediate; ++n)
-            entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
+        //ostringstream os;
+        //
+        //formatter.print(os, c, entrylist) << std::endl;
 
-        ostringstream os;
-        
-        formatter.print(os, c, entrylist) << std::endl;
+        //std::lock_guard<std::mutex>
+        //    g(stream_mutex);
 
-        std::lock_guard<std::mutex>
-            g(stream_mutex);
-
-        get_stream() << os.str();
+        //get_stream() << os.str();
     }
 
     void post_init(Caliper* c) {
@@ -222,7 +192,6 @@ class SosService
           set_event_attr(Attribute::invalid),
           end_event_attr(Attribute::invalid)
         { 
-            init_stream();
 
             util::split(config.get("trigger").to_string(), ':', 
                         std::back_inserter(trigger_attr_names));
