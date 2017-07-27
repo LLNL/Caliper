@@ -115,30 +115,31 @@ class SosService
     }
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         //// operate only on cali.snapshot.event.end attributes for now
-        if (!trigger_info)
-            return;
+        //if (!trigger_info)
+        //    return;
 
-        Entry event = trigger_info->get(end_event_attr);
+        //Entry event = trigger_info->get(end_event_attr);
 
-        if (event.is_empty())
-            event = trigger_info->get(set_event_attr);
-        if (event.is_empty())
-            return;
+        //if (event.is_empty())
+        //    event = trigger_info->get(set_event_attr);
+        //if (event.is_empty())
+        //    return;
 
-        Attribute trigger_attr { Attribute::invalid };
+        //Attribute trigger_attr { Attribute::invalid };
 
-        {
-            std::lock_guard<std::mutex> lock(trigger_attr_mutex);
+        //{
+        //    std::lock_guard<std::mutex> lock(trigger_attr_mutex);
 
-            TriggerAttributeMap::const_iterator it = 
-                trigger_attr_map.find(event.value().to_id());
+        //    TriggerAttributeMap::const_iterator it = 
+        //        trigger_attr_map.find(event.value().to_id());
 
-            if (it != trigger_attr_map.end())
-                trigger_attr = it->second;
-        }
-        if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
-            return;
+        //    if (it != trigger_attr_map.end())
+        //        trigger_attr = it->second;
+        //}
+        //if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
+        //    return;
 
+        std::cout<<"FLUSHING\n";
         auto unpacked = snapshot->unpack(*c);
         for(std::pair<const Attribute,std::vector<Variant>> & iter : unpacked){
           auto search = attr_to_sos_type.find(iter.first.id());
