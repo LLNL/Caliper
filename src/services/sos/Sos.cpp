@@ -1,13 +1,6 @@
 /// \file  TextLog.cpp
 /// \brief Caliper text log service
 
-
-
-
-
-/**
- * TODO NOTE TO SELF, DELETE BEFORE MERGE
-*/
 #include "../CaliperService.h"
 
 #include "caliper/Caliper.h"
@@ -145,8 +138,9 @@ class SosService
           auto search = attr_to_sos_type.find(iter.first.id());
           if(search != attr_to_sos_type.end()){
             for(auto item : iter.second){
-              auto rawData = variantValue(item);
-              SOS_pack(sos_publication_handle,iter.first.name().c_str(),search->second,&rawData);
+              const char* stringData = item.to_string().c_str();
+              std::cout<<stringData;
+              SOS_pack(sos_publication_handle,iter.first.name().c_str(),SOS_VAL_TYPE_STRING,(void*)stringData);
             }
           }
         }
@@ -170,6 +164,7 @@ class SosService
     }
 
     void post_init(Caliper* c) {
+      sos_runtime = NULL;
       SOS_init(NULL, NULL, &sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
       SOS_pub_create(sos_runtime, &sos_publication_handle, (char *)"caliper.data", SOS_NATURE_CREATE_OUTPUT);
     }
