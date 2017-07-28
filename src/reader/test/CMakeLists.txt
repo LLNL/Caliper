@@ -1,4 +1,5 @@
 set(CALIPER_READER_TEST_SOURCES
+  test_aggregator.cpp
   test_nodebuffer.cpp)
 
 add_executable(test_caliper-reader ${CALIPER_READER_TEST_SOURCES})

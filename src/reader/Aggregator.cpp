@@ -30,14 +30,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file Aggregator.cpp
+/// \file Aggregator.cpp
 /// Aggregator implementation
 
 #include "caliper/reader/Aggregator.h"
 
-#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/reader/QuerySpec.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 
@@ -58,6 +59,9 @@ using namespace cali;
 using namespace std;
 
 #define MAX_KEYLEN 32
+
+namespace
+{
 
 class AggregateKernel {
 public:
@@ -293,7 +297,7 @@ public:
               m_min_attr(Attribute::invalid),
               m_max_attr(Attribute::invalid)
             {
-                Log(2).stream() << "aggregate: creating sum kernel for attribute " << m_aggr_attr_name << std::endl;
+                Log(2).stream() << "aggregate: creating statistics kernel for attribute " << m_aggr_attr_name << std::endl;
             }
 
         static AggregateKernelConfig* create(const std::string& cfg) {
@@ -393,6 +397,23 @@ private:
     Config*    m_config;
 };
 
+enum KernelID {
+    Count       = 0,
+    Sum         = 1,
+    Statistics  = 2
+};
+
+#define MAX_KERNEL_ID 2
+
+const char* kernel_args[] = { "attribute" };
+
+const QuerySpec::FunctionSignature kernel_signatures[] = {
+    { KernelID::Count,      "count",      0, 0, nullptr     },
+    { KernelID::Sum,        "sum",        1, 1, kernel_args },
+    { KernelID::Statistics, "statistics", 1, 1, kernel_args },
+    
+    QuerySpec::FunctionSignatureTerminator
+};
 
 const struct KernelInfo {
     const char* name;
@@ -403,6 +424,8 @@ const struct KernelInfo {
     { "statistics", StatisticsKernel::Config::create },
     { 0, 0 }
 };
+
+} // namespace [anonymous]
 
 
 struct Aggregator::AggregatorImpl
@@ -455,7 +478,7 @@ struct Aggregator::AggregatorImpl
             if (cparen != string::npos && cparen > oparen+1)
                 kernelconfig = s.substr(oparen+1, cparen-oparen-1);
 
-            const KernelInfo* ki = kernel_list;
+            const ::KernelInfo* ki = ::kernel_list;
 
             for ( ; ki->name && ki->create && kernelname != ki->name; ++ki)
                 ;
@@ -464,6 +487,56 @@ struct Aggregator::AggregatorImpl
                 m_kernel_configs.push_back((*ki->create)(kernelconfig));
             else
                 Log(0).stream() << "aggregator: unknown aggregation kernel \"" << kernelname << "\"" << std::endl;
+        }
+    }
+
+    void configure(const QuerySpec& spec) {
+        //
+        // --- key config
+        //
+        
+        m_kernel_configs.clear();
+        m_key_strings.clear();
+        m_select_all = false;
+        
+        switch (spec.aggregation_key.selection) {
+        case QuerySpec::SelectionList<std::string>::Default:
+        case QuerySpec::SelectionList<std::string>::All:
+            m_select_all  = true;
+            break;
+        case QuerySpec::SelectionList<std::string>::List:
+            m_key_strings = spec.aggregation_key.list;
+            break;
+        default:
+            ; 
+        }
+
+        //
+        // --- kernel config
+        //
+
+        m_kernel_configs.clear();
+
+        switch (spec.aggregation_ops.selection) {
+        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::Default:
+        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::All:
+            m_kernel_configs.push_back(CountKernel::Config::create(""));
+            // TODO: pick class.aggregatable attributes
+            break;
+        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::List:
+            for (const QuerySpec::AggregationOp& k : spec.aggregation_ops.list) {
+                if (k.op.id >= 0 && k.op.id <= MAX_KERNEL_ID) {
+                    m_kernel_configs.push_back((*::kernel_list[k.op.id].create)(k.args.front()));
+                } else {
+                    Log(0).stream() << "aggregator: Error: Unknown aggregation kernel "
+                                    << k.op.id << " (" << (k.op.name ? k.op.name : "") << ")"
+                                    << std::endl;
+                }
+            }
+            break;
+        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::None:
+            Log(0).stream() << "aggregator: Error: No aggregation in query spec!" << std::endl;
+            break;
         }
     }
     
@@ -695,10 +768,19 @@ struct Aggregator::AggregatorImpl
         recursive_flush(0, &key, trie, db, push);
     }
 
-    AggregatorImpl() {
+    AggregatorImpl() 
+        : m_select_all(false)
+    {
         m_trie.reserve(4096);
     }
-    
+
+    AggregatorImpl(const QuerySpec& spec) 
+        : m_select_all(false)
+    {
+        configure(spec);
+        m_trie.reserve(4096);
+    }
+
     ~AggregatorImpl() {
         for (TrieNode* e : m_trie)
             delete e;
@@ -719,6 +801,11 @@ Aggregator::Aggregator(const string& aggr_config, const string& key)
     mP->parse_key(key);
 }
 
+Aggregator::Aggregator(const QuerySpec& spec)
+    : mP { new AggregatorImpl(spec) }
+{
+}
+
 Aggregator::~Aggregator()
 {
     mP.reset();
@@ -731,7 +818,13 @@ Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 }
 
 void
-Aggregator::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
+Aggregator::add(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process(db, list);
+}
+
+const QuerySpec::FunctionSignature*
+Aggregator::aggregation_defs()
+{
+    return ::kernel_signatures;
 }
