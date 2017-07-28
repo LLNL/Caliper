@@ -69,8 +69,8 @@ class SosService
     }
 
     void create_attribute(Caliper* c, const Attribute& attr) {
-        if (attr.skip_events())
-            return;
+        //if (attr.skip_events())
+        //    return;
         std::pair<bool,SOS_val_type> validAndType = sos_type_for_cali_type(attr);
         // If this is something we should forward
         if(validAndType.first){
@@ -93,9 +93,10 @@ class SosService
             //Iterate over all of its nested values
             for(auto item : iter.second){
               // Get them as a C string for SOS
+              std::cout << iter.first.name() << "\n";
               std::string inner_string = item.to_string();
               const char* stringData = inner_string.c_str();
-
+              //std::cout << stringData << "\n";
               // Pack it in
               SOS_pack(sos_publication_handle,iter.first.name().c_str(),SOS_VAL_TYPE_STRING,(void*)stringData);
             }
