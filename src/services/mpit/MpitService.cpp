@@ -59,7 +59,10 @@ namespace
 	
 	vector<MPI_T_pvar_handle> pvar_handle;
 	vector<int> pvar_count;
+	vector<int> pvar_continuousness;
+	vector<int> pvar_readonlyness;
 	vector<MPI_Datatype> pvar_type;
+	vector<int> pvar_class;
 	MPI_T_pvar_session pvar_session;
 
 	ConfigSet        config;
@@ -108,6 +111,7 @@ namespace
 
 	void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
 	    Attribute attr;
+
 			if((datatype == MPI_COUNT) || (datatype == MPI_UNSIGNED) || (datatype == MPI_UNSIGNED_LONG) || (datatype == MPI_UNSIGNED_LONG_LONG))
 			{
 				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
@@ -141,18 +145,50 @@ namespace
 		Log(2).stream() << "Attribute created with name: " << attr.name() << endl;
 	}
 
+	void handle_pvar_class(int index, const char* pvar_name) {
+		switch(pvar_class[index]) {
+			case MPI_T_PVAR_CLASS_STATE:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_LEVEL:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_SIZE:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_PERCENTAGE:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_LOWWATERMARK:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_COUNTER:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_AGGREGATE:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_AGGREGATE" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_TIMER:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_TIMER" << endl;
+				break;
+			case MPI_T_PVAR_CLASS_GENERIC:
+				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_GENERIC" << endl;
+				break;
+		}
+	}			
+
+
 	/*Allocate handles for pvars and create attributes*/
 	void do_mpit_allocate_pvar_handles(Caliper *c) {
 		int current_num_pvars, return_val, thread_provided;
 		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
-		int var_class, verbosity, bind, readonly, continuous, atomic, name_len, desc_len;
+		int verbosity, bind, atomic, name_len, desc_len;
 		MPI_Datatype datatype;
 		MPI_T_enum enumtype;
 		MPI_Comm comm = MPI_COMM_WORLD;
-		int rank;
-
-		int temp; 
-		MPI_T_pvar_handle handle;
 
 		desc_len = name_len = NAME_LEN;
 		/* Get the number of pvars exported by the implementation */
@@ -165,6 +201,9 @@ namespace
 		}
 
 		pvar_handle.resize(current_num_pvars, 0);
+		pvar_continuousness.resize(current_num_pvars, 0);
+		pvar_readonlyness.resize(current_num_pvars, 0);
+		pvar_class.resize(current_num_pvars, 0);
 		pvar_type.resize(current_num_pvars);
 		pvar_count.resize(current_num_pvars, 0);
 		mpit_pvar_attr.resize(current_num_pvars);
@@ -174,27 +213,27 @@ namespace
 		for(int index=num_pvars; index < current_num_pvars; index++) {
 			desc_len = name_len = NAME_LEN;
 
-			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &var_class, &datatype, &enumtype, 
-								pvar_desc, &desc_len, &bind, &readonly, &continuous, &atomic);
-			
+			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &datatype, &enumtype, 
+								pvar_desc, &desc_len, &bind, &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
+
+			handle_pvar_class(index, pvar_name);
+
 			/* allocate a pvar handle that will be used later */
 			pvar_count[index] = -1;
-			Log(0).stream() << "Value of some variables: " << pvar_name << " " << bind << " " << pvar_desc << " " << current_num_pvars << endl;
 
 			switch (bind) {
 				case MPI_T_BIND_NO_OBJECT:
 				{
-					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
+					Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
 					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
 					break;
 				}
-				case MPI_T_BIND_MPI_COMM:
+				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). We can probably support MPI_COMM_WORLD as default
 				{
 					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_COMM" << endl;
-					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
-					break;
+					continue;
 				}
-				case MPI_T_BIND_MPI_WIN:
+				case MPI_T_BIND_MPI_WIN: //Handle this through a Wrapper call to MPI_Win_create.
 				{
 					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_WIN. Not doing anything here." << endl;
 					continue;
@@ -212,8 +251,10 @@ namespace
 		   /*Non-continuous variables need to be started before being read. If this is not done
 		   *TODO:Currently, the MVAPICH and MPICH implementations error out if non-continuous PVARs are not started before being read.
 		   *Check if this is expected behaviour from an MPI implementation. No mention of the need to do this from a clients perspective in the 3.1 standard.*/
-		   if(continuous == 0) 
+		   if(pvar_continuousness[index] == 0) 
 		   {
+			   Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_name << " is non-continuous. Starting this PVAR. " << endl;
+
 		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index]);
 
 		   		if (return_val != MPI_SUCCESS) 
@@ -263,7 +304,7 @@ namespace
     
     	Log(1).stream() << "Registered MPIT service" << endl;
 		
-		//do_mpit_allocate_pvar_handles(c);
+		do_mpit_allocate_pvar_handles(c);
 		c->events().snapshot.connect(&snapshot_cb);
 
 	}
