@@ -93,7 +93,6 @@ class SosService
             //Iterate over all of its nested values
             for(auto item : iter.second){
               // Get them as a C string for SOS
-              std::cout << iter.first.name() << "\n";
               std::string inner_string = item.to_string();
               const char* stringData = inner_string.c_str();
               //std::cout << stringData << "\n";
