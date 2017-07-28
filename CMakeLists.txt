@@ -39,7 +39,7 @@ option(WITH_MPI       "Enable MPI" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" TRUE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
-option(WITH_SOS       "Enable SOSFlow data management" TRUE)
+option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
