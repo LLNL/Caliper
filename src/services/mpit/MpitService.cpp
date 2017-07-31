@@ -61,6 +61,7 @@ namespace
 	vector<int> pvar_count;
 	vector<int> pvar_continuousness;
 	vector<int> pvar_readonlyness;
+	vector<bool> pvar_is_aggregatable;
 	vector<MPI_Datatype> pvar_type;
 	vector<int> pvar_class;
 	MPI_T_pvar_session pvar_session;
@@ -107,75 +108,122 @@ namespace
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
 				}
 		}
+
+		// MPI_T_pvar_reset(pvar_session, MPI_T_PVAR_ALL_HANDLES); 
 	}
 
 	void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
 	    Attribute attr;
+		Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
+	    Variant   v_true(true);
+	    Variant   v_false(false);
 
 			if((datatype == MPI_COUNT) || (datatype == MPI_UNSIGNED) || (datatype == MPI_UNSIGNED_LONG) || (datatype == MPI_UNSIGNED_LONG_LONG))
 			{
-				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE      | 
-                                    CALI_ATTR_SCOPE_PROCESS | 
-                                    CALI_ATTR_SKIP_EVENTS);
+				if(pvar_is_aggregatable[index]) {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				} else {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
+				}
 			}
 			else if(datatype == MPI_INT)
 			{
-				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
-                                    CALI_ATTR_ASVALUE      | 
-                                    CALI_ATTR_SCOPE_PROCESS | 
-                                    CALI_ATTR_SKIP_EVENTS);
+				if(pvar_is_aggregatable[index]) {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				} else {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
+				}
 			}
 			else if(datatype == MPI_CHAR)
 			{
-				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
-                                    CALI_ATTR_ASVALUE      | 
-                                    CALI_ATTR_SCOPE_PROCESS | 
-                                    CALI_ATTR_SKIP_EVENTS);
+				if(pvar_is_aggregatable[index]) {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				} else {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
+				}
 			}
 			else if(datatype == MPI_DOUBLE)
 			{
-				attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
-                                    CALI_ATTR_ASVALUE      | 
-                                    CALI_ATTR_SCOPE_PROCESS | 
-                                    CALI_ATTR_SKIP_EVENTS);
+				if(pvar_is_aggregatable[index]) {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				} else {
+					attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
+				}
 			}
 
 		mpit_pvar_attr[index] = attr.id();
-		Log(2).stream() << "Attribute created with name: " << attr.name() << endl;
+		Log(3).stream() << "Attribute created with name: " << attr.name() << endl;
 	}
 
-	void handle_pvar_class(int index, const char* pvar_name) {
+	bool is_pvar_class_aggregatable(int index, const char* pvar_name) {
+
+		/*General idea to determine aggretablitity of a PVAR: Any PVAR that represents an internal MPI state is by default not aggregatable
+		 * A PVAR is aggregatable if it "makes sense" to apply one or more of these operators to it: COUNT, SUM, MIN, MAX, AVG. In the future, more operators may be considered.*/
+
 		switch(pvar_class[index]) {
 			case MPI_T_PVAR_CLASS_STATE:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
+				return false;
 				break;
 			case MPI_T_PVAR_CLASS_LEVEL:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
+				return false;
 				break;
 			case MPI_T_PVAR_CLASS_SIZE:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
+				return false;
 				break;
 			case MPI_T_PVAR_CLASS_PERCENTAGE:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
+				return false; 
 				break;
 			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
+				return true; // "MAX" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_LOWWATERMARK:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
+				return true; // "MIN" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_COUNTER:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
+				return true; // "SUM" or "COUNT" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_AGGREGATE:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_AGGREGATE" << endl;
+				return false;  // Already aggregated values!
 				break;
 			case MPI_T_PVAR_CLASS_TIMER:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_TIMER" << endl;
+				return false; // Already aggregated values!
 				break;
 			case MPI_T_PVAR_CLASS_GENERIC:
 				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_GENERIC" << endl;
+				return false; // Arbitrary PVAR that does not fall into any of the other well-defined classes. Implementation and handling of these PVARs must be custom-designed.
 				break;
 		}
 	}			
@@ -203,6 +251,7 @@ namespace
 		pvar_handle.resize(current_num_pvars, 0);
 		pvar_continuousness.resize(current_num_pvars, 0);
 		pvar_readonlyness.resize(current_num_pvars, 0);
+		pvar_is_aggregatable.resize(current_num_pvars, false);
 		pvar_class.resize(current_num_pvars, 0);
 		pvar_type.resize(current_num_pvars);
 		pvar_count.resize(current_num_pvars, 0);
@@ -216,7 +265,10 @@ namespace
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &datatype, &enumtype, 
 								pvar_desc, &desc_len, &bind, &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
 
-			handle_pvar_class(index, pvar_name);
+			pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_name);
+
+
+			Log(1).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
 
 			/* allocate a pvar handle that will be used later */
 			pvar_count[index] = -1;
