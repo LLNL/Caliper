@@ -94,11 +94,11 @@ namespace
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
 					//Hack until MPI implementations support resetting of PVARs
-					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+					/*if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
 						temp_unsigned = ((unsigned long long int *)buffer)[0];
 						((unsigned long long int *)buffer)[0] -= last_value_unsigned_long[index];
 						last_value_unsigned_long[index] = temp_unsigned;
-					}
+					}*/
 
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
 					
@@ -119,11 +119,11 @@ namespace
 				else if((pvar_type[index] == MPI_DOUBLE))
 				{
 					//Hack until MPI implementations support resetting of PVARs
-					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+					/*if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
 						temp_double = ((double *)buffer)[0];
 						((double *)buffer)[0] -= last_value_double[index];
 						last_value_double[index] = temp_double;
-					}
+					}*/
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
