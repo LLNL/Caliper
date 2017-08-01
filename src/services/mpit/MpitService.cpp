@@ -66,6 +66,12 @@ namespace
 	vector<int> pvar_class;
 	MPI_T_pvar_session pvar_session;
 
+	//Arrays storing last values of PVARs. This is a hack. Only in place because current MPI implementations do not
+	//support resetting of PVARs. So we store last value of pvars and subtract it
+	vector<unsigned long long int> last_value_unsigned_long;
+	vector<double> last_value_double;
+
+
 	ConfigSet        config;
 
 	ConfigSet::Entry configdata[] = {
@@ -77,14 +83,23 @@ namespace
 	void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
 
 		int size;
+		unsigned long long int temp_unsigned;
+		double temp_double;
 
 		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
 		for(int index=0; index < num_pvars && pvar_count[index] != -1; index++) {
 			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
-				
+			
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
+					//Hack until MPI implementations support resetting of PVARs
+					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+						temp_unsigned = ((unsigned long long int *)buffer)[0];
+						((unsigned long long int *)buffer)[0] -= ((unsigned long long int *)buffer)[0] - last_value_unsigned_long[index];
+						last_value_unsigned_long[index] = temp_unsigned;
+					}
+
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((unsigned long long int *)buffer)[0] << endl;
@@ -103,6 +118,12 @@ namespace
 				}
 				else if((pvar_type[index] == MPI_DOUBLE))
 				{
+					//Hack until MPI implementations support resetting of PVARs
+					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+						temp_double = ((double *)buffer)[0];
+						((double *)buffer)[0] -= ((double *)buffer)[0] - last_value_double[index];
+						last_value_double[index] = temp_double;
+					}
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
@@ -186,43 +207,43 @@ namespace
 
 		switch(pvar_class[index]) {
 			case MPI_T_PVAR_CLASS_STATE:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
 				return false;
 				break;
 			case MPI_T_PVAR_CLASS_LEVEL:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
 				return false;
 				break;
 			case MPI_T_PVAR_CLASS_SIZE:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
 				return false;
 				break;
 			case MPI_T_PVAR_CLASS_PERCENTAGE:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
 				return false; 
 				break;
 			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
 				return true; // "MAX" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_LOWWATERMARK:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
 				return true; // "MIN" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_COUNTER:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
 				return true; // "SUM" or "COUNT" operator to aggregate
 				break;
 			case MPI_T_PVAR_CLASS_AGGREGATE:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_AGGREGATE" << endl;
-				return false;  // Already aggregated values!
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_AGGREGATE" << endl;
+				return true; 
 				break;
 			case MPI_T_PVAR_CLASS_TIMER:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_TIMER" << endl;
-				return false; // Already aggregated values!
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_TIMER" << endl;
+				return true; 
 				break;
 			case MPI_T_PVAR_CLASS_GENERIC:
-				Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_GENERIC" << endl;
+				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_GENERIC" << endl;
 				return false; // Arbitrary PVAR that does not fall into any of the other well-defined classes. Implementation and handling of these PVARs must be custom-designed.
 				break;
 		}
@@ -257,9 +278,15 @@ namespace
 		pvar_count.resize(current_num_pvars, 0);
 		mpit_pvar_attr.resize(current_num_pvars);
 
+	    last_value_unsigned_long.resize(current_num_pvars, 0);
+	    last_value_double.resize(current_num_pvars, 0.0);
+
 		Log(1).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
+			last_value_unsigned_long[index] = 0;
+			last_value_double[index] = 0.0;
+
 			desc_len = name_len = NAME_LEN;
 
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &datatype, &enumtype, 
@@ -268,7 +295,7 @@ namespace
 			pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_name);
 
 
-			Log(1).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
+			Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
 
 			/* allocate a pvar handle that will be used later */
 			pvar_count[index] = -1;
