@@ -96,7 +96,7 @@ namespace
 					//Hack until MPI implementations support resetting of PVARs
 					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
 						temp_unsigned = ((unsigned long long int *)buffer)[0];
-						((unsigned long long int *)buffer)[0] -= ((unsigned long long int *)buffer)[0] - last_value_unsigned_long[index];
+						((unsigned long long int *)buffer)[0] -= last_value_unsigned_long[index];
 						last_value_unsigned_long[index] = temp_unsigned;
 					}
 
@@ -121,7 +121,7 @@ namespace
 					//Hack until MPI implementations support resetting of PVARs
 					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
 						temp_double = ((double *)buffer)[0];
-						((double *)buffer)[0] -= ((double *)buffer)[0] - last_value_double[index];
+						((double *)buffer)[0] -= last_value_double[index];
 						last_value_double[index] = temp_double;
 					}
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
