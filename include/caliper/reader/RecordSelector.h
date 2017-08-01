@@ -44,6 +44,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class QuerySpec;
 
 /// \brief Filter for snapshot records
 /// \ingroup ReaderAPI
@@ -57,9 +58,13 @@ public:
 
     RecordSelector(const std::string& filter_string);
 
+    RecordSelector(const QuerySpec& spec);
+    
     ~RecordSelector();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList& node, SnapshotProcessFn) const;
+    bool pass(const CaliperMetadataAccessInterface&, const EntryList&);
+
+    void operator()(CaliperMetadataAccessInterface&, const EntryList&, SnapshotProcessFn) const;
 };
 
 } // namespace cali

@@ -500,11 +500,11 @@ struct Aggregator::AggregatorImpl
         m_select_all = false;
         
         switch (spec.aggregation_key.selection) {
-        case QuerySpec::SelectionList<std::string>::Default:
-        case QuerySpec::SelectionList<std::string>::All:
+        case QuerySpec::AttributeSelection::Default:
+        case QuerySpec::AttributeSelection::All:
             m_select_all  = true;
             break;
-        case QuerySpec::SelectionList<std::string>::List:
+        case QuerySpec::AttributeSelection::List:
             m_key_strings = spec.aggregation_key.list;
             break;
         default:
@@ -518,12 +518,12 @@ struct Aggregator::AggregatorImpl
         m_kernel_configs.clear();
 
         switch (spec.aggregation_ops.selection) {
-        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::Default:
-        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::All:
+        case QuerySpec::AggregationSelection::Default:
+        case QuerySpec::AggregationSelection::All:
             m_kernel_configs.push_back(CountKernel::Config::create(""));
             // TODO: pick class.aggregatable attributes
             break;
-        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::List:
+        case QuerySpec::AggregationSelection::List:
             for (const QuerySpec::AggregationOp& k : spec.aggregation_ops.list) {
                 if (k.op.id >= 0 && k.op.id <= MAX_KERNEL_ID) {
                     m_kernel_configs.push_back((*::kernel_list[k.op.id].create)(k.args.front()));
@@ -534,7 +534,7 @@ struct Aggregator::AggregatorImpl
                 }
             }
             break;
-        case QuerySpec::SelectionList<QuerySpec::AggregationOp>::None:
+        case QuerySpec::AggregationSelection::None:
             Log(0).stream() << "aggregator: Error: No aggregation in query spec!" << std::endl;
             break;
         }

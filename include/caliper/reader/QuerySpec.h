@@ -100,9 +100,13 @@ struct QuerySpec
     /// \brief Filter condition
     struct Condition {
         enum Op   {
-            Exist, NotExist, Equal, UnEqual, LessThan, GreaterThan, LessOrEqual, GreaterOrEqual
+            None,
+            Exist,       NotExist,
+            Equal,       NotEqual,
+            LessThan,    GreaterThan,
+            LessOrEqual, GreaterOrEqual
         }           op;
-        std::string attribute;
+        std::string attr_name;
         std::string value;
     };
 
@@ -118,13 +122,18 @@ struct QuerySpec
     // --- Data members
     //
 
-    SelectionList<AggregationOp> aggregation_ops;
-    SelectionList<std::string>   aggregation_key;
+    typedef SelectionList<AggregationOp> AggregationSelection;
+    typedef SelectionList<std::string>   AttributeSelection;
+    typedef SelectionList<Condition>     FilterSelection;
+    typedef SelectionList<SortSpec>      SortSelection;
 
-    SelectionList<std::string>   attribute_selection;
+    AggregationSelection         aggregation_ops;
+    AttributeSelection           aggregation_key;
 
-    SelectionList<Condition>     snapshot_filter;
-    SelectionList<SortSpec>      sort;
+    AttributeSelection           attribute_selection;
+
+    FilterSelection              filter;
+    SortSelection                sort;
 
     FormatSpec                   format;
 };
