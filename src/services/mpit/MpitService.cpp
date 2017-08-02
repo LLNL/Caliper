@@ -68,8 +68,8 @@ namespace
 
 	//Arrays storing last values of PVARs. This is a hack. Only in place because current MPI implementations do not
 	//support resetting of PVARs. So we store last value of pvars and subtract it
-	vector<unsigned long long int> last_value_unsigned_long;
-	vector<double> last_value_double;
+	vector<array <unsigned long long int, SOME_BIG_ENOUGH_VALUE> > last_value_unsigned_long;
+	vector<array <double, SOME_BIG_ENOUGH_VALUE> > last_value_double;
 
 
 	ConfigSet        config;
@@ -93,12 +93,15 @@ namespace
 			
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
-					//Hack until MPI implementations support resetting of PVARs
-					/*if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
-						temp_unsigned = ((unsigned long long int *)buffer)[0];
-						((unsigned long long int *)buffer)[0] -= last_value_unsigned_long[index];
-						last_value_unsigned_long[index] = temp_unsigned;
-					}*/
+					//These are free-flowing (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
+					//value of the PVAR
+					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+						for(int j=0; j < pvar_count[index]; j++) {
+							temp_unsigned = ((unsigned long long int *)buffer)[0];
+							((unsigned long long int *)buffer)[0] -= last_value_unsigned_long[index][j];
+							last_value_unsigned_long[index][j] = temp_unsigned;
+						}
+					}
 
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
 					
@@ -118,19 +121,21 @@ namespace
 				}
 				else if((pvar_type[index] == MPI_DOUBLE))
 				{
-					//Hack until MPI implementations support resetting of PVARs
-					/*if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
-						temp_double = ((double *)buffer)[0];
-						((double *)buffer)[0] -= last_value_double[index];
-						last_value_double[index] = temp_double;
-					}*/
+					//These are free-flowing (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
+					//value of the PVAR
+					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
+						for(int j=0; j < pvar_count[index]; j++) {
+							temp_double = ((double *)buffer)[0];
+							((double *)buffer)[0] -= last_value_double[index][j];
+							last_value_double[index][j] = temp_double;
+						}
+					}
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
 				}
 		}
 
-		// MPI_T_pvar_reset(pvar_session, MPI_T_PVAR_ALL_HANDLES); 
 	}
 
 	void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
@@ -224,7 +229,7 @@ namespace
 				break;
 			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
-				return true; // "MAX" operator to aggregate
+				return true; // "MAX" operator to aggregate? Think about how we want to handle watermarks? That will determine what we do with these kind of variables. 
 				break;
 			case MPI_T_PVAR_CLASS_LOWWATERMARK:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
@@ -278,14 +283,12 @@ namespace
 		pvar_count.resize(current_num_pvars, 0);
 		mpit_pvar_attr.resize(current_num_pvars);
 
-	    last_value_unsigned_long.resize(current_num_pvars, 0);
-	    last_value_double.resize(current_num_pvars, 0.0);
+	    last_value_unsigned_long.resize(current_num_pvars, {0});
+	    last_value_double.resize(current_num_pvars, {0.0});
 
 		Log(1).stream() << "Num PVARs exported: " << current_num_pvars << endl;
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
-			last_value_unsigned_long[index] = 0;
-			last_value_double[index] = 0.0;
 
 			desc_len = name_len = NAME_LEN;
 
