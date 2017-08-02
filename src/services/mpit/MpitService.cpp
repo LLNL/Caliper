@@ -93,13 +93,22 @@ namespace
 			
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
-					//These are free-flowing (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
-					//value of the PVAR
-					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
-						for(int j=0; j < pvar_count[index]; j++) {
-							temp_unsigned = ((unsigned long long int *)buffer)[0];
-							((unsigned long long int *)buffer)[0] -= last_value_unsigned_long[index][j];
-							last_value_unsigned_long[index][j] = temp_unsigned;
+					switch(pvar_class[index]) {
+						case MPI_T_PVAR_CLASS_TIMER:
+						case MPI_T_PVAR_CLASS_COUNTER:
+						case MPI_T_PVAR_CLASS_AGGREGATE: {
+							//These are free-counting (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
+							//value of the PVAR
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_unsigned = ((unsigned long long int *)buffer)[j];
+								((unsigned long long int *)buffer)[j] -= last_value_unsigned_long[index][j];
+									last_value_unsigned_long[index][j] = temp_unsigned;
+							}
+							break;
+						}
+						default: {
+							//do nothing for any other class of PVARs.
+							break;
 						}
 					}
 
@@ -121,15 +130,25 @@ namespace
 				}
 				else if((pvar_type[index] == MPI_DOUBLE))
 				{
-					//These are free-flowing (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
-					//value of the PVAR
-					if((pvar_class[index] == MPI_T_PVAR_CLASS_TIMER) || (pvar_class[index] == MPI_T_PVAR_CLASS_COUNTER) || (pvar_class[index] == MPI_T_PVAR_CLASS_AGGREGATE)) {
-						for(int j=0; j < pvar_count[index]; j++) {
-							temp_double = ((double *)buffer)[0];
-							((double *)buffer)[0] -= last_value_double[index][j];
-							last_value_double[index][j] = temp_double;
+					switch(pvar_class[index]) {
+						case MPI_T_PVAR_CLASS_TIMER:
+						case MPI_T_PVAR_CLASS_COUNTER:
+						case MPI_T_PVAR_CLASS_AGGREGATE: {
+							//These are free-counting (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
+							//value of the PVAR
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_double = ((double *)buffer)[j];
+								((double *)buffer)[j] -= last_value_double[index][j];
+								last_value_double[index][j] = temp_double;
+							}
+							break;
+						}
+						default: {
+							//do nothing for any other class of PVARs.
+							break;
 						}
 					}
+
 			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
@@ -262,7 +281,6 @@ namespace
 		int verbosity, bind, atomic, name_len, desc_len;
 		MPI_Datatype datatype;
 		MPI_T_enum enumtype;
-		MPI_Comm comm = MPI_COMM_WORLD;
 
 		desc_len = name_len = NAME_LEN;
 		/* Get the number of pvars exported by the implementation */
