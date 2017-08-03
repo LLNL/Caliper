@@ -75,6 +75,10 @@ namespace
 	ConfigSet        config;
 
 	ConfigSet::Entry configdata[] = {
+    { "bind_comm_world", CALI_TYPE_BOOL, "true",
+      "Bind the MPI_COMM_WORLD object to a performance variable if the MPI implementation supports such variables.",
+      "Bind the MPI_COMM_WORLD object to a performance variable if the MPI implementation supports such variables.\n"
+    },
     	ConfigSet::Terminator
 	};
 
@@ -281,6 +285,8 @@ namespace
 		int verbosity, bind, atomic, name_len, desc_len;
 		MPI_Datatype datatype;
 		MPI_T_enum enumtype;
+		MPI_Comm comm;
+		comm = MPI_COMM_WORLD;
 
 		desc_len = name_len = NAME_LEN;
 		/* Get the number of pvars exported by the implementation */
@@ -328,9 +334,13 @@ namespace
 					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
 					break;
 				}
-				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). We can probably support MPI_COMM_WORLD as default
+				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). Support MPI_COMM_WORLD as default.
 				{
 					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_COMM" << endl;
+					if(config.get("bind_comm_world").to_bool()) {
+						return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+						break;
+					}
 					continue;
 				}
 				case MPI_T_BIND_MPI_WIN: //Handle this through a Wrapper call to MPI_Win_create.
