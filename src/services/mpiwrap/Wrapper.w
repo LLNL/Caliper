@@ -27,6 +27,7 @@ namespace cali
     extern std::string mpi_blacklist_string;
 	
 	extern void mpit_allocate_pvar_handles();
+	extern void mpit_allocate_bound_pvar_handles(void *handle, int bind);
 
 }
 
@@ -126,9 +127,42 @@ namespace
 
 }{{endfn}}
 
+// Invoke pvar handle allocation routines for pvars bound to some MPI object
+
+{{fn func MPI_Comm_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+	if(mpit_enabled) {
+		mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_COMM); 
+	}
+
+}{{endfn}}
+
+{{fn func MPI_Errhandler_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+	if(mpit_enabled) {
+		mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_ERRHANDLER); 
+	}
+
+}{{endfn}}
 // Wrap all MPI functions
 
-{{fnall func MPI_Init MPI_Init_thread}}{
+{{fnall func MPI_Init MPI_Init_thread MPI_Comm_create}}{
     if (mpi_enabled && ::enable_{{func}}) {
         Caliper c;
         c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));

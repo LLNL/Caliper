@@ -37,7 +37,8 @@
 #include "caliper/common/RuntimeConfig.h"
 
 #include <mpi.h>
-
+#include <string>
+#include <cstring>
 #include <vector>
 
 using namespace cali;
@@ -64,12 +65,14 @@ namespace
 	vector<bool> pvar_is_aggregatable;
 	vector<MPI_Datatype> pvar_type;
 	vector<int> pvar_class;
+	vector<int> pvar_bind;
+	vector<string> pvar_names;
 	MPI_T_pvar_session pvar_session;
 
 	//Arrays storing last values of PVARs. This is a hack. Only in place because current MPI implementations do not
 	//support resetting of PVARs. So we store last value of pvars and subtract it
-	vector<array <unsigned long long int, SOME_BIG_ENOUGH_VALUE> > last_value_unsigned_long;
-	vector<array <double, SOME_BIG_ENOUGH_VALUE> > last_value_double;
+	vector<array <unsigned long long int, MAX_COUNT> > last_value_unsigned_long;
+	vector<array <double, MAX_COUNT> > last_value_double;
 
 
 	ConfigSet        config;
@@ -106,7 +109,7 @@ namespace
 							for(int j=0; j < pvar_count[index]; j++) {
 								temp_unsigned = ((unsigned long long int *)buffer)[j];
 								((unsigned long long int *)buffer)[j] -= last_value_unsigned_long[index][j];
-									last_value_unsigned_long[index][j] = temp_unsigned;
+								last_value_unsigned_long[index][j] = temp_unsigned;
 							}
 							break;
 						}
@@ -278,12 +281,53 @@ namespace
 	}			
 
 
+	/*Allocate PVAR handles when the PVAR is bound to something other than MPI_T_BIND_NO_OBJECT*/
+	void do_mpit_allocate_bound_pvar_handles(Caliper *c, void *handle, int bind) {
+
+		int return_val;
+
+		for(int index=0; index < num_pvars; index++) {
+
+			/*Iterate through all pvars, and only allocate handles for those pvars whose bindings are the same as the input to this function
+			 * Also, check if the pvar_handle is NULL -- we should only be allocating handles once. This means that additional calls to this function will simply return
+			 * without doing anything.
+			 * In other words, PVARs that are bound to something other than MPI_T_BIND_NO_OBJECT will be bound to the FIRST MPI_OBJ of that type for the course of the entire run*/
+			if(bind == pvar_bind[index] && pvar_handle[index] == NULL) {
+				return_val = MPI_T_pvar_handle_alloc(pvar_session, index, handle, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+			} else {
+				continue;
+			}
+			
+			if (return_val != MPI_SUCCESS)
+			{
+				Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_names[index] << endl;
+		    	return;
+  			}
+
+		   /*Non-continuous variables need to be started before being read*/
+		   if(pvar_continuousness[index] == 0) 
+		   {
+			   Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_names[index] << " is non-continuous. Starting this PVAR. " << endl;
+
+		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index]);
+
+		   		if (return_val != MPI_SUCCESS) 
+				{
+					Log(0).stream() << "MPI_T_pvar_start ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_names[index] << endl;
+					return;
+    			}
+
+			}
+			
+			create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
+		}
+	}
+
 	/*Allocate handles for pvars and create attributes*/
 	void do_mpit_allocate_pvar_handles(Caliper *c) {
 		int current_num_pvars, return_val, thread_provided;
 		char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
-		int verbosity, bind, atomic, name_len, desc_len;
-		MPI_Datatype datatype;
+		int verbosity, atomic, name_len, desc_len;
 		MPI_T_enum enumtype;
 		MPI_Comm comm;
 		comm = MPI_COMM_WORLD;
@@ -298,13 +342,15 @@ namespace
 		    return;
 		}
 
-		pvar_handle.resize(current_num_pvars, 0);
+		pvar_handle.resize(current_num_pvars, NULL);
 		pvar_continuousness.resize(current_num_pvars, 0);
-		pvar_readonlyness.resize(current_num_pvars, 0);
+		pvar_readonlyness.resize(current_num_pvars, 1);
 		pvar_is_aggregatable.resize(current_num_pvars, false);
-		pvar_class.resize(current_num_pvars, 0);
+		pvar_class.resize(current_num_pvars, MPI_T_PVAR_CLASS_GENERIC);
 		pvar_type.resize(current_num_pvars);
 		pvar_count.resize(current_num_pvars, 0);
+		pvar_bind.resize(current_num_pvars, MPI_T_BIND_NO_OBJECT);
+		pvar_names.resize(current_num_pvars,"");
 		mpit_pvar_attr.resize(current_num_pvars);
 
 	    last_value_unsigned_long.resize(current_num_pvars, {0});
@@ -316,18 +362,18 @@ namespace
 
 			desc_len = name_len = NAME_LEN;
 
-			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &datatype, &enumtype, 
-								pvar_desc, &desc_len, &bind, &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
-
+			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &(pvar_type.data())[index], &enumtype, 
+								pvar_desc, &desc_len, &(pvar_bind.data())[index], &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
+			
 			pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_name);
-
+			pvar_names[index] = pvar_name;
 
 			Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
 
 			/* allocate a pvar handle that will be used later */
 			pvar_count[index] = -1;
 
-			switch (bind) {
+			switch (pvar_bind[index]) {
 				case MPI_T_BIND_NO_OBJECT:
 				{
 					Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
@@ -356,11 +402,7 @@ namespace
 		    	return;
   			}
 
-		    pvar_type[index] = datatype; 
-
-		   /*Non-continuous variables need to be started before being read. If this is not done
-		   *TODO:Currently, the MVAPICH and MPICH implementations error out if non-continuous PVARs are not started before being read.
-		   *Check if this is expected behaviour from an MPI implementation. No mention of the need to do this from a clients perspective in the 3.1 standard.*/
+		   /*Non-continuous variables need to be started before being read.*/
 		   if(pvar_continuousness[index] == 0) 
 		   {
 			   Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_name << " is non-continuous. Starting this PVAR. " << endl;
@@ -375,8 +417,7 @@ namespace
 
 			}
 			
-			string s(pvar_name);
-			create_attribute_for_pvar(c, index, s, datatype);
+			create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
 			
 		}
 		num_pvars = current_num_pvars;
@@ -425,10 +466,15 @@ namespace cali
 {
     CaliperService mpit_service = { "mpit", ::mpit_register };
 
-	/*Thin wrapper function to invoke pvar allocation function from another module*/
+	/*Thin wrapper functions to invoke pvar allocation function from another module*/
 	void mpit_allocate_pvar_handles() {
 		Caliper c;
 		::do_mpit_allocate_pvar_handles(&c);
+	}
+
+	void mpit_allocate_bound_pvar_handles(void *handle, int bind) {
+		Caliper c;
+		::do_mpit_allocate_bound_pvar_handles(&c, handle, bind);
 	}
 } // namespace cali
 
