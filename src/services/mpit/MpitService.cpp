@@ -255,11 +255,11 @@ namespace
 				break;
 			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
-				return true; // "MAX" operator to aggregate? Think about how we want to handle watermarks? That will determine what we do with these kind of variables. 
+				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. Handling this class is interesting!
 				break;
 			case MPI_T_PVAR_CLASS_LOWWATERMARK:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
-				return true; // "MIN" operator to aggregate
+				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. Handling this class is interesting!
 				break;
 			case MPI_T_PVAR_CLASS_COUNTER:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
@@ -369,6 +369,7 @@ namespace
 			pvar_names[index] = pvar_name;
 
 			Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
+			Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has description: " << pvar_desc << endl;
 
 			/* allocate a pvar handle that will be used later */
 			pvar_count[index] = -1;
