@@ -52,6 +52,8 @@ namespace cali
 {
 	bool mpit_enabled { false };
     vector<cali_id_t> mpit_pvar_attr;
+	vector<cali_id_t> watermark_changed_attr;
+	vector<cali_id_t> watermark_change_attr;
 }
 
 namespace
@@ -89,9 +91,10 @@ namespace
 
 	void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
 
-		int size;
-		unsigned long long int temp_unsigned;
-		double temp_double;
+		int size, watermark_changed;
+		unsigned long long int temp_unsigned, temp_unsigned_array[MAX_COUNT] = {0};
+		double temp_double, temp_double_array[MAX_COUNT] = {0.0};
+		
 
 		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
@@ -113,6 +116,45 @@ namespace
 							}
 							break;
 						}
+						case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
+							watermark_changed = 0;
+							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_unsigned_array[j] = ((unsigned long long int *)buffer)[j];
+								if(temp_unsigned_array[j] > last_value_unsigned_long[index][j]) {
+									watermark_changed = 1;
+									temp_unsigned_array[j] -= last_value_unsigned_long[index][j];
+								} else {
+									temp_unsigned_array[j] = 0;
+								}
+								last_value_unsigned_long[index][j] = ((unsigned long long int *)buffer)[j];
+							}
+							if(watermark_changed) {
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index]));
+							}
+							break;
+						}
+						case MPI_T_PVAR_CLASS_LOWWATERMARK: {
+							watermark_changed = 0;
+							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_unsigned_array[j] = ((unsigned long long int *)buffer)[j];
+								if(temp_unsigned_array[j] < last_value_unsigned_long[index][j]) {
+									watermark_changed = 1;
+									temp_unsigned_array[j] = last_value_unsigned_long[index][j] - temp_unsigned_array[j];
+								} else {
+									temp_unsigned_array[j] = 0;
+								}
+								last_value_unsigned_long[index][j] = ((unsigned long long int *)buffer)[j];
+							}
+							if(watermark_changed) {
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index]));
+							}
+							break;
+						}
+
 						default: {
 							//do nothing for any other class of PVARs.
 							break;
@@ -150,6 +192,45 @@ namespace
 							}
 							break;
 						}
+						case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
+							watermark_changed = 0;
+							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_double_array[j] = ((double *)buffer)[j];
+								if(temp_double_array[j] > last_value_double[index][j]) {
+									watermark_changed = 1;
+									temp_double_array[j] -= last_value_double[index][j];
+								} else {
+									temp_double_array[j] = 0;
+								}
+								last_value_double[index][j] = ((double *)buffer)[j];
+							}
+							if(watermark_changed) {
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_DOUBLE, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_DOUBLE, (void *)temp_double_array, pvar_count[index]));
+							}
+							break;
+						}
+						case MPI_T_PVAR_CLASS_LOWWATERMARK: {
+							watermark_changed = 0;
+							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
+							for(int j=0; j < pvar_count[index]; j++) {
+								temp_double_array[j] = ((double *)buffer)[j];
+								if(temp_double_array[j] < last_value_double[index][j]) {
+									watermark_changed = 1;
+									temp_double_array[j] = last_value_double[index][j] - temp_double_array[j];
+								} else {
+									temp_double_array[j] = 0;
+								}
+								last_value_double[index][j] = ((double *)buffer)[j];
+							}
+							if(watermark_changed) {
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_DOUBLE, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_DOUBLE, (void *)temp_double_array, pvar_count[index]));
+							}
+							break;
+						}
+						
 						default: {
 							//do nothing for any other class of PVARs.
 							break;
@@ -232,6 +313,10 @@ namespace
 	}
 
 	bool is_pvar_class_aggregatable(int index, const char* pvar_name) {
+		Caliper c;
+	    Attribute attr;
+		Attribute aggr_class_attr = c.get_attribute("class.aggregatable");
+	    Variant   v_true(true);
 
 		/*General idea to determine aggretablitity of a PVAR: Any PVAR that represents an internal MPI state is by default not aggregatable
 		 * A PVAR is aggregatable if it "makes sense" to apply one or more of these operators to it: COUNT, SUM, MIN, MAX, AVG. In the future, more operators may be considered.*/
@@ -239,11 +324,11 @@ namespace
 		switch(pvar_class[index]) {
 			case MPI_T_PVAR_CLASS_STATE:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
-				return false;
+				return false; //This class is better viewed along with "time" as another dimension - a.k.a. a trace
 				break;
 			case MPI_T_PVAR_CLASS_LEVEL:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
-				return false;
+				return true; //AVG operator can be applied
 				break;
 			case MPI_T_PVAR_CLASS_SIZE:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
@@ -251,16 +336,42 @@ namespace
 				break;
 			case MPI_T_PVAR_CLASS_PERCENTAGE:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
-				return false; 
+				return true; //AVG operator can be applied
 				break;
-			case MPI_T_PVAR_CLASS_HIGHWATERMARK:
+			case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
-				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. Handling this class is interesting!
+				attr = c.create_attribute(pvar_name+string(".number_highwatermark_changes"), CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				
+				watermark_changed_attr[index] = attr.id();
+				attr = c.create_attribute(pvar_name+string(".total_highwatermark_change"), CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				watermark_change_attr[index] = attr.id();
+				
+				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. We need to create a "derived" attribute for this in order to perform aggregation.
 				break;
-			case MPI_T_PVAR_CLASS_LOWWATERMARK:
+			}
+			case MPI_T_PVAR_CLASS_LOWWATERMARK: {
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
-				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. Handling this class is interesting!
+				attr = c.create_attribute(pvar_name+string(".number_lowwatermark_changes"), CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+				watermark_changed_attr[index] = attr.id();
+				
+				attr = c.create_attribute(pvar_name+string(".total_lowwatermark_change"), CALI_TYPE_DOUBLE,
+    	                                CALI_ATTR_ASVALUE      | 
+        	                            CALI_ATTR_SCOPE_PROCESS | 
+            	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
+
+				watermark_change_attr[index] = attr.id();
+				return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. We need to create a "derived" attribute for this in order to perform aggregation.
 				break;
+			}
 			case MPI_T_PVAR_CLASS_COUNTER:
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
 				return true; // "SUM" or "COUNT" operator to aggregate
@@ -352,6 +463,9 @@ namespace
 		pvar_bind.resize(current_num_pvars, MPI_T_BIND_NO_OBJECT);
 		pvar_names.resize(current_num_pvars,"");
 		mpit_pvar_attr.resize(current_num_pvars);
+		watermark_changed_attr.resize(current_num_pvars);
+		watermark_change_attr.resize(current_num_pvars);
+
 
 	    last_value_unsigned_long.resize(current_num_pvars, {0});
 	    last_value_double.resize(current_num_pvars, {0.0});
