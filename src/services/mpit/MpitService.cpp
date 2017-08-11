@@ -60,8 +60,8 @@ namespace
 {
 	void 	 *buffer;
 	
-	vector<MPI_T_pvar_handle> pvar_handle;
-	vector<int> pvar_count;
+	vector<vector<MPI_T_pvar_handle> > pvar_handle;
+	vector<vector<int> >pvar_count;
 	vector<int> pvar_continuousness;
 	vector<int> pvar_readonlyness;
 	vector<bool> pvar_is_aggregatable;
@@ -76,14 +76,9 @@ namespace
 	vector<array <unsigned long long int, MAX_COUNT> > last_value_unsigned_long;
 	vector<array <double, MAX_COUNT> > last_value_double;
 
-
 	ConfigSet        config;
 
 	ConfigSet::Entry configdata[] = {
-    { "bind_comm_world", CALI_TYPE_BOOL, "true",
-      "Bind the MPI_COMM_WORLD object to a performance variable if the MPI implementation supports such variables.",
-      "Bind the MPI_COMM_WORLD object to a performance variable if the MPI implementation supports such variables.\n"
-    },
     	ConfigSet::Terminator
 	};
 
@@ -98,8 +93,9 @@ namespace
 
 		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
-		for(int index=0; index < num_pvars && pvar_count[index] != -1; index++) {
-			MPI_T_pvar_read(pvar_session, pvar_handle[index], buffer);
+		for(int index=0; index < num_pvars; index++) {
+		  for(int subindex=0; subindex < pvar_handle[index].size(); subindex++) {
+			MPI_T_pvar_read(pvar_session, pvar_handle[index][subindex], buffer);
 			
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))
 				{
@@ -109,7 +105,7 @@ namespace
 						case MPI_T_PVAR_CLASS_AGGREGATE: {
 							//These are free-counting (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
 							//value of the PVAR
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_unsigned = ((unsigned long long int *)buffer)[j];
 								((unsigned long long int *)buffer)[j] -= last_value_unsigned_long[index][j];
 								last_value_unsigned_long[index][j] = temp_unsigned;
@@ -119,7 +115,7 @@ namespace
 						case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
 							watermark_changed = 0;
 							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_unsigned_array[j] = ((unsigned long long int *)buffer)[j];
 								if(temp_unsigned_array[j] > last_value_unsigned_long[index][j]) {
 									watermark_changed = 1;
@@ -131,14 +127,14 @@ namespace
 							}
 							if(watermark_changed) {
 								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index]));
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index][subindex]));
 							}
 							break;
 						}
 						case MPI_T_PVAR_CLASS_LOWWATERMARK: {
 							watermark_changed = 0;
 							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_unsigned_array[j] = ((unsigned long long int *)buffer)[j];
 								if(temp_unsigned_array[j] < last_value_unsigned_long[index][j]) {
 									watermark_changed = 1;
@@ -150,7 +146,7 @@ namespace
 							}
 							if(watermark_changed) {
 								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index]));
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_unsigned_array, pvar_count[index][subindex]));
 							}
 							break;
 						}
@@ -161,19 +157,19 @@ namespace
 						}
 					}
 
-			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index]));
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_UINT, buffer, pvar_count[index][subindex]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((unsigned long long int *)buffer)[0] << endl;
 				}
 				else if((pvar_type[index] == MPI_INT))
 				{
-			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_INT, buffer, pvar_count[index]));
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_INT, buffer, pvar_count[index][subindex]));
 					
 					Log(3).stream() << "Index and Value: " <<  index << " " << ((int *)buffer)[0] << endl;
 				}
 				else if((pvar_type[index] == MPI_CHAR))
 				{
-			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_STRING, buffer, pvar_count[index]));
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_STRING, buffer, pvar_count[index][subindex]));
 					
 					Log(3).stream() << "Index and Value: " <<  index << "  " << ((char *)buffer)[0] << endl;
 				}
@@ -185,7 +181,7 @@ namespace
 						case MPI_T_PVAR_CLASS_AGGREGATE: {
 							//These are free-counting (monotonically increasing) counters and timers. Keep track of the last value read, and find the difference to get the change in the 
 							//value of the PVAR
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_double = ((double *)buffer)[j];
 								((double *)buffer)[j] -= last_value_double[index][j];
 								last_value_double[index][j] = temp_double;
@@ -195,7 +191,7 @@ namespace
 						case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
 							watermark_changed = 0;
 							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_double_array[j] = ((double *)buffer)[j];
 								if(temp_double_array[j] > last_value_double[index][j]) {
 									watermark_changed = 1;
@@ -207,14 +203,14 @@ namespace
 							}
 							if(watermark_changed) {
 								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index]));
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index][subindex]));
 							}
 							break;
 						}
 						case MPI_T_PVAR_CLASS_LOWWATERMARK: {
 							watermark_changed = 0;
 							//Calculate the "derived" value for watermarks - whether this function changed the watermark, and if so, by how much"
-							for(int j=0; j < pvar_count[index]; j++) {
+							for(int j=0; j < pvar_count[index][subindex]; j++) {
 								temp_double_array[j] = ((double *)buffer)[j];
 								if(temp_double_array[j] < last_value_double[index][j]) {
 									watermark_changed = 1;
@@ -226,7 +222,7 @@ namespace
 							}
 							if(watermark_changed) {
 								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index]));
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index][subindex]));
 							}
 							break;
 						}
@@ -237,10 +233,11 @@ namespace
 						}
 					}
 
-			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index]));
+			    	snapshot->append(mpit_pvar_attr[index], Variant(CALI_TYPE_DOUBLE, buffer, pvar_count[index][subindex]));
 					
 					Log(3).stream() << "Index and Value: " << index << " " << ((double *)buffer)[0] << endl;
 				}
+			}
 		}
 
 	}
@@ -345,7 +342,7 @@ namespace
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
 				
 				watermark_changed_attr[index] = attr.id();
-				attr = c->create_attribute(string("mpit.")+pvar_name+string(".total_highwatermark_change"), CALI_TYPE_UNIT,
+				attr = c->create_attribute(string("mpit.")+pvar_name+string(".total_highwatermark_change"), CALI_TYPE_UINT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
@@ -356,7 +353,7 @@ namespace
 			}
 			case MPI_T_PVAR_CLASS_LOWWATERMARK: {
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
-				attr = c->create_attribute(pvar_name+string(".number_lowwatermark_changes"), CALI_TYPE_UNIT,
+				attr = c->create_attribute(pvar_name+string(".number_lowwatermark_changes"), CALI_TYPE_UINT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
@@ -398,12 +395,9 @@ namespace
 
 		for(int index=0; index < num_pvars; index++) {
 
-			/*Iterate through all pvars, and only allocate handles for those pvars whose bindings are the same as the input to this function
-			 * Also, check if the pvar_handle is NULL -- we should only be allocating handles once. This means that additional calls to this function will simply return
-			 * without doing anything.
-			 * In other words, PVARs that are bound to something other than MPI_T_BIND_NO_OBJECT will be bound to the FIRST MPI_OBJ of that type for the course of the entire run*/
-			if(bind == pvar_bind[index] && pvar_handle[index] == NULL) {
-				return_val = MPI_T_pvar_handle_alloc(pvar_session, index, handle, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+			/*Iterate through all pvars, and only allocate handles for those pvars whose bindings are the same as the input to this function*/
+			if(bind == pvar_bind[index]) {
+				return_val = MPI_T_pvar_handle_alloc(pvar_session, index, handle, &(pvar_handle.data())[index][pvar_handle[index].size() - 1], &(pvar_count.data())[index][pvar_handle[index].size() - 1]);
 			} else {
 				continue;
 			}
@@ -419,7 +413,7 @@ namespace
 		   {
 			   Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_names[index] << " is non-continuous. Starting this PVAR. " << endl;
 
-		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index]);
+		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index][pvar_handle[index].size() - 1]);
 
 		   		if (return_val != MPI_SUCCESS) 
 				{
@@ -429,7 +423,15 @@ namespace
 
 			}
 			
-			create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
+			/*Only create the attribute for the PVAR once*/
+			if(1 == pvar_handle[index].size()) {
+				create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
+			}
+
+			/*Increase the size of the PVAR handle and PVAR count arrays*/
+			pvar_handle[index].resize(pvar_handle[index].size() + 1, NULL);
+			pvar_count[index].resize(pvar_count[index].size() + 1, -1);
+
 		}
 	}
 
@@ -452,13 +454,14 @@ namespace
 		    return;
 		}
 
-		pvar_handle.resize(current_num_pvars, NULL);
+		pvar_handle.resize(current_num_pvars, {NULL});
+
 		pvar_continuousness.resize(current_num_pvars, 0);
 		pvar_readonlyness.resize(current_num_pvars, 1);
 		pvar_is_aggregatable.resize(current_num_pvars, false);
 		pvar_class.resize(current_num_pvars, MPI_T_PVAR_CLASS_GENERIC);
 		pvar_type.resize(current_num_pvars);
-		pvar_count.resize(current_num_pvars, 0);
+		pvar_count.resize(current_num_pvars);
 		pvar_bind.resize(current_num_pvars, MPI_T_BIND_NO_OBJECT);
 		pvar_names.resize(current_num_pvars,"");
 		mpit_pvar_attr.resize(current_num_pvars);
@@ -473,6 +476,9 @@ namespace
 
 		for(int index=num_pvars; index < current_num_pvars; index++) {
 
+			pvar_handle[index].resize(1, NULL);
+			pvar_count[index].resize(1, -1);
+
 			desc_len = name_len = NAME_LEN;
 
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &(pvar_type.data())[index], &enumtype, 
@@ -485,23 +491,26 @@ namespace
 			Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has description: " << pvar_desc << endl;
 
 			/* allocate a pvar handle that will be used later */
-			pvar_count[index] = -1;
 
 			switch (pvar_bind[index]) {
 				case MPI_T_BIND_NO_OBJECT:
 				{
 					Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
-					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
+					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index][0], &(pvar_count.data())[index][0]);
 					break;
 				}
-				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). Support MPI_COMM_WORLD as default.
+				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). Support MPI_COMM_WORLD, MPI_COMM_SELF as default.
 				{
 					Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_COMM" << endl;
-					if(config.get("bind_comm_world").to_bool()) {
-						return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index], &(pvar_count.data())[index]);
-						break;
-					}
-					continue;
+					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index][0], &(pvar_count.data())[index][0]);
+					pvar_handle[index].resize(2, NULL);
+					pvar_count[index].resize(2, -1);
+					comm = MPI_COMM_SELF;
+					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index][1], &(pvar_count.data())[index][1]);
+					pvar_handle[index].resize(3, NULL);
+					pvar_count[index].resize(3, -1);
+
+					break;
 				}
 				case MPI_T_BIND_MPI_WIN: //Handle this through a Wrapper call to MPI_Win_create.
 				{
@@ -521,7 +530,7 @@ namespace
 		   {
 			   Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_name << " is non-continuous. Starting this PVAR. " << endl;
 
-		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index]);
+		       return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index][0]);
 
 		   		if (return_val != MPI_SUCCESS) 
 				{
