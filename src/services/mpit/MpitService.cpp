@@ -206,8 +206,8 @@ namespace
 								last_value_double[index][j] = ((double *)buffer)[j];
 							}
 							if(watermark_changed) {
-								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_DOUBLE, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_DOUBLE, (void *)temp_double_array, pvar_count[index]));
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index]));
 							}
 							break;
 						}
@@ -225,8 +225,8 @@ namespace
 								last_value_double[index][j] = ((double *)buffer)[j];
 							}
 							if(watermark_changed) {
-								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_DOUBLE, &watermark_changed, 1));	
-								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_DOUBLE, (void *)temp_double_array, pvar_count[index]));
+								snapshot->append(watermark_changed_attr[index], Variant(CALI_TYPE_UINT, &watermark_changed, 1));	
+								snapshot->append(watermark_change_attr[index], Variant(CALI_TYPE_UINT, (void *)temp_double_array, pvar_count[index]));
 							}
 							break;
 						}
@@ -312,10 +312,9 @@ namespace
 		Log(3).stream() << "Attribute created with name: " << attr.name() << endl;
 	}
 
-	bool is_pvar_class_aggregatable(int index, const char* pvar_name) {
-		Caliper c;
+	bool is_pvar_class_aggregatable(int index, const char* pvar_name, Caliper *c) {
 	    Attribute attr;
-		Attribute aggr_class_attr = c.get_attribute("class.aggregatable");
+		Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
 	    Variant   v_true(true);
 
 		/*General idea to determine aggretablitity of a PVAR: Any PVAR that represents an internal MPI state is by default not aggregatable
@@ -340,13 +339,13 @@ namespace
 				break;
 			case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
-				attr = c.create_attribute(pvar_name+string(".number_highwatermark_changes"), CALI_TYPE_DOUBLE,
+				attr = c->create_attribute(string("mpit.")+pvar_name+string(".number_highwatermark_changes"), CALI_TYPE_UINT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
 				
 				watermark_changed_attr[index] = attr.id();
-				attr = c.create_attribute(pvar_name+string(".total_highwatermark_change"), CALI_TYPE_DOUBLE,
+				attr = c->create_attribute(string("mpit.")+pvar_name+string(".total_highwatermark_change"), CALI_TYPE_UNIT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
@@ -357,13 +356,13 @@ namespace
 			}
 			case MPI_T_PVAR_CLASS_LOWWATERMARK: {
 				Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LOWWATERMARK" << endl;
-				attr = c.create_attribute(pvar_name+string(".number_lowwatermark_changes"), CALI_TYPE_DOUBLE,
+				attr = c->create_attribute(pvar_name+string(".number_lowwatermark_changes"), CALI_TYPE_UNIT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
 				watermark_changed_attr[index] = attr.id();
 				
-				attr = c.create_attribute(pvar_name+string(".total_lowwatermark_change"), CALI_TYPE_DOUBLE,
+				attr = c->create_attribute(pvar_name+string(".total_lowwatermark_change"), CALI_TYPE_UINT,
     	                                CALI_ATTR_ASVALUE      | 
         	                            CALI_ATTR_SCOPE_PROCESS | 
             	                        CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
@@ -479,8 +478,8 @@ namespace
 			MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &(pvar_type.data())[index], &enumtype, 
 								pvar_desc, &desc_len, &(pvar_bind.data())[index], &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
 			
-			pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_name);
 			pvar_names[index] = pvar_name;
+			pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_names[index].c_str(), c);
 
 			Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
 			Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has description: " << pvar_desc << endl;
