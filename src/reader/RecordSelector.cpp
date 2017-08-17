@@ -33,13 +33,11 @@
 /// @file RecordSelector.cpp
 /// RecordSelector implementation
 
+#include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordSelector.h"
 
-#include "caliper/reader/QuerySpec.h"
-
-#include "caliper/common/CaliperMetadataAccessInterface.h"
-
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
 #include "caliper/common/util/split.hpp"
@@ -50,83 +48,80 @@
 
 using namespace cali;
 
+namespace
+{
+
+QuerySpec::Condition
+parse_clause(const std::string& str)
+{
+    QuerySpec::Condition clause { QuerySpec::Condition::None, "", "" };
+    
+    // parse "[-]attribute[(<>=)value]" string
+
+    if (str.empty())
+        return clause;
+        
+    std::string::size_type spos = 0;
+    bool negate = false;
+
+    if (str[spos] == '-') {
+        ++spos;
+        negate = true;
+    }
+
+    std::string::size_type opos = str.find_first_of("<>=", spos);
+
+    clause.attr_name.assign(str, spos, opos < std::string::npos ? opos-spos : opos);
+
+    if (opos < str.size()-1) {
+        clause.value.assign(str, opos+1, std::string::npos);
+
+        struct ops_t { char c; QuerySpec::Condition::Op op; } const ops[] = {
+            // { '<', Op::Less     }, { '>', Op::Greater  },
+            { '=', QuerySpec::Condition::Op::Equal },
+            { 0,   QuerySpec::Condition::Op::Exist }
+        };
+
+        int i;
+        for (i = 0; ops[i].c && ops[i].c != str[opos]; ++i)
+            ;
+
+        if (negate) {
+            switch (ops[i].op) {
+            case QuerySpec::Condition::Op::Exist:
+                clause.op = QuerySpec::Condition::Op::NotExist;
+                break;
+            case QuerySpec::Condition::Op::Equal:
+                clause.op = QuerySpec::Condition::Op::NotEqual;
+                break;
+            default:
+                // TODO: Handle remaining conditions
+                clause.op = QuerySpec::Condition::Op::None;
+            }
+        } else {
+            clause.op = ops[i].op;
+        }
+    }
+    
+    if (clause.attr_name.empty() || (opos < std::string::npos && clause.value.empty()))
+        clause.op = QuerySpec::Condition::Op::None;
+
+    return clause;
+}
+
+}
+
+using namespace cali;
+
 struct RecordSelector::RecordSelectorImpl
 {
-    std::vector<QuerySpec::Condition> m_filters;
-    
-    bool parse_clause(const std::string& str) {
-        // parse "[-]attribute[(<>=)value]" string
-
-        if (str.empty())
-            return false;
-
-        QuerySpec::Condition clause { QuerySpec::Condition::None, "", "" };
-        
-        std::string::size_type spos = 0;
-        bool negate = false;
-
-        if (str[spos] == '-') {
-            ++spos;
-            negate = true;
-        }
-
-        std::string::size_type opos = str.find_first_of("<>=", spos);
-
-        clause.attr_name.assign(str, spos, opos < std::string::npos ? opos-spos : opos);
-
-        if (opos < str.size()-1) {
-            clause.value.assign(str, opos+1, std::string::npos);
-
-            struct ops_t { char c; QuerySpec::Condition::Op op; } const ops[] = {
-                // { '<', Op::Less     }, { '>', Op::Greater  },
-                { '=', QuerySpec::Condition::Op::Equal },
-                { 0,   QuerySpec::Condition::Op::Exist }
-            };
-
-            int i;
-            for (i = 0; ops[i].c && ops[i].c != str[opos]; ++i)
-                ;
-
-            if (negate) {
-                switch (ops[i].op) {
-                case QuerySpec::Condition::Op::Exist:
-                    clause.op = QuerySpec::Condition::Op::NotExist;
-                    break;
-                case QuerySpec::Condition::Op::Equal:
-                    clause.op = QuerySpec::Condition::Op::NotEqual;
-                    break;
-                default:
-                    // TODO: Handle remaining conditions
-                    clause.op = QuerySpec::Condition::Op::None;
-                }
-            } else {
-                clause.op = ops[i].op;
-            }
-        }
-
-        if (!clause.attr_name.empty() && (opos == std::string::npos || !clause.value.empty()))
-            m_filters.push_back(clause);
-        else 
-            return false;
-
-        return true;
-    }
+    std::vector<QuerySpec::Condition> m_filters;    
 
     struct Clause {
         QuerySpec::Condition::Op op;
         Attribute attr;
         Variant   value;
-    };
-    
-    void parse(const std::string& filter_string) {
-        std::vector<std::string> clause_strings;
-
-        util::split(filter_string, ':', std::back_inserter(clause_strings));
-
-        for (const std::string& s : clause_strings)
-            if (!parse_clause(s))
-                std::cerr << "cali-query: malformed selector clause: \"" << s << "\"" << std::endl;
-    }
+    };    
 
     void configure(const QuerySpec& spec) {
         m_filters.clear();
@@ -218,7 +213,7 @@ struct RecordSelector::RecordSelectorImpl
 RecordSelector::RecordSelector(const std::string& filter_string)
     : mP { new RecordSelectorImpl }
 {
-    mP->parse(filter_string);
+    mP->m_filters = parse(filter_string);
 }
 
 RecordSelector::RecordSelector(const QuerySpec& spec)
@@ -243,4 +238,24 @@ RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& 
 {
     if (mP->pass(db, list))
         push(db, list);
+}
+
+std::vector<QuerySpec::Condition>
+RecordSelector::parse(const std::string& str)
+{
+    std::vector<QuerySpec::Condition> clauses;    
+    std::vector<std::string> clause_strings;
+
+    util::split(str, ',', std::back_inserter(clause_strings));
+
+    for (const std::string& s : clause_strings) {
+        QuerySpec::Condition clause = ::parse_clause(s);
+
+        if (clause.op != QuerySpec::Condition::Op::None)
+            clauses.push_back(clause);
+        else
+            std::cerr << "cali-query: malformed selector clause: \"" << s << "\"" << std::endl;
+    }
+
+    return clauses;
 }

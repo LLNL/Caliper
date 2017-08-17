@@ -35,6 +35,7 @@
 /// A basic tool for Caliper metadata queries
 
 #include "AttributeExtract.h"
+#include "query_common.h"
 
 #include "caliper/tools-util/Args.h"
 
@@ -42,13 +43,9 @@
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"
-#include "caliper/reader/Expand.h"
-#include "caliper/reader/Format.h"
+#include "caliper/reader/FormatProcessor.h"
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
-#include "caliper/reader/Table.h"
-#include "caliper/reader/TreeFormatter.h"
-#include "caliper/reader/Json.h"
 
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
@@ -164,21 +161,6 @@ namespace
         }
     };
 
-    /// SnapshotFilterStep helper struct
-    /// Basically the chain link in the processing chain.
-    /// Passes result of @param m_filter_fn to @param m_push_fn
-    struct SnapshotFilterStep {
-        SnapshotFilterFn  m_filter_fn;  ///< This processing step
-        SnapshotProcessFn m_push_fn;    ///< Next processing step
-
-        SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn) 
-            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
-            { }
-
-        void operator ()(CaliperMetadataAccessInterface& db, const EntryList& list) {
-            m_filter_fn(db, list, m_push_fn);
-        }
-    };
 
     /// NodeFilterStep helper struct
     /// Basically the chain link in the processing chain.
@@ -195,6 +177,7 @@ namespace
             m_filter_fn(db, node, m_push_fn);
         }
     };
+
 }
 
 
@@ -266,51 +249,25 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    TreeFormatter     trx_writer(args.get("path-attributes"), args.get("attributes"));
-    Table             tbl_writer(args.get("attributes"), args.get("sort"));
-    Json              jsn_writer(args.get("attributes"));
+    QuerySpec         spec = spec_from_args(args);
 
-    NodeProcessFn     node_proc   = [](CaliperMetadataAccessInterface&,const Node*) { return; };
-    SnapshotProcessFn snap_writer = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+    // setup format spec
+    
+    FormatProcessor   format(spec, fs.is_open() ? fs : cout);
 
+    NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
+    SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
 
-    // differentiate between "expand" and "format"
-    if (args.is_set("expand")) {
-        snap_writer = Expand(fs.is_open() ? fs : cout, args.get("attributes"));
-    } else if (args.is_set("format")) {
-        string formatstr = args.get("format");
-        
-        if (formatstr.empty()) {
-            cerr << "cali-query: Format string required for --format" << endl;
-            return -2;
-        }
-        
-        snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
-    } else if (args.is_set("tree"))  {
-        snap_writer = trx_writer;
-    } else if (args.is_set("table")) {        
-        snap_writer = tbl_writer;
-    } 
-    else if(args.is_set("json")) {
-        snap_writer = jsn_writer;
-    }
-    else {
-        CsvWriter writer(fs.is_open() ? fs : cout);
+    Aggregator        aggregate(spec);
 
-        snap_writer = writer;
-        node_proc   = writer;
-    }
+    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
+        snap_proc = format;
+    else
+        snap_proc = aggregate;
 
-    Aggregator        aggregate(args.get("aggregate"), args.get("aggregate-key"));
-    SnapshotProcessFn snap_proc(args.is_set("aggregate") ? aggregate : snap_writer);
-
-    string select = args.get("select");
-
-    if (!select.empty())
-        snap_proc = ::SnapshotFilterStep(RecordSelector(select), snap_proc);
-    else if (args.is_set("select"))
-        cerr << "cali-query: Arguments required for --select" << endl;
-
+    if (spec.filter.selection == QuerySpec::FilterSelection::List)
+        snap_proc = ::SnapshotFilterStep(RecordSelector(spec), snap_proc);
+    
     if (args.is_set("list-attributes")) {
         node_proc = AttributeExtract(snap_proc);
         snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
@@ -374,12 +331,6 @@ int main(int argc, const char* argv[])
 
     a_phase.set("flush");
 
-    aggregate.flush(metadb, snap_writer);
-
-    if (args.is_set("tree"))
-        trx_writer.flush(metadb, fs.is_open() ? fs : cout);
-    else if (args.is_set("table"))
-        tbl_writer.flush(metadb, fs.is_open() ? fs : cout);
-    else if (args.is_set("json"))
-        jsn_writer.flush(metadb, fs.is_open() ? fs : cout);
+    aggregate.flush(metadb, format);
+    format.flush(metadb);
 }

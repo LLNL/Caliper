@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,59 +30,42 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file  TableReport.cpp
-/// \brief Generates text reports from Caliper snapshots on flush() events 
+/// \file Json.h
+/// Json output formatter
 
-#include "caliper/report/TableReport.h"
+#pragma once
 
-#include "caliper/Caliper.h"
-#include "caliper/SnapshotRecord.h"
+#include "Formatter.h"
+#include "RecordProcessor.h"
 
-using namespace cali;
-using namespace cali::report;
+#include "../common/RecordMap.h"
 
+#include <iostream>
+#include <memory>
 
-void TableReport::report()
+namespace cali
 {
-    Caliper c;
 
-    c.flush(nullptr, 
-            [this,&c](const SnapshotRecord* snapshot){
-                using namespace std::placeholders;
-                m_selector(c, snapshot->to_entrylist(), std::bind(&TableFormatter::process_record, &m_table_formatter, _1, _2));
-                return true;
-            });
+class CaliperMetadataAccessInterface;
+class QuerySpec;
 
-    m_table_formatter.flush(c, *m_output_stream);
-}
+/// \brief Prints snapshot records as JSON
+/// \ingroup ReaderAPI
+class JsonFormatter : public Formatter
+{
+    struct JsonFormatterImpl;
+    std::shared_ptr<JsonFormatterImpl> mP;
 
-TableReport::TableReport(output_stream_type out, 
-                         const std::string& attributes, 
-                         const std::string& sort, 
-                         const std::string& filter)
-    : m_output_stream(out),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+public:
 
-TableReport::TableReport(std::ostream&      out, 
-                         const char*        attributes, 
-                         const char*        sort, 
-                         const char*        filter)
-    : m_output_stream(&out),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+    JsonFormatter(const std::string& fields);
+    JsonFormatter(const QuerySpec& spec);
 
-TableReport::TableReport(FILE*              fp, 
-                         const char*        attributes, 
-                         const char*        sort, 
-                         const char*        filter)
-    : m_output_stream(new std::ostream(new FileBufferStream(fp))),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+    ~JsonFormatter();
 
-TableReport::~TableReport()
-{ }
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
+};
+
+} // namespace cali

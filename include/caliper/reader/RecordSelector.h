@@ -36,6 +36,7 @@
 #ifndef CALI_RECORDSELECTOR_H
 #define CALI_RECORDSELECTOR_H
 
+#include "QuerySpec.h"
 #include "RecordProcessor.h"
 
 #include <memory>
@@ -44,7 +45,6 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
-class QuerySpec;
 
 /// \brief Filter for snapshot records
 /// \ingroup ReaderAPI
@@ -57,7 +57,6 @@ class RecordSelector
 public:
 
     RecordSelector(const std::string& filter_string);
-
     RecordSelector(const QuerySpec& spec);
     
     ~RecordSelector();
@@ -65,6 +64,8 @@ public:
     bool pass(const CaliperMetadataAccessInterface&, const EntryList&);
 
     void operator()(CaliperMetadataAccessInterface&, const EntryList&, SnapshotProcessFn) const;
+
+    static std::vector<QuerySpec::Condition> parse(const std::string&);
 };
 
 } // namespace cali

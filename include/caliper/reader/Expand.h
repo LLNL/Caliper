@@ -36,6 +36,7 @@
 #ifndef CALI_EXPAND_H
 #define CALI_EXPAND_H
 
+#include "Formatter.h"
 #include "RecordProcessor.h"
 
 #include "../common/RecordMap.h"
@@ -47,11 +48,12 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class QuerySpec;
 
 /// \brief Prints expanded snapshot records in CSV form
 /// \ingroup ReaderAPI
     
-class Expand 
+class Expand : public Formatter
 {
     struct ExpandImpl;
     std::shared_ptr<ExpandImpl> mP;
@@ -59,10 +61,13 @@ class Expand
 public:
 
     Expand(std::ostream& os, const std::string& filter_string);
+    Expand(std::ostream& os, const QuerySpec& spec);
 
     ~Expand();
 
     void operator()(CaliperMetadataAccessInterface&, const EntryList&) const;
+
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };
 
 } // namespace cali

@@ -535,7 +535,6 @@ struct Aggregator::AggregatorImpl
             }
             break;
         case QuerySpec::AggregationSelection::None:
-            Log(0).stream() << "aggregator: Error: No aggregation in query spec!" << std::endl;
             break;
         }
     }

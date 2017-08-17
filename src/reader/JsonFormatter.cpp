@@ -33,11 +33,10 @@
 /// @file Json.cpp
 /// Print web-readable table
 
-#include "caliper/reader/Json.h"
-
-#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/reader/JsonFormatter.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 
@@ -49,7 +48,7 @@
 
 using namespace cali;
 
-struct Json::JsonImpl
+struct JsonFormatter::JsonFormatterImpl
 {
     std::vector<std::string>                m_col_attr_names;
     std::vector<Attribute>                  m_cols;    
@@ -188,25 +187,25 @@ struct Json::JsonImpl
 };
 
 
-Json::Json(const std::string& fields)
-    : mP { new JsonImpl }
+JsonFormatter::JsonFormatter(const std::string& fields)
+    : mP { new JsonFormatterImpl }
 {
     mP->parse(fields);
 }
 
-Json::~Json()
+JsonFormatter::~JsonFormatter()
 {
     mP.reset();
 }
 
 void 
-Json::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
+JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
 }
 
 void
-Json::flush(CaliperMetadataAccessInterface&, std::ostream& os)
+JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
     mP->flush(os);
 }

@@ -371,5 +371,4 @@ TEST(RecordFilterTest, TestEqual) {
             EXPECT_FALSE(::has_entry(rec, val_attr, v_val47));
         }
     }
-
 }

@@ -87,6 +87,10 @@ struct QuerySpec
         AggregationOp(const FunctionSignature& s)
             : op(s)
         { }
+
+        AggregationOp(const FunctionSignature& s, const std::vector<std::string>& a, const std::string& as = "")
+            : op(s), args(a), alias(as)
+        { } 
     };
 
     /// \brief Sort description
@@ -95,6 +99,10 @@ struct QuerySpec
             Ascending, Descending
         }           order;
         std::string attribute;
+
+        SortSpec(const std::string& s, Order o = Ascending)
+            : attribute(s), order(o)
+        { }
     };
 
     /// \brief Filter condition
