@@ -1,0 +1,11 @@
+\chapter*{Introduction}
+MPI libraries today involve multiple components interacting in complex ways to affect performance. Together with the heterogeneous nature of current and future architectures, this means default MPI library settings may not always be optimal for performance and scalability --- significant performance gains may be achieved by tailoring MPI library behaviour to suit application characteristics. To understand MPI library internals, there needs to be a way to introspect the MPI\_T libary at runtime. In order to modify MPI library behaviour dynamically at runtime, the library must expose a means to do so. \\
+The MPI\_T interface, introduced in the MPI 3.0 standard provides external tools an opportunity to introspect and potentially modify MPI library behaviour at runtime by means of two semantics:
+\begin{itemize}
+	\item Performance Variables (PVARs): Performance variables represent MPI internal information in the form of counters, state, watermarks, etc. The MPI specification details the various classes of PVARs supported, allowed datatypes and access semantics each of class. 
+	\item Control Variables (CVARs): Control variables are the means by which an external tool can modify MPI library behaviour and fine-tune application performance. They are essentially knobs that may represent the value of a particular setting inside the MPI library.
+\end{itemize}
+Caliper is an application introspection tool that relies on source code annotations to collect information and perform profiling related tasks. Caliper \emph{services} are the basic building blocks that can be combined freely to realize advanced profiling / tracing capabilities. The \emph{MPI} service utilizes the PMPI interface to profile MPI library calls. This document describes the design of the \emph{MPIT} service that performs MPI library introspection through the MPI\_T interface. The motivation behind this document is to describe the rationale that went into the design of the service. Caliper is in active development --- this document deliberately avoids description of code or filenames used to implement the \emph{MPIT} service. However, any design modifications to the service shall be reflected here.\\
+We shall touch upon some Caliper concepts when required. For detailed description of Caliper design, kindly refer to Caliper documentation.
+
+
