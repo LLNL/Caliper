@@ -1,40 +1,41 @@
-#ifndef CALI_SERVICES_FILTER_REGEX_FILTER_HXX_
-#define CALI_SERVICES_FILTER_REGEX_FILTER_HXX_
+#pragma once
 
 #include "Filter.h"
 
 #include <string>
-#include <sstream>
 #include <regex>
 
 #include <iostream>
 
+namespace cali
+{
 
 class RegexFilter : public Filter {
-  private:
-    std::regex filter_regex;
-    bool inclusive;
-  public:
-    virtual void initialize(std::string config_name)
-    {
-      std::string regex = config.get("regex").to_string();
-      inclusive = config.get("inclusive").to_bool();
-      filter_regex = std::regex(regex, std::regex::optimize);
-    }
+    std::regex m_filter_regex;
+    bool       m_inclusive;
 
-    virtual bool apply_filter(const cali::Attribute& attr, const cali::Variant& value)
-    {
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
+public:
 
-      std::string attr_and_val = ss.str();
+    RegexFilter(const char* tag, const cali::ConfigSet& config)
+        {
+            std::string regex = config.get("regex").to_string();
 
-      if (std::regex_search(attr_and_val, filter_regex)) {
-        return inclusive;
-      } else {
-        return (!inclusive);
-      }
+            m_inclusive    = config.get("inclusive").to_bool();
+            m_filter_regex = std::regex(regex, std::regex::optimize);            
+        }
+
+    virtual bool filter(const cali::Attribute& attr, const cali::Variant& value) {
+        std::string s(attr.name());
+        s.append("=");
+        s.append(value.to_string());
+
+        if (std::regex_search(s, m_filter_regex)) {
+            return m_inclusive;
+        } else {
+            return (!m_inclusive);
+        }
     }
 };
 
-#endif
+}
+

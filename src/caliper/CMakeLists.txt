@@ -1,7 +1,6 @@
 set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
-    CompressedSnapshotRecord.cpp
     ContextBuffer.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
@@ -9,7 +8,14 @@ set(CALIPER_SOURCES
     api.cpp
     cali.cpp)
 
-add_library(caliper ${CALIPER_SOURCES} $<TARGET_OBJECTS:caliper-services> ${CALIPER_SERVICES_LIBS})
+add_subdirectory(report)
+  
+add_library(caliper 
+  $<TARGET_OBJECTS:caliper-services>
+  $<TARGET_OBJECTS:caliper-reporters>
+  ${CALIPER_SOURCES} 
+  ${CALIPER_SERVICES_LIBS})
+
 target_link_libraries(caliper PUBLIC caliper-common)
 target_link_libraries(caliper PRIVATE Threads::Threads)
 

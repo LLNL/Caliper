@@ -31,8 +31,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /** 
- * @file node.h 
- * Node class declaration
+ * \file Node.h 
+ * \brief Context tree node class.
  */
 
 #ifndef CALI_NODE_H
@@ -52,18 +52,16 @@
 namespace cali 
 {
 
-//
-// --- Node base class 
-//
+/// \brief A context tree node.
+///
+/// Represents a context tree node and its (attribute key, value) pair.
 
 class Node : public IdType, public util::LockfreeIntrusiveTree<Node> 
 {
     util::LockfreeIntrusiveTree<Node>::Node m_treenode;
 
-    cali_id_t         m_attribute;
-    Variant           m_data;
-
-    std::atomic<bool> m_written; // temporary implementation - will go away
+    cali_id_t m_attribute;
+    Variant   m_data;
 
     static const RecordDescriptor s_record;
 
@@ -72,7 +70,8 @@ public:
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
         : IdType(id),
           util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode), 
-        m_attribute { attr }, m_data { data }, m_written { false }
+        m_attribute { attr },
+        m_data      { data }
         { }
 
     Node(const Node&) = delete;
@@ -89,16 +88,6 @@ public:
 
     cali_id_t attribute() const { return m_attribute; }
     Variant   data() const      { return m_data;      }    
-
-    // Temporary implementation - will go away
-    bool      written() const   { return m_written.load(); }
-    bool      check_written()   { return m_written.exchange(true); }
-    void      write_path(WriteRecordFn recfn);
-    
-    /// @name Serialization API
-    /// @{
-
-    void      push_record(WriteRecordFn recfn) const;
     
     static const RecordDescriptor& record_descriptor() { return s_record; }
 

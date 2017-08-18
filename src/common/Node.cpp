@@ -60,33 +60,6 @@ bool Node::equals(cali_id_t attr, const void* data, size_t size) const
     return false;
 }
 
-void Node::push_record(WriteRecordFn fn) const
-{
-    cali_id_t parent_id = parent() ? parent()->id() : CALI_INV_ID;
-
-    int n[] = { 1, 1, 1, (parent_id == CALI_INV_ID ? 0 : 1) };
-
-    Variant  v_id     { id()        };
-    Variant  v_attr   { m_attribute }; 
-    Variant  v_parent { parent_id   };
-
-    const Variant* data[] = { &v_id, &v_attr, &m_data, &v_parent };
-
-    fn(s_record, n, data);
-}
-
-// temporary - will go away
-void Node::write_path(WriteRecordFn fn)
-{
-    if (!written()) {
-        if (parent() && parent()->id() != CALI_INV_ID)
-            parent()->write_path(fn);
-            
-        push_record(fn);
-        m_written.store(true);
-    }
-}
-
 RecordMap Node::record() const
 {
     RecordMap rec;

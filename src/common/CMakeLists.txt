@@ -1,12 +1,15 @@
 set(CALIPER_COMMON_SOURCES
     Attribute.cpp
     CaliperMetadataAccessInterface.cpp
+    CompressedSnapshotRecord.cpp
     ContextRecord.cpp
     Entry.cpp
     Log.cpp
     Node.cpp
+    NodeBuffer.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
+    SnapshotBuffer.cpp
     SnapshotTextFormatter.cpp
     StringConverter.cpp
     Variant.cpp

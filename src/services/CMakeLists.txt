@@ -30,6 +30,8 @@ macro(add_service_objlib)
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
 
+add_subdirectory(common)
+
 # Service subdirectories
 
 add_subdirectory(aggregate)
@@ -45,8 +47,8 @@ endif()
 if (CALIPER_HAVE_LIBCURL)
   add_subdirectory(netout)
 endif()
-if (CALIPER_HAVE_NVVP)
-  add_subdirectory(nvvp)
+if (CALIPER_HAVE_NVPROF)
+  add_subdirectory(nvprof)
 endif()
 if (CALIPER_HAVE_CUPTI)
   add_subdirectory(cupti)

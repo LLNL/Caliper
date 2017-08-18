@@ -1,7 +1,11 @@
-# - caliper: (David's TO DO)
+# - caliper: Context Annotation Library
 #
 #=============================================================================
-# caliper is ....  (David's TO DO)
+# Caliper is a program instrumentation and performance measurement
+# framework. It provides data collection mechanisms and a source-code
+# annotation API for a variety of performance engineering use cases,
+# e.g., performance profiling, tracing, monitoring, and
+# auto-tuning.
 #
 #=== Usage ===================================================================
 # This file allows caliper to be automatically detected by other libraries
@@ -34,9 +38,9 @@ if (NOT caliper_CONFIG_LOADED)
 
   # Install layout
   set(caliper_INSTALL_PREFIX @CMAKE_INSTALL_PREFIX@)
-  set(caliper_INCLUDE_DIR    ${caliper_INSTALL_PREFIX}/include)
-  set(caliper_LIB_DIR        ${caliper_INSTALL_PREFIX}/lib)
-  set(caliper_CMAKE_DIR      ${caliper_INSTALL_PREFIX}/share/cmake/caliper)
+  set(caliper_INCLUDE_DIR    @CMAKE_INSTALL_FULL_INCLUDEDIR@)
+  set(caliper_LIB_DIR        @CMAKE_INSTALL_FULL_LIBDIR@)
+  set(caliper_CMAKE_DIR      @CMAKE_INSTALL_FULL_DATADIR@/cmake/caliper)
 
   # Includes needed to use caliper
   set(caliper_INCLUDE_PATH ${caliper_INCLUDE_DIR})

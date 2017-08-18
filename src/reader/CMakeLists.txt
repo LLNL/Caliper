@@ -5,12 +5,18 @@ set(CALIPER_READER_SOURCES
     CaliperMetadataDB.cpp
     RecordSelector.cpp
     SimpleReader.cpp
+    SnapshotTree.cpp
     Table.cpp
+    TreeFormatter.cpp
     Json.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
 target_link_libraries(caliper-reader caliper-common)
+
+if (BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 install(TARGETS caliper-reader 
   EXPORT caliper

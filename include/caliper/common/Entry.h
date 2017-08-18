@@ -11,6 +11,14 @@ namespace cali
 // --- Class for either a node or immediate data element
 //
 
+/// \brief Encapsulate a blackboard or snapshot record entry. 
+///
+/// Represents a blackboard or snapshot record entry, which can be either 
+/// a _reference entry_ (reference into the context tree) or an 
+/// _immediate entry_ (explicit key:value pair). Reference entries are
+/// stored as context tree node pointer, immediate entries are stored as
+/// (attribute id, value) pair.
+
 class Entry 
 {
     const Node* m_node;
@@ -34,23 +42,30 @@ public:
         : m_node(0), m_attr_id(attr.id()), m_value(val)
         { }
 
+    /// \brief Return context tree node pointer for reference entries.
+    /// \return The context tree node. Null pointer if the entry is
+    ///   an immediate entry or empty.
     const Node* node() const {
         return m_node;
     }
     
-    /// @brief Return top-level attribute of this entry
+    /// \brief Return top-level attribute ID of this entry
+    ///
+    /// For immediate entries, returns the stored attribute id.
+    /// For reference entries, returns the referenced node's 
+    /// attribute id.
     cali_id_t attribute() const;
 
-    /// @brief Count instances of attribute @param attr_id in this entry
+    /// \brief Count instances of attribute \a attr_id in this entry
     int       count(cali_id_t attr_id = CALI_INV_ID) const;
     int       count(const Attribute& attr) const {
         return count(attr.id());
     }
 
-    /// @brief Return top-level data value of this entry
+    /// \brief Return top-level data value of this entry
     Variant   value() const;
 
-    /// @brief Extract data value for attribute @param attr_id from this entry
+    /// \brief Extract data value for attribute \a attr_id from this entry
     Variant   value(cali_id_t attr_id) const;
     Variant   value(const Attribute& attr) const {
         return value(attr.id());
@@ -62,8 +77,9 @@ public:
     bool      is_immediate() const {
         return m_node == 0 && m_attr_id != CALI_INV_ID;
     }
-
-    // int       extract(cali_id_t attr, int n, Variant buf[]) const;
+    bool      is_reference() const {
+        return m_node != 0;
+    }
 
     static const Entry empty;
 

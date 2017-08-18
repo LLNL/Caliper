@@ -88,9 +88,6 @@ public:
             if (!fn(unpack_next_entry(c, n, pos)))
                 return;
     }
-    
-    void
-    push_record(WriteRecordFn fn) const;
 
     friend class CompressedSnapshotRecord;
 };

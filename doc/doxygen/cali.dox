@@ -1,0 +1,9 @@
+/**
+\namespace cali
+\brief Contains the Caliper C++ API
+
+\namespace util
+\brief Various utility functions and classes
+
+\defgroup AnnotationAPI Source-code annotation API 
+*/

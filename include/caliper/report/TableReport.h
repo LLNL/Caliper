@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,69 +30,69 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file  NVVP.cpp
-/// @brief Caliper NVVP service
+/// \file  TableReport.h
+/// \brief Generates text reports from Caliper snapshots on flush() events 
 
-#include "../common/ToolWrapper.h"
+#pragma once
 
-#include "caliper/common/filters/RegexFilter.h"
+#include "caliper/reader/RecordSelector.h"
+#include "caliper/reader/Table.h"
 
-#include "nvToolsExt.h"
+#include <cstdio>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
-#include <map>
+namespace cali
+{
 
-const uint32_t colors[] = { 0x0000ff00, 0x000000ff, 0x00ffff00, 0x00ff00ff, 0x0000ffff, 0x00ff0000, 0x00ffffff };
-const int num_colors = sizeof(colors)/sizeof(uint32_t);
-static int color_id = 0;
+namespace report
+{
+    
+    class FileBufferStream : public std::basic_streambuf<char> {
+        FILE* m_fp;
 
-namespace cali {
+    public:
 
+        FileBufferStream(FILE* fp) 
+            : m_fp(fp) { }
 
-class NVVPWrapper : public ToolWrapper {
-  private:
-    static std::map<std::string, nvtxRangeId_t> nvtx_ranges;
+        virtual int_type overflow(int_type ch) {
+            fputc((char)ch, m_fp);
+            return 0;
+        }
+    };
 
-  public:
-    virtual void initialize(){
-    }
+    class TableReport {
+        using output_stream_type = std::ostream*;
 
-    virtual std::string service_name() { 
-      return "NVVP service";
-    }
-    virtual std::string service_tag(){
-      return "nvvp";
-    }
-    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
+        output_stream_type m_output_stream;
+        Table              m_table_formatter;
+        RecordSelector     m_selector;
 
-      color_id = (color_id+1)%num_colors;
-      nvtxEventAttributes_t eventAttrib = {0};
-      eventAttrib.version = NVTX_VERSION;
-      eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
-      eventAttrib.colorType = NVTX_COLOR_ARGB;
-      eventAttrib.color = colors[color_id];
-      eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
-      eventAttrib.message.ascii = name.c_str();
-      nvtx_ranges[name] = nvtxRangeStartEx(&eventAttrib);
-    }
+    public:
 
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      if (nvtx_ranges.find(name) != nvtx_ranges.end()) {
-        nvtxRangeId_t r = nvtx_ranges[name];
-        nvtxRangeEnd(r);
-      }
-    }
-};
+        TableReport(output_stream_type out, 
+                    const std::string& attributes, 
+                    const std::string& sort, 
+                    const std::string& filter);
 
-CaliperService nvvp_service { "nvvp", &setCallbacks<NVVPWrapper>};
+        TableReport(std::ostream&      out, 
+                    const char*        attributes = "", 
+                    const char*        sort = "", 
+                    const char*        filter = "");
 
-std::map<std::string, nvtxRangeId_t> NVVPWrapper::nvtx_ranges;
+        TableReport(FILE*              fp, 
+                    const char*        attributes = "", 
+                    const char*        sort = "", 
+                    const char*        filter = "");
 
+        ~TableReport();
 
-}
+        void report();
+    };
+
+} // namespace report
+
+} // namespace cali
 

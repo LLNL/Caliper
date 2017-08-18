@@ -1,5 +1,7 @@
 set(CALIPER_COMMON_TEST_SOURCES
   test_c_variant.cpp
+  test_compressedsnapshotrecord.cpp
+  test_snapshotbuffer.cpp
   test_stringconverter.cpp
   test_variant.cpp)
 
