@@ -238,10 +238,10 @@ void post_init_cb(Caliper* c)
 {
     // Find begin/end event snapshot event info attributes
 
-    begin_evt_attr = c->get_attribute("cali.snapshot.event.begin");
-    set_evt_attr   = c->get_attribute("cali.snapshot.event.set");
-    end_evt_attr   = c->get_attribute("cali.snapshot.event.end");
-    lvl_attr       = c->get_attribute("cali.snapshot.event.attr.level");
+    begin_evt_attr = c->get_attribute("cali.event.begin");
+    set_evt_attr   = c->get_attribute("cali.event.set");
+    end_evt_attr   = c->get_attribute("cali.event.end");
+    lvl_attr       = c->get_attribute("cali.event.attr.level");
 
     if (begin_evt_attr == Attribute::invalid || 
         set_evt_attr   == Attribute::invalid ||

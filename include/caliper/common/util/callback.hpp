@@ -21,6 +21,10 @@ public:
         mCb.push_back(f);
     } 
 
+    bool empty() const {
+        return mCb.empty();
+    }
+
     template<class... Args>
     void operator()(Args... a) {
         for ( auto& f : mCb )

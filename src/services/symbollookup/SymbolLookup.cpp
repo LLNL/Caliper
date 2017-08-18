@@ -286,7 +286,7 @@ class SymbolLookup
         s_instance->init_lookup();
     }
 
-    static void pre_flush_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
+    static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
         s_instance->process_snapshot(c, snapshot);
     }
 
@@ -296,7 +296,7 @@ class SymbolLookup
 
     void register_callbacks(Caliper* c) {
         c->events().pre_flush_evt.connect(pre_flush_cb);
-        c->events().pre_flush_snapshot.connect(pre_flush_snapshot_cb);
+        c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 

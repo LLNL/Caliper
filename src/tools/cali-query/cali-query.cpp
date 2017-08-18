@@ -47,6 +47,7 @@
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 #include "caliper/reader/Table.h"
+#include "caliper/reader/TreeFormatter.h"
 #include "caliper/reader/Json.h"
 
 #include "caliper/common/ContextRecord.h"
@@ -110,7 +111,15 @@ namespace
           "STRING"
         }, 
         { "table", "table", 't', false,
-          "Print given attributes in human-readable table form",
+          "Print attributes in human-readable table form",
+          nullptr
+        },
+        { "tree" , "tree", 'T', false,
+          "Print records in a tree based on the hierarchy of the selected path attributes",
+          nullptr
+        },
+        { "path-attributes", "path-attributes", 0, true,
+          "Select the path attributes for tree printers",
           "ATTRIBUTES"
         },
         { "json", "json", 'j', false,
@@ -152,22 +161,6 @@ namespace
             }
 
             push(db, node);
-        }
-    };
-
-    /// FilterStep helper struct
-    /// Basically the chain link in the processing chain.
-    /// Passes result of @param m_filter_fn to @param m_push_fn
-    struct FilterStep {
-        RecordFilterFn  m_filter_fn; ///< This processing step
-        RecordProcessFn m_push_fn;   ///< Next processing step
-
-        FilterStep(RecordFilterFn filter_fn, RecordProcessFn push_fn) 
-            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
-            { }
-
-        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            m_filter_fn(db, rec, m_push_fn);
         }
     };
 
@@ -273,6 +266,7 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
+    TreeFormatter     trx_writer(args.get("path-attributes"), args.get("attributes"));
     Table             tbl_writer(args.get("attributes"), args.get("sort"));
     Json              jsn_writer(args.get("attributes"));
 
@@ -292,6 +286,8 @@ int main(int argc, const char* argv[])
         }
         
         snap_writer = Format(fs.is_open() ? fs : cout, formatstr, args.get("title"));
+    } else if (args.is_set("tree"))  {
+        snap_writer = trx_writer;
     } else if (args.is_set("table")) {        
         snap_writer = tbl_writer;
     } 
@@ -365,7 +361,7 @@ int main(int argc, const char* argv[])
     //
     // --- Fill thread vector and process
     //
-     
+
     for (unsigned t = 0; t < num_threads; ++t)
         threads.emplace_back(thread_fn, t);
 
@@ -380,8 +376,10 @@ int main(int argc, const char* argv[])
 
     aggregate.flush(metadb, snap_writer);
 
-    if (args.is_set("table"))
+    if (args.is_set("tree"))
+        trx_writer.flush(metadb, fs.is_open() ? fs : cout);
+    else if (args.is_set("table"))
         tbl_writer.flush(metadb, fs.is_open() ? fs : cout);
-    if (args.is_set("json"))
+    else if (args.is_set("json"))
         jsn_writer.flush(metadb, fs.is_open() ? fs : cout);
 }

@@ -35,6 +35,7 @@
 
 #include "caliper/SnapshotRecord.h"
 
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
 #include <iostream>
@@ -112,22 +113,33 @@ SnapshotRecord::get(const Attribute& attr) const
     return Entry::empty;
 }
 
-void
-SnapshotRecord::push_record(WriteRecordFn fn) const
+std::vector<Entry> 
+SnapshotRecord::to_entrylist() const
 {
-    std::vector<cali::Variant> attr_vec(m_sizes.n_immediate, Variant());
-    std::vector<cali::Variant> node_vec(m_sizes.n_nodes,     Variant());
+    std::vector<Entry> vec(m_sizes.n_nodes + m_sizes.n_immediate);
 
+    for (size_t i = 0; i < m_sizes.n_nodes; ++i)
+        vec.push_back(Entry(m_node_array[i]));
+    for (size_t i = 0; i < m_sizes.n_immediate; ++i)
+        vec.push_back(Entry(m_attr_array[i], m_data_array[i]));
+
+    return vec;
+}
+
+std::map< Attribute, std::vector<Variant> >
+SnapshotRecord::unpack(CaliperMetadataAccessInterface& db) const
+{
+    std::map< Attribute, std::vector<Variant> > rec;
+
+    // unpack node entries 
     for (int i = 0; i < m_sizes.n_nodes; ++i)
-        node_vec[i] = cali::Variant(m_node_array[i]->id());
+        for (const cali::Node* node = m_node_array[i]; node; node = node->parent())
+            if (node->attribute() != CALI_INV_ID)
+                rec[db.get_attribute(node->attribute())].push_back(node->data());
+
+    // unpack immediate entries
     for (int i = 0; i < m_sizes.n_immediate; ++i)
-        attr_vec[i] = cali::Variant(m_attr_array[i]);
+        rec[db.get_attribute(m_attr_array[i])].push_back(m_data_array[i]);
 
-    int n_nodes     = static_cast<size_t>(m_sizes.n_nodes);
-    int n_immediate = static_cast<size_t>(m_sizes.n_immediate);
-    
-    int                     n[3] = { n_nodes, n_immediate, n_immediate };
-    const cali::Variant* data[3] = { node_vec.data(), attr_vec.data(), m_data_array }; 
-
-    fn(ContextRecord::record_descriptor(), n, data);
+    return rec;
 }

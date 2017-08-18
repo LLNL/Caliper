@@ -54,7 +54,8 @@ namespace cali
 class Node;    
 class SnapshotRecord;
     
-/// @class Caliper
+/// \class Caliper
+/// \brief The main interface for the caliper runtime system
 
 class Caliper : public CaliperMetadataAccessInterface
 {
@@ -96,13 +97,17 @@ public:
     Caliper& operator = (const Caliper&) = default;
 
     bool is_signal() const { return m_is_signal; };
+
+    // --- Typedefs
+
+    typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
     
     // --- Events
 
     struct Events {
         typedef util::callback<void(Caliper*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type*,int*)>
+        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type,int*,Node**)>
             pre_create_attr_cbvec;                        
         typedef util::callback<void(Caliper*,const Attribute&,const Variant&)>
             update_cbvec;
@@ -118,10 +123,10 @@ public:
         typedef util::callback<void(Caliper*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*, const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotFlushFn)>
             flush_cbvec;
-        typedef util::callback<void(const RecordDescriptor&,const int*,const Variant**)>
-            write_record_cbvec;
+        typedef util::callback<void(Caliper*,const SnapshotRecord*)>
+            write_cbvec;
                                     
         pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
@@ -142,13 +147,14 @@ public:
         snapshot_cbvec         snapshot;
         process_snapshot_cbvec process_snapshot;
 
-        flush_cbvec            pre_flush_evt;
+        write_cbvec            pre_flush_evt;
         flush_cbvec            flush_evt;
-        edit_snapshot_cbvec    pre_flush_snapshot;
-        process_snapshot_cbvec flush_snapshot;
-        flush_cbvec            flush_finish_evt;
 
-        write_record_cbvec     write_record;
+        edit_snapshot_cbvec    postprocess_snapshot;
+
+        write_cbvec            pre_write_evt;
+        process_snapshot_cbvec write_snapshot;
+        write_cbvec            post_write_evt;
     };
 
     Events&   events();
@@ -164,31 +170,57 @@ public:
 
     // --- Snapshot API
 
+    /// \name Snapshot API
+    /// \{
+
     void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
     void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
-    void      flush(const SnapshotRecord* flush_info);
-    void      flush_snapshot(const SnapshotRecord* flush_info, const SnapshotRecord* snapshot);
+    // --- Flush and I/O API
+
+    /// \}
+    /// \name Flush and I/O
+    /// \{
+
+    void      flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
+    void      flush_and_write(const SnapshotRecord* flush_info);
 
     // --- Annotation API
+
+    /// \}
+    /// \name Annotation API
+    /// \{
 
     cali_err  begin(const Attribute& attr, const Variant& data);
     cali_err  end(const Attribute& attr);
     cali_err  set(const Attribute& attr, const Variant& data);
     cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
 
+    /// \}
+    /// \name Blackboard access
+    /// \{
+
     Variant   exchange(const Attribute& attr, const Variant& data);
-
-    // --- Direct metadata / data access API
-
-    void      make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list);
-    Entry     make_entry(const Attribute& attr, const Variant& value);
-
-    // --- Query API
 
     Entry     get(const Attribute& attr);
 
+    // --- Direct metadata / data access API
+
+    /// \}
+    /// \name Explicit snapshot record manipulation
+    /// \{
+
+    void      make_entrylist(size_t n, 
+                             const Attribute attr[], 
+                             const Variant   data[], 
+                             SnapshotRecord& list);
+    Entry     make_entry(const Attribute& attr, const Variant& value);
+
     // --- Metadata Access Interface
+
+    /// \}
+    /// \name Context tree manipulation and metadata access
+    /// \{
 
     size_t    num_attributes() const;
 
@@ -204,11 +236,16 @@ public:
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
     
-    /// \brief return node by id
+    /// \brief Return node by id
     Node*     node(cali_id_t id) const;
 
-    /// \brief Get or create new tree path with data from given nodes in given order 
+    /// \brief Get or create tree path with data from given nodes in given order 
     Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
+
+    /// \brief Get or create tree entry with given attribute/value pair
+    Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
+
+    /// \}
 
     // --- Caliper API access
 
