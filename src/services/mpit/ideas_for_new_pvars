@@ -1,0 +1,54 @@
+Currently, MVAPICH exports the richest variety of PVARs of any implementation:
+
+== CALIPER: Attribute created with name: mpit.mem_allocated
+== CALIPER: Attribute created with name: mpit.mem_allocated
+== CALIPER: Attribute created with name: mpit.num_malloc_calls
+== CALIPER: Attribute created with name: mpit.num_calloc_calls
+== CALIPER: Attribute created with name: mpit.num_memalign_calls
+== CALIPER: Attribute created with name: mpit.num_strdup_calls
+== CALIPER: Attribute created with name: mpit.num_realloc_calls
+== CALIPER: Attribute created with name: mpit.num_free_calls
+== CALIPER: Attribute created with name: mpit.num_memalign_free_calls
+== CALIPER: Attribute created with name: mpit.mv2_num_2level_comm_requests
+== CALIPER: Attribute created with name: mpit.mv2_num_2level_comm_success
+== CALIPER: Attribute created with name: mpit.mv2_num_shmem_coll_calls
+== CALIPER: Attribute created with name: mpit.mpit_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_read_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_write_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_read_progress_poll_success
+== CALIPER: Attribute created with name: mpit.mv2_smp_write_progress_poll_success
+== CALIPER: Attribute created with name: mpit.rdma_ud_retransmissions
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_binomial
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_doubling_allgather
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_ring_allgather
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_ring_allgather_shm
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_shmem
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_knomial_internode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_knomial_intranode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_mcast_internode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_pipelined
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_inplace
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_bruck
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_rd
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_sd
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_pw
+== CALIPER: Attribute created with name: mpit.mpit_alltoallv_mv2_pw
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_rd
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_rs
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_intra
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_intra_p2p
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_2lvl
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shmem
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_mcast
+== CALIPER: Attribute created with name: mpit.mv2_reg_cache_hits
+== CALIPER: Attribute created with name: mpit.mv2_reg_cache_misses
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_allocated
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_freed
+== CALIPER: Attribute created with name: mpit.mv2_ud_vbuf_allocated
+== CALIPER: Attribute created with name: mpit.mv2_ud_vbuf_freed
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_available
+== CALIPER: Attribute created with name: mpit.mv2_smp_eager_avail_buffer
+== CALIPER: Attribute created with name: mpit.mv2_smp_rndv_avail_buffer
+== CALIPER: Attribute created with name: mpit.mv2_smp_eager_total_buffer
+
+Below are some of the ideas for adding new PVARs to export through the MPI_T interface:
