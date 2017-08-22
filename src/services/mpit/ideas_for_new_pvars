@@ -52,3 +52,48 @@ Currently, MVAPICH exports the richest variety of PVARs of any implementation:
 == CALIPER: Attribute created with name: mpit.mv2_smp_eager_total_buffer
 
 Below are some of the ideas for adding new PVARs to export through the MPI_T interface:
+1. Message sizes:
+	a. Max / min / average / median message size sent / received in point-to-point communication: Watermark PVARs
+	b. Max / min / average / median message size used in collective communication (one PVAR for each type of MPI collective call)
+	Rationale: A tool can alternatively infer this by intercepting each call through the PMPI interface. However, it seems that the MPI-T interface is a more appropriate platform to export this information.
+				Moreover, it would be interesting to gather this information across communicators. The MPI-T interface is better suited to answer such questions. This makes a clear-cut case in my opinion.
+				This information could be very useful in generating recommendations for the application - whether it is latency sensitive or bandwidth bound
+				
+2. Non-blocking communication:
+	a. Some way to measure the degree of computation-communication overlap for asynchronous calls?
+	//Check excellent ICPP on this topic: MPI Overlap: Benchamark and Analysis
+	Rationale: When a process uses non-blocking communication, how do we know if any overlap actaully occurred?
+	Issues: Measuring overlap is a function that sits "outside" the library. I do not think it would be meaningful or possible to directly measure this overlap from within the library.
+
+3. Misc:
+	\\Check the paper: Characteristics of Unexpected Message Queue of MPI applications
+	\\Idea also taken from internal MVAPICH version
+	a. Unexpected message queue:
+		i.   Instantaneous size of the unexpected message queue - memory usage and the length in terms of number of unexpected message queue
+			 Also add watermarks for this?
+		ii.  Total time spent matching incoming messages with pre-posted recieves
+			 I.   Successful match time
+			 II.  Unsuccessful match time
+		iii. Total time spent matching unexpected messages when a receive is posted:
+		     I.   Successful match time
+			 II.  Unsuccessful match time
+			 Calculating the above of successful / unsuccessful time would be a useful derived metric
+		iv.  Number of incoming messages being matched with pre-posted receives
+			 I.   Successful matches
+			 II.  Unsuccessful matches
+		v.   Number of times receives are matched with messages on the unexpected message queue
+			 I.	  Sucessfuly matches
+			 II.  Unsuccessful matches
+		vi.  Min, max, average time that messages spends in the unexpected message queue
+
+4. Measuring the time delay between a send being posted and a receive being posted: Example of where we can use MPI_T_BIND_MESSAGE?
+5. Measuring the time delay between a process requesting a non-blocking communication, and a wait for that request to complete.
+6. Measuring the averge total time for a non-blocking communication operation to complete on a per-process basis.
+	Possible tuning opportunity: Perhaps cases 4, 5, 6 can benefit from interrupt as opposed to polling (check LLNL tutorial)
+7. Number of times a probe for checking completion for an MPI operation returns false.
+//Ideas taken from Paper: MPI on a million cores
+8. Something for one-sided communication: Fence syncrhonization?
+9. Measuring connection setup time? 
+10. Memory consumption is very important: What can we measure that will be useful? Is there a way to detect the amount of memory used for a given data structure? 
+11. Can we make MPI communication more topology aware?
+12. 
