@@ -35,6 +35,8 @@
 
 #include "caliper/reader/JsonFormatter.h"
 
+#include "caliper/reader/QuerySpec.h"
+
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/ContextRecord.h"
@@ -70,6 +72,23 @@ struct JsonFormatter::JsonFormatterImpl
         util::split(field_string, ':', std::back_inserter(m_col_attr_names));
     }
 
+    void configure(const QuerySpec& spec) {
+        m_col_attr_names.clear();
+        
+        switch (spec.attribute_selection.selection) {
+        case QuerySpec::AttributeSelection::Default:
+        case QuerySpec::AttributeSelection::All:
+            m_auto_column = true;
+            break;
+        case QuerySpec::AttributeSelection::List:
+            m_auto_column = false;
+            m_col_attr_names = spec.attribute_selection.list;
+            break;
+        case QuerySpec::AttributeSelection::None:
+            m_auto_column = false;
+        }
+    }
+    
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Attribute& c) {
@@ -191,6 +210,12 @@ JsonFormatter::JsonFormatter(const std::string& fields)
     : mP { new JsonFormatterImpl }
 {
     mP->parse(fields);
+}
+
+JsonFormatter::JsonFormatter(const QuerySpec& spec)
+    : mP { new JsonFormatterImpl }
+{
+    mP->configure(spec);
 }
 
 JsonFormatter::~JsonFormatter()

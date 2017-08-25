@@ -101,8 +101,7 @@ struct FormatProcessor::FormatProcessorImpl
                 m_formatter = new CsvFormatter(m_os);
                 break;
             case FormatterID::Json:
-                // m_formatter = new JsonFormatter(spec);
-                std::cerr << "Error: uJsonFormatter currently disabled" << std::endl;
+                m_formatter = new JsonFormatter(spec);
                 break;
             case FormatterID::Expand:
                 m_formatter = new Expand(m_os, spec);
