@@ -94,7 +94,7 @@ namespace
 		Log(3).stream() << "Collecting PVARs for the MPI-T interface." << endl;
 
 		for(int index=0; index < num_pvars; index++) {
-		  for(int subindex=0; subindex < pvar_handle[index].size(); subindex++) {
+		  for(int subindex=0; subindex < pvar_handle[index].size() - 1; subindex++) {
 			MPI_T_pvar_read(pvar_session, pvar_handle[index][subindex], buffer);
 			
 				if((pvar_type[index] == MPI_COUNT) || (pvar_type[index] == MPI_UNSIGNED) || (pvar_type[index] == MPI_UNSIGNED_LONG) || (pvar_type[index] == MPI_UNSIGNED_LONG_LONG))

@@ -238,9 +238,10 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
 add_subdirectory(ext)
 add_subdirectory(src)
 
-if (CALIPER_HAVE_MPI)
-  add_subdirectory(mpi)
-endif()
+#if (CALIPER_HAVE_MPI)
+#  add_subdirectory(mpi)
+#endif()
+
 if (WITH_TEST_APPS)
   add_subdirectory(test)
 endif()
