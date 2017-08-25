@@ -33,10 +33,10 @@
 #include "caliper/reader/FormatProcessor.h"
 
 #include "caliper/reader/Expand.h"
-#include "caliper/reader/Format.h"
 #include "caliper/reader/JsonFormatter.h"
 #include "caliper/reader/TableFormatter.h"
 #include "caliper/reader/TreeFormatter.h"
+#include "caliper/reader/UserFormatter.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
@@ -47,7 +47,7 @@ using namespace cali;
 namespace
 {
 
-const char* format_kernel_args[] = { "formatstring"    };
+const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes" }; 
 
 enum FormatterID {
@@ -63,7 +63,7 @@ const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Csv,    "csv",    0, 0, nullptr },
     { FormatterID::Json,   "json",   0, 0, nullptr },
     { FormatterID::Expand, "expand", 0, 0, nullptr },
-    { FormatterID::Format, "format", 1, 1, format_kernel_args },
+    { FormatterID::Format, "format", 1, 2, format_kernel_args },
     { FormatterID::Table,  "table",  0, 0, nullptr },
     { FormatterID::Tree,   "tree",   0, 1, tree_kernel_args   },
     
@@ -107,7 +107,7 @@ struct FormatProcessor::FormatProcessorImpl
                 m_formatter = new Expand(m_os, spec);
                 break;
             case FormatterID::Format:
-                // m_formatter = Format(spec);
+                m_formatter = new UserFormatter(m_os, spec);
                 break;
             case FormatterID::Table:
                 m_formatter = new TableFormatter(spec);

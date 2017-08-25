@@ -101,6 +101,8 @@ parse_clause(const std::string& str)
         } else {
             clause.op = ops[i].op;
         }
+    } else {
+        clause.op = (negate ? QuerySpec::Condition::Op::NotExist : QuerySpec::Condition::Op::Exist);
     }
     
     if (clause.attr_name.empty() || (opos < std::string::npos && clause.value.empty()))

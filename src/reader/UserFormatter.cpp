@@ -33,7 +33,9 @@
 /// @file Format.cpp
 /// Print expanded records
 
-#include "caliper/reader/Format.h"
+#include "caliper/reader/UserFormatter.h"
+
+#include "caliper/reader/QuerySpec.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
@@ -53,7 +55,7 @@
 using namespace cali;
 using namespace std;
 
-struct Format::FormatImpl
+struct UserFormatter::FormatImpl
 {
     struct Field {
         string    prefix;
@@ -131,6 +133,11 @@ struct Format::FormatImpl
         }
     }
 
+    void configure(const QuerySpec& spec) {
+        if (spec.format.args.size() > 0)
+            parse(spec.format.args[0]);
+    }
+    
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::ostringstream os;
         
@@ -182,20 +189,22 @@ struct Format::FormatImpl
 };
 
 
-Format::Format(ostream& os, const string& formatstr, const string& titlestr)
+UserFormatter::UserFormatter(ostream& os, const QuerySpec& spec)
     : mP { new FormatImpl(os) }
 {
-    mP->parse(formatstr);    
-    mP->m_os << titlestr;
+    mP->configure(spec);
+
+    if (spec.format.args.size() > 1)
+        os << spec.format.args[1] << std::endl;
 }
 
-Format::~Format()
+UserFormatter::~UserFormatter()
 {
     mP.reset();
 }
 
 void 
-Format::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
+UserFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
 }

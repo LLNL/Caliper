@@ -36,6 +36,7 @@
 #ifndef CALI_FORMAT_H
 #define CALI_FORMAT_H
 
+#include "Formatter.h"
 #include "RecordProcessor.h"
 
 #include "../common/RecordMap.h"
@@ -47,22 +48,23 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class QuerySpec;
 
 /// \brief Prints snapshot records using a user-defined format string
 /// \ingroup ReaderAPI
     
-class Format 
+class UserFormatter : public Formatter
 {
     struct FormatImpl;
     std::shared_ptr<FormatImpl> mP;
 
 public:
 
-    Format(std::ostream& os, const std::string& formatstr, const std::string& titlestr);
+    UserFormatter(std::ostream& os, const QuerySpec& spec);
 
-    ~Format();
+    ~UserFormatter();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };
 
 } // namespace cali

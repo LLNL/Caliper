@@ -1,7 +1,6 @@
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
     Expand.cpp
-    Format.cpp
     FormatProcessor.cpp
     CaliperMetadataDB.cpp
     RecordSelector.cpp
@@ -9,7 +8,8 @@ set(CALIPER_READER_SOURCES
     SnapshotTree.cpp
     TableFormatter.cpp
     TreeFormatter.cpp
-    JsonFormatter.cpp)
+    JsonFormatter.cpp
+    UserFormatter.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})
 
