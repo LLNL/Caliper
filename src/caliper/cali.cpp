@@ -563,6 +563,12 @@ cali_init()
     Caliper::instance();
 }
 
+int
+cali_is_initialized()
+{
+    return Caliper::is_initialized() ? 1 : 0;
+}
+
 //
 // --- Helper functions for high-level macro interface
 // 

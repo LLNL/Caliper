@@ -446,6 +446,14 @@ cali_config_preset(const char* key, const char* value);
 void
 cali_init();
 
+/**
+ * \brief  Check if Caliper is initialized on this process.
+ * \return A non-zero value if Caliper is initialized, 0 if it is not initialized.
+ */
+
+int
+cali_is_initialized();
+    
 /*
  * --- Macro annotation helper functions
  */  

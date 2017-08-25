@@ -1282,3 +1282,11 @@ Caliper::release()
     delete GlobalData::sG;
     GlobalData::sG = 0;
 }
+
+/// \brief Test if Caliper has been initialized yet.
+
+bool
+Caliper::is_initialized()
+{
+    return GlobalData::sG != nullptr;
+}
