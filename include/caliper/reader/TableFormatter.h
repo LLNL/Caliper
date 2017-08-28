@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,59 +30,46 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file  TableReport.cpp
-/// \brief Generates text reports from Caliper snapshots on flush() events 
+/// \file Table.h
+/// \brief Table output formatter
 
-#include "caliper/report/TableReport.h"
+#ifndef CALI_TABLE_H
+#define CALI_TABLE_H
 
-#include "caliper/Caliper.h"
-#include "caliper/SnapshotRecord.h"
+#include "Formatter.h"
+#include "RecordProcessor.h"
 
-using namespace cali;
-using namespace cali::report;
+#include "../common/RecordMap.h"
 
+#include <iostream>
+#include <memory>
 
-void TableReport::report()
+namespace cali
 {
-    Caliper c;
 
-    c.flush(nullptr, 
-            [this,&c](const SnapshotRecord* snapshot){
-                using namespace std::placeholders;
-                m_selector(c, snapshot->to_entrylist(), std::bind(&TableFormatter::process_record, &m_table_formatter, _1, _2));
-                return true;
-            });
+class CaliperMetadataAccessInterface;
+class QuerySpec;
 
-    m_table_formatter.flush(c, *m_output_stream);
-}
+/// \brief Print a set of snapshot records in a human-readable table
+/// \ingroup ReaderAPI
+    
+class TableFormatter : public Formatter
+{
+    struct TableImpl;
+    std::shared_ptr<TableImpl> mP;
 
-TableReport::TableReport(output_stream_type out, 
-                         const std::string& attributes, 
-                         const std::string& sort, 
-                         const std::string& filter)
-    : m_output_stream(out),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+public:
 
-TableReport::TableReport(std::ostream&      out, 
-                         const char*        attributes, 
-                         const char*        sort, 
-                         const char*        filter)
-    : m_output_stream(&out),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+    TableFormatter(const std::string& fields, const std::string& sort_fields);
+    TableFormatter(const QuerySpec& spec);
 
-TableReport::TableReport(FILE*              fp, 
-                         const char*        attributes, 
-                         const char*        sort, 
-                         const char*        filter)
-    : m_output_stream(new std::ostream(new FileBufferStream(fp))),
-      m_table_formatter(attributes, sort),
-      m_selector(filter)
-{ }
+    ~TableFormatter();
 
-TableReport::~TableReport()
-{ }
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
+};
+
+} // namespace cali
+
+#endif

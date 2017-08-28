@@ -35,6 +35,7 @@
 
 #include "caliper/reader/TreeFormatter.h"
 
+#include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/SnapshotTree.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
@@ -79,7 +80,7 @@ struct TreeFormatter::TreeFormatterImpl
 {
     SnapshotTree             m_tree;
 
-    std::vector<std::string> m_attribute_column_names;
+    QuerySpec::AttributeSelection m_attribute_columns;
     std::map<Attribute, int> m_attribute_column_widths;
 
     int                      m_path_column_width;
@@ -90,13 +91,16 @@ struct TreeFormatter::TreeFormatterImpl
     std::mutex               m_path_key_lock;
 
 
-    void parse(const std::string& path_key_str, const std::string& attribute_str) {
-        util::split(path_key_str,  ':', std::back_inserter(m_path_key_names));
-        util::split(attribute_str, ':', std::back_inserter(m_attribute_column_names));
+    void configure(const QuerySpec& spec) {
+        // set path keys (first argument in spec.format.args)
+        if (spec.format.args.size() > 0)
+            util::split(spec.format.args.front(), ',',
+                        std::back_inserter(m_path_key_names));
 
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
+        m_attribute_columns = spec.attribute_selection;
     }
-
+    
     std::vector<Attribute> get_path_keys(const CaliperMetadataAccessInterface& db) {
         std::vector<Attribute> path_keys;
 
@@ -116,7 +120,7 @@ struct TreeFormatter::TreeFormatterImpl
                     std::lock_guard<std::mutex>
                         g(m_path_key_lock);
                     m_path_keys[i] = attr;
-                }
+                } 
             }
 
         return path_keys;
@@ -218,17 +222,8 @@ struct TreeFormatter::TreeFormatterImpl
 
         std::vector<Attribute> attributes;
 
-        if (m_attribute_column_names.size() > 0) {
-            for (const std::string& s : m_attribute_column_names) {
-                Attribute attr = db.get_attribute(s);
-
-                if (attr == Attribute::invalid)
-                    std::cerr << "cali-query: TreeFormatter: Attribute \"" << s << "\" not found."
-                              << std::endl;
-                else
-                    attributes.push_back(attr);
-            }
-        } else {
+        switch (m_attribute_columns.selection) {
+        case QuerySpec::AttributeSelection::Default:
             // auto-attributes: skip hidden and "cali." attributes
             for (auto &p : m_attribute_column_widths) {
                 if (p.first.is_hidden())
@@ -238,6 +233,25 @@ struct TreeFormatter::TreeFormatterImpl
 
                 attributes.push_back(p.first);
             }
+            break;
+        case QuerySpec::AttributeSelection::All:
+            for (auto &p : m_attribute_column_widths)
+                attributes.push_back(p.first);
+            break;
+        case QuerySpec::AttributeSelection::List:
+            for (const std::string& s : m_attribute_columns.list) {
+                Attribute attr = db.get_attribute(s);
+
+                if (attr == Attribute::invalid)
+                    std::cerr << "cali-query: TreeFormatter: Attribute \"" << s << "\" not found."
+                              << std::endl;
+                else
+                    attributes.push_back(attr);
+            }
+            break;
+        case QuerySpec::AttributeSelection::None:
+            // keep empty list
+            break;
         }
 
         //
@@ -268,10 +282,10 @@ struct TreeFormatter::TreeFormatterImpl
 };
 
 
-TreeFormatter::TreeFormatter(const std::string& path_keys, const std::string& attr_columns)
+TreeFormatter::TreeFormatter(const QuerySpec& spec)
     : mP { new TreeFormatterImpl }
 {
-    mP->parse(path_keys, attr_columns);
+    mP->configure(spec);
 }
 
 TreeFormatter::~TreeFormatter()
@@ -280,7 +294,7 @@ TreeFormatter::~TreeFormatter()
 }
 
 void
-TreeFormatter::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
+TreeFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
 }

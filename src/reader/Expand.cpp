@@ -36,9 +36,10 @@
 
 #include "caliper/reader/Expand.h"
 
-#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/reader/QuerySpec.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
 #include "caliper/common/util/split.hpp"
@@ -82,6 +83,23 @@ struct Expand::ExpandImpl
         }
     }
 
+    void configure(const QuerySpec& spec) {
+        switch (spec.attribute_selection.selection) {
+        case QuerySpec::AttributeSelection::Default:
+        case QuerySpec::AttributeSelection::All:
+            // do nothing; default is all
+            break;
+        case QuerySpec::AttributeSelection::None:
+            // doesn't make much sense
+            break;
+        case QuerySpec::AttributeSelection::List:
+            m_selected =
+                std::set<std::string>(spec.attribute_selection.list.begin(),
+                                      spec.attribute_selection.list.end());
+            break;
+        }
+    }
+    
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         int nentry = 0;
 
@@ -142,6 +160,12 @@ Expand::Expand(ostream& os, const string& field_string)
     mP->parse(field_string);
 }
 
+Expand::Expand(ostream& os, const QuerySpec& spec)
+    : mP { new ExpandImpl(os) }
+{
+    mP->configure(spec);
+}
+
 Expand::~Expand()
 {
     mP.reset();
@@ -149,6 +173,12 @@ Expand::~Expand()
 
 void 
 Expand::operator()(CaliperMetadataAccessInterface& db, const EntryList& list) const
+{
+    mP->print(db, list);
+}
+
+void
+Expand::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
 }

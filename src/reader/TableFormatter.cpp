@@ -33,11 +33,12 @@
 /// @file Table.cpp
 /// Print human-readable table
 
-#include "caliper/reader/Table.h"
+#include "caliper/reader/TableFormatter.h"
 
-#include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/reader/QuerySpec.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/StringConverter.h"
@@ -50,7 +51,7 @@
 
 using namespace cali;
 
-struct Table::TableImpl
+struct TableFormatter::TableImpl
 {
     struct Column {
         std::string name;
@@ -103,6 +104,45 @@ struct Table::TableImpl
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
     }
 
+    void configure(const QuerySpec& spec) {
+        m_cols.clear();
+        m_rows.clear();
+        
+        m_auto_column      = false;
+        m_num_sort_columns = 0;
+
+        // Fill sort columns
+
+        switch (spec.sort.selection) {
+        case QuerySpec::SortSelection::Default:
+        case QuerySpec::SortSelection::None:
+        case QuerySpec::SortSelection::All:
+            break;
+        case QuerySpec::SortSelection::List:
+            for (const QuerySpec::SortSpec& s : spec.sort.list)
+                m_cols.emplace_back(s.attribute, s.attribute.size(), Attribute::invalid, false);
+            break;
+        }
+
+        m_num_sort_columns = m_cols.size();        
+
+        // Fill header columns
+        
+        switch (spec.attribute_selection.selection) {
+        case QuerySpec::AttributeSelection::Default:
+        case QuerySpec::AttributeSelection::All:
+            m_auto_column = true;
+            break;
+        case QuerySpec::AttributeSelection::List:
+            for (const std::string& s : spec.attribute_selection.list)
+                m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
+            break;
+        case QuerySpec::AttributeSelection::None:
+            // Keep auto_column = false and empty column list
+            break;
+        }
+    }
+    
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin()+m_num_sort_columns, m_cols.end(),
                                [attr_id](const Column& c) {
@@ -266,25 +306,31 @@ struct Table::TableImpl
 };
 
 
-Table::Table(const std::string& fields, const std::string& sort_fields)
+TableFormatter::TableFormatter(const std::string& fields, const std::string& sort_fields)
     : mP { new TableImpl }
 {
     mP->parse(fields, sort_fields);
 }
 
-Table::~Table()
+TableFormatter::TableFormatter(const QuerySpec& spec)
+    : mP { new TableImpl }
+{
+    mP->configure(spec);
+}
+
+TableFormatter::~TableFormatter()
 {
     mP.reset();
 }
 
 void
-Table::operator()(CaliperMetadataAccessInterface& db, const EntryList& list)
+TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->add(db, list);
 }
 
 void
-Table::flush(CaliperMetadataAccessInterface&, std::ostream& os)
+TableFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
     mP->flush(os);
 }

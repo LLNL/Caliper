@@ -31,7 +31,7 @@ Options
 |        |                                   | or values thereof can be excluded by using a ``-`` symbol in front  |
 |        |                                   | of the name of the attribute/variable. Specific attribute or        |
 |        |                                   | variable values are listed in ``attribute=value`` format. Multiple  |
-|        |                                   | attributes/variables are selected by listing with a ``:`` separator.|
+|        |                                   | attributes/variables are selected by listing with a ``,`` separator.|
 |        |                                   | The default behavior is to select all snapshots.                    |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-t`` | ``--table``                       | Print snapshots in a human-readable table format.                   |
@@ -47,18 +47,18 @@ Options
 |        |                                   | ``--table`` formatters.                                             |
 |        |                                   | Attributes can be                                                   |
 |        |                                   | excluded by using a ``-`` symbol in front of the name. Multiple     |
-|        |                                   | attributes are selected/excluded by listing with a ``:`` separator. |
+|        |                                   | attributes are selected/excluded by listing with a ``,`` separator. |
 |        |                                   |                                                                     |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-a`` | ``--aggregate=AGGREGATION_OPS``   | Aggregate over the specified attributes with the specified          |
 |        |                                   | operation(s). ``AGGREGATION_OPS`` format is:                        |
-|        |                                   | ``(operation(attr1)|operation(attr1)):(operation(attr2)):...``      |
+|        |                                   | ``(operation(attr1)|operation(attr1)),(operation(attr2)),...``      |
 |        |                                   | Operations available: ``sum(attr)``, ``max(attr)``, ``min(attr)``,  |
 |        |                                   | ``count``.                                                          |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 |        | ``--aggregate-key=ATTRIBUTES``    | Collapses previously aggregated snapshots, using ``--aggregate``,   |
 |        |                                   | by the specified attributes. ``ATTRIBUTES`` is of the form:         |
-|        |                                   | ``attr1:attr2:...`` where ``attribute#value`` may be used.          |
+|        |                                   | ``attr1,attr2,...`` where ``attribute#value`` may be used.          |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-f`` | ``--format=FORMAT_STRING``        | Print the snapshot data in a table in the format specified by       |
 |        |                                   | ``FORMAT_STRING``. ``FORMAT_STRING`` should be of the form:         |
@@ -66,7 +66,6 @@ Options
 |        |                                   | minimum width in characters of the printed value for the matching   |
 |        |                                   | attribute, ``attr``. Limits the printed attributes to those         |
 |        |                                   | listed in ``FORMAT_STRING``. Will override the ``--expand`` option. |
-|        |                                   | Attributes excluded by ``--print-attributes`` will not print.       |
 +--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-T`` | ``--title=TITLE_STRING``          | Specify a custom title (header line) for formatted (``-f``) output. |
 +--------+-----------------------------------+---------------------------------------------------------------------+
@@ -223,7 +222,7 @@ be using the ``-e`` option.
 
 .. code-block:: sh
 
-    $ cali-query -s "iteration=3:factorial" -e -o cali-query-selected.output 160809-094411_72298_fuu1NeAHT2US.cali
+    $ cali-query -s "iteration=3,factorial" -e -o cali-query-selected.output 160809-094411_72298_fuu1NeAHT2US.cali
     == CALIPER: Initialized
 
 Here, only the records that contain the ``iteration=3`` attribute value and the ``factorial`` attribute
@@ -265,7 +264,7 @@ This is the last six records after aggregation of the ``time.inclusive.duration`
 
 .. code-block:: sh
 
-    $ cali-query -a "count:sum(time.inclusive.duration)" --aggregate-key="event.end#main:event.end#factorial" -e 160809-094411_72298_fuu1NeAHT2US.cali
+    $ cali-query -a "count,sum(time.inclusive.duration)" --aggregate-key="event.end#main,event.end#factorial" -e 160809-094411_72298_fuu1NeAHT2US.cali
 
 The ``event.end`` attributes work in ``--aggregate-key`` to add up all of the values for the listed attribute:
 
@@ -298,7 +297,7 @@ Only the selected attributes will print in each record.
 
 .. code-block:: sh
 
-    $ cali-query -a "time.inclusive.duration" --print-attributes="main:iteration:time.inclusive.duration" -e -o cali-query-print-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
+    $ cali-query -a "time.inclusive.duration" --print-attributes="main,iteration,time.inclusive.duration" -e -o cali-query-print-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
     == CALIPER: Initialized
 
 This is the last six records as above, but printing only the

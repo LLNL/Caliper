@@ -39,9 +39,9 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/reader/Format.h"
+// #include "caliper/reader/Format.h"
 #include "caliper/reader/RecordSelector.h"
-#include "caliper/reader/Table.h"
+#include "caliper/reader/TableFormatter.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
@@ -63,7 +63,7 @@ namespace
 
         ConfigSet      m_config;
 
-        Table          m_table_writer;
+        TableFormatter m_table_writer;
         RecordSelector m_selector;
 
         std::vector<Entry> make_entrylist(Caliper* c, const SnapshotRecord* snapshot) {
@@ -84,9 +84,10 @@ namespace
         }
 
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            SnapshotProcessFn fn(m_table_writer);
-
-            m_selector(*c, snapshot->to_entrylist(), fn);
+            m_selector(*c, snapshot->to_entrylist(),
+                       [this](CaliperMetadataAccessInterface& db, const EntryList& list){
+                           m_table_writer.process_record(db, list);
+                       });
         }
 
         void flush(Caliper* c, const SnapshotRecord* flush_info) {

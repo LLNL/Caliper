@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,15 +30,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Table.h
-/// \brief Table output formatter
+/// \file FormatProcessor.h
+/// FormatProcessor class
 
-#ifndef CALI_TABLE_H
-#define CALI_TABLE_H
+#pragma once
 
+#include "QuerySpec.h"
 #include "RecordProcessor.h"
-
-#include "../common/RecordMap.h"
 
 #include <iostream>
 #include <memory>
@@ -48,25 +46,26 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
-/// \brief Print a set of snapshot records in a human-readable table
-/// \ingroup ReaderAPI
-    
-class Table 
+class FormatProcessor
 {
-    struct TableImpl;
-    std::shared_ptr<TableImpl> mP;
-
+    struct FormatProcessorImpl;
+    std::shared_ptr<FormatProcessorImpl> mP;
+    
 public:
 
-    Table(const std::string& fields, const std::string& sort_fields);
+    FormatProcessor(const QuerySpec&, std::ostream& os);
 
-    ~Table();
+    ~FormatProcessor();
+    
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    void flush(CaliperMetadataAccessInterface&);
 
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
+    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+        process_record(db, rec);
+    }
+
+    static const QuerySpec::FunctionSignature* formatter_defs();
 };
 
-} // namespace cali
-
-#endif
+}
