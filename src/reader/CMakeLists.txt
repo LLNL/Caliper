@@ -1,5 +1,6 @@
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
+    CalQLParser.cpp
     Expand.cpp
     FormatProcessor.cpp
     CaliperMetadataDB.cpp
