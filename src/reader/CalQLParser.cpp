@@ -344,6 +344,18 @@ struct CalQLParser::CalQLParserImpl
 
         if (c)
             is.unget();
+
+        // explicitly add aggregation attribute names to the attribute list
+        
+        if (!error &&
+            spec.aggregation_ops.selection     == QuerySpec::AggregationSelection::List &&
+            spec.attribute_selection.selection != QuerySpec::AttributeSelection::All) {
+            spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
+
+            auto names = Aggregator::aggregation_attribute_names(spec);
+            spec.attribute_selection.list.insert(spec.attribute_selection.list.end(),
+                                                 std::begin(names), std::end(names));
+        }
     }
 
     void
@@ -489,11 +501,11 @@ struct CalQLParser::CalQLParserImpl
     CalQLParserImpl()
         : error(false), error_pos(std::istream::pos_type(-1))
     {
-        spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::Default;
+        spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
         spec.aggregation_key.selection     = QuerySpec::AttributeSelection::Default;
         spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
-        spec.filter.selection              = QuerySpec::FilterSelection::Default;
-        spec.sort.selection                = QuerySpec::SortSelection::Default;
+        spec.filter.selection              = QuerySpec::FilterSelection::None;
+        spec.sort.selection                = QuerySpec::SortSelection::None;
         spec.format.opt                    = QuerySpec::FormatSpec::Default;
     }
 };

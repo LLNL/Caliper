@@ -15,7 +15,7 @@ TEST(CalQLParserTest, SelectClause) {
     QuerySpec q1 = p1.spec();
 
     EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q1.aggregation_ops.selection,     QuerySpec::AggregationSelection::Default);
+    EXPECT_EQ(q1.aggregation_ops.selection,     QuerySpec::AggregationSelection::None);
     
     ASSERT_EQ(q1.attribute_selection.list.size(), 4);
     
@@ -31,7 +31,7 @@ TEST(CalQLParserTest, SelectClause) {
     QuerySpec q2 = p2.spec();
     
     EXPECT_EQ(q2.attribute_selection.selection, QuerySpec::AttributeSelection::List);
-    EXPECT_EQ(q2.aggregation_ops.selection,     QuerySpec::AggregationSelection::Default);
+    EXPECT_EQ(q2.aggregation_ops.selection,     QuerySpec::AggregationSelection::None);
 
     ASSERT_EQ(q2.attribute_selection.list.size(), 1);
     EXPECT_EQ(q2.attribute_selection.list[0], "aa");
@@ -49,6 +49,7 @@ TEST(CalQLParserTest, SelectClause) {
     QuerySpec q5 = p5.spec();
 
     EXPECT_EQ(q5.attribute_selection.selection, QuerySpec::AttributeSelection::All);
+    EXPECT_EQ(q5.aggregation_ops.selection, QuerySpec::AggregationSelection::None);
 }
 
 TEST(CalQLParserTest, SelectClauseWithAggregation) {
@@ -59,8 +60,10 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     QuerySpec q1 = p1.spec();
 
     EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
-    ASSERT_EQ(q1.attribute_selection.list.size(), 1);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 3);
     EXPECT_EQ(q1.attribute_selection.list[0], "aa");
+    EXPECT_EQ(q1.attribute_selection.list[1], "aggregate.count");
+    EXPECT_EQ(q1.attribute_selection.list[2], "bb");
     
     EXPECT_EQ(q1.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q1.aggregation_ops.list.size(), 2);
@@ -77,9 +80,10 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     QuerySpec q2 = p2.spec();
 
     EXPECT_EQ(q2.attribute_selection.selection, QuerySpec::AttributeSelection::List);
-    ASSERT_EQ(q2.attribute_selection.list.size(), 2);
+    ASSERT_EQ(q2.attribute_selection.list.size(), 3);
     EXPECT_EQ(q2.attribute_selection.list[0], "b");
     EXPECT_EQ(q2.attribute_selection.list[1], "ccc");
+    EXPECT_EQ(q2.attribute_selection.list[2], "aggregate.count");
     
     EXPECT_EQ(q2.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregation_ops.list.size(), 1);
@@ -94,6 +98,17 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
 
     CalQLParser p5("select sum(a,b,c)");
     EXPECT_TRUE(p5.error());
+
+    CalQLParser p6("SELECT count(),* ");
+
+    EXPECT_FALSE(p6.error()) << "Unexpected parse error: " << p6.error_msg();
+
+    QuerySpec q6 = p6.spec();
+
+    EXPECT_EQ(q6.attribute_selection.selection, QuerySpec::AttributeSelection::All);    
+    EXPECT_EQ(q6.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
+    ASSERT_EQ(q6.aggregation_ops.list.size(), 1);
+    EXPECT_STREQ(q6.aggregation_ops.list[0].op.name, "count");    
 }
 
 TEST(CalQLParserTest, WhereClause) {
@@ -226,10 +241,11 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_STREQ(q1.aggregation_ops.list[0].op.name, "count");
 
     EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
-    ASSERT_EQ(q1.attribute_selection.list.size(), 3);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 4);
     EXPECT_EQ(q1.attribute_selection.list[0], "a");
     EXPECT_EQ(q1.attribute_selection.list[1], "bb");
     EXPECT_EQ(q1.attribute_selection.list[2], "cc");
+    EXPECT_EQ(q1.attribute_selection.list[3], "aggregate.count");
 
     EXPECT_EQ(q1.filter.selection, QuerySpec::FilterSelection::List);
     ASSERT_EQ(q1.filter.list.size(), 3);
@@ -277,4 +293,18 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q2.filter.list[0].attr_name, "group");
 
     EXPECT_EQ(q2.format.opt, QuerySpec::FormatSpec::Default);
+
+    CalQLParser p3("SELECT a GROUP b.c.d WHERE e>100");
+    EXPECT_TRUE(p3.error());
+
+    CalQLParser p4("SELECT *,count() FORMAT table");
+
+    EXPECT_FALSE(p4.error()) << "Unexpected parse error: " << p4.error_msg();
+
+    QuerySpec q4 = p4.spec();
+
+    EXPECT_EQ(q4.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
+    EXPECT_EQ(q4.aggregation_key.selection, QuerySpec::AttributeSelection::Default);
+    EXPECT_EQ(q4.filter.selection, QuerySpec::FilterSelection::None);
+    EXPECT_EQ(q4.format.opt, QuerySpec::FormatSpec::User);    
 }

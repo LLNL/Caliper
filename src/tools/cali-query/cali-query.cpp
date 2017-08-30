@@ -127,6 +127,10 @@ namespace
           "Use this many threads (applicable only with multiple files)",
           "THREADS"
         },
+        { "query", "query", 'q', true,
+          "Execute a query in CalQL format",
+          "QUERY STRING"
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
