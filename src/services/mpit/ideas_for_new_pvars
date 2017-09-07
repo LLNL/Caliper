@@ -1,0 +1,123 @@
+Currently, MVAPICH exports the richest variety of PVARs of any implementation:
+
+== CALIPER: Attribute created with name: mpit.mem_allocated
+== CALIPER: Attribute created with name: mpit.mem_allocated
+== CALIPER: Attribute created with name: mpit.num_malloc_calls
+== CALIPER: Attribute created with name: mpit.num_calloc_calls
+== CALIPER: Attribute created with name: mpit.num_memalign_calls
+== CALIPER: Attribute created with name: mpit.num_strdup_calls
+== CALIPER: Attribute created with name: mpit.num_realloc_calls
+== CALIPER: Attribute created with name: mpit.num_free_calls
+== CALIPER: Attribute created with name: mpit.num_memalign_free_calls
+== CALIPER: Attribute created with name: mpit.mv2_num_2level_comm_requests
+== CALIPER: Attribute created with name: mpit.mv2_num_2level_comm_success
+== CALIPER: Attribute created with name: mpit.mv2_num_shmem_coll_calls
+== CALIPER: Attribute created with name: mpit.mpit_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_read_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_write_progress_poll
+== CALIPER: Attribute created with name: mpit.mv2_smp_read_progress_poll_success
+== CALIPER: Attribute created with name: mpit.mv2_smp_write_progress_poll_success
+== CALIPER: Attribute created with name: mpit.rdma_ud_retransmissions
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_binomial
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_doubling_allgather
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_ring_allgather
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_scatter_ring_allgather_shm
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_shmem
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_knomial_internode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_knomial_intranode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_mcast_internode
+== CALIPER: Attribute created with name: mpit.mv2_coll_bcast_pipelined
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_inplace
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_bruck
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_rd
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_sd
+== CALIPER: Attribute created with name: mpit.mv2_coll_alltoall_pw
+== CALIPER: Attribute created with name: mpit.mpit_alltoallv_mv2_pw
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_rd
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_rs
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shm_intra
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_intra_p2p
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_2lvl
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_shmem
+== CALIPER: Attribute created with name: mpit.mv2_coll_allreduce_mcast
+== CALIPER: Attribute created with name: mpit.mv2_reg_cache_hits
+== CALIPER: Attribute created with name: mpit.mv2_reg_cache_misses
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_allocated
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_freed
+== CALIPER: Attribute created with name: mpit.mv2_ud_vbuf_allocated
+== CALIPER: Attribute created with name: mpit.mv2_ud_vbuf_freed
+== CALIPER: Attribute created with name: mpit.mv2_vbuf_available
+== CALIPER: Attribute created with name: mpit.mv2_smp_eager_avail_buffer
+== CALIPER: Attribute created with name: mpit.mv2_smp_rndv_avail_buffer
+== CALIPER: Attribute created with name: mpit.mv2_smp_eager_total_buffer
+
+Below are some of the ideas for adding new PVARs to export through the MPI_T interface:
+1. Message sizes:
+	a. Max / min / average / median message size sent / received in point-to-point communication: Watermark PVARs
+	b. Max / min / average / median message size used in collective communication (one PVAR for each type of MPI collective call)
+	Rationale: A tool can alternatively infer this by intercepting each call through the PMPI interface. However, it seems that the MPI-T interface is a more appropriate platform to export this information.
+				Moreover, it would be interesting to gather this information across communicators. The MPI-T interface is better suited to answer such questions.
+				==> This information could be very useful in generating recommendations for the application - whether it is latency sensitive or bandwidth bound
+				==> This can also be useful in determining if polling or blocking (interrupts) should be used as a means of checking for incoming messages
+					//Taken from blog by Jeff Squyres
+					Tuning opportunity: If it is detected that polling is not useful, turn on blocking mode and measure the amount of energy saved by powering down the processor
+	****I have started implementing PVARs for messages sizes within MVAPICH2.3b version (latest)
+				
+2. Non-blocking communication:
+	a. Some way to measure the degree of computation-communication overlap for asynchronous calls?
+	//Check excellent ICPP paper on this topic: "MPI Overlap: Benchamark and Analysis"
+	Rationale: When a process uses non-blocking communication, how do we know if any overlap actaully occurred?
+	Issues: Measuring overlap is a function that sits "outside" the library. I do not think it would be meaningful or possible to directly measure this overlap from within the library.
+	b. Measuring the time delay between a process requesting a non-blocking communication, and a wait for that request to complete
+		If one can use this, along with a measure of the bandwidth, one can estimate if there is a chance for overlap?
+	c. Number of times a probe for checking completion for an MPI operation returns false.
+
+
+4. One-sided communication:
+	a. Amount of memory allocated for the window versus how much is currently used
+		==> Tuning opportunity here in a manner similar to freeing unused VBUFs?
+
+5. Point-to-point:
+	a. Interrupt vs Polling: In addition to the number of progress polls that are already generated by MVAPICH, it may be interesting to see how much time is spent polling in total
+
+7. Misc:
+	\\Check the paper: "Characteristics of Unexpected Message Queue of MPI applications"
+	\\Idea also taken from internal MVAPICH version
+	a. Unexpected message queue:
+		i.   Instantaneous size of the unexpected message queue - memory usage and the length in terms of number of unexpected message queue
+			 Also add watermarks for this?
+		ii.  Total time spent matching incoming messages with pre-posted recieves
+			 I.   Successful match time
+			 II.  Unsuccessful match time
+		iii. Total time spent matching unexpected messages when a receive is posted:
+		     I.   Successful match time
+			 II.  Unsuccessful match time
+			 Calculating the above of successful / unsuccessful time would be a useful derived metric
+		iv.  Number of incoming messages being matched with pre-posted receives
+			 I.   Successful matches
+			 II.  Unsuccessful matches
+		v.   Number of times receives are matched with messages on the unexpected message queue
+			 I.	  Sucessfuly matches
+			 II.  Unsuccessful matches
+		vi.  Min, max, average time that messages spends in the unexpected message queue
+			 NOTE: It would useful to add some contextual information to the watermarks - which send / receive was responsible for the watermark? Can we get a line number?
+		Rationale: Why are we interested in unexpected message queues? One reason could be that we do not want unexpected message queues to grow without limit due to memory constraints inside MPI.
+				   Another reason could be that looking at "average time messages spend inside the unexpected message queue" could tell us about inefficient application design.
+			 An important point coming out here is that we are using MPI-T not only to detect inefficiencies inside the MPI implementation, we can also detect application design inefficiencies.
+
+	b. Connection setup time: Measuring connection setup time? This quantity is a little unclear - what connection setup are we measuring?
+
+	c. Lower down the InfiniBand stack:
+		i.   Number / total size of messages sent through the Reliable Communication protocol
+		ii.  Number / total size of messages sent through UD Communication protocol
+		iii. Amount of memory used for RC communications
+		iv.  Number of active queue pairs
+		v.   Number of RC channels / connections created
+		Rationale: Through MPI-T, one can monitor the number of RC channels created, memory footprint for the RC connections, and accordingly modify communication protocol method used depending on this.
+
+	d. Multi-rail NIC's:
+		i.  Number of messages going out through different HCA's when MVAPICH is configured to use multiple HCA's
+		Rationale: Monitoring the amount of message traffic traffic going out different multiple HCAs can be useful to know what usage patterns of HCA's for different processes, and detecting unused / inefficiently used network hardware and potential tuning opportunities
+		ii. Number of HCA's available: PVAR of "size" class?
+		Note to myself: Study what are the potential benefits of rail binding (i.e binding a process to a rail?)
+	
