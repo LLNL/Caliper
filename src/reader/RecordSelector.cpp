@@ -33,11 +33,11 @@
 /// @file RecordSelector.cpp
 /// RecordSelector implementation
 
+#include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordSelector.h"
 
-#include "caliper/common/CaliperMetadataAccessInterface.h"
-
 #include "caliper/common/Attribute.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
 #include "caliper/common/util/split.hpp"
@@ -47,144 +47,164 @@
 #include <mutex>
 
 using namespace cali;
-using namespace std;
+
+namespace
+{
+
+QuerySpec::Condition
+parse_clause(const std::string& str)
+{
+    QuerySpec::Condition clause { QuerySpec::Condition::None, "", "" };
+    
+    // parse "[-]attribute[(<>=)value]" string
+
+    if (str.empty())
+        return clause;
+        
+    std::string::size_type spos = 0;
+    bool negate = false;
+
+    if (str[spos] == '-') {
+        ++spos;
+        negate = true;
+    }
+
+    std::string::size_type opos = str.find_first_of("<>=", spos);
+
+    clause.attr_name.assign(str, spos, opos < std::string::npos ? opos-spos : opos);
+
+    if (opos < str.size()-1) {
+        clause.value.assign(str, opos+1, std::string::npos);
+
+        struct ops_t { char c; QuerySpec::Condition::Op op; } const ops[] = {
+            // { '<', Op::Less     }, { '>', Op::Greater  },
+            { '=', QuerySpec::Condition::Op::Equal },
+            { 0,   QuerySpec::Condition::Op::Exist }
+        };
+
+        int i;
+        for (i = 0; ops[i].c && ops[i].c != str[opos]; ++i)
+            ;
+
+        if (negate) {
+            switch (ops[i].op) {
+            case QuerySpec::Condition::Op::Exist:
+                clause.op = QuerySpec::Condition::Op::NotExist;
+                break;
+            case QuerySpec::Condition::Op::Equal:
+                clause.op = QuerySpec::Condition::Op::NotEqual;
+                break;
+            default:
+                // TODO: Handle remaining conditions
+                clause.op = QuerySpec::Condition::Op::None;
+            }
+        } else {
+            clause.op = ops[i].op;
+        }
+    } else {
+        clause.op = (negate ? QuerySpec::Condition::Op::NotExist : QuerySpec::Condition::Op::Exist);
+    }
+    
+    if (clause.attr_name.empty() || (opos < std::string::npos && clause.value.empty()))
+        clause.op = QuerySpec::Condition::Op::None;
+
+    return clause;
+}
+
+}
+
+using namespace cali;
 
 struct RecordSelector::RecordSelectorImpl
 {
-    enum class Op { Contains, Equals, Less, Greater };
+    std::vector<QuerySpec::Condition> m_filters;    
 
     struct Clause {
-        cali_id_t     attr_id;
-        std::string   value;
-        Op            op;
-        bool          negate;
-    };
+        QuerySpec::Condition::Op op;
+        Attribute attr;
+        Variant   value;
+    };    
 
-    struct ClauseConfig {
-        std::string   attr_name;
-        cali_id_t     attr_id;
-        std::string   value;
-        Op            op;
-        bool          negate;
-    };
-
-    std::vector<ClauseConfig> m_clauses;
-    std::mutex                m_clause_lock;
-    
-    bool parse_clause(const string& str) {
-        // parse "[-]attribute[(<>=)value]" string
-
-        if (str.empty())
-            return false;
-
-        ClauseConfig clause { "", CALI_INV_ID, "", Op::Contains, false };
-        string::size_type spos = 0;
-
-        if (str[spos] == '-') {
-            ++spos;
-            clause.negate = true;
-        }
-
-        string::size_type opos = str.find_first_of("<>=", spos);
-
-        clause.attr_name.assign(str, spos, opos < string::npos ? opos-spos : opos);
-
-        if (opos < str.size()-1) {
-            clause.value.assign(str, opos+1, string::npos);
-
-            struct ops_t { char c; Op op; } const ops[] = {
-                // { '<', Op::Less     }, { '>', Op::Greater  },
-                { '=', Op::Equals   }, { 0,   Op::Contains }
-            };
-
-            int i;
-            for (i = 0; ops[i].c && ops[i].c != str[opos]; ++i)
-                ;
-
-            clause.op = ops[i].op;
-        }
-
-        if (!clause.attr_name.empty() && (opos == string::npos || !clause.value.empty()))
-            m_clauses.push_back(clause);
-        else 
-            return false;
-
-        return true;
-    }
-
-    void parse(const string& filter_string) {
-        std::lock_guard<std::mutex>
-            g(m_clause_lock);
+    void configure(const QuerySpec& spec) {
+        m_filters.clear();
         
-        vector<string> clause_strings;
-
-        util::split(filter_string, ':', back_inserter(clause_strings));
-
-        for (const string& s : clause_strings)
-            if (!parse_clause(s))
-                cerr << "cali-query: malformed selector clause: \"" << s << "\"" << endl;
+        if (spec.filter.selection == QuerySpec::FilterSelection::List)
+            m_filters = spec.filter.list;
     }
 
-    Clause check_and_update_clause(CaliperMetadataAccessInterface& db, ClauseConfig& clause) {
-        std::lock_guard<std::mutex>
-            g(m_clause_lock);
+    Clause make_clause(const CaliperMetadataAccessInterface& db, const QuerySpec::Condition& f) {
+        Clause clause { f.op, Attribute::invalid, Variant() };
 
-        if (clause.attr_id == CALI_INV_ID) {
-            Attribute attr = db.get_attribute(clause.attr_name);
+        clause.attr = db.get_attribute(f.attr_name);
 
-            if (attr != Attribute::invalid)
-                clause.attr_id = attr.id();
-        }
+        if (clause.attr != Attribute::invalid)
+            clause.value = Variant::from_string(clause.attr.type(), f.value.c_str(), nullptr);
         
-        return { clause.attr_id, clause.value, clause.op, clause.negate };
+        return clause;
     }
-    
-    bool match(cali_id_t attr_id, const Variant& data, const Clause& clause) {            
-        if (clause.attr_id == attr_id)
-            switch (clause.op) {
-            case Op::Contains:
-                return true;
-            case Op::Equals:
-                return clause.value == data.to_string();
-            default:
-                break;
-            }
 
-        return false;
-    }    
-    
-    bool match(const Entry& entry, const Clause& clause) {
+    template<class Op>
+    bool have_match(const Entry& entry, Op match) {
         const Node* node = entry.node();
 
         if (node) {
             for ( ; node && node->id() != CALI_INV_ID; node = node->parent())
-                if (match(node->attribute(), node->data(), clause))
+                if (match(node->attribute(), node->data()))
                     return true;
-        } else if (match(entry.attribute(), entry.value(), clause))
+        } else if  (match(entry.attribute(), entry.value()))
             return true;
 
-        return false;
+        return false;        
     }
 
-    bool pass(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        for (ClauseConfig& clause_conf : m_clauses) {
-            Clause clause = check_and_update_clause(db, clause_conf);
+    bool pass(const CaliperMetadataAccessInterface& db, const EntryList& list) {
+        for (auto &f : m_filters) {
+            Clause clause = make_clause(db, f);
 
-            if (clause.attr_id == CALI_INV_ID) {
-                if (clause.negate)
-                    continue;
-                else
-                    return false;
-	    }
+            switch (clause.op) {
+            case QuerySpec::Condition::Op::Exist:
+                {
+                    bool m = false;
+                    
+                    for (const Entry& e : list)
+                        if (have_match(e, [&clause](cali_id_t attr_id, const Variant&){
+                                    return attr_id == clause.attr.id();
+                                }))
+                            m = true;
 
-            bool m = false;
+                    if (!m)
+                        return false;
+                }
+                break;
+            case QuerySpec::Condition::Op::NotExist:
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant&){
+                                return attr_id == clause.attr.id();
+                            }))
+                        return false;
+                break;                
+            case QuerySpec::Condition::Op::Equal:
+                {
+                    bool m = false;
+                    
+                    for (const Entry& e : list)
+                        if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                    return attr_id == clause.attr.id() && val == clause.value;
+                                }))
+                            m = true;
 
-            for (const Entry& e : list)
-                if ((m = (m || match(e, clause))))
-                    break;
-
-            if (m == clause.negate)
-                return false;
+                    if (!m)
+                        return false;
+                }
+                break;
+            case QuerySpec::Condition::Op::NotEqual:
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                return attr_id == clause.attr.id() && val == clause.value;
+                            }))
+                        return false;
+                break;
+            }   
         }
 
         return true;
@@ -192,10 +212,16 @@ struct RecordSelector::RecordSelectorImpl
 }; // RecordSelectorImpl
 
 
-RecordSelector::RecordSelector(const string& filter_string)
+RecordSelector::RecordSelector(const std::string& filter_string)
     : mP { new RecordSelectorImpl }
 {
-    mP->parse(filter_string);
+    mP->m_filters = parse(filter_string);
+}
+
+RecordSelector::RecordSelector(const QuerySpec& spec)
+    : mP { new RecordSelectorImpl }
+{
+    mP->configure(spec);
 }
 
 RecordSelector::~RecordSelector()
@@ -203,9 +229,35 @@ RecordSelector::~RecordSelector()
     mP.reset();
 }
 
+bool
+RecordSelector::pass(const CaliperMetadataAccessInterface& db, const EntryList& list)
+{
+    return mP->pass(db, list);
+}
+
 void 
 RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn push) const
 {
     if (mP->pass(db, list))
         push(db, list);
+}
+
+std::vector<QuerySpec::Condition>
+RecordSelector::parse(const std::string& str)
+{
+    std::vector<QuerySpec::Condition> clauses;    
+    std::vector<std::string> clause_strings;
+
+    util::split(str, ',', std::back_inserter(clause_strings));
+
+    for (const std::string& s : clause_strings) {
+        QuerySpec::Condition clause = ::parse_clause(s);
+
+        if (clause.op != QuerySpec::Condition::Op::None)
+            clauses.push_back(clause);
+        else
+            std::cerr << "cali-query: malformed selector clause: \"" << s << "\"" << std::endl;
+    }
+
+    return clauses;
 }

@@ -5,5 +5,9 @@
 \namespace util
 \brief Various utility functions and classes
 
-\defgroup AnnotationAPI Source-code annotation API 
+\defgroup AnnotationAPI Annotation API
+\brief The user-facing source-code annotation API
+
+\defgroup ReaderAPI Reader API
+\brief Facilities for post-processing and exporting Caliper output
 */

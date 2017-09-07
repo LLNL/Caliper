@@ -79,7 +79,7 @@ void mpi_register(Caliper* c)
     config = RuntimeConfig::init("mpi", configdata);
 
     mpifn_attr   = 
-        c->create_attribute("mpi.function", CALI_TYPE_STRING);
+        c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);
     mpirank_attr = 
         c->create_attribute("mpi.rank", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);

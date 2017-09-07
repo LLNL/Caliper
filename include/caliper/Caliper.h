@@ -258,6 +258,8 @@ public:
     
     static Caliper sigsafe_instance();
 
+    static bool    is_initialized();
+
     friend struct GlobalData;
 };
 

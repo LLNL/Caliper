@@ -36,7 +36,7 @@
 #pragma once
 
 #include "caliper/reader/RecordSelector.h"
-#include "caliper/reader/Table.h"
+#include "caliper/reader/TableFormatter.h"
 
 #include <cstdio>
 #include <iostream>
@@ -67,7 +67,7 @@ namespace report
         using output_stream_type = std::ostream*;
 
         output_stream_type m_output_stream;
-        Table              m_table_formatter;
+        TableFormatter     m_table_formatter;
         RecordSelector     m_selector;
 
     public:

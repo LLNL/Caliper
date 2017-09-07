@@ -30,6 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include "query_common.h"
+
 #include "caliper/cali-mpi.h"
 #include "caliper/cali.h"
 
@@ -37,10 +39,9 @@
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"
+#include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordProcessor.h"
-#include "caliper/reader/Json.h"
-#include "caliper/reader/Table.h"
-#include "caliper/reader/TreeFormatter.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/csv/CsvReader.h"
@@ -106,7 +107,7 @@ const Args::Table option_table[] = {
 };
 
     
-void format_output(const Args& args, CaliperMetadataAccessInterface& db, Aggregator& aggregate)
+void format_output(const Args& args, const QuerySpec& spec, CaliperMetadataAccessInterface& db, Aggregator& aggregate)
 {
     CALI_CXX_MARK_FUNCTION;
 
@@ -125,26 +126,11 @@ void format_output(const Args& args, CaliperMetadataAccessInterface& db, Aggrega
         } 
     }
 
-    if (args.is_set("table")) {
-        Table tbl_writer(args.get("attributes"), args.get("sort"));
+    FormatProcessor format(spec, fs.is_open() ? fs : std::cout);
 
-        aggregate.flush(db, tbl_writer);
-        tbl_writer.flush(db, fs.is_open() ? fs : std::cout);
-    } else if (args.is_set("tree")) {
-        TreeFormatter trx_writer(args.get("path-attributes"), args.get("attributes"));
-
-        aggregate.flush(db, trx_writer);
-        trx_writer.flush(db, fs.is_open() ? fs : std::cout);
-    } else if (args.is_set("json")) {
-        Json json_writer(args.get("attributes"));
-
-        aggregate.flush(db, json_writer);
-        json_writer.flush(db, fs.is_open() ? fs : std::cout);
-    } else {
-        aggregate.flush(db, CsvWriter(fs.is_open() ? fs : std::cout));
-    }
+    aggregate.flush(db, format);
+    format.flush(db);
 }
-
 
 void process_my_input(int rank, const Args& args, CaliperMetadataDB& db, Aggregator& aggregate)
 {
@@ -199,8 +185,10 @@ int main(int argc, char* argv[])
             MPI_Abort(MPI_COMM_WORLD, -1);
         }
     }
+
+    QuerySpec  spec = spec_from_args(args);
     
-    Aggregator aggregate(args.get("aggregate"), args.get("aggregate-key"));
+    Aggregator aggregate(spec);
     CaliperMetadataDB metadb;
     
     // --- Process our own input
@@ -217,7 +205,7 @@ int main(int argc, char* argv[])
     //
 
     if (rank == 0)
-        ::format_output(args, metadb, aggregate);
+        ::format_output(args, spec, metadb, aggregate);
 
     MPI_Finalize();
 

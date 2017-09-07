@@ -30,12 +30,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Aggregator.h
-/// Aggregator declarations
+/// \file Aggregator.h
+/// \brief Defines the Aggregator class
 
 #ifndef CALI_AGGREGATOR_H
 #define CALI_AGGREGATOR_H
 
+#include "QuerySpec.h"
 #include "RecordProcessor.h"
 
 #include <iostream>
@@ -46,6 +47,9 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
+/// \brief Post-processing aggregator
+/// \ingroup ReaderAPI
+    
 class Aggregator 
 {
     struct AggregatorImpl;
@@ -55,11 +59,19 @@ public:
 
     Aggregator(const std::string& aggr_config, const std::string& key);
 
+    Aggregator(const QuerySpec& spec);
+
     ~Aggregator();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    void add(CaliperMetadataAccessInterface&, const EntryList&);
+
+    void operator()(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        add(db, list);
+    }
 
     void flush(CaliperMetadataAccessInterface&, SnapshotProcessFn push);
+
+    static const QuerySpec::FunctionSignature* aggregation_defs();
 };
 
 } // namespace cali

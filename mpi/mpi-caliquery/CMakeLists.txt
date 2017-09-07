@@ -1,4 +1,8 @@
-add_executable(mpi-caliquery mpi-caliquery.cpp)
+include_directories("../../src/tools/cali-query")
+
+add_executable(mpi-caliquery
+    $<TARGET_OBJECTS:query-common>
+    mpi-caliquery.cpp)
 
 target_link_libraries(mpi-caliquery caliper-mpi caliper-tools-util caliper-mpiwrap caliper)
 

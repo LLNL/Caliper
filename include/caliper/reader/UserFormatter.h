@@ -30,12 +30,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Json.h
-/// Json output formatter declarations
+///@file Format.h
+/// Format output formatter declarations
 
-#ifndef CALI_JSON_H
-#define CALI_JSON_H
+#ifndef CALI_FORMAT_H
+#define CALI_FORMAT_H
 
+#include "Formatter.h"
 #include "RecordProcessor.h"
 
 #include "../common/RecordMap.h"
@@ -47,21 +48,23 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class QuerySpec;
 
-class Json 
+/// \brief Prints snapshot records using a user-defined format string
+/// \ingroup ReaderAPI
+    
+class UserFormatter : public Formatter
 {
-    struct JsonImpl;
-    std::shared_ptr<JsonImpl> mP;
+    struct FormatImpl;
+    std::shared_ptr<FormatImpl> mP;
 
 public:
 
-    Json(const std::string& fields);
+    UserFormatter(std::ostream& os, const QuerySpec& spec);
 
-    ~Json();
+    ~UserFormatter();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
-
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 };
 
 } // namespace cali

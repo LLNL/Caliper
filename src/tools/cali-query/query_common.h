@@ -30,38 +30,44 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Format.h
-/// Format output formatter declarations
+/// \file query_common.h
+/// \brief Common functionality for cali-query and mpi-caliquery
 
-#ifndef CALI_FORMAT_H
-#define CALI_FORMAT_H
+#pragma once
 
-#include "RecordProcessor.h"
+#include "caliper/reader/QuerySpec.h"
+#include "caliper/reader/RecordProcessor.h"
 
-#include "../common/RecordMap.h"
+namespace util
+{
 
-#include <iostream>
-#include <memory>
+class Args;
+
+}
 
 namespace cali
 {
 
 class CaliperMetadataAccessInterface;
 
-class Format 
-{
-    struct FormatImpl;
-    std::shared_ptr<FormatImpl> mP;
+/// \brief Create QuerySpec from command-line arguments
+QuerySpec
+spec_from_args(const util::Args& args);
 
-public:
+/// \class SnapshotFilterStep
+/// \brief Basically the chain link in the processing chain.
+///    Passes result of \param m_filter_fn to \param m_push_fn.
+struct SnapshotFilterStep {
+    SnapshotFilterFn  m_filter_fn;  ///< This processing step
+    SnapshotProcessFn m_push_fn;    ///< Next processing step
 
-    Format(std::ostream& os, const std::string& formatstr, const std::string& titlestr);
+    SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn) 
+        : m_filter_fn { filter_fn }, m_push_fn { push_fn }
+    { }
 
-    ~Format();
-
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    void operator ()(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        m_filter_fn(db, list, m_push_fn);
+    }
 };
 
-} // namespace cali
-
-#endif
+}

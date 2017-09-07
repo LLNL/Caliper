@@ -55,7 +55,8 @@ class Variant;
 typedef std::map<cali_id_t, cali_id_t> IdMap;
 
 /// \brief Maintains a context tree and provides metadata information.
-
+/// \ingroup ReaderAPI
+    
 class CaliperMetadataDB : public CaliperMetadataAccessInterface
 {
     struct CaliperMetadataDBImpl;

@@ -251,8 +251,41 @@ std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)
     return os;
 }
 
+void test_instance()
+{
+    if (cali::Caliper::is_initialized() == true) {
+        std::cout << "cali-test: Caliper::is_initialized() failed uninitialized condition"
+                  << std::endl;
+        return;
+    }
+    if (cali_is_initialized() != 0) {
+        std::cout << "cali-test: cali_is_initialized() failed uninitialized condition "
+                  << std::endl;
+        return;
+    }
+    
+    cali_init();
+
+    if (cali::Caliper::is_initialized() == false) {
+        std::cout << "cali-test: Caliper::is_initialized() failed initialized condition"
+                  << std::endl;
+        return;
+    }
+    if (cali_is_initialized() == 0) {
+        std::cout << "cali-test: cali_is_initialized() failed initialized condition "
+                  << std::endl;
+        return;
+    }
+
+    std::cout << "Caliper instance test OK" << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
+    // instance test has to run before Caliper initialization
+
+    test_instance();
+    
     cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
 
     CALI_CXX_MARK_FUNCTION;

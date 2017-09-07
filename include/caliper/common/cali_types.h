@@ -80,16 +80,30 @@ cali_string2type(const char* str);
 /**
  * \brief Attribute property flags.
  *
- * These flags control how the caliper runtime system handles the associated
- * attributes.   
+ * These flags control how the caliper runtime system handles the
+ * associated attributes. Flags can be combined with a bitwise OR
+ * (however, the scope flags are mutually exclusive).
  */
 typedef enum {
+  /** \brief Default value */
   CALI_ATTR_DEFAULT       =  0,
-  CALI_ATTR_ASVALUE       =  1,
-  CALI_ATTR_NOMERGE       =  2,
 
-  CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */ 
+  /** 
+   * \brief Store directly as key:value pair, not in the context tree.
+   *
+   * Attributes with this property will be not be put into the context
+   * tree, but stored directly as key:value pairs on the blackboard
+   * and in snapshot records. ASVALUE attributes cannot be
+   * nested. Only applicable to scalar data types.
+   */
+  CALI_ATTR_ASVALUE       =  1,
+  /** \brief Create a separate context tree root node for this attribute. */
+  CALI_ATTR_NOMERGE       =  2,
+  /** \brief Process-scope attribute. Shared between all threads. */
+  CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */
+  /** \brief Thread-scope attribute. */
   CALI_ATTR_SCOPE_THREAD  = 20, 
+  /** \brief Task-scope attribute. Currently unused. */
   CALI_ATTR_SCOPE_TASK    = 24,
 
   /** \brief Skip event callbacks for blackboard updates with this attribute */
@@ -100,10 +114,11 @@ typedef enum {
 
   /** \brief Begin/end calls are properly aligned with the call stack.
    * 
-   * Indicates that \a begin/end calls for this attribute are correctly
-   * nested with the call stack and other NESTED attributes.
-   * That is, an active region of a NESTED attribute does not 
-   * partially overlap function calls or other NESTED attribute regions.
+   * Indicates that \a begin/end calls for this attribute are
+   * correctly nested with the call stack and other NESTED attributes.
+   * That is, an active region of a NESTED attribute does not
+   * partially overlap function calls or other NESTED attribute
+   * regions.
    */
   CALI_ATTR_NESTED        = 256
 } cali_attr_properties;

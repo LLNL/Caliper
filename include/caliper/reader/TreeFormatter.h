@@ -31,10 +31,11 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file TreeFormatter.h
-/// TreeFormatter output formatter declarations
+/// \brief TreeFormatter output formatter
 
 #pragma once
 
+#include "Formatter.h"
 #include "RecordProcessor.h"
 
 #include "../common/RecordMap.h"
@@ -46,19 +47,23 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class QuerySpec;
 
-class TreeFormatter 
+/// \brief Print a set of snapshot records in a tree 
+/// \ingroup ReaderAPI
+    
+class TreeFormatter : public Formatter
 {
     struct TreeFormatterImpl;
     std::shared_ptr<TreeFormatterImpl> mP;
 
 public:
 
-    TreeFormatter(const std::string& fields, const std::string& sort_fields);
+    TreeFormatter(const QuerySpec& spec);
 
     ~TreeFormatter();
 
-    void operator()(CaliperMetadataAccessInterface&, const EntryList&);
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 
     void flush(CaliperMetadataAccessInterface&, std::ostream& os);
 };
