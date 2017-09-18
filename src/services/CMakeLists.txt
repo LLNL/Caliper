@@ -1,8 +1,10 @@
 # A macro to include service module source files in the caliper runtime lib
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+set(CALIPER_SERVICES_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 macro(add_service_sources)
-  file(RELATIVE_PATH _relpath "${CMAKE_SOURCE_DIR}/src/services" "${CMAKE_CURRENT_SOURCE_DIR}")
+  file(RELATIVE_PATH _relpath "${CALIPER_SERVICES_SRC_ROOT_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
   foreach(_src ${ARGN})
     if (_relpath)
       list(APPEND CALIPER_SERVICES_SOURCES "${_relpath}/${_src}")
