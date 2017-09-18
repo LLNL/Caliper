@@ -1,0 +1,3 @@
+1. CALIPER does not work with OpenMPI, as of September 18th, 2017.
+	Details: The handle allocation routine fails with a SEGV, when we are trying to allocate handles for PVARs bound to MPI_COMM objects. Martin had sent an email to Nathan from the OpenMPI team, and they had supposedly fixed the issue. We still see this issue when we use CALIPER, but do not see the issue with a dummy sample code initializing the MPI-T interface, and allocating PVAR handles.
+
