@@ -36,6 +36,7 @@
 #include "../CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "../../caliper/MemoryPool.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
@@ -48,6 +49,7 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
+#include <inttypes.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -60,6 +62,9 @@
 #include <getopt.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+//#include <linux/perf_event.h>
+
+#include "perf_postprocessing.h"
 
 extern "C"
 {
@@ -91,6 +96,7 @@ namespace {
 
     static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
     static size_t libpfm_attribute_types[MAX_ATTRIBUTES];
+    static std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     static __thread uint64_t *sample_attribute_pointers[MAX_ATTRIBUTES];
 
     std::map <std::string, uint64_t> sample_attribute_map = {
@@ -196,7 +202,7 @@ namespace {
         uint64_t *vptr;
         for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
             vptr = sample_attribute_pointers[attribute_index];
-            data[attribute_index] = Variant(static_cast<uint64_t>(*vptr));
+            data[attribute_index] = Variant(*vptr);
         }
 
         SnapshotRecord trigger_info(num_attributes, libpfm_attributes, data);
@@ -261,8 +267,11 @@ namespace {
                     warnx("cannot read sample");
                 }
 
-                // fprintf(stderr, "CPU: %d, IP: %d PID: %d TID: %d TIME: %d\n",
-                //     sample.cpu, sample.ip, sample.pid, sample.tid, sample.time);
+                 //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
+                 //                "TIME: %llu ADDR:%llu CPU: %llu "
+                 //                "WEIGHT: %llu DATA_SRC: %llu\n",
+                 //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
+                 //        sample.cpu, sample.weight, sample.data_src);
                 sample_handler();
             }
         } else {
@@ -421,14 +430,14 @@ namespace {
                 Variant v_true(true);
 
                 new_attribute = c->create_attribute(attribute_name,
-                                                    CALI_TYPE_ADDR,
+                                                    CALI_TYPE_UINT,
                                                     CALI_ATTR_ASVALUE
                                                     | CALI_ATTR_SCOPE_THREAD
                                                     | CALI_ATTR_SKIP_EVENTS,
                                                     1, &symbol_class_attr, &v_true);
             } else {
                 new_attribute = c->create_attribute(attribute_name,
-                                                    CALI_TYPE_ADDR,
+                                                    CALI_TYPE_UINT,
                                                     CALI_ATTR_ASVALUE
                                                     | CALI_ATTR_SCOPE_THREAD
                                                     | CALI_ATTR_SKIP_EVENTS);
@@ -440,6 +449,9 @@ namespace {
 
             // Record type of attribute
             libpfm_attribute_types[num_attributes] = attribute_bits;
+
+            // Map type to id for postprocessing
+            libpfm_attribute_type_to_attr[attribute_bits] = new_attribute;
 
             ++num_attributes;
         }
@@ -538,6 +550,46 @@ namespace {
         }
     }
 
+    struct DataSrcAttrs {
+        Attribute mem_lvl_attr;
+    };
+
+    struct DataSrcAttrs data_src_attrs;
+
+    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
+        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
+            data_src_attrs.mem_lvl_attr = c->create_attribute("libpfm.memory_level",
+                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        }
+    }
+
+    static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
+
+        std::vector<Attribute> attr;
+        std::vector<Variant>   data;
+
+        std::string mem_lvl;
+
+        // Decode data_src encoding
+        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
+
+            Entry e = snapshot->get(libpfm_attribute_type_to_attr[PERF_SAMPLE_DATA_SRC]);
+
+            if (!e.is_empty()) {
+                uint64_t data_src = e.value().to_uint();
+
+                mem_lvl = lookup_mem_lvl(data_src);
+
+                attr.push_back(data_src_attrs.mem_lvl_attr);
+
+                data.push_back(Variant(CALI_TYPE_STRING, mem_lvl.c_str(), mem_lvl.size()));
+            }
+        }
+
+        if (attr.size() > 0)
+            c->make_entrylist(attr.size(), attr.data(), data.data(), *snapshot);
+    }
+
     // Initialization handler
     void libpfm_service_register(Caliper* c) {
         config = RuntimeConfig::init("libpfm", s_configdata);
@@ -548,6 +600,8 @@ namespace {
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().post_init_evt.connect(post_init_cb);
         c->events().finish_evt.connect(finish_cb);
+        c->events().pre_flush_evt.connect(pre_flush_cb);
+        c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
 
         Log(1).stream() << "Registered libpfm service" << endl;
     }
