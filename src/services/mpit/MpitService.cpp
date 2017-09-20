@@ -497,6 +497,10 @@ namespace
 				{
 					Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
 					return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index][0], &(pvar_count.data())[index][0]);
+
+					/*Increment the size of the handle and count arrays*/
+					pvar_handle[index].resize(2, NULL);
+					pvar_count[index].resize(2, -1);
 					break;
 				}
 				case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). Support MPI_COMM_WORLD, MPI_COMM_SELF as default.
