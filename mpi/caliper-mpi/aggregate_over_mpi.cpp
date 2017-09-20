@@ -95,7 +95,8 @@ void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& agg
 
         MPI_Send(&nodecount,     1,              MPI_UNSIGNED,
                  dest, 1, MPI_COMM_WORLD);
-        MPI_Send(nodebuf.data(), nodebuf.size(), MPI_BYTE,
+        // Work with pre-3.0 MPIs that take non-const void* :-/
+        MPI_Send(const_cast<unsigned char*>(nodebuf.data()), nodebuf.size(), MPI_BYTE,
                  dest, 2, MPI_COMM_WORLD);
     }
 
@@ -104,7 +105,7 @@ void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& agg
 
         MPI_Send(&snapcount,     1,              MPI_UNSIGNED,
                  dest, 3, MPI_COMM_WORLD);
-        MPI_Send(snapbuf.data(), snapbuf.size(), MPI_BYTE,
+        MPI_Send(const_cast<unsigned char*>(snapbuf.data()), snapbuf.size(), MPI_BYTE,
                  dest, 4, MPI_COMM_WORLD);
     }        
 }
