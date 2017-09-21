@@ -44,10 +44,10 @@
 #include "caliper/reader/RecordProcessor.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/OutputStream.h"
 #include "caliper/common/csv/CsvReader.h"
 #include "caliper/common/csv/CsvWriter.h"
 
-#include <fstream>
 #include <iostream>
 
 using namespace cali;
@@ -102,6 +102,10 @@ const Args::Table option_table[] = {
       "Print given attributes in web-friendly json format",
       "ATTRIBUTES"
     },
+    { "query", "query", 'q', true,
+      "Execute a query in CalQL format",
+      "QUERY STRING"
+    },
     { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
     Args::Table::Terminator
 };
@@ -111,22 +115,14 @@ void format_output(const Args& args, const QuerySpec& spec, CaliperMetadataAcces
 {
     CALI_CXX_MARK_FUNCTION;
 
-    std::ofstream fs;
+    OutputStream stream;
 
-    if (args.is_set("output")) {
-        std::string filename = args.get("output");
-
-        fs.open(filename.c_str());
-
-        if (!fs) {
-            std::cerr << "mpi-caliquery: error: could not open output file " 
-                      << filename << std::endl;
-
-            return;
-        } 
-    }
-
-    FormatProcessor format(spec, fs.is_open() ? fs : std::cout);
+    if (args.is_set("output"))
+        stream.set_filename(args.get("output").c_str());
+    else
+        stream.set_stream(OutputStream::StdOut);
+    
+    FormatProcessor format(spec, stream);
 
     aggregate.flush(db, format);
     format.flush(db);

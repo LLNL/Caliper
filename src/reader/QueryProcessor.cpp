@@ -30,41 +30,62 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file QueryProcessor.h
-/// QueryProcessor class
+#include "caliper/reader/QueryProcessor.h"
 
-#pragma once
+#include "caliper/reader/Aggregator.h"
+#include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/RecordSelector.h"
 
-#include "QuerySpec.h"
-#include "RecordProcessor.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
-#include <iostream>
-#include <memory>
+using namespace cali;
 
-namespace cali
+struct QueryProcessor::QueryProcessorImpl
 {
+    Aggregator        aggregator;
+    RecordSelector    filter;
+    FormatProcessor   formatter;
 
-class CaliperMetadataAccessInterface;
-class OutputStream;
+    SnapshotProcessFn snap_proc;
 
-class QueryProcessor
-{
-    struct QueryProcessorImpl;
-    std::shared_ptr<QueryProcessorImpl> mP;
-    
-public:
+    QueryProcessorImpl(const QuerySpec& spec, OutputStream& stream)
+        : aggregator(spec),
+          filter(spec),
+          formatter(spec, stream)
+    {
+        if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
+            snap_proc = formatter;
+        else
+            snap_proc = aggregator;
 
-    QueryProcessor(const QuerySpec&, OutputStream& stream);
-
-    ~QueryProcessor();
-
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
-
-    void flush(CaliperMetadataAccessInterface&);
-
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
+        if (spec.filter.selection == QuerySpec::FilterSelection::List)
+            snap_proc = [this](CaliperMetadataAccessInterface& db, const EntryList& list){
+                if (filter.pass(db, list))
+                    snap_proc(db, list);
+            };
     }
+          
 };
 
+
+QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream)
+    : mP(new QueryProcessorImpl(spec, stream))
+{ }
+
+QueryProcessor::~QueryProcessor()
+{
+    mP.reset();
+}
+
+void
+QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
+{
+    mP->snap_proc(db, list);
+}
+
+void
+QueryProcessor::flush(CaliperMetadataAccessInterface& db)
+{
+    mP->aggregator.flush(db, mP->formatter);
+    mP->formatter.flush(db);
 }

@@ -45,6 +45,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class OutputStream;
 
 class FormatProcessor
 {
@@ -53,7 +54,7 @@ class FormatProcessor
     
 public:
 
-    FormatProcessor(const QuerySpec&, std::ostream& os);
+    FormatProcessor(const QuerySpec&, OutputStream&);
 
     ~FormatProcessor();
     

@@ -37,7 +37,6 @@
 
 #include "../Entry.h"
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -46,6 +45,7 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 class Node;
+class OutputStream;
     
 class CsvWriter
 {
@@ -57,7 +57,7 @@ public:
     CsvWriter()
     { }
     
-    CsvWriter(std::ostream& os);
+    CsvWriter(OutputStream& os);
 
     ~CsvWriter();
 

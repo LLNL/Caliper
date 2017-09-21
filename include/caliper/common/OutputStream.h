@@ -30,41 +30,74 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file QueryProcessor.h
-/// QueryProcessor class
+/// \file OutputStream.h
+/// Manage output streams
 
 #pragma once
 
-#include "QuerySpec.h"
-#include "RecordProcessor.h"
+#include "Entry.h"
 
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace cali
 {
 
 class CaliperMetadataAccessInterface;
-class OutputStream;
 
-class QueryProcessor
+/// \class OutputStream
+/// \brief A simple stream abstraction class.
+///   Handles file streams/stdout/stderr.
+class OutputStream
 {
-    struct QueryProcessorImpl;
-    std::shared_ptr<QueryProcessorImpl> mP;
+    struct OutputStreamImpl;
+    std::shared_ptr<OutputStreamImpl> mP;
     
 public:
+    
+    enum StreamType {
+        None,
+        StdOut,
+        StdErr,
+        File
+    };
 
-    QueryProcessor(const QuerySpec&, OutputStream& stream);
+    StreamType    type() const;
 
-    ~QueryProcessor();
+    /// \brief Return a C++ ostream. Opens/creates the underlying file stream
+    ///   if needed.
+    std::ostream& stream();
 
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
+    OutputStream();
 
-    void flush(CaliperMetadataAccessInterface&);
+    ~OutputStream();
 
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
-    }
+    /// \brief Set stream type. (Note: for file streams, use \a set_filename).
+    void
+    set_stream(StreamType type);
+
+    /// \brief Set stream's file name to \a filename
+    void
+    set_filename(const char* filename);
+
+    /// \brief Create stream's filename from the given format string pattern and
+    ///   entry list.
+    ///
+    /// The filename is created from the format string \a formatstr.
+    /// The format string can include attribute names enclosed with '%',
+    /// (i.e., "%attribute.name%"). These fields will be replaced with the value
+    /// attribute in the given record \a rec.
+    ///
+    /// For example, the format string "out-%mpi.rank%.txt" will result in a
+    // file name like "out-0.txt" using the \a mpi.rank value in \a rec.
+    ///
+    /// The special values "stdout" and "stderr" for \a formatstr will redirect
+    /// output to standard out and standard error, respectively.
+    void
+    set_filename(const char* formatstr,
+                 const CaliperMetadataAccessInterface& db,
+                 const std::vector<Entry>& rec);
 };
-
+    
 }

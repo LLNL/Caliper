@@ -49,6 +49,7 @@
 
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 
 #include "caliper/common/csv/CsvReader.h"
 #include "caliper/common/csv/CsvWriter.h"
@@ -234,20 +235,12 @@ int main(int argc, const char* argv[])
     // --- Create output stream (if requested)
     //
 
-    ofstream fs;
+    OutputStream stream;
 
-    if (args.is_set("output")) {
-        string filename = args.get("output");
-
-        fs.open(filename.c_str());
-
-        if (!fs) {
-            cerr << "cali-query: error: could not open output file " 
-                 << filename << endl;
-
-            return -2;
-        } 
-    }
+    if (args.is_set("output"))
+        stream.set_filename(args.get("output").c_str());
+    else
+        stream.set_stream(OutputStream::StdOut);
 
     //
     // --- Build up processing chain (from back to front)
@@ -257,7 +250,7 @@ int main(int argc, const char* argv[])
 
     // setup format spec
     
-    FormatProcessor   format(spec, fs.is_open() ? fs : cout);
+    FormatProcessor   format(spec, stream);
 
     NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
     SnapshotProcessFn snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
@@ -268,7 +261,7 @@ int main(int argc, const char* argv[])
         snap_proc = format;
     else
         snap_proc = aggregate;
-
+    
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
         snap_proc = ::SnapshotFilterStep(RecordSelector(spec), snap_proc);
     
