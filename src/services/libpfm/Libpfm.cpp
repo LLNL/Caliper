@@ -552,6 +552,10 @@ namespace {
 
     struct DataSrcAttrs {
         Attribute mem_lvl_attr;
+        Attribute mem_hit_attr;
+        Attribute mem_op_attr;
+        Attribute mem_snoop_attr;
+        Attribute mem_tlb_attr;
     };
 
     struct DataSrcAttrs data_src_attrs;
@@ -559,7 +563,15 @@ namespace {
     static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
         if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
             data_src_attrs.mem_lvl_attr = c->create_attribute("libpfm.memory_level",
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_hit_attr = c->create_attribute("libpfm.hit_type",
+                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_op_attr = c->create_attribute("libpfm.operation",
+                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_snoop_attr = c->create_attribute("libpfm.snoop",
+                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_tlb_attr = c->create_attribute("libpfm.tlb",
+                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         }
     }
 
@@ -569,6 +581,10 @@ namespace {
         std::vector<Variant>   data;
 
         std::string mem_lvl;
+        std::string hit;
+        std::string op;
+        std::string snoop;
+        std::string tlb;
 
         // Decode data_src encoding
         if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
@@ -578,11 +594,23 @@ namespace {
             if (!e.is_empty()) {
                 uint64_t data_src = e.value().to_uint();
 
-                mem_lvl = lookup_mem_lvl(data_src);
+                mem_lvl = datasource_mem_lvl(data_src);
+                hit = datasource_mem_hit(data_src);
+                op = datasource_mem_op(data_src);
+                snoop = datasource_mem_snoop(data_src);
+                tlb = datasource_mem_tlb(data_src);
 
                 attr.push_back(data_src_attrs.mem_lvl_attr);
+                attr.push_back(data_src_attrs.mem_hit_attr);
+                attr.push_back(data_src_attrs.mem_op_attr);
+                attr.push_back(data_src_attrs.mem_snoop_attr);
+                attr.push_back(data_src_attrs.mem_tlb_attr);
 
                 data.push_back(Variant(CALI_TYPE_STRING, mem_lvl.c_str(), mem_lvl.size()));
+                data.push_back(Variant(CALI_TYPE_STRING, hit.c_str(), hit.size()));
+                data.push_back(Variant(CALI_TYPE_STRING, op.c_str(), op.size()));
+                data.push_back(Variant(CALI_TYPE_STRING, snoop.c_str(), snoop.size()));
+                data.push_back(Variant(CALI_TYPE_STRING, tlb.c_str(), tlb.size()));
             }
         }
 
