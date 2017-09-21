@@ -46,25 +46,31 @@ struct QueryProcessor::QueryProcessorImpl
     RecordSelector    filter;
     FormatProcessor   formatter;
 
-    SnapshotProcessFn snap_proc;
+    bool              do_aggregate;
 
+    void
+    process_record(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+        if (filter.pass(db, rec)) {
+            if (do_aggregate)
+                aggregator.add(db, rec);
+            else
+                formatter.process_record(db, rec);
+        }
+    }
+
+    void
+    flush(CaliperMetadataAccessInterface& db) {
+        aggregator.flush(db, formatter);
+        formatter.flush(db);
+    }
+    
     QueryProcessorImpl(const QuerySpec& spec, OutputStream& stream)
         : aggregator(spec),
           filter(spec),
           formatter(spec, stream)
     {
-        if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
-            snap_proc = formatter;
-        else
-            snap_proc = aggregator;
-
-        if (spec.filter.selection == QuerySpec::FilterSelection::List)
-            snap_proc = [this](CaliperMetadataAccessInterface& db, const EntryList& list){
-                if (filter.pass(db, list))
-                    snap_proc(db, list);
-            };
+        do_aggregate = (spec.aggregation_ops.selection != QuerySpec::AggregationSelection::None);
     }
-          
 };
 
 
@@ -78,14 +84,14 @@ QueryProcessor::~QueryProcessor()
 }
 
 void
-QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
+QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-    mP->snap_proc(db, list);
+    
+    mP->process_record(db, rec);
 }
 
 void
 QueryProcessor::flush(CaliperMetadataAccessInterface& db)
 {
-    mP->aggregator.flush(db, mP->formatter);
-    mP->formatter.flush(db);
+    mP->flush(db);
 }
