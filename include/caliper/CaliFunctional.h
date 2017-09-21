@@ -184,12 +184,7 @@ struct ArgRecorder<N, Arg, Args...>{
 
 //TODO: fix
 template<typename LB, typename... Args>
-auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::enable_if<
-                                                                  !std::is_same<
-                                                                    typename std::result_of<LB(Args...)>::type,
-                                                                    void
-                                                                  >::type
-                                                                  ,void>::type {
+auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
     Annotation startedAnnot = wrapper_annotation().begin(name).getAnnot();
     cali::Annotation::Guard func_annot(startedAnnot);
     #ifdef VARIADIC_RETURN_SAFE
