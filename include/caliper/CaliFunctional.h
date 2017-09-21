@@ -182,8 +182,14 @@ struct ArgRecorder<N, Arg, Args...>{
     }
 };
 
+//TODO: fix
 template<typename LB, typename... Args>
-auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::result_of<LB(Args...)>::type{
+auto wrap_with_args(const char* name, LB body, Args... args) -> typename std::enable_if<
+                                                                  !std::is_same<
+                                                                    typename std::result_of<LB(Args...)>::type,
+                                                                    void
+                                                                  >::type
+                                                                  ,void>::type {
     Annotation startedAnnot = wrapper_annotation().begin(name).getAnnot();
     cali::Annotation::Guard func_annot(startedAnnot);
     #ifdef VARIADIC_RETURN_SAFE
@@ -217,14 +223,34 @@ struct ArgWrappedFunction {
         name = func_name;
     }
     template <typename... Args>
-    auto operator()(Args... args) -> typename std::result_of<LB(Args...)>::type {
-        cali::Annotation::Guard func_annot(wrapper_annotation().begin(name).getAnnot());
-        #ifdef VARIADIC_RETURN_SAFE
-        auto n =ArgRecorder<1,Args...>::record(name,args...);
-        #else
-        #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
-        #endif
-        return body(args...);
+    auto operator()(Args... args) -> typename std::enable_if<
+        !std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
+        typename std::result_of<LB(Args...)>::type>::type {
+      cali::Annotation::Guard func_annot(
+          wrapper_annotation().begin(name).getAnnot());
+      #ifdef VARIADIC_RETURN_SAFE
+      auto n =ArgRecorder<1,Args...>::record(name,args...);
+      #else
+      #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
+      #endif
+      auto return_value = body(args...);
+      cali::Annotation return_value_annot("return");
+      return_value_annot.set(return_value);
+      return_value_annot.end();
+      return return_value;
+    }
+    template <typename... Args>
+    auto operator()(Args... args) -> typename std::enable_if<
+        std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
+        typename std::result_of<LB(Args...)>::type>::type {
+      cali::Annotation::Guard func_annot(
+          wrapper_annotation().begin(name).getAnnot());
+      #ifdef VARIADIC_RETURN_SAFE
+      auto n =ArgRecorder<1,Args...>::record(name,args...);
+      #else
+      #warning CALIPER WARNING: This  C++ compiler has bugs which prevent argument profiling
+      #endif
+      return body(args...);
     }
     LB body;
     const char* name;
@@ -244,5 +270,3 @@ ArgWrappedFunction<LB> wrap_function_and_args(const char* name, LB body){
 }
 
 #endif //CALI_ANNOTATED_REGION_H
-
-

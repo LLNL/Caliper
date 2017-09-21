@@ -33,9 +33,25 @@
 // A minimal Caliper instrumentation demo 
 
 #include <caliper/cali.h>
+#include <caliper/CaliFunctional.h>
+
+// TODO: [DNM] THIS STUFF IS FOR TESTING PURPOSES ONLY
+
+int wrap_doThings(int x, int y){
+  return x + y;
+}
+
+void wrap_doNothing(){
+}
+
+auto doThings = cali::wrap_function_and_args("doThings",wrap_doThings);
+
+auto doNothing = cali::wrap_function_and_args("doNothing",wrap_doNothing);
 
 int main(int argc, char* argv[])
 {
+    int x = doThings(3,4);
+    doNothing();
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("init");
