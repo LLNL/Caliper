@@ -84,7 +84,7 @@ namespace
             // TODO: get callpath
 
             SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
-            c.push_snapshot(CALI_SCOPE_PROCESS, &trigger_info);
+            c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
         }
 
         return ret;
