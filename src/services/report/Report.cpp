@@ -85,7 +85,13 @@ namespace
                 Log(0).stream() << "report: config parse error: " << parser.error_msg() << std::endl;
                 return;
             }
-            
+
+            QuerySpec    spec(parser.spec());
+
+            // set format default to table if it hasn't been set in the query config
+            if (spec.format.opt == QuerySpec::FormatSpec::Default)
+                spec.format = CalQLParser("format table").spec().format;
+                
             OutputStream stream;
 
             stream.set_stream(OutputStream::StdOut);
@@ -95,7 +101,7 @@ namespace
             if (!filename.empty())
                 stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
             
-            s_instance.reset(new Report(QueryProcessor(parser.spec(), stream)));
+            s_instance.reset(new Report(QueryProcessor(spec, stream)));
         }
 
         static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
@@ -139,19 +145,6 @@ namespace
         { "config", CALI_TYPE_STRING, "",
           "Report configuration/query specification in CalQL",
           "Report configuration/query specification in CalQL"
-        },
-        { "attributes", CALI_TYPE_STRING, "",
-          "List of attributes (columns) to print.",
-          "List of attributes (columns) to print. "
-          "Default: empty (print all user-defined attributes).",
-        },
-        { "filter", CALI_TYPE_STRING, "",
-          "Filter snapshots (rows) to print.",
-          "Filter snapshots (rows) to print. Default: empty (print all).",
-        },
-        { "sort_by", CALI_TYPE_STRING, "",
-          "List of attributes to sort by.",
-          "List of attributes to sort by. Default: empty (undefined order)"
         },
         ConfigSet::Terminator
     };
