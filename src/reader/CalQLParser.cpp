@@ -142,6 +142,7 @@ struct CalQLParser::CalQLParserImpl
         Format,
         Group,
         Select,
+        Sort,
         Where
     };
 
@@ -153,8 +154,9 @@ struct CalQLParser::CalQLParserImpl
             { "format",    Format    },
             { "group",     Group     },
             { "select",    Select    },
+            { "order",     Sort      },
             { "where",     Where     },
-            
+             
             { nullptr,     None      }
         };
 
@@ -359,6 +361,50 @@ struct CalQLParser::CalQLParserImpl
     }
 
     void
+    parse_sort(std::istream& is) {
+        std::string next_keyword;
+        char c = 0;
+        
+        do {
+            c = 0;
+            next_keyword.clear();
+            
+            std::string arg = parse_word(is);
+
+            if (arg.empty()) {
+                set_error("Sort attribute expected", is);
+                return;
+            }
+            
+            std::string tmp = parse_word(is);
+            std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
+
+            if (next_keyword == "asc" ) {
+                spec.sort.selection = QuerySpec::SortSelection::List;
+                spec.sort.list.push_back(QuerySpec::SortSpec(arg, QuerySpec::SortSpec::Ascending));
+                next_keyword.clear();
+            } else if (next_keyword == "desc") {
+                spec.sort.selection = QuerySpec::SortSelection::List;
+                spec.sort.list.push_back(QuerySpec::SortSpec(arg, QuerySpec::SortSpec::Descending));
+                next_keyword.clear();
+            } else {
+                spec.sort.selection = QuerySpec::SortSelection::List;
+                spec.sort.list.push_back(QuerySpec::SortSpec(arg, QuerySpec::SortSpec::Ascending));
+
+                if (!next_keyword.empty())
+                    break;
+            }
+            
+            c = parse_char(is);
+        } while (!error && is.good() && c == ',');
+
+        if (c)
+            is.unget();
+        if (!next_keyword.empty())
+            parse_clause_from_word(next_keyword, is);
+    }
+
+    void
     parse_filter_clause(std::istream& is) {
         std::string w = parse_word(is);        
         std::string wl(w);
@@ -460,12 +506,38 @@ struct CalQLParser::CalQLParserImpl
         case Select:
             parse_select(is);
             break;
+        case Sort:
+            // we expect that "by" has already been read
+            parse_sort(is);
+            break;
         case Where:
             parse_where(is);
             break;
         case None:
             // do nothing
             break;
+        }
+    }
+
+    void
+    parse_clause_from_word(std::string w, std::istream& is) {
+        Clause clause = get_clause_from_word(w);
+
+        if (clause == None) {
+            set_error(std::string("Expected clause keyword, got ")+w, is);
+        } else {
+            // special handling for "group" and "sort"
+            if (clause == Group || clause == Sort) {
+                std::string w2 = parse_word(is);
+                std::transform(w2.begin(), w2.end(), w2.begin(), ::tolower);
+
+                if (w2 != "by") {
+                    set_error(std::string("Expected clause keyword. Did you mean \"GROUP BY\"?"), is);
+                    return;
+                }
+            }
+                
+            parse_clause(clause, is);
         }
     }
     
@@ -476,25 +548,8 @@ struct CalQLParser::CalQLParserImpl
 
             if (w.empty())
                 break;
-            
-            Clause clause = get_clause_from_word(w);
 
-            if (clause == None) {
-                set_error(std::string("Expected clause keyword, got ")+w, is);
-            } else {
-                // special handling for "group"
-                if (clause == Group) {
-                    std::string w2 = parse_word(is);
-                    std::transform(w2.begin(), w2.end(), w2.begin(), ::tolower);
-
-                    if (w2 != "by") {
-                        set_error(std::string("Expected clause keyword. Did you mean \"GROUP BY\"?"), is);
-                        break;
-                    }
-                }
-                
-                parse_clause(clause, is);
-            }
+            parse_clause_from_word(w, is);
         }
     }
 

@@ -129,6 +129,7 @@ public:
 
     friend bool operator == (const Variant& lhs, const Variant& rhs);
     friend bool operator <  (const Variant& lhs, const Variant& rhs);
+    friend bool operator >  (const Variant& lhs, const Variant& rhs);
 };
 
 inline bool operator == (const Variant& lhs, const Variant& rhs) {
@@ -137,6 +138,10 @@ inline bool operator == (const Variant& lhs, const Variant& rhs) {
     
 inline bool operator <  (const Variant& lhs, const Variant& rhs) {
     return (cali_variant_compare(lhs.m_v, rhs.m_v) < 0);
+}
+
+inline bool operator >  (const Variant& lhs, const Variant& rhs) {
+    return (cali_variant_compare(lhs.m_v, rhs.m_v) > 0);
 }
 
 std::ostream& operator << (std::ostream& os, const Variant& v);

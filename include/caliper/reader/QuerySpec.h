@@ -41,8 +41,8 @@
 namespace cali
 {
 
-/// \brief Describes a %Caliper data processing rule
-
+/// \brief Describes a %Caliper data processing rule (filter, aggregation, formatting)
+/// \ingroup ReaderAPI
 struct QuerySpec
 {
     //
@@ -96,7 +96,7 @@ struct QuerySpec
     /// \brief Sort description
     struct SortSpec {
         enum Order {
-            Ascending, Descending
+            None, Ascending, Descending
         }           order;
         std::string attribute;
 

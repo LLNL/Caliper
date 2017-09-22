@@ -160,6 +160,62 @@ TEST(CalQLParserTest, GroupByClause) {
     EXPECT_EQ(q1.aggregation_key.list[2], "ccc");
 }
 
+TEST(CalQLParserTest, OrderByClause1) {
+    CalQLParser p1("Order By aa, b desc , c   asc, ddd ");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_EQ(q1.sort.selection, QuerySpec::SortSelection::List);
+    ASSERT_EQ(q1.sort.list.size(), 4);
+
+    EXPECT_EQ(q1.sort.list[0].attribute, "aa");
+    EXPECT_EQ(q1.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[1].attribute, "b");
+    EXPECT_EQ(q1.sort.list[1].order,     QuerySpec::SortSpec::Descending);
+    EXPECT_EQ(q1.sort.list[2].attribute, "c");
+    EXPECT_EQ(q1.sort.list[2].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q1.sort.list[3].attribute, "ddd");
+    EXPECT_EQ(q1.sort.list[3].order,     QuerySpec::SortSpec::Ascending);    
+}
+
+TEST(CalQLParserTest, OrderByClause2) {
+    CalQLParser p("Order By aa,\"b with space\" format table ");
+
+    EXPECT_FALSE(p.error()) << "Unexpected parse error: " << p.error_msg();
+
+    QuerySpec q = p.spec();
+
+    EXPECT_EQ(q.sort.selection, QuerySpec::SortSelection::List);
+    ASSERT_EQ(q.sort.list.size(), 2);
+    
+    EXPECT_EQ(q.sort.list[0].attribute, "aa");
+    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Ascending);
+    EXPECT_EQ(q.sort.list[1].attribute, "b with space");
+    EXPECT_EQ(q.sort.list[1].order,     QuerySpec::SortSpec::Ascending);
+    
+    EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
+    EXPECT_STREQ(q.format.formatter.name, "table");
+}
+
+TEST(CalQLParserTest, OrderByClause3) {
+    CalQLParser p("Order By aa DESC format table ");
+
+    EXPECT_FALSE(p.error()) << "Unexpected parse error: " << p.error_msg();
+
+    QuerySpec q = p.spec();
+
+    EXPECT_EQ(q.sort.selection, QuerySpec::SortSelection::List);
+    ASSERT_EQ(q.sort.list.size(), 1);
+    
+    EXPECT_EQ(q.sort.list[0].attribute, "aa");
+    EXPECT_EQ(q.sort.list[0].order,     QuerySpec::SortSpec::Descending);
+    
+    EXPECT_EQ(q.format.opt, QuerySpec::FormatSpec::User);
+    EXPECT_STREQ(q.format.formatter.name, "table");
+}
+
 TEST(CalQLParserTest, FormatSpec) {
     CalQLParser p1("FORMAT tree(\"a,bb,ccc\")");
 

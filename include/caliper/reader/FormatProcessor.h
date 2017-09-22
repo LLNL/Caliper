@@ -47,6 +47,7 @@ namespace cali
 class CaliperMetadataAccessInterface;
 class OutputStream;
 
+/// \brief 
 class FormatProcessor
 {
     struct FormatProcessorImpl;
