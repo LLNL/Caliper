@@ -76,8 +76,8 @@ struct QuerySpec
     
     /// \brief An aggregation function invocation in a query spec
     struct AggregationOp {
-        FunctionSignature        op;    ///< The aggregation operation
-        std::vector<std::string> args;  ///< Arguments
+        FunctionSignature        op;    ///< The aggregation operator
+        std::vector<std::string> args;  ///< Arguments for the aggregation operator (typically, the attribute name)
         std::string              alias; ///< Output name
 
         AggregationOp()
@@ -93,11 +93,13 @@ struct QuerySpec
         { } 
     };
 
-    /// \brief Sort description
+    /// \brief Sort description.
     struct SortSpec {
+        /// \brief The sort order.
         enum Order {
             None, Ascending, Descending
         }           order;
+        /// \brief Name of the attribute to be sorted.
         std::string attribute;
 
         SortSpec(const std::string& s, Order o = Ascending)
@@ -118,12 +120,13 @@ struct QuerySpec
         std::string value;
     };
 
+    /// \brief Output formatter specification.
     struct FormatSpec {
         enum Opt {
             Default, User
-        }                        opt;        
-        FunctionSignature        formatter;
-        std::vector<std::string> args;
+        }                        opt;       ///< Default or user-defined formatter
+        FunctionSignature        formatter; ///< The formatter to use. Signatures provided by FormatProcessor. 
+        std::vector<std::string> args;      ///< Arguments to the formatter.
     };
     
     //
@@ -135,14 +138,21 @@ struct QuerySpec
     typedef SelectionList<Condition>     FilterSelection;
     typedef SelectionList<SortSpec>      SortSelection;
 
+    /// \brief List of aggregations to be performed.
     AggregationSelection         aggregation_ops;
+    /// \brief List of attribute names that form the aggregation key (i.e., GROUP BY spec).
     AttributeSelection           aggregation_key;
 
+    /// \brief List of attributes to print in output
     AttributeSelection           attribute_selection;
 
+    /// \brief List of filter clauses (filters will be combined with AND)
     FilterSelection              filter;
+
+    /// \brief List of sort specifications
     SortSelection                sort;
 
+    /// \brief Output formatter specification
     FormatSpec                   format;
 };
 
