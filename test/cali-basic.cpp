@@ -34,7 +34,6 @@
 
 #include <caliper/cali.h>
 #include <caliper/CaliFunctional.h>
-#include <caliper/CaliGotcha.h>
 
 // TODO: [DNM] THIS STUFF IS FOR TESTING PURPOSES ONLY
 
@@ -61,12 +60,15 @@ auto doThings = cali::wrap_function_and_args("doThings",wrapped_doThings);
 
 auto doNothing = cali::wrap_function_and_args("doNothing",wrapped_doNothing);
 
+auto wrapped_malloc = cali::wrap_function_and_args("malloc",malloc); 
+
 int main(int argc, char* argv[])
 {
     int x = doThings(3,4);
     doNothing();
-    auto foo = cali::gotcha_instrument_function("malloc",malloc); 
-    int* dog =(int*) foo(sizeof(int) * 20);
+    // Desired future interface
+    //auto foo = cali::gotcha_instrument_function("malloc",malloc); 
+    
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("init");

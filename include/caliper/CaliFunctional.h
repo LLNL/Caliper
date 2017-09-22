@@ -262,6 +262,5 @@ ArgWrappedFunction<LB> wrap_function_and_args(const char* name, LB body){
     return ArgWrappedFunction<LB>(name,body);
 }
 
-}
-
+} // end namespace cali
 #endif //CALI_ANNOTATED_REGION_H
