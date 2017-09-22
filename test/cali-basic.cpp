@@ -34,24 +34,39 @@
 
 #include <caliper/cali.h>
 #include <caliper/CaliFunctional.h>
+#include <caliper/CaliGotcha.h>
 
 // TODO: [DNM] THIS STUFF IS FOR TESTING PURPOSES ONLY
 
-int wrap_doThings(int x, int y){
+// Initial code might be
+
+/**
+ 
+int doThings(int x, int y){
   return x + y;
 }
 
-void wrap_doNothing(){
+void doNothing(){
+}
+*/
+
+int wrapped_doThings(int x, int y){
+  return x + y;
 }
 
-auto doThings = cali::wrap_function_and_args("doThings",wrap_doThings);
+void wrapped_doNothing(){
+}
 
-auto doNothing = cali::wrap_function_and_args("doNothing",wrap_doNothing);
+auto doThings = cali::wrap_function_and_args("doThings",wrapped_doThings);
+
+auto doNothing = cali::wrap_function_and_args("doNothing",wrapped_doNothing);
 
 int main(int argc, char* argv[])
 {
     int x = doThings(3,4);
     doNothing();
+    auto foo = cali::gotcha_instrument_function("malloc",malloc); 
+    int* dog =(int*) foo(sizeof(int) * 20);
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("init");
@@ -71,6 +86,5 @@ int main(int argc, char* argv[])
 
         t += delta_t;
     }
-
     CALI_CXX_MARK_LOOP_END(mainloop);
 }
