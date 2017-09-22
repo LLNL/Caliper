@@ -30,31 +30,51 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+// A minimal Caliper function object demo 
 
 #include <caliper/cali.h>
+#include <caliper/CaliFunctional.h>
+
+// This example shows how to instrument an application using Caliper's
+// instrumented function objects
+//
+// This interface allows for simple instrumentation of functions and their
+// arguments via C++ functors
+
+// Initial code might be like the following comment
+
+/**
+ 
+int sum(int x, int y){
+  return x + y;
+}
+
+*/
+
+// To instrument, instead first rename your function to "wrapped"
+
+int wrapped_sum(int x, int y){
+  return x + y;
+}
+
+// Then make a function object with the original name
+// by calling cali::wrap_function_and_args, which takes
+// in the name you want that function identified by
+// and the function to wrap.
+//
+// In this case we want to name the function "sum" and
+// create it by wrapping "wrapped_sum"
+auto sum = cali::wrap_function_and_args("sum",wrapped_sum);
+
+// You can wrap anything you can get a handle to, see:
+auto wrapped_malloc = cali::wrap_function_and_args("malloc",malloc); 
+
+// Note that you don't have to profile arguments and return values:
+auto minimally_wrapped_free = cali::wrap_function("free",free);
 
 int main(int argc, char* argv[])
 {
-    CALI_CXX_MARK_FUNCTION;
-
-    CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
-
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
-
-    double t = 0, delta_t = 0.42;
-
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
-
-        // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
-
-        t += delta_t;
-    }
-
-    CALI_CXX_MARK_LOOP_END(mainloop);
+    int seven = sum(3,4);
+    int* int_pointer = (int*)wrapped_malloc(sizeof(int)* 100);
+    minimally_wrapped_free(int_pointer);
 }
