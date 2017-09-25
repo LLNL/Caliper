@@ -42,6 +42,7 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -72,10 +73,10 @@ struct UserFormatter::FormatImpl
 
     std::mutex    m_fields_lock;
 
-    ostream&      m_os;
+    OutputStream  m_os;
     std::mutex    m_os_lock;
     
-    FormatImpl(ostream& os)
+    FormatImpl(OutputStream& os)
         : m_os(os)
         { }
 
@@ -183,19 +184,19 @@ struct UserFormatter::FormatImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
             
-            m_os << os.str() <<std::endl;
+            m_os.stream() << os.str() <<std::endl;
         }
     }
 };
 
 
-UserFormatter::UserFormatter(ostream& os, const QuerySpec& spec)
+UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec)
     : mP { new FormatImpl(os) }
 {
     mP->configure(spec);
 
     if (spec.format.args.size() > 1)
-        os << spec.format.args[1] << std::endl;
+        os.stream() << spec.format.args[1] << std::endl;
 }
 
 UserFormatter::~UserFormatter()

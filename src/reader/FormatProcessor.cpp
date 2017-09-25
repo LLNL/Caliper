@@ -34,11 +34,13 @@
 
 #include "caliper/reader/Expand.h"
 #include "caliper/reader/JsonFormatter.h"
+#include "caliper/reader/JsonSparseFormatter.h"
 #include "caliper/reader/TableFormatter.h"
 #include "caliper/reader/TreeFormatter.h"
 #include "caliper/reader/UserFormatter.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
+#include "caliper/common/OutputStream.h"
 
 #include "caliper/common/csv/CsvWriter.h"
 
@@ -51,17 +53,19 @@ const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes" }; 
 
 enum FormatterID {
-    Csv    = 0,
-    Json   = 1,
-    Expand = 2,
-    Format = 3,
-    Table  = 4,
-    Tree   = 5
+    Csv         = 0,
+    Json        = 1,
+    JsonSparse  = 2,
+    Expand      = 3,
+    Format      = 4,
+    Table       = 5,
+    Tree        = 6
 };
 
 const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Csv,    "csv",    0, 0, nullptr },
     { FormatterID::Json,   "json",   0, 0, nullptr },
+    { FormatterID::JsonSparse,   "json-sparse",   0, 0, nullptr },
     { FormatterID::Expand, "expand", 0, 0, nullptr },
     { FormatterID::Format, "format", 1, 2, format_kernel_args },
     { FormatterID::Table,  "table",  0, 0, nullptr },
@@ -76,7 +80,7 @@ class CsvFormatter : public Formatter
 
 public:
 
-    CsvFormatter(std::ostream& os)
+    CsvFormatter(OutputStream& os)
         : m_writer(CsvWriter(os))
     { }
 
@@ -89,25 +93,28 @@ public:
 
 struct FormatProcessor::FormatProcessorImpl
 {
-    std::ostream&     m_os;
-    Formatter*        m_formatter;
+    Formatter*   m_formatter;
+    OutputStream m_stream;
 
     void create_formatter(const QuerySpec& spec) {
         if (spec.format.opt == QuerySpec::FormatSpec::Default) {
-            m_formatter = new CsvFormatter(m_os);
+            m_formatter = new CsvFormatter(m_stream);
         } else {
             switch (spec.format.formatter.id) {
             case FormatterID::Csv:
-                m_formatter = new CsvFormatter(m_os);
+                m_formatter = new CsvFormatter(m_stream);
                 break;
             case FormatterID::Json:
                 m_formatter = new JsonFormatter(spec);
                 break;
+            case FormatterID::JsonSparse:
+                m_formatter = new JsonSparseFormatter(m_stream, spec);
+                break;
             case FormatterID::Expand:
-                m_formatter = new Expand(m_os, spec);
+                m_formatter = new Expand(m_stream, spec);
                 break;
             case FormatterID::Format:
-                m_formatter = new UserFormatter(m_os, spec);
+                m_formatter = new UserFormatter(m_stream, spec);
                 break;
             case FormatterID::Table:
                 m_formatter = new TableFormatter(spec);
@@ -119,9 +126,8 @@ struct FormatProcessor::FormatProcessorImpl
         }
     }
     
-    FormatProcessorImpl(const QuerySpec& spec, std::ostream& os)
-        : m_os(os),
-          m_formatter(nullptr)
+    FormatProcessorImpl(OutputStream& stream, const QuerySpec& spec)
+        : m_stream(stream), m_formatter(nullptr)
     {
         create_formatter(spec);
     }
@@ -133,8 +139,8 @@ struct FormatProcessor::FormatProcessorImpl
 };
 
 
-FormatProcessor::FormatProcessor(const QuerySpec& spec, std::ostream& os)
-    : mP(new FormatProcessorImpl(spec, os))
+FormatProcessor::FormatProcessor(const QuerySpec& spec, OutputStream& stream)
+    : mP(new FormatProcessorImpl(stream, spec))
 { }
 
 FormatProcessor::~FormatProcessor()
@@ -154,10 +160,10 @@ FormatProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryL
     if (mP->m_formatter)
         mP->m_formatter->process_record(db, rec);
 }
-    
+
 void
 FormatProcessor::flush(CaliperMetadataAccessInterface& db)
 {
     if (mP->m_formatter)
-        mP->m_formatter->flush(db, mP->m_os);
+        mP->m_formatter->flush(db, mP->m_stream.stream());
 }

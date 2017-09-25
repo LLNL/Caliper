@@ -40,6 +40,7 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 
 #include <mutex>
 #include <set>
@@ -49,7 +50,7 @@ using namespace cali;
 
 struct CsvWriter::CsvWriterImpl
 {
-    std::ostream& m_os;
+    OutputStream  m_os;
     std::mutex    m_os_lock;
 
     std::set<cali_id_t> m_written_nodes;
@@ -57,7 +58,7 @@ struct CsvWriter::CsvWriterImpl
 
     std::size_t   m_num_written;
 
-    CsvWriterImpl(std::ostream& os)
+    CsvWriterImpl(OutputStream& os)
         : m_os(os),
           m_num_written(0)
     { }
@@ -91,7 +92,7 @@ struct CsvWriter::CsvWriterImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
             
-            CsvSpec::write_record(m_os, node->record());
+            CsvSpec::write_record(m_os.stream(), node->record());
             ++m_num_written;
         }
 
@@ -132,14 +133,14 @@ struct CsvWriter::CsvWriterImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
             
-            CsvSpec::write_record(m_os, ContextRecord::record_descriptor(), n, data);
+            CsvSpec::write_record(m_os.stream(), ContextRecord::record_descriptor(), n, data);
             ++m_num_written;
         }
     }
 };
 
 
-CsvWriter::CsvWriter(std::ostream& os)
+CsvWriter::CsvWriter(OutputStream& os)
     : mP(new CsvWriterImpl(os))
 { }
 
@@ -201,6 +202,6 @@ void CsvWriter::operator()(const CaliperMetadataAccessInterface& db, const std::
         std::lock_guard<std::mutex>
             g(mP->m_os_lock);
             
-        CsvSpec::write_record(mP->m_os, ContextRecord::record_descriptor(), n, data);
+        CsvSpec::write_record(mP->m_os.stream(), ContextRecord::record_descriptor(), n, data);
     }
 }

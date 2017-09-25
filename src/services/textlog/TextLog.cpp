@@ -168,19 +168,9 @@ class TextLogService
         if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
             return;
 
-        std::vector<Entry> entrylist;
-
-        SnapshotRecord::Sizes size = snapshot->size();
-        SnapshotRecord::Data  data = snapshot->data();
-
-        for (size_t n = 0; n < size.n_nodes; ++n)
-            entrylist.push_back(Entry(data.node_entries[n]));
-        for (size_t n = 0; n < size.n_immediate; ++n)
-            entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
-
         ostringstream os;
         
-        formatter.print(os, c, entrylist) << std::endl;
+        formatter.print(os, *c, snapshot->to_entrylist()) << std::endl;
 
         std::lock_guard<std::mutex>
             g(stream_mutex);

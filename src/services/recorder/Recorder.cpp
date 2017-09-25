@@ -38,14 +38,13 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/csv/CsvSpec.h"
 #include "caliper/common/csv/CsvWriter.h"
 
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/SnapshotTextFormatter.h"
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -57,7 +56,6 @@
 #include <fstream>
 #include <random>
 #include <string>
-#include <sstream>
 
 using namespace cali;
 using namespace std;
@@ -70,18 +68,8 @@ class Recorder
     static unique_ptr<Recorder>   s_instance;
     static const ConfigSet::Entry s_configdata[];
 
-    enum class Stream { None, File, StdErr, StdOut };
-
-    ConfigSet     m_config;
-
-    std::mutex    m_init_mutex;
-    bool          m_writer_initialized;
-    
-    Stream        m_stream;
-    std::ofstream m_ofstream;
-    std::string   m_filename;
-
-    CsvWriter     m_writer;
+    ConfigSet m_config;
+    CsvWriter m_writer;
     
     // --- helpers
 
@@ -111,107 +99,24 @@ class Recorder
         return string(timestring) + "_" + std::to_string(pid) + "_" + random_string(12) + ".cali";
     }
 
-    void init_recorder() {
-        string filename = m_config.get("filename").to_string();
-
-        const map<string, Stream> strmap { 
-            { "none",   Stream::None   },
-            { "stdout", Stream::StdOut },
-            { "stderr", Stream::StdErr } };
-
-        auto it = strmap.find(filename);
-
-        if (it == strmap.end())
-            m_stream = Stream::File;
-        else {
-            m_stream = it->second;
-        }
-    }
-
-    void init_writer() {
-        switch (m_stream) {
-        case Stream::File:
-            {
-                std::string filename = m_filename;
-
-                if (filename.empty())
-                    filename = create_filename();
-
-                string dirname = m_config.get("directory").to_string();
-                struct stat s = { 0 };
-
-                if (!dirname.empty()) {
-                    if (stat(dirname.c_str(), &s) < 0) {
-                        Log(0).stream() << "Recorder: Error: Could not open output directory "
-                                        << dirname << std::endl;
-                        m_stream = Stream::None;
-                        return;
-                    } else
-                        dirname += '/';
-                }
-
-                m_ofstream.open(dirname + filename);
-
-                if (!m_ofstream) {
-                    Log(0).stream() << "Recorder: Error: Could not open recording file "
-                                    << filename << std::endl;
-                    m_stream = Stream::None;
-                } else {
-                    m_stream = Stream::File;
-                    m_writer = CsvWriter(m_ofstream);
-                }
-            }
-            break;        
-        case Stream::StdOut:
-            m_writer = CsvWriter(std::cout);
-            break;
-        case Stream::StdErr:
-            m_writer = CsvWriter(std::cerr);
-            break;
-        case Stream::None:
-            break;
-        }
-
-        m_writer_initialized = true;
-    }
-
     void pre_flush(Caliper* c, const SnapshotRecord* flush_info) {
         // Generate m_filename from pattern in the config file and the attributes
         // in flush_info.
         // The actual output stream will be created on-demand 
         // with the first flush_snapshot call.
 
-        SnapshotTextFormatter formatter(m_config.get("filename").to_string());
+        std::string filename = m_config.get("filename").to_string();
 
-        // convert snapshot record
-        std::vector<Entry> entrylist;
+        if (filename.empty())
+            filename = create_filename();
 
-        SnapshotRecord::Sizes size = flush_info->size();
-        SnapshotRecord::Data  data = flush_info->data();
-
-        for (size_t n = 0; n < size.n_nodes; ++n)
-            entrylist.push_back(Entry(data.node_entries[n]));
-        for (size_t n = 0; n < size.n_immediate; ++n)
-            entrylist.push_back(Entry(data.immediate_attr[n], data.immediate_data[n]));
-
-        std::ostringstream os;
-
-        formatter.print(os, c, entrylist);
-
-        m_filename = os.str();
+        OutputStream stream;
+        stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+        
+        m_writer = CsvWriter(stream);
     }
 
-    void flush_snapshot(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
-        {
-            std::lock_guard<std::mutex>
-                g(m_init_mutex);
-            
-            if (!m_writer_initialized)
-                init_writer();
-            if (m_stream == Stream::None)
-                return;
-        }
-        
+    void flush_snapshot(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {        
         SnapshotRecord::Data   data = snapshot->data();
         SnapshotRecord::Sizes sizes = snapshot->size();
 
@@ -240,7 +145,7 @@ class Recorder
     }
 
     static void finish_cb(Caliper* c) {
-        if (s_instance && s_instance->m_writer_initialized)
+        if (s_instance)
             Log(1).stream() << "Recorder: Wrote " << s_instance->m_writer.num_written() << " records." << endl;
     }
     
@@ -251,16 +156,10 @@ class Recorder
     }
 
     Recorder(Caliper* c)
-        : m_config { RuntimeConfig::init("recorder", s_configdata) },
-          m_writer_initialized { false }
+        : m_config { RuntimeConfig::init("recorder", s_configdata) }
     { 
-        init_recorder();
-
-        if (m_stream != Stream::None) {
-            register_callbacks(c);
-
-            Log(1).stream() << "Registered recorder service" << endl;
-        }
+        register_callbacks(c);
+        Log(1).stream() << "Registered recorder service" << endl;
     }
 
 public:
@@ -280,13 +179,8 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
       "File name for event record stream. Auto-generated by default.",
       "File name for event record stream. Either one of\n"
       "   stdout: Standard output stream,\n"
-      "   stderr: Standard error stream,\n"
-      "   none:   No output,\n"
-      " or a file name. By default, a filename is auto-generated.\n"
-    },
-    { "directory", CALI_TYPE_STRING, "",
-      "Name of Caliper output directory (default: current working directory)",
-      "Name of Caliper output directory (default: current working directory)"
+      "   stderr: Standard error stream.\n"
+      " or a file name pattern. By default, a filename is auto-generated.\n"
     },
     ConfigSet::Terminator
 };

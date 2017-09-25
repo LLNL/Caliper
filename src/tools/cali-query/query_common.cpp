@@ -33,6 +33,7 @@
 #include "query_common.h"
 
 #include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/FormatProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 
@@ -175,9 +176,26 @@ spec_from_args(const Args& args)
 {
     QuerySpec spec;
     
-    // setup filter
+    spec.filter.selection              = QuerySpec::FilterSelection::Default;
+    spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
+    spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
+    spec.aggregation_key.selection     = QuerySpec::AttributeSelection::None;
+    spec.sort.selection                = QuerySpec::SortSelection::Default;
+    spec.format.opt                    = QuerySpec::FormatSpec::Default;
+    
+    // parse CalQL query (if any)
 
-    spec.filter.selection = QuerySpec::FilterSelection::Default;
+    if (args.is_set("query")) {
+        std::string q = args.get("query");
+        CalQLParser p(q.c_str());
+
+        if (p.error())
+            Log(0).stream() << "Query parse error: " << q << ": " << p.error_msg();
+        else
+            spec = p.spec();
+    }
+    
+    // setup filter
 
     if (args.is_set("select")) {
         spec.filter.selection = QuerySpec::FilterSelection::List;
@@ -189,10 +207,8 @@ spec_from_args(const Args& args)
     if (args.is_set("attributes")) {
         spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
         util::split(args.get("attributes"), ',', std::back_inserter(spec.attribute_selection.list));
-    } else {
-        spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
     }
-
+    
     // setup aggregation
     
     if (args.is_set("aggregate")) {
@@ -232,14 +248,9 @@ spec_from_args(const Args& args)
                 util::split(keystr, ',', std::back_inserter(spec.aggregation_key.list));
             }
         }
-    } else {
-        spec.aggregation_ops.selection = QuerySpec::AggregationSelection::None;
-        spec.aggregation_key.selection = QuerySpec::AttributeSelection::None;
     }
-
+    
     // setup sort
-
-    spec.sort.selection = QuerySpec::SortSelection::Default;
     
     if (args.is_set("sort")) {
         spec.sort.selection = QuerySpec::SortSelection::List;
@@ -252,8 +263,6 @@ spec_from_args(const Args& args)
     }
 
     // setup formatter
-
-    spec.format.opt = QuerySpec::FormatSpec::Default;
     
     for (const QuerySpec::FunctionSignature* fmtsig = FormatProcessor::formatter_defs(); fmtsig && fmtsig->name; ++fmtsig) {
         // see if a formatting option is set        

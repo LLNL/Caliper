@@ -41,13 +41,13 @@
 
 #include "../common/RecordMap.h"
 
-#include <iostream>
 #include <memory>
 
 namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class OutputStream;
 class QuerySpec;
 
 /// \brief Prints expanded snapshot records in CSV form
@@ -60,8 +60,8 @@ class Expand : public Formatter
 
 public:
 
-    Expand(std::ostream& os, const std::string& filter_string);
-    Expand(std::ostream& os, const QuerySpec& spec);
+    Expand(OutputStream& os, const std::string& filter_string);
+    Expand(OutputStream& os, const QuerySpec& spec);
 
     ~Expand();
 

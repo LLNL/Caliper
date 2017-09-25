@@ -7,6 +7,7 @@ set(CALIPER_COMMON_SOURCES
     Log.cpp
     Node.cpp
     NodeBuffer.cpp
+    OutputStream.cpp
     RecordMap.cpp
     RuntimeConfig.cpp
     SnapshotBuffer.cpp

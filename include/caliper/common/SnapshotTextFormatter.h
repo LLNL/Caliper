@@ -32,7 +32,7 @@ public:
     reset(const std::string& format_str);
 
     std::ostream& 
-    print(std::ostream&, const CaliperMetadataAccessInterface*, const std::vector<Entry>&);
+    print(std::ostream&, const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
 };
 
 }
