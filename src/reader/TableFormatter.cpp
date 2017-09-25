@@ -144,7 +144,7 @@ struct TableFormatter::TableImpl
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Column& c) {
-                                   return c.attr.id() == attr_id;
+                                   return c.sort_order == QuerySpec::SortSpec::None && c.attr.id() == attr_id;
                                });
 
         if (it != m_cols.end())
