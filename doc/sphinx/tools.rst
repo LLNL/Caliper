@@ -24,6 +24,10 @@ Usage
 Options
 ````````````````````````````````
 +--------+-----------------------------------+---------------------------------------------------------------------+
+| ``-q`` | ``--query=QUERY_STRING``          | A CalQL expression. Specify the filter, aggregation, and formatting |
+|        |                                   | operations to execute as a SQL-like CalQL expression.               |
+|        |                                   | See :doc:`calql`.                                                   |
++--------+-----------------------------------+---------------------------------------------------------------------+
 | ``-s`` | ``--select=QUERY_STRING``         | Selects snapshots to expand. Snapshots can be filtered by which     |
 |        |                                   | attributes or variables appear, and specific states of attributes or|
 |        |                                   | variables. When this is set, all other snapshots are ignored in the |
@@ -137,6 +141,19 @@ The first six lines of records after processing look like this:
 Without using ``-e`` or ``--expand``, ``cali-query`` does not change the format
 of the records.
 
+CalQL expressions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An easy way to specify query and report options for cali-query is the
+SQL-like CalQL language (see :doc:`calql`). For example, filtering and
+aggregating trace records to print a table report can be accomplished
+with the following expression:
+
+.. code-block:: sh
+
+   $ cali-query -q "SELECT *,sum(time.inclusive.duration) WHERE main=loop FORMAT table" *.cali
+
+   
 ``-t`` / ``--table``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

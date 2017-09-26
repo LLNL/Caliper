@@ -400,11 +400,13 @@ file name.
 Report
 --------------------------------
 
-The report service prints a tabular, human-readable report of the
-collected snapshots. Similar to the `recorder` service, this report is
-generated and printed in a flush phase, typically at the end of the
-program execution. In contrast, the `textlog` service prints snapshots
-at the moment they are taken.
+The report service aggregates, formats, and writes collected Caliper
+records into files or stdout on Caliper flush events (typically, at
+program end). By default, the report service prints a tabular,
+human-readable report of the collected snapshots. Users can provide a
+query specification in CalQL syntax to define filter, aggregation, and
+formatting options.
+
 
 .. envvar:: CALI_REPORT_FILENAME
 
@@ -419,31 +421,16 @@ at the moment they are taken.
 
    Default: stdout
 
-.. envvar:: CALI_REPORT_ATTRIBUTES
+.. envvar:: CALI_REPORT_CONFIG
 
-   Colon-separated list of attribute names. Selects which attributes
-   in the snapshots should be printed (i.e., the table columns).
+   A formatting specification in CalQL syntax. 
 
    Default: empty; all attributes in the snapshots will be printed.
-
-.. envvar:: CALI_REPORT_FILTER
-
-   Selects which snapshots to print (i.e., the table rows). This is a
-   colon-seeparated list of filter specifications of the form
-   ``attribute name`` (selects snapshots which contain this attribute,
-   with any value), or ``attribute name=value`` (selects snapshots
-   where the attribute is set to the given value).
-
-.. envvar:: CALI_REPORT_SORT_BY
-
-   A colon-separated list of attributes to sort snapshots (rows) by.
 
 Example: Consider the following report configuration and list of
 flushed snapshots: ::
 
-   CALI_REPORT_FILTER=phase=loop
-   CALI_REPORT_ATTRIBUTES=function:time.duration
-   CALI_REPORT_SORT_BY=time.duration
+   CALI_REPORT_CONFIG="SELECT function,time.duration WHERE phase=loop ORDER BY time.duration FORMAT table"
 
    phase=init,function=foo,time.duration=42
    phase=loop,function=foo,time.duration=2000
