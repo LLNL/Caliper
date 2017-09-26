@@ -34,6 +34,7 @@
 
 #include "caliper/reader/Expand.h"
 #include "caliper/reader/JsonFormatter.h"
+#include "caliper/reader/JsonSparseFormatter.h"
 #include "caliper/reader/TableFormatter.h"
 #include "caliper/reader/TreeFormatter.h"
 #include "caliper/reader/UserFormatter.h"
@@ -52,17 +53,19 @@ const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes" }; 
 
 enum FormatterID {
-    Csv    = 0,
-    Json   = 1,
-    Expand = 2,
-    Format = 3,
-    Table  = 4,
-    Tree   = 5
+    Csv         = 0,
+    Json        = 1,
+    JsonSparse  = 2,
+    Expand      = 3,
+    Format      = 4,
+    Table       = 5,
+    Tree        = 6
 };
 
 const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Csv,    "csv",    0, 0, nullptr },
     { FormatterID::Json,   "json",   0, 0, nullptr },
+    { FormatterID::JsonSparse,   "json-sparse",   0, 0, nullptr },
     { FormatterID::Expand, "expand", 0, 0, nullptr },
     { FormatterID::Format, "format", 1, 2, format_kernel_args },
     { FormatterID::Table,  "table",  0, 0, nullptr },
@@ -103,6 +106,9 @@ struct FormatProcessor::FormatProcessorImpl
                 break;
             case FormatterID::Json:
                 m_formatter = new JsonFormatter(spec);
+                break;
+            case FormatterID::JsonSparse:
+                m_formatter = new JsonSparseFormatter(m_stream, spec);
                 break;
             case FormatterID::Expand:
                 m_formatter = new Expand(m_stream, spec);
