@@ -72,7 +72,7 @@ struct QuerySpec
         const char** args;     ///< Names of the function arguments
     };
 
-    static constexpr FunctionSignature FunctionSignatureTerminator = { -1, nullptr, -1, 0, nullptr };
+    static const FunctionSignature FunctionSignatureTerminator;
     
     /// \brief An aggregation function invocation in a query spec
     struct AggregationOp {

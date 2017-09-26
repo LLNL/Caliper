@@ -5,6 +5,7 @@ set(CALIPER_READER_SOURCES
     FormatProcessor.cpp
     CaliperMetadataDB.cpp
     QueryProcessor.cpp
+    QuerySpec.cpp
     RecordSelector.cpp
     SimpleReader.cpp
     SnapshotTree.cpp
