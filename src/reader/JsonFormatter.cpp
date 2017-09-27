@@ -57,6 +57,7 @@ using namespace std;
 
 const std::string opt_split = std::string("split");
 const std::string opt_pretty = std::string("pretty");
+const std::string opt_quote_all = std::string("quote-all");
 
 struct JsonFormatter::JsonFormatterImpl
 {
@@ -71,6 +72,7 @@ struct JsonFormatter::JsonFormatterImpl
 
     bool         m_opt_split = false;
     bool         m_opt_pretty = false;
+    bool         m_opt_quote_all = false;
 
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
@@ -99,6 +101,8 @@ struct JsonFormatter::JsonFormatterImpl
                 m_opt_split = true;
             if (arg == opt_pretty)
                 m_opt_pretty = true;
+            if (arg == opt_quote_all)
+                m_opt_quote_all = true;
         }
 
         switch (spec.attribute_selection.selection) {
@@ -150,7 +154,7 @@ struct JsonFormatter::JsonFormatterImpl
 	  
                 cali_id_t prev_attr_id = CALI_INV_ID;
 
-                bool quotes = true; /*false*/
+                bool quotes = m_opt_quote_all | false;
 
                 // Go through all nodes in reverse order
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
@@ -172,7 +176,7 @@ struct JsonFormatter::JsonFormatterImpl
                         }
 
                         // Start new attribute
-                        quotes = true; /*false*/
+                        quotes = m_opt_quote_all | false;
                         ss_key_value << '"' << attr.name() << '"' << ':';
 
                         // If STRING or USR, start quotes
@@ -199,7 +203,7 @@ struct JsonFormatter::JsonFormatterImpl
                     key_value_pairs.push_back(ss_key_value.str());
                     ss_key_value.str(std::string());
                     writing_attr_data = false;
-                    quotes = true; /*false*/
+                    quotes = m_opt_quote_all | false;
                 }
 
             } else if (e.attribute() != CALI_INV_ID) {
@@ -211,7 +215,7 @@ struct JsonFormatter::JsonFormatterImpl
                 if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
 
-                bool quotes = true; /*false*/
+                bool quotes = m_opt_quote_all | false;
 
                 ss_key_value << '"' << name << '"' << ':' ;
                 
