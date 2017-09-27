@@ -179,8 +179,9 @@ struct JsonFormatter::JsonFormatterImpl
                         quotes = m_opt_quote_all | false;
                         ss_key_value << '"' << attr.name() << '"' << ':';
 
-                        // If STRING or USR, start quotes
-                        if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR) {
+                        // If STRING or USR, or if nested attribute values x/y/z, start quotes
+                        if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR 
+                                || ((it+1 != nodes.rend()) && (*(it+1))->attribute()) != attr_id) {
                             quotes = true;
                         }
 
@@ -237,7 +238,7 @@ struct JsonFormatter::JsonFormatterImpl
             os << (m_first_row ? '[' : ',');
         m_first_row = false;
 
-        os << "\n{" << (m_opt_pretty ? "\n\t" : "");
+        os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
 
         for(size_t i = 0; i < key_value_pairs.size(); ++i)
         {
