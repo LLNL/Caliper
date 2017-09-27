@@ -211,9 +211,14 @@ public:
     /// \{
 
     void      make_entrylist(size_t n, 
-                             const Attribute attr[], 
-                             const Variant   data[], 
-                             SnapshotRecord& list);
+                             const Attribute  attr[], 
+                             const Variant    data[], 
+                             SnapshotRecord&  list);
+    void      make_entrylist(const Attribute& attr, 
+                             size_t           n,
+                             const Variant    data[], 
+                             SnapshotRecord&  list);
+
     Entry     make_entry(const Attribute& attr, const Variant& value);
 
     // --- Metadata Access Interface

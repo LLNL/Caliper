@@ -66,6 +66,11 @@ namespace cali
         get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent);
 
         /// \brief Get or construct a path in the tree under parent with
+        ///   the attribute \a attr and the list of values in \a data
+        Node*
+        get_path(const Attribute& attr, size_t n, const Variant data[], Node* parent);
+
+        /// \brief Get or construct a path in the tree under parent with
         ///   the data of the nodes given in the nodelist in the order of that list
         Node*
         get_path(size_t n, const Node* nodelist[], Node* parent);

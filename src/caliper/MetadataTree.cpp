@@ -607,6 +607,12 @@ MetadataTree::get_path(size_t n, const Attribute attr[], const Variant data[], N
 }
 
 Node*
+MetadataTree::get_path(const Attribute& attr, size_t n, const Variant data[], Node* parent)
+{
+    return mP->get_path(attr, n, data, parent);
+}
+
+Node*
 MetadataTree::get_path(size_t n, const Node* nodelist[], Node* parent)
 {
     return mP->get_path(n, nodelist, parent);

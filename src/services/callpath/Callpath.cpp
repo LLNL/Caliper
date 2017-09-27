@@ -84,7 +84,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord*)
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot)
 {
     Variant v_addr[MAX_PATH];
     Variant v_name[MAX_PATH];
@@ -136,9 +136,9 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord*)
 
     if (n > 0) {
         if (use_addr)
-            c->set_path(callpath_addr_attr, n, v_addr+(MAX_PATH-n));
+            c->make_entrylist(callpath_addr_attr, n, v_addr+(MAX_PATH-n), *snapshot);
         if (use_name)
-            c->set_path(callpath_name_attr, n, v_name+(MAX_PATH-n));
+            c->make_entrylist(callpath_name_attr, n, v_name+(MAX_PATH-n), *snapshot);        
     }
 }
 
@@ -154,10 +154,14 @@ void callpath_service_register(Caliper* c)
     Variant v_true(true);
 
     callpath_addr_attr = 
-        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   CALI_ATTR_SKIP_EVENTS,
+        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
+                            CALI_ATTR_SKIP_EVENTS |
+                            CALI_ATTR_NOMERGE,
                             1, &symbol_class_attr, &v_true);
     callpath_name_attr = 
-        c->create_attribute("callpath.regname", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);    
+        c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
+                            CALI_ATTR_SKIP_EVENTS | 
+                            CALI_ATTR_NOMERGE);
 
     c->events().snapshot.connect(&snapshot_cb);
 
