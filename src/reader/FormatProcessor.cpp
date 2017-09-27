@@ -50,6 +50,7 @@ namespace
 
 const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes" }; 
+const char* json_kernel_args[]   = { "split" }; 
 
 enum FormatterID {
     Csv         = 0,
@@ -62,7 +63,7 @@ enum FormatterID {
 
 const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Csv,    "csv",    0, 0, nullptr },
-    { FormatterID::Json,   "json",   0, 0, nullptr },
+    { FormatterID::Json,   "json",   0, 1, json_kernel_args },
     { FormatterID::Expand, "expand", 0, 0, nullptr },
     { FormatterID::Format, "format", 1, 2, format_kernel_args },
     { FormatterID::Table,  "table",  0, 0, nullptr },

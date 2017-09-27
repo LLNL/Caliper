@@ -58,7 +58,6 @@ class JsonFormatter : public Formatter
 
 public:
 
-    JsonFormatter(OutputStream& os, const std::string& field_string);
     JsonFormatter(OutputStream& os, const QuerySpec& spec);
 
     ~JsonFormatter();

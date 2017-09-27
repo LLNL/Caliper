@@ -55,6 +55,9 @@
 using namespace cali;
 using namespace std;
 
+const std::string opt_split = std::string("split");
+const std::string opt_pretty = std::string("pretty");
+
 struct JsonFormatter::JsonFormatterImpl
 {
     set<string>  m_selected;
@@ -65,6 +68,9 @@ struct JsonFormatter::JsonFormatterImpl
     std::mutex   m_os_lock;
 
     bool         m_first_row = true;
+
+    bool         m_opt_split = false;
+    bool         m_opt_pretty = false;
 
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
@@ -86,7 +92,15 @@ struct JsonFormatter::JsonFormatterImpl
         }
     }
 
+
     void configure(const QuerySpec& spec) {
+        for (auto arg : spec.format.args) {
+            if (arg == opt_split)
+                m_opt_split = true;
+            if (arg == opt_pretty)
+                m_opt_pretty = true;
+        }
+
         switch (spec.attribute_selection.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
@@ -215,17 +229,20 @@ struct JsonFormatter::JsonFormatterImpl
             }
         }
 
-        os << (m_first_row ? '[' : ',') << "\n{\n";
+        if (!m_opt_split) 
+            os << (m_first_row ? '[' : ',');
         m_first_row = false;
+
+        os << "\n{" << (m_opt_pretty ? "\n\t" : "");
 
         for(size_t i = 0; i < key_value_pairs.size(); ++i)
         {
             if(i != 0)
-                os << ",\n";
+                os << "," << (m_opt_pretty ? "\n\t" : "");
             os << key_value_pairs[i];
         }
 
-        os << "\n}";
+        os << (m_opt_pretty ? "\n" : "" ) << "}";
         
         if (!key_value_pairs.empty()) {
             std::lock_guard<std::mutex>
@@ -235,12 +252,6 @@ struct JsonFormatter::JsonFormatterImpl
         }
     }
 };
-
-JsonFormatter::JsonFormatter(OutputStream &os, const string& field_string)
-    : mP { new JsonFormatterImpl(os) }
-{
-    mP->parse(field_string);
-}
 
 JsonFormatter::JsonFormatter(OutputStream &os, const QuerySpec& spec)
     : mP { new JsonFormatterImpl(os) }
@@ -261,6 +272,7 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 
 void JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
-    os << "\n]";
+    if (!mP->m_opt_split)
+        os << "\n]";
 }
 
