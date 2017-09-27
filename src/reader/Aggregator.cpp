@@ -827,3 +827,32 @@ Aggregator::aggregation_defs()
 {
     return ::kernel_signatures;
 }
+
+std::vector<std::string>
+Aggregator::aggregation_attribute_names(const QuerySpec& spec)
+{
+    std::vector<std::string> ret;
+
+    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::Default)
+        ret.push_back("aggregate.count");
+
+    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::List) {
+        for (const QuerySpec::AggregationOp& op : spec.aggregation_ops.list) {
+            switch (op.op.id) {
+            case KernelID::Count:
+                ret.push_back("aggregate.count");
+                break;
+            case KernelID::Sum:
+                ret.push_back(op.args[0]);
+                break;
+            case KernelID::Statistics:
+                ret.push_back(std::string("aggregate.min#") + op.args[0]);
+                ret.push_back(std::string("aggregate.max#") + op.args[0]);
+                ret.push_back(std::string("aggregate.avg#") + op.args[0]);
+                break;        
+            }
+        }
+    }
+    
+    return ret;
+}

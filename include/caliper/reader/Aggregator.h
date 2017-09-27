@@ -71,7 +71,11 @@ public:
 
     void flush(CaliperMetadataAccessInterface&, SnapshotProcessFn push);
 
-    static const QuerySpec::FunctionSignature* aggregation_defs();
+    static const QuerySpec::FunctionSignature*
+    aggregation_defs();
+
+    static std::vector<std::string>
+    aggregation_attribute_names(const QuerySpec&);
 };
 
 } // namespace cali

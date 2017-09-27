@@ -41,6 +41,7 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -56,14 +57,14 @@ using namespace std;
 
 struct Expand::ExpandImpl
 {
-    set<string> m_selected;
-    set<string> m_deselected;
+    set<string>  m_selected;
+    set<string>  m_deselected;
 
-    ostream&    m_os;
+    OutputStream m_os;
 
-    std::mutex  m_os_lock;
+    std::mutex   m_os_lock;
 
-    ExpandImpl(ostream& os)
+    ExpandImpl(OutputStream& os)
         : m_os(os)
         { }
 
@@ -148,19 +149,19 @@ struct Expand::ExpandImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
             
-            m_os << os.str() << endl;
+            m_os.stream() << os.str() << endl;
         }
     }
 };
 
 
-Expand::Expand(ostream& os, const string& field_string)
+Expand::Expand(OutputStream& os, const string& field_string)
     : mP { new ExpandImpl(os) }
 {
     mP->parse(field_string);
 }
 
-Expand::Expand(ostream& os, const QuerySpec& spec)
+Expand::Expand(OutputStream& os, const QuerySpec& spec)
     : mP { new ExpandImpl(os) }
 {
     mP->configure(spec);

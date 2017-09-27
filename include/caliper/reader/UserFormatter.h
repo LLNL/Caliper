@@ -41,13 +41,13 @@
 
 #include "../common/RecordMap.h"
 
-#include <iostream>
 #include <memory>
 
 namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class OutputStream;
 class QuerySpec;
 
 /// \brief Prints snapshot records using a user-defined format string
@@ -60,7 +60,7 @@ class UserFormatter : public Formatter
 
 public:
 
-    UserFormatter(std::ostream& os, const QuerySpec& spec);
+    UserFormatter(OutputStream& os, const QuerySpec& spec);
 
     ~UserFormatter();
 

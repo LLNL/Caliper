@@ -30,58 +30,68 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file FormatProcessor.h
-/// FormatProcessor class
+#include "caliper/reader/QueryProcessor.h"
 
-#pragma once
+#include "caliper/reader/Aggregator.h"
+#include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/RecordSelector.h"
 
-#include "QuerySpec.h"
-#include "RecordProcessor.h"
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 
-#include <iostream>
-#include <memory>
+using namespace cali;
 
-namespace cali
+struct QueryProcessor::QueryProcessorImpl
 {
+    Aggregator        aggregator;
+    RecordSelector    filter;
+    FormatProcessor   formatter;
 
-class CaliperMetadataAccessInterface;
-class OutputStream;
+    bool              do_aggregate;
 
-/// \brief Format output based on a given query specification.
-///   Essentially a factory for Caliper's output formatters.
-/// \ingroup ReaderAPI
-class FormatProcessor
-{
-    struct FormatProcessorImpl;
-    std::shared_ptr<FormatProcessorImpl> mP;
-    
-public:
-
-    /// \brief Create formatter for given query spec and output stream.
-    FormatProcessor(const QuerySpec&, OutputStream&);
-
-    ~FormatProcessor();
-
-    /// \brief Add snapshot record to formatter. 
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
-
-    /// \brief Flush formatter contents.
-    ///
-    /// There are two types of formatters: \e Stream formatters
-    /// (such as csv or Expand) write each record directly into the output
-    /// stream. In this case, flush does nothing. \e Buffered formatters
-    /// (such as TableFormatter or TreeFormatter) need to read in all
-    /// records before they can print output. In this case, flush triggers
-    /// the actual output, and writes it to the given OutputStream.
-    void flush(CaliperMetadataAccessInterface& db);
-
-    /// \brief Make FormatProcessor usable as a SnapshotProcessFn.
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
+    void
+    process_record(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+        if (filter.pass(db, rec)) {
+            if (do_aggregate)
+                aggregator.add(db, rec);
+            else
+                formatter.process_record(db, rec);
+        }
     }
 
-    /// \brief Return all known formatter signatures.
-    static const QuerySpec::FunctionSignature* formatter_defs();
+    void
+    flush(CaliperMetadataAccessInterface& db) {
+        aggregator.flush(db, formatter);
+        formatter.flush(db);
+    }
+    
+    QueryProcessorImpl(const QuerySpec& spec, OutputStream& stream)
+        : aggregator(spec),
+          filter(spec),
+          formatter(spec, stream)
+    {
+        do_aggregate = (spec.aggregation_ops.selection != QuerySpec::AggregationSelection::None);
+    }
 };
 
+
+QueryProcessor::QueryProcessor(const QuerySpec& spec, OutputStream& stream)
+    : mP(new QueryProcessorImpl(spec, stream))
+{ }
+
+QueryProcessor::~QueryProcessor()
+{
+    mP.reset();
+}
+
+void
+QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
+{
+    
+    mP->process_record(db, rec);
+}
+
+void
+QueryProcessor::flush(CaliperMetadataAccessInterface& db)
+{
+    mP->flush(db);
 }

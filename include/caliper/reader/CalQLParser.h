@@ -30,58 +30,52 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file FormatProcessor.h
-/// FormatProcessor class
+/// \file CalQLParser.h
+/// \brief CalQLParser definition
 
 #pragma once
 
 #include "QuerySpec.h"
-#include "RecordProcessor.h"
 
 #include <iostream>
 #include <memory>
+#include <string>
 
 namespace cali
 {
 
-class CaliperMetadataAccessInterface;
-class OutputStream;
-
-/// \brief Format output based on a given query specification.
-///   Essentially a factory for Caliper's output formatters.
+/// \brief Create a QuerySpec specification from a given %CalQL expression.
 /// \ingroup ReaderAPI
-class FormatProcessor
+
+class CalQLParser
 {
-    struct FormatProcessorImpl;
-    std::shared_ptr<FormatProcessorImpl> mP;
+    struct CalQLParserImpl;
+    std::unique_ptr<CalQLParserImpl> mP;
     
 public:
 
-    /// \brief Create formatter for given query spec and output stream.
-    FormatProcessor(const QuerySpec&, OutputStream&);
+    /// \brief Read %CalQL expression from the given input stream \a is.
+    CalQLParser(std::istream& is);
+    /// \brief Read %CalQL expression from \a str.
+    CalQLParser(const char* str);
+    
+    ~CalQLParser();
 
-    ~FormatProcessor();
+    /// \brief Indicate if there was an error parsing the %CalQL expression.
+    bool
+    error() const;
 
-    /// \brief Add snapshot record to formatter. 
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
+    /// \brief Approximate position of a parser error in the given string or stream.
+    std::istream::pos_type
+    error_pos();
 
-    /// \brief Flush formatter contents.
-    ///
-    /// There are two types of formatters: \e Stream formatters
-    /// (such as csv or Expand) write each record directly into the output
-    /// stream. In this case, flush does nothing. \e Buffered formatters
-    /// (such as TableFormatter or TreeFormatter) need to read in all
-    /// records before they can print output. In this case, flush triggers
-    /// the actual output, and writes it to the given OutputStream.
-    void flush(CaliperMetadataAccessInterface& db);
+    /// \brief A descriptive error message in case of a parse error.
+    std::string
+    error_msg();
 
-    /// \brief Make FormatProcessor usable as a SnapshotProcessFn.
-    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        process_record(db, rec);
-    }
-
-    /// \brief Return all known formatter signatures.
-    static const QuerySpec::FunctionSignature* formatter_defs();
-};
+    /// \brief Returns the query specification object for the given %CalQL expression.
+    QuerySpec
+    spec() const;
+}; 
 
 }

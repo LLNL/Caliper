@@ -61,8 +61,11 @@ struct TableFormatter::TableImpl
 
         bool        print; // used for hidden sort columns
 
-        Column(const std::string& n, std::size_t w, const Attribute& a, bool p)
-            : name(n), max_width(w), attr(a), print(p)
+        QuerySpec::SortSpec::Order sort_order;
+
+        Column(const std::string& n, std::size_t w, const Attribute& a, bool p,
+               QuerySpec::SortSpec::Order o = QuerySpec::SortSpec::Order::None)
+            : name(n), max_width(w), attr(a), print(p), sort_order(o)
             { }
     };
 
@@ -73,7 +76,6 @@ struct TableFormatter::TableImpl
     std::mutex                              m_row_lock;
 
     bool                                    m_auto_column;
-    std::size_t                             m_num_sort_columns;
 
     void parse(const std::string& field_string, const std::string& sort_string) {
         std::vector<std::string> fields;
@@ -86,7 +88,6 @@ struct TableFormatter::TableImpl
             if (s.size() > 0)
                 m_cols.emplace_back(s, s.size(), Attribute::invalid, false);
 
-        m_num_sort_columns = m_cols.size();
         fields.clear();
 
         // fill print columns
@@ -108,8 +109,7 @@ struct TableFormatter::TableImpl
         m_cols.clear();
         m_rows.clear();
         
-        m_auto_column      = false;
-        m_num_sort_columns = 0;
+        m_auto_column = false;
 
         // Fill sort columns
 
@@ -120,11 +120,9 @@ struct TableFormatter::TableImpl
             break;
         case QuerySpec::SortSelection::List:
             for (const QuerySpec::SortSpec& s : spec.sort.list)
-                m_cols.emplace_back(s.attribute, s.attribute.size(), Attribute::invalid, false);
+                m_cols.emplace_back(s.attribute, s.attribute.size(), Attribute::invalid, false, s.order);
             break;
         }
-
-        m_num_sort_columns = m_cols.size();        
 
         // Fill header columns
         
@@ -144,9 +142,9 @@ struct TableFormatter::TableImpl
     }
     
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
-        auto it = std::find_if(m_cols.begin()+m_num_sort_columns, m_cols.end(),
+        auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Column& c) {
-                                   return c.attr.id() == attr_id;
+                                   return c.sort_order == QuerySpec::SortSpec::None && c.attr.id() == attr_id;
                                });
 
         if (it != m_cols.end())
@@ -260,14 +258,24 @@ struct TableFormatter::TableImpl
         // sort rows
         // NOTE: This is REALLY slow (potentially converts strings to numbers on every comparison)
 
-        for (std::vector<Column>::size_type c = 0; c < m_num_sort_columns; ++c)
-            std::stable_sort(m_rows.begin(), m_rows.end(),
-                             [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
-                                 if (c >= lhs.size() || c >= rhs.size())
-                                     return lhs.size() < rhs.size();
-                                 cali_attr_type type = this->m_cols[c].attr.type();
-                                 return Variant::from_string(type, lhs[c].c_str()) < Variant::from_string(type, rhs[c].c_str());
-                             });
+        for (std::vector<Column>::size_type c = 0; c < m_cols.size(); ++c)
+            if (m_cols[c].sort_order == QuerySpec::SortSpec::Order::Ascending)
+                std::stable_sort(m_rows.begin(), m_rows.end(),
+                                 [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
+                                     if (c >= lhs.size() || c >= rhs.size())
+                                         return lhs.size() < rhs.size();
+                                     cali_attr_type type = this->m_cols[c].attr.type();
+                                     return Variant::from_string(type, lhs[c].c_str()) < Variant::from_string(type, rhs[c].c_str());
+                                 });
+            else if (m_cols[c].sort_order == QuerySpec::SortSpec::Order::Descending)
+                std::stable_sort(m_rows.begin(), m_rows.end(),
+                                 [c,this](const std::vector<std::string>& lhs, const std::vector<std::string>& rhs){
+                                     if (c >= lhs.size() || c >= rhs.size())
+                                         return lhs.size() > rhs.size();
+                                     cali_attr_type type = this->m_cols[c].attr.type();
+                                     return Variant::from_string(type, lhs[c].c_str()) > Variant::from_string(type, rhs[c].c_str());
+                                 });
+                
 
         const char whitespace[120+1] =
             "                                        "
@@ -285,7 +293,7 @@ struct TableFormatter::TableImpl
         // print rows
 
         for (auto row : m_rows) {
-            for (std::vector<Column>::size_type c = m_num_sort_columns; c < row.size(); ++c) {
+            for (std::vector<Column>::size_type c = 0; c < row.size(); ++c) {
                 if (!m_cols[c].print)
                     continue;
 

@@ -91,7 +91,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
     }
 
     std::ostream& 
-    print(std::ostream& os, const CaliperMetadataAccessInterface* db, const std::vector<Entry>& list) {
+    print(std::ostream& os, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list) {
         std::vector<Field> fields;
 
         {
@@ -105,7 +105,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
 
         for (Field& f : fields) {
             if (!f.attr_name.empty()) {
-                f.attr = db->get_attribute(f.attr_name);
+                f.attr = db.get_attribute(f.attr_name);
                 f.attr_name.clear();
                 update = true;
             }
@@ -169,7 +169,7 @@ SnapshotTextFormatter::reset(const std::string& format_str)
 }
 
 std::ostream& 
-SnapshotTextFormatter::print(std::ostream& os, const CaliperMetadataAccessInterface* db, const std::vector<Entry>& list)
+SnapshotTextFormatter::print(std::ostream& os, const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
     return mP->print(os, db, list);
 }

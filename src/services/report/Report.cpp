@@ -39,18 +39,15 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-// #include "caliper/reader/Format.h"
-#include "caliper/reader/RecordSelector.h"
-#include "caliper/reader/TableFormatter.h"
+#include "caliper/reader/CalQLParser.h"
+#include "caliper/reader/QueryProcessor.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/SnapshotTextFormatter.h"
 
 #include <iostream>
-#include <fstream>
-#include <sstream>
 
 using namespace cali;
 
@@ -61,69 +58,51 @@ namespace
         static std::unique_ptr<Report> s_instance;
         static const ConfigSet::Entry  s_configdata[];
 
-        ConfigSet      m_config;
-
-        TableFormatter m_table_writer;
-        RecordSelector m_selector;
-
-        std::vector<Entry> make_entrylist(Caliper* c, const SnapshotRecord* snapshot) {
-            std::vector<Entry> list;
-
-            if (!snapshot)
-                return list;
-
-            SnapshotRecord::Data  data(snapshot->data());
-            SnapshotRecord::Sizes size(snapshot->size());
-
-            for (size_t n = 0; n < size.n_nodes; ++n)
-                list.push_back(Entry(data.node_entries[n]));
-            for (size_t n = 0; n < size.n_immediate; ++n)
-                list.push_back(Entry(c->get_attribute(data.immediate_attr[n]), data.immediate_data[n]));
-
-            return list;
-        }
+        QueryProcessor m_query;
 
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            m_selector(*c, snapshot->to_entrylist(),
-                       [this](CaliperMetadataAccessInterface& db, const EntryList& list){
-                           m_table_writer.process_record(db, list);
-                       });
+            m_query.process_record(*c, snapshot->to_entrylist());
         }
 
-        void flush(Caliper* c, const SnapshotRecord* flush_info) {
-            std::string filename = m_config.get("filename").to_string();
-
-            if (filename == "stdout")
-                m_table_writer.flush(*c, std::cout);
-            else if (filename == "stderr")
-                m_table_writer.flush(*c, std::cerr);
-            else {
-                SnapshotTextFormatter formatter(filename);
-                std::ostringstream    fnamestr;
-
-                formatter.print(fnamestr, c, flush_info->to_entrylist());
-
-                std::ofstream fs(fnamestr.str());
-
-                if (!fs) {
-                    Log(0).stream() << "Report: could not open output stream " << fnamestr.str() << std::endl;
-                    return;
-                }
-
-                m_table_writer.flush(*c, fs);
-            }
+        void flush(Caliper* c, const SnapshotRecord*) {
+            m_query.flush(*c);
         }
 
-        Report() 
-            : m_config( RuntimeConfig::init("report", s_configdata) ),
-              m_table_writer(m_config.get("attributes").to_string(),
-                             m_config.get("sort_by").to_string()),
-              m_selector(m_config.get("filter").to_string())  
+        Report(const QueryProcessor& query) 
+            : m_query(query)
             { }
 
         //
         // --- callback functions
-        // 
+        //
+
+        static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
+            ConfigSet    config(RuntimeConfig::init("report", s_configdata));
+
+            CalQLParser  parser(config.get("config").to_string().c_str());
+
+            if (parser.error()) {
+                Log(0).stream() << "report: config parse error: " << parser.error_msg() << std::endl;
+                return;
+            }
+
+            QuerySpec    spec(parser.spec());
+
+            // set format default to table if it hasn't been set in the query config
+            if (spec.format.opt == QuerySpec::FormatSpec::Default)
+                spec.format = CalQLParser("format table").spec().format;
+                
+            OutputStream stream;
+
+            stream.set_stream(OutputStream::StdOut);
+
+            std::string filename = config.get("filename").to_string();
+
+            if (!filename.empty())
+                stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+            
+            s_instance.reset(new Report(QueryProcessor(spec, stream)));
+        }
 
         static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
             if (!s_instance)
@@ -145,8 +124,7 @@ namespace
             { }
 
         static void create(Caliper* c) {
-            s_instance.reset(new Report);
-
+            c->events().pre_flush_evt.connect(pre_flush_cb);
             c->events().write_snapshot.connect(flush_snapshot_cb);
             c->events().post_write_evt.connect(flush_finish_cb);
 
@@ -164,18 +142,9 @@ namespace
           "   stderr: Standard error stream,\n"
           " or a file name.\n"
         },
-        { "attributes", CALI_TYPE_STRING, "",
-          "List of attributes (columns) to print.",
-          "List of attributes (columns) to print. "
-          "Default: empty (print all user-defined attributes).",
-        },
-        { "filter", CALI_TYPE_STRING, "",
-          "Filter snapshots (rows) to print.",
-          "Filter snapshots (rows) to print. Default: empty (print all).",
-        },
-        { "sort_by", CALI_TYPE_STRING, "",
-          "List of attributes to sort by.",
-          "List of attributes to sort by. Default: empty (undefined order)"
+        { "config", CALI_TYPE_STRING, "",
+          "Report configuration/query specification in CalQL",
+          "Report configuration/query specification in CalQL"
         },
         ConfigSet::Terminator
     };
