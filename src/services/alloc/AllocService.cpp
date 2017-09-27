@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///\file  MallocService.cpp
+///\file  AllocService.cpp
 ///\brief Service for hooking memory allocation calls
 
 #include "../CaliperService.h"
@@ -44,10 +44,16 @@
 
 #include <gotcha/gotcha.h>
 
+#include "AllocTracker.h"
+
 using namespace cali;
 
 namespace
 {
+    AllocTracker m_alloc_tracker;
+    uint64_t alloc_count = 0;
+    bool hook_enabled = true;
+
     /**
      * malloc
      */
@@ -69,22 +75,23 @@ namespace
     {
         Caliper c = Caliper::sigsafe_instance();
 
-        // Run malloc
         void *ret = (*orig_malloc)(size);
 
-        if (c) {
-            // Create and push snapshot
-            Variant data[NUM_MALLOC_ATTRS];
+        if (hook_enabled) {
+            hook_enabled = false;
+            if (c) {
+                m_alloc_tracker.add_allocation(alloc_count++, (uint64_t)ret, size);
 
-            data[0] = malloc_count++;
-            data[1] = static_cast<uint64_t>(size);
-            data[2] = (uint64_t)ret;
+                Variant data[NUM_MALLOC_ATTRS];
 
-            // TODO: get timestamp
-            // TODO: get callpath
+                data[0] = malloc_count++;
+                data[1] = static_cast<uint64_t>(size);
+                data[2] = (uint64_t)ret;
 
-            SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
-            c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
+                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+            }
+            hook_enabled = true;
         }
 
         return ret;
@@ -112,23 +119,24 @@ namespace
     {
         Caliper c = Caliper::sigsafe_instance();
 
-        // Run malloc
         void *ret = (*orig_calloc)(num, size);
 
-        if (c) {
-            // Create and push snapshot
-            Variant data[NUM_CALLOC_ATTRS];
+        if (hook_enabled) {
+            hook_enabled = false;
+            if (c) {
+                m_alloc_tracker.add_allocation(alloc_count++, (uint64_t)ret, size*num);
 
-            data[0] = calloc_count++;
-            data[1] = static_cast<uint64_t>(num);
-            data[2] = static_cast<uint64_t>(size);
-            data[3] = (uint64_t)ret;
+                Variant data[NUM_CALLOC_ATTRS];
 
-            // TODO: get timestamp
-            // TODO: get callpath
+                data[0] = calloc_count++;
+                data[1] = static_cast<uint64_t>(num);
+                data[2] = static_cast<uint64_t>(size);
+                data[3] = (uint64_t)ret;
 
-            SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
-            c.push_snapshot(CALI_SCOPE_PROCESS, &trigger_info);
+                SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
+                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+            }
+            hook_enabled = true;
         }
 
         return ret;
@@ -156,23 +164,25 @@ namespace
     {
         Caliper c = Caliper::sigsafe_instance();
 
-        // Run malloc
         void *ret = (*orig_realloc)(ptr, size);
 
-        if (c) {
-            // Create and push snapshot
-            Variant data[NUM_REALLOC_ATTRS];
+        if (hook_enabled) {
+            hook_enabled = false;
+            if (c) {
+                m_alloc_tracker.remove_allocation((uint64_t)ptr);
+                m_alloc_tracker.add_allocation(alloc_count++, (uint64_t)ret, size);
 
-            data[0] = realloc_count++;
-            data[1] = ((uint64_t)ptr);
-            data[2] = static_cast<uint64_t>(size);
-            data[3] = (uint64_t)ret;
+                Variant data[NUM_REALLOC_ATTRS];
 
-            // TODO: get timestamp
-            // TODO: get callpath
+                data[0] = realloc_count++;
+                data[1] = ((uint64_t)ptr);
+                data[2] = static_cast<uint64_t>(size);
+                data[3] = (uint64_t)ret;
 
-            SnapshotRecord trigger_info(NUM_REALLOC_ATTRS, realloc_attributes, data);
-            c.push_snapshot(CALI_SCOPE_PROCESS, &trigger_info);
+                SnapshotRecord trigger_info(NUM_REALLOC_ATTRS, realloc_attributes, data);
+                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+            }
+            hook_enabled = true;
         }
 
         return ret;
@@ -198,77 +208,84 @@ namespace
     {
         Caliper c = Caliper::sigsafe_instance();
 
-        // Run original
         (*orig_free)(ptr);
 
-        if (c) {
-            // Create and push snapshot
-            Variant data[NUM_FREE_ATTRS];
+        if (hook_enabled) {
+            hook_enabled = false;
+            if (c) {
+                m_alloc_tracker.remove_allocation((uint64_t)ptr);
 
-            data[0] = free_count++;
-            data[1] = ((uint64_t)ptr);
+                Variant data[NUM_FREE_ATTRS];
 
-            // TODO: get timestamp
-            // TODO: get callpath
+                data[0] = free_count++;
+                data[1] = ((uint64_t)ptr);
 
-            SnapshotRecord trigger_info(NUM_FREE_ATTRS, free_attributes, data);
-            c.push_snapshot(CALI_SCOPE_PROCESS, &trigger_info);
+                SnapshotRecord trigger_info(NUM_FREE_ATTRS, free_attributes, data);
+                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+            }
+            hook_enabled = true;
         }
     }
 
-// Initialization routine.
+    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
+        hook_enabled = false;
+    }
+
+    // Initialization routine.
     void
-    mallocservice_initialize(Caliper* c)
+    allocservice_initialize(Caliper* c)
     {
-        malloc_id_attr = c->create_attribute("malloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        malloc_size_attr = c->create_attribute("malloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        malloc_addr_attr = c->create_attribute("malloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        malloc_id_attr = c->create_attribute("alloc.malloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        malloc_size_attr = c->create_attribute("alloc.malloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        malloc_addr_attr = c->create_attribute("alloc.malloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         malloc_attributes[0] = malloc_id_attr.id();
         malloc_attributes[1] = malloc_size_attr.id();
         malloc_attributes[2] = malloc_addr_attr.id();
 
-        calloc_id_attr = c->create_attribute("calloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_size_attr = c->create_attribute("calloc.num", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_size_attr = c->create_attribute("calloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_addr_attr = c->create_attribute("calloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        calloc_id_attr = c->create_attribute("alloc.calloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        calloc_size_attr = c->create_attribute("alloc.calloc.num", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        calloc_size_attr = c->create_attribute("alloc.calloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        calloc_addr_attr = c->create_attribute("alloc.calloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         calloc_attributes[0] = calloc_id_attr.id();
         calloc_attributes[1] = calloc_num_attr.id();
         calloc_attributes[2] = calloc_size_attr.id();
         calloc_attributes[3] = calloc_addr_attr.id();
 
-        realloc_id_attr = c->create_attribute("realloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_ptr_attr = c->create_attribute("realloc.ptr", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_size_attr = c->create_attribute("realloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_addr_attr = c->create_attribute("realloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        realloc_id_attr = c->create_attribute("alloc.realloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        realloc_ptr_attr = c->create_attribute("alloc.realloc.ptr", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        realloc_size_attr = c->create_attribute("alloc.realloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        realloc_addr_attr = c->create_attribute("alloc.realloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         realloc_attributes[0] = realloc_id_attr.id();
         realloc_attributes[1] = realloc_ptr_attr.id();
         realloc_attributes[2] = realloc_size_attr.id();
         realloc_attributes[3] = realloc_addr_attr.id();
 
-        free_id_attr = c->create_attribute("free.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        free_addr_attr = c->create_attribute("free.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        free_id_attr = c->create_attribute("alloc.free.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        free_addr_attr = c->create_attribute("alloc.free.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         free_attributes[0] = free_id_attr.id();
         free_attributes[1] = free_addr_attr.id();
 
-        struct gotcha_binding_t malloc_binding[] = {
+        struct gotcha_binding_t alloc_bindings[] = {
                 { "malloc", (void*) cali_malloc_wrapper, &orig_malloc },
                 { "calloc", (void*) cali_calloc_wrapper, &orig_calloc },
                 { "realloc", (void*) cali_realloc_wrapper, &orig_realloc },
                 { "free", (void*) cali_free_wrapper, &orig_free }
         };
 
-        gotcha_wrap(malloc_binding, sizeof(malloc_binding)/sizeof(struct gotcha_binding_t), "Caliper");
+        gotcha_wrap(alloc_bindings, sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), "Caliper");
 
-        Log(1).stream() << "Registered malloc service" << std::endl;
+        c->events().pre_flush_evt.connect(pre_flush_cb);
+
+        Log(1).stream() << "Registered alloc service" << std::endl;
     }
 
 } // namespace [anonymous]
 
 namespace cali
 {
-    CaliperService malloc_service { "malloc", ::mallocservice_initialize };
+    CaliperService alloc_service { "alloc", ::allocservice_initialize };
 }
