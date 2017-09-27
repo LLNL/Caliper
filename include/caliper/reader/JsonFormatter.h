@@ -39,8 +39,8 @@
 #include "RecordProcessor.h"
 
 #include "../common/RecordMap.h"
+#include "../common/OutputStream.h"
 
-#include <iostream>
 #include <memory>
 
 namespace cali
@@ -49,7 +49,7 @@ namespace cali
 class CaliperMetadataAccessInterface;
 class QuerySpec;
 
-/// \brief Prints snapshot records as JSON
+/// \brief Prints snapshot records as sparse JSON
 /// \ingroup ReaderAPI
 class JsonFormatter : public Formatter
 {
@@ -58,8 +58,8 @@ class JsonFormatter : public Formatter
 
 public:
 
-    JsonFormatter(const std::string& fields);
-    JsonFormatter(const QuerySpec& spec);
+    JsonFormatter(OutputStream& os, const std::string& field_string);
+    JsonFormatter(OutputStream& os, const QuerySpec& spec);
 
     ~JsonFormatter();
 
