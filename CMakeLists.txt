@@ -36,8 +36,9 @@ option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" TRU
 option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" TRUE)
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
+option(WITH_MPIT      "Enable MPI-T" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
-option(WITH_DYNINST   "Enable dyninst (for symbollookup service" TRUE)
+option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
@@ -169,6 +170,16 @@ if (WITH_MPI)
   endif()
 endif()
 
+# Find MPIT - As of now, rely on finding MPI
+if (WITH_MPIT)
+  find_package(MPI)
+  if (MPI_C_FOUND)
+    message(STATUS "MPI Library found. Header files are in " ${MPI_C_INCLUDE_PATH})
+    set(CALIPER_HAVE_MPIT TRUE)
+	list(APPEND CALIPER_EXTERNAL_LIBS ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+  endif()
+endif()
+
 # Find Python
 
 find_package(PythonInterp REQUIRED)
@@ -230,6 +241,7 @@ add_subdirectory(src)
 if (CALIPER_HAVE_MPI)
   add_subdirectory(mpi)
 endif()
+
 if (WITH_TEST_APPS)
   add_subdirectory(test)
 endif()

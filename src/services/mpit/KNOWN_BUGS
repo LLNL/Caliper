@@ -1,0 +1,23 @@
+1. CALIPER does not work with OpenMPI, as of September 18th, 2017.
+	Details: The handle allocation routine fails with a SEGV, when we are trying to allocate handles for PVARs. Martin had sent an email to Nathan from the OpenMPI team, and they had supposedly fixed the issue. We still see this issue when we use CALIPER, but do not see the issue with a dummy sample code initializing the MPI-T interface, and allocating PVAR handles.
+	Backtrace of running CALIPER with OpenMPI GIT version as of September 21st along with LULESH
+	#0  0x00002aaac3e9b13a in psm2_mq_get_stats () from /usr/lib64/libpsm2.so.2
+	#1  0x00002aaac3c7dd84 in mca_mtl_psm2_get_stats (pvar=0x7714a0, value=0x77bee0, obj=0x0) at mtl_psm2_stats.c:74
+	#2  0x00002aaaade625fe in mca_base_pvar_handle_alloc (session=0x77cd90, index=1, obj_handle=0x0, handle=0x77d1a0, count=0x77ca40) at mca_base_pvar.c:524
+	#3  0x00002aaaab818314 in PMPI_T_pvar_handle_alloc (session=0x77cd90, pvar_index=1, obj_handle=0x0, handle=0x77d1a0, count=0x77ca40) at ppvar_handle_alloc.c:52
+	#4  0x00002aaaaae52a64 in (anonymous namespace)::do_mpit_allocate_pvar_handles (c=0x7fffffffbbf0) at /g/g91/ramesh2/CALIPER/pull-request/src/services/mpit/MpitService.cpp:499
+	#5  0x00002aaaaae53476 in (anonymous namespace)::mpit_register (c=0x7fffffffbbf0) at /g/g91/ramesh2/CALIPER/pull-request/src/services/mpit/MpitService.cpp:585
+	#6  0x00002aaaaae3fab2 in cali::Services::ServicesImpl::register_services (this=0x657b90, c=0x7fffffffbbf0) at /g/g91/ramesh2/CALIPER/pull-request/src/services/Services.cpp:96
+	#7  0x00002aaaaae3f54f in cali::Services::register_services (c=0x7fffffffbbf0) at /g/g91/ramesh2/CALIPER/pull-request/src/services/Services.cpp:137
+	#8  0x00002aaaaaddf1b2 in cali::Caliper::GlobalData::init (this=0x64c5a0) at /g/g91/ramesh2/CALIPER/pull-request/src/caliper/Caliper.cpp:305
+	#9  0x00002aaaaadde949 in cali::Caliper::GlobalData::GlobalData (this=0x64c5a0) at /g/g91/ramesh2/CALIPER/pull-request/src/caliper/Caliper.cpp:249
+	#10 0x00002aaaaaddcd26 in cali::Caliper::instance () at /g/g91/ramesh2/CALIPER/pull-request/src/caliper/Caliper.cpp:1247
+	#11 0x00002aaaaaddcc06 in cali::Caliper::Caliper (this=0x7fffffffc430) at /g/g91/ramesh2/CALIPER/pull-request/src/caliper/Caliper.cpp:1213
+	#12 0x00002aaaaadd8be1 in cali::Function::Function (this=0x7fffffffc548, name=0x436370 <__$U18> "main") at /g/g91/ramesh2/CALIPER/pull-request/src/caliper/Annotation.cpp:60
+	#13 0x0000000000402ce0 in main (argc=1, argv=0x7fffffffc758) at lulesh.cc:2781
+
+	The SEGV happens whwne when try to allocate handle for PVAR at index 1. What is weird is that this does not happen in a dummy sample code allocating the handle for the same PVAR though.
+	OpenMPI configuration: ./configure --prefix=/g/g91/ramesh2/OMPI_INSTALL --enable-debug --with-pmi=/usr --with-pmi-libdir=/usr/lib64 CC=icc CXX=icpc
+	Machine: quartz.llnl.gov
+	Compiler: intel/16.0
+
