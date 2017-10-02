@@ -166,7 +166,8 @@ AllocTree::remove(uint64_t start_address) {
                 leftTree.splay(lMax);
                 root = lMax;
                 root->right = node->right;
-                root->right->parent = root;
+                if (root->right)
+                    root->right->parent = root;
             } else if (node->right) {
                 root = node->right;
                 root->parent = nullptr;
