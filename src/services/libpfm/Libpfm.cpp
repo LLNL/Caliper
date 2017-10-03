@@ -267,11 +267,11 @@ namespace {
                     warnx("cannot read sample");
                 }
 
-                 //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
-                 //                "TIME: %llu ADDR:%llu CPU: %llu "
-                 //                "WEIGHT: %llu DATA_SRC: %llu\n",
-                 //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
-                 //        sample.cpu, sample.weight, sample.data_src);
+                //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
+                //                "TIME: %llu ADDR:%llu CPU: %llu "
+                //                "WEIGHT: %llu DATA_SRC: %llu\n",
+                //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
+                //        sample.cpu, sample.weight, sample.data_src);
                 sample_handler();
             }
         } else {
@@ -435,7 +435,20 @@ namespace {
                                                     | CALI_ATTR_SCOPE_THREAD
                                                     | CALI_ATTR_SKIP_EVENTS,
                                                     1, &symbol_class_attr, &v_true);
+            } else if (attribute_bits == PERF_SAMPLE_ADDR) {
+
+                // Register ADDR attribute for memory address lookup
+                Attribute memory_class_attr = c->get_attribute("class.memoryaddress");
+                Variant v_true(true);
+
+                new_attribute = c->create_attribute(attribute_name,
+                                                    CALI_TYPE_UINT,
+                                                    CALI_ATTR_ASVALUE
+                                                    | CALI_ATTR_SCOPE_THREAD
+                                                    | CALI_ATTR_SKIP_EVENTS,
+                                                    1, &memory_class_attr, &v_true);
             } else {
+
                 new_attribute = c->create_attribute(attribute_name,
                                                     CALI_TYPE_UINT,
                                                     CALI_ATTR_ASVALUE
@@ -537,6 +550,8 @@ namespace {
     }
 
     void finish_cb(Caliper* c) {
+        end_thread_sampling();
+
         pfm_terminate();
 
         Log(1).stream() << "libpfm thread stats:" << std::endl;

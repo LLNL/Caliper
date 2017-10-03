@@ -53,6 +53,7 @@ namespace
     AllocTracker m_alloc_tracker;
     uint64_t alloc_count = 0;
     bool hook_enabled = true;
+    Attribute alloc_id_attr = Attribute::invalid;
 
     /**
      * malloc
@@ -227,14 +228,7 @@ namespace
         }
     }
 
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        hook_enabled = false;
-    }
-
-    // Initialization routine.
-    void
-    allocservice_initialize(Caliper* c)
-    {
+    void init_alloc_hooks(Caliper *c) {
         malloc_id_attr = c->create_attribute("alloc.malloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
         malloc_size_attr = c->create_attribute("alloc.malloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
         malloc_addr_attr = c->create_attribute("alloc.malloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
@@ -277,8 +271,60 @@ namespace
         };
 
         gotcha_wrap(alloc_bindings, sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), "Caliper");
+    }
 
+    std::vector<Attribute> memory_address_attrs;
+
+    static void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
+        bool prev_hook_enabled = hook_enabled;
+        hook_enabled = false;
+
+        if (!memory_address_attrs.empty()) {
+
+            // TODO: do this for every memoryaddress attribute
+            Attribute attr = memory_address_attrs.front();
+            Entry e = snapshot->get(attr);
+
+            if (!e.is_empty()) {
+
+                uint64_t memory_address = e.value().to_uint();
+                Allocation *alloc = m_alloc_tracker.find_allocation_containing(memory_address);
+
+                if (alloc) {
+                    Attribute attr[1] = { alloc_id_attr };
+                    Variant data[1] = { Variant(alloc->id) };
+
+                    c->make_entrylist(1, attr, data, *snapshot);
+                }
+            }
+        }
+
+        hook_enabled = prev_hook_enabled;
+    }
+
+    static void post_init_cb(Caliper *c) {
+
+        // TODO: make an alloc.id per memoryaddress attribute, e.g. alloc.id#libpfm.address
+        alloc_id_attr = c->create_attribute("alloc.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+
+        memory_address_attrs = c->find_attributes_with(c->get_attribute("class.memoryaddress"));
+    }
+
+    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
+        // Disable the hook for Caliper flush
+        hook_enabled = false;
+    }
+
+    // Initialization routine.
+    void
+    allocservice_initialize(Caliper* c)
+    {
+
+        c->events().post_init_evt.connect(post_init_cb);
+        c->events().snapshot.connect(snapshot_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
+
+        init_alloc_hooks(c);
 
         Log(1).stream() << "Registered alloc service" << std::endl;
     }
