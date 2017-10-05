@@ -48,6 +48,11 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
+#ifdef WITH_DWARF
+#include <elfutils/libdwfl.h>
+#include <unistd.h>
+#endif
+
 #define MAX_PATH 40
 #define NAMELEN  100
 
@@ -66,6 +71,11 @@ bool      use_name { false };
 bool      use_addr { false };
 
 unsigned  skip_frames { 0 };
+
+#ifdef WITH_DWARF
+Dwfl* dwfl;
+Dwfl_Module* caliper_module;
+#endif
 
 static const ConfigSet::Entry s_configdata[] = {
     { "use_name", CALI_TYPE_BOOL, "false",
@@ -113,12 +123,24 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
         return;
 
     while (n < MAX_PATH && unw_step(&unw_cursor) > 0) {
-        // store path from top to bottom
 
+#ifdef WITH_DWARF
+        // skip stack frames inside caliper
+        unw_word_t ip;
+        unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+
+        Dwfl_Module* module=dwfl_addrmodule (dwfl, ip);
+
+        if (module == caliper_module)
+            continue;
+#endif
+
+        // store path from top to bottom
         if (use_addr) {
+#ifndef WITH_DWARF
             unw_word_t ip;
             unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
-
+#endif
             uint64_t uint = ip;
             v_addr[MAX_PATH-(n+1)] = Variant(CALI_TYPE_ADDR, &uint, sizeof(uint64_t));
         }
@@ -142,6 +164,40 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
     }
 }
 
+void initialize()
+{
+#ifdef WITH_DWARF
+    // initialize dwarf
+    char *debuginfo_path=nullptr;
+    Dwfl_Callbacks callbacks;
+    callbacks.find_elf = dwfl_linux_proc_find_elf;
+    callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
+    callbacks.debuginfo_path = &debuginfo_path;
+
+    dwfl=dwfl_begin(&callbacks);
+
+    dwfl_linux_proc_report(dwfl, getpid());
+    dwfl_report_end(dwfl, nullptr, nullptr);
+
+    // Init unwind context
+    unw_context_t unw_ctx;
+    unw_cursor_t  unw_cursor;
+
+    unw_getcontext(&unw_ctx);
+
+    if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+        Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind cursor" << endl;
+        return;
+    }
+
+    // Get current (caliper) module
+    unw_word_t ip;
+    unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+
+    caliper_module = dwfl_addrmodule(dwfl, ip);
+#endif
+}
+
 void callpath_service_register(Caliper* c)
 {
     config = RuntimeConfig::init("callpath", s_configdata);
@@ -162,6 +218,8 @@ void callpath_service_register(Caliper* c)
         c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
                             CALI_ATTR_SKIP_EVENTS | 
                             CALI_ATTR_NOMERGE);
+
+    initialize();
 
     c->events().snapshot.connect(&snapshot_cb);
 
