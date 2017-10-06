@@ -2,6 +2,7 @@ set(CALIPER_SOURCES
     Annotation.cpp
     Caliper.cpp
     ContextBuffer.cpp
+        DataTracker.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
