@@ -32,80 +32,34 @@
 
 #include "caliper/DataTracker.h"
 
-#include "../services/alloc/AllocTracker.h"
+#include "AllocTracker.h"
 
-#include <map>
-
-using namespace cali;
-using namespace DataTracker;
-
-uint64_t g_alloc_id = 0;
-AllocTracker g_alloc_tracker;
-std::map<uint64_t, TrackedAllocation*> g_tracked_alloc_map;
-
-void* DataTracker::Allocate(const std::string &label,
-                            const size_t elem_size,
-                            const std::vector<size_t> dimensions)
+namespace cali
 {
-    size_t total_size = 1;
-    for(auto d : dimensions)
-        total_size *= d;
+namespace DataTracker
+{
 
-    void* ret = malloc(total_size*elem_size);
+AllocTracker g_alloc_tracker;
 
-    uint64_t addr = (uint64_t)ret;
+void* Allocate(const std::string &label,
+                            const size_t elem_size,
+                            const std::vector<size_t> &dimensions)
+{
+    // FIXME: the num_bytes calculation happens twice here...
+    size_t total_size = Allocation::num_bytes(elem_size, dimensions);
 
-    g_tracked_alloc_map[addr] = new TrackedAllocation(label.c_str(), addr, elem_size, dimensions);
+    void* ret = malloc(total_size);
+
+    g_alloc_tracker.add_allocation(label, (uint64_t)ret, elem_size, dimensions);
 
     return ret;
 }
 
-void DataTracker::Free(void *ptr)
+void Free(void *ptr)
 {
     free(ptr);
-    delete g_tracked_alloc_map[(uint64_t)ptr];
+    g_alloc_tracker.remove_allocation((uint64_t)ptr);
 }
 
-struct TrackedAllocation::Impl {
-    const std::string           m_label;
-    const uint64_t              m_addr;
-    const size_t                m_elem_size;
-    const std::vector<size_t>   m_dimensions;
-
-    Impl(const char* label,
-         const uint64_t addr,
-         const size_t elem_size,
-         std::vector<size_t> dimensions)
-            : m_label(label),
-              m_addr(addr),
-              m_elem_size(elem_size),
-              m_dimensions(std::move(dimensions))
-    {
-        size_t total_size = 1;
-        for(auto d : dimensions)
-            total_size *= d;
-
-        g_alloc_tracker.add_allocation(g_alloc_id++, m_addr, elem_size*total_size);
-    }
-
-    ~Impl()
-    {
-        g_alloc_tracker.remove_allocation(m_addr);
-    }
-
-};
-
-TrackedAllocation::TrackedAllocation(const char* label,
-                         const uint64_t addr,
-                         const size_t elem_size,
-                         const std::vector<size_t> &dimensions)
-    : pI(new Impl(label, addr, elem_size, dimensions))
-{
-    g_tracked_alloc_map[addr] = this;
 }
-
-TrackedAllocation::~TrackedAllocation()
-{
-    g_tracked_alloc_map.erase(pI->m_addr);
-    delete pI;
 }

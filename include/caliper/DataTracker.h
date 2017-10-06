@@ -36,6 +36,8 @@
 #ifndef CALIPER_DATATRACKER_H
 #define CALIPER_DATATRACKER_H
 
+#include "../../src/caliper/AllocTracker.h"
+
 #include <vector>
 #include <string>
 #include <cstdlib>
@@ -46,9 +48,12 @@ namespace cali
 
 namespace DataTracker
 {
+
+extern AllocTracker g_alloc_tracker;
+
 void* Allocate(const std::string &label,
                const size_t elem_size,
-               const std::vector<size_t> dimensions);
+               const std::vector<size_t> &dimensions);
 
 void Free(void *ptr);
 
@@ -65,9 +70,9 @@ public:
                       const std::vector<size_t> &dimensions);
     ~TrackedAllocation();
 
+    static TrackedAllocation invalid;
 };
 
-TrackedAllocation CALI_TRACKED_ALLOCATION_INVALID;
 
 }
 }

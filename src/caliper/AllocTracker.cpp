@@ -4,7 +4,7 @@
 
 AllocNode* 
 AllocNode::insert(Allocation *allocation) {
-    if (allocation->start_address < key) {
+    if (allocation->m_start_address < key) {
         if (left)
             return left->insert(allocation);
         else {
@@ -13,7 +13,7 @@ AllocNode::insert(Allocation *allocation) {
             return newNode;
         }
     }
-    else if (allocation->start_address > key) {
+    else if (allocation->m_start_address > key) {
         if (right)
             return right->insert(allocation);
         else {
@@ -23,11 +23,10 @@ AllocNode::insert(Allocation *allocation) {
         }
     }
     else {
-        std::cerr << "Duplicate allocation not inserted!" << std::endl;
+        // Duplicate allocation, replace this one
+        delete this->allocation;
+        this->allocation = allocation;
         return this;
-        //delete this->allocation;
-        //this->allocation = allocation;
-        //return this;
     }
 }
 
@@ -152,7 +151,7 @@ AllocTree::insert(Allocation *allocation) {
 void
 AllocTree::remove(uint64_t start_address) {
     if (root == nullptr) {
-        std::cerr << "Tree empty, nothing to remove!" << std::endl;
+        // Nothing to do here
     }
     else {
         AllocNode *node = root->find_allocation_containing(start_address);
@@ -184,7 +183,7 @@ AllocTree::remove(uint64_t start_address) {
 Allocation*
 AllocTree::find_allocation_containing(uint64_t address) {
     if (root == nullptr) {
-        std::cerr << "Tree empty, nothing to find!" << std::endl;
+        // Nothing to find here
         return nullptr;
     }
 

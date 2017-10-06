@@ -53,6 +53,7 @@ void do_work(size_t M, size_t W, size_t N)
     double *matB = (double*)cali::DataTracker::Allocate("B", sizeof(double), {W,N});
     double *matC = (double*)cali::DataTracker::Allocate("C", sizeof(double), {M,N});
 
+    alloc_phase.end();
     cali::Annotation init_phase(cali::Annotation("phase").begin("initialize_values"));
 
     // Initialize A and B randomly
@@ -101,16 +102,16 @@ int main(int argc, const char* argv[])
     const util::Args::Table option_table[] = {
             { "m_size",      "m_size",      'm', true,
               "Width of input matrix A",
-              "1024" },
+              "elements" },
             { "w_size",      "w_size",      'w', true,
               "Height of input matrix A and width of input matrix B",
-              "1024" },
+              "elements" },
             { "n_size",      "n_size",      'n', true,
               "Height of input matrix B",
-              "1024" },
+              "elements" },
             { "iterations",      "iterations",      'i', true,
               "Number of iterations",
-              "10" },
+              "iterations" },
 
             util::Args::Table::Terminator
     };
@@ -133,10 +134,9 @@ int main(int argc, const char* argv[])
     size_t n_size = std::stoul(args.get("n_size", "512"));
     size_t num_iterations = std::stoul(args.get("iterations", "4"));
 
-    cali::Annotation benchmark_annotation("benchmark", CALI_ATTR_SCOPE_PROCESS);
     cali::Annotation phase_annotation("phase", CALI_ATTR_SCOPE_PROCESS);
 
-    benchmark_annotation.begin();
+    phase_annotation.begin("benchmark");
 
     cali::Loop loop("loop");
     for(size_t i=0; i<num_iterations; i++) {
@@ -144,6 +144,6 @@ int main(int argc, const char* argv[])
         do_work(m_size, w_size, n_size);
     }
 
-    benchmark_annotation.end();
+    phase_annotation.end();
 
 }
