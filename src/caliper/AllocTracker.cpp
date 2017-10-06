@@ -2,7 +2,64 @@
 
 #include <iostream>
 
-AllocNode* 
+size_t Allocation::num_bytes(const size_t elem_size,
+                             const std::vector<size_t> &dimensions) {
+    return std::accumulate(dimensions.begin(),
+                           dimensions.end(),
+                           elem_size,
+                           std::multiplies<size_t>());
+}
+
+Allocation::Allocation(const std::string &label,
+                       const uint64_t start_address,
+                       const size_t elem_size,
+                       const std::vector<size_t> &dimensions)
+        : m_label(label),
+          m_start_address(start_address),
+          m_elem_size(elem_size),
+          m_dimensions(dimensions),
+          m_bytes(num_bytes(elem_size, dimensions)),
+          m_end_address(start_address + m_bytes),
+          m_num_dimensions(dimensions.size()),
+          m_index_ret(new size_t[m_num_dimensions])
+{ }
+
+Allocation::~Allocation() {
+    delete m_index_ret;
+}
+
+bool Allocation::contains(uint64_t address) {
+    return m_start_address <= address && m_end_address >= address;
+}
+
+const size_t * Allocation::index_of(uint64_t address) {
+
+    size_t offset = (address - m_start_address) / m_elem_size;
+
+    size_t d;
+    for (d = 0; d<m_num_dimensions-1; d++) {
+        m_index_ret[d] = offset % m_dimensions[d];
+        offset = offset / m_dimensions[d];
+    }
+    m_index_ret[d] = offset;
+
+    return m_index_ret;
+}
+
+AllocNode::AllocNode(Allocation *allocation,
+                     AllocNode *parent,
+                     AllocNode *left,
+                     AllocNode *right,
+                     HAND handedness)
+        : allocation(allocation),
+          parent(parent),
+          left(left),
+          right(right),
+          handedness(handedness),
+          key(allocation->m_start_address)
+{ }
+
+AllocNode*
 AllocNode::insert(Allocation *allocation) {
     if (allocation->m_start_address < key) {
         if (left)
@@ -194,4 +251,24 @@ AllocTree::find_allocation_containing(uint64_t address) {
     }
 
     return nullptr;
+}
+
+void AllocTracker::add_allocation(const std::string &label,
+                                  const uint64_t addr,
+                                  const size_t elem_size,
+                                  const std::vector<size_t> &dimensions) {
+    alloc_map[addr] = alloc_tree.insert(new Allocation(label, addr, elem_size, dimensions));
+}
+
+void AllocTracker::remove_allocation(uint64_t address) {
+    alloc_tree.remove(address);
+    alloc_map.erase(address);
+}
+
+Allocation *AllocTracker::get_allocation_at(uint64_t address) {
+    return alloc_map[address]->allocation;
+}
+
+Allocation *AllocTracker::find_allocation_containing(uint64_t address) {
+    return alloc_tree.find_allocation_containing(address);
 }
