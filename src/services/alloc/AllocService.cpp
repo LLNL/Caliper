@@ -304,8 +304,11 @@ namespace
                 Allocation *alloc = DataTracker::g_alloc_tracker.find_allocation_containing(memory_address);
 
                 if (alloc) {
-                    // TODO: support tuples? or custom ways to print CALI_TYPE_USR data?
-                    const size_t *index = alloc->index_of(memory_address);
+                    const size_t index = alloc->index_1D(memory_address);
+
+                    // TODO: for n-dimensional indices:
+                    // TODO:    support tuples? or custom ways to print CALI_TYPE_USR data?
+                    //const size_t *index = alloc->index_ND(memory_address);
 
                     Attribute attr[NUM_ALLOC_ATTRS] = {
                             alloc_label_attr,
@@ -313,7 +316,7 @@ namespace
                     };
                     Variant data[NUM_ALLOC_ATTRS] = {
                             Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
-                            Variant(CALI_TYPE_USR, index, alloc->m_num_dimensions*sizeof(size_t)),
+                            Variant(index),
                     };
 
                     c->make_entrylist(NUM_ALLOC_ATTRS, attr, data, *snapshot);
@@ -328,7 +331,7 @@ namespace
 
         // TODO: make an alloc.id per memoryaddress attribute, e.g. alloc.label#libpfm.address
         alloc_label_attr = c->create_attribute("alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        alloc_index_attr = c->create_attribute("alloc.index", CALI_TYPE_USR, CALI_ATTR_DEFAULT);
+        alloc_index_attr = c->create_attribute("alloc.index", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         memory_address_attrs = c->find_attributes_with(c->get_attribute("class.memoryaddress"));
     }
