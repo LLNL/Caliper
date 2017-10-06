@@ -27,7 +27,8 @@ public:
     ~Allocation();
 
     bool contains(uint64_t address);
-    const size_t* index_of(uint64_t address);
+    const size_t index_1D(uint64_t address);
+    const size_t* index_ND(uint64_t address);
 
     const std::string           m_label;
     const uint64_t              m_start_address;
