@@ -34,6 +34,10 @@
 
 #include "AllocTracker.h"
 
+#include <iostream>
+
+#include <malloc.h>
+
 namespace cali
 {
 namespace DataTracker
@@ -42,9 +46,9 @@ namespace DataTracker
 AllocTracker g_alloc_tracker;
 
 void* Allocate(const std::string &label,
-                            const size_t elem_size,
-                            const std::vector<size_t> &dimensions)
-{
+               const size_t elem_size,
+               const std::vector<size_t> &dimensions) {
+
     // FIXME: the num_bytes calculation happens twice here...
     size_t total_size = Allocation::num_bytes(elem_size, dimensions);
 
@@ -53,6 +57,18 @@ void* Allocate(const std::string &label,
     g_alloc_tracker.add_allocation(label, (uint64_t)ret, elem_size, dimensions);
 
     return ret;
+}
+
+void TrackAllocation(const void *ptr,
+                     const std::string &label,
+                     const size_t elem_size,
+                     const std::vector<size_t> &dimensions) {
+
+    size_t size = malloc_usable_size((void*)ptr);
+    if (size == Allocation::num_bytes(elem_size, dimensions))
+        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions);
+    else
+        std::cerr << "Invalid allocation tracking information!" << std::endl;
 }
 
 void Free(void *ptr)

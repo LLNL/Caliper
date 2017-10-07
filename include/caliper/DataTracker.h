@@ -55,23 +55,11 @@ void* Allocate(const std::string &label,
                const size_t elem_size,
                const std::vector<size_t> &dimensions);
 
+void TrackAllocation(const std::string &label,
+                     const size_t elem_size,
+                     const std::vector<size_t> &dimensions);
+
 void Free(void *ptr);
-
-class TrackedAllocation
-{
-    struct Impl;
-    Impl* pI;
-
-public:
-    TrackedAllocation() = default;
-    TrackedAllocation(const char* label,
-                      const uint64_t addr,
-                      const size_t elem_size,
-                      const std::vector<size_t> &dimensions);
-    ~TrackedAllocation();
-
-    static TrackedAllocation invalid;
-};
 
 
 }
