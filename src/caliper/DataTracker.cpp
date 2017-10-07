@@ -59,13 +59,23 @@ void* Allocate(const std::string &label,
     return ret;
 }
 
-void TrackAllocation(const void *ptr,
+void TrackAllocation(void *ptr,
+                     const std::string &label) {
+
+    size_t size = malloc_usable_size(ptr);
+    if (size > 0)
+        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, (size_t)1, {size});
+    else
+        std::cerr << "Invalid allocation to track!" << std::endl;
+}
+
+void TrackAllocation(void *ptr,
                      const std::string &label,
                      const size_t elem_size,
                      const std::vector<size_t> &dimensions) {
 
-    size_t size = malloc_usable_size((void*)ptr);
-    if (size == Allocation::num_bytes(elem_size, dimensions))
+    size_t size = malloc_usable_size(ptr);
+    if (size >= Allocation::num_bytes(elem_size, dimensions))
         g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions);
     else
         std::cerr << "Invalid allocation tracking information!" << std::endl;
