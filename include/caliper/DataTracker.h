@@ -55,7 +55,11 @@ void* Allocate(const std::string &label,
                const size_t elem_size,
                const std::vector<size_t> &dimensions);
 
-void TrackAllocation(const std::string &label,
+void TrackAllocation(void *ptr,
+                     const std::string &label);
+
+void TrackAllocation(void *ptr,
+                     const std::string &label,
                      const size_t elem_size,
                      const std::vector<size_t> &dimensions);
 
