@@ -1,3 +1,4 @@
+#include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
 
@@ -21,14 +22,17 @@ namespace cali
     extern Attribute   mpisize_attr;
 
     extern bool        mpi_enabled;
-    extern bool        mpit_enabled;
 
     extern std::string mpi_whitelist_string;
     extern std::string mpi_blacklist_string;
-	
-	extern void mpit_allocate_pvar_handles();
-	extern void mpit_allocate_bound_pvar_handles(void *handle, int bind);
 
+#ifdef CALIPER_HAVE_MPIT
+    extern bool mpit_enabled;
+
+    extern void mpit_init(Caliper* c);
+    extern void mpit_allocate_pvar_handles();
+    extern void mpit_allocate_bound_pvar_handles(void *handle, int bind);
+#endif
 }
 
 using namespace cali;
@@ -116,15 +120,15 @@ namespace
         PMPI_Comm_size(MPI_COMM_WORLD, &size);
 
         c.set(mpisize_attr, Variant(size));
-        c.set(mpirank_attr, Variant(rank));
-		
+        c.set(mpirank_attr, Variant(rank));		
     }
 
-	if(mpit_enabled) {
-		Log(1).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
-		mpit_allocate_pvar_handles();
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        Log(1).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
+        mpit_allocate_pvar_handles();
+    }
+#endif
 }{{endfn}}
 
 // Invoke pvar handle allocation routines for pvars bound to some MPI object
@@ -139,10 +143,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_COMM); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if(mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_COMM); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_Errhandler_create}}{
@@ -155,10 +160,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_ERRHANDLER); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_ERRHANDLER); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_File_open}}{
@@ -171,10 +177,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{4}}, MPI_T_BIND_MPI_FILE); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{4}}, MPI_T_BIND_MPI_FILE); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_Comm_group}}{
@@ -187,10 +194,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_GROUP); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_GROUP); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_Op_create}}{
@@ -203,10 +211,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_OP); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_OP); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_Win_create}}{
@@ -219,10 +228,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{5}}, MPI_T_BIND_MPI_WIN); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{5}}, MPI_T_BIND_MPI_WIN); 
+    }
+#endif
 }{{endfn}}
 
 {{fn func MPI_Info_create}}{
@@ -235,10 +245,11 @@ namespace
         {{callfn}}
     }
 
-	if(mpit_enabled) {
-		mpit_allocate_bound_pvar_handles({{0}}, MPI_T_BIND_MPI_INFO); 
-	}
-
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{0}}, MPI_T_BIND_MPI_INFO); 
+    }
+#endif
 }{{endfn}}
 // Wrap all MPI functions
 
