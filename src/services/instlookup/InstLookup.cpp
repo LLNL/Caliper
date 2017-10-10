@@ -35,6 +35,8 @@
 
 #include "../CaliperService.h"
 
+#include "x86_util.h"
+
 #include "caliper/Caliper.h"
 #include "../../caliper/MemoryPool.h"
 #include "caliper/SnapshotRecord.h"
@@ -61,6 +63,7 @@
 using namespace cali;
 
 using namespace Dyninst;
+using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
@@ -73,7 +76,9 @@ class InstLookup
     static const ConfigSet::Entry        s_configdata[];
 
     struct InstAttributes {
-        Attribute type_attr;
+        Attribute op_attr;
+        Attribute read_size_attr;
+        Attribute write_size_attr;
     };
 
     ConfigSet m_config;
@@ -85,7 +90,10 @@ class InstLookup
 
     std::vector<std::string> m_addr_attr_names;
 
-    AddressLookup* m_lookup;
+    bool m_arch_set = false;
+    Architecture m_arch;
+    unsigned int m_inst_length;
+    SymtabCodeSource *m_sts;
     std::mutex     m_lookup_mutex;
 
     unsigned m_num_lookups;
@@ -98,9 +106,16 @@ class InstLookup
     void make_inst_attributes(Caliper* c, const Attribute& attr) {
         struct InstAttributes sym_attribs;
 
-        sym_attribs.type_attr = 
-            c->create_attribute("instruction.type#" + attr.name(), 
+        sym_attribs.op_attr = 
+            c->create_attribute("instruction.op#" + attr.name(), 
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
+        sym_attribs.read_size_attr = 
+            c->create_attribute("instruction.read_size#" + attr.name(), 
+                                CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        sym_attribs.write_size_attr = 
+            c->create_attribute("instruction.write_size#" + attr.name(), 
+                                CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         std::lock_guard<std::mutex>
             g(m_sym_attr_mutex);
@@ -134,14 +149,61 @@ class InstLookup
     }
     
     void add_inst_attributes(const Entry& e, 
-                               const InstAttributes& sym_attr,
-                               MemoryPool& mempool,
-                               std::vector<Attribute>& attr, 
-                               std::vector<Variant>&   data) {
+                             const InstAttributes& sym_attr,
+                             MemoryPool& mempool,
+                             std::vector<Attribute>& attr, 
+                             std::vector<Variant>&   data) {
 
         uint64_t address  = e.value().to_uint();
 
-        // TODO: get instruction semantics and add to `attr` and `data`
+        {
+            std::lock_guard<std::mutex>
+                g(m_lookup_mutex);
+
+            void *inst_raw = nullptr;
+            if(m_sts->isValidAddress(address))
+            {
+                inst_raw = m_sts->getPtrToInstruction(address);
+
+                if(inst_raw)
+                {
+                    // Get and decode instruction
+                    InstructionDecoder dec(inst_raw, m_inst_length, m_arch);
+                    Instruction::Ptr inst = dec.decode();
+                    Operation op = inst->getOperation();
+                    entryID eid = op.getID();
+                    
+                    // Extract semantics
+                    uint64_t read_size = 0;
+                    uint64_t write_size = 0;
+                    std::string inst_name;
+
+                    inst_name = NS_x86::entryNames_IAPI[eid];
+
+                    if(inst->readsMemory()) {
+                        read_size = getReadSize(inst);
+                    }
+                    if(inst->writesMemory()) {
+                        read_size = getWriteSize(inst);
+                    }
+
+                    // Hack to put string on heap
+                    char* tmp_s = static_cast<char*>(mempool.allocate(inst_name.size()+1));
+                    std::copy(inst_name.begin(), inst_name.end(), tmp_s);
+                    tmp_s[inst_name.size()] = '\0';
+
+                    // Add attributes and data
+                    attr.push_back(sym_attr.op_attr);
+                    attr.push_back(sym_attr.read_size_attr);
+                    attr.push_back(sym_attr.write_size_attr);
+
+                    data.push_back(Variant(CALI_TYPE_STRING, tmp_s, inst_name.size()));
+                    data.push_back(Variant(read_size));
+                    data.push_back(Variant(write_size));
+                }
+            }
+        }
+        
     }
 
     void process_snapshot(Caliper* c, SnapshotRecord* snapshot) {
@@ -198,20 +260,34 @@ class InstLookup
 
     void init_lookup() {
 
-        // TODO: initialize instructionAPI lookups
-        
         std::lock_guard<std::mutex> 
             g(m_lookup_mutex);
 
-        if (!m_lookup) {
-            m_lookup = AddressLookup::createAddressLookup();
+        std::string self_bin("/proc/self/exe");
 
-            if (!m_lookup)
-                Log(0).stream() << "Instlookup: Could not create address lookup object"
+        if (!m_arch_set) {
+            // TODO: how to use dynamic symtab instead?
+            Symtab *tab;
+
+            int sym_success = Symtab::openFile(tab, self_bin);
+            if(!sym_success)
+                Log(0).stream() << "Instlookup: Could not create symtab object"
                                 << std::endl;
 
-            m_lookup->refresh();
+            m_arch = tab->getArchitecture();
+
+            m_arch_set = true;
         }
+
+        if (!m_sts) {
+            m_sts = new SymtabCodeSource((char*)self_bin.c_str());
+
+            if(!m_sts)
+                Log(0).stream() << "Instlookup: Could not create symtab code source"
+                                << std::endl;
+        }
+
+        m_inst_length = InstructionDecoder::maxInstructionLength;
     }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
@@ -235,7 +311,7 @@ class InstLookup
 
     InstLookup(Caliper* c)
         : m_config(RuntimeConfig::init("instlookup", s_configdata)),
-          m_lookup(0)
+          m_sts(nullptr)
         {
             util::split(m_config.get("attributes").to_string(), ':',
                         std::back_inserter(m_addr_attr_names));
@@ -260,10 +336,6 @@ const ConfigSet::Entry InstLookup::s_configdata[] = {
     { "attributes", CALI_TYPE_STRING, "",
       "List of address attributes for which to perform inst lookup",
       "List of address attributes for which to perform inst lookup",
-    },
-    { "instruction_type", CALI_TYPE_BOOL, "true",
-      "Look up the type of instruction (memory read/write, compute)",
-      "Look up the type of instruction (memory read/write, compute)",
     },
     ConfigSet::Terminator
 };
