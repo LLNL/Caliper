@@ -125,8 +125,8 @@ namespace
 
 #ifdef CALIPER_HAVE_MPIT
     if (mpit_enabled) {
-        Log(1).stream() << "Invoking PVAR allocating routine after MPI_Init." << endl;
-        mpit_allocate_pvar_handles();
+        Log(1).stream() << "mpit: Initializing MPI-T interface." << std::endl;
+        mpit_init(&c);
     }
 #endif
 }{{endfn}}

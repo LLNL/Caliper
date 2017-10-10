@@ -33,7 +33,6 @@ endif()
 add_service_sources(${CALIPER_MPI_SOURCES})
 
 add_library(caliper-mpiwrap ${CALIPER_MPIWRAP_SOURCES})
-message(STATUS "mpiwrap sources: " ${CALIPER_MPIWRAP_SOURCES})
 
 target_link_libraries(caliper-mpiwrap caliper-common)
 target_link_libraries(caliper-mpiwrap caliper)

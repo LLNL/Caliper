@@ -470,7 +470,7 @@ namespace
         last_value_unsigned_long.resize(current_num_pvars, {0});
         last_value_double.resize(current_num_pvars, {0.0});
 
-        Log(1).stream() << "Num PVARs exported: " << current_num_pvars << endl;
+        Log(1).stream() << "mpit: Exporting " << current_num_pvars << " PVARs." << std::endl;
 
         for(int index=num_pvars; index < current_num_pvars; index++) {
 
