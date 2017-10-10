@@ -140,6 +140,7 @@ if (WITH_DYNINST)
     set(CALIPER_HAVE_DYNINST TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
     list(APPEND CALIPER_EXTERNAL_LIBS instructionAPI)
+    list(APPEND CALIPER_EXTERNAL_LIBS parseAPI)
   endif()
 endif()
 
