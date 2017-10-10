@@ -1085,6 +1085,32 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         list.append(node);
 }
 
+/// \brief Create a snapshot record (entry list) from the given attribute and 
+///   list of values 
+///
+/// This function is signal-safe.
+///
+/// \param attr   Attribute list
+/// \param n      Number of elements in attribute/value lists
+/// \param value  Value list
+/// \param list   Output record. Must be large enough to hold all entries.
+
+void
+Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, SnapshotRecord& list) 
+{
+    if (n < 1)
+        return;
+
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    if (attr.store_as_value())
+        // only store one value entry
+        list.append(attr.id(), value[0]);
+    else
+        list.append(m_thread_scope->tree.get_path(attr, n, value, nullptr));
+}
+
 /// \brief Create an Entry object from the given attribute:value pair.
 ///
 /// Creates an Entry object from the given (attribute, value) pair with 
