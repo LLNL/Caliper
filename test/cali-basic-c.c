@@ -16,17 +16,23 @@ void foo(int count)
 
   /* Mark foo loop and set loopcount information */
 
+  double *d = (double*)malloc(count*sizeof(double));
+
   CALI_MARK_LOOP_BEGIN(fooloop, "cali-demo.fooloop");
   
   for (int i = 0; i < count; ++i) {
     CALI_MARK_ITERATION_BEGIN(fooloop, i);
 
     /* do work */
+    d[i] = i;
 
     CALI_MARK_ITERATION_END(fooloop);
   }
 
   CALI_MARK_LOOP_END(fooloop);
+
+  free(d);
+
   CALI_MARK_FUNCTION_END;
 }
 
