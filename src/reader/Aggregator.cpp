@@ -669,12 +669,16 @@ struct Aggregator::AggregatorImpl
         for (cali_id_t id : key_ids)
             for (const Entry& e : list)
                 if (e.is_immediate() && e.attribute() == id)
-                    immediates.push_back(e);                
+                    immediates.push_back(e);
         
-        // --- Group by attribute, reverse nodes (restores original order) and get/create tree node
+        // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
+        //       Keeps nested attributes separate.
 
-        std::stable_sort(nodes.begin(), nodes.end(),
-                    [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+        auto nonnested_begin = std::partition(nodes.begin(), nodes.end(), [&db](const Node* node) {
+                return db.get_attribute(node->attribute()).is_nested(); } );
+
+        std::stable_sort(nonnested_begin, nodes.end(), [](const Node* a, const Node* b) {
+                             return a->attribute() < b->attribute(); } );
 
         std::reverse(nodes.begin(), nodes.end());
 

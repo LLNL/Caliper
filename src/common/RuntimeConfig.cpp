@@ -59,6 +59,13 @@ namespace
     const char*  builtin_profiles =
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event:recorder:timestamp:trace\n"
+        "# [caliper-profile]\n"
+        "CALI_SERVICES_ENABLE=aggregate:event:report:timestamp\n"
+        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
+        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
+        "CALI_AGGREGATE_KEY=annotation:function:loop\n"
+        "CALI_EVENT_TRIGGER=annotation:function:loop\n"
+        "CALI_REPORT_CONFIG=select sum(aggregate.sum#time.duration) group by annotation,function,loop format tree\n"
         "# [thread-trace]\n"
         "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
         "# [mpi-trace]\n"

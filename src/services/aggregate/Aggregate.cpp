@@ -459,19 +459,18 @@ public:
                 key_attribute_ids[n_key_attr++] = s_key_attribute_ids[i];
             
         if (n_key_attr > 0 && sizes.n_nodes > 0) {
-            // --- find out number of entries for each key attribute
+            // --- find out number of key node entries
             
-            size_t* key_entries = static_cast<size_t*>(alloca(n_key_attr * sizeof(size_t)));
+            size_t       key_entries = 0;
             const Node* *start_nodes = static_cast<const Node**>(alloca(sizes.n_nodes * sizeof(const Node*)));
-            
-            memset(key_entries, 0, n_key_attr * sizeof(size_t));
+
             memset(start_nodes, 0, sizes.n_nodes * sizeof(const Node*));
             
             for (size_t i = 0; i < sizes.n_nodes; ++i)
                 for (const Node* node = addr.node_entries[i]; node; node = node->parent())
                     for (size_t a = 0; a < n_key_attr; ++a)
                         if (key_attribute_ids[a] == node->attribute()) {
-                            ++key_entries[a];
+                            ++key_entries;
 
                             // Save the snapshot nodes that lead to key nodes
                             // to short-cut the subsequent loop a bit 
@@ -479,29 +478,25 @@ public:
                                 start_nodes[i] = node;
                         }
 
-            // --- make prefix sum
-            
-            for (size_t a = 1; a < n_key_attr; ++a)
-                key_entries[a] += key_entries[a-1];
+            // FIXME: Strictly, we need to partition between nested/nonnested attribute nodes here
+            //   and order nonnested ones by attribute ID, as nodes of different attributes 
+            //   can appear in any order in the context tree.
 
             // --- construct path of key nodes in reverse order, make/find new entry
 
-            size_t tot_entries = key_entries[n_key_attr-1];
-            
-            if (tot_entries > 0) {
-                const Node* *nodelist = static_cast<const Node**>(alloca(tot_entries*sizeof(const Node*)));
-                size_t* filled = static_cast<size_t*>(alloca(n_key_attr*sizeof(size_t)));
+            if (key_entries > 0) {
+                const Node* *nodelist = static_cast<const Node**>(alloca(key_entries*sizeof(const Node*)));
+                size_t       filled   = 0;
 
-                memset(nodelist, 0, tot_entries * sizeof(const Node*));
-                memset(filled,   0, n_key_attr  * sizeof(size_t));
+                memset(nodelist, 0, key_entries * sizeof(const Node*));
                 
                 for (size_t i = 0; i < sizes.n_nodes; ++i)
                     for (const Node* node = start_nodes[i]; node; node = node->parent())
                         for (size_t a = 0; a < n_key_attr; ++a)
                             if (key_attribute_ids[a] == node->attribute())
-                                nodelist[key_entries[a] - (++filled[a])] = node;
+                                nodelist[key_entries - ++filled] = node;
                 
-                const Node* node = c->make_tree_entry(tot_entries, nodelist, &m_aggr_root_node);
+                const Node* node = c->make_tree_entry(key_entries, nodelist, &m_aggr_root_node);
 
                 if (node)
                     nodeid_vec[n_nodes++] = node->id();
