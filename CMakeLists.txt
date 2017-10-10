@@ -139,6 +139,7 @@ if (WITH_DYNINST)
     message(STATUS "Found Dyninst in " ${Dyninst_DIR})
     set(CALIPER_HAVE_DYNINST TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
+    list(APPEND CALIPER_EXTERNAL_LIBS instructionAPI)
   endif()
 endif()
 
