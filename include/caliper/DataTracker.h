@@ -36,7 +36,7 @@
 #ifndef CALIPER_DATATRACKER_H
 #define CALIPER_DATATRACKER_H
 
-#include "../../src/caliper/AllocTracker.h"
+#include "AllocTracker.h"
 
 #include <vector>
 #include <string>
