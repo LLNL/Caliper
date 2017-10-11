@@ -49,14 +49,20 @@ using namespace cali;
 
 namespace
 {
-    bool hook_enabled { false };
+    bool hook_enabled { true };
+    bool record_all_allocs { false };
+    bool track_all_allocs { false };
 
     ConfigSet config;
 
     const ConfigSet::Entry s_configdata[] = {
-            { "hook_malloc", CALI_TYPE_BOOL, "false",
-              "Hook calls to malloc/calloc/realloc/free.",
-              "Hook calls to malloc/calloc/realloc/free. May incur high overhead for code with frequent allocations."
+            { "record_all_allocs", CALI_TYPE_BOOL, "false",
+              "Record all allocations made by malloc/calloc/realloc.",
+              "Record all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
+            },
+            { "track_all_allocs", CALI_TYPE_BOOL, "false",
+              "Track all allocations made by malloc/calloc/realloc.",
+              "Track all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
             },
             ConfigSet::Terminator
     };
@@ -79,13 +85,15 @@ namespace
 #define NUM_CALLOC_ATTRS 5
 #define NUM_REALLOC_ATTRS 4
 
-    /**
-     * malloc
-     */
-
-    void* (*orig_malloc)(size_t size) = NULL;
+    void* (*orig_malloc)(size_t size) = nullptr;
+    void* (*orig_calloc)(size_t num, size_t size) = nullptr;
+    void* (*orig_realloc)(void* ptr, size_t size) = nullptr;
+    void  (*orig_free)(void* ptr) = nullptr;
 
     static cali_id_t malloc_attributes[NUM_MALLOC_ATTRS] = {CALI_INV_ID};
+    static cali_id_t calloc_attributes[NUM_CALLOC_ATTRS] = {CALI_INV_ID};
+    static cali_id_t realloc_attributes[NUM_REALLOC_ATTRS] = {CALI_INV_ID};
+    static cali_id_t free_attributes[NUM_FREE_ATTRS] = {CALI_INV_ID};
 
     void*
     cali_malloc_wrapper(size_t size)
@@ -97,16 +105,20 @@ namespace
         if (hook_enabled) {
             hook_enabled = false;
             if (c) {
-                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                if (track_all_allocs) {
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                }
 
-                Variant data[NUM_MALLOC_ATTRS];
+                if (record_all_allocs) {
+                    Variant data[NUM_MALLOC_ATTRS];
 
-                data[0] = alloc_count;
-                data[1] = static_cast<uint64_t>(size);
-                data[2] = (uint64_t)ret;
+                    data[0] = alloc_count;
+                    data[1] = static_cast<uint64_t>(size);
+                    data[2] = (uint64_t)ret;
 
-                SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
-                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                    SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
+                    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                }
 
                 alloc_count++;
             }
@@ -115,14 +127,6 @@ namespace
 
         return ret;
     }
-
-    /**
-     * calloc
-     */
-
-    void* (*orig_calloc)(size_t num, size_t size) = NULL;
-
-    static cali_id_t calloc_attributes[NUM_CALLOC_ATTRS] = {CALI_INV_ID};
 
     void*
     cali_calloc_wrapper(size_t num, size_t size)
@@ -134,18 +138,22 @@ namespace
         if (hook_enabled) {
             hook_enabled = false;
             if (c) {
-                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, size, {num});
+                if (track_all_allocs) {
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, size, {num});
+                }
 
-                Variant data[NUM_CALLOC_ATTRS];
+                if (record_all_allocs) {
+                    Variant data[NUM_CALLOC_ATTRS];
 
-                data[0] = alloc_count;
-                data[1] = static_cast<uint64_t>(num);
-                data[2] = static_cast<uint64_t>(size);
-                data[3] = (uint64_t)ret;
-                data[4] = data[1]*data[2]; // num*size
+                    data[0] = alloc_count;
+                    data[1] = static_cast<uint64_t>(num);
+                    data[2] = static_cast<uint64_t>(size);
+                    data[3] = (uint64_t)ret;
+                    data[4] = data[1]*data[2]; // num*size
 
-                SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
-                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                    SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
+                    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                }
 
                 alloc_count++;
             }
@@ -154,14 +162,6 @@ namespace
 
         return ret;
     }
-
-    /**
-     * realloc
-     */
-
-    void* (*orig_realloc)(void* ptr, size_t size) = NULL;
-
-    static cali_id_t realloc_attributes[NUM_REALLOC_ATTRS] = {CALI_INV_ID};
 
     void*
     cali_realloc_wrapper(void *ptr, size_t size)
@@ -173,18 +173,23 @@ namespace
         if (hook_enabled) {
             hook_enabled = false;
             if (c) {
-                DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
-                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                bool removed = DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
 
-                Variant data[NUM_REALLOC_ATTRS];
+                if (removed || track_all_allocs) {
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                }
 
-                data[0] = alloc_count;
-                data[1] = ((uint64_t)ptr);
-                data[2] = static_cast<uint64_t>(size);
-                data[3] = (uint64_t)ret;
+                if (record_all_allocs) {
+                    Variant data[NUM_REALLOC_ATTRS];
 
-                SnapshotRecord trigger_info(NUM_REALLOC_ATTRS, realloc_attributes, data);
-                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                    data[0] = alloc_count;
+                    data[1] = ((uint64_t)ptr);
+                    data[2] = static_cast<uint64_t>(size);
+                    data[3] = (uint64_t)ret;
+
+                    SnapshotRecord trigger_info(NUM_REALLOC_ATTRS, realloc_attributes, data);
+                    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                }
 
                 alloc_count++;
             }
@@ -193,14 +198,6 @@ namespace
 
         return ret;
     }
-
-    /**
-     * free
-     */
-
-    void (*orig_free)(void* ptr) = NULL;
-
-    static cali_id_t free_attributes[NUM_FREE_ATTRS] = {CALI_INV_ID};
 
     void
     cali_free_wrapper(void *ptr)
@@ -212,15 +209,18 @@ namespace
         if (hook_enabled) {
             hook_enabled = false;
             if (c) {
+                // Always check the allocation tracker for frees
                 DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
 
-                Variant data[NUM_FREE_ATTRS];
+                if (record_all_allocs) {
+                    Variant data[NUM_FREE_ATTRS];
 
-                data[0] = alloc_count;
-                data[1] = ((uint64_t)ptr);
+                    data[0] = alloc_count;
+                    data[1] = ((uint64_t)ptr);
 
-                SnapshotRecord trigger_info(NUM_FREE_ATTRS, free_attributes, data);
-                c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                    SnapshotRecord trigger_info(NUM_FREE_ATTRS, free_attributes, data);
+                    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+                }
 
                 alloc_count++;
             }
@@ -282,7 +282,7 @@ namespace
             if (!e.is_empty()) {
 
                 uint64_t memory_address = e.value().to_uint();
-                Allocation *alloc = DataTracker::g_alloc_tracker.find_allocation_containing(memory_address);
+                cali::DataTracker::Allocation *alloc = DataTracker::g_alloc_tracker.find_allocation_containing(memory_address);
 
                 if (alloc) {
                     const size_t index = alloc->index_1D(memory_address);
@@ -328,7 +328,8 @@ namespace
     {
         config = RuntimeConfig::init("callpath", s_configdata);
 
-        hook_enabled = config.get("use_name").to_bool();
+        record_all_allocs = config.get("record_all").to_bool();
+        track_all_allocs = config.get("track_all").to_bool();
 
         c->events().post_init_evt.connect(post_init_cb);
         c->events().snapshot.connect(snapshot_cb);

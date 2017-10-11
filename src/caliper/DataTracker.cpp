@@ -83,7 +83,7 @@ void TrackAllocation(void *ptr,
 void Free(void *ptr)
 {
     free(ptr);
-    g_alloc_tracker.remove_allocation((uint64_t)ptr);
+    //g_alloc_tracker.remove_allocation((uint64_t)ptr);
 }
 
 }
