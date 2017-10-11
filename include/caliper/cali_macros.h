@@ -91,10 +91,10 @@
 #define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
     cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
 
-#define CALI_TRACK_ALLOCATION(ptr) \
+#define CALI_CXX_TRACK_ALLOCATION(ptr) \
     cali::DataTracker::TrackAllocation(ptr, #ptr)
 
-#define CALI_TRACK_DIM_ALLOCATION(ptr, elem_size, dimensions) \
+#define CALI_CXX_TRACK_DIM_ALLOCATION(ptr, elem_size, dimensions) \
     cali::DataTracker::TrackAllocation(ptr, #ptr, elem_size, dimensions)
 
 #endif // __cplusplus

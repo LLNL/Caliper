@@ -55,9 +55,9 @@ void do_work(size_t M, size_t W, size_t N)
     auto B_dims = {W,N};
     auto C_dims = {M,N};
 
-    CALI_TRACK_DIM_ALLOCATION(matA, sizeof(double), A_dims);
-    CALI_TRACK_DIM_ALLOCATION(matB, sizeof(double), B_dims);
-    CALI_TRACK_DIM_ALLOCATION(matC, sizeof(double), C_dims);
+    CALI_CXX_TRACK_DIM_ALLOCATION(matA, sizeof(double), A_dims);
+    CALI_CXX_TRACK_DIM_ALLOCATION(matB, sizeof(double), B_dims);
+    CALI_CXX_TRACK_DIM_ALLOCATION(matC, sizeof(double), C_dims);
 
     CALI_MARK_END("allocate");
     CALI_MARK_BEGIN("initialize values");
