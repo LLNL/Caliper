@@ -16,7 +16,7 @@ Example: High-level annotation macros in C
        CALI_MARK_FUNCTION_END; /* Must mark _all_ function exit points! */
        return;
      }
-                
+
      CALI_MARK_LOOP_BEGIN(fooloop, "example.fooloop");
 
      for (int i = 0; i < count; ++i) {
@@ -84,6 +84,9 @@ A C++ example producing the same output as above:
 
      if (count == 0)
        return;
+                
+     int *array = new int[count];
+     CALI_CXX_TRACK_ALLOCATION(array);
                 
      CALI_CXX_MARK_LOOP_BEGIN(fooloop, "example.fooloop");
 
@@ -206,6 +209,59 @@ The `cali::Annotation` class provides the C++ instrumentation interface.
    .. cpp:function:: void end()
 
       Remove top-most value of the referenced attribute from the blackboard.
+
+
+C++ data tracking API      
+--------------------------------
+
+Caliper also supports tracking allocated data, using the `cali::DataTracker` namespace.
+Doing so provides advanced data-centric attributes, such as recording allocation events 
+and determining the containers for memory addresses provided by services like libpfm.
+
+.. cpp:namespace cali::DataTracker
+
+   Example:
+
+   .. code-block:: c++
+      
+       double* matC = (double*)cali::DataTracker::Allocate("C", sizeof(double), {M,N});
+
+      This example allocates a 2-dimensional matrix of ``double`` sized elements and 
+      tracks it under the label "C".
+
+   .. code-block:: c++
+      
+       double* matC = new double[M,N];
+
+       cali::DataTracker::TrackAllocation(matC, "C", sizeof(double), {M,N});
+
+      This example tracks an existing 2-dimensional matrix of ``double`` sized elements 
+      under the label "C".
+
+   .. cpp:function:: TrackAllocation(void* ptr, 
+                                     const std::string &label)
+
+      Track the allocation pointed to by ``ptr`` under the label ``label``.
+
+   .. cpp:function:: TrackAllocation(void* ptr,
+                                     const std::string &label,
+                                     const size_t elem_size,
+                                     const std::vector<size_t> &dimensions)
+
+      Same as above, with additional semantics for element size and dimensionality.
+
+   .. cpp:function:: Allocate(const std::string &label,
+                              const size_t size)
+
+      Allocates memory using ``malloc`` and tracks the resulting allocation.
+
+   .. cpp:function:: Allocate(const std::string &label,
+                              const size_t elem_size,
+                              const std::vector<size_t> &dimensions)
+
+      Same as above with additional semantics for element size and dimensionality.
+
+
 
       
 C and Fortran annotation API
