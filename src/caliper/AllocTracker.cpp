@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+using namespace cali;
+
 size_t Allocation::num_bytes(const size_t elem_size,
                              const std::vector<size_t> &dimensions) {
     return std::accumulate(dimensions.begin(),
