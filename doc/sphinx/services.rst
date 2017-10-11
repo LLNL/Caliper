@@ -171,6 +171,32 @@ The resulting file has the following contents: ::
      aggregate.max#time.inclusive.duration=26
      aggregate.sum#time.inclusice.duration=102
    
+Alloc
+--------------------------------
+
+The `alloc` service adds data tracking information to Caliper.
+It will resolve the data container of any attribute of class 
+"class.memoryaddress", for example the array containing a 
+memory address sampled by the `Libpfm` service.
+By default, it will only use data tracking information provided
+via the ``cali::DataTracker`` API, but it may be configured to 
+record and/or track any allocations by hooking system allocation 
+calls.
+
+.. envvar:: CALI_ALLOC_RECORD_ALL=(true|false)
+
+   Record all allocations captured by hooking malloc/calloc/realloc.
+   May cause high overhead for codes that frequently allocate memory.
+
+   Default: false.
+
+.. envvar:: CALI_ALLOC_TRACK_ALL=(true|false)
+
+   Track all allocations captured by hooking malloc/calloc/realloc.
+   May cause high overhead for codes that frequently allocate memory.
+
+   Default: false.
+
 
 Callpath
 --------------------------------
