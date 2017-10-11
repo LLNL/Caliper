@@ -331,6 +331,85 @@ Example:
                 == CALIPER: Event: finish
                 == CALIPER: Finished
 
+Libpfm
+--------------------------------
+
+The libpfm service performs per-thread event-based sampling. The user
+may configure the event upon which to sample, the values to record for
+each sample, and the sampling period.
+
+.. envvar:: CALI_LIBPFM_EVENT_LIST
+   
+   Comma-separated list of events to sample. Event names are resolved
+   through libpfm, and may include software and hardware events (see
+   libpfm's showevtinfo tool
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to obtain a list of events available on a particular system).
+
+   Default: cycles
+
+.. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
+   
+   Comma-separated list of attributes to record for each sample.
+
+   Available entries are:
+     ip             Instruction pointer
+     id             Sample id
+     stream_id      Stream id
+     time           Timestamp
+     tid            Thread id
+     period         Current sampling period
+     cpu            CPU
+     transaction    Type of transaction
+     addr           Data address*
+     weight         Latency*
+     data_src       Encoding for memory resource (L1, L2, DRAM etc.)*
+
+     \*available only for certain events.
+
+   Default: ip,time,tid,cpu
+
+.. envvar:: CALI_LIBPFM_PERIOD
+
+   Sampling period. When set to a value N, a sample will be recorded
+   after every N number of events has occurred.
+
+   Default: 20000000
+
+.. envvar:: CALI_LIBPFM_PRECISE_IP
+
+   Whether to set (precise) for events that support precise ip. Some
+   events require (precise) to be set, for others it is optional (see
+   output of libpfm's showevtinfo tool 
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to determine when it is available or required).
+
+   May be set to either 0, 1, or 2.
+
+   Default: 0
+
+.. envvar:: CALI_LIBPFM_CONFIG1
+
+   Extra event configuration. Some events require an additional
+   parameter to configure behavior, such as latency threshold (see
+   output of libpfm's showevtinfo tool 
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to determine when it is available or required).
+
+   Default: 0
+
+The following example shows how to configure PEBS memory access sampling
+with a latency threshold (available on SandyBridge, IvyBridge,
+Haswell):
+
+.. code-block:: sh
+
+   $ export CALI_LIBPFM_EVENT_LIST=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   $ export CALI_LIBPFM_PERIOD=100
+   $ export CALI_LIBPFM_PRECISE_IP=2
+   $ export CALI_LIBPFM_CONFIG1=100
+   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+
 MPI
 --------------------------------
 
@@ -616,81 +695,3 @@ Flush
    
    Default: `grow`.
    
-Libpfm
---------------------------------
-
-The libpfm service performs per-thread event-based sampling. The user
-may configure the event upon which to sample, the values to record for
-each sample, and the sampling period.
-
-.. envvar:: CALI_LIBPFM_EVENT_LIST
-   
-   Comma-separated list of events to sample. Event names are resolved
-   through libpfm, and may include software and hardware events (see
-   libpfm's showevtinfo tool
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to obtain a list of events available on a particular system).
-
-   Default: cycles
-
-.. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
-   
-   Comma-separated list of attributes to record for each sample.
-
-   Available entries are:
-     ip             Instruction pointer
-     id             Sample id
-     stream_id      Stream id
-     time           Timestamp
-     tid            Thread id
-     period         Current sampling period
-     cpu            CPU
-     transaction    Type of transaction
-     addr           Data address*
-     weight         Latency*
-     data_src       Encoding for memory resource (L1, L2, DRAM etc.)*
-
-     \*available only for certain events.
-
-   Default: ip,time,tid,cpu
-
-.. envvar:: CALI_LIBPFM_PERIOD
-
-   Sampling period. When set to a value N, a sample will be recorded
-   after every N number of events has occurred.
-
-   Default: 20000000
-
-.. envvar:: CALI_LIBPFM_PRECISE_IP
-
-   Whether to set (precise) for events that support precise ip. Some
-   events require (precise) to be set, for others it is optional (see
-   output of libpfm's showevtinfo tool 
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to determine when it is available or required).
-
-   May be set to either 0, 1, or 2.
-
-   Default: 0
-
-.. envvar:: CALI_LIBPFM_CONFIG1
-
-   Extra event configuration. Some events require an additional
-   parameter to configure behavior, such as latency threshold (see
-   output of libpfm's showevtinfo tool 
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to determine when it is available or required).
-
-   Default: 0
-
-The following example shows how to configure PEBS memory access sampling
-with a latency threshold (available on SandyBridge, IvyBridge,
-Haswell):
-
-.. code-block:: sh
-
-   $ export CALI_LIBPFM_EVENT_LIST=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-   $ export CALI_LIBPFM_PERIOD=100
-   $ export CALI_LIBPFM_PRECISE_IP=2
-   $ export CALI_LIBPFM_CONFIG1=100
-   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
