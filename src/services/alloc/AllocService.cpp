@@ -64,21 +64,26 @@ namespace
     // FIXME: alloc count is possibly(?) not unique in threaded scenarios
     uint64_t alloc_count { 0 };
 
-#define NUM_ALLOC_ATTRS 2
+    Attribute alloc_fn_attr = Attribute::invalid;
     Attribute alloc_label_attr = Attribute::invalid;
+    Attribute alloc_size_attr = Attribute::invalid;
+    Attribute alloc_prev_addr_attr = Attribute::invalid;
+    Attribute alloc_addr_attr = Attribute::invalid;
+    Attribute alloc_num_elems_attr = Attribute::invalid;
+    Attribute alloc_elem_size_attr = Attribute::invalid;
     Attribute alloc_index_attr = Attribute::invalid;
+
+#define NUM_FREE_ATTRS 2
+#define NUM_TRACKED_ALLOC_ATTRS 2
+#define NUM_MALLOC_ATTRS 3
+#define NUM_CALLOC_ATTRS 5
+#define NUM_REALLOC_ATTRS 4
 
     /**
      * malloc
      */
 
-#define NUM_MALLOC_ATTRS 3
-
     void* (*orig_malloc)(size_t size) = NULL;
-
-    Attribute malloc_label_attr = Attribute::invalid;
-    Attribute malloc_size_attr = Attribute::invalid;
-    Attribute malloc_addr_attr = Attribute::invalid;
 
     static cali_id_t malloc_attributes[NUM_MALLOC_ATTRS] = {CALI_INV_ID};
 
@@ -117,13 +122,6 @@ namespace
 
     void* (*orig_calloc)(size_t num, size_t size) = NULL;
 
-#define NUM_CALLOC_ATTRS 4
-
-    Attribute calloc_label_attr = Attribute::invalid;
-    Attribute calloc_num_attr = Attribute::invalid;
-    Attribute calloc_size_attr = Attribute::invalid;
-    Attribute calloc_addr_attr = Attribute::invalid;
-
     static cali_id_t calloc_attributes[NUM_CALLOC_ATTRS] = {CALI_INV_ID};
 
     void*
@@ -144,6 +142,7 @@ namespace
                 data[1] = static_cast<uint64_t>(num);
                 data[2] = static_cast<uint64_t>(size);
                 data[3] = (uint64_t)ret;
+                data[4] = data[1]*data[2]; // num*size
 
                 SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
                 c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
@@ -161,13 +160,6 @@ namespace
      */
 
     void* (*orig_realloc)(void* ptr, size_t size) = NULL;
-
-#define NUM_REALLOC_ATTRS 4
-
-    Attribute realloc_label_attr = Attribute::invalid;
-    Attribute realloc_ptr_attr = Attribute::invalid;
-    Attribute realloc_size_attr = Attribute::invalid;
-    Attribute realloc_addr_attr = Attribute::invalid;
 
     static cali_id_t realloc_attributes[NUM_REALLOC_ATTRS] = {CALI_INV_ID};
 
@@ -208,11 +200,6 @@ namespace
 
     void (*orig_free)(void* ptr) = NULL;
 
-#define NUM_FREE_ATTRS 2
-
-    Attribute free_label_attr = Attribute::invalid;
-    Attribute free_addr_attr = Attribute::invalid;
-
     static cali_id_t free_attributes[NUM_FREE_ATTRS] = {CALI_INV_ID};
 
     void
@@ -242,39 +229,33 @@ namespace
     }
 
     void init_alloc_hooks(Caliper *c) {
-        malloc_label_attr = c->create_attribute("alloc.malloc.label", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        malloc_size_attr = c->create_attribute("alloc.malloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        malloc_addr_attr = c->create_attribute("alloc.malloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
-        malloc_attributes[0] = malloc_label_attr.id();
-        malloc_attributes[1] = malloc_size_attr.id();
-        malloc_attributes[2] = malloc_addr_attr.id();
+        // Global attributes for 
+        alloc_fn_attr = c->create_attribute("alloc.fn", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        alloc_label_attr = c->create_attribute("alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        alloc_size_attr = c->create_attribute("alloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        alloc_prev_addr_attr = c->create_attribute("alloc.prev_address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        alloc_addr_attr = c->create_attribute("alloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        alloc_num_elems_attr = c->create_attribute("alloc.num_elems", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        alloc_elem_size_attr = c->create_attribute("alloc.elem_size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
-        calloc_label_attr = c->create_attribute("alloc.calloc.label", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_size_attr = c->create_attribute("alloc.calloc.num", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_size_attr = c->create_attribute("alloc.calloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        calloc_addr_attr = c->create_attribute("alloc.calloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        malloc_attributes[0] = alloc_label_attr.id();
+        malloc_attributes[1] = alloc_size_attr.id();
+        malloc_attributes[2] = alloc_addr_attr.id();
 
-        calloc_attributes[0] = calloc_label_attr.id();
-        calloc_attributes[1] = calloc_num_attr.id();
-        calloc_attributes[2] = calloc_size_attr.id();
-        calloc_attributes[3] = calloc_addr_attr.id();
+        calloc_attributes[0] = alloc_label_attr.id();
+        calloc_attributes[1] = alloc_num_elems_attr.id();
+        calloc_attributes[2] = alloc_elem_size_attr.id();
+        calloc_attributes[3] = alloc_addr_attr.id();
+        calloc_attributes[4] = alloc_size_attr.id();
 
-        realloc_label_attr = c->create_attribute("alloc.realloc.label", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_ptr_attr = c->create_attribute("alloc.realloc.ptr", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_size_attr = c->create_attribute("alloc.realloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        realloc_addr_attr = c->create_attribute("alloc.realloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        realloc_attributes[0] = alloc_label_attr.id();
+        realloc_attributes[1] = alloc_prev_addr_attr.id();
+        realloc_attributes[2] = alloc_size_attr.id();
+        realloc_attributes[3] = alloc_addr_attr.id();
 
-        realloc_attributes[0] = realloc_label_attr.id();
-        realloc_attributes[1] = realloc_ptr_attr.id();
-        realloc_attributes[2] = realloc_size_attr.id();
-        realloc_attributes[3] = realloc_addr_attr.id();
-
-        free_label_attr = c->create_attribute("alloc.free.label", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        free_addr_attr = c->create_attribute("alloc.free.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-
-        free_attributes[0] = free_label_attr.id();
-        free_attributes[1] = free_addr_attr.id();
+        free_attributes[0] = alloc_label_attr.id();
+        free_attributes[1] = alloc_prev_addr_attr.id();
 
         struct gotcha_binding_t alloc_bindings[] = {
                 { "malloc", (void*) cali_malloc_wrapper, &orig_malloc },
@@ -310,16 +291,16 @@ namespace
                     // TODO:    support tuples? or custom ways to print CALI_TYPE_USR data?
                     //const size_t *index = alloc->index_ND(memory_address);
 
-                    Attribute attr[NUM_ALLOC_ATTRS] = {
+                    Attribute attr[NUM_TRACKED_ALLOC_ATTRS] = {
                             alloc_label_attr,
                             alloc_index_attr
                     };
-                    Variant data[NUM_ALLOC_ATTRS] = {
+                    Variant data[NUM_TRACKED_ALLOC_ATTRS] = {
                             Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
                             Variant(index),
                     };
 
-                    c->make_entrylist(NUM_ALLOC_ATTRS, attr, data, *snapshot);
+                    c->make_entrylist(NUM_TRACKED_ALLOC_ATTRS, attr, data, *snapshot);
                 }
             }
         }
