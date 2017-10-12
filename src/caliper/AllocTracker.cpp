@@ -1,4 +1,7 @@
+#include "caliper/Caliper.h"
 #include "caliper/AllocTracker.h"
+#include "caliper/SnapshotRecord.h"
+#include "caliper/common/Attribute.h"
 
 #include <iostream>
 
@@ -7,9 +10,13 @@ using namespace DataTracker;
 
 size_t Allocation::num_bytes(const size_t elem_size,
                              const std::vector<size_t> &dimensions) {
+    return elem_size*num_elems(dimensions);
+}
+
+size_t Allocation::num_elems(const std::vector<size_t> &dimensions) {
     return std::accumulate(dimensions.begin(),
                            dimensions.end(),
-                           elem_size,
+                           1,
                            std::multiplies<size_t>());
 }
 
@@ -21,7 +28,8 @@ Allocation::Allocation(const std::string &label,
           m_start_address(start_address),
           m_elem_size(elem_size),
           m_dimensions(dimensions),
-          m_bytes(num_bytes(elem_size, dimensions)),
+          m_num_elems(num_elems(dimensions)),
+          m_bytes(elem_size*m_num_elems),
           m_end_address(start_address + m_bytes),
           m_num_dimensions(dimensions.size()),
           m_index_ret(new size_t[m_num_dimensions])
@@ -71,10 +79,10 @@ struct AllocTracker::AllocTree {
         uint64_t key;
 
         AllocNode(Allocation *allocation,
-                             AllocNode *parent,
-                             AllocNode *left,
-                             AllocNode *right,
-                             HAND handedness)
+                  AllocNode *parent,
+                  AllocNode *left,
+                  AllocNode *right,
+                  HAND handedness)
                 : allocation(allocation),
                   parent(parent),
                   left(left),
@@ -294,7 +302,41 @@ void AllocTracker::add_allocation(const std::string &label,
                                   const uint64_t addr,
                                   const size_t elem_size,
                                   const std::vector<size_t> &dimensions) {
-    alloc_tree->insert(new Allocation(label, addr, elem_size, dimensions));
+
+    // Insert into splay tree
+    Allocation *a = new Allocation(label, addr, elem_size, dimensions);
+    AllocTree::AllocNode *newNode = alloc_tree->insert(a);
+
+    Caliper c = Caliper();
+
+    // Record snapshot
+    // cali_id_t attrs[] = {
+    //     alloc_label_attr.id(),
+    //     alloc_addr_attr.id(),
+    //     alloc_elem_size_attr.id(),
+    //     alloc_num_elems_attr.id(),
+    //     alloc_total_size_attr.id()
+    // };
+
+    // FIXME: how to avoid doing this every time? extern alloc_label_attr did not work...
+    cali_id_t attrs[] = {
+        c.get_attribute("alloc.label").id(),
+        c.get_attribute("alloc.address").id(),
+        c.get_attribute("alloc.elem_size").id(),
+        c.get_attribute("alloc.num_elems").id(),
+        c.get_attribute("alloc.total_size").id()
+    };
+
+    Variant data[] = {
+        Variant(CALI_TYPE_STRING, label.data(), label.size()),
+        Variant(a->m_start_address),
+        Variant(a->m_elem_size),
+        Variant(a->m_num_elems),
+        Variant(a->m_bytes)
+    };
+
+    SnapshotRecord trigger_info(5, attrs, data);
+    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 }
 
 bool AllocTracker::remove_allocation(uint64_t address) {

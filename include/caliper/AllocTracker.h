@@ -16,7 +16,8 @@ namespace DataTracker
 class Allocation {
 
 public:
-    static size_t num_bytes(const size_t elem_size,
+    static size_t num_elems(const std::vector<size_t> &dimensions);
+    static size_t num_bytes(const size_t elem_size, 
                             const std::vector<size_t> &dimensions);
 
 public:
@@ -36,6 +37,7 @@ public:
     const std::vector<size_t>   m_dimensions;
     const uint64_t              m_end_address;
     const size_t                m_bytes;
+    const size_t                m_num_elems;
 
     const size_t    m_num_dimensions;
     size_t*         m_index_ret;

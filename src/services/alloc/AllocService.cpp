@@ -70,14 +70,17 @@ namespace
     // FIXME: alloc count is possibly(?) not unique in threaded scenarios
     uint64_t alloc_count { 0 };
 
+    Attribute class_memoryaddress_attr = Attribute::invalid;
+
     Attribute alloc_fn_attr = Attribute::invalid;
-    Attribute alloc_label_attr = Attribute::invalid;
-    Attribute alloc_size_attr = Attribute::invalid;
     Attribute alloc_prev_addr_attr = Attribute::invalid;
-    Attribute alloc_addr_attr = Attribute::invalid;
-    Attribute alloc_num_elems_attr = Attribute::invalid;
-    Attribute alloc_elem_size_attr = Attribute::invalid;
     Attribute alloc_index_attr = Attribute::invalid;
+
+    Attribute alloc_label_attr = Attribute::invalid;
+    Attribute alloc_addr_attr = Attribute::invalid;
+    Attribute alloc_elem_size_attr = Attribute::invalid;
+    Attribute alloc_num_elems_attr = Attribute::invalid;
+    Attribute alloc_total_size_attr = Attribute::invalid;
 
 #define NUM_FREE_ATTRS 2
 #define NUM_TRACKED_ALLOC_ATTRS 2
@@ -230,32 +233,9 @@ namespace
 
     void init_alloc_hooks(Caliper *c) {
 
-        // Global attributes for 
+        // Additional hook-specific attributes
         alloc_fn_attr = c->create_attribute("alloc.fn", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        alloc_label_attr = c->create_attribute("alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        alloc_size_attr = c->create_attribute("alloc.size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
         alloc_prev_addr_attr = c->create_attribute("alloc.prev_address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        alloc_addr_attr = c->create_attribute("alloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        alloc_num_elems_attr = c->create_attribute("alloc.num_elems", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-        alloc_elem_size_attr = c->create_attribute("alloc.elem_size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-
-        malloc_attributes[0] = alloc_label_attr.id();
-        malloc_attributes[1] = alloc_size_attr.id();
-        malloc_attributes[2] = alloc_addr_attr.id();
-
-        calloc_attributes[0] = alloc_label_attr.id();
-        calloc_attributes[1] = alloc_num_elems_attr.id();
-        calloc_attributes[2] = alloc_elem_size_attr.id();
-        calloc_attributes[3] = alloc_addr_attr.id();
-        calloc_attributes[4] = alloc_size_attr.id();
-
-        realloc_attributes[0] = alloc_label_attr.id();
-        realloc_attributes[1] = alloc_prev_addr_attr.id();
-        realloc_attributes[2] = alloc_size_attr.id();
-        realloc_attributes[3] = alloc_addr_attr.id();
-
-        free_attributes[0] = alloc_label_attr.id();
-        free_attributes[1] = alloc_prev_addr_attr.id();
 
         struct gotcha_binding_t alloc_bindings[] = {
                 { "malloc", (void*) cali_malloc_wrapper, &orig_malloc },
@@ -310,11 +290,38 @@ namespace
 
     static void post_init_cb(Caliper *c) {
 
+        class_memoryaddress_attr = c->get_attribute("class.memoryaddress");
+
+        alloc_label_attr = c->get_attribute("alloc.label");
+        alloc_addr_attr = c->get_attribute("alloc.address");
+        alloc_elem_size_attr = c->get_attribute("alloc.elem_size");
+        alloc_num_elems_attr = c->get_attribute("alloc.num_elems");
+        alloc_total_size_attr = c->get_attribute("alloc.total_size");
+
+        // Set per-hook attributes
+        malloc_attributes[0] = alloc_label_attr.id();
+        malloc_attributes[1] = alloc_total_size_attr.id();
+        malloc_attributes[2] = alloc_addr_attr.id();
+
+        calloc_attributes[0] = alloc_label_attr.id();
+        calloc_attributes[1] = alloc_num_elems_attr.id();
+        calloc_attributes[2] = alloc_elem_size_attr.id();
+        calloc_attributes[3] = alloc_addr_attr.id();
+        calloc_attributes[4] = alloc_total_size_attr.id();
+
+        realloc_attributes[0] = alloc_label_attr.id();
+        realloc_attributes[1] = alloc_prev_addr_attr.id();
+        realloc_attributes[2] = alloc_total_size_attr.id();
+        realloc_attributes[3] = alloc_addr_attr.id();
+
+        free_attributes[0] = alloc_label_attr.id();
+        free_attributes[1] = alloc_prev_addr_attr.id();
+
         // TODO: make an alloc.id per memoryaddress attribute, e.g. alloc.label#libpfm.address
         alloc_label_attr = c->create_attribute("alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         alloc_index_attr = c->create_attribute("alloc.index", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
-        memory_address_attrs = c->find_attributes_with(c->get_attribute("class.memoryaddress"));
+        memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
     }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
