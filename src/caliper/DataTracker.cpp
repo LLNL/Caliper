@@ -49,11 +49,11 @@ void* Allocate(const std::string &label,
                const std::vector<size_t> &dimensions) {
 
     // FIXME: the num_bytes calculation happens twice here...
-    size_t total_size = Allocation::num_bytes(elem_size, dimensions);
+    size_t total_size = Allocation::num_bytes(elem_size, (size_t*)dimensions.data(), (size_t)dimensions.size());
 
     void* ret = malloc(total_size);
 
-    g_alloc_tracker.add_allocation(label, (uint64_t)ret, elem_size, dimensions);
+    g_alloc_tracker.add_allocation(label, (uint64_t)ret, elem_size, (size_t*)dimensions.data(), (size_t)dimensions.size());
 
     return ret;
 }
@@ -61,9 +61,9 @@ void* Allocate(const std::string &label,
 void TrackAllocation(void *ptr,
                      const std::string &label) {
 
-    size_t size = malloc_usable_size(ptr);
-    if (size > 0)
-        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, (size_t)1, {size});
+    size_t size[] = {malloc_usable_size(ptr)};
+    if (size[0] > 0)
+        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, (size_t)1, size, (size_t)1);
     else
         std::cerr << "Invalid allocation to track!" << std::endl;
 }
@@ -74,8 +74,8 @@ void TrackAllocation(void *ptr,
                      const std::vector<size_t> &dimensions) {
 
     size_t size = malloc_usable_size(ptr);
-    if (size >= Allocation::num_bytes(elem_size, dimensions))
-        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions);
+    if (size >= Allocation::num_bytes(elem_size, (size_t*)dimensions.data(), (size_t)dimensions.size()))
+        g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions.data(), (size_t)dimensions.size());
     else
         std::cerr << "Invalid allocation tracking information!" << std::endl;
 }

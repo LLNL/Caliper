@@ -3,37 +3,51 @@
 #include "caliper/SnapshotRecord.h"
 #include "caliper/common/Attribute.h"
 
+#include "caliper/MemoryPool.h"
+
 #include <iostream>
 
 using namespace cali;
 using namespace DataTracker;
 
+extern cali_id_t cali_alloc_label_attr_id;
+extern cali_id_t cali_alloc_addr_attr_id;
+extern cali_id_t cali_alloc_elem_size_attr_id;
+extern cali_id_t cali_alloc_num_elems_attr_id;
+extern cali_id_t cali_alloc_total_size_attr_id;
+
 size_t Allocation::num_bytes(const size_t elem_size,
-                             const std::vector<size_t> &dimensions) {
-    return elem_size*num_elems(dimensions);
+                             const size_t dimensions[],
+                             const size_t num_dimensions) {
+    return elem_size*num_elems(dimensions, num_dimensions);
 }
 
-size_t Allocation::num_elems(const std::vector<size_t> &dimensions) {
-    return std::accumulate(dimensions.begin(),
-                           dimensions.end(),
-                           1,
-                           std::multiplies<size_t>());
+size_t Allocation::num_elems(const size_t dimensions[],
+                             const size_t num_dimensions) {
+    size_t ret = 1;
+    for(int i=0; i<num_dimensions; i++) 
+        ret *= dimensions[i];
+    return ret;
 }
 
 Allocation::Allocation(const std::string &label,
                        const uint64_t start_address,
                        const size_t elem_size,
-                       const std::vector<size_t> &dimensions)
+                       const size_t dimensions[],
+                       const size_t num_dimensions)
         : m_label(label),
           m_start_address(start_address),
           m_elem_size(elem_size),
-          m_dimensions(dimensions),
-          m_num_elems(num_elems(dimensions)),
-          m_bytes(elem_size*m_num_elems),
+          m_dimensions(new size_t[num_dimensions]),
+          m_num_elems(num_elems(dimensions, num_dimensions)),
+          m_bytes(num_bytes(elem_size, dimensions, num_dimensions)),
           m_end_address(start_address + m_bytes),
-          m_num_dimensions(dimensions.size()),
-          m_index_ret(new size_t[m_num_dimensions])
-{ }
+          m_num_dimensions(num_dimensions),
+          m_index_ret(new size_t[num_dimensions])
+{ 
+    for(int i=0; i<num_dimensions; i++) 
+        m_dimensions[i] = dimensions[i];
+}
 
 Allocation::~Allocation() {
     delete m_index_ret;
@@ -298,37 +312,29 @@ AllocTracker::AllocTracker()
     : alloc_tree(new AllocTree)
 { }
 
-void AllocTracker::add_allocation(const std::string &label,
-                                  const uint64_t addr,
-                                  const size_t elem_size,
-                                  const std::vector<size_t> &dimensions) {
-
+void 
+AllocTracker::add_allocation(const std::string &label,
+                             const uint64_t addr,
+                             const size_t elem_size,
+                             const size_t dimensions[],
+                             const size_t num_dimensions) {
     // Insert into splay tree
-    Allocation *a = new Allocation(label, addr, elem_size, dimensions);
+    Allocation *a = new Allocation(label, addr, elem_size, dimensions, num_dimensions);
     AllocTree::AllocNode *newNode = alloc_tree->insert(a);
 
     Caliper c = Caliper();
 
     // Record snapshot
-    // cali_id_t attrs[] = {
-    //     alloc_label_attr.id(),
-    //     alloc_addr_attr.id(),
-    //     alloc_elem_size_attr.id(),
-    //     alloc_num_elems_attr.id(),
-    //     alloc_total_size_attr.id()
-    // };
-
-    // FIXME: how to avoid doing this every time? extern alloc_label_attr did not work...
     cali_id_t attrs[] = {
-        c.get_attribute("alloc.label").id(),
-        c.get_attribute("alloc.address").id(),
-        c.get_attribute("alloc.elem_size").id(),
-        c.get_attribute("alloc.num_elems").id(),
-        c.get_attribute("alloc.total_size").id()
+        cali_alloc_label_attr_id,
+        cali_alloc_addr_attr_id,
+        cali_alloc_elem_size_attr_id,
+        cali_alloc_num_elems_attr_id,
+        cali_alloc_total_size_attr_id
     };
-
+    
     Variant data[] = {
-        Variant(CALI_TYPE_STRING, label.data(), label.size()),
+        Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size()),
         Variant(a->m_start_address),
         Variant(a->m_elem_size),
         Variant(a->m_num_elems),

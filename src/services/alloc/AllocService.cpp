@@ -109,7 +109,9 @@ namespace
             hook_enabled = false;
             if (c) {
                 if (track_all_allocs) {
-                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                    size_t dims[] = {size};
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), 
+                            (uint64_t)ret, (size_t)1, dims, (size_t)1);
                 }
 
                 if (record_all_allocs) {
@@ -142,7 +144,8 @@ namespace
             hook_enabled = false;
             if (c) {
                 if (track_all_allocs) {
-                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, size, {num});
+                    size_t dims[] = {num};
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, size, dims, 1);
                 }
 
                 if (record_all_allocs) {
@@ -179,7 +182,8 @@ namespace
                 bool removed = DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
 
                 if (removed || track_all_allocs) {
-                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, {size});
+                    size_t dims[] = {size};
+                    DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), (uint64_t)ret, (size_t)1, dims, 1);
                 }
 
                 if (record_all_allocs) {
@@ -247,17 +251,21 @@ namespace
         gotcha_wrap(alloc_bindings, sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), "Caliper");
     }
 
-    std::vector<Attribute> memory_address_attrs;
+    struct alloc_attrs {
+        Attribute memoryaddress_attr;
+        Attribute alloc_label_attr;
+        Attribute alloc_index_attr;
+    };
+
+    std::vector<alloc_attrs> memoryaddress_attrs;
 
     static void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
         bool prev_hook_enabled = hook_enabled;
         hook_enabled = false;
 
-        if (!memory_address_attrs.empty()) {
+        for (auto attrs : memoryaddress_attrs) {
 
-            // TODO: do this for every memoryaddress attribute
-            Attribute attr = memory_address_attrs.front();
-            Entry e = snapshot->get(attr);
+            Entry e = snapshot->get(attrs.memoryaddress_attr);
 
             if (!e.is_empty()) {
 
@@ -272,12 +280,12 @@ namespace
                     //const size_t *index = alloc->index_ND(memory_address);
 
                     Attribute attr[NUM_TRACKED_ALLOC_ATTRS] = {
-                            alloc_label_attr,
-                            alloc_index_attr
+                        attrs.alloc_label_attr,
+                        attrs.alloc_index_attr
                     };
                     Variant data[NUM_TRACKED_ALLOC_ATTRS] = {
-                            Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
-                            Variant(index),
+                        Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
+                        Variant(index),
                     };
 
                     c->make_entrylist(NUM_TRACKED_ALLOC_ATTRS, attr, data, *snapshot);
@@ -317,11 +325,17 @@ namespace
         free_attributes[0] = alloc_label_attr.id();
         free_attributes[1] = alloc_prev_addr_attr.id();
 
-        // TODO: make an alloc.id per memoryaddress attribute, e.g. alloc.label#libpfm.address
-        alloc_label_attr = c->create_attribute("alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        alloc_index_attr = c->create_attribute("alloc.index", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+        std::vector<Attribute> memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
 
-        memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
+        for (auto attr : memory_address_attrs) {
+            struct alloc_attrs attrs = {
+                attr,
+                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
+            };
+            memoryaddress_attrs.push_back(attrs);
+        }
+
     }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
