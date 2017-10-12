@@ -10,6 +10,11 @@
 using namespace cali;
 using namespace DataTracker;
 
+namespace cali
+{
+extern Attribute alloc_label_attr;
+}
+
 extern cali_id_t cali_alloc_label_attr_id;
 extern cali_id_t cali_alloc_addr_attr_id;
 extern cali_id_t cali_alloc_elem_size_attr_id;
@@ -326,7 +331,6 @@ AllocTracker::add_allocation(const std::string &label,
 
     // Record snapshot
     cali_id_t attrs[] = {
-        cali_alloc_label_attr_id,
         cali_alloc_addr_attr_id,
         cali_alloc_elem_size_attr_id,
         cali_alloc_num_elems_attr_id,
@@ -334,14 +338,16 @@ AllocTracker::add_allocation(const std::string &label,
     };
     
     Variant data[] = {
-        Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size()),
         Variant(a->m_start_address),
         Variant(a->m_elem_size),
         Variant(a->m_num_elems),
         Variant(a->m_bytes)
     };
 
-    SnapshotRecord trigger_info(5, attrs, data);
+    Node *n = c.make_tree_entry(alloc_label_attr,
+        Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size()));
+
+    SnapshotRecord trigger_info(1, &n, 4, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 }
 

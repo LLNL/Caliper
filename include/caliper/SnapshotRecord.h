@@ -98,6 +98,14 @@ public:
           m_capacity { N, N }
         { }
 
+    SnapshotRecord(size_t n_nodes, cali::Node **nodes, size_t n, cali_id_t* attr, Variant* data)
+        : m_node_array { nodes },
+          m_attr_array { attr },
+          m_data_array { data },
+          m_sizes    { n_nodes, n },
+          m_capacity { n_nodes, n }
+        { } 
+
     SnapshotRecord(size_t n, cali_id_t* attr, Variant* data)
         : m_node_array { 0 },
           m_attr_array { attr },
