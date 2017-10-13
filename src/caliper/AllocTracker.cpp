@@ -5,6 +5,7 @@
 
 #include "caliper/MemoryPool.h"
 
+#include <mutex>
 #include <iostream>
 
 using namespace cali;
@@ -81,6 +82,9 @@ const size_t * Allocation::index_ND(uint64_t address) {
 }
 
 struct AllocTracker::AllocTree {
+
+    std::mutex process_mutex;
+    static __thread std::mutex thread_mutex;
 
     enum HAND {
         LEFT = -1,
@@ -245,6 +249,14 @@ struct AllocTracker::AllocTree {
     }
 
     AllocNode* insert(Allocation *allocation) {
+
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(!thread_lock.owns_lock()){
+            return nullptr;
+        }
+
+        std::unique_lock<std::mutex> process_lock(process_mutex);
+
         if (root == nullptr) {
             root = new AllocNode(allocation, nullptr, nullptr, nullptr, NA);
         }
@@ -253,10 +265,19 @@ struct AllocTracker::AllocTree {
             splay(newNode);
         }
         alloc_map[root->key] = root;
+
         return root;
     }
 
     bool remove(uint64_t start_address) {
+
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(!thread_lock.owns_lock()){
+            return nullptr;
+        }
+
+        std::unique_lock<std::mutex> process_lock(process_mutex);
+
         if (root == nullptr) {
             // Nothing to do here
         }
@@ -298,6 +319,14 @@ struct AllocTracker::AllocTree {
     }
 
     AllocNode* find_allocation_containing(uint64_t address) {
+
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(!thread_lock.owns_lock()){
+            return nullptr;
+        }
+
+        std::unique_lock<std::mutex> process_lock(process_mutex);
+
         if (root == nullptr) {
             // Nothing to find here
             return nullptr;
@@ -312,6 +341,8 @@ struct AllocTracker::AllocTree {
         return nullptr;
     }
 };
+
+__thread std::mutex AllocTracker::AllocTree::thread_mutex;
 
 AllocTracker::AllocTracker() 
     : alloc_tree(new AllocTree)

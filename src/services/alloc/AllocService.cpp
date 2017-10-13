@@ -56,11 +56,11 @@ namespace
     ConfigSet config;
 
     const ConfigSet::Entry s_configdata[] = {
-            { "record_all_allocs", CALI_TYPE_BOOL, "false",
+            { "record_all", CALI_TYPE_BOOL, "false",
               "Record all allocations made by malloc/calloc/realloc.",
               "Record all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
             },
-            { "track_all_allocs", CALI_TYPE_BOOL, "false",
+            { "track_all", CALI_TYPE_BOOL, "false",
               "Track all allocations made by malloc/calloc/realloc.",
               "Track all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
             },
@@ -347,7 +347,7 @@ namespace
     void
     allocservice_initialize(Caliper* c)
     {
-        config = RuntimeConfig::init("callpath", s_configdata);
+        config = RuntimeConfig::init("alloc", s_configdata);
 
         record_all_allocs = config.get("record_all").to_bool();
         track_all_allocs = config.get("track_all").to_bool();
