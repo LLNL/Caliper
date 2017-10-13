@@ -43,13 +43,17 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include <atomic>
+#include <cstring>
+#include <mutex>
+
 #include <gotcha/gotcha.h>
 
 using namespace cali;
 
 namespace
 {
-    bool hook_enabled { true };
+    __thread std::mutex thread_mutex;
     bool record_all_allocs { false };
     bool track_all_allocs { false };
 
@@ -67,8 +71,15 @@ namespace
             ConfigSet::Terminator
     };
 
-    // FIXME: alloc count is possibly(?) not unique in threaded scenarios
-    uint64_t alloc_count { 0 };
+    struct alloc_attrs {
+        Attribute memoryaddress_attr;
+        Attribute alloc_label_attr;
+        Attribute alloc_index_attr;
+    };
+
+    std::vector<alloc_attrs> memoryaddress_attrs;
+
+    std::atomic<uint64_t> alloc_count { 0 };
 
     Attribute class_memoryaddress_attr = Attribute::invalid;
 
@@ -82,31 +93,54 @@ namespace
     Attribute alloc_num_elems_attr = Attribute::invalid;
     Attribute alloc_total_size_attr = Attribute::invalid;
 
-#define NUM_FREE_ATTRS 2
 #define NUM_TRACKED_ALLOC_ATTRS 2
-#define NUM_MALLOC_ATTRS 3
-#define NUM_CALLOC_ATTRS 5
-#define NUM_REALLOC_ATTRS 4
+
+#define NUM_MALLOC_ATTRS 4
+#define NUM_CALLOC_ATTRS 6
+#define NUM_REALLOC_ATTRS 5
+#define NUM_FREE_ATTRS 3
 
     void* (*orig_malloc)(size_t size) = nullptr;
     void* (*orig_calloc)(size_t num, size_t size) = nullptr;
     void* (*orig_realloc)(void* ptr, size_t size) = nullptr;
     void  (*orig_free)(void* ptr) = nullptr;
 
+    void* cali_malloc_wrapper(size_t size);
+    void* cali_calloc_wrapper(size_t num, size_t size);
+    void* cali_realloc_wrapper(void *ptr, size_t size);
+    void cali_free_wrapper(void *ptr);
+
+    const char *malloc_str = "malloc";
+    const char *calloc_str = "calloc";
+    const char *realloc_str = "realloc";
+    const char *free_str = "free";
+
+    struct gotcha_binding_t alloc_bindings[] = {
+            { malloc_str,   (void*) cali_malloc_wrapper,    &orig_malloc },
+            { calloc_str,   (void*) cali_calloc_wrapper,    &orig_calloc },
+            { realloc_str,  (void*) cali_realloc_wrapper,   &orig_realloc },
+            { free_str,     (void*) cali_free_wrapper,      &orig_free }
+    };
+
+    Variant malloc_str_variant = Variant(CALI_TYPE_STRING, malloc_str, strlen(malloc_str));
+    Variant calloc_str_variant = Variant(CALI_TYPE_STRING, calloc_str, strlen(calloc_str));
+    Variant realloc_str_variant = Variant(CALI_TYPE_STRING, realloc_str, strlen(realloc_str));
+    Variant free_str_variant = Variant(CALI_TYPE_STRING, free_str, strlen(free_str));
+
     static cali_id_t malloc_attributes[NUM_MALLOC_ATTRS] = {CALI_INV_ID};
     static cali_id_t calloc_attributes[NUM_CALLOC_ATTRS] = {CALI_INV_ID};
     static cali_id_t realloc_attributes[NUM_REALLOC_ATTRS] = {CALI_INV_ID};
     static cali_id_t free_attributes[NUM_FREE_ATTRS] = {CALI_INV_ID};
 
-    void*
-    cali_malloc_wrapper(size_t size)
+    void* cali_malloc_wrapper(size_t size)
     {
-        Caliper c = Caliper::sigsafe_instance();
-
         void *ret = (*orig_malloc)(size);
 
-        if (hook_enabled) {
-            hook_enabled = false;
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(thread_lock.owns_lock()) {
+
+            Caliper c = Caliper::sigsafe_instance();
+
             if (c) {
                 if (track_all_allocs) {
                     size_t dims[] = {size};
@@ -117,9 +151,10 @@ namespace
                 if (record_all_allocs) {
                     Variant data[NUM_MALLOC_ATTRS];
 
-                    data[0] = alloc_count;
-                    data[1] = static_cast<uint64_t>(size);
-                    data[2] = (uint64_t)ret;
+                    data[0] = malloc_str_variant;
+                    data[1] = (uint64_t)alloc_count;
+                    data[2] = static_cast<uint64_t>(size);
+                    data[3] = (uint64_t)ret;
 
                     SnapshotRecord trigger_info(NUM_MALLOC_ATTRS, malloc_attributes, data);
                     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
@@ -127,21 +162,20 @@ namespace
 
                 alloc_count++;
             }
-            hook_enabled = true;
         }
 
         return ret;
     }
 
-    void*
-    cali_calloc_wrapper(size_t num, size_t size)
+    void* cali_calloc_wrapper(size_t num, size_t size)
     {
-        Caliper c = Caliper::sigsafe_instance();
-
         void *ret = (*orig_calloc)(num, size);
 
-        if (hook_enabled) {
-            hook_enabled = false;
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(thread_lock.owns_lock()) {
+
+            Caliper c = Caliper::sigsafe_instance();
+
             if (c) {
                 if (track_all_allocs) {
                     size_t dims[] = {num};
@@ -151,11 +185,12 @@ namespace
                 if (record_all_allocs) {
                     Variant data[NUM_CALLOC_ATTRS];
 
-                    data[0] = alloc_count;
-                    data[1] = static_cast<uint64_t>(num);
-                    data[2] = static_cast<uint64_t>(size);
-                    data[3] = (uint64_t)ret;
-                    data[4] = data[1]*data[2]; // num*size
+                    data[0] = calloc_str_variant;
+                    data[1] = (uint64_t)alloc_count;
+                    data[2] = static_cast<uint64_t>(num);
+                    data[3] = static_cast<uint64_t>(size);
+                    data[4] = (uint64_t)ret;
+                    data[5] = data[1]*data[2]; // num*size
 
                     SnapshotRecord trigger_info(NUM_CALLOC_ATTRS, calloc_attributes, data);
                     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
@@ -163,21 +198,20 @@ namespace
 
                 alloc_count++;
             }
-            hook_enabled = true;
         }
 
         return ret;
     }
 
-    void*
-    cali_realloc_wrapper(void *ptr, size_t size)
+    void* cali_realloc_wrapper(void *ptr, size_t size)
     {
-        Caliper c = Caliper::sigsafe_instance();
-
         void *ret = (*orig_realloc)(ptr, size);
 
-        if (hook_enabled) {
-            hook_enabled = false;
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(thread_lock.owns_lock()) {
+
+            Caliper c = Caliper::sigsafe_instance();
+
             if (c) {
                 bool removed = DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
 
@@ -189,10 +223,11 @@ namespace
                 if (record_all_allocs) {
                     Variant data[NUM_REALLOC_ATTRS];
 
-                    data[0] = alloc_count;
-                    data[1] = ((uint64_t)ptr);
-                    data[2] = static_cast<uint64_t>(size);
-                    data[3] = (uint64_t)ret;
+                    data[0] = realloc_str_variant;
+                    data[1] = (uint64_t)alloc_count;
+                    data[2] = ((uint64_t)ptr);
+                    data[3] = static_cast<uint64_t>(size);
+                    data[4] = (uint64_t)ret;
 
                     SnapshotRecord trigger_info(NUM_REALLOC_ATTRS, realloc_attributes, data);
                     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
@@ -200,21 +235,20 @@ namespace
 
                 alloc_count++;
             }
-            hook_enabled = true;
         }
 
         return ret;
     }
 
-    void
-    cali_free_wrapper(void *ptr)
+    void cali_free_wrapper(void *ptr)
     {
-        Caliper c = Caliper::sigsafe_instance();
-
         (*orig_free)(ptr);
 
-        if (hook_enabled) {
-            hook_enabled = false;
+        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
+        if(thread_lock.owns_lock()) {
+
+            Caliper c = Caliper::sigsafe_instance();
+
             if (c) {
                 // Always check the allocation tracker for frees
                 DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr);
@@ -222,8 +256,9 @@ namespace
                 if (record_all_allocs) {
                     Variant data[NUM_FREE_ATTRS];
 
-                    data[0] = alloc_count;
-                    data[1] = ((uint64_t)ptr);
+                    data[0] = free_str_variant;
+                    data[1] = (uint64_t)alloc_count;
+                    data[2] = ((uint64_t)ptr);
 
                     SnapshotRecord trigger_info(NUM_FREE_ATTRS, free_attributes, data);
                     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
@@ -231,38 +266,16 @@ namespace
 
                 alloc_count++;
             }
-            hook_enabled = true;
         }
     }
 
     void init_alloc_hooks(Caliper *c) {
-
-        // Additional hook-specific attributes
-        alloc_fn_attr = c->create_attribute("alloc.fn", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        alloc_prev_addr_attr = c->create_attribute("alloc.prev_address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
-
-        struct gotcha_binding_t alloc_bindings[] = {
-                { "malloc", (void*) cali_malloc_wrapper, &orig_malloc },
-                { "calloc", (void*) cali_calloc_wrapper, &orig_calloc },
-                { "realloc", (void*) cali_realloc_wrapper, &orig_realloc },
-                { "free", (void*) cali_free_wrapper, &orig_free }
-        };
-
-        gotcha_wrap(alloc_bindings, sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), "Caliper");
+        gotcha_wrap(alloc_bindings, 
+                    sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), 
+                    "Caliper AllocService Wrap");
     }
 
-    struct alloc_attrs {
-        Attribute memoryaddress_attr;
-        Attribute alloc_label_attr;
-        Attribute alloc_index_attr;
-    };
-
-    std::vector<alloc_attrs> memoryaddress_attrs;
-
     static void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
-        bool prev_hook_enabled = hook_enabled;
-        hook_enabled = false;
-
         for (auto attrs : memoryaddress_attrs) {
 
             Entry e = snapshot->get(attrs.memoryaddress_attr);
@@ -292,8 +305,6 @@ namespace
                 }
             }
         }
-
-        hook_enabled = prev_hook_enabled;
     }
 
     static void post_init_cb(Caliper *c) {
@@ -306,24 +317,32 @@ namespace
         alloc_num_elems_attr = c->get_attribute("alloc.num_elems");
         alloc_total_size_attr = c->get_attribute("alloc.total_size");
 
+        // Additional hook-specific attributes
+        alloc_fn_attr = c->create_attribute("alloc.fn", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        alloc_prev_addr_attr = c->create_attribute("alloc.prev_address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+
         // Set per-hook attributes
-        malloc_attributes[0] = alloc_label_attr.id();
-        malloc_attributes[1] = alloc_total_size_attr.id();
-        malloc_attributes[2] = alloc_addr_attr.id();
+        malloc_attributes[0] = alloc_fn_attr.id();
+        malloc_attributes[1] = alloc_label_attr.id();
+        malloc_attributes[2] = alloc_total_size_attr.id();
+        malloc_attributes[3] = alloc_addr_attr.id();
 
-        calloc_attributes[0] = alloc_label_attr.id();
-        calloc_attributes[1] = alloc_num_elems_attr.id();
-        calloc_attributes[2] = alloc_elem_size_attr.id();
-        calloc_attributes[3] = alloc_addr_attr.id();
-        calloc_attributes[4] = alloc_total_size_attr.id();
+        calloc_attributes[0] = alloc_fn_attr.id();
+        calloc_attributes[1] = alloc_label_attr.id();
+        calloc_attributes[2] = alloc_num_elems_attr.id();
+        calloc_attributes[3] = alloc_elem_size_attr.id();
+        calloc_attributes[4] = alloc_addr_attr.id();
+        calloc_attributes[5] = alloc_total_size_attr.id();
 
-        realloc_attributes[0] = alloc_label_attr.id();
-        realloc_attributes[1] = alloc_prev_addr_attr.id();
-        realloc_attributes[2] = alloc_total_size_attr.id();
-        realloc_attributes[3] = alloc_addr_attr.id();
+        realloc_attributes[0] = alloc_fn_attr.id();
+        realloc_attributes[1] = alloc_label_attr.id();
+        realloc_attributes[2] = alloc_prev_addr_attr.id();
+        realloc_attributes[3] = alloc_total_size_attr.id();
+        realloc_attributes[4] = alloc_addr_attr.id();
 
-        free_attributes[0] = alloc_label_attr.id();
-        free_attributes[1] = alloc_prev_addr_attr.id();
+        free_attributes[0] = alloc_fn_attr.id();
+        free_attributes[1] = alloc_label_attr.id();
+        free_attributes[2] = alloc_prev_addr_attr.id();
 
         std::vector<Attribute> memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
 
@@ -339,8 +358,7 @@ namespace
     }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        // Disable the hook for Caliper flush
-        hook_enabled = false;
+        thread_mutex.lock();
     }
 
     // Initialization routine.
