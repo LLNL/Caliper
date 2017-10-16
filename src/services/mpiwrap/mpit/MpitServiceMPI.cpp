@@ -50,30 +50,37 @@ using namespace std;
 
 namespace cali
 {
-    vector<cali_id_t> mpit_pvar_attr;
-    vector<cali_id_t> watermark_changed_attr;
-    vector<cali_id_t> watermark_change_attr;
+    // vector<cali_id_t> mpit_pvar_attr;
+    // vector<cali_id_t> watermark_changed_attr;
+    // vector<cali_id_t> watermark_change_attr;
 }
 
 namespace
 {
-    void 	 *buffer;
-	
-    vector<vector<MPI_T_pvar_handle> > pvar_handle;
-    vector<vector<int> >pvar_count;
-    vector<int> pvar_continuousness;
-    vector<int> pvar_readonlyness;
-    vector<bool> pvar_is_aggregatable;
-    vector<MPI_Datatype> pvar_type;
-    vector<int> pvar_class;
-    vector<int> pvar_bind;
-    vector<string> pvar_names;
-    MPI_T_pvar_session pvar_session;
+    struct PvarInfo {
+        std::vector<MPI_T_pvar_handle> handles;
+        std::vector<int>               counts;
+        int          index;
+        int          continuous;
+        int          readonly;
+        MPI_Datatype datatype;
+        int          pvarclass;
+        int          bind;
+        int          verbosity;
+        std::string  name;
+        std::string  desc;
+        int          atomic;
+        bool         aggregatable;
+        Attribute    attr;
+    };
+
+    std::vector<PvarInfo> pvars;
+    MPI_T_pvar_session    pvar_session;
 
     //Arrays storing last values of PVARs. This is a hack. Only in place because current MPI implementations do not
     //support resetting of PVARs. So we store last value of pvars and subtract it
-    vector<array <unsigned long long int, MAX_COUNT> > last_value_unsigned_long;
-    vector<array <double, MAX_COUNT> > last_value_double;
+    // vector<array <unsigned long long int, MAX_COUNT> > last_value_unsigned_long;
+    // vector<array <double, MAX_COUNT> > last_value_double;
 
     ConfigSet        config;
 
@@ -84,7 +91,20 @@ namespace
     int num_pvars = 0;
 
     void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+        for (const PvarInfo& pvi : pvars) {
+            if (pvi.attr == Attribute::invalid)
+                continue;
 
+            if (pvi.handles.size() > 0 && pvi.counts.size() > 1 && pvi.counts[0] == 1) {
+                // read only PVAR's with count one for now
+                unsigned char buf[64];
+                MPI_T_pvar_read(pvar_session, pvi.handles[0], buf);
+
+                snapshot->append(pvi.attr.id(), Variant(pvi.attr.type(), buf, 8));
+            }
+        }
+        
+        /*
         int size, watermark_changed;
         unsigned long long int temp_unsigned, temp_unsigned_array[MAX_COUNT] = {0};
         double temp_double, temp_double_array[MAX_COUNT] = {0.0};
@@ -238,100 +258,81 @@ namespace
                 }
             }
         }
+        */
     }
 
-    void create_attribute_for_pvar(Caliper *c, int index, const string& name, MPI_Datatype datatype) {
-        Attribute attr;
-        Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
-        Variant   v_true(true);
-        Variant   v_false(false);
-
-        if((datatype == MPI_COUNT) || (datatype == MPI_UNSIGNED) || (datatype == MPI_UNSIGNED_LONG) || (datatype == MPI_UNSIGNED_LONG_LONG))
-        {
-            if(pvar_is_aggregatable[index]) {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
-            } else {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_UINT,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
-            }
-        }
-        else if(datatype == MPI_INT)
-        {
-            if(pvar_is_aggregatable[index]) {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
-            } else {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_INT,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
-            }
-        }
-        else if(datatype == MPI_CHAR)
-        {
-            if(pvar_is_aggregatable[index]) {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
-            } else {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_STRING,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
-            }
-        }
-        else if(datatype == MPI_DOUBLE)
-        {
-            if(pvar_is_aggregatable[index]) {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_true);
-            } else {
-                attr = c->create_attribute(string("mpit.")+name, CALI_TYPE_DOUBLE,
-                                           CALI_ATTR_ASVALUE      | 
-                                           CALI_ATTR_SCOPE_PROCESS | 
-                                           CALI_ATTR_SKIP_EVENTS, 1, &aggr_class_attr, &v_false);
-            }
-        }
-
-        mpit_pvar_attr[index] = attr.id();
-        Log(3).stream() << "Attribute created with name: " << attr.name() << endl;
-    }
-
-    bool is_pvar_class_aggregatable(int index, const char* pvar_name, Caliper *c) {
-        Attribute attr;
+    void create_attribute_for_pvar(Caliper *c, PvarInfo& pvi) {
         Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
         Variant   v_true(true);
 
-        /*General idea to determine aggretablitity of a PVAR: Any PVAR that represents an internal MPI state is by default not aggregatable
-         * A PVAR is aggregatable if it "makes sense" to apply one or more of these operators to it: COUNT, SUM, MIN, MAX, AVG. In the future, more operators may be considered.*/
+        cali_attr_type type = CALI_TYPE_INV;
 
-        switch(pvar_class[index]) {
-        case MPI_T_PVAR_CLASS_STATE:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_STATE" << endl;
-            return false; //This class is better viewed along with "time" as another dimension - a.k.a. a trace
+        switch (pvi.datatype) {
+        case MPI_COUNT:
+        case MPI_UNSIGNED:
+        case MPI_UNSIGNED_LONG:
+        case MPI_UNSIGNED_LONG_LONG:
+            type = CALI_TYPE_UINT;
             break;
-        case MPI_T_PVAR_CLASS_LEVEL:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_LEVEL" << endl;
-            return true; //AVG operator can be applied
+        case MPI_INT:
+            type = CALI_TYPE_INT;
             break;
-        case MPI_T_PVAR_CLASS_SIZE:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_SIZE" << endl;
-            return false;
+        case MPI_CHAR:
+            type = CALI_TYPE_STRING;
             break;
-        case MPI_T_PVAR_CLASS_PERCENTAGE:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_PERCENTAGE" << endl;
-            return true; //AVG operator can be applied
+        case MPI_DOUBLE:
+            type = CALI_TYPE_DOUBLE;
             break;
+        default:
+            break;
+        }
+
+        if (type != CALI_TYPE_INV) {
+            pvi.attr = 
+                c->create_attribute(string("mpit.")+pvi.name, CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE       | 
+                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    (pvi.aggregatable ? 1 : 0), &aggr_class_attr, &v_true);
+        } else {
+            Log(1).stream() << "mpit: Cannot create attribute for PVAR with index " << pvi.index
+                            << " (" << pvi.name << ")" << std::endl;
+        }
+    }
+
+    bool is_pvar_class_aggregatable(int index, int pvarclass) {
+        // General idea to determine aggretablitity of a PVAR: 
+        // Any PVAR that represents an internal MPI state is by default not aggregatable
+        // A PVAR is aggregatable if it "makes sense" to apply one or more of these operators to it: 
+        //   COUNT, SUM, MIN, MAX, AVG. In the future, more operators may be considered.
+
+        const struct aggregateable_t {
+            int pvarclass; bool state;
+        } aggregateable_table[] = {
+            { MPI_T_PVAR_CLASS_STATE,         false },
+            { MPI_T_PVAR_CLASS_LEVEL,         true  },
+            { MPI_T_PVAR_CLASS_SIZE,          false },
+            { MPI_T_PVAR_CLASS_PERCENTAGE,    true  },
+            { MPI_T_PVAR_CLASS_HIGHWATERMARK, false },
+            { MPI_T_PVAR_CLASS_LOWWATERMARK,  false },
+            { MPI_T_PVAR_CLASS_COUNTER,       true  },
+            { MPI_T_PVAR_CLASS_AGGREGATE,     true  },
+            { MPI_T_PVAR_CLASS_TIMER,         true  },
+            { MPI_T_PVAR_CLASS_GENERIC,       false }
+        };
+
+        for (const aggregateable_t &atp : aggregateable_table)
+            if (atp.pvarclass == pvarclass)
+                return atp.state;
+
+        return false;
+
+        /*
+        switch(pvi.pvarclass) {
+        Attribute attr;
+        Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
+        Variant   v_true(true);
+
         case MPI_T_PVAR_CLASS_HIGHWATERMARK: {
             Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_HIGHWATERMARK" << endl;
             attr = c->create_attribute(string("mpit.")+pvar_name+string(".number_highwatermark_changes"), CALI_TYPE_UINT,
@@ -366,215 +367,198 @@ namespace
             return false; // Doesn't make sense to aggregate watermarks in accordance with the definition above. We need to create a "derived" attribute for this in order to perform aggregation.
             break;
         }
-        case MPI_T_PVAR_CLASS_COUNTER:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_COUNTER" << endl;
-            return true; // "SUM" or "COUNT" operator to aggregate
-            break;
-        case MPI_T_PVAR_CLASS_AGGREGATE:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_AGGREGATE" << endl;
-            return true; 
-            break;
-        case MPI_T_PVAR_CLASS_TIMER:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_TIMER" << endl;
-            return true; 
-            break;
-        case MPI_T_PVAR_CLASS_GENERIC:
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has a class: MPI_T_PVAR_CLASS_GENERIC" << endl;
-            return false; // Arbitrary PVAR that does not fall into any of the other well-defined classes. Implementation and handling of these PVARs must be custom-designed.
-            break;
         }
+        */
     }			
 
 
-    /*Allocate PVAR handles when the PVAR is bound to something other than MPI_T_BIND_NO_OBJECT*/
-    void do_mpit_allocate_bound_pvar_handles(Caliper *c, void *handle, int bind) {
+    // Allocate PVAR handles when the PVAR is bound to something other than MPI_T_BIND_NO_OBJECT
+    void do_mpit_allocate_bound_pvar_handles(Caliper *c, void *in_handle, int bind) {
+        for (PvarInfo& pvi : pvars) {
+            if (bind == pvi.bind) {
+                MPI_T_pvar_handle handle;
+                int count;
 
-        int return_val;
+                int ret = MPI_T_pvar_handle_alloc(pvar_session, pvi.index, in_handle, &handle, &count);
 
-        for(int index=0; index < num_pvars; index++) {
-
-            /*Iterate through all pvars, and only allocate handles for those pvars whose bindings are the same as the input to this function*/
-            if(bind == pvar_bind[index]) {
-                return_val = MPI_T_pvar_handle_alloc(pvar_session, index, handle, &(pvar_handle.data())[index][pvar_handle[index].size() - 1], &(pvar_count.data())[index][pvar_handle[index].size() - 1]);
-            } else {
-                continue;
-            }
-			
-            if (return_val != MPI_SUCCESS)
-            {
-                Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_names[index] << endl;
-                return;
-            }
-
-            /*Non-continuous variables need to be started before being read*/
-            if(pvar_continuousness[index] == 0) 
-            {
-                Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_names[index] << " is non-continuous. Starting this PVAR. " << endl;
-
-                return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index][pvar_handle[index].size() - 1]);
-
-                if (return_val != MPI_SUCCESS) 
-                {
-                    Log(0).stream() << "MPI_T_pvar_start ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_names[index] << endl;
-                    return;
+                if (ret != MPI_SUCCESS) {
+                    Log(0).stream() << "mpit: MPI_T_pvar_handle_alloc error for PVAR at index " << pvi.index
+                                    << " (" << pvi.name << ")" << std::endl;
+                    continue;
                 }
 
-            }
-			
-            /*Only create the attribute for the PVAR once*/
-            if(1 == pvar_handle[index].size()) {
-                create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
+                pvi.handles.push_back(handle);
+                pvi.counts.push_back(count);
+
+                if (pvi.continuous) {
+                    ret = MPI_T_pvar_start(pvar_session, pvi.handles[pvi.handles.size()-1]);
+
+                    if (ret != MPI_SUCCESS) {
+                        Log(0).stream() << "mpit: MPI_T_pvar_start error for PVAR at index " << pvi.index
+                                        << " (" << pvi.name << ")" << std::endl;
+                    }
+                }
             }
 
-            /*Increase the size of the PVAR handle and PVAR count arrays*/
-            pvar_handle[index].resize(pvar_handle[index].size() + 1, NULL);
-            pvar_count[index].resize(pvar_count[index].size() + 1, -1);
-
+            if (pvi.attr == Attribute::invalid) {
+                create_attribute_for_pvar(c, pvi);
+            }
         }
     }
 
     /*Allocate handles for pvars and create attributes*/
     void do_mpit_allocate_pvar_handles(Caliper *c) {
-        int current_num_pvars, return_val, thread_provided;
-        char pvar_name[NAME_LEN], pvar_desc[NAME_LEN] = "";
-        int verbosity, atomic, name_len, desc_len;
-        MPI_T_enum enumtype;
-        MPI_Comm comm;
-        comm = MPI_COMM_WORLD;
+        int current_num_pvars = 0;
 
-        desc_len = name_len = NAME_LEN;
-        /* Get the number of pvars exported by the implementation */
-        return_val = MPI_T_pvar_get_num(&current_num_pvars);
-        if (return_val != MPI_SUCCESS)
         {
-            perror("MPI_T_pvar_get_num ERROR:");
-            Log(0).stream() << "MPI_T_pvar_get_num ERROR: " << return_val << endl;
-            return;
+            int ret = MPI_T_pvar_get_num(&current_num_pvars);
+
+            if (ret != MPI_SUCCESS) {
+                perror("MPI_T_pvar_get_num ERROR:");
+                Log(0).stream() << "MPI_T_pvar_get_num ERROR." << std::endl;
+                return;
+            }
         }
 
-        pvar_handle.resize(current_num_pvars, {NULL});
-
-        pvar_continuousness.resize(current_num_pvars, 0);
-        pvar_readonlyness.resize(current_num_pvars, 1);
-        pvar_is_aggregatable.resize(current_num_pvars, false);
-        pvar_class.resize(current_num_pvars, MPI_T_PVAR_CLASS_GENERIC);
-        pvar_type.resize(current_num_pvars);
-        pvar_count.resize(current_num_pvars);
-        pvar_bind.resize(current_num_pvars, MPI_T_BIND_NO_OBJECT);
-        pvar_names.resize(current_num_pvars,"");
-        mpit_pvar_attr.resize(current_num_pvars);
-        watermark_changed_attr.resize(current_num_pvars);
-        watermark_change_attr.resize(current_num_pvars);
-
-
-        last_value_unsigned_long.resize(current_num_pvars, {0});
-        last_value_double.resize(current_num_pvars, {0.0});
+        // watermark_changed_attr.resize(current_num_pvars);
+        // watermark_change_attr.resize(current_num_pvars);
+        // last_value_unsigned_long.resize(current_num_pvars, {0});
+        // last_value_double.resize(current_num_pvars, {0.0});
 
         Log(1).stream() << "mpit: Exporting " << current_num_pvars << " PVARs." << std::endl;
 
-        for(int index=num_pvars; index < current_num_pvars; index++) {
+        for (int index = num_pvars; index < current_num_pvars; index++) {
+            PvarInfo   pvi;
 
-            pvar_handle[index].resize(1, NULL);
-            pvar_count[index].resize(1, -1);
+            char       namebuf[NAME_LEN];
+            char       descbuf[NAME_LEN];
+            int        namelen = NAME_LEN;
+            int        desclen = NAME_LEN;
 
-            desc_len = name_len = NAME_LEN;
+            MPI_T_enum enumtype;
 
-            MPI_T_pvar_get_info(index, pvar_name, &name_len, &verbosity, &(pvar_class.data())[index], &(pvar_type.data())[index], &enumtype, 
-                                pvar_desc, &desc_len, &(pvar_bind.data())[index], &(pvar_readonlyness.data())[index], &(pvar_continuousness.data())[index], &atomic);
-			
-            pvar_names[index] = pvar_name;
-            pvar_is_aggregatable[index] = is_pvar_class_aggregatable(index, pvar_names[index].c_str(), c);
+            int iret = MPI_T_pvar_get_info(index, 
+                                           namebuf, &namelen, 
+                                           &pvi.verbosity, 
+                                           &pvi.pvarclass, 
+                                           &pvi.datatype, 
+                                           &enumtype, 
+                                           descbuf, &desclen, 
+                                           &pvi.bind, 
+                                           &pvi.readonly, 
+                                           &pvi.continuous,
+                                           &pvi.atomic);
 
-            Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has readonly flag set as: " << pvar_readonlyness[index] << endl;
-            Log(2).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " has description: " << pvar_desc << endl;
+            pvi.index = index;
 
-            /* allocate a pvar handle that will be used later */
+            pvi.name.assign(namebuf, namelen);
+            pvi.desc.assign(descbuf, desclen);
 
-            switch (pvar_bind[index]) {
+            pvi.aggregatable = is_pvar_class_aggregatable(index, pvi.pvarclass);
+
+            // allocate a pvar handle that will be used later
+
+            int ret = -1;
+
+            switch (pvi.bind) {
             case MPI_T_BIND_NO_OBJECT:
             {
-                Log(3).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is not bound to an MPI object" << endl;
-                return_val = MPI_T_pvar_handle_alloc(pvar_session, index, NULL, &(pvar_handle.data())[index][0], &(pvar_count.data())[index][0]);
+                MPI_T_pvar_handle handle;
+                int count;
 
-                /*Increment the size of the handle and count arrays*/
-                pvar_handle[index].resize(2, NULL);
-                pvar_count[index].resize(2, -1);
+                ret = MPI_T_pvar_handle_alloc(pvar_session, index, nullptr, &handle, &count);
+
+                pvi.handles.push_back(handle);
+                pvi.counts.push_back(count);
                 break;
             }
-            case MPI_T_BIND_MPI_COMM: //Handle this through a Wrapper call to MPI_Comm_create(). Support MPI_COMM_WORLD, MPI_COMM_SELF as default.
+            case MPI_T_BIND_MPI_COMM:
+                // Handle this through a Wrapper call to MPI_Comm_create(). 
+                // Support MPI_COMM_WORLD, MPI_COMM_SELF as default.
             {
-                Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_COMM" << endl;
-                return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index][0], &(pvar_count.data())[index][0]);
-                pvar_handle[index].resize(2, NULL);
-                pvar_count[index].resize(2, -1);
-                comm = MPI_COMM_SELF;
-                return_val = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &(pvar_handle.data())[index][1], &(pvar_count.data())[index][1]);
-                pvar_handle[index].resize(3, NULL);
-                pvar_count[index].resize(3, -1);
+                MPI_T_pvar_handle handle;
+                int count;
 
-                break;
-            }
-            case MPI_T_BIND_MPI_WIN: //Handle this through a Wrapper call to MPI_Win_create.
-            {
-                Log(0).stream() << "PVAR at index: " << index << " with name: " << pvar_name << " is bound to an MPI object of type MPI_T_BIND_MPI_WIN. Not doing anything here." << endl;
-                continue;
-            }
-            }
+                MPI_Comm comm = MPI_COMM_WORLD;
+                ret = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &handle, &count);
 
-            if (return_val != MPI_SUCCESS)
-            {
-                Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
-                return;
-            }
-
-            /*Non-continuous variables need to be started before being read.*/
-            if(pvar_continuousness[index] == 0) 
-            {
-                Log(1).stream() << "PVAR at index: " << index << " and name: " << pvar_name << " is non-continuous. Starting this PVAR. " << endl;
-
-                return_val = MPI_T_pvar_start(pvar_session, pvar_handle[index][0]);
-
-                if (return_val != MPI_SUCCESS) 
-                {
-                    Log(0).stream() << "MPI_T_pvar_start ERROR:" << return_val << " for PVAR at index " << index << " with name " << pvar_name << endl;
-                    return;
+                if (ret == MPI_SUCCESS) {
+                    pvi.handles.push_back(handle);
+                    pvi.counts.push_back(count);
+                } else {
+                    break;
                 }
 
+                comm = MPI_COMM_SELF;
+                ret = MPI_T_pvar_handle_alloc(pvar_session, index, &comm, &handle, &count);
+
+                if (ret == MPI_SUCCESS) {
+                    pvi.handles.push_back(handle);
+                    pvi.counts.push_back(count);
+                }
+
+                break;
+            }
+            default:
+                break;
+                // Do nothing here
+            }
+
+            if (ret != MPI_SUCCESS) {
+                Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR: " << ret 
+                                << " for PVAR at index " << index << " with name " << pvi.name << std::endl;
+                return;
+            }
+
+            // Non-continuous variables need to be started before being read.
+
+            if (pvi.continuous == 0) {
+                Log(1).stream() << "PVAR \'" << pvi.name << "\' at index " << index 
+                                << "is non-continuous. Starting this PVAR."
+                                << std::endl;
+
+                ret = MPI_T_pvar_start(pvar_session, pvi.handles[0]);
+
+                if (ret != MPI_SUCCESS) {
+                    Log(0).stream() << "MPI_T_pvar_start ERROR:" << ret
+                                    << " for PVAR at index " << index << " with name " << pvi.name << endl;
+                    return;
+                }
             }
 			
-            create_attribute_for_pvar(c, index, pvar_names[index], pvar_type[index]);
-			
+            create_attribute_for_pvar(c, pvi);
+
+            if (pvi.attr != Attribute::invalid) {
+                Log(2).stream() << "mpit: Registered PVAR " << pvi.index 
+                                << " (" << pvi.name << ")" << std::endl;
+
+                pvars.push_back(pvi);
+            }
         }
-        num_pvars = current_num_pvars;
-		
     }
 
-    /*Register the service and initalize the MPI-T interface*/
+    // Register the service and initalize the MPI-T interface
     void do_mpit_init(Caliper *c)
     {	
-        int thread_provided, return_val;
+        int thread_provided;
 
     	config = RuntimeConfig::init("mpit", configdata);
-        buffer = (void*)malloc(sizeof(unsigned long long int)*SOME_BIG_ENOUGH_VALUE); 
     
         /* Initialize MPI_T */
-        return_val = MPI_T_init_thread(MPI_THREAD_SINGLE, &thread_provided);
+        int return_val = MPI_T_init_thread(MPI_THREAD_SINGLE, &thread_provided);
 
-        if (return_val != MPI_SUCCESS) 
-        {
+        if (return_val != MPI_SUCCESS) {
             Log(0).stream() << "MPI_T_init_thread ERROR: " << return_val << ". MPIT service disabled." << endl;
             return;
-        } 
-        else 
-        {
-            /* Track a performance pvar session */
-            return_val = MPI_T_pvar_session_create(&pvar_session);
-            if (return_val != MPI_SUCCESS) {
-                Log(0).stream() << "MPI_T_pvar_session_create ERROR: " << return_val << ". MPIT service disabled." << endl;
-                return;
-            }  
         }
-		
+
+        /* Track a performance pvar session */
+        return_val = MPI_T_pvar_session_create(&pvar_session);
+        if (return_val != MPI_SUCCESS) {
+            Log(0).stream() << "MPI_T_pvar_session_create ERROR: " << return_val << ". MPIT service disabled." << endl;
+            return;
+        }  
+        		
         do_mpit_allocate_pvar_handles(c);
         c->events().snapshot.connect(&snapshot_cb);
 
@@ -587,7 +571,6 @@ namespace cali
 {
     void mpit_init(Caliper* c) {
         ::do_mpit_init(c);
-        ::do_mpit_allocate_pvar_handles(c);
     }
 
     /*Thin wrapper functions to invoke pvar allocation function from another module*/

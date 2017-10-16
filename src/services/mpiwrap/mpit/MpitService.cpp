@@ -50,7 +50,7 @@ namespace
 
 void mpit_register(Caliper* c) {
     mpit_enabled = true;
-    Log(1).stream() << "Registered MPI-T service." << std::endl;
+    Log(1).stream() << "Registered MPI-T service" << std::endl;
 }
 
 }
