@@ -359,6 +359,25 @@ information.
    be instrumented, and the blacklist will be applied to the
    whitelisted functions.
 
+MPIT
+--------------------------------
+
+The MPIT service records MPI performance variables (PVARs) exported by
+the MPI 3 tools interface (MPI-T). Users can provide a list of PVARs
+to record. By default, all available PVARs will be recorded.  Note
+that PVARs are MPI implementation specific; MPI implementations do not
+necessarily export the same or similar PVARs, or any at all.
+
+This service is part of the Caliper MPI wrapper library
+(`libcaliper-mpiwrap`), which must be linked to the application in
+addition to the regular Caliper runtime library.
+
+.. envvar:: CALI_MPIT_PVARS
+
+   A comma-separated list of PVARs to export. PVAR names are defined 
+   by the MPI implementation. Default: empty, records all available
+   PVARs.
+
 Recorder
 --------------------------------
 
