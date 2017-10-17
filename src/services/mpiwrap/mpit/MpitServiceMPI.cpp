@@ -36,9 +36,13 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include "caliper/common/util/split.hpp"
+
 #include <mpi.h>
-#include <string>
+
 #include <cstring>
+#include <iterator>
+#include <string>
 #include <vector>
 
 using namespace cali;
@@ -74,8 +78,13 @@ namespace
         Attribute    attr;
     };
 
-    std::vector<PvarInfo> pvars;
-    MPI_T_pvar_session    pvar_session;
+    std::vector<std::string> pvar_selection;
+
+    std::vector<PvarInfo>    pvars;
+    MPI_T_pvar_session       pvar_session;
+
+    unsigned                 num_pvars_read = 0;
+    unsigned                 num_pvars_read_error = 0;
 
     //Arrays storing last values of PVARs. This is a hack. Only in place because current MPI implementations do not
     //support resetting of PVARs. So we store last value of pvars and subtract it
@@ -85,6 +94,10 @@ namespace
     ConfigSet        config;
 
     ConfigSet::Entry configdata[] = {
+        { "pvars", CALI_TYPE_STRING, "", 
+          "List of comma-separated PVARs to read",
+          "List of comma-separated PVARs to read. Default: all" 
+        },
     	ConfigSet::Terminator
     };
 
@@ -95,12 +108,19 @@ namespace
             if (pvi.attr == Attribute::invalid)
                 continue;
 
-            if (pvi.handles.size() > 0 && pvi.counts.size() > 1 && pvi.counts[0] == 1) {
+            if (pvi.handles.size() > 0 && pvi.counts.size() > 0 && pvi.counts[0] == 1) {
                 // read only PVAR's with count one for now
                 unsigned char buf[64];
-                MPI_T_pvar_read(pvar_session, pvi.handles[0], buf);
+                int ret = MPI_T_pvar_read(pvar_session, pvi.handles[0], buf);
 
-                snapshot->append(pvi.attr.id(), Variant(pvi.attr.type(), buf, 8));
+                if (ret == MPI_SUCCESS) {
+                    snapshot->append(pvi.attr.id(), Variant(pvi.attr.type(), buf, 8));
+                    ++num_pvars_read;
+                } else {
+                    ++num_pvars_read_error;
+                }
+            } else {
+                ++num_pvars_read_error;
             }
         }
         
@@ -430,8 +450,8 @@ namespace
         for (int index = num_pvars; index < current_num_pvars; index++) {
             PvarInfo   pvi;
 
-            char       namebuf[NAME_LEN];
-            char       descbuf[NAME_LEN];
+            char       namebuf[NAME_LEN] = { 0 };
+            char       descbuf[NAME_LEN] = { 0 };
             int        namelen = NAME_LEN;
             int        desclen = NAME_LEN;
 
@@ -451,8 +471,19 @@ namespace
 
             pvi.index = index;
 
-            pvi.name.assign(namebuf, namelen);
-            pvi.desc.assign(descbuf, desclen);
+            if (namelen > 0)
+                pvi.name.assign(namebuf, namelen-1);
+            if (desclen > 0)
+                pvi.desc.assign(descbuf, desclen-1);
+
+            // see if this pvar is in the selection list
+            if (!pvar_selection.empty()) {
+                auto it = std::find(pvar_selection.begin(), pvar_selection.end(), pvi.name);
+
+                if (it == pvar_selection.end()) {
+                    continue;
+                }
+            }
 
             pvi.aggregatable = is_pvar_class_aggregatable(index, pvi.pvarclass);
 
@@ -505,22 +536,30 @@ namespace
             }
 
             if (ret != MPI_SUCCESS) {
-                Log(0).stream() << "MPI_T_pvar_handle_alloc ERROR: " << ret 
+                Log(0).stream() << "mpit: MPI_T_pvar_handle_alloc ERROR: " << ret 
                                 << " for PVAR at index " << index << " with name " << pvi.name << std::endl;
                 return;
+            }
+
+            if (pvi.counts.size() > 0 && pvi.counts[0] > 1) {
+                Log(1).stream() << "mpit: PVAR at index " << pvi.index 
+                                << " (" << pvi.name << ") has count > 1 (count = " << pvi.counts[0] 
+                                << "), skipping." << std::endl;
+
+                continue;
             }
 
             // Non-continuous variables need to be started before being read.
 
             if (pvi.continuous == 0) {
-                Log(1).stream() << "PVAR \'" << pvi.name << "\' at index " << index 
+                Log(1).stream() << "mpit: PVAR \'" << pvi.name << "\' at index " << index 
                                 << "is non-continuous. Starting this PVAR."
                                 << std::endl;
 
                 ret = MPI_T_pvar_start(pvar_session, pvi.handles[0]);
 
                 if (ret != MPI_SUCCESS) {
-                    Log(0).stream() << "MPI_T_pvar_start ERROR:" << ret
+                    Log(0).stream() << "mpit: MPI_T_pvar_start ERROR:" << ret
                                     << " for PVAR at index " << index << " with name " << pvi.name << endl;
                     return;
                 }
@@ -537,12 +576,19 @@ namespace
         }
     }
 
+    void finish_cb(Caliper*) {
+        Log(1).stream() << "mpit: " << num_pvars_read << " PVARs read, " 
+                        << num_pvars_read_error << " PVAR read errors." << std::endl;
+    }
+
     // Register the service and initalize the MPI-T interface
     void do_mpit_init(Caliper *c)
     {	
         int thread_provided;
 
     	config = RuntimeConfig::init("mpit", configdata);
+
+        util::split(config.get("pvars").to_string(), ',', std::back_inserter(pvar_selection));
     
         /* Initialize MPI_T */
         int return_val = MPI_T_init_thread(MPI_THREAD_SINGLE, &thread_provided);
@@ -560,7 +606,9 @@ namespace
         }  
         		
         do_mpit_allocate_pvar_handles(c);
+
         c->events().snapshot.connect(&snapshot_cb);
+        c->events().finish_evt.connect(&finish_cb);
 
     	Log(1).stream() << "mpit: MPI-T initialized." << endl;
     }
