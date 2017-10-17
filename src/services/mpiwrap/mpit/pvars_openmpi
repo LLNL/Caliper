@@ -1,0 +1,13 @@
+= CALIPER: PVAR at index: 0 with name: mpool_hugepage_bytes_allocated has a class: MPI_T_PVAR_CLASS_SIZE
+== CALIPER: PVAR at index: 0 with name: mpool_hugepage_bytes_allocated has description: Number of bytes currently allocated in the mpool hugepage component
+== CALIPER: PVAR at index: 1 with name: osc_rdma_put_retry_count has a class: MPI_T_PVAR_CLASS_COUNTER
+== CALIPER: PVAR at index: 1 with name: osc_rdma_put_retry_count has description: Number of times put transaction were retried due to resource limitations
+== CALIPER: PVAR at index: 1 with name: osc_rdma_put_retry_count is bound to an MPI object of type MPI_T_BIND_MPI_WIN. Not doing anything here.
+== CALIPER: PVAR at index: 2 with name: osc_rdma_get_retry_count has a class: MPI_T_PVAR_CLASS_COUNTER
+== CALIPER: PVAR at index: 2 with name: osc_rdma_get_retry_count has description: Number of times get transaction were retried due to resource limitations
+== CALIPER: PVAR at index: 2 with name: osc_rdma_get_retry_count is bound to an MPI object of type MPI_T_BIND_MPI_WIN. Not doing anything here.
+== CALIPER: PVAR at index: 3 with name: pml_monitoring_flush has a 
+
+===FAILURE at this point!======
+OpenMPI exports 20 variables overall, but fails when allocating handles for PVARs bound to MPI_COMM objects. See "KNOWN_BUGS" file for more info
+===============================

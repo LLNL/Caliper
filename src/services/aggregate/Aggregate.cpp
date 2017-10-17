@@ -86,18 +86,20 @@ class AggregateDB {
         double   min;
         double   max;
         double   sum;
+		double   avg;
         int      count;
 
         AggregateKernel()
             : min(std::numeric_limits<double>::max()),
               max(std::numeric_limits<double>::min()),
-              sum(0), count(0)
+              sum(0), count(0), avg(0)
         { }
 
         void add(double val) {
             min  = std::min(min, val);
             max  = std::max(max, val);
             sum += val;
+			avg = ((count*avg) + val)/ (count + 1.0);
             ++count;
         }
     };
@@ -174,6 +176,7 @@ class AggregateDB {
         Attribute min_attr;
         Attribute max_attr;
         Attribute sum_attr;
+        Attribute avg_attr;
     };
 
     static Attribute         s_count_attribute;
@@ -296,6 +299,7 @@ class AggregateDB {
             snapshot.append(s_stats_attributes[a].min_attr.id(), Variant(k->min));
             snapshot.append(s_stats_attributes[a].max_attr.id(), Variant(k->max));
             snapshot.append(s_stats_attributes[a].sum_attr.id(), Variant(k->sum));
+            snapshot.append(s_stats_attributes[a].avg_attr.id(), Variant(k->avg));
         }
 
         uint64_t count = entry->count;
@@ -393,6 +397,10 @@ class AggregateDB {
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].sum_attr =
                 c->create_attribute(std::string("aggregate.sum#") + name,
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+            
+			s_stats_attributes[i].avg_attr =
+                c->create_attribute(std::string("aggregate.avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
         }
 

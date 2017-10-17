@@ -1,0 +1,9 @@
+Features that we must implememt:
+1. Handle allocation: 
+   a. Wrap all routines for the purpose of allocating PVAR handles bound to MPI objects
+	For eg. We wrap MPI_Comm_create, but not MPI_Comm_split - handle all such use cases
+   b. How do we support MPI objects such as MPI_Requests, MPI Messages?
+2. Integrate CALIPER with a tracing tool / file such as OTF2 for viewing PVAR changes over time
+3. Add functionality to sample a PVAR of a given name, instead of sampling ALL PVARs inside a snapshot - this should control overheads
+4. Add functionality to write CVARs from CALIPER - I think the same design for allocating PVAR handles would work for CVARs?
+

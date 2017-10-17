@@ -1,3 +1,4 @@
+#include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
 
@@ -24,6 +25,14 @@ namespace cali
 
     extern std::string mpi_whitelist_string;
     extern std::string mpi_blacklist_string;
+
+#ifdef CALIPER_HAVE_MPIT
+    extern bool mpit_enabled;
+
+    extern void mpit_init(Caliper* c);
+    extern void mpit_allocate_pvar_handles();
+    extern void mpit_allocate_bound_pvar_handles(void *handle, int bind);
+#endif
 }
 
 using namespace cali;
@@ -111,13 +120,140 @@ namespace
         PMPI_Comm_size(MPI_COMM_WORLD, &size);
 
         c.set(mpisize_attr, Variant(size));
-        c.set(mpirank_attr, Variant(rank));
+        c.set(mpirank_attr, Variant(rank));		
     }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        Log(1).stream() << "mpit: Initializing MPI-T interface." << std::endl;
+        mpit_init(&c);
+    }
+#endif
 }{{endfn}}
 
+// Invoke pvar handle allocation routines for pvars bound to some MPI object
+
+{{fn func MPI_Comm_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if(mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_COMM); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Errhandler_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_ERRHANDLER); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_File_open}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{4}}, MPI_T_BIND_MPI_FILE); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Comm_group}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{1}}, MPI_T_BIND_MPI_GROUP); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Op_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{2}}, MPI_T_BIND_MPI_OP); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Win_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{5}}, MPI_T_BIND_MPI_WIN); 
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Info_create}}{
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
+
+#ifdef CALIPER_HAVE_MPIT
+    if (mpit_enabled) {
+        mpit_allocate_bound_pvar_handles({{0}}, MPI_T_BIND_MPI_INFO); 
+    }
+#endif
+}{{endfn}}
 // Wrap all MPI functions
 
-{{fnall func MPI_Init MPI_Init_thread}}{
+{{fnall func MPI_Init MPI_Init_thread MPI_Comm_create MPI_Errhandler_create MPI_File_open MPI_Comm_group MPI_Op_create MPI_Info_create MPI_Win_create}}{
     if (mpi_enabled && ::enable_{{func}}) {
         Caliper c;
         c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
