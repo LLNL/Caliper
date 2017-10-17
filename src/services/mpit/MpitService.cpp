@@ -28,7 +28,7 @@
 // This is the Caliper runtime part of the MPI-T service, which will be part of libcaliper.
 // Must not contain any MPI dependencies.
 
-#include "../../CaliperService.h"
+#include "../CaliperService.h"
 
 #include <caliper/Caliper.h>
 

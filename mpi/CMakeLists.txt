@@ -14,6 +14,7 @@ else()
 endif()
 
 add_subdirectory(caliper-mpi)
+add_subdirectory(services)
 
 if (WITH_TOOLS)
   add_subdirectory(mpi-caliquery)
