@@ -12,7 +12,6 @@ set(CALIPER_READER_SOURCES
     TableFormatter.cpp
     TreeFormatter.cpp
     JsonFormatter.cpp
-    JsonSparseFormatter.cpp
     UserFormatter.cpp)
 
 add_library(caliper-reader ${CALIPER_READER_SOURCES})

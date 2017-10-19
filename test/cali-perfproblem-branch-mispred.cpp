@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,41 +30,84 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Json.h
-/// Json output formatter
 
-#pragma once
+#include <iostream>
+#include <cstdlib>
+#include <algorithm>
 
-#include "Formatter.h"
-#include "RecordProcessor.h"
+#include <caliper/Annotation.h>
+#include <caliper/cali_macros.h>
+#include <caliper/DataTracker.h>
 
-#include "../common/RecordMap.h"
-#include "../common/OutputStream.h"
-
-#include <memory>
-
-namespace cali
+int* init(size_t arraySize, bool sort)
 {
+    CALI_CXX_MARK_FUNCTION;
 
-class CaliperMetadataAccessInterface;
-class QuerySpec;
+    int *data = (int*)cali::DataTracker::Allocate("data", sizeof(int), {arraySize});
 
-/// \brief Prints snapshot records as sparse JSON
-/// \ingroup ReaderAPI
-class JsonFormatter : public Formatter
+    std::srand(1337);
+    for (size_t c = 0; c < arraySize; ++c)
+        data[c] = std::rand() % 256;
+
+    if (sort)
+        std::sort(data, data + arraySize); 
+
+    return data;
+}
+
+void work(int *data, size_t arraySize)
 {
-    struct JsonFormatterImpl;
-    std::shared_ptr<JsonFormatterImpl> mP;
+    CALI_CXX_MARK_FUNCTION;
 
-public:
+    long sum = 0;
 
-    JsonFormatter(OutputStream& os, const QuerySpec& spec);
+    for (size_t i = 0; i < 100000; ++i)
+    {
+        // Primary loop
+        for (size_t c = 0; c < arraySize; ++c)
+        {
+            if (data[c] >= 128)
+                sum += data[c];
+        }
+    }
+    std::cout << "sum = " << sum << std::endl;
+}
 
-    ~JsonFormatter();
+void cleanup(int *data)
+{
+    CALI_CXX_MARK_FUNCTION;
 
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
+    cali::DataTracker::Free(data);
+}
 
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
-};
+void benchmark(size_t arraySize, bool sort)
+{
+    CALI_CXX_MARK_FUNCTION;
 
-} // namespace cali
+    cali::Annotation sorted("sorted");
+    sorted.set(sort);
+
+    std::cout << "Initializing benchmark data with sort = " << sort << std::endl;
+
+    int *data = init(arraySize, sort);
+
+    std::cout << "Calculating sum of values >= 128" << std::endl;
+
+    work(data, arraySize);
+
+    std::cout << "Cleaning up" << std::endl;
+
+    cleanup(data);
+
+    std::cout << "Done!" << std::endl;
+}
+
+int main(int argc, char *argv[])
+{
+    CALI_CXX_MARK_FUNCTION;
+
+    // Generate data
+    size_t arraySize = 32768;
+    benchmark(arraySize, true);
+    benchmark(arraySize, false);
+}

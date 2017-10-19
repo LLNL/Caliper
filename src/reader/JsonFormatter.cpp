@@ -2,7 +2,7 @@
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file Json.cpp
-/// Print web-readable table
+/// @file JsonFormatter.cpp
+/// Print web-readable table in sparse format
 
 #include "caliper/reader/JsonFormatter.h"
 
@@ -41,179 +41,225 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 
 #include "caliper/common/util/split.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <mutex>
+#include <set>
+#include <sstream>
 
 using namespace cali;
+using namespace std;
+
+const std::string opt_split = std::string("split");
+const std::string opt_pretty = std::string("pretty");
+const std::string opt_quote_all = std::string("quote-all");
 
 struct JsonFormatter::JsonFormatterImpl
 {
-    std::vector<std::string>                m_col_attr_names;
-    std::vector<Attribute>                  m_cols;    
+    set<string>  m_selected;
+    set<string>  m_deselected;
 
-    std::vector< std::vector<std::string> > m_rows;
+    OutputStream m_os;
 
-    std::mutex m_col_lock;
-    std::mutex m_row_lock;
-    
-    bool                                    m_auto_column;
-    
-    void parse(const std::string& field_string) {
-        if (field_string.empty()) {
-            m_auto_column = true;
-            return;
-        } else
-            m_auto_column = false;
-        
-        util::split(field_string, ':', std::back_inserter(m_col_attr_names));
+    std::mutex   m_os_lock;
+
+    bool         m_first_row = true;
+
+    bool         m_opt_split = false;
+    bool         m_opt_pretty = false;
+    bool         m_opt_quote_all = false;
+
+    JsonFormatterImpl(OutputStream &os)
+        : m_os(os)
+        { }
+
+    void parse(const string& field_string) {
+        vector<string> fields;
+
+        util::split(field_string, ':', back_inserter(fields));
+
+        for (const string& s : fields) {
+            if (s.size() == 0)
+                continue;
+
+            if (s[0] == '-')
+                m_deselected.emplace(s, 1, string::npos);
+            else
+                m_selected.insert(s);
+        }
     }
 
+
     void configure(const QuerySpec& spec) {
-        m_col_attr_names.clear();
-        
+        for (auto arg : spec.format.args) {
+            if (arg == opt_split)
+                m_opt_split = true;
+            if (arg == opt_pretty)
+                m_opt_pretty = true;
+            if (arg == opt_quote_all)
+                m_opt_quote_all = true;
+        }
+
         switch (spec.attribute_selection.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
-            m_auto_column = true;
-            break;
-        case QuerySpec::AttributeSelection::List:
-            m_auto_column = false;
-            m_col_attr_names = spec.attribute_selection.list;
+            // do nothing; default is all
             break;
         case QuerySpec::AttributeSelection::None:
-            m_auto_column = false;
+            // doesn't make much sense
+            break;
+        case QuerySpec::AttributeSelection::List:
+            m_selected =
+                std::set<std::string>(spec.attribute_selection.list.begin(),
+                                      spec.attribute_selection.list.end());
+            break;
         }
     }
     
-    void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
-        auto it = std::find_if(m_cols.begin(), m_cols.end(),
-                               [attr_id](const Attribute& c) {
-                                   return c.id() == attr_id;
-                               });
+    void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
 
-        if (it != m_cols.end())
-            return;
+        std::vector<std::string> key_value_pairs;
+        std::ostringstream ss_key_value;
+
+        std::ostringstream os;
+
+        bool writing_attr_data = false;
         
-        Attribute attr   = db.get_attribute(attr_id);
+        for (const Entry& e : list) {
 
-        if (attr == Attribute::invalid)
-            return;
-        
-        std::string name = attr.name();
+            if (e.node()) {
 
-        // Skip internal "cali." and ".event" attributes
-        if (name.compare(0, 5, "cali." ) == 0 ||
-            name.compare(0, 6, "event.") == 0)
-            return;
-                
-        m_cols.push_back(attr);
-    }
-    
-    std::vector<Attribute> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::lock_guard<std::mutex>
-            g(m_col_lock);
-        
-        // Auto-generate columns from attributes in the snapshots. Used if no
-        // field list was given. Skips some internal attributes.
+                // First find all nodes selected for printing
+                vector<const Node*> nodes;
+                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                    Attribute attr = db.get_attribute(node->attribute());
+                    string name = attr.name();
 
-        if (m_auto_column) {
-            for (Entry e : list) {
-                if (e.node()) {
-                    for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                        update_column_attribute(db, node->attribute());
-                } else
-                    update_column_attribute(db, e.attribute());
-            }
-        } else {
-            // Check if we can look up attribute object from name
+                    if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                        continue;
 
-            auto it = m_col_attr_names.begin();
-
-            while (it != m_col_attr_names.end()) {
-                Attribute attr = db.get_attribute(*it);
-
-                if (attr != Attribute::invalid) {
-                    m_cols.push_back(attr);
-                    it = m_col_attr_names.erase(it);
-                } else
-                    ++it;
-            }
-        }
-
-        return m_cols;
-    }
-    
-    void add(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::vector<Attribute>   col(update_columns(db, list));
-        std::vector<std::string> row(col.size());
-
-        bool active = false;
-        
-        for (std::vector<Attribute>::size_type c = 0; c < col.size(); ++c) {
-            if (col[c] == Attribute::invalid)
-                continue;
-
-            std::string val;
-
-            for (Entry e : list) {
-                if (e.node()) {
-                    for (const Node* node = e.node(); node; node = node->parent())
-                        if (node->attribute() == col[c].id())
-                            val = node->data().to_string().append(val.empty() ? "" : "/").append(val);
-                } else {
-                    if (e.attribute() == col[c].id())
-                        val = e.value().to_string();
+                    nodes.push_back(node);
                 }
-            }
 
-            if (!val.empty()) {
-                active = true;
-                row[c] = val;
+                if (nodes.empty())
+                    continue;
+
+                // Sort all nodes consistently baseed on attribute id
+                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+	  
+                cali_id_t prev_attr_id = CALI_INV_ID;
+
+                bool quotes = m_opt_quote_all | false;
+
+                // Go through all nodes in reverse order
+                for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
+
+                    // Get attribute information
+                    cali_id_t attr_id = (*it)->attribute();
+                    Attribute attr = db.get_attribute(attr_id);
+                    cali_attr_type attr_type = attr.type();
+
+                    // Check if we encountered a new attribute
+                    if (attr_id != prev_attr_id) {
+
+                        // Check if we are completing a previous attribute
+                        if (writing_attr_data) {
+                            // Complete a pair and push it back, then clear the stringstream
+                            ss_key_value << (quotes ? "\"" : "");
+                            key_value_pairs.push_back(ss_key_value.str());
+                            ss_key_value.str(std::string());
+                        }
+
+                        // Start new attribute
+                        quotes = m_opt_quote_all | false;
+                        ss_key_value << '"' << attr.name() << '"' << ':';
+
+                        // If STRING or USR, or if nested attribute values x/y/z, start quotes
+                        if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR 
+                                || ((it+1 != nodes.rend()) && (*(it+1))->attribute()) != attr_id) {
+                            quotes = true;
+                        }
+
+                        if (quotes) {
+                            ss_key_value << '"';
+                        }
+
+                        writing_attr_data = true;
+                        prev_attr_id = attr_id;
+
+                    } else {
+                        ss_key_value << '/';
+                    }
+
+                    ss_key_value << (*it)->data().to_string();
+                }
+
+                if (writing_attr_data) {
+                    ss_key_value << (quotes ? "\"" : "");
+                    key_value_pairs.push_back(ss_key_value.str());
+                    ss_key_value.str(std::string());
+                    writing_attr_data = false;
+                    quotes = m_opt_quote_all | false;
+                }
+
+            } else if (e.attribute() != CALI_INV_ID) {
+                Attribute attr = db.get_attribute(e.attribute());
+                string name = attr.name();
+                cali_attr_type attr_type = attr.type();
+
+                // Check if this attribute is selected for printing
+                if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                    continue;
+
+                bool quotes = m_opt_quote_all | false;
+
+                ss_key_value << '"' << name << '"' << ':' ;
+                
+                string data = e.value().to_string();
+                if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR)
+                    quotes = true;
+
+                if (quotes)
+                    ss_key_value << '"' << data << '"';
+                else
+                    ss_key_value << data;
+
+                key_value_pairs.push_back(ss_key_value.str());
+                ss_key_value.str(std::string());
             }
         }
 
-        if (active) {
+        if (!m_opt_split) 
+            os << (m_first_row ? '[' : ',');
+        m_first_row = false;
+
+        os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
+
+        for(size_t i = 0; i < key_value_pairs.size(); ++i)
+        {
+            if(i != 0)
+                os << "," << (m_opt_pretty ? "\n\t" : "");
+            os << key_value_pairs[i];
+        }
+
+        os << (m_opt_pretty ? "\n" : "" ) << "}";
+        
+        if (!key_value_pairs.empty()) {
             std::lock_guard<std::mutex>
-                g(m_row_lock);
+                g(m_os_lock);
             
-            m_rows.push_back(std::move(row));
+            m_os.stream() << os.str();
         }
-    }
-
-    void flush(std::ostream& os) {            
-        // print header
-        os << "{ \"attributes\" : [" ;
-        for (const Attribute& col : m_cols)
-            os << "\"" << col.name() <<"\",";
-
-        os << "\b ], "<< std::endl<<" \"rows\" : [ ";
-
-        // print rows
-
-        for (auto row : m_rows) {
-            os << " [ " ;
-            for (std::vector<std::string>::size_type c = 0; c < row.size(); ++c) {
-                    os << "\"" << row[c] << "\",";
-            }
-            os<< "\b ]," ;
-        }        
-        os << "\b]}" << std::endl;
     }
 };
 
-
-JsonFormatter::JsonFormatter(const std::string& fields)
-    : mP { new JsonFormatterImpl }
-{
-    mP->parse(fields);
-}
-
-JsonFormatter::JsonFormatter(const QuerySpec& spec)
-    : mP { new JsonFormatterImpl }
+JsonFormatter::JsonFormatter(OutputStream &os, const QuerySpec& spec)
+    : mP { new JsonFormatterImpl(os) }
 {
     mP->configure(spec);
 }
@@ -226,11 +272,12 @@ JsonFormatter::~JsonFormatter()
 void 
 JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
-    mP->add(db, list);
+    mP->print(db, list);
 }
 
-void
-JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
+void JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
-    mP->flush(os);
+    if (!mP->m_opt_split)
+        os << "\n]";
 }
+

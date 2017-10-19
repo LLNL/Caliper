@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,41 +30,48 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Json.h
-/// Json output formatter
+/// \file DataTracker.h
+/// Caliper C++ data tracking interface
 
-#pragma once
+#ifndef CALIPER_DATATRACKER_H
+#define CALIPER_DATATRACKER_H
 
-#include "Formatter.h"
-#include "RecordProcessor.h"
+#include "AllocTracker.h"
 
-#include "../common/RecordMap.h"
-#include "../common/OutputStream.h"
-
-#include <memory>
+#include <vector>
+#include <string>
+#include <cstdlib>
+#include <cinttypes>
 
 namespace cali
 {
 
-class CaliperMetadataAccessInterface;
-class QuerySpec;
-
-/// \brief Prints snapshot records as sparse JSON
-/// \ingroup ReaderAPI
-class JsonFormatter : public Formatter
+namespace DataTracker
 {
-    struct JsonFormatterImpl;
-    std::shared_ptr<JsonFormatterImpl> mP;
 
-public:
+extern AllocTracker g_alloc_tracker;
 
-    JsonFormatter(OutputStream& os, const QuerySpec& spec);
+void* Allocate(const std::string &label,
+               const size_t size);
 
-    ~JsonFormatter();
+void* Allocate(const std::string &label,
+               const size_t elem_size,
+               const std::vector<size_t> &dimensions);
 
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
+void Free(void *ptr);
 
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
-};
+void TrackAllocation(void *ptr,
+                     const std::string &label);
 
-} // namespace cali
+void TrackAllocation(void *ptr,
+                     const std::string &label,
+                     const size_t elem_size,
+                     const std::vector<size_t> &dimensions);
+
+void UntrackAllocation(void *ptr);
+
+}
+}
+
+
+#endif //CALIPER_DATATRACKER_H

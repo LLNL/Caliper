@@ -2,7 +2,7 @@
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,42 +30,46 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Json.h
-/// Json output formatter
+/// \file cali_datatracker.cpp
+/// Caliper data tracking C interface implementation
 
-#pragma once
+#include "caliper/cali_datatracker.h"
 
-#include "Formatter.h"
-#include "RecordProcessor.h"
+#include "caliper/DataTracker.h"
 
-#include "../common/RecordMap.h"
-#include "../common/OutputStream.h"
+using namespace cali;
 
-#include <memory>
+void*
+cali_datatracker_allocate(const char *label,
+                          const size_t elem_size, 
+                          size_t *dimensions, 
+                          size_t num_dimensions) {
+    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
+    cali::DataTracker::Allocate(label, elem_size, d);
+}
 
-namespace cali
-{
+void*
+cali_datatracker_free(void *ptr) {
+    cali::DataTracker::Free(ptr);
+}
 
-class CaliperMetadataAccessInterface;
-class QuerySpec;
+void 
+cali_datatracker_track(void *ptr, 
+                       const char *label) {
+    cali::DataTracker::TrackAllocation(ptr, label);
+}
 
-/// \brief Prints snapshot records as sparse JSON
-/// \ingroup ReaderAPI
-class JsonSparseFormatter : public Formatter
-{
-    struct JsonSparseFormatterImpl;
-    std::shared_ptr<JsonSparseFormatterImpl> mP;
+void 
+cali_datatracker_track_dimensional(void *ptr, 
+                                   const char *label,
+                                   const size_t elem_size,
+                                   size_t *dimensions,
+                                   size_t num_dimensions) {
+    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
+    cali::DataTracker::TrackAllocation(ptr, label, elem_size, d);
+}
 
-public:
-
-    JsonSparseFormatter(OutputStream& os, const std::string& field_string);
-    JsonSparseFormatter(OutputStream& os, const QuerySpec& spec);
-
-    ~JsonSparseFormatter();
-
-    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
-
-    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
-};
-
-} // namespace cali
+void 
+cali_datatracker_untrack(void *ptr) {
+    cali::DataTracker::UntrackAllocation(ptr);
+}

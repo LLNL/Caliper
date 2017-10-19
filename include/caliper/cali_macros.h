@@ -90,7 +90,6 @@
 #define CALI_CXX_MARK_LOOP_ITERATION(loop_id, iter) \
     cali::Loop::Iteration __cali_iter_##loop_id ( __cali_loop_##loop_id.iteration(static_cast<int>(iter)) )
 
-
 #endif // __cplusplus
 
 extern cali_id_t cali_function_attr_id;
