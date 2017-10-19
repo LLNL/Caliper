@@ -33,6 +33,7 @@
 #include "caliper/tools-util/Args.h"
 
 #include <caliper/cali.h>
+#include <caliper/cali_datatracker.h>
 
 #include <numeric>
 
@@ -51,13 +52,14 @@ void do_work(size_t M, size_t W, size_t N)
     double *matB = (double*)malloc(sizeof(double)*W*N);
     double *matC = (double*)malloc(sizeof(double)*M*N);
 
-    auto A_dims = {M,W};
-    auto B_dims = {W,N};
-    auto C_dims = {M,N};
+    size_t num_dimensions = 2;
+    size_t A_dims[] = {M,W};
+    size_t B_dims[] = {W,N};
+    size_t C_dims[] = {M,N};
 
-    CALI_CXX_TRACK_DIM_ALLOCATION(matA, sizeof(double), A_dims);
-    CALI_CXX_TRACK_DIM_ALLOCATION(matB, sizeof(double), B_dims);
-    CALI_CXX_TRACK_DIM_ALLOCATION(matC, sizeof(double), C_dims);
+    CALI_DATATRACKER_TRACK_DIMENSIONAL(matA, sizeof(double), A_dims, num_dimensions);
+    CALI_DATATRACKER_TRACK_DIMENSIONAL(matB, sizeof(double), B_dims, num_dimensions);
+    CALI_DATATRACKER_TRACK_DIMENSIONAL(matC, sizeof(double), C_dims, num_dimensions);
 
     CALI_MARK_END("allocate");
     CALI_MARK_BEGIN("initialize values");
@@ -94,9 +96,9 @@ void do_work(size_t M, size_t W, size_t N)
     CALI_MARK_END("sum");
     CALI_MARK_BEGIN("free");
 
-    cali::DataTracker::Free(matA);
-    cali::DataTracker::Free(matB);
-    cali::DataTracker::Free(matC);
+    CALI_DATATRACKER_FREE(matA);
+    CALI_DATATRACKER_FREE(matB);
+    CALI_DATATRACKER_FREE(matC);
 
     CALI_MARK_END("free");
 }

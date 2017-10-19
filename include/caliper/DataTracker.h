@@ -52,8 +52,13 @@ namespace DataTracker
 extern AllocTracker g_alloc_tracker;
 
 void* Allocate(const std::string &label,
+               const size_t size);
+
+void* Allocate(const std::string &label,
                const size_t elem_size,
                const std::vector<size_t> &dimensions);
+
+void Free(void *ptr);
 
 void TrackAllocation(void *ptr,
                      const std::string &label);
@@ -63,8 +68,7 @@ void TrackAllocation(void *ptr,
                      const size_t elem_size,
                      const std::vector<size_t> &dimensions);
 
-void Free(void *ptr);
-
+void UntrackAllocation(void *ptr);
 
 }
 }

@@ -8,7 +8,8 @@ set(CALIPER_SOURCES
     MemoryPool.cpp
     MetadataTree.cpp
     api.cpp
-    cali.cpp)
+    cali.cpp
+    cali_datatracker.cpp)
 
 add_subdirectory(report)
   

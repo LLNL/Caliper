@@ -45,6 +45,15 @@ namespace DataTracker
 AllocTracker g_alloc_tracker;
 
 void* Allocate(const std::string &label,
+               const size_t size) {
+
+    void* ret = malloc(size);
+
+    size_t dimensions[] = {size};
+    g_alloc_tracker.add_allocation(label, (uint64_t)ret, 1, dimensions, 1);
+}
+
+void* Allocate(const std::string &label,
                const size_t elem_size,
                const std::vector<size_t> &dimensions) {
 
@@ -78,6 +87,10 @@ void TrackAllocation(void *ptr,
         g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions.data(), (size_t)dimensions.size());
     else
         std::cerr << "Invalid allocation tracking information!" << std::endl;
+}
+
+void UntrackAllocation(void *ptr) {
+    g_alloc_tracker.remove_allocation((uint64_t)ptr);
 }
 
 void Free(void *ptr)

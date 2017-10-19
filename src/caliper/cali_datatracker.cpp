@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
+// Written by Alfredo Gimenez, gimenez1@llnl.gov
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,84 +30,46 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+/// \file cali_datatracker.cpp
+/// Caliper data tracking C interface implementation
 
-#include <iostream>
-#include <cstdlib>
-#include <algorithm>
+#include "caliper/cali_datatracker.h"
 
-#include <caliper/Annotation.h>
-#include <caliper/cali_macros.h>
-#include <caliper/DataTracker.h>
+#include "caliper/DataTracker.h"
 
-int* init(size_t arraySize, bool sort)
-{
-    CALI_CXX_MARK_FUNCTION;
+using namespace cali;
 
-    int *data = (int*)cali::DataTracker::Allocate("data", sizeof(int), {arraySize});
-
-    std::srand(1337);
-    for (size_t c = 0; c < arraySize; ++c)
-        data[c] = std::rand() % 256;
-
-    if (sort)
-        std::sort(data, data + arraySize); 
-
-    return data;
+void*
+cali_datatracker_allocate(const char *label,
+                          const size_t elem_size, 
+                          size_t *dimensions, 
+                          size_t num_dimensions) {
+    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
+    cali::DataTracker::Allocate(label, elem_size, d);
 }
 
-void work(int *data, size_t arraySize)
-{
-    CALI_CXX_MARK_FUNCTION;
-
-    long sum = 0;
-
-    for (size_t i = 0; i < 100000; ++i)
-    {
-        // Primary loop
-        for (size_t c = 0; c < arraySize; ++c)
-        {
-            if (data[c] >= 128)
-                sum += data[c];
-        }
-    }
-    std::cout << "sum = " << sum << std::endl;
+void*
+cali_datatracker_free(void *ptr) {
+    cali::DataTracker::Free(ptr);
 }
 
-void cleanup(int *data)
-{
-    CALI_CXX_MARK_FUNCTION;
-
-    cali::DataTracker::Free(data);
+void 
+cali_datatracker_track(void *ptr, 
+                       const char *label) {
+    cali::DataTracker::TrackAllocation(ptr, label);
 }
 
-void benchmark(size_t arraySize, bool sort)
-{
-    CALI_CXX_MARK_FUNCTION;
-
-    cali::Annotation sorted("sorted");
-    sorted.set(sort);
-
-    std::cout << "Initializing benchmark data with sort = " << sort << std::endl;
-
-    int *data = init(arraySize, sort);
-
-    std::cout << "Calculating sum of values >= 128" << std::endl;
-
-    work(data, arraySize);
-
-    std::cout << "Cleaning up" << std::endl;
-
-    cleanup(data);
-
-    std::cout << "Done!" << std::endl;
+void 
+cali_datatracker_track_dimensional(void *ptr, 
+                                   const char *label,
+                                   const size_t elem_size,
+                                   size_t *dimensions,
+                                   size_t num_dimensions) {
+    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
+    cali::DataTracker::TrackAllocation(ptr, label, elem_size, d);
 }
 
-int main(int argc, char *argv[])
-{
-    CALI_CXX_MARK_FUNCTION;
-
-    // Generate data
-    size_t arraySize = 32768;
-    benchmark(arraySize, true);
-    benchmark(arraySize, false);
+void 
+cali_datatracker_untrack(void *ptr) {
+    cali::DataTracker::UntrackAllocation(ptr);
 }
