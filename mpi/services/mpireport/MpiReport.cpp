@@ -54,6 +54,8 @@ class MpiReport
     CaliperMetadataDB m_db;
     Aggregator        m_a;
 
+    std::string       m_filename;
+
     void add(Caliper* c, const SnapshotRecord* snapshot) {
         // this function processes our local snapshots during flush:
         //   add them to our local aggregator (m_a)
@@ -89,6 +91,9 @@ class MpiReport
             OutputStream    stream;
             stream.set_stream(OutputStream::StdOut);
 
+            if (!m_filename.empty())
+                stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
+
             FormatProcessor formatter(m_spec, stream);
 
             m_a.flush(m_db, formatter);
@@ -98,8 +103,8 @@ class MpiReport
 
 public:
 
-    MpiReport(const QuerySpec& spec) 
-        : m_spec(spec), m_a(spec) 
+    MpiReport(const QuerySpec& spec, const std::string& filename) 
+        : m_spec(spec), m_a(spec), m_filename(filename)
         { }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
@@ -129,7 +134,7 @@ public:
             return;
         }
 
-        s_instance.reset(new MpiReport(parser.spec()));
+        s_instance.reset(new MpiReport(parser.spec(), config.get("filename").to_string()));
     }
 
     static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
