@@ -104,11 +104,13 @@ cali_datatracker_free(void *ptr);
  *
  * \param ptr The pointer to the beginning of the allocation to track
  * \param label The unique label with which to track the allocation 
+ * \param size Size of the allocation
  */
 
 void 
 cali_datatracker_track(void *ptr, 
-                       const char *label);
+                       const char *label,
+                       size_t size);
 
 /**
  * Track an existing allocation in Caliper.
@@ -149,8 +151,8 @@ cali_datatracker_untrack(void *ptr);
 #define CALI_DATATRACKER_FREE(ptr) \
     cali_datatracker_free(ptr)
 
-#define CALI_DATATRACKER_TRACK(ptr) \
-    cali_datatracker_track(ptr, #ptr)
+#define CALI_DATATRACKER_TRACK(ptr, size)            \
+    cali_datatracker_track(ptr, #ptr, size)
 
 #define CALI_DATATRACKER_TRACK_DIMENSIONAL(ptr, elem_size, dimensions, num_dimensions) \
     cali_datatracker_track_dimensional(ptr, #ptr, elem_size, dimensions, num_dimensions)

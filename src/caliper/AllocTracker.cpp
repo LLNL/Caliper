@@ -273,7 +273,7 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
         if(!thread_lock.owns_lock()){
-            return nullptr;
+            return false;
         }
 
         std::unique_lock<std::mutex> process_lock(process_mutex);
@@ -370,9 +370,9 @@ AllocTracker::add_allocation(const std::string &label,
     
     Variant data[] = {
         Variant(a->m_start_address),
-        Variant(a->m_elem_size),
-        Variant(a->m_num_elems),
-        Variant(a->m_bytes)
+        Variant(cali_make_variant_from_uint(a->m_elem_size)),
+        Variant(cali_make_variant_from_uint(a->m_num_elems)),
+        Variant(cali_make_variant_from_uint(a->m_bytes))
     };
 
     Node *n = c.make_tree_entry(alloc_label_attr,

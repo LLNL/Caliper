@@ -61,7 +61,8 @@ void* Allocate(const std::string &label,
 void Free(void *ptr);
 
 void TrackAllocation(void *ptr,
-                     const std::string &label);
+                     const std::string &label,
+                     size_t size);
 
 void TrackAllocation(void *ptr,
                      const std::string &label,

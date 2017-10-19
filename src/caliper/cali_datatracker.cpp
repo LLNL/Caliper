@@ -55,8 +55,9 @@ cali_datatracker_free(void *ptr) {
 
 void 
 cali_datatracker_track(void *ptr, 
-                       const char *label) {
-    cali::DataTracker::TrackAllocation(ptr, label);
+                       const char *label,
+                       size_t size) {
+    cali::DataTracker::TrackAllocation(ptr, label, size);
 }
 
 void 
