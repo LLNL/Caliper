@@ -58,7 +58,7 @@ class SnapshotRecord
 public:
 
     struct Data {
-        const cali::Node* const*  node_entries;
+        const cali::Node* const* node_entries;
         const cali_id_t*     immediate_attr;
         const cali::Variant* immediate_data;
     };

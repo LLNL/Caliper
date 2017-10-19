@@ -22,9 +22,12 @@ namespace cali
     extern Attribute   mpisize_attr;
 
     extern bool        mpi_enabled;
+    extern bool        mpireport_enabled;
 
     extern std::string mpi_whitelist_string;
     extern std::string mpi_blacklist_string;
+
+    extern void mpireport_init(Caliper* c);
 
 #ifdef CALIPER_HAVE_MPIT
     extern bool mpit_enabled;
@@ -123,12 +126,30 @@ namespace
         c.set(mpirank_attr, Variant(rank));		
     }
 
+    if (mpireport_enabled) {
+        mpireport_init(&c);
+    }
+
 #ifdef CALIPER_HAVE_MPIT
     if (mpit_enabled) {
         Log(1).stream() << "mpit: Initializing MPI-T interface." << std::endl;
         mpit_init(&c);
     }
 #endif
+}{{endfn}}
+
+{{fn func MPI_Finalize}}{
+    if (mpireport_enabled)
+        Caliper::instance().flush_and_write(nullptr);
+
+    if (mpi_enabled && ::enable_{{func}}) {
+        Caliper c;
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        c.end(mpifn_attr);
+    } else {
+        {{callfn}}
+    }
 }{{endfn}}
 
 // Invoke pvar handle allocation routines for pvars bound to some MPI object
@@ -253,7 +274,7 @@ namespace
 }{{endfn}}
 // Wrap all MPI functions
 
-{{fnall func MPI_Init MPI_Init_thread MPI_Comm_create MPI_Errhandler_create MPI_File_open MPI_Comm_group MPI_Op_create MPI_Info_create MPI_Win_create}}{
+{{fnall func MPI_Init MPI_Init_thread MPI_Comm_create MPI_Errhandler_create MPI_File_open MPI_Finalize MPI_Comm_group MPI_Op_create MPI_Info_create MPI_Win_create}}{
     if (mpi_enabled && ::enable_{{func}}) {
         Caliper c;
         c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));

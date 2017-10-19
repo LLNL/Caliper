@@ -27,7 +27,6 @@
 //
 /// \file MpitService.cpp
 /// \brief Caliper MPIT service
-
 /// This is the MPI part of the MPI-T service, which will be part of libcaliper-mpiwrap.
 
 #include "caliper/Caliper.h"

@@ -23,16 +23,17 @@ macro(add_mpi_service_objlib)
 endmacro()
 
 add_subdirectory(mpiwrap)
+add_subdirectory(mpireport)
 
 if (CALIPER_HAVE_MPIT)
   add_subdirectory(mpit)
 endif()
 
-add_library(caliper-mpiwrap ${CALIPER_MPI_SERVICE_SOURCES})
+add_library(caliper-mpiwrap 
+  ${CALIPER_MPI_SERVICE_SOURCES} 
+  ${CALIPER_MPI_SERVICES_LIBS})
 
-target_link_libraries(caliper-mpiwrap caliper-common)
-target_link_libraries(caliper-mpiwrap caliper)
-target_link_libraries(caliper-mpiwrap ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
+target_link_libraries(caliper-mpiwrap caliper-mpi caliper)
 
 install(TARGETS caliper-mpiwrap
   EXPORT caliper

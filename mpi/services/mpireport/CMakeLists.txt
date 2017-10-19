@@ -1,0 +1,1 @@
+add_mpi_service_sources(MpiReport.cpp)
