@@ -378,6 +378,40 @@ addition to the regular Caliper runtime library.
    by the MPI implementation. Default: empty, records all available
    PVARs.
 
+MPI Report
+--------------------------------
+
+The MPI report service (`mpireport`) aggregates, formats, and writes
+collected Caliper records from all ranks in an MPI program into a
+single global report.  By default, the mpireport service prints a
+tabular, human-readable report of the collected snapshots. Users can
+provide a query specification in CalQL syntax to define filter,
+aggregation, and formatting options.
+
+The mpireport service aggregates Caliper data across MPI processes
+before printing it. This happens on every Caliper flush event.
+Enabling the mpireport service will trigger a flush during 
+MPI_Finalize.
+
+.. envvar:: CALI_MPIREPORT_FILENAME
+
+   File name of the output file. May be set to ``stdout`` or ``stderr``
+   to print to the standard output or error streams, respectively. 
+
+   Similar to the `recorder` service, the file name may contain fields
+   which will be substituted by attribute values (see `recorder`
+   service description), for example to create xindividual
+   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
+   multi-process program.
+
+   Default: stdout
+
+.. envvar:: CALI_MPIREPORT_CONFIG
+
+   An aggregation and formatting specification in CalQL syntax. 
+
+   Default: empty; all attributes in the snapshots will be printed.
+
 Recorder
 --------------------------------
 
