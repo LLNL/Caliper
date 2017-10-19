@@ -219,13 +219,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         return ret;
     }
-    
+
     /// Merge node given by un-mapped node info from stream with given \a idmap into DB
     /// If \a v_data is a string, it must already be in the string database!
-    const Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data, IdMap& idmap) {
-        attr_id = ::map_id(attr_id, idmap);
-        prnt_id = ::map_id(prnt_id, idmap);
-
+    const Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data) {
         if (attribute(attr_id) == Attribute::invalid)
             attr_id = CALI_INV_ID;
 
@@ -281,6 +278,17 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             m_attributes.insert(make_pair(string(node->data().to_string()), node));
         }
 
+        return node;
+    }
+    
+    /// Merge node given by un-mapped node info from stream with given \a idmap into DB
+    /// If \a v_data is a string, it must already be in the string database!
+    const Node* merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& v_data, IdMap& idmap) {
+        attr_id = ::map_id(attr_id, idmap);
+        prnt_id = ::map_id(prnt_id, idmap);
+
+        const Node* node = merge_node(node_id, attr_id, prnt_id, v_data);
+
         if (node_id != node->id())
             idmap.insert(make_pair(node_id, node->id()));
 
@@ -326,6 +334,39 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             list.push_back(Entry(node(::map_id(node_ids[i], idmap)))); 
         for (size_t i = 0; i < n_imm; ++i)
             list.push_back(Entry(::map_id(attr_ids[i], idmap), values[i]));
+
+        return list;       
+    }
+
+    const Node* recursive_merge_node(const Node* node, const CaliperMetadataAccessInterface& db) {
+        if (!node || node->id() == CALI_INV_ID)
+            return nullptr;
+        if (node->id() < 11)
+            return m_nodes[node->id()];
+
+        const Node* attr_node = 
+            recursive_merge_node(db.node(node->attribute()), db);
+        const Node* parent    = 
+            recursive_merge_node(node->parent(), db);
+
+        Variant v_data = node->data();
+
+        if (v_data.type() == CALI_TYPE_STRING)
+            v_data = make_string_variant(static_cast<const char*>(v_data.data()), v_data.size());
+
+        return merge_node(node->id(), attr_node->id(), parent ? parent->id() : CALI_INV_ID, v_data);
+    }
+
+    EntryList merge_snapshot(size_t n_nodes, const Node* const* nodes,
+                             size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
+                             const CaliperMetadataAccessInterface& db)
+    {
+        EntryList list;
+
+        for (size_t i = 0; i < n_nodes; ++i)
+            list.push_back(Entry(recursive_merge_node(nodes[i], db))); 
+        for (size_t i = 0; i < n_imm; ++i) 
+            list.push_back(Entry(recursive_merge_node(db.node(attr_ids[i]), db)->id(), values[i]));
 
         return list;       
     }
@@ -576,6 +617,14 @@ CaliperMetadataDB::merge_snapshot(size_t n_nodes, const cali_id_t node_ids[],
                                   const IdMap& idmap) const
 {
     return mP->merge_snapshot(n_nodes, node_ids, n_imm, attr_ids, values, idmap);
+}
+
+EntryList
+CaliperMetadataDB::merge_snapshot(size_t n_nodes, const Node* const* nodes, 
+                                  size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
+                                  const CaliperMetadataAccessInterface& db)
+{
+    return mP->merge_snapshot(n_nodes, nodes, n_imm, attr_ids, values, db);
 }
 
 Node* 

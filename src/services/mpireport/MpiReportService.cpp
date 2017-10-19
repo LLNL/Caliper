@@ -28,7 +28,7 @@
 // This is the Caliper runtime part of the MPI-T service, which will be part of libcaliper.
 // Must not contain any MPI dependencies.
 
-#include "../../CaliperService.h"
+#include "../CaliperService.h"
 
 #include <caliper/Caliper.h>
 
@@ -39,7 +39,7 @@ using namespace cali;
 namespace cali
 {
 
-bool mpit_enabled { false };
+bool mpireport_enabled { false };
 
 }
 
@@ -48,15 +48,14 @@ namespace
 
 // Register the service and initalize the MPI-T interface
 
-void mpit_register(Caliper* c) {
-    mpit_enabled = true;
-    Log(1).stream() << "Registered MPI-T service" << std::endl;
+void mpireport_register(Caliper* c) {
+    mpireport_enabled = true;
+    Log(1).stream() << "Registered MPI report service" << std::endl;
 }
 
 }
-
 
 namespace cali 
 {
-    CaliperService mpit_service = { "mpit", ::mpit_register };
+    CaliperService mpireport_service = { "mpireport", ::mpireport_register };
 }
