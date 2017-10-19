@@ -286,26 +286,25 @@ namespace
 
         cali_attr_type type = CALI_TYPE_INV;
 
-        switch (pvi.datatype) {
-        case MPI_COUNT:
-        case MPI_UNSIGNED:
-        case MPI_UNSIGNED_LONG:
-        case MPI_UNSIGNED_LONG_LONG:
-            type = CALI_TYPE_UINT;
-            break;
-        case MPI_INT:
-            type = CALI_TYPE_INT;
-            break;
-        case MPI_CHAR:
-            type = CALI_TYPE_STRING;
-            break;
-        case MPI_DOUBLE:
-            type = CALI_TYPE_DOUBLE;
-            break;
-        default:
-            break;
-        }
+        const struct calimpi_type_info_t {
+            MPI_Datatype   mpitype;
+            cali_attr_type calitype;
+        } calimpi_types[] = {
+            { MPI_COUNT,              CALI_TYPE_UINT   },
+            { MPI_UNSIGNED,           CALI_TYPE_UINT   },
+            { MPI_UNSIGNED_LONG,      CALI_TYPE_UINT   },
+            { MPI_UNSIGNED_LONG_LONG, CALI_TYPE_UINT   },
+            { MPI_INT,                CALI_TYPE_INT    },
+            { MPI_DOUBLE,             CALI_TYPE_DOUBLE },
+            { MPI_CHAR,               CALI_TYPE_STRING }
+        };
 
+        for (calimpi_type_info_t i : calimpi_types)
+            if (pvi.datatype == i.mpitype) {
+                type = i.calitype;
+                break;
+            }
+            
         if (type != CALI_TYPE_INV) {
             pvi.attr = 
                 c->create_attribute(string("mpit.")+pvi.name, CALI_TYPE_UINT,
@@ -315,7 +314,7 @@ namespace
                                     (pvi.aggregatable ? 1 : 0), &aggr_class_attr, &v_true);
         } else {
             Log(1).stream() << "mpit: Cannot create attribute for PVAR with index " << pvi.index
-                            << " (" << pvi.name << ")" << std::endl;
+                            << " (" << pvi.name << "): unsupported MPI datatype." << std::endl;
         }
     }
 
