@@ -810,7 +810,7 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
     m_thread_scope->blackboard.snapshot(&flush_info);
     mG->process_scope->blackboard.snapshot(&flush_info);
 
-    Log(0).stream() << "Application complete, flushing Caliper data" << std::endl;
+    Log(1).stream() << "Flushing Caliper data" << std::endl;
 
     mG->events.pre_write_evt(this, &flush_info);
 
