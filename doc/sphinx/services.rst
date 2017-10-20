@@ -58,7 +58,7 @@ generate an aggregate snapshot record for each unique combination of
 key values found in the input snapshots.  The values of the
 aggregation attributes in the input snapshots will be accumulated and
 appended to the aggregate snapshot.  The aggregate snapshot records
-also include an `aggregate.count` attribute that indicates how many
+also include a `count` attribute that indicates how many
 input snapshots with the given aggregation key were found. Attributes
 that are neither aggregation attributes nor part of the aggregation
 key will not appear in the aggregate snapshot records.
@@ -107,20 +107,20 @@ the aggregation key contains the `function`, `loop.id`, and
 `iteration` attributes, the `aggregate` service will generate the
 following aggregate snapshots : ::
 
-    loop.id=A  iteration=0  function=foo  aggregate.count=2
-    loop.id=A  iteration=1  function=foo  aggregate.count=2
-    loop.id=A  iteration=2  function=foo  aggregate.count=2
-    loop.id=B  iteration=0  function=foo  aggregate.count=1
-    loop.id=B  iteration=1  function=foo  aggregate.count=1
-    loop.id=B  iteration=2  function=foo  aggregate.count=1
-    loop.id=B  iteration=3  function=foo  aggregate.count=1
+    loop.id=A  iteration=0  function=foo  count=2
+    loop.id=A  iteration=1  function=foo  count=2
+    loop.id=A  iteration=2  function=foo  count=2
+    loop.id=B  iteration=0  function=foo  count=1
+    loop.id=B  iteration=1  function=foo  count=1
+    loop.id=B  iteration=2  function=foo  count=1
+    loop.id=B  iteration=3  function=foo  count=1
 
 Removing the `iteration` attribute from the aggregation key will
 collapse input snapshots with different iteration values into a
 single aggregate snapshot: ::
 
-    loop.id=A  function=foo  aggregate.count=6
-    loop.id=B  function=foo  aggregate.count=4
+    loop.id=A  function=foo  count=6
+    loop.id=B  function=foo  count=4
 
 Aggregation attributes
 ................................
@@ -129,7 +129,7 @@ The aggregate service accumulates values of aggregation attributes in
 input snapshots with similar aggregation keys. Specifically, it
 reports the minimum and maximum value, and computes the sum of the
 aggregation attributes in the input snapshots. Aggregate snapshots
-include `aggregate.(min|max|sum)#attribute-name` attributes with the
+include `(min|max|sum)#attribute-name` attributes with the
 minimum, maximum, and sum values for each aggregation attribute,
 respectively.
 
@@ -162,14 +162,14 @@ annotations of interest in the aggregation key (e.g.,
 
 The resulting file has the following contents: ::
 
-   loop.id=A  event.end#function=foo  aggregate.count=6
-     aggregate.min#time.inclusive.duration=25
-     aggregate.max#time.inclusive.duration=26
-     aggregate.sum#time.inclusice.duration=151
-   loop.id=B  event.end#function=foo  aggregate.count=4
-     aggregate.min#time.inclusive.duration=25
-     aggregate.max#time.inclusive.duration=26
-     aggregate.sum#time.inclusice.duration=102
+   loop.id=A  event.end#function=foo  count=6
+     min#time.inclusive.duration=25
+     max#time.inclusive.duration=26
+     sum#time.inclusice.duration=151
+   loop.id=B  event.end#function=foo  count=4
+     min#time.inclusive.duration=25
+     max#time.inclusive.duration=26
+     sum#time.inclusice.duration=102
    
 Alloc
 --------------------------------

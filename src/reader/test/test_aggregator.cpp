@@ -116,7 +116,7 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("aggregate.count");
+    Attribute count_attr = db.get_attribute("count");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -225,7 +225,7 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("aggregate.count");
+    Attribute count_attr = db.get_attribute("count");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -341,7 +341,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("aggregate.count");
+    Attribute count_attr = db.get_attribute("count");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -451,7 +451,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("aggregate.count");
+    Attribute count_attr = db.get_attribute("count");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -466,4 +466,88 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
 
     EXPECT_EQ(count,  9);
     EXPECT_EQ(val,   35);
+}
+
+TEST(AggregatorTest, StatisticsKernel) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+     // create some context attributes
+    
+    Attribute ctx =
+        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_attr =
+        db.create_attribute("val", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+
+    // make some nodes
+    
+    const struct NodeInfo {
+        cali_id_t node_id;
+        cali_id_t attr_id;
+        cali_id_t prnt_id;
+        Variant   data;
+    } test_nodes[] = {
+        { 100, ctx.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 101, ctx.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
+    };
+
+    const Node* node = nullptr;
+
+    for ( const NodeInfo& nI : test_nodes )
+        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+
+    //
+    // --- Make spec with default key and statistics kernel for "val"
+    //
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("statistics", "val"));
+
+    // perform recursive aggregation from two aggregators
+
+    Aggregator a(spec), b(spec);
+
+    Variant    v_ints[4] = { Variant(-4), Variant(9), Variant(25), Variant(36) };
+    cali_id_t  node_id = 101;
+    cali_id_t  val_id  = val_attr.id();
+
+    a.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[0], idmap));
+    a.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[1], idmap));
+
+    b.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[2], idmap));
+    b.add(db, db.merge_snapshot(1, &node_id, 1, &val_id, &v_ints[3], idmap));
+
+    // merge b into a
+    b.flush(db, a);
+
+    Attribute attr_min = db.get_attribute("min#val");
+    Attribute attr_max = db.get_attribute("max#val");
+    Attribute attr_sum = db.get_attribute("sum#val");
+    Attribute attr_avg = db.get_attribute("avg#val");
+
+    ASSERT_NE(attr_min, Attribute::invalid);
+    ASSERT_NE(attr_max, Attribute::invalid);
+    ASSERT_NE(attr_sum, Attribute::invalid);
+    ASSERT_NE(attr_avg, Attribute::invalid);
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    // check results
+    
+    EXPECT_EQ(resdb.size(), 1); // one entry
+
+    auto dict  = make_dict_from_entrylist(resdb.front());
+
+    EXPECT_EQ(dict[attr_min.id()].value().to_int(), -4);
+    EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
+    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 66);
+    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
 }
