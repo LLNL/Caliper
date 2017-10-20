@@ -101,6 +101,7 @@ namespace {
     static size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     static std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     static __thread uint64_t *sample_attribute_pointers[MAX_ATTRIBUTES];
+    static std::vector<Node*> event_name_nodes;
 
     std::map <std::string, uint64_t> sample_attribute_map = {
             {"ip",          PERF_SAMPLE_IP},
@@ -176,7 +177,6 @@ namespace {
 
         int signals_received;
         int samples_produced;
-        int mismatches;
         int null_events;
         int null_cali_instances;
     };
@@ -199,7 +199,7 @@ namespace {
         return (pid_t) syscall(__NR_gettid);
     }
 
-    static void sample_handler(perf_event_desc_t *fd) {
+    static void sample_handler(int event_index) {
         Caliper c = Caliper::sigsafe_instance();
 
         if (!c) {
@@ -215,11 +215,7 @@ namespace {
             data[attribute_index] = Variant(*vptr);
         }
 
-        // FIXME: make nodes beforehand
-        Node *n = c.make_tree_entry(libpfm_event_name_attr,
-            Variant(CALI_TYPE_STRING, fd->name, strlen(fd->name)));
-
-        SnapshotRecord trigger_info(1, &n, num_attributes, libpfm_attributes, data);
+        SnapshotRecord trigger_info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
 
         c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 
@@ -254,18 +250,13 @@ namespace {
             }
 
             // Read and record
-            //ret = perf_display_sample(fdx, 1, fdx->id, &ehdr, stderr);
             ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample);
             if (ret) {
                 Log(1).stream() << "Libpfm: cannot read sample" << std::endl;
             }
 
-            //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
-            //                "TIME: %llu ADDR:%llu CPU: %llu "
-            //                "WEIGHT: %llu DATA_SRC: %llu\n",
-            //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
-            //        sample.cpu, sample.weight, sample.data_src);
-            sample_handler(fdx);
+            // Run handler to push snapshot
+            sample_handler(i);
         } else {
             thread_states[thread_id].null_events++;
         }
@@ -277,7 +268,7 @@ namespace {
         }
     }
 
-    static void setup_thread_events() {
+    static void setup_thread_events(Caliper *c) {
         struct thread_state *ts;
         struct f_owner_ex fown_ex;
         int ret, fd, flags, i;
@@ -342,8 +333,8 @@ namespace {
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
 
             // Store Caliper nodes for each event name
-            // Node *n = c.make_tree_entry(libpfm_event_name_attr,
-            //      Variant(CALI_TYPE_STRING, fd->name, strlen(fd->name)));
+            event_name_nodes.push_back(c->make_tree_entry(libpfm_event_name_attr,
+                                                          Variant(CALI_TYPE_STRING, fds[i].name, strlen(fds[i].name))));
         }
     }
 
@@ -576,14 +567,14 @@ namespace {
 
     void post_init_cb(Caliper* c) {
         // Run on master thread initialization
-        setup_thread_events();
+        setup_thread_events(c);
         setup_thread_pointers();
         begin_thread_sampling();
     }
 
     void create_scope_cb(Caliper* c, cali_context_scope_t scope) {
         if (scope == CALI_SCOPE_THREAD) {
-            setup_thread_events();
+            setup_thread_events(c);
             setup_thread_pointers();
             begin_thread_sampling();
         }
@@ -605,7 +596,6 @@ namespace {
             Log(1).stream() << "thread " << i
                             << "\tsignals received: " << thread_states[i].signals_received
                             << "\tsamples produced: " << thread_states[i].samples_produced
-                            << "\tmismatches: " << thread_states[i].mismatches
                             << "\tnull events: " << thread_states[i].null_events
                             << "\tnull cali instances: " << thread_states[i].null_cali_instances << std::endl;
         }
