@@ -92,9 +92,12 @@ namespace {
     ConfigSet config;
 
 #define MAX_THR  4096
+#define MAX_EVENTS 12 // Maximum number of events to count/sample
 #define MAX_ATTRIBUTES 12 // Number of available attributes below
 
     static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
+    static Attribute libpfm_event_name_attr;
+    static cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
     static size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     static std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     static __thread uint64_t *sample_attribute_pointers[MAX_ATTRIBUTES];
@@ -114,25 +117,33 @@ namespace {
     };
 
     static const ConfigSet::Entry s_configdata[] = {
-            {"event_list", CALI_TYPE_STRING, "cycles",
-             "Event List",
+            {"events", CALI_TYPE_STRING, "cycles",
+             "Event list",
              "Comma-separated list of events to sample"
+            },
+            {"record_counter", CALI_TYPE_BOOL, "true",
+             "Record counter values (true|false)",   
+             "Whether to record event counter values at each snapshot (true|false)"
+            },
+            {"enable_sampling", CALI_TYPE_BOOL, "true",
+             "Enable sampling",   
+             "Whether to trigger and record samples"
             },
             {"sample_attributes", CALI_TYPE_STRING, "ip,time,tid,cpu",
              "Sample attributes",
              "Comma-separated list of attributes to record for each sample"
             },
-            {"period", CALI_TYPE_UINT, "20000000",
-             "Sampling period",
-             "Period of events until a sample is generated."
+            {"sample_period", CALI_TYPE_UINT, "20000000",
+             "Event sampling periods",
+             "Comma-separated list of event periods"
             },
-            {"precise_ip", CALI_TYPE_UINT, "0",
-             "Use Precise IP?",
-             "Requests precise IP for supporting architectures (e.g. PEBS). May be 0, 1, or 2."
+            {"precise_ip", CALI_TYPE_STRING, "0",
+             "Precise IP values for events",
+             "Comma-separated list of precise IP values for respective events"
             },
-            {"config1", CALI_TYPE_UINT, "0",
-             "Extra event configuration",
-             "Specifies extra event configuration value for supported events (e.g. PEBS latency threshold)"
+            {"config1", CALI_TYPE_STRING, "0",
+             "Extra event configurations",
+             "Comma-separated list of extra event configuration values for supported events"
             },
             ConfigSet::Terminator
     };
@@ -141,11 +152,11 @@ namespace {
      * Service configuration variables
      */
     int num_attributes = 0;
-    static unsigned int sampling_period;
-    static unsigned int precise_ip;
-    static unsigned int config1;
+    static unsigned int record_counter;
     static std::string events_string;
-    static std::vector <uint64_t> events;
+    static std::vector<uint64_t> sampling_period_list;
+    static std::vector<uint64_t> precise_ip_list;
+    static std::vector<uint64_t> config1_list;
 
     static std::vector <std::string> sample_attributes_strvec;
     static uint64_t sample_attributes = 0;
@@ -160,7 +171,6 @@ namespace {
         }
 
         int id;
-        int fd;
         pid_t tid;
         perf_event_desc_t *fds;
 
@@ -177,7 +187,7 @@ namespace {
 
     static __thread int thread_id;
     static __thread perf_event_desc_t *fds;
-    static __thread int num_fds;
+    static __thread int num_events;
 
     static int signum = SIGIO;
     static int buffer_pages = 1;
@@ -189,7 +199,7 @@ namespace {
         return (pid_t) syscall(__NR_gettid);
     }
 
-    static void sample_handler() {
+    static void sample_handler(perf_event_desc_t *fd) {
         Caliper c = Caliper::sigsafe_instance();
 
         if (!c) {
@@ -205,7 +215,11 @@ namespace {
             data[attribute_index] = Variant(*vptr);
         }
 
-        SnapshotRecord trigger_info(num_attributes, libpfm_attributes, data);
+        // FIXME: make nodes beforehand
+        Node *n = c.make_tree_entry(libpfm_event_name_attr,
+            Variant(CALI_TYPE_STRING, fd->name, strlen(fd->name)));
+
+        SnapshotRecord trigger_info(1, &n, num_attributes, libpfm_attributes, data);
 
         c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 
@@ -213,67 +227,45 @@ namespace {
     }
 
     static void sigio_handler(int sig, siginfo_t *info, void *extra) {
-        perf_event_desc_t *fdx;
+        perf_event_desc_t *fdx = 0;
         struct perf_event_header ehdr;
-        thread_state *ts;
         int fd, i, ret;
-        bool skip = false;
-        pid_t tid;
 
-        ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+        fd = info->si_fd;
+
+        ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
         if (ret)
-            err(1, "cannot stop sampling for handling");
+            Log(0).stream() << "Libpfm: cannot stop sampling for handling" << std::endl;
 
         thread_states[thread_id].signals_received++;
 
-        fd = info->si_fd;
-        tid = gettid();
-
-        for (i = 0; i < MAX_THR; i++) {
-            if (thread_states[i].fd == fd) {
+        for (i=0; i<num_events; i++) {
+            if (fd == fds[i].fd) {
+                fdx = &fds[i];
                 break;
             }
         }
 
-        if (i == MAX_THR) {
-            warnx("bad info.si_fd: %d NEQ %d", fd, thread_states[thread_id].fd);
-        }
-
-        ts = &thread_states[i];
-
-        if (tid != ts->tid) {
-            thread_states[thread_id].mismatches++;
-            fdx = ts->fds;
-            skip = true;
-        } else {
-            fdx = fds;
-        }
-
         if (fdx) {
             // Read header
-            ret = perf_read_buffer(fdx + 0, &ehdr, sizeof(ehdr));
+            ret = perf_read_buffer(fdx, &ehdr, sizeof(ehdr));
             if (ret) {
-                warnx("cannot read event header");
+                Log(1).stream() << "Libpfm: cannot read event header" << std::endl;
             }
 
-            if (skip) {
-                // Consume only (don't record a different threads data on this thread)
-                perf_skip_buffer(fdx + 0, ehdr.size);
-            } else {
-                // Read and record
-                //ret = perf_display_sample(fdx, 1, fdx->id, &ehdr, stderr);
-                ret = perf_read_sample(fdx, 1, fdx->id, &ehdr, &sample);
-                if (ret) {
-                    warnx("cannot read sample");
-                }
-
-                //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
-                //                "TIME: %llu ADDR:%llu CPU: %llu "
-                //                "WEIGHT: %llu DATA_SRC: %llu\n",
-                //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
-                //        sample.cpu, sample.weight, sample.data_src);
-                sample_handler();
+            // Read and record
+            //ret = perf_display_sample(fdx, 1, fdx->id, &ehdr, stderr);
+            ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample);
+            if (ret) {
+                Log(1).stream() << "Libpfm: cannot read sample" << std::endl;
             }
+
+            //fprintf(stderr, "IP: %llu PID: %llu TID: %llu "
+            //                "TIME: %llu ADDR:%llu CPU: %llu "
+            //                "WEIGHT: %llu DATA_SRC: %llu\n",
+            //        sample.ip, sample.pid, sample.tid, sample.time, sample.addr,
+            //        sample.cpu, sample.weight, sample.data_src);
+            sample_handler(fdx);
         } else {
             thread_states[thread_id].null_events++;
         }
@@ -281,35 +273,15 @@ namespace {
         // Reset
         ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
         if (ret) {
-            err(1, "cannot refresh");
+            Log(0).stream() << "Libpfm: unable to refresh sampling!" << std::endl;
         }
     }
 
     static void setup_thread_events() {
         struct thread_state *ts;
         struct f_owner_ex fown_ex;
-        int ret, fd, flags;
+        int ret, fd, flags, i;
         size_t pgsz = sysconf(_SC_PAGESIZE);
-
-        // Get perf_event from string
-        fds = NULL;
-        num_fds = 0;
-        ret = perf_setup_list_events(events_string.c_str(), &fds, &num_fds);
-        if (ret || !num_fds)
-            errx(1, "cannot monitor event");
-
-        // Set up perf_event
-        fds[0].hw.disabled = 1;
-        fds[0].hw.wakeup_events = 1;
-        fds[0].hw.sample_type = sample_attributes;
-        fds[0].hw.sample_period = sampling_period;
-        fds[0].hw.read_format = 0;
-        fds[0].hw.precise_ip = precise_ip;
-        fds[0].hw.config1 = config1;
-
-        fds[0].fd = fd = perf_event_open(&fds[0].hw, gettid(), -1, -1, 0);
-        if (fd == -1)
-            err(1, "cannot attach event %s", fds[0].name);
 
         // Get unique thread id
         id_mutex.lock();
@@ -319,30 +291,60 @@ namespace {
         // Set thread state
         ts = &thread_states[thread_id];
         ts->id = thread_id;
-        ts->fd = fd;
         ts->tid = gettid();
         ts->fds = fds;
 
-        // Set up perf_event file descriptor to signal this thread
-        flags = fcntl(fd, F_GETFL, 0);
-        if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
-            err(1, "fcntl SETFL failed");
+        // Get perf_event from string
+        fds = NULL;
+        num_events = 0;
+        ret = perf_setup_list_events(events_string.c_str(), &fds, &num_events);
+        if (ret || !num_events)
+            Log(0).stream() << "Libpfm: invalid event(s) specified!" << std::endl;
+        
+        if (num_events > MAX_EVENTS)
+            Log(0).stream() << "Libpfm: too many events specified for Libpfm service! Maximum is " << MAX_EVENTS << std::endl;
 
-        fown_ex.type = F_OWNER_TID;
-        fown_ex.pid = gettid();
-        ret = fcntl(fd, F_SETOWN_EX, (unsigned long) &fown_ex);
-        if (ret)
-            err(1, "fcntl SETOWN failed");
+        fds[0].fd = -1;
+        for(i=0; i < num_events; i++) {
 
-        if (fcntl(fd, F_SETSIG, signum) < 0)
-            err(1, "fcntl SETSIG failed");
+            // Set up perf_event
+            fds[i].hw.disabled = (i == 0) ? 1 : 0;
+            fds[i].hw.wakeup_events = 1;
+            fds[i].hw.sample_type = sample_attributes;
+            fds[i].hw.sample_period = sampling_period_list[i];
+            fds[i].hw.read_format = 0;
+            fds[i].hw.precise_ip = precise_ip_list[i];
+            fds[i].hw.config1 = config1_list[i];
 
-        // Create mmap buffer for samples
-        fds[0].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        if (fds[0].buf == MAP_FAILED)
-            err(1, "cannot mmap buffer");
+            fds[i].fd = fd = perf_event_open(&fds[i].hw, ts->tid, -1, fds[0].fd, 0);
+            if (fd == -1)
+                Log(0).stream() << "Libpfm: cannot attach event " << fds[i].name << std::endl;
 
-        fds[0].pgmsk = (buffer_pages * pgsz) - 1;
+            // Set up perf_event file descriptor to signal this thread
+            flags = fcntl(fd, F_GETFL, 0);
+            if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
+                Log(0).stream() << "Libpfm: fcntl SETFL failed" << std::endl;
+
+            fown_ex.type = F_OWNER_TID;
+            fown_ex.pid = ts->tid;
+            ret = fcntl(fd, F_SETOWN_EX, (unsigned long) &fown_ex);
+            if (ret)
+                Log(0).stream() << "Libpfm: fcntl SETOWN failed" << std::endl;
+
+            if (fcntl(fd, F_SETSIG, signum) < 0)
+                Log(0).stream() << "Libpfm: fcntl SETSIG failed" << std::endl;
+
+            // Create mmap buffer for samples
+            fds[i].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            if (fds[i].buf == MAP_FAILED)
+                Log(0).stream() << "Libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
+
+            fds[i].pgmsk = (buffer_pages * pgsz) - 1;
+
+            // Store Caliper nodes for each event name
+            // Node *n = c.make_tree_entry(libpfm_event_name_attr,
+            //      Variant(CALI_TYPE_STRING, fd->name, strlen(fd->name)));
+        }
     }
 
     static int setup_process_signals() {
@@ -358,10 +360,10 @@ namespace {
         sa.sa_flags = SA_SIGINFO;
 
         if (sigaction(signum, &sa, NULL) != 0)
-            errx(1, "sigaction failed");
+            Log(0).stream() << "Libpfm: sigaction failed" << std::endl;
 
         if (pfm_initialize() != PFM_SUCCESS)
-            errx(1, "pfm_initialize failed");
+            Log(0).stream() << "Libpfm: pfm_initialize failed" << std::endl;
 
         sigemptyset(&set);
         sigemptyset(&newsig);
@@ -369,17 +371,17 @@ namespace {
         sigaddset(&newsig, SIGIO);
 
         if (pthread_sigmask(SIG_BLOCK, &set, NULL))
-            err(1, "cannot mask SIGIO in main thread");
+            Log(0).stream() << "Libpfm: cannot mask SIGIO in main thread" << std::endl;
 
         ret = sigprocmask(SIG_SETMASK, NULL, &oldsig);
         if (ret)
-            err(1, "sigprocmask failed");
+            Log(0).stream() << "Libpfm: sigprocmask failed" << std::endl;
 
         if (sigismember(&oldsig, SIGIO)) {
-            warnx("program started with SIGIO masked, unmasking it now\n");
+            Log(1).stream() << "Libpfm: program started with SIGIO masked, unmasking it now" << std::endl;
             ret = sigprocmask(SIG_UNBLOCK, &newsig, NULL);
             if (ret)
-                err(1, "sigprocmask failed");
+                Log(0).stream() << "Libpfm: sigprocmask failed" << std::endl;
         }
 
         return ret;
@@ -389,24 +391,22 @@ namespace {
         int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH, 1);
 
         if (ret == -1)
-            err(1, "cannot refresh");
+            Log(0).stream() << "Libpfm: cannot refresh sampler" << std::endl;
 
         return ret;
     }
 
     static int end_thread_sampling() {
-        int ret = ioctl(thread_states[thread_id].fd, PERF_EVENT_IOC_DISABLE, 0);
+        int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_DISABLE, 0);
 
         if (ret)
-            err(1, "cannot stop");
+            Log(0).stream() <<  "Libpfm: cannot stop sampling" << std::endl;
 
         return ret;
     }
 
-    static void parse_configset(Caliper *c) {
+    static bool parse_configset(Caliper *c) {
         config = RuntimeConfig::init("libpfm", s_configdata);
-
-        events_string = config.get("event_list").to_string();
 
         num_attributes = 0;
         sample_attributes_strvec.clear();
@@ -469,11 +469,48 @@ namespace {
             ++num_attributes;
         }
 
-        sampling_period = config.get("period").to_uint();
+        record_counter = config.get("record_counter").to_bool();
 
-        precise_ip = config.get("precise_ip").to_uint();
+        events_string = config.get("events").to_string();
 
-        config1 = config.get("config1").to_uint();
+        std::string sampling_period_list_str = config.get("sample_period").to_string();
+        std::string precise_ip_list_str = config.get("precise_ip").to_string();
+        std::string config1_list_str = config.get("config1").to_string();
+
+        std::vector<std::string> sampling_period_strvec;
+        std::vector<std::string> precise_ip_strvec;
+        std::vector<std::string> config1_strvec;
+
+        util::split(sampling_period_list_str, ',', back_inserter(sampling_period_strvec));
+        util::split(precise_ip_list_str, ',', back_inserter(precise_ip_strvec));
+        util::split(config1_list_str, ',', back_inserter(config1_strvec));
+
+        size_t events_listed = 1+std::count(events_string.begin(), events_string.end(), ',');
+
+        if (events_listed != sampling_period_strvec.size()
+            | events_listed != precise_ip_strvec.size()
+            | events_listed != config1_strvec.size()) {
+            
+            Log(0).stream() << "Invalid arguments specified to Libpfm service!" << std::endl;
+            Log(0).stream() << "Event list, sampling period, precise IP, and config1 must all have the same number of values." << std::endl;
+
+            return false;
+        }
+
+        for (int i=0; i<events_listed; i++) {
+            try {
+                sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
+                precise_ip_list.push_back(std::stoull(precise_ip_strvec[i]));
+                config1_list.push_back(std::stoull(config1_strvec[i]));
+            } catch (...) {
+                Log(0).stream() << "Invalid arguments specified to Libpfm service!" << std::endl;
+                Log(0).stream() << "Sampling period, precise IP, and config1 must be unsigned integers (uint64_t)" << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+
     }
 
     static void setup_thread_pointers() {
@@ -522,9 +559,18 @@ namespace {
                     sample_attribute_pointers[attribute_index] = &sample.data_src;
                     break;
                 default:
-                    errx(1, "Attribute unrecognized!");
+                    Log(0).stream() << "Attribute unrecognized!" << std::endl;
                     return;
             }
+        }
+    }
+
+    void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+
+        Variant data[MAX_EVENTS];
+
+        for (int i=0; i<num_events; i++) {
+            // TODO: here
         }
     }
 
@@ -554,7 +600,7 @@ namespace {
 
         pfm_terminate();
 
-        Log(1).stream() << "libpfm thread stats:" << std::endl;
+        Log(1).stream() << "Libpfm thread stats:" << std::endl;
         for (int i=0; i<num_threads; i++) {
             Log(1).stream() << "thread " << i
                             << "\tsignals received: " << thread_states[i].signals_received
@@ -635,9 +681,21 @@ namespace {
 
     // Initialization handler
     void libpfm_service_register(Caliper* c) {
+
+        if (!parse_configset(c)) {
+            Log(0).stream() << "Failed to register Libpfm service!" << std::endl;
+            return;
+        }
+
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        parse_configset(c);
+        libpfm_event_name_attr = c->create_attribute("libpfm.event_name",
+                                                     CALI_TYPE_STRING, 
+                                                     CALI_ATTR_SCOPE_THREAD
+                                                     | CALI_ATTR_SKIP_EVENTS);
+        libpfm_event_name_attr_id = libpfm_event_name_attr.id();
+
+
         setup_process_signals();
         
         c->events().create_scope_evt.connect(create_scope_cb);
