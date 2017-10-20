@@ -187,7 +187,12 @@ perf_is_group_leader(perf_event_desc_t *fds, int idx)
 
 extern int perf_get_group_nevents(perf_event_desc_t *fds, int num, int leader);
 extern int perf_display_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, FILE *fp);
-extern int perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s);
+extern int perf_read_sample(perf_event_desc_t *fds, 
+                            int num_fds, 
+                            int idx, 
+                            struct perf_event_header *ehdr, 
+                            perf_event_sample_t *s,
+                            FILE *ferr);
 extern uint64_t display_lost(perf_event_desc_t *hw, perf_event_desc_t *fds, int num_fds, FILE *fp);
 extern void display_exit(perf_event_desc_t *hw, FILE *fp);
 extern void display_freq(int mode, perf_event_desc_t *hw, FILE *fp);

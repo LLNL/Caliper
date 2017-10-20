@@ -231,7 +231,7 @@ namespace {
 
         ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
         if (ret)
-            Log(0).stream() << "Libpfm: cannot stop sampling for handling" << std::endl;
+            Log(0).stream() << "libpfm: cannot stop sampling for handling" << std::endl;
 
         thread_states[thread_id].signals_received++;
 
@@ -246,13 +246,13 @@ namespace {
             // Read header
             ret = perf_read_buffer(fdx, &ehdr, sizeof(ehdr));
             if (ret) {
-                Log(1).stream() << "Libpfm: cannot read event header" << std::endl;
+                Log(1).stream() << "libpfm: cannot read event header" << std::endl;
             }
 
             // Read and record
-            ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample);
+            ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample, stderr); // any way to print to Log(1)?
             if (ret) {
-                Log(1).stream() << "Libpfm: cannot read sample" << std::endl;
+                Log(1).stream() << "libpfm: cannot read sample" << std::endl;
             }
 
             // Run handler to push snapshot
@@ -264,7 +264,7 @@ namespace {
         // Reset
         ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
         if (ret) {
-            Log(0).stream() << "Libpfm: unable to refresh sampling!" << std::endl;
+            Log(0).stream() << "libpfm: unable to refresh sampling!" << std::endl;
         }
     }
 
@@ -290,10 +290,10 @@ namespace {
         num_events = 0;
         ret = perf_setup_list_events(events_string.c_str(), &fds, &num_events);
         if (ret || !num_events)
-            Log(0).stream() << "Libpfm: invalid event(s) specified!" << std::endl;
+            Log(0).stream() << "libpfm: invalid event(s) specified!" << std::endl;
         
         if (num_events > MAX_EVENTS)
-            Log(0).stream() << "Libpfm: too many events specified for Libpfm service! Maximum is " << MAX_EVENTS << std::endl;
+            Log(0).stream() << "libpfm: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
 
         fds[0].fd = -1;
         for(i=0; i < num_events; i++) {
@@ -309,26 +309,26 @@ namespace {
 
             fds[i].fd = fd = perf_event_open(&fds[i].hw, ts->tid, -1, fds[0].fd, 0);
             if (fd == -1)
-                Log(0).stream() << "Libpfm: cannot attach event " << fds[i].name << std::endl;
+                Log(0).stream() << "libpfm: cannot attach event " << fds[i].name << std::endl;
 
             // Set up perf_event file descriptor to signal this thread
             flags = fcntl(fd, F_GETFL, 0);
             if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
-                Log(0).stream() << "Libpfm: fcntl SETFL failed" << std::endl;
+                Log(0).stream() << "libpfm: fcntl SETFL failed" << std::endl;
 
             fown_ex.type = F_OWNER_TID;
             fown_ex.pid = ts->tid;
             ret = fcntl(fd, F_SETOWN_EX, (unsigned long) &fown_ex);
             if (ret)
-                Log(0).stream() << "Libpfm: fcntl SETOWN failed" << std::endl;
+                Log(0).stream() << "libpfm: fcntl SETOWN failed" << std::endl;
 
             if (fcntl(fd, F_SETSIG, signum) < 0)
-                Log(0).stream() << "Libpfm: fcntl SETSIG failed" << std::endl;
+                Log(0).stream() << "libpfm: fcntl SETSIG failed" << std::endl;
 
             // Create mmap buffer for samples
             fds[i].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             if (fds[i].buf == MAP_FAILED)
-                Log(0).stream() << "Libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
+                Log(0).stream() << "libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
 
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
 
@@ -351,10 +351,10 @@ namespace {
         sa.sa_flags = SA_SIGINFO;
 
         if (sigaction(signum, &sa, NULL) != 0)
-            Log(0).stream() << "Libpfm: sigaction failed" << std::endl;
+            Log(0).stream() << "libpfm: sigaction failed" << std::endl;
 
         if (pfm_initialize() != PFM_SUCCESS)
-            Log(0).stream() << "Libpfm: pfm_initialize failed" << std::endl;
+            Log(0).stream() << "libpfm: pfm_initialize failed" << std::endl;
 
         sigemptyset(&set);
         sigemptyset(&newsig);
@@ -362,17 +362,17 @@ namespace {
         sigaddset(&newsig, SIGIO);
 
         if (pthread_sigmask(SIG_BLOCK, &set, NULL))
-            Log(0).stream() << "Libpfm: cannot mask SIGIO in main thread" << std::endl;
+            Log(0).stream() << "libpfm: cannot mask SIGIO in main thread" << std::endl;
 
         ret = sigprocmask(SIG_SETMASK, NULL, &oldsig);
         if (ret)
-            Log(0).stream() << "Libpfm: sigprocmask failed" << std::endl;
+            Log(0).stream() << "libpfm: sigprocmask failed" << std::endl;
 
         if (sigismember(&oldsig, SIGIO)) {
-            Log(1).stream() << "Libpfm: program started with SIGIO masked, unmasking it now" << std::endl;
+            Log(1).stream() << "libpfm: program started with SIGIO masked, unmasking it now" << std::endl;
             ret = sigprocmask(SIG_UNBLOCK, &newsig, NULL);
             if (ret)
-                Log(0).stream() << "Libpfm: sigprocmask failed" << std::endl;
+                Log(0).stream() << "libpfm: sigprocmask failed" << std::endl;
         }
 
         return ret;
@@ -382,7 +382,7 @@ namespace {
         int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH, 1);
 
         if (ret == -1)
-            Log(0).stream() << "Libpfm: cannot refresh sampler" << std::endl;
+            Log(0).stream() << "libpfm: cannot refresh sampler" << std::endl;
 
         return ret;
     }
@@ -391,7 +391,7 @@ namespace {
         int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_DISABLE, 0);
 
         if (ret)
-            Log(0).stream() <<  "Libpfm: cannot stop sampling" << std::endl;
+            Log(0).stream() <<  "libpfm: cannot stop sampling" << std::endl;
 
         return ret;
     }
@@ -482,8 +482,8 @@ namespace {
             | events_listed != precise_ip_strvec.size()
             | events_listed != config1_strvec.size()) {
             
-            Log(0).stream() << "Invalid arguments specified to Libpfm service!" << std::endl;
-            Log(0).stream() << "Event list, sampling period, precise IP, and config1 must all have the same number of values." << std::endl;
+            Log(0).stream() << "libpfm: invalid arguments specified!" << std::endl;
+            Log(0).stream() << "libpfm: Event list, sampling period, precise IP, and config1 must all have the same number of values." << std::endl;
 
             return false;
         }
@@ -494,8 +494,8 @@ namespace {
                 precise_ip_list.push_back(std::stoull(precise_ip_strvec[i]));
                 config1_list.push_back(std::stoull(config1_strvec[i]));
             } catch (...) {
-                Log(0).stream() << "Invalid arguments specified to Libpfm service!" << std::endl;
-                Log(0).stream() << "Sampling period, precise IP, and config1 must be unsigned integers (uint64_t)" << std::endl;
+                Log(0).stream() << "libpfm: invalid arguments specified to libpfm service!" << std::endl;
+                Log(0).stream() << "libpfm: sampling period, precise IP, and config1 must be unsigned integers (uint64_t)" << std::endl;
                 return false;
             }
         }
@@ -550,7 +550,7 @@ namespace {
                     sample_attribute_pointers[attribute_index] = &sample.data_src;
                     break;
                 default:
-                    Log(0).stream() << "Attribute unrecognized!" << std::endl;
+                    Log(0).stream() << "libpfm: attribute unrecognized!" << std::endl;
                     return;
             }
         }
@@ -561,7 +561,10 @@ namespace {
         Variant data[MAX_EVENTS];
 
         for (int i=0; i<num_events; i++) {
-            // TODO: here
+            // TODO: this
+            // 1. create libpfm.counter.EVENT_NAME for each event at init
+            //   - make it of class "aggregatable"
+            // 2. read each event counter here and record it
         }
     }
 
@@ -591,13 +594,13 @@ namespace {
 
         pfm_terminate();
 
-        Log(1).stream() << "Libpfm thread stats:" << std::endl;
+        Log(1).stream() << "libpfm: thread stats:" << std::endl;
         for (int i=0; i<num_threads; i++) {
-            Log(1).stream() << "thread " << i
+            Log(1).stream() << "libpfm: thread " << i
                             << "\tsignals received: " << thread_states[i].signals_received
                             << "\tsamples produced: " << thread_states[i].samples_produced
-                            << "\tnull events: " << thread_states[i].null_events
-                            << "\tnull cali instances: " << thread_states[i].null_cali_instances << std::endl;
+                            << "\tunknown events: " << thread_states[i].null_events
+                            << "\tnull Caliper instances: " << thread_states[i].null_cali_instances << std::endl;
         }
     }
 
@@ -673,7 +676,7 @@ namespace {
     void libpfm_service_register(Caliper* c) {
 
         if (!parse_configset(c)) {
-            Log(0).stream() << "Failed to register Libpfm service!" << std::endl;
+            Log(0).stream() << "Failed to register libpfm service!" << std::endl;
             return;
         }
 
