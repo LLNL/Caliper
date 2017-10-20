@@ -62,7 +62,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
     ASSERT_EQ(q1.attribute_selection.list.size(), 3);
     EXPECT_EQ(q1.attribute_selection.list[0], "aa");
-    EXPECT_EQ(q1.attribute_selection.list[1], "aggregate.count");
+    EXPECT_EQ(q1.attribute_selection.list[1], "count");
     EXPECT_EQ(q1.attribute_selection.list[2], "bb");
     
     EXPECT_EQ(q1.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
@@ -83,7 +83,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     ASSERT_EQ(q2.attribute_selection.list.size(), 3);
     EXPECT_EQ(q2.attribute_selection.list[0], "b");
     EXPECT_EQ(q2.attribute_selection.list[1], "ccc");
-    EXPECT_EQ(q2.attribute_selection.list[2], "aggregate.count");
+    EXPECT_EQ(q2.attribute_selection.list[2], "count");
     
     EXPECT_EQ(q2.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregation_ops.list.size(), 1);
@@ -301,7 +301,7 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q1.attribute_selection.list[0], "a");
     EXPECT_EQ(q1.attribute_selection.list[1], "bb");
     EXPECT_EQ(q1.attribute_selection.list[2], "cc");
-    EXPECT_EQ(q1.attribute_selection.list[3], "aggregate.count");
+    EXPECT_EQ(q1.attribute_selection.list[3], "count");
 
     EXPECT_EQ(q1.filter.selection, QuerySpec::FilterSelection::List);
     ASSERT_EQ(q1.filter.list.size(), 3);
