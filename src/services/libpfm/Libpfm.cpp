@@ -92,8 +92,8 @@ namespace {
     ConfigSet config;
 
 #define MAX_THR  4096
-#define MAX_EVENTS 12 // Maximum number of events to count/sample
-#define MAX_ATTRIBUTES 12 // Number of available attributes below
+#define MAX_ATTRIBUTES 12
+#define MAX_EVENTS 32
 
     static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
     static Attribute libpfm_event_name_attr;
@@ -154,7 +154,8 @@ namespace {
      * Service configuration variables
      */
     int num_attributes = 0;
-    static unsigned int record_counters;
+    static bool record_counters;
+    static bool enable_sampling;
     static std::string events_string;
     static std::vector<std::string> event_list;
     static std::vector<uint64_t> sampling_period_list;
@@ -177,10 +178,11 @@ namespace {
         pid_t tid;
         perf_event_desc_t *fds;
 
-        int signals_received;
-        int samples_produced;
-        int null_events;
-        int null_cali_instances;
+        uint64_t signals_received;
+        uint64_t samples_produced;
+        uint64_t bad_samples;
+        uint64_t null_events;
+        uint64_t null_cali_instances;
     };
 
     thread_state thread_states[MAX_THR];
@@ -251,22 +253,27 @@ namespace {
                 Log(1).stream() << "libpfm: cannot read event header" << std::endl;
             }
 
-            // Read and record
-            ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample, stderr); // any way to print to Log(1)?
-            if (ret) {
-                Log(1).stream() << "libpfm: cannot read sample" << std::endl;
-            }
+            if (ehdr.type == PERF_RECORD_SAMPLE) {
+                // Read and record
+                ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample, stderr); // any way to print to Log(1)?
+                if (ret) {
+                    Log(1).stream() << "libpfm: cannot read sample" << std::endl;
+                }
 
-            // Run handler to push snapshot
-            sample_handler(i);
+                // Run handler to push snapshot
+                sample_handler(i);
+            } else {
+                thread_states[thread_id].bad_samples++;
+                perf_skip_buffer(fdx, ehdr.size);
+            }
         } else {
             thread_states[thread_id].null_events++;
         }
 
         // Reset
-        ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+        ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
         if (ret) {
-            Log(0).stream() << "libpfm: unable to refresh sampling!" << std::endl;
+            Log(0).stream() << "libpfm: unable to re-enable sampling!" << std::endl;
         }
     }
 
@@ -297,19 +304,21 @@ namespace {
         if (num_events > MAX_EVENTS)
             Log(0).stream() << "libpfm: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
 
-        fds[0].fd = -1;
         for(i=0; i < num_events; i++) {
 
             // Set up perf_event
-            fds[i].hw.disabled = (i == 0) ? 1 : 0;
-            fds[i].hw.wakeup_events = 1;
-            fds[i].hw.sample_type = sample_attributes;
-            fds[i].hw.sample_period = sampling_period_list[i];
-            fds[i].hw.read_format = PERF_FORMAT_SCALE;
-            fds[i].hw.precise_ip = precise_ip_list[i];
-            fds[i].hw.config1 = config1_list[i];
+            fds[i].hw.disabled = 1;
+            fds[i].hw.read_format = record_counters ? PERF_FORMAT_SCALE : 0;
 
-            fds[i].fd = fd = perf_event_open(&fds[i].hw, ts->tid, -1, fds[0].fd, 0);
+            if (enable_sampling) {
+                fds[i].hw.wakeup_events = 1;
+                fds[i].hw.sample_type = sample_attributes;
+                fds[i].hw.sample_period = sampling_period_list[i]; 
+                fds[i].hw.precise_ip = precise_ip_list[i];
+                fds[i].hw.config1 = config1_list[i];
+            }
+
+            fds[i].fd = fd = perf_event_open(&fds[i].hw, ts->tid, -1, -1, 0);
             if (fd == -1)
                 Log(0).stream() << "libpfm: cannot attach event " << fds[i].name << std::endl;
 
@@ -327,16 +336,19 @@ namespace {
             if (fcntl(fd, F_SETSIG, signum) < 0)
                 Log(0).stream() << "libpfm: fcntl SETSIG failed" << std::endl;
 
-            // Create mmap buffer for samples
             fds[i].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
             if (fds[i].buf == MAP_FAILED)
                 Log(0).stream() << "libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
 
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
 
-            // Store Caliper nodes for each event name
-            event_name_nodes.push_back(c->make_tree_entry(libpfm_event_name_attr,
-                                                          Variant(CALI_TYPE_STRING, fds[i].name, strlen(fds[i].name))));
+            if (enable_sampling) {
+                // Store Caliper nodes for each event name
+                event_name_nodes.push_back(
+                        c->make_tree_entry(libpfm_event_name_attr,
+                                           Variant(CALI_TYPE_STRING, fds[i].name, strlen(fds[i].name))));
+            }
+
         }
     }
 
@@ -381,19 +393,40 @@ namespace {
     }
 
     static int begin_thread_sampling() {
-        int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_REFRESH, 1);
+        int i, ret;
+        
+        for (i=0; i<num_events; i++) {
+            ret = ioctl(fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
-        if (ret == -1)
-            Log(0).stream() << "libpfm: cannot refresh sampler" << std::endl;
+            if (ret == -1)
+                Log(0).stream() << "libpfm: cannot enable sampler" << std::endl;
+
+            ret = ioctl(fds[i].fd, PERF_EVENT_IOC_ENABLE, 0);
+
+            if (ret == -1)
+                Log(0).stream() << "libpfm: cannot enable sampler" << std::endl;
+        }
 
         return ret;
     }
 
     static int end_thread_sampling() {
-        int ret = ioctl(fds[0].fd, PERF_EVENT_IOC_DISABLE, 0);
+        int i, ret;
+        size_t pgsz = sysconf(_SC_PAGESIZE);
 
-        if (ret)
-            Log(0).stream() <<  "libpfm: cannot stop sampling" << std::endl;
+        for (i=0; i<num_events; i++) {
+            ret = ioctl(fds[i].fd, PERF_EVENT_IOC_DISABLE, 0);
+
+            if (ret)
+                Log(0).stream() <<  "libpfm: cannot stop sampling" << std::endl;
+
+            munmap(fds[i].buf, pgsz);
+            close(fds[i].fd);
+        }
+
+        perf_free_fds(fds, num_events);
+
+        pfm_terminate();
 
         return ret;
     }
@@ -401,108 +434,115 @@ namespace {
     static bool parse_configset(Caliper *c) {
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        num_attributes = 0;
-        sample_attributes_strvec.clear();
-        std::string sample_attributes_string = config.get("sample_attributes").to_string();
-        util::split(sample_attributes_string, ',', back_inserter(sample_attributes_strvec));
-
-        for (auto sample_attribute_str : sample_attributes_strvec) {
-
-            std::string attribute_name = "libpfm." + sample_attribute_str;
-
-            // Add to sample attributes for perf_event
-            uint64_t attribute_bits = sample_attribute_map[sample_attribute_str];
-            sample_attributes |= attribute_bits;
-
-            Attribute new_attribute;
-
-            if (attribute_bits == PERF_SAMPLE_IP) {
-
-                // Register IP attribute for symbol lookup
-                Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
-                Variant v_true(true);
-
-                new_attribute = c->create_attribute(attribute_name,
-                                                    CALI_TYPE_UINT,
-                                                    CALI_ATTR_ASVALUE
-                                                    | CALI_ATTR_SCOPE_THREAD
-                                                    | CALI_ATTR_SKIP_EVENTS,
-                                                    1, &symbol_class_attr, &v_true);
-            } else if (attribute_bits == PERF_SAMPLE_ADDR) {
-
-                // Register ADDR attribute for memory address lookup
-                Attribute memory_class_attr = c->get_attribute("class.memoryaddress");
-                Variant v_true(true);
-
-                new_attribute = c->create_attribute(attribute_name,
-                                                    CALI_TYPE_UINT,
-                                                    CALI_ATTR_ASVALUE
-                                                    | CALI_ATTR_SCOPE_THREAD
-                                                    | CALI_ATTR_SKIP_EVENTS,
-                                                    1, &memory_class_attr, &v_true);
-            } else {
-
-                new_attribute = c->create_attribute(attribute_name,
-                                                    CALI_TYPE_UINT,
-                                                    CALI_ATTR_ASVALUE
-                                                    | CALI_ATTR_SCOPE_THREAD
-                                                    | CALI_ATTR_SKIP_EVENTS);
-            }
-
-            // Add to attribute ids
-            cali_id_t attribute_id = new_attribute.id();
-            libpfm_attributes[num_attributes] = attribute_id;
-
-            // Record type of attribute
-            libpfm_attribute_types[num_attributes] = attribute_bits;
-
-            // Map type to id for postprocessing
-            libpfm_attribute_type_to_attr[attribute_bits] = new_attribute;
-
-            ++num_attributes;
-        }
-
+        enable_sampling = config.get("enable_sampling").to_bool();
         record_counters = config.get("record_counters").to_bool();
-
         events_string = config.get("events").to_string();
 
-        std::string sampling_period_list_str = config.get("sample_period").to_string();
-        std::string precise_ip_list_str = config.get("precise_ip").to_string();
-        std::string config1_list_str = config.get("config1").to_string();
+        util::split(events_string, ',', back_inserter(event_list));
+        size_t events_listed = event_list.size();
 
         std::vector<std::string> sampling_period_strvec;
         std::vector<std::string> precise_ip_strvec;
         std::vector<std::string> config1_strvec;
 
-        util::split(events_string, ',', back_inserter(event_list));
-        util::split(sampling_period_list_str, ',', back_inserter(sampling_period_strvec));
-        util::split(precise_ip_list_str, ',', back_inserter(precise_ip_strvec));
-        util::split(config1_list_str, ',', back_inserter(config1_strvec));
+        num_attributes = 0;
+        sample_attributes_strvec.clear();
 
-        size_t events_listed = event_list.size();
+        if (enable_sampling) {
+            std::string sample_attributes_string = config.get("sample_attributes").to_string();
+            util::split(sample_attributes_string, ',', back_inserter(sample_attributes_strvec));
 
-        if (events_listed != sampling_period_strvec.size()
-            | events_listed != precise_ip_strvec.size()
-            | events_listed != config1_strvec.size()) {
-            
-            Log(0).stream() << "libpfm: invalid arguments specified!" << std::endl;
-            Log(0).stream() << "libpfm: Event list, sampling period, precise IP, and config1 must all have the same number of values." << std::endl;
+            for (auto sample_attribute_str : sample_attributes_strvec) {
 
-            return false;
+                std::string attribute_name = "libpfm." + sample_attribute_str;
+
+                // Add to sample attributes for perf_event
+                uint64_t attribute_bits = sample_attribute_map[sample_attribute_str];
+                sample_attributes |= attribute_bits;
+
+                Attribute new_attribute;
+
+                if (attribute_bits == PERF_SAMPLE_IP) {
+
+                    // Register IP attribute for symbol lookup
+                    Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+                    Variant v_true(true);
+
+                    new_attribute = c->create_attribute(attribute_name,
+                                                        CALI_TYPE_UINT,
+                                                        CALI_ATTR_ASVALUE
+                                                        | CALI_ATTR_SCOPE_THREAD
+                                                        | CALI_ATTR_SKIP_EVENTS,
+                                                        1, &symbol_class_attr, &v_true);
+                } else if (attribute_bits == PERF_SAMPLE_ADDR) {
+
+                    // Register ADDR attribute for memory address lookup
+                    Attribute memory_class_attr = c->get_attribute("class.memoryaddress");
+                    Variant v_true(true);
+
+                    new_attribute = c->create_attribute(attribute_name,
+                                                        CALI_TYPE_UINT,
+                                                        CALI_ATTR_ASVALUE
+                                                        | CALI_ATTR_SCOPE_THREAD
+                                                        | CALI_ATTR_SKIP_EVENTS,
+                                                        1, &memory_class_attr, &v_true);
+                } else {
+
+                    new_attribute = c->create_attribute(attribute_name,
+                                                        CALI_TYPE_UINT,
+                                                        CALI_ATTR_ASVALUE
+                                                        | CALI_ATTR_SCOPE_THREAD
+                                                        | CALI_ATTR_SKIP_EVENTS);
+                }
+
+                // Add to attribute ids
+                cali_id_t attribute_id = new_attribute.id();
+                libpfm_attributes[num_attributes] = attribute_id;
+
+                // Record type of attribute
+                libpfm_attribute_types[num_attributes] = attribute_bits;
+
+                // Map type to id for postprocessing
+                libpfm_attribute_type_to_attr[attribute_bits] = new_attribute;
+
+                ++num_attributes;
+            }
+
+            std::string sampling_period_list_str = config.get("sample_period").to_string();
+            std::string precise_ip_list_str = config.get("precise_ip").to_string();
+            std::string config1_list_str = config.get("config1").to_string();
+
+            util::split(sampling_period_list_str, ',', back_inserter(sampling_period_strvec));
+            util::split(precise_ip_list_str, ',', back_inserter(precise_ip_strvec));
+            util::split(config1_list_str, ',', back_inserter(config1_strvec));
+
+            if (events_listed != sampling_period_strvec.size()
+                | events_listed != precise_ip_strvec.size()
+                | events_listed != config1_strvec.size()) {
+                
+                Log(0).stream() << "libpfm: invalid arguments specified!" << std::endl;
+                Log(0).stream() << "libpfm: if sampling enabled, event list, sampling period, precise IP, "
+                                << "and config1 must all have the same number of values." << std::endl;
+
+                return false;
+            }
         }
 
         Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
         Variant   v_true(true);
 
         for (int i=0; i<events_listed; i++) {
-            try {
-                sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
-                precise_ip_list.push_back(std::stoull(precise_ip_strvec[i]));
-                config1_list.push_back(std::stoull(config1_strvec[i]));
-            } catch (...) {
-                Log(0).stream() << "libpfm: invalid arguments specified to libpfm service!" << std::endl;
-                Log(0).stream() << "libpfm: sampling period, precise IP, and config1 must be unsigned integers (uint64_t)" << std::endl;
-                return false;
+            if (enable_sampling) {
+                try {
+                    sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
+                    precise_ip_list.push_back(std::stoull(precise_ip_strvec[i]));
+                    config1_list.push_back(std::stoull(config1_strvec[i]));
+                } catch (...) {
+                    Log(0).stream() << "libpfm: invalid arguments specified to libpfm service!" << std::endl;
+                    Log(0).stream() << "libpfm: if sampling enabled, sampling period, precise IP, and config1 "
+                                    << "must be unsigned integers (uint64_t)" << std::endl;
+                    return false;
+                }
             }
 
             // Create attribute for each event counter
@@ -519,7 +559,6 @@ namespace {
         }
 
         return true;
-
     }
 
     static void setup_thread_pointers() {
@@ -575,24 +614,30 @@ namespace {
     }
 
     struct read_format {
+        uint64_t value;     /* The value of the event */
         uint64_t time_enabled;  /* if PERF_FORMAT_TOTAL_TIME_ENABLED */
         uint64_t time_running;  /* if PERF_FORMAT_TOTAL_TIME_RUNNING */
-        uint64_t value;     /* The value of the event */
         //uint64_t id;        /* if PERF_FORMAT_ID */
     };
 
     void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
-        int i;
+        int i, ret;
         Variant data[MAX_EVENTS];
 
         struct read_format counter_reads[MAX_EVENTS];
 
         for (i=0; i<num_events; i++) {
-            read(fds[i].fd, &counter_reads[i], sizeof(struct read_format));
+            ret = read(fds[i].fd, &counter_reads[i], sizeof(struct read_format));
+            if (ret < sizeof(struct read_format))
+                Log(1).stream() << "libpfm: failed to read counter!" << std::endl;
         }
 
         for (i=0; i<num_events; i++) {
-            data[i] = Variant(counter_reads[i].value);
+            // FIXME: everyone does this but it does not make sense...
+            double raw     = (double)counter_reads[i].value;
+            double enabled = (double)counter_reads[i].time_enabled;
+            double running = (double)counter_reads[i].time_running;
+            data[i] = Variant((uint64_t)(raw * enabled / running));
         }
 
         snapshot->append(num_events, libpfm_event_counter_attr_ids.data(), data);
@@ -629,6 +674,7 @@ namespace {
             Log(1).stream() << "libpfm: thread " << i
                             << "\tsignals received: " << thread_states[i].signals_received
                             << "\tsamples produced: " << thread_states[i].samples_produced
+                            << "\tbad samples: " << thread_states[i].bad_samples
                             << "\tunknown events: " << thread_states[i].null_events
                             << "\tnull Caliper instances: " << thread_states[i].null_cali_instances << std::endl;
         }
@@ -723,10 +769,15 @@ namespace {
         
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().post_init_evt.connect(post_init_cb);
-        c->events().snapshot.connect(snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
-        c->events().pre_flush_evt.connect(pre_flush_cb);
-        c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
+
+        if (enable_sampling) {
+            c->events().pre_flush_evt.connect(pre_flush_cb);
+            c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
+        }
+
+        if (record_counters)
+            c->events().snapshot.connect(snapshot_cb);
 
         Log(1).stream() << "Registered libpfm service" << endl;
     }
