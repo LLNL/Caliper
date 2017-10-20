@@ -390,22 +390,22 @@ class AggregateDB {
             std::string name = s_aggr_attributes[i].name();
 
             s_stats_attributes[i].min_attr =
-                c->create_attribute(std::string("aggregate.min#") + name,
+                c->create_attribute(std::string("min#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].max_attr =
-                c->create_attribute(std::string("aggregate.max#") + name,
+                c->create_attribute(std::string("max#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             s_stats_attributes[i].sum_attr =
-                c->create_attribute(std::string("aggregate.sum#") + name,
+                c->create_attribute(std::string("sum#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             
 			s_stats_attributes[i].avg_attr =
-                c->create_attribute(std::string("aggregate.avg#") + name,
+                c->create_attribute(std::string("avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
         }
 
         s_count_attribute =
-            c->create_attribute("aggregate.count",
+            c->create_attribute("count",
                                 CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
     }
 

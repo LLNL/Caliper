@@ -24,22 +24,22 @@ class CaliperAggregationTest(unittest.TestCase):
 
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, [ 'loop.id', 'function', 
-                         'aggregate.sum#time.inclusive.duration',
-                         'aggregate.min#time.inclusive.duration',
-                         'aggregate.max#time.inclusive.duration',
-                         'aggregate.sum#time.duration',
-                         'aggregate.count' ] ))
+                         'sum#time.inclusive.duration',
+                         'min#time.inclusive.duration',
+                         'max#time.inclusive.duration',
+                         'sum#time.duration',
+                         'count' ] ))
 
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
                 'loop.id': 'A',
-                'aggregate.count': '6' }))
+                'count': '6' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
                 'loop.id': 'B',
-                'aggregate.count': '4' }))
+                'count': '4' }))
 
     def test_aggregate_value_key(self):
         target_cmd = [ './ci_test_aggregate' ]
@@ -59,12 +59,12 @@ class CaliperAggregationTest(unittest.TestCase):
             snapshots, {
                 'event.end#function': 'foo', 
                 'iteration': '1',
-                'aggregate.count': '3' }))
+                'count': '3' }))
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {
                 'event.end#function': 'foo', 
                 'iteration': '3',
-                'aggregate.count': '1' }))
+                'count': '1' }))
 
     def test_aggregate_attributes(self):
         target_cmd = [ './ci_test_aggregate' ]
@@ -84,10 +84,10 @@ class CaliperAggregationTest(unittest.TestCase):
 
         self.assertTrue(calitest.has_snapshot_with_keys(
             snapshots, [ 'loop.id', 'function',
-                         'aggregate.sum#time.duration',
-                         'aggregate.count' ] ))
+                         'sum#time.duration',
+                         'count' ] ))
         self.assertFalse(calitest.has_snapshot_with_keys(
-            snapshots, [ 'aggregate.sum#time.inclusive.duration' ] ))
+            snapshots, [ 'sum#time.inclusive.duration' ] ))
 
 if __name__ == "__main__":
     unittest.main()
