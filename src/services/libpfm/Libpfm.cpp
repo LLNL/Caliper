@@ -98,6 +98,7 @@ namespace {
     static cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
     static Attribute libpfm_event_name_attr;
     static cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
+    static std::vector<cali_id_t> libpfm_event_counter_attr_ids;
     static size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     static std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     static __thread uint64_t *sample_attribute_pointers[MAX_ATTRIBUTES];
@@ -122,7 +123,7 @@ namespace {
              "Event list",
              "Comma-separated list of events to sample"
             },
-            {"record_counter", CALI_TYPE_BOOL, "true",
+            {"record_counters", CALI_TYPE_BOOL, "true",
              "Record counter values (true|false)",   
              "Whether to record event counter values at each snapshot (true|false)"
             },
@@ -153,8 +154,9 @@ namespace {
      * Service configuration variables
      */
     int num_attributes = 0;
-    static unsigned int record_counter;
+    static unsigned int record_counters;
     static std::string events_string;
+    static std::vector<std::string> event_list;
     static std::vector<uint64_t> sampling_period_list;
     static std::vector<uint64_t> precise_ip_list;
     static std::vector<uint64_t> config1_list;
@@ -303,7 +305,7 @@ namespace {
             fds[i].hw.wakeup_events = 1;
             fds[i].hw.sample_type = sample_attributes;
             fds[i].hw.sample_period = sampling_period_list[i];
-            fds[i].hw.read_format = 0;
+            fds[i].hw.read_format = PERF_FORMAT_SCALE;
             fds[i].hw.precise_ip = precise_ip_list[i];
             fds[i].hw.config1 = config1_list[i];
 
@@ -460,7 +462,7 @@ namespace {
             ++num_attributes;
         }
 
-        record_counter = config.get("record_counter").to_bool();
+        record_counters = config.get("record_counters").to_bool();
 
         events_string = config.get("events").to_string();
 
@@ -472,11 +474,12 @@ namespace {
         std::vector<std::string> precise_ip_strvec;
         std::vector<std::string> config1_strvec;
 
+        util::split(events_string, ',', back_inserter(event_list));
         util::split(sampling_period_list_str, ',', back_inserter(sampling_period_strvec));
         util::split(precise_ip_list_str, ',', back_inserter(precise_ip_strvec));
         util::split(config1_list_str, ',', back_inserter(config1_strvec));
 
-        size_t events_listed = 1+std::count(events_string.begin(), events_string.end(), ',');
+        size_t events_listed = event_list.size();
 
         if (events_listed != sampling_period_strvec.size()
             | events_listed != precise_ip_strvec.size()
@@ -488,6 +491,9 @@ namespace {
             return false;
         }
 
+        Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
+        Variant   v_true(true);
+
         for (int i=0; i<events_listed; i++) {
             try {
                 sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
@@ -497,6 +503,18 @@ namespace {
                 Log(0).stream() << "libpfm: invalid arguments specified to libpfm service!" << std::endl;
                 Log(0).stream() << "libpfm: sampling period, precise IP, and config1 must be unsigned integers (uint64_t)" << std::endl;
                 return false;
+            }
+
+            // Create attribute for each event counter
+            if (record_counters) {
+                Attribute event_counter_attr = 
+                    c->create_attribute(std::string("libpfm.counter.") + event_list[i],
+                                            CALI_TYPE_UINT, 
+                                            CALI_ATTR_ASVALUE
+                                            | CALI_ATTR_SCOPE_THREAD
+                                            | CALI_ATTR_SKIP_EVENTS,
+                                            1, &aggr_class_attr, &v_true);
+                libpfm_event_counter_attr_ids.push_back(event_counter_attr.id());
             }
         }
 
@@ -556,16 +574,28 @@ namespace {
         }
     }
 
-    void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+    struct read_format {
+        uint64_t time_enabled;  /* if PERF_FORMAT_TOTAL_TIME_ENABLED */
+        uint64_t time_running;  /* if PERF_FORMAT_TOTAL_TIME_RUNNING */
+        uint64_t value;     /* The value of the event */
+        //uint64_t id;        /* if PERF_FORMAT_ID */
+    };
 
+    void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+        int i;
         Variant data[MAX_EVENTS];
 
-        for (int i=0; i<num_events; i++) {
-            // TODO: this
-            // 1. create libpfm.counter.EVENT_NAME for each event at init
-            //   - make it of class "aggregatable"
-            // 2. read each event counter here and record it
+        struct read_format counter_reads[MAX_EVENTS];
+
+        for (i=0; i<num_events; i++) {
+            read(fds[i].fd, &counter_reads[i], sizeof(struct read_format));
         }
+
+        for (i=0; i<num_events; i++) {
+            data[i] = Variant(counter_reads[i].value);
+        }
+
+        snapshot->append(num_events, libpfm_event_counter_attr_ids.data(), data);
     }
 
     void post_init_cb(Caliper* c) {
@@ -682,7 +712,7 @@ namespace {
 
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        libpfm_event_name_attr = c->create_attribute("libpfm.event_name",
+        libpfm_event_name_attr = c->create_attribute("libpfm.event_sample_name",
                                                      CALI_TYPE_STRING, 
                                                      CALI_ATTR_SCOPE_THREAD
                                                      | CALI_ATTR_SKIP_EVENTS);
@@ -693,6 +723,7 @@ namespace {
         
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().post_init_evt.connect(post_init_cb);
+        c->events().snapshot.connect(snapshot_cb);
         c->events().finish_evt.connect(finish_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
         c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
