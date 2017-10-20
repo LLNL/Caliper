@@ -120,8 +120,15 @@ public:
         : m_count(0), m_config(config)
         { }
     
-    virtual void aggregate(CaliperMetadataAccessInterface&, const EntryList& list) {
-        
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        cali_id_t count_attr_id = m_config->attribute(db).id();
+
+        for (const Entry& e : list)
+            if (e.attribute() == count_attr_id) {
+                m_count += e.value().to_uint();
+                return;
+            }
+
         ++m_count;
     }
 
