@@ -19,6 +19,9 @@ add_library(caliper
   ${CALIPER_SOURCES} 
   ${CALIPER_SERVICES_LIBS})
 
+set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
+set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
+
 target_link_libraries(caliper PUBLIC caliper-common)
 target_link_libraries(caliper PRIVATE Threads::Threads)
 

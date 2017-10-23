@@ -3,6 +3,9 @@ set(CALIPER_MPI_SOURCES
 
 add_library(caliper-mpi ${CALIPER_MPI_SOURCES})
 
+set_target_properties(caliper-mpi PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
+set_target_properties(caliper-mpi PROPERTIES VERSION ${CALIPER_VERSION})
+
 target_link_libraries(caliper-mpi caliper-reader)
 target_link_libraries(caliper-mpi ${MPI_C_LIBRARIES} ${MPI_CXX_LIBRARIES})
 
