@@ -10,6 +10,11 @@ set(CALIPER_STUB_C_SOURCES
 add_library(caliper-stub-c ${CALIPER_STUB_C_SOURCES})
 add_library(caliper-stub ${CALIPER_STUB_CXX_SOURCES})
 
+set_target_properties(caliper-stub-c PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
+set_target_properties(caliper-stub-c PROPERTIES VERSION ${CALIPER_VERSION})
+set_target_properties(caliper-stub PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
+set_target_properties(caliper-stub PROPERTIES VERSION ${CALIPER_VERSION})
+
 install(TARGETS caliper-stub-c
   EXPORT caliper-stub-c
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
