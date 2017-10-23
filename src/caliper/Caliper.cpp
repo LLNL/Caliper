@@ -188,10 +188,6 @@ struct Caliper::GlobalData
     map<string, Node*>     attribute_nodes;
     map<string, int>       attribute_prop_presets;
 
-    // are there new attributes since last snapshot recording? - temporary, will go away
-    std::atomic<bool>      new_attributes;
-    std::atomic<bool>      bootstrap_nodes_written;
-
     Attribute              name_attr;
     Attribute              type_attr;
     Attribute              prop_attr;
@@ -214,8 +210,6 @@ struct Caliper::GlobalData
         : config { RuntimeConfig::init("caliper", s_configdata) },
           get_thread_scope_cb { nullptr },
           get_task_scope_cb   { nullptr },
-          new_attributes          { true  },
-          bootstrap_nodes_written { false },
           name_attr { Attribute::invalid }, 
           type_attr { Attribute::invalid },  
           prop_attr { Attribute::invalid },
@@ -590,7 +584,6 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
             if (it == mG->attribute_nodes.end() || it->first != name) {
                 mG->attribute_nodes.emplace_hint(it, name, node);
-                mG->new_attributes.store(true);
                 created_now = true;
             } else
                 node = it->second;
