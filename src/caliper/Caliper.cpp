@@ -589,7 +589,7 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
             auto it = mG->attribute_nodes.lower_bound(name);
 
             if (it == mG->attribute_nodes.end() || it->first != name) {
-                mG->attribute_nodes.emplace_hint(it, name, node);
+                mG->attribute_nodes.insert(it, std::make_pair(name, node));
                 mG->new_attributes.store(true);
                 created_now = true;
             } else

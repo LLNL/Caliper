@@ -93,7 +93,7 @@ cali_datatracker_allocate_dimensional(const char *label,
  * \param ptr The pointer to the beginning of the allocation to free/untrack
  */
 
-void*
+void
 cali_datatracker_free(void *ptr);
 
 /**

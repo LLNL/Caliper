@@ -78,7 +78,7 @@ struct Expand::ExpandImpl
                 continue;
 
             if (s[0] == '-')
-                m_deselected.emplace(s, 1, string::npos);
+                m_deselected.insert(s.substr(1, string::npos));
             else
                 m_selected.insert(s);
         }

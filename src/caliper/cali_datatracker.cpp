@@ -45,10 +45,10 @@ cali_datatracker_allocate(const char *label,
                           size_t *dimensions, 
                           size_t num_dimensions) {
     std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
-    cali::DataTracker::Allocate(label, elem_size, d);
+    return cali::DataTracker::Allocate(label, elem_size, d);
 }
 
-void*
+void
 cali_datatracker_free(void *ptr) {
     cali::DataTracker::Free(ptr);
 }

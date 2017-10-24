@@ -52,6 +52,8 @@ void* Allocate(const std::string &label,
 
     size_t dimensions[] = {size};
     g_alloc_tracker.add_allocation(label, (uint64_t)ret, 1, dimensions, 1);
+
+    return ret;
 }
 
 void* Allocate(const std::string &label,
