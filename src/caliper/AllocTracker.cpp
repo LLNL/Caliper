@@ -56,7 +56,7 @@ Allocation::Allocation(const std::string &label,
 }
 
 Allocation::~Allocation() {
-    delete m_index_ret;
+    delete[] m_index_ret;
 }
 
 bool Allocation::contains(uint64_t address) {
@@ -84,7 +84,7 @@ const size_t * Allocation::index_ND(uint64_t address) {
 struct AllocTracker::AllocTree {
 
     std::mutex process_mutex;
-    static __thread std::mutex thread_mutex;
+    static thread_local std::mutex thread_mutex;
 
     enum HAND {
         LEFT = -1,
@@ -342,7 +342,7 @@ struct AllocTracker::AllocTree {
     }
 };
 
-__thread std::mutex AllocTracker::AllocTree::thread_mutex;
+thread_local std::mutex AllocTracker::AllocTree::thread_mutex;
 
 AllocTracker::AllocTracker() 
     : alloc_tree(new AllocTree)
