@@ -63,7 +63,7 @@ bool Allocation::contains(uint64_t address) {
     return m_start_address <= address && m_end_address >= address;
 }
 
-const size_t Allocation::index_1D(uint64_t address) {
+size_t Allocation::index_1D(uint64_t address) {
     return (address - m_start_address) / m_elem_size;
 }
 
