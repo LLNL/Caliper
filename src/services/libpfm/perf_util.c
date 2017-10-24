@@ -772,7 +772,12 @@ display_lost(perf_event_desc_t *hw, perf_event_desc_t *fds, int num_fds, FILE *f
 
 
 int
-perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event_header *ehdr, perf_event_sample_t *s)
+perf_read_sample(perf_event_desc_t *fds, 
+                 int num_fds, 
+                 int idx, 
+                 struct perf_event_header *ehdr, 
+                 perf_event_sample_t *s,
+                 FILE *ferr)
 {
     perf_event_desc_t *hw;
     struct { uint32_t pid, tid; } pid;
@@ -797,7 +802,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_IDENTIFIER) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx("cannot read IP");
+            fprintf(ferr, "libpfm: cannot read IP");
             return -1;
         }
         s->id = val64;
@@ -813,7 +818,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
         const char *xtra = " ";
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx("cannot read IP");
+            fprintf(ferr, "libpfm: cannot read IP");
             return -1;
         }
         s->ip = val64;
@@ -823,7 +828,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_TID) {
         ret = perf_read_buffer(hw, &pid, sizeof(pid));
         if (ret) {
-            warnx( "cannot read PID");
+            fprintf(ferr, "libpfm: cannot read PID");
             return -1;
         }
         s->pid = pid.pid;
@@ -834,7 +839,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_TIME) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read time");
+            fprintf(ferr, "libpfm: cannot read time");
             return -1;
         }
         s->time = val64;
@@ -844,7 +849,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_ADDR) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read addr");
+            fprintf(ferr, "libpfm: cannot read addr");
             return -1;
         }
         s->addr = val64;
@@ -854,7 +859,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_ID) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read id");
+            fprintf(ferr, "libpfm: cannot read id");
             return -1;
         }
         s->id = val64;
@@ -864,7 +869,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_STREAM_ID) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read stream_id");
+            fprintf(ferr, "libpfm: cannot read stream_id");
             return -1;
         }
         s->stream_id = val64;
@@ -875,7 +880,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
         struct { uint32_t cpu, reserved; } cpu;
         ret = perf_read_buffer(hw, &cpu, sizeof(cpu));
         if (ret) {
-            warnx( "cannot read cpu");
+            fprintf(ferr, "libpfm: cannot read cpu");
             return -1;
         }
         s->cpu = cpu.cpu;
@@ -886,7 +891,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_PERIOD) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read period");
+            fprintf(ferr, "libpfm: cannot read period");
             return -1;
         }
         s->period = val64;
@@ -916,7 +921,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
         if (fmt & PERF_FORMAT_GROUP) {
             ret = perf_read_buffer_64(hw, &nr);
             if (ret) {
-                warnx( "cannot read nr");
+                fprintf(ferr, "libpfm: cannot read nr");
                 return -1;
             }
 
@@ -927,7 +932,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
                 ret = perf_read_buffer_64(hw, &time_enabled);
                 if (ret) {
-                    warnx( "cannot read timing info");
+                    fprintf(ferr, "libpfm: cannot read timing info");
                     return -1;
                 }
                 sz -= sizeof(time_enabled);
@@ -936,7 +941,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
                 ret = perf_read_buffer_64(hw, &time_running);
                 if (ret) {
-                    warnx( "cannot read timing info");
+                    fprintf(ferr, "libpfm: cannot read timing info");
                     return -1;
                 }
                 sz -= sizeof(time_running);
@@ -950,7 +955,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
                 grp.id = -1;
                 ret = perf_read_buffer_64(hw, &grp.value);
                 if (ret) {
-                    warnx( "cannot read group value");
+                    fprintf(ferr, "libpfm: cannot read group value");
                     return -1;
                 }
                 sz -= sizeof(grp.value);
@@ -958,7 +963,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
                 if (fmt & PERF_FORMAT_ID) {
                     ret = perf_read_buffer_64(hw, &grp.id);
                     if (ret) {
-                        warnx( "cannot read leader id");
+                        fprintf(ferr, "libpfm: cannot read leader id");
                         return -1;
                     }
                     sz -= sizeof(grp.id);
@@ -986,7 +991,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
              */
             ret = perf_read_buffer_64(hw, &val64);
             if (ret) {
-                warnx( "cannot read value");
+                fprintf(ferr, "libpfm: cannot read value");
                 return -1;
             }
             sz -= sizeof(val64);
@@ -994,7 +999,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             if (fmt & PERF_FORMAT_TOTAL_TIME_ENABLED) {
                 ret = perf_read_buffer_64(hw, &time_enabled);
                 if (ret) {
-                    warnx( "cannot read timing info");
+                    fprintf(ferr, "libpfm: cannot read timing info");
                     return -1;
                 }
                 sz -= sizeof(time_enabled);
@@ -1003,7 +1008,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             if (fmt & PERF_FORMAT_TOTAL_TIME_RUNNING) {
                 ret = perf_read_buffer_64(hw, &time_running);
                 if (ret) {
-                    warnx( "cannot read timing info");
+                    fprintf(ferr, "libpfm: cannot read timing info");
                     return -1;
                 }
                 sz -= sizeof(time_running);
@@ -1011,7 +1016,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
             if (fmt & PERF_FORMAT_ID) {
                 ret = perf_read_buffer_64(hw, &val64);
                 if (ret) {
-                    warnx( "cannot read leader id");
+                    fprintf(ferr, "libpfm: cannot read leader id");
                     return -1;
                 }
                 sz -= sizeof(val64);
@@ -1035,7 +1040,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
 
         ret = perf_read_buffer_64(hw, &nr);
         if (ret) {
-            warnx( "cannot read callchain nr");
+            fprintf(ferr, "libpfm: cannot read callchain nr");
             return -1;
         }
         sz -= sizeof(nr);
@@ -1043,7 +1048,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
         while(nr--) {
             ret = perf_read_buffer_64(hw, &ip);
             if (ret) {
-                warnx( "cannot read ip");
+                fprintf(ferr, "libpfm: cannot read ip");
                 return -1;
             }
 
@@ -1078,7 +1083,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_WEIGHT) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read weight");
+            fprintf(ferr, "libpfm: cannot read weight");
             return -1;
         }
         s->weight = val64;
@@ -1088,7 +1093,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_DATA_SRC) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read data src");
+            fprintf(ferr, "libpfm: cannot read data src");
             return -1;
         }
         s->data_src = val64;
@@ -1097,7 +1102,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
     if (type & PERF_SAMPLE_TRANSACTION) {
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
-            warnx( "cannot read txn");
+            fprintf(ferr, "libpfm: cannot read txn");
             return -1;
         }
         s->transaction = val64;
@@ -1116,7 +1121,7 @@ perf_read_sample(perf_event_desc_t *fds, int num_fds, int idx, struct perf_event
      * that's the best we can do.
      */
     if (sz) {
-        warnx("did not correctly parse sample leftover=%zu", sz);
+        fprintf(ferr, "libpfm: did not correctly parse sample leftover=%zu", sz);
         perf_skip_buffer(hw, sz);
     }
 
