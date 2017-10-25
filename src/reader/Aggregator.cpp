@@ -111,7 +111,7 @@ public:
             : m_attr { Attribute::invalid }
             { }
 
-        static AggregateKernelConfig* create(const std::string&) {
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config;
         }
     };
@@ -178,8 +178,8 @@ public:
                 Log(2).stream() << "aggregate: creating sum kernel for attribute " << m_aggr_attr_name << std::endl;
             }
 
-        static AggregateKernelConfig* create(const std::string& cfg) {
-            return new Config(cfg);
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
         }        
     };
 
@@ -300,8 +300,8 @@ public:
                 Log(2).stream() << "aggregate: creating statistics kernel for attribute " << m_target_attr_name << std::endl;
             }
 
-        static AggregateKernelConfig* create(const std::string& cfg) {
-            return new Config(cfg);
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
         }        
     };
 
@@ -438,13 +438,149 @@ private:
     Config*    m_config;
 };
 
+//
+// --- PercentageKernel
+//
+
+class PercentageKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string          m_target_attr1_name;
+        std::string          m_target_attr2_name;
+        Attribute            m_target_attr1;
+        Attribute            m_target_attr2;
+
+        Attribute m_percentage_attr;
+
+    public:
+
+        std::pair<Attribute,Attribute> get_target_attrs(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr1 == Attribute::invalid)
+                m_target_attr1 = db.get_attribute(m_target_attr1_name);
+
+            if (m_target_attr2 == Attribute::invalid)
+                m_target_attr2 = db.get_attribute(m_target_attr2_name);
+
+            return std::pair<Attribute,Attribute>(m_target_attr1, m_target_attr2);
+        }
+
+        bool get_percentage_attribute(CaliperMetadataAccessInterface& db, Attribute& a) {
+            if (m_target_attr1 == Attribute::invalid)
+                return false;
+            if (m_target_attr2 == Attribute::invalid)
+                return false;
+            if (m_percentage_attr != Attribute::invalid) {
+                a = m_percentage_attr;
+                return true;
+            }
+
+            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+            m_percentage_attr = 
+                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name, CALI_TYPE_DOUBLE, prop);
+
+            a = m_percentage_attr;
+            return true;
+        }
+                
+        AggregateKernel* make_kernel() {
+            return new PercentageKernel(this);
+        }
+
+        Config(const std::vector<std::string>& names)
+            : m_target_attr1_name(names.front()), // We have already checked that there are two strings given
+              m_target_attr2_name(names.back()),
+              m_target_attr1(Attribute::invalid),
+              m_target_attr2(Attribute::invalid)
+            {
+                Log(2).stream() << "aggregate: creating percentage kernel for attributes " 
+                                << m_target_attr1_name << " / " << m_target_attr2_name <<std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg);
+        }        
+    };
+
+    PercentageKernel(Config* config)
+        : m_sum1(0), m_sum2(0), m_config(config)
+        { }
+
+    void increment(Attribute a, Variant& v, const Entry& e) {
+        switch (a.type()){
+        case CALI_TYPE_DOUBLE:
+        {
+            double val = e.value().to_double();                        
+            v = Variant(v.to_double() + val);
+        }
+        break;
+        case CALI_TYPE_INT:
+        {
+            int val = e.value().to_int();                        
+            v = Variant(v.to_int() + val);
+        }
+        break;
+        case CALI_TYPE_UINT:
+        {
+            uint64_t val = e.value().to_uint();                        
+            v = Variant(v.to_uint() + val);
+        }
+        break;
+        default:
+            // some error?
+            ;
+        }
+    }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        std::pair<Attribute,Attribute> target_attrs = m_config->get_target_attrs(db);
+        Attribute percentage_attr = Attribute::invalid;
+
+        if (!m_config->get_percentage_attribute(db, percentage_attr))
+            return;
+
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attrs.first.id()) {                        
+                increment(target_attrs.first, m_sum1, e);
+            } else if (e.attribute() == target_attrs.second.id()) {
+                increment(target_attrs.second, m_sum2, e);
+            } 
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (m_sum2.to_double() > 0) {
+            Attribute percentage_attr;
+
+            if (!m_config->get_percentage_attribute(db, percentage_attr))
+                return;
+
+            list.push_back(Entry(percentage_attr, Variant(m_sum1.to_double() / m_sum2.to_double())));
+        }
+    }
+
+private:
+
+    Variant    m_sum1;
+    Variant    m_sum2;
+
+    std::mutex m_lock;
+    
+    Config*    m_config;
+};
+
 enum KernelID {
     Count       = 0,
     Sum         = 1,
-    Statistics  = 2
+    Statistics  = 2,
+    Percentage  = 3,
 };
 
-#define MAX_KERNEL_ID 2
+#define MAX_KERNEL_ID 3
 
 const char* kernel_args[] = { "attribute" };
 
@@ -452,17 +588,19 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,      "count",      0, 0, nullptr     },
     { KernelID::Sum,        "sum",        1, 1, kernel_args },
     { KernelID::Statistics, "statistics", 1, 1, kernel_args },
+    { KernelID::Percentage, "percentage", 2, 2, kernel_args },
     
     QuerySpec::FunctionSignatureTerminator
 };
 
 const struct KernelInfo {
     const char* name;
-    AggregateKernelConfig* (*create)(const std::string& cfg);
+    AggregateKernelConfig* (*create)(const std::vector<std::string>& cfg);
 } kernel_list[] = {
     { "count",      CountKernel::Config::create      },
     { "sum",        SumKernel::Config::create        },
     { "statistics", StatisticsKernel::Config::create },
+    { "percentage", PercentageKernel::Config::create },
     { 0, 0 }
 };
 
@@ -514,10 +652,12 @@ struct Aggregator::AggregatorImpl
             string::size_type cparen = s.find_last_of(')');
 
             string kernelname = s.substr(0, oparen);
-            string kernelconfig;
+            vector<string> kernelattrs;
 
-            if (cparen != string::npos && cparen > oparen+1)
-                kernelconfig = s.substr(oparen+1, cparen-oparen-1);
+            if (cparen != string::npos && cparen > oparen+1) {
+                string kernelattrs_str = s.substr(oparen+1, cparen-oparen-1);
+                util::split(kernelattrs_str, ',', back_inserter(kernelattrs));
+            }
 
             const ::KernelInfo* ki = ::kernel_list;
 
@@ -525,7 +665,7 @@ struct Aggregator::AggregatorImpl
                 ;
 
             if (ki->create)
-                m_kernel_configs.push_back((*ki->create)(kernelconfig));
+                m_kernel_configs.push_back((*ki->create)(kernelattrs));
             else
                 Log(0).stream() << "aggregator: unknown aggregation kernel \"" << kernelname << "\"" << std::endl;
         }
@@ -561,13 +701,13 @@ struct Aggregator::AggregatorImpl
         switch (spec.aggregation_ops.selection) {
         case QuerySpec::AggregationSelection::Default:
         case QuerySpec::AggregationSelection::All:
-            m_kernel_configs.push_back(CountKernel::Config::create(""));
+            m_kernel_configs.push_back(CountKernel::Config::create(vector<string>()));
             // TODO: pick class.aggregatable attributes
             break;
         case QuerySpec::AggregationSelection::List:
             for (const QuerySpec::AggregationOp& k : spec.aggregation_ops.list) {
                 if (k.op.id >= 0 && k.op.id <= MAX_KERNEL_ID) {
-                    m_kernel_configs.push_back((*::kernel_list[k.op.id].create)(k.args.front()));
+                    m_kernel_configs.push_back((*::kernel_list[k.op.id].create)(k.args));
                 } else {
                     Log(0).stream() << "aggregator: Error: Unknown aggregation kernel "
                                     << k.op.id << " (" << (k.op.name ? k.op.name : "") << ")"
@@ -895,6 +1035,9 @@ Aggregator::aggregation_attribute_names(const QuerySpec& spec)
                 ret.push_back(std::string("max#") + op.args[0]);
                 ret.push_back(std::string("avg#") + op.args[0]);
                 break;        
+            case KernelID::Percentage:
+                ret.push_back(op.args[0] + std::string("/") + op.args[1]);
+                break;
             }
         }
     }
