@@ -48,7 +48,7 @@
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
-#ifdef WITH_DWARF
+#ifdef CALIPER_HAVE_LIBDW
 #include <elfutils/libdwfl.h>
 #include <unistd.h>
 #endif
@@ -72,7 +72,7 @@ bool      use_addr { false };
 
 unsigned  skip_frames { 0 };
 
-#ifdef WITH_DWARF
+#ifdef CALIPER_HAVE_LIBDW
 Dwfl* dwfl;
 Dwfl_Module* caliper_module;
 #endif
@@ -124,7 +124,7 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
 
     while (n < MAX_PATH && unw_step(&unw_cursor) > 0) {
 
-#ifdef WITH_DWARF
+#ifdef CALIPER_HAVE_LIBDW
         // skip stack frames inside caliper
         unw_word_t ip;
         unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
@@ -137,7 +137,7 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
 
         // store path from top to bottom
         if (use_addr) {
-#ifndef WITH_DWARF
+#ifndef CALIPER_HAVE_LIBDW
             unw_word_t ip;
             unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
 #endif
@@ -166,7 +166,7 @@ void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* s
 
 void initialize()
 {
-#ifdef WITH_DWARF
+#ifdef CALIPER_HAVE_LIBDW
     // initialize dwarf
     char *debuginfo_path=nullptr;
     Dwfl_Callbacks callbacks;
