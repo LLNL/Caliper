@@ -629,7 +629,10 @@ namespace {
         for (i=0; i<num_events; i++) {
             ret = read(fds[i].fd, &counter_reads[i], sizeof(struct read_format));
             if (ret < sizeof(struct read_format))
-                Log(1).stream() << "libpfm: failed to read counter!" << std::endl;
+                Log(1).stream() << "libpfm: failed to read counter: " << fds[i].name << std::endl;
+            ret = ioctl(fds[i].fd, PERF_EVENT_IOC_RESET, 0);
+            if (ret)
+                Log(1).stream() << "libpfm: failed to reset counter: " << fds[i].name << std::endl;
         }
 
         for (i=0; i<num_events; i++) {
