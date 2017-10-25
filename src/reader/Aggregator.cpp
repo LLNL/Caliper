@@ -488,11 +488,11 @@ public:
 
             m_sum1_attr = 
                 db.create_attribute("sum#" + m_target_attr1_name, 
-                        m_target_attr1.type(), CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
             m_sum2_attr = 
                 db.create_attribute("sum#" + m_target_attr2_name, 
-                        m_target_attr2.type(), CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
             percentage_attr = m_percentage_attr;
             sum1_attr = m_sum1_attr;
@@ -524,31 +524,7 @@ public:
         : m_sum1(0), m_sum2(0), m_config(config)
         { }
 
-    void increment(Attribute a, Variant& v, const Entry& e) {
-        switch (a.type()){
-            case CALI_TYPE_DOUBLE:
-            {
-                double val = e.value().to_double();                        
-                v = Variant(v.to_double() + val);
-            }
-            break;
-            case CALI_TYPE_INT:
-            {
-                int val = e.value().to_int();                        
-                v = Variant(v.to_int() + val);
-            }
-            break;
-            case CALI_TYPE_UINT:
-            {
-                uint64_t val = e.value().to_uint();                        
-                v = Variant(v.to_uint() + val);
-            }
-            break;
-            default:
-                // some error?
-                ;
-        }
-    }
+
 
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
@@ -562,34 +538,34 @@ public:
 
         for (const Entry& e : list) {
             if (e.attribute() == target_attrs.first.id()) {                        
-                increment(target_attrs.first, m_sum1, e);
+                m_sum1 += e.value().to_double();
             } else if (e.attribute() == target_attrs.second.id()) {
-                increment(target_attrs.second, m_sum2, e);
+                m_sum2 += e.value().to_double();
             } else if (e.attribute() == sum1_attr.id()) {
-                increment(sum1_attr, m_sum1, e);
+                m_sum1 += e.value().to_double();
             } else if (e.attribute() == sum2_attr.id()) {
-                increment(sum2_attr, m_sum2, e);
+                m_sum2 += e.value().to_double();
             }  
         }
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
-        if (m_sum2.to_double() > 0) {
+        if (m_sum2 > 0) {
             Attribute percentage_attr, sum1_attr, sum2_attr;
 
             if (!m_config->get_percentage_attributes(db, percentage_attr, sum1_attr, sum2_attr))
                 return;
 
-            list.push_back(Entry(sum1_attr, m_sum1));
-            list.push_back(Entry(sum2_attr, m_sum2));
-            list.push_back(Entry(percentage_attr, Variant(m_sum1.to_double() / m_sum2.to_double())));
+            list.push_back(Entry(sum1_attr, Variant(m_sum1)));
+            list.push_back(Entry(sum2_attr, Variant(m_sum2)));
+            list.push_back(Entry(percentage_attr, Variant(m_sum1 / m_sum2)));
         }
     }
 
 private:
 
-    Variant    m_sum1;
-    Variant    m_sum2;
+    double    m_sum1;
+    double    m_sum2;
 
     std::mutex m_lock;
     
