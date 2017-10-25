@@ -15,6 +15,7 @@
 #cmakedefine CALIPER_HAVE_DYNINST
 #cmakedefine CALIPER_HAVE_GOTCHA
 #cmakedefine CALIPER_HAVE_CUPTI
+#cmakedefine CALIPER_HAVE_LIBDW
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@
