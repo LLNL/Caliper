@@ -450,6 +450,8 @@ public:
         std::string          m_target_attr2_name;
         Attribute            m_target_attr1;
         Attribute            m_target_attr2;
+        Attribute            m_sum1_attr;
+        Attribute            m_sum2_attr;
 
         Attribute m_percentage_attr;
 
@@ -465,22 +467,37 @@ public:
             return std::pair<Attribute,Attribute>(m_target_attr1, m_target_attr2);
         }
 
-        bool get_percentage_attribute(CaliperMetadataAccessInterface& db, Attribute& a) {
+        bool get_percentage_attributes(CaliperMetadataAccessInterface& db, 
+                                       Attribute& percentage_attr,
+                                       Attribute& sum1_attr,
+                                       Attribute& sum2_attr) {
             if (m_target_attr1 == Attribute::invalid)
                 return false;
             if (m_target_attr2 == Attribute::invalid)
                 return false;
             if (m_percentage_attr != Attribute::invalid) {
-                a = m_percentage_attr;
+                percentage_attr = m_percentage_attr;
+                sum1_attr = m_sum1_attr;
+                sum2_attr = m_sum2_attr;
                 return true;
             }
 
-            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
-
             m_percentage_attr = 
-                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name, CALI_TYPE_DOUBLE, prop);
+                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name, 
+                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
-            a = m_percentage_attr;
+            m_sum1_attr = 
+                db.create_attribute("sum#" + m_target_attr1_name, 
+                        m_target_attr1.type(), CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            m_sum2_attr = 
+                db.create_attribute("sum#" + m_target_attr2_name, 
+                        m_target_attr2.type(), CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            percentage_attr = m_percentage_attr;
+            sum1_attr = m_sum1_attr;
+            sum2_attr = m_sum2_attr;
+
             return true;
         }
                 
@@ -509,27 +526,27 @@ public:
 
     void increment(Attribute a, Variant& v, const Entry& e) {
         switch (a.type()){
-        case CALI_TYPE_DOUBLE:
-        {
-            double val = e.value().to_double();                        
-            v = Variant(v.to_double() + val);
-        }
-        break;
-        case CALI_TYPE_INT:
-        {
-            int val = e.value().to_int();                        
-            v = Variant(v.to_int() + val);
-        }
-        break;
-        case CALI_TYPE_UINT:
-        {
-            uint64_t val = e.value().to_uint();                        
-            v = Variant(v.to_uint() + val);
-        }
-        break;
-        default:
-            // some error?
-            ;
+            case CALI_TYPE_DOUBLE:
+            {
+                double val = e.value().to_double();                        
+                v = Variant(v.to_double() + val);
+            }
+            break;
+            case CALI_TYPE_INT:
+            {
+                int val = e.value().to_int();                        
+                v = Variant(v.to_int() + val);
+            }
+            break;
+            case CALI_TYPE_UINT:
+            {
+                uint64_t val = e.value().to_uint();                        
+                v = Variant(v.to_uint() + val);
+            }
+            break;
+            default:
+                // some error?
+                ;
         }
     }
 
@@ -538,9 +555,9 @@ public:
             g(m_lock);
 
         std::pair<Attribute,Attribute> target_attrs = m_config->get_target_attrs(db);
-        Attribute percentage_attr = Attribute::invalid;
+        Attribute percentage_attr, sum1_attr, sum2_attr;
 
-        if (!m_config->get_percentage_attribute(db, percentage_attr))
+        if (!m_config->get_percentage_attributes(db, percentage_attr, sum1_attr, sum2_attr))
             return;
 
         for (const Entry& e : list) {
@@ -548,17 +565,23 @@ public:
                 increment(target_attrs.first, m_sum1, e);
             } else if (e.attribute() == target_attrs.second.id()) {
                 increment(target_attrs.second, m_sum2, e);
-            } 
+            } else if (e.attribute() == sum1_attr.id()) {
+                increment(sum1_attr, m_sum1, e);
+            } else if (e.attribute() == sum2_attr.id()) {
+                increment(sum2_attr, m_sum2, e);
+            }  
         }
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         if (m_sum2.to_double() > 0) {
-            Attribute percentage_attr;
+            Attribute percentage_attr, sum1_attr, sum2_attr;
 
-            if (!m_config->get_percentage_attribute(db, percentage_attr))
+            if (!m_config->get_percentage_attributes(db, percentage_attr, sum1_attr, sum2_attr))
                 return;
 
+            list.push_back(Entry(sum1_attr, m_sum1));
+            list.push_back(Entry(sum2_attr, m_sum2));
             list.push_back(Entry(percentage_attr, Variant(m_sum1.to_double() / m_sum2.to_double())));
         }
     }
@@ -583,12 +606,13 @@ enum KernelID {
 #define MAX_KERNEL_ID 3
 
 const char* kernel_args[] = { "attribute" };
+const char* kernel_2args[] = { "numerator", "denominator" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,      "count",      0, 0, nullptr     },
     { KernelID::Sum,        "sum",        1, 1, kernel_args },
     { KernelID::Statistics, "statistics", 1, 1, kernel_args },
-    { KernelID::Percentage, "percentage", 2, 2, kernel_args },
+    { KernelID::Percentage, "percentage", 2, 2, kernel_2args },
     
     QuerySpec::FunctionSignatureTerminator
 };
