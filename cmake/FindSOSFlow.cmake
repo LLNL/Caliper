@@ -7,7 +7,7 @@
 # Variables used by this module, they can change the default behaviour and need
 # to be set before calling find_package:
 #
-#  SOSFlow_PREFIX         Set this variable to the root installation of
+#  SOS_PREFIX         Set this variable to the root installation of
 #                      libpapi if the module has problems finding the
 #                      proper installation path.
 #
@@ -27,7 +27,7 @@ find_path(SOSFlow_INCLUDE_DIR sos.h
 
 find_library(SOSFlow_LIBRARY 
   NAMES sos
-  HINTS ${SOSFlow_PREFIX}/lib
+  HINTS ${SOS_PREFIX}/lib
 )
 
 include(FindPackageHandleStandardArgs)
