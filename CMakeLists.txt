@@ -163,11 +163,12 @@ if (WITH_GOTCHA)
 endif()
 
 if (WITH_SOS)
-  set(CALIPER_HAVE_SOS TRUE)
-  set(SOS_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/sos/sos-download/sos-src/src)
-  find_library(ext_lib_sos sos REQUIRED)
-  list(APPEND CALIPER_EXTERNAL_LIBS ${ext_lib_sos})
-  include_directories(${SOS_INCLUDE_DIR})
+  include(FindSOSFlow)
+  if (SOSFlow_FOUND)
+    message(STATUS "Found sosflow in " ${SOSFlow_LIBRARY})
+    list(APPEND CALIPER_EXTERNAL_LIBS ${SOSFlow_LIBRARY})
+    set(CALIPER_HAVE_SOS TRUE)
+  endif()
 endif()
 
 # pthread handling
