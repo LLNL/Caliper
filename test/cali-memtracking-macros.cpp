@@ -143,13 +143,13 @@ int main(int argc, const char* argv[])
     size_t num_iterations = std::stoul(args.get("iterations", "4"));
 
     CALI_MARK_BEGIN("benchmark");
-
-    cali::Loop loop("loop");
+    
+    CALI_CXX_MARK_LOOP_BEGIN(loop, "loop");
     for(size_t i=0; i<num_iterations; i++) {
-        cali::Loop::Iteration iteration(loop.iteration((int)i));
+        CALI_CXX_MARK_LOOP_ITERATION(loop, i);
         do_work(m_size, w_size, n_size);
     }
+    CALI_CXX_MARK_LOOP_END(loop);
 
     CALI_MARK_END("benchmark");
-
 }
