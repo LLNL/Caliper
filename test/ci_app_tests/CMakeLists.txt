@@ -11,6 +11,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_postprocess_snapshot
   ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
+  ci_dgemm_memtrack
   ci_test_c_ann
   ci_test_c_snapshot)
 

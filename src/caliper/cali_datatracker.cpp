@@ -70,6 +70,15 @@ cali_datatracker_track_dimensional(void *ptr,
     cali::DataTracker::TrackAllocation(ptr, label, elem_size, d);
 }
 
+void*
+cali_datatracker_allocate_dimensional(const char *label,
+                                      const size_t elem_size, 
+                                      size_t *dimensions, 
+                                      size_t num_dimensions)
+{
+    return cali::DataTracker::Allocate(label, elem_size, std::vector<size_t>(dimensions, dimensions+num_dimensions));    
+}
+
 void 
 cali_datatracker_untrack(void *ptr) {
     cali::DataTracker::UntrackAllocation(ptr);
