@@ -40,6 +40,12 @@ set(PYTHON_SCRIPTS
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS test_pthread.py)
 endif()
+if (CALIPER_HAVE_PAPI)
+  list(APPEND PYTHON_SCRIPTS test_papi.py)
+endif()
+if (CALIPER_HAVE_SAMPLER AND CALI_HAVE_DYNINST)
+  list(APPEND PYTHON_SCRIPTS test_sampler.py)
+endif()
 
 foreach(file ${PYTHON_SCRIPTS})
   add_custom_target(${file} ALL
