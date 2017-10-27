@@ -12,6 +12,7 @@
 
 #include "caliper/common/util/split.hpp"
 
+#include <atomic>
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -80,6 +81,8 @@ class SosService
     }
 
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
+        static std::atomic<int> frame { 0 };
+        int current_frame = ++frame;
 
         auto unpacked = snapshot->unpack(*c);
 
@@ -97,7 +100,7 @@ class SosService
               const char* stringData = inner_string.c_str();
               //std::cout << stringData << "\n";
               // Pack it in
-              SOS_pack(sos_publication_handle,iter.first.name().c_str(),SOS_VAL_TYPE_STRING,(void*)stringData);
+              SOS_pack_frame(sos_publication_handle, static_cast<long>(current_frame), iter.first.name().c_str(), SOS_VAL_TYPE_STRING, (void*)stringData);
             }
           }
         }
