@@ -33,9 +33,14 @@ namespace
 {
 
 const ConfigSet::Entry   configdata[] = {
+    { "trigger_attr", CALI_TYPE_STRING, "",
+      "Attribute that triggers flush & publish",
+      "Attribute that triggers flush & publish"
+    },
     ConfigSet::Terminator
 };
 
+// Takes an unpacked Caliper snapshot and publishes it in SOS
 void pack_snapshot(SOS_pub* sos_pub, int frame_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
     for (auto &p : unpacked_snapshot) {
         switch (p.first.type()) {
@@ -78,14 +83,24 @@ class SosService
                                 s_sos;
 
     SOS_runtime *sos_runtime;
-    SOS_pub *sos_publication_handle;
+    SOS_pub     *sos_publication_handle;
 
-    // void flush_and_publish(Caliper* c) {
-    //     c->flush(nullptr, [c](const SnapshotRecord* snapshot){
-    //             static std::atomic<int> frame { 0 };
-    //             pack_snapshot(++frame, snapshot->unpack(*c));
-    //         });
-    // }
+    Attribute   trigger_attr;
+
+    void flush_and_publish(Caliper* c) {
+        Log(2).stream() << "sos: Publishing Caliper data" << std::endl;
+
+        c->flush(nullptr, [this,c](const SnapshotRecord* snapshot){
+                static std::atomic<int> frame { 0 };
+                pack_snapshot(sos_publication_handle, ++frame, snapshot->unpack(*c));
+                return true;
+            });
+    }
+
+    void create_attr(const Attribute& attr) {
+        if (attr.name() == config.get("trigger_attr").to_string())
+            trigger_attr = attr;        
+    }
 
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         static std::atomic<int> frame { 0 };
@@ -93,17 +108,33 @@ class SosService
         pack_snapshot(sos_publication_handle, ++frame, snapshot->unpack(*c));
     }
 
+    void post_end(Caliper* c, const Attribute& attr) {
+        if (trigger_attr != Attribute::invalid && attr.id() == trigger_attr.id()) 
+            flush_and_publish(c);
+    }
+
     // Initialize the SOS runtime, and create our publication handle
     void post_init(Caliper* c) {
-      sos_runtime = NULL;
-      SOS_init(NULL, NULL, &sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
-      SOS_pub_create(sos_runtime, &sos_publication_handle, (char *)"caliper.data", SOS_NATURE_CREATE_OUTPUT);
+        sos_runtime = NULL;
+        SOS_init(NULL, NULL, &sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
+        SOS_pub_create(sos_runtime, &sos_publication_handle, (char *)"caliper.data", SOS_NATURE_CREATE_OUTPUT);
+
+        // trigger_attr will be invalid if it's not found - still need to check attributes in create_attribute_cb
+        trigger_attr = c->get_attribute(config.get("trigger_attr").to_string());
     }
 
     // static callbacks
 
+    static void create_attr_cb(Caliper*, const Attribute& attr) {
+        s_sos->create_attr(attr);
+    }
+
     static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
         s_sos->process_snapshot(c, trigger_info, snapshot);
+    }
+
+    static void post_end_cb(Caliper* c, const Attribute& attr, const Variant& val) {
+        s_sos->post_end(c, attr);
     }
 
     static void post_init_cb(Caliper* c) { 
@@ -111,10 +142,14 @@ class SosService
     }
 
     SosService(Caliper* c)
-        : config(RuntimeConfig::init("sos", configdata))
+        : config(RuntimeConfig::init("sos", configdata)),
+          trigger_attr(Attribute::invalid)
         {
+            
+            c->events().create_attr_evt.connect(&SosService::create_attr_cb);
             c->events().post_init_evt.connect(&SosService::post_init_cb);
-            c->events().process_snapshot.connect(&SosService::process_snapshot_cb);
+            // c->events().process_snapshot.connect(&SosService::process_snapshot_cb);
+            c->events().post_end_evt.connect(&SosService::post_end_cb);
 
             Log(1).stream() << "Registered SOS service" << std::endl;
         }
