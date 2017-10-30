@@ -41,11 +41,9 @@ using namespace cali;
 
 void*
 cali_datatracker_allocate(const char *label,
-                          const size_t elem_size, 
-                          size_t *dimensions, 
-                          size_t num_dimensions) {
-    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
-    return cali::DataTracker::Allocate(label, elem_size, d);
+                          const size_t size) 
+{
+    return cali::DataTracker::Allocate(label, size);
 }
 
 void
@@ -76,7 +74,7 @@ cali_datatracker_allocate_dimensional(const char *label,
                                       size_t *dimensions, 
                                       size_t num_dimensions)
 {
-    return cali::DataTracker::Allocate(label, elem_size, std::vector<size_t>(dimensions, dimensions+num_dimensions));    
+    return cali::DataTracker::Allocate(label, elem_size, std::vector<size_t>(dimensions, dimensions+num_dimensions));
 }
 
 void 
