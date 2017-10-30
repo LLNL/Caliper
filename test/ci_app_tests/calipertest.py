@@ -94,3 +94,13 @@ def has_snapshot_with_keys(snapshots, keys):
     """ Test if a snapshot with the given subset of keys exists """
     return any( set(keys).issubset(set(s.keys())) for s in snapshots )
 
+def get_snapshot_with_keys(snapshots, keys):
+    """ Return the first snapshot that with the given subset of keys"""
+
+    sk = set(keys)
+
+    for s in snapshots:
+        if (sk.issubset(set(s.keys()))):
+            return s
+
+    return None

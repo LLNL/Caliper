@@ -82,10 +82,10 @@ cali_datatracker_allocate(const char *label,
  */
 
 void*
-cali_datatracker_allocate_dimensional(const char *label,
-                                      const size_t elem_size, 
-                                      size_t *dimensions, 
-                                      size_t num_dimensions);
+cali_datatracker_allocate_dimensional(const char   *label,
+                                      size_t        elem_size, 
+                                      const size_t *dimensions, 
+                                      size_t        num_dimensions);
 
 /**
  * Free and untrack an allocation in Caliper.
@@ -123,11 +123,11 @@ cali_datatracker_track(void *ptr,
  */
 
 void 
-cali_datatracker_track_dimensional(void *ptr, 
-                                   const char *label,
-                                   const size_t elem_size,
-                                   size_t *dimensions,
-                                   size_t num_dimensions);
+cali_datatracker_track_dimensional(void         *ptr, 
+                                   const char   *label,
+                                   size_t        elem_size,
+                                   const size_t *dimensions,
+                                   size_t        num_dimensions);
 
 /**
  * Untrack a previously tracked allocation in Caliper.

@@ -53,7 +53,7 @@ using namespace cali;
 
 namespace
 {
-    __thread std::mutex thread_mutex;
+    thread_local std::mutex thread_mutex;
     bool record_all_allocs { false };
     bool track_all_allocs { false };
 
@@ -307,6 +307,24 @@ namespace
         }
     }
 
+    static void create_attr_cb(Caliper* c, const Attribute& attr) {
+        if (class_memoryaddress_attr == Attribute::invalid) // not initialized yet; skip
+            return;
+
+        if (attr.get(class_memoryaddress_attr) == Variant(true)) {
+            Log(2).stream() << "alloc: Creating alloc label attributes for attribute " << attr.name() << std::endl;
+
+            struct alloc_attrs attrs = {
+                attr,
+                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
+            };
+
+            // TODO: This isn't thread-safe
+            memoryaddress_attrs.push_back(attrs);            
+        }
+    }
+
     static void post_init_cb(Caliper *c) {
 
         class_memoryaddress_attr = c->get_attribute("class.memoryaddress");
@@ -370,6 +388,7 @@ namespace
         record_all_allocs = config.get("record_all").to_bool();
         track_all_allocs = config.get("track_all").to_bool();
 
+        c->events().create_attr_evt.connect(create_attr_cb);
         c->events().post_init_evt.connect(post_init_cb);
         c->events().snapshot.connect(snapshot_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
