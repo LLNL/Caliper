@@ -39,6 +39,9 @@ set(PYTHON_SCRIPTS
   test_thread.py
   calipertest.py)
 
+if (CALIPER_HAVE_LIBUNWIND)
+  list(APPEND PYTHON_SCRIPTS test_callpath.py)
+endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS test_pthread.py)
 endif()

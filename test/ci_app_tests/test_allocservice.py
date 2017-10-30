@@ -57,3 +57,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
         self.assertFalse(calitest.has_snapshot_with_keys(
             snapshots, { 'test_alloc.freed', 'alloc.label#ptr_in' }))
+
+
+if __name__ == "__main__":
+    unittest.main()
