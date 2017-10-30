@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 
-inline size_t
+static inline size_t
 row_major(size_t x, size_t y, size_t width)
 {
     return width*y + x;

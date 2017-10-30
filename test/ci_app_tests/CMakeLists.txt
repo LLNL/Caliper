@@ -32,7 +32,6 @@ endforeach()
 
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
-  test_allocservice.py
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
@@ -43,7 +42,9 @@ if (CALIPER_HAVE_LIBUNWIND)
   list(APPEND PYTHON_SCRIPTS test_callpath.py)
 endif()
 if (CALIPER_HAVE_GOTCHA)
-  list(APPEND PYTHON_SCRIPTS test_pthread.py)
+  list(APPEND PYTHON_SCRIPTS 
+    test_allocservice.py
+    test_pthread.py)
 endif()
 if (CALIPER_HAVE_PAPI)
   list(APPEND PYTHON_SCRIPTS test_papi.py)
