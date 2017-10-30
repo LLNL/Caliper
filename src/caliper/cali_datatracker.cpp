@@ -47,37 +47,41 @@ cali_datatracker_allocate(const char *label,
 }
 
 void
-cali_datatracker_free(void *ptr) {
+cali_datatracker_free(void *ptr) 
+{
     cali::DataTracker::Free(ptr);
 }
 
 void 
 cali_datatracker_track(void *ptr, 
                        const char *label,
-                       size_t size) {
+                       size_t size) 
+{
     cali::DataTracker::TrackAllocation(ptr, label, size);
 }
 
 void 
 cali_datatracker_track_dimensional(void *ptr, 
                                    const char *label,
-                                   const size_t elem_size,
-                                   size_t *dimensions,
-                                   size_t num_dimensions) {
+                                   size_t elem_size,
+                                   const size_t *dimensions,
+                                   size_t num_dimensions) 
+{
     std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
     cali::DataTracker::TrackAllocation(ptr, label, elem_size, d);
 }
 
 void*
 cali_datatracker_allocate_dimensional(const char *label,
-                                      const size_t elem_size, 
-                                      size_t *dimensions, 
+                                      size_t elem_size, 
+                                      const size_t *dimensions, 
                                       size_t num_dimensions)
 {
     return cali::DataTracker::Allocate(label, elem_size, std::vector<size_t>(dimensions, dimensions+num_dimensions));
 }
 
 void 
-cali_datatracker_untrack(void *ptr) {
+cali_datatracker_untrack(void *ptr) 
+{
     cali::DataTracker::UntrackAllocation(ptr);
 }
