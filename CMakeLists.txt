@@ -41,6 +41,7 @@ option(WITH_MPIT      "Enable MPI-T" TRUE)
 option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
+option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -159,6 +160,15 @@ if (WITH_GOTCHA)
   set(CALIPER_HAVE_GOTCHA TRUE)
   set(GOTCHA_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-download/gotcha-src/include)
   list(APPEND CALIPER_EXTERNAL_LIBS gotcha)
+endif()
+
+if (WITH_SOS)
+  include(FindSOSFlow)
+  if (SOSFlow_FOUND)
+    message(STATUS "Found sosflow in " ${SOSFlow_LIBRARY})
+    list(APPEND CALIPER_EXTERNAL_LIBS ${SOSFlow_LIBRARY})
+    set(CALIPER_HAVE_SOS TRUE)
+  endif()
 endif()
 
 # pthread handling
