@@ -127,12 +127,11 @@ struct SnapshotTree::SnapshotTreeImpl
         assert(node);
 
         if (!(node->is_empty())) {
-            assert(node->parent());
-
             // create a new node if the existing one is not empty
-            node->parent()->append(new SnapshotTreeNode(node->label_key(), 
-                                                        node->label_value(), 
-                                                        false));
+            SnapshotTreeNode* parent = node->parent();
+
+            node = new SnapshotTreeNode(node->label_key(), node->label_value(), false);
+            parent->append(node);
         }
 
         //
