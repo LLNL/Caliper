@@ -120,7 +120,7 @@ parse_arglist(std::istream& is)
         std::string str = parse_word(is);
         c = parse_char(is);
 
-        if (!str.empty() && c == ',' || c == ')')
+        if (!str.empty() && (c == ',' || c == ')'))
             ret.push_back(str);
     } while (is.good() && c == ',');
 

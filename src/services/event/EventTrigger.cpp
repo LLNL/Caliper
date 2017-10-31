@@ -112,7 +112,7 @@ make_event_attributes(Caliper* c, const std::string& name, cali_attr_type type, 
         s.append(name);
 
         *(setup.attr_ptr) =
-            c->create_attribute(s, type, prop & ~CALI_ATTR_NESTED | CALI_ATTR_SKIP_EVENTS);
+            c->create_attribute(s, type, (prop & ~CALI_ATTR_NESTED) | CALI_ATTR_SKIP_EVENTS);
     }
 
     std::string s = "cali.lvl#";
