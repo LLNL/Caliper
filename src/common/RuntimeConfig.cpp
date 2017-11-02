@@ -100,7 +100,12 @@ struct ConfigSetImpl
 {
     // --- data
 
-    unordered_map<string, ConfigSet::Entry> m_dict;
+    struct ConfigValue {
+        ConfigSet::Entry entry;
+        std::string      value;
+    };
+
+    unordered_map<string, ConfigValue> m_dict;
 
     // --- interface
 
@@ -112,20 +117,19 @@ struct ConfigSetImpl
     void init(const char* name, const ConfigSet::Entry* list, bool read_env, const ::config_profile_t& profile, const ::config_profile_t& top_profile)
     {
         for (const ConfigSet::Entry* e = list; e && e->key; ++e) {
-            ConfigSet::Entry newent = *e;
-
-            string varname = ::config_var_name(name, e->key);
+            ConfigValue newent  { *e, string(e->value) };
+            string      varname { ::config_var_name(name, e->key) };
 
             // See if there is an entry in the top config profile
             auto topit = top_profile.find(varname);
 
             if (topit != top_profile.end()) {
-                newent.value = topit->second.c_str();
+                newent.value = topit->second;
             } else {
                 // See if there is an entry in the base config profile
                 auto it = profile.find(varname);
                 if (it != profile.end())
-                    newent.value = it->second.c_str();
+                    newent.value = it->second;
                 
                 if (read_env) {
                     // See if there is a config variable set
@@ -313,11 +317,13 @@ struct RuntimeConfigImpl
         m_config_profiles[string(name)] = std::move(profile);
     }
 
-    void print(ostream& os) const {
+    void print(std::ostream& os) const {
         for ( auto set : m_database )
             for ( auto entry : set.second->m_dict )
-                os << "# " << entry.second.descr << " (" << cali_type2string(entry.second.type) << ")\n" 
-                   << ::config_var_name(set.first, entry.first) << '=' << entry.second.value << endl;
+                os << "# " << entry.second.entry.descr
+                   << " (" << cali_type2string(entry.second.entry.type) << ")\n" 
+                   << ::config_var_name(set.first, entry.first)
+                   << '=' << entry.second.value << std::endl;
     }
 
     static RuntimeConfigImpl* instance() {
