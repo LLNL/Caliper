@@ -119,6 +119,61 @@ def derive_topdown(dfm, arch):
     return dfm
 
 
+def max_column(row, columns):
+    """ Returns the column name for the column with the largest value in row """
+
+    return max([(column, row[column]) for column in columns],
+               key=lambda t: t[1])[0]
+
+
+def percentage_string(val):
+    """ Returns a percentage-formatted string for a value, e.g. 0.9234 becomes 92.34% """
+
+    return '{:,.2%}'.format(val)
+
+
+def determine_boundedness(row):
+    """ Determine the boundedness of a single row with topdown metrics """
+
+    boundedness = []
+
+    level_1 = max_column(row, ['retiring',
+                               'bad_speculation',
+                               'frontend_bound',
+                               'backend_bound'])
+    boundedness.append(level_1 + ' ' + percentage_string(row[level_1]))
+
+    if level_1 == 'bad_speculation':
+        level_2 = max_column(row, ['branch_mispredict',
+                                   'machine_clear'])
+        boundedness.append(level_2 + ' ' + percentage_string(row[level_2]))
+    elif level_1 == 'frontend_bound':
+        level_2 = max_column(row, ['frontend_latency',
+                                   'frontend_bandwidth'])
+        boundedness.append(level_2 + ' ' + percentage_string(row[level_2]))
+    elif level_1 == 'backend_bound':
+        level_2 = max_column(row, ['core_bound',
+                                   'memory_bound'])
+        boundedness.append(level_2 + ' ' + percentage_string(row[level_2]))
+        if level_2 == 'memory_bound':
+            level_3 = max_column(row, ['l1_bound',
+                                       'l2_bound',
+                                       'l3_bound',
+                                       'mem_bound',
+                                       'uncore_bound'])
+            boundedness.append(level_3 + ' ' + percentage_string(row[level_3]))
+
+    return boundedness
+
+
+def analyze_topdown_metrics(dfm):
+    """ Analyze topdown metrics to determine boundedness of different Caliper regions """
+
+    dfm['boundedness'] = dfm.apply(determine_boundedness, axis=1)
+
+    return dfm
+
+
 def main():
     """ Print all Caliper entries with their derived metrics """
 
@@ -129,13 +184,12 @@ def main():
 
     dfm = derive_topdown(dfm, sys.argv[2])
 
-    # Format metrics as percentages
-    percentage = '{:,.2%}'.format
-    output = dfm.to_string(formatters={
-        metric: percentage for metric in METRICS
-    })
+    dfm = analyze_topdown_metrics(dfm)
 
-    print(output)
+    for metric in METRICS:
+        del dfm[metric]
+
+    print(dfm)
 
 
 if __name__ == "__main__":
