@@ -14,7 +14,7 @@ METRICS = [
     'backend_bound',
     'branch_mispredict',
     'machine_clear',
-    'frontend_latency_bound',
+    'frontend_latency',
     'frontend_bandwidth_bound',
     'memory_bound',
     'core_bound',
@@ -28,6 +28,7 @@ METRICS = [
 
 def eprint(*args, **kwargs):
     """ Print to stderr """
+
     print(*args, file=sys.stderr, **kwargs)
 
 
@@ -62,9 +63,9 @@ def derive_topdown_ivb(dfm):
     dfm['machine_clear'] = (1 - dfm['branch_mispredict'])  # FIXME: is this correct?
 
     # Level 2 - Frontend Bound
-    dfm['frontend_latency_bound'] = (dfm['libpfm.counter.IDQ_UOPS_NOT_DELIVERED.CORE'].clip(lower=4)
+    dfm['frontend_latency'] = (dfm['libpfm.counter.IDQ_UOPS_NOT_DELIVERED.CORE'].clip(lower=4)
                                      / dfm['TEMPORARY_clocks'])
-    dfm['frontend_bandwidth_bound'] = (1 - dfm['frontend_latency_bound'])  # FIXME: is this correct?
+    dfm['frontend_bandwidth'] = (1 - dfm['frontend_latency'])  # FIXME: is this correct?
 
     # Level 2 - Backend Bound
     dfm['memory_bound'] = (dfm['libpfm.counter.CYCLE_ACTIVITY.STALLS_LDM_PENDING']
@@ -141,7 +142,8 @@ def determine_boundedness(row):
                                'bad_speculation',
                                'frontend_bound',
                                'backend_bound'])
-    boundedness.append(level_1 + ' ' + percentage_string(row[level_1]))
+    if str(row[level_1]) != 'nan':
+        boundedness.append(level_1 + ' ' + percentage_string(row[level_1]))
 
     if level_1 == 'bad_speculation':
         level_2 = max_column(row, ['branch_mispredict',
@@ -163,6 +165,9 @@ def determine_boundedness(row):
                                        'uncore_bound'])
             boundedness.append(level_3 + ' ' + percentage_string(row[level_3]))
 
+    if len(boundedness) == 0:
+        boundedness.append('undetermined')
+
     return boundedness
 
 
@@ -171,7 +176,11 @@ def analyze_topdown_metrics(dfm):
 
     dfm['boundedness'] = dfm.apply(determine_boundedness, axis=1)
 
-    return dfm
+    for metric in METRICS:
+        del dfm[metric]
+
+    return [dict([col for col in row.items() if str(col[1]) != 'nan'])
+            for row in dfm.to_dict('index').values()]
 
 
 def main():
@@ -184,12 +193,10 @@ def main():
 
     dfm = derive_topdown(dfm, sys.argv[2])
 
-    dfm = analyze_topdown_metrics(dfm)
+    analysis = analyze_topdown_metrics(dfm)
 
-    for metric in METRICS:
-        del dfm[metric]
-
-    print(dfm)
+    for row in analysis:
+        print(row)
 
 
 if __name__ == "__main__":
