@@ -13,6 +13,7 @@ set(CALIPER_CI_CXX_TEST_APPS
 set(CALIPER_CI_C_TEST_APPS
   ci_dgemm_memtrack
   ci_test_alloc
+  ci_test_alloc_hooks
   ci_test_c_ann
   ci_test_c_snapshot)
 
