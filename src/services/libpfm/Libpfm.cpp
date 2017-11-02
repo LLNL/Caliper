@@ -399,12 +399,12 @@ namespace {
             ret = ioctl(fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
             if (ret == -1)
-                Log(0).stream() << "libpfm: cannot enable sampler" << std::endl;
+                Log(0).stream() << "libpfm: cannot reset counter for event " << fds[i].name << std::endl;
 
             ret = ioctl(fds[i].fd, PERF_EVENT_IOC_ENABLE, 0);
 
             if (ret == -1)
-                Log(0).stream() << "libpfm: cannot enable sampler" << std::endl;
+                Log(0).stream() << "libpfm: cannot enable event " << fds[i].name << std::endl;
         }
 
         return ret;
@@ -418,7 +418,7 @@ namespace {
             ret = ioctl(fds[i].fd, PERF_EVENT_IOC_DISABLE, 0);
 
             if (ret)
-                Log(0).stream() <<  "libpfm: cannot stop sampling" << std::endl;
+                Log(0).stream() <<  "libpfm: cannot disable event " << fds[i].name << std::endl;
 
             munmap(fds[i].buf, pgsz);
             close(fds[i].fd);
@@ -627,20 +627,27 @@ namespace {
         struct read_format counter_reads[MAX_EVENTS];
 
         for (i=0; i<num_events; i++) {
+
             ret = read(fds[i].fd, &counter_reads[i], sizeof(struct read_format));
+
             if (ret < sizeof(struct read_format))
-                Log(1).stream() << "libpfm: failed to read counter: " << fds[i].name << std::endl;
+                Log(1).stream() << "libpfm: failed to read counter for event " << fds[i].name << std::endl;
+
             ret = ioctl(fds[i].fd, PERF_EVENT_IOC_RESET, 0);
+
             if (ret)
-                Log(1).stream() << "libpfm: failed to reset counter: " << fds[i].name << std::endl;
+                Log(1).stream() << "libpfm: failed to reset counter for event " << fds[i].name << std::endl;
         }
 
         for (i=0; i<num_events; i++) {
             // FIXME: everyone does this but it does not make sense...
-            double raw     = (double)counter_reads[i].value;
-            double enabled = (double)counter_reads[i].time_enabled;
-            double running = (double)counter_reads[i].time_running;
-            data[i] = Variant((uint64_t)(raw * enabled / running));
+            //      : 1. this calculation scales down rather than interpolate for missing values
+            //      : 2. time_enabled and time_running are not reset when counters are reset
+            // double raw     = (double)counter_reads[i].value;
+            // double enabled = (double)counter_reads[i].time_enabled;
+            // double running = (double)counter_reads[i].time_running;
+            // uint64_t scaled = (uint64_t)((enabled < running) ? (raw * enabled / running) : raw);
+            data[i] = Variant(counter_reads[i].value);
         }
 
         snapshot->append(num_events, libpfm_event_counter_attr_ids.data(), data);
@@ -672,14 +679,16 @@ namespace {
 
         pfm_terminate();
 
-        Log(1).stream() << "libpfm: thread stats:" << std::endl;
-        for (int i=0; i<num_threads; i++) {
-            Log(1).stream() << "libpfm: thread " << i
-                            << "\tsignals received: " << thread_states[i].signals_received
-                            << "\tsamples produced: " << thread_states[i].samples_produced
-                            << "\tbad samples: " << thread_states[i].bad_samples
-                            << "\tunknown events: " << thread_states[i].null_events
-                            << "\tnull Caliper instances: " << thread_states[i].null_cali_instances << std::endl;
+        if (enable_sampling) {
+            Log(1).stream() << "libpfm: thread sampling stats:" << std::endl;
+            for (int i=0; i<num_threads; i++) {
+                Log(1).stream() << "libpfm: thread " << i
+                                << "\tsignals received: " << thread_states[i].signals_received
+                                << "\tsamples produced: " << thread_states[i].samples_produced
+                                << "\tbad samples: " << thread_states[i].bad_samples
+                                << "\tunknown events: " << thread_states[i].null_events
+                                << "\tnull Caliper instances: " << thread_states[i].null_cali_instances << std::endl;
+            }
         }
     }
 
