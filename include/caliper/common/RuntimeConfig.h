@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file RuntimeConfig.h
+/// \file RuntimeConfig.h
 /// RuntimeConfig definition
 
 #ifndef CALI_RUNTIMECONFIG_H
@@ -59,11 +59,11 @@ class ConfigSet
 public:
 
     struct Entry {
-        const char*   key;         ///< Variable key
+        const char*    key;         ///< Variable key
         cali_attr_type type;        ///< Variable type
-        const char*   value;       ///< (Default) value as string
-        const char*   descr;       ///< One-line description
-        const char*   long_descr;  ///< Extensive, multi-line description
+        const char*    value;       ///< (Default) value as string
+        const char*    descr;       ///< One-line description
+        const char*    long_descr;  ///< Extensive, multi-line description
     };
 
     static constexpr Entry Terminator = { 0, CALI_TYPE_INV, 0, 0, 0 };
@@ -73,16 +73,46 @@ public:
     StringConverter get(const char* key) const;
 };
 
-
+/// \brief Functionality to read and retrieve Caliper config settings.
 class RuntimeConfig
 {
 
 public:
 
     static StringConverter get(const char* set, const char* key);
-    static void        preset(const char* key, const std::string& value);
-    static ConfigSet   init(const char* name, const ConfigSet::Entry* set);
 
+    /// \brief Pre-set config entry \a key to \a value.
+    ///
+    /// The value may be overwritten by configuration files or environment
+    /// variables. Only effective *before*
+    /// initialization of the Caliper runtime system.
+    static void            preset(const char* key, const std::string& value);
+
+    /// \brief Set config entry \a key to \a value.
+    ///
+    /// The value will *not* be overwritten by configuration files,
+    /// profile settings, or environment variables. Only effective *before*
+    /// initialization of the Caliper runtime system.
+    static void            set(const char* key, const std::string& value);
+
+    /// \brief Initialize a ConfigSet.
+    static ConfigSet       init(const char* name, const ConfigSet::Entry* set);
+
+    static bool            allow_read_env();
+
+    /// \brief Enable or disable reading of configuration settings
+    ///   from environment variables.
+    ///
+    /// Use with caution: it is generally not recommended to disable
+    /// configuration through environment variables, as this limits the
+    /// ability to debug Caliper (e.g., increasing the log level).
+    /// Consider providing other means to modify configuration settings
+    /// at runtime in this case, e.g. command-line arguments.
+    static bool            allow_read_env(bool allow);
+
+    /// \brief Print the current configuration settings.
+    ///
+    /// Only effective after initialization of the Caliper runtime system.
     static void print(std::ostream& os);
 
 }; // class RuntimeConfig
