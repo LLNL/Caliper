@@ -3,6 +3,7 @@ set(CALIPER_COMMON_TEST_SOURCES
   test_compressedsnapshotrecord.cpp
   test_runtimeconfig.cpp
   test_snapshotbuffer.cpp
+  test_snapshottextformatter.cpp
   test_stringconverter.cpp
   test_variant.cpp)
 

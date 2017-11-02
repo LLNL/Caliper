@@ -85,7 +85,6 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
                 split_string.erase(split_string.begin());
             }
 
-
             m_fields.push_back(field);
         }
     }
@@ -107,6 +106,14 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             if (!f.attr_name.empty()) {
                 f.attr = db.get_attribute(f.attr_name);
                 f.attr_name.clear();
+
+                cali_attr_type type = f.attr.type();
+
+                f.align = (type == CALI_TYPE_DOUBLE ||
+                           type == CALI_TYPE_INT    ||
+                           type == CALI_TYPE_UINT   ||
+                           type == CALI_TYPE_ADDR) ? 'r' : 'l';
+                
                 update = true;
             }
 
@@ -137,7 +144,10 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
             int len = str.size();
             int w   = len < f.width ? std::min<int>(f.width - len, 80) : 0;
 
-            os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
+            if (f.align == 'r')
+                os << f.prefix << (w > 0 ? whitespace+(80-w) : "") << str;
+            else
+                os << f.prefix << str << (w > 0 ? whitespace+(80-w) : "");
         }
 
         if (update) {
