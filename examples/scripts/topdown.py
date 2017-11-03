@@ -15,7 +15,7 @@ METRICS = [
     'branch_mispredict',
     'machine_clear',
     'frontend_latency',
-    'frontend_bandwidth_bound',
+    'frontend_bandwidth',
     'memory_bound',
     'core_bound',
     'mem_bound',
@@ -142,7 +142,7 @@ def determine_boundedness(row):
                                'bad_speculation',
                                'frontend_bound',
                                'backend_bound'])
-    if str(row[level_1]) != 'nan':
+    if str(row[level_1]) != 'nan' and str(row[level_1]) != 'inf':
         boundedness.append(level_1 + ' ' + percentage_string(row[level_1]))
 
     if level_1 == 'bad_speculation':
