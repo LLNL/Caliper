@@ -29,6 +29,8 @@ using namespace std;
 namespace
 {
 
+static std::atomic<int> snapshot_id { 0 };
+
 const ConfigSet::Entry   configdata[] = {
     { "trigger_attr", CALI_TYPE_STRING, "",
       "Attribute that triggers flush & publish",
@@ -38,7 +40,7 @@ const ConfigSet::Entry   configdata[] = {
 };
 
 // Takes an unpacked Caliper snapshot and publishes it in SOS
-void pack_snapshot(SOS_pub* sos_pub, int frame_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
+void pack_snapshot(SOS_pub* sos_pub, int snapshot_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
     for (auto &p : unpacked_snapshot) {
         switch (p.first.type()) {
         case CALI_TYPE_STRING:
@@ -48,7 +50,7 @@ void pack_snapshot(SOS_pub* sos_pub, int frame_id, const std::map< Attribute, st
             for (const Variant &val : p.second)
                 pubstr.append(val.to_string()).append(pubstr.empty() ? "" : "/");
 
-            SOS_pack_frame(sos_pub, frame_id, p.first.name_c_str(), SOS_VAL_TYPE_STRING, pubstr.c_str());
+            SOS_pack_related(sos_pub, snapshot_id, p.first.name_c_str(), SOS_VAL_TYPE_STRING, pubstr.c_str());
         }
         break;
         case CALI_TYPE_ADDR:
@@ -57,13 +59,13 @@ void pack_snapshot(SOS_pub* sos_pub, int frame_id, const std::map< Attribute, st
         case CALI_TYPE_BOOL:
         {
             int64_t val = p.second.front().to_int();
-            SOS_pack_frame(sos_pub, frame_id, p.first.name_c_str(), SOS_VAL_TYPE_INT, &val);
+            SOS_pack_related(sos_pub, snapshot_id, p.first.name_c_str(), SOS_VAL_TYPE_INT, &val);
         }
         break;
         case CALI_TYPE_DOUBLE:
         {
             double val = p.second.front().to_double();
-            SOS_pack_frame(sos_pub, frame_id, p.first.name_c_str(), SOS_VAL_TYPE_DOUBLE, &val);   
+            SOS_pack_related(sos_pub, snapshot_id, p.first.name_c_str(), SOS_VAL_TYPE_DOUBLE, &val);   
         }
         default:
             ;
@@ -88,8 +90,7 @@ class SosService
         Log(2).stream() << "sos: Publishing Caliper data" << std::endl;
 
         c->flush(nullptr, [this,c](const SnapshotRecord* snapshot){
-                static std::atomic<int> frame { 0 };
-                pack_snapshot(sos_publication_handle, ++frame, snapshot->unpack(*c));
+                pack_snapshot(sos_publication_handle, ++snapshot_id, snapshot->unpack(*c));
                 return true;
             });
     }
@@ -100,9 +101,7 @@ class SosService
     }
 
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
-        static std::atomic<int> frame { 0 };
-
-        pack_snapshot(sos_publication_handle, ++frame, snapshot->unpack(*c));
+        pack_snapshot(sos_publication_handle, ++snapshot_id, snapshot->unpack(*c));
     }
 
     void post_end(Caliper* c, const Attribute& attr) {
