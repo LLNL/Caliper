@@ -115,12 +115,12 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
     def test_alloc_hooks(self):
         target_cmd = [ './ci_test_alloc_hooks' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', 'out.cali' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_ALLOC_TRACK_ALL'   : 'true',
             'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace',
-            'CALI_RECORDER_FILENAME' : 'out.cali',
+            'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
