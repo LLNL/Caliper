@@ -41,11 +41,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <algorithm>
 #include <cassert>
-#include <iterator>
 #include <map>
 #include <mutex>
 #include <string>
@@ -296,9 +293,7 @@ void event_trigger_register(Caliper* c)
 
     config = RuntimeConfig::init("event", configdata);
 
-    util::split(config.get("trigger").to_string(), ':',
-                std::back_inserter(trigger_attr_names));
-
+    trigger_attr_names   = config.get("trigger").to_stringlist(",:");
     enable_snapshot_info = config.get("enable_snapshot_info").to_bool();
 
     // register trigger events

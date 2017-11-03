@@ -47,13 +47,11 @@
 #include "caliper/common/c-util/vlenc.h"
 
 #include "caliper/common/util/spinlock.hpp"
-#include "caliper/common/util/split.hpp"
 
 #include <pthread.h>
 
 #include <algorithm>
 #include <cstring>
-#include <iterator>
 #include <limits>
 #include <mutex>
 #include <vector>
@@ -414,8 +412,8 @@ class AggregateDB {
 
         s_config = RuntimeConfig::init("aggregate", s_configdata);
 
-        util::split(s_config.get("key").to_string(), ':',
-                    std::back_inserter(s_key_attribute_names));
+        s_key_attribute_names =
+            s_config.get("key").to_stringlist(",:");
 
         s_key_attribute_ids.assign(s_key_attribute_names.size(), CALI_INV_ID);
         s_key_attributes.assign(s_key_attribute_names.size(), Attribute::invalid);
@@ -753,10 +751,8 @@ public:
         }
 
         // Initialize aggregation attributes
-        std::vector<std::string> names;
-
-        util::split(s_config.get("attributes").to_string(), ':',
-                    std::back_inserter(names));
+        std::vector<std::string> names =
+            s_config.get("attributes").to_stringlist(",:");
 
         init_aggregation_attributes(c, names);
 

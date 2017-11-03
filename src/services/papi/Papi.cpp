@@ -42,8 +42,6 @@
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Log.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <pthread.h>
 
 #include <vector>
@@ -180,16 +178,12 @@ void papi_finish(Caliper* c) {
                         << " times." << std::endl;
 }
 
-void setup_events(Caliper* c, const string& eventstring)
+void setup_events(Caliper* c, const std::vector<std::string>& events)
 {
-    vector<string> events;
-
-    util::split(eventstring, ',', back_inserter(events));
-
     Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
     Variant   v_true(true);
 
-    for (string& event : events) {
+    for (const string& event : events) {
         int code;
 
         if (PAPI_event_name_to_code(const_cast<char*>(event.c_str()), &code) != PAPI_OK) {
@@ -243,7 +237,7 @@ void papi_register(Caliper* c) {
 
     ConfigSet config = RuntimeConfig::init("papi", s_configdata);
 
-    setup_events(c, config.get("counters").to_string());
+    setup_events(c, config.get("counters").to_stringlist());
 
     if (global_info.counter_events.size() < 1) {
         Log(1).stream() << "No PAPI counters registered, dropping PAPI service" << endl;

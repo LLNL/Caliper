@@ -10,12 +10,9 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/SnapshotTextFormatter.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <algorithm>
 #include <fstream>
 #include <functional>
-#include <iterator>
 #include <iostream>
 #include <map>
 #include <mutex>
@@ -216,8 +213,7 @@ class TextLogService
         { 
             init_stream();
 
-            util::split(config.get("trigger").to_string(), ':', 
-                        std::back_inserter(trigger_attr_names));
+            trigger_attr_names = config.get("trigger").to_stringlist(",:");
 
             c->events().create_attr_evt.connect(&TextLogService::create_attr_cb);
             c->events().post_init_evt.connect(&TextLogService::post_init_cb);

@@ -41,8 +41,6 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
@@ -50,7 +48,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <iterator>
 #include <string>
 #include <vector>
 
@@ -140,11 +137,7 @@ void read_hostname(Caliper* c)
 
 void read_extra(Caliper* c)
 {
-    string extra = config.get("extra").to_string();
-
-    vector<string> extra_list;
-
-    util::split(extra, ':', back_inserter(extra_list));
+    vector<string> extra_list = config.get("extra").to_stringlist(",:");
 
     for (string& env : extra_list) {
         if (env.empty())

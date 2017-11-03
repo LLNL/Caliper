@@ -42,10 +42,7 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <algorithm>
-#include <iterator>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -83,9 +80,7 @@ struct Services::ServicesImpl
             Log(2).stream() << "Available services:" << sstr.str() << endl;
         }
 
-        vector<string> services;
-
-        util::split(m_config.get("enable").to_string(), ':', back_inserter(services));
+        vector<string> services = m_config.get("enable").to_stringlist(",:");
 
         // register caliper services
 
@@ -120,7 +115,7 @@ const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
     // key, type, value, short description, long description
     { "enable", CALI_TYPE_STRING, "",
       "List of service modules to enable",
-      "A list of colon-separated names of the service modules to enable"      
+      "A list of comma-separated names of the service modules to enable"      
     },
     ConfigSet::Terminator
 };

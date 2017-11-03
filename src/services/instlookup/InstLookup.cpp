@@ -45,8 +45,6 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <Symtab.h>
 #include <LineInformation.h>
 #include <CodeObject.h> // parseAPI
@@ -55,7 +53,6 @@
 #include <AddrLookup.h>
 
 #include <algorithm>
-#include <iterator>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -313,9 +310,7 @@ class InstLookup
         : m_config(RuntimeConfig::init("instlookup", s_configdata)),
           m_sts(nullptr)
         {
-            util::split(m_config.get("attributes").to_string(), ':',
-                        std::back_inserter(m_addr_attr_names));
-
+            m_addr_attr_names  = m_config.get("attributes").to_stringlist(",:");
             m_instruction_type = m_config.get("instruction_type").to_bool();
 
             register_callbacks(c);

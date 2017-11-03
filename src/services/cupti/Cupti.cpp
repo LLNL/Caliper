@@ -41,13 +41,10 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <cupti.h>
 #include <nvToolsExt.h>
 #include <generated_nvtx_meta.h>
 
-#include <iterator>
 #include <vector>
 
 using namespace cali;
@@ -425,10 +422,8 @@ namespace
             return false;
         }
 
-        std::vector<std::string> cb_domain_names;
-
-        util::split(config.get("callback_domains").to_string(), ':',
-                    std::back_inserter(cb_domain_names));
+        std::vector<std::string> cb_domain_names =
+            config.get("callback_domains").to_stringlist(",:");
 
         for (const std::string& s : cb_domain_names) {
             const CallbackDomainInfo* cbinfo = callback_domains;

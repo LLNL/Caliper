@@ -38,10 +38,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
 
-#include "caliper/common/util/split.hpp"
 #include "caliper/common/filters/RegexFilter.h"
-
-#include <iterator>
 
 using namespace cali;
 
@@ -144,8 +141,8 @@ AnnotationBinding::pre_initialize(Caliper* c)
     if (m_config.get("regex").to_string().size() > 0)
         m_filter = new RegexFilter(tag, m_config);
 
-    util::split(m_config.get("trigger_attributes").to_string(), ':',
-                std::back_inserter(m_trigger_attr_names));
+    m_trigger_attr_names = 
+        m_config.get("trigger_attributes").to_stringlist(",:");
 
     std::string marker_attr_name("cali.binding.");
     marker_attr_name.append(tag);

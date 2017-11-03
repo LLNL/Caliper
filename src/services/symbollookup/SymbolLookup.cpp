@@ -304,8 +304,7 @@ class SymbolLookup
         : m_config(RuntimeConfig::init("symbollookup", s_configdata)),
           m_lookup(0)
         {
-            util::split(m_config.get("attributes").to_string(), ':',
-                        std::back_inserter(m_addr_attr_names));
+            m_addr_attr_names  = m_config.get("attributes").to_stringlist(",:");
 
             m_lookup_functions = m_config.get("lookup_functions").to_bool();
             m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();

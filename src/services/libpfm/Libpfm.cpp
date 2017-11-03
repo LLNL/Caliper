@@ -43,8 +43,6 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/ContextRecord.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <mutex>
 
 #include <sys/time.h>
@@ -436,9 +434,8 @@ namespace {
 
         enable_sampling = config.get("enable_sampling").to_bool();
         record_counters = config.get("record_counters").to_bool();
-        events_string = config.get("events").to_string();
 
-        util::split(events_string, ',', back_inserter(event_list));
+        event_list = config.get("events").to_stringlist();
         size_t events_listed = event_list.size();
 
         std::vector<std::string> sampling_period_strvec;
@@ -449,8 +446,7 @@ namespace {
         sample_attributes_strvec.clear();
 
         if (enable_sampling) {
-            std::string sample_attributes_string = config.get("sample_attributes").to_string();
-            util::split(sample_attributes_string, ',', back_inserter(sample_attributes_strvec));
+            sample_attributes_strvec = config.get("sample_attributes").to_stringlist();
 
             for (auto sample_attribute_str : sample_attributes_strvec) {
 
@@ -508,13 +504,9 @@ namespace {
                 ++num_attributes;
             }
 
-            std::string sampling_period_list_str = config.get("sample_period").to_string();
-            std::string precise_ip_list_str = config.get("precise_ip").to_string();
-            std::string config1_list_str = config.get("config1").to_string();
-
-            util::split(sampling_period_list_str, ',', back_inserter(sampling_period_strvec));
-            util::split(precise_ip_list_str, ',', back_inserter(precise_ip_strvec));
-            util::split(config1_list_str, ',', back_inserter(config1_strvec));
+            sampling_period_strvec = config.get("sample_period").to_stringlist();
+            precise_ip_strvec      = config.get("precise_ip").to_stringlist();
+            config1_strvec         = config.get("config1").to_stringlist();
 
             if (events_listed != sampling_period_strvec.size()
                 | events_listed != precise_ip_strvec.size()

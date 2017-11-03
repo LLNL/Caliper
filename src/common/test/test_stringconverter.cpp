@@ -105,3 +105,20 @@ TEST(StringConverterTest, ConvertUint) {
     res = strconv.to_uint(&ok);
     EXPECT_FALSE(ok);
 }
+
+TEST(StringConverterTest, ConvertStringList) {
+    bool ok = false;
+
+    StringConverter sc(" aword, b.c:cdef,, d, e\\ f\",gword \"  ,  ");
+
+    std::vector<std::string> res = sc.to_stringlist(",:", &ok);
+
+    EXPECT_TRUE(ok);
+    ASSERT_EQ(res.size(), static_cast<decltype(res.size())>(5));
+
+    EXPECT_EQ(res[0], std::string("aword"));
+    EXPECT_EQ(res[1], std::string("b.c"));
+    EXPECT_EQ(res[2], std::string("cdef"));
+    EXPECT_EQ(res[3], std::string("d"));
+    EXPECT_EQ(res[4], std::string("e f,gword "));
+}

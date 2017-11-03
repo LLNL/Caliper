@@ -10,13 +10,10 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/SnapshotTextFormatter.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <atomic>
 #include <algorithm>
 #include <fstream>
 #include <functional>
-#include <iterator>
 #include <iostream>
 #include <map>
 #include <mutex>
