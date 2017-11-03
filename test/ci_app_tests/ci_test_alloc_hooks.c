@@ -10,6 +10,35 @@
 
 extern cali_id_t cali_class_memoryaddress_attr_id;
 
+cali_id_t  attrs[2];
+size_t     sizes[2];
+int        scope = CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD;
+
+void test_allocation(void *ptr, size_t size)
+{
+  cali_begin_byname("test_alloc.allocated.0");
+  int* ptr_inside  = ptr;
+  int* ptr_outside = ptr-1;
+  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &ptr_inside, &ptr_outside }, sizes);
+  cali_end_byname("test_alloc.allocated.0");
+
+  cali_begin_byname("test_alloc.allocated.1");
+  ptr_inside  = ptr+size-1;
+  ptr_outside = ptr+size;
+  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &ptr_inside, &ptr_outside }, sizes);
+  cali_end_byname("test_alloc.allocated.1");
+}
+
+void test_free(void *ptr)
+{
+  cali_begin_byname("test_alloc.freed");
+  free(ptr);
+  int* ptr_inside  = ptr;
+  int* ptr_outside = ptr-1;
+  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &ptr_inside, &ptr_outside }, sizes);
+  cali_end_byname("test_alloc.freed");
+}
+
 void ci_test_alloc()
 {
   CALI_MARK_FUNCTION_BEGIN;
@@ -25,30 +54,30 @@ void ci_test_alloc()
     cali_create_attribute_with_metadata("ptr_out", CALI_TYPE_ADDR, CALI_ATTR_ASVALUE,
                                         1, &cali_class_memoryaddress_attr_id, val_ptrs, &val_size);
 
+  attrs[0] = ptr_in_attr;
+  attrs[1] = ptr_out_attr;
+  sizes[0] = sizeof(int*);
+  sizes[1] = sizeof(int*);
+
   int *A = (int*)malloc(sizeof(int)*42);
+  int *C = (int*)calloc(42, sizeof(int));
+  int *R = (int*)malloc(sizeof(int)*100);
+  R = (int*)realloc(R, sizeof(int)*42);
 
-  cali_id_t  attrs[2] = { ptr_in_attr,  ptr_out_attr };
-  size_t     sizes[2] = { sizeof(int*), sizeof(int*) };
-  int        scope    = CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD;
+  cali_begin_byname("test_alloc.malloc_hook");
+  test_allocation(A, sizeof(int)*42);
+  test_free(A);
+  cali_end_byname("test_alloc.malloc_hook");
 
-  cali_begin_byname("test_alloc.allocated.0");
-  int* A_inside  = A;
-  int* A_outside = A-1;
-  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &A_inside, &A_outside }, sizes);
-  cali_end_byname("test_alloc.allocated.0");
+  cali_begin_byname("test_alloc.calloc_hook");
+  test_allocation(C, sizeof(int)*42);
+  test_free(C);
+  cali_end_byname("test_alloc.calloc_hook");
 
-  cali_begin_byname("test_alloc.allocated.1");
-  A_inside  = A+41;
-  /* int* A_outside = A+42; this should fail but doesn't: needs fix */
-  A_outside = A+43;
-  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &A_inside, &A_outside }, sizes);
-  cali_end_byname("test_alloc.allocated.1");
-
-  free(A);
-
-  cali_begin_byname("test_alloc.freed");
-  cali_push_snapshot(scope, 2, attrs, (const void*[]) { &A_inside, &A_outside}, sizes);
-  cali_end_byname("test_alloc.freed");
+  cali_begin_byname("test_alloc.realloc_hook");
+  test_allocation(R, sizeof(int)*42);
+  test_free(R);
+  cali_end_byname("test_alloc.realloc_hook");
 
   CALI_MARK_FUNCTION_END;
 }
