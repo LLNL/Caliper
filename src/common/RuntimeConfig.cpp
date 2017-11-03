@@ -50,7 +50,6 @@
 using namespace cali;
 using namespace std;
 
-
 namespace 
 {
     const string prefix { "cali" };
@@ -138,7 +137,7 @@ struct ConfigSetImpl
                         newent.value = val;
                 }
             }
-            
+
             m_dict.emplace(make_pair(string(e->key), newent));
         }
     }
@@ -284,7 +283,7 @@ struct RuntimeConfigImpl
     }
 
     void preset(const char* key, const std::string& value) {
-        m_config_profiles["default"][key] = value;
+        m_combined_profile[key] = value;
     }
 
     void set(const char* key, const std::string& value) {
@@ -423,4 +422,17 @@ RuntimeConfig::allow_read_env(bool allow)
 {
     RuntimeConfigImpl::s_allow_read_env = allow;
     return RuntimeConfigImpl::s_allow_read_env;
+}
+
+// "hidden" function to be used by tests
+
+namespace cali
+{
+
+void
+clear_caliper_runtime_config()
+{
+    RuntimeConfigImpl::s_instance.reset();
+}
+
 }

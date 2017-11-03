@@ -8,6 +8,12 @@ set(CALIPER_COMMON_TEST_SOURCES
   test_variant.cpp)
 
 add_executable(test_caliper-common ${CALIPER_COMMON_TEST_SOURCES})
+
 target_link_libraries(test_caliper-common caliper-common gtest_main)
+
+add_custom_target(caliper-common_test.config ALL
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_CURRENT_SOURCE_DIR}/caliper-common_test.config
+    ${CMAKE_CURRENT_BINARY_DIR}/caliper-common_test.config)
 
 add_test(NAME test-caliper-common COMMAND test_caliper-common)
