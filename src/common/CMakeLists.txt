@@ -19,10 +19,12 @@ set(CALIPER_COMMON_SOURCES
 
 add_subdirectory(csv)
 add_subdirectory(c-util)
+add_subdirectory(util)
 
 add_library(caliper-common
   $<TARGET_OBJECTS:caliper-csv>
   $<TARGET_OBJECTS:c-util>
+  $<TARGET_OBJECTS:util>
   ${CALIPER_COMMON_SOURCES})
 
 set_target_properties(caliper-common PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})

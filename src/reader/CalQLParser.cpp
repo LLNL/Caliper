@@ -35,6 +35,8 @@
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/FormatProcessor.h"
 
+#include "../common/util/parse_util.h"
+
 #include <algorithm>
 #include <cctype>
 #include <sstream>
@@ -43,71 +45,6 @@ using namespace cali;
 
 namespace
 {
-
-inline bool
-is_one_of(char c, const char* characters)
-{
-    for (const char* ptr = characters; *ptr != '\0'; ++ptr)
-        if (*ptr == c)
-            return true;
-
-    return false;
-}
-
-/// \brief Parse text from stream, ignoring whitespace, until one of ",()" are found.
-///   Handles escaping with '\' and '"'.
-std::string
-parse_word(std::istream& is)
-{
-    std::string ret;
-    char c;
-    
-    do {
-        c = is.get();
-    } while (is.good() && isspace(c));
-
-    if (is.good())
-        is.unget();
-
-    bool esc = false;
-    
-    while (is.good()) {
-        auto c = is.get();
-
-        if (c == '\\') {
-            c = is.get();
-            ret.push_back(c);
-            continue;
-        } else if (c == '"') {
-            esc = !esc;
-            continue;
-        }
-        
-        if (!is.good())
-            break;
-
-        if (!esc && (isspace(c) || is_one_of(c, ",;=<>()\n"))) {
-            is.unget();
-            break;
-        }
-
-        ret.push_back(c);
-    }
-
-    return ret;
-}
-
-char
-parse_char(std::istream& is)
-{
-    char ret = '\0';
-
-    do {
-        ret = is.get();
-    } while (is.good() && isspace(ret));
-
-    return ret;
-}
 
 int
 get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs)
@@ -126,7 +63,8 @@ get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs
     return defs[retid].name ? retid : -1;
 }
 
-}
+} // namespace [anonymous]
+
 
 struct CalQLParser::CalQLParserImpl
 {
@@ -184,7 +122,7 @@ struct CalQLParser::CalQLParserImpl
         std::vector<std::string> ret;
         std::string word;
 
-        char c = parse_char(is);
+        char c = util::read_char(is);
 
         if (!is.good())
             return ret;
@@ -195,8 +133,8 @@ struct CalQLParser::CalQLParserImpl
         }
     
         do {
-            std::string str = parse_word(is);
-            c = parse_char(is);
+            std::string str = util::read_word(is, ",;=<>()\n");
+            c = util::read_char(is);
 
             if (!str.empty() && (c == ',' || c == ')'))
                 ret.push_back(str);
@@ -217,7 +155,7 @@ struct CalQLParser::CalQLParserImpl
         char c = '\0';
         
         do {
-            std::string w = parse_word(is);
+            std::string w = util::read_word(is, ",;=<>()\n");
             std::vector<std::string> args = parse_arglist(is);
             
             // check if this is an aggregation function
@@ -235,7 +173,7 @@ struct CalQLParser::CalQLParserImpl
                 set_error(std::string("Unknown aggregation function ") + w, is);
             }
 
-            c = parse_char(is);
+            c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
@@ -246,7 +184,7 @@ struct CalQLParser::CalQLParserImpl
     parse_format(std::istream& is) {
         const QuerySpec::FunctionSignature* defs = FormatProcessor::formatter_defs();
 
-        std::string fname = parse_word(is);
+        std::string fname = util::read_word(is, ",;=<>()\n");
         std::transform(fname.begin(), fname.end(), fname.begin(), ::tolower);
 
         int i = 0;
@@ -275,14 +213,14 @@ struct CalQLParser::CalQLParserImpl
         char c = 0;
         
         do {
-            std::string w = parse_word(is);
+            std::string w = util::read_word(is, ",;=<>()\n");
 
             if (!w.empty()) {
                 spec.aggregation_key.selection = QuerySpec::AttributeSelection::List;
                 spec.aggregation_key.list.push_back(w);
             }
 
-            c = parse_char(is);
+            c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
@@ -300,18 +238,18 @@ struct CalQLParser::CalQLParserImpl
         char c = '\0';
         
         do {
-            c = parse_char(is);
+            c = util::read_char(is);
 
             if (c == '*') {
                 spec.attribute_selection.selection = QuerySpec::AttributeSelection::All;
             } else {
                 is.unget();
 
-                std::string w = parse_word(is);
+                std::string w = util::read_word(is, ",;=<>()\n");
 
                 // check if this is an aggregation function
 
-                char c = parse_char(is);
+                char c = util::read_char(is);
                 is.unget();
 
                 if (c == '(') {
@@ -341,7 +279,7 @@ struct CalQLParser::CalQLParserImpl
                 }
             }
 
-            c = parse_char(is);
+            c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
@@ -369,14 +307,14 @@ struct CalQLParser::CalQLParserImpl
             c = 0;
             next_keyword.clear();
             
-            std::string arg = parse_word(is);
+            std::string arg = util::read_word(is, ",;=<>()\n");
 
             if (arg.empty()) {
                 set_error("Sort attribute expected", is);
                 return;
             }
             
-            std::string tmp = parse_word(is);
+            std::string tmp = util::read_word(is, ",;=<>()\n");
             std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
 
             if (next_keyword == "asc" ) {
@@ -395,7 +333,7 @@ struct CalQLParser::CalQLParserImpl
                     break;
             }
             
-            c = parse_char(is);
+            c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
@@ -406,7 +344,7 @@ struct CalQLParser::CalQLParserImpl
 
     void
     parse_filter_clause(std::istream& is) {
-        std::string w = parse_word(is);        
+        std::string w = util::read_word(is, ",;=<>()\n");        
         std::string wl(w);
             
         std::transform(w.begin(), w.end(), wl.begin(), ::tolower);
@@ -415,7 +353,7 @@ struct CalQLParser::CalQLParserImpl
         
         if (wl == "not") {
             negate = true;
-            w = parse_word(is);
+            w = util::read_word(is, ",;=<>()\n");
         }
 
         if (w.empty()) {
@@ -428,11 +366,11 @@ struct CalQLParser::CalQLParserImpl
         cond.op        = QuerySpec::Condition::None;
         cond.attr_name = w;
         
-        char c = parse_char(is);
+        char c = util::read_char(is);
 
         switch (c) {
         case '=':
-            w = parse_word(is);
+            w = util::read_word(is, ",;=<>()\n");
             
             if (w.empty()) 
                 set_error("Argument expected for '='", is);
@@ -443,7 +381,7 @@ struct CalQLParser::CalQLParserImpl
             
             break;            
         case '<':
-            w = parse_word(is);
+            w = util::read_word(is, ",;=<>()\n");
             
             if (w.empty()) 
                 set_error("Argument expected for '<'", is);
@@ -454,7 +392,7 @@ struct CalQLParser::CalQLParserImpl
             
             break;            
         case '>':
-            w = parse_word(is);
+            w = util::read_word(is, ",;=<>()\n");
             
             if (w.empty()) 
                 set_error("Argument expected for '>'", is);
@@ -483,7 +421,7 @@ struct CalQLParser::CalQLParserImpl
         
         do {
             parse_filter_clause(is);
-            c = parse_char(is);
+            c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
@@ -528,7 +466,7 @@ struct CalQLParser::CalQLParserImpl
         } else {
             // special handling for "group" and "sort"
             if (clause == Group || clause == Sort) {
-                std::string w2 = parse_word(is);
+                std::string w2 = util::read_word(is, ",;=<>()\n");
                 std::transform(w2.begin(), w2.end(), w2.begin(), ::tolower);
 
                 if (w2 != "by") {
@@ -544,7 +482,7 @@ struct CalQLParser::CalQLParserImpl
     void
     parse(std::istream& is) {
         while (!error && is.good()) {
-            std::string w = parse_word(is);
+            std::string w = util::read_word(is, ",;=<>()\n");
 
             if (w.empty())
                 break;
