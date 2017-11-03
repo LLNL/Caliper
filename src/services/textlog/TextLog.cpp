@@ -183,8 +183,8 @@ class TextLogService
 
         formatter.reset(formatstr);
 
-        set_event_attr = c->get_attribute("cali.snapshot.event.set");
-        end_event_attr = c->get_attribute("cali.snapshot.event.end");
+        set_event_attr = c->get_attribute("cali.event.set");
+        end_event_attr = c->get_attribute("cali.event.end");
 
         if (end_event_attr      == Attribute::invalid ||
             set_event_attr      == Attribute::invalid)

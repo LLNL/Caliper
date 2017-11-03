@@ -30,8 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file RuntimeConfig.cpp
-/// RuntimeConfig class implementation
+// RuntimeConfig class implementation
 
 #include "caliper/common/RuntimeConfig.h"
 
@@ -50,7 +49,6 @@
 
 using namespace cali;
 using namespace std;
-
 
 namespace 
 {
@@ -86,6 +84,8 @@ namespace
 
         return str;
     }
+
+    typedef map< string, string > config_profile_t;
 }
 
 namespace cali
@@ -99,7 +99,12 @@ struct ConfigSetImpl
 {
     // --- data
 
-    unordered_map<string, ConfigSet::Entry> m_dict;
+    struct ConfigValue {
+        ConfigSet::Entry entry;
+        std::string      value;
+    };
+
+    unordered_map<string, ConfigValue> m_dict;
 
     // --- interface
 
@@ -108,23 +113,30 @@ struct ConfigSetImpl
         return (it == m_dict.end() ? StringConverter() : StringConverter(it->second.value));
     }
 
-    void init(const char* name, const ConfigSet::Entry* list, const map<string, string>& profile) {
+    void init(const char* name, const ConfigSet::Entry* list, bool read_env, const ::config_profile_t& profile, const ::config_profile_t& top_profile)
+    {
         for (const ConfigSet::Entry* e = list; e && e->key; ++e) {
-            ConfigSet::Entry newent = *e;
+            ConfigValue newent  { *e, string(e->value) };
+            string      varname { ::config_var_name(name, e->key) };
 
-            string varname = ::config_var_name(name, e->key);
+            // See if there is an entry in the top config profile
+            auto topit = top_profile.find(varname);
 
-            // See if there is an entry in the config profile
-
-            auto it = profile.find(varname);
-            if (it != profile.end())
-                newent.value = it->second.c_str();
-
-            // See if there is a config variable set
-
-            char* val = getenv(::config_var_name(name, e->key).c_str());
-            if (val)
-                newent.value = val;
+            if (topit != top_profile.end()) {
+                newent.value = topit->second;
+            } else {
+                // See if there is an entry in the base config profile
+                auto it = profile.find(varname);
+                if (it != profile.end())
+                    newent.value = it->second;
+                
+                if (read_env) {
+                    // See if there is a config variable set
+                    char* val = getenv(::config_var_name(name, e->key).c_str());
+                    if (val)
+                        newent.value = val;
+                }
+            }
 
             m_dict.emplace(make_pair(string(e->key), newent));
         }
@@ -137,18 +149,27 @@ struct ConfigSetImpl
 //
 
 struct RuntimeConfigImpl
-{
+{    
     // --- data
 
     static unique_ptr<RuntimeConfigImpl>     s_instance;
     static const ConfigSet::Entry            s_configdata[];
 
-    ConfigSet                                m_config;
+    static bool                              s_allow_read_env;
 
-    string                                   m_profile_name;
+    // combined profile: initially receives settings made through "add" API,
+    // then merges all selected profiles in here
+    ::config_profile_t                       m_combined_profile;
+    
+    // top-priority profile: receives all settings made through "set" API
+    // that overwrite other settings
+    ::config_profile_t                       m_top_profile;
 
+    // the DB of initialized config sets
     map< string, shared_ptr<ConfigSetImpl> > m_database;
-    map< string, map<string, string> >       m_config_profiles;
+
+    // the config profile DB
+    map< string, ::config_profile_t>         m_config_profiles;
 
     // --- helpers
 
@@ -160,8 +181,8 @@ struct RuntimeConfigImpl
         // * Other lines are parsed as NAME=VALUE, or ignored if no '=' is found
         //
 
-        map<string, string> current_profile;
-        string              current_profile_name { "default" };
+        ::config_profile_t current_profile;
+        string             current_profile_name { "default" };
 
         for (string line; std::getline(in, line); ) {
             if (line.length() < 1)
@@ -212,19 +233,67 @@ struct RuntimeConfigImpl
         }
     }
 
+    void init_config_database() {
+        // read pre-init config set to get config file name from env var
+        ConfigSetImpl init_config_cfg;
+        init_config_cfg.init("config", s_configdata, s_allow_read_env, m_combined_profile, m_top_profile);
+
+        // read config files
+        read_config_files(init_config_cfg.get("file").to_string());
+
+        // merge "default" profile into combined profile
+        {
+            for ( auto &p : m_config_profiles["default"] )
+                m_combined_profile[p.first] = p.second;
+        }
+
+        // read "config" config again: profile may have been set in the file
+        shared_ptr<ConfigSetImpl> config_cfg { new ConfigSetImpl };
+        config_cfg->init("config", s_configdata, s_allow_read_env, m_combined_profile, m_top_profile);
+
+        m_database.insert(make_pair("config", config_cfg));
+
+        // get the selected config profile names
+        vector<string> profile_names;        
+        util::split(config_cfg->get("profile").to_string(), ',',
+                    std::back_inserter(profile_names));
+
+        // merge all selected profiles
+        for (const std::string& profile_name : profile_names) {
+            auto it = m_config_profiles.find(profile_name);
+
+            if (it == m_config_profiles.end()) {
+                std::cerr << "caliper: error: config profile \"" << profile_name << "\" not defined." << std::endl;
+                continue;
+            }
+
+            for (auto &p : it->second)
+                m_combined_profile[p.first] = p.second;
+        }            
+    }
 
     // --- interface
 
-    StringConverter get(const char* set, const char* key) const {
+    StringConverter get(const char* set, const char* key) {
+        if (m_database.empty())
+            init_config_database();
+        
         auto it = m_database.find(set);
         return (it == m_database.end() ? StringConverter() : StringConverter(it->second->get(key)));
     }
 
     void preset(const char* key, const std::string& value) {
-        m_config_profiles[m_profile_name][key] = value;
+        m_combined_profile[key] = value;
+    }
+
+    void set(const char* key, const std::string& value) {
+        m_top_profile[key] = value;
     }
     
     shared_ptr<ConfigSetImpl> init(const char* name, const ConfigSet::Entry* list) {
+        if (m_database.empty())
+            init_config_database();
+        
         auto it = m_database.find(name);
 
         if (it != m_database.end())
@@ -232,38 +301,33 @@ struct RuntimeConfigImpl
 
         shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
 
-        ret->init(name, list, m_config_profiles[m_profile_name]);
+        ret->init(name, list, s_allow_read_env, m_combined_profile, m_top_profile);
         m_database.insert(it, make_pair(string(name), ret));
 
         return ret;
     }
 
-    void print(ostream& os) const {
-        for ( auto set : m_database )
-            for ( auto entry : set.second->m_dict )
-                os << "# " << entry.second.descr << " (" << cali_type2string(entry.second.type) << ")\n" 
-                   << ::config_var_name(set.first, entry.first) << '=' << entry.second.value << endl;
+    void define_profile(const char* name, const char* keyvallist[][2]) {
+        ::config_profile_t profile;
+        
+        for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
+            profile[string((*keyvallist)[0])] = string((*keyvallist)[1]);
+
+        m_config_profiles[string(name)] = std::move(profile);
     }
 
-    RuntimeConfigImpl() 
-        : m_profile_name { "default" } {
-        // read pre-init config set to get config file name from env var
-        ConfigSetImpl pre_init_config;
-
-        pre_init_config.init("config", s_configdata, map<string, string>());
-
-        // read config files
-        read_config_files(pre_init_config.get("file").to_string());
+    void print(std::ostream& os) const {
+        for ( auto set : m_database )
+            for ( auto entry : set.second->m_dict )
+                os << "# " << entry.second.entry.descr
+                   << " (" << cali_type2string(entry.second.entry.type) << ")\n" 
+                   << ::config_var_name(set.first, entry.first)
+                   << '=' << entry.second.value << std::endl;
     }
 
     static RuntimeConfigImpl* instance() {
-        if (!s_instance) {
+        if (!s_instance)
             s_instance.reset(new RuntimeConfigImpl);
-
-            // read "config" config set again (profile may have been set in file)
-            s_instance->m_config = RuntimeConfig::init("config", s_configdata);
-            s_instance->m_profile_name = s_instance->m_config.get("profile").to_string();
-        }
 
         return s_instance.get();
     }
@@ -272,16 +336,18 @@ struct RuntimeConfigImpl
 unique_ptr<RuntimeConfigImpl> RuntimeConfigImpl::s_instance { nullptr };
 
 const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
-    { "profile", CALI_TYPE_STRING, "default",
+    { "profile",  CALI_TYPE_STRING, "default",
       "Configuration profile",
       "Configuration profile" 
     },
-    { "file", CALI_TYPE_STRING, "caliper.config",
+    { "file",     CALI_TYPE_STRING, "caliper.config",
       "List of configuration files",
       "Colon-serparated list of configuration files" 
     },
     ConfigSet::Terminator
 };
+
+bool RuntimeConfigImpl::s_allow_read_env { true };
 
 } // namespace cali
 
@@ -320,10 +386,23 @@ RuntimeConfig::preset(const char* key, const std::string& value)
     RuntimeConfigImpl::instance()->preset(key, value);
 }
 
+void
+RuntimeConfig::set(const char* key, const std::string& value)
+{
+    RuntimeConfigImpl::instance()->set(key, value);
+}
+
 ConfigSet 
 RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
 {
     return ConfigSet(RuntimeConfigImpl::instance()->init(name, list));
+}
+
+void
+RuntimeConfig::define_profile(const char* name,
+                              const char* keyvallist[][2])
+{
+    RuntimeConfigImpl::instance()->define_profile(name, keyvallist);
 }
 
 void
@@ -332,3 +411,28 @@ RuntimeConfig::print(ostream& os)
     RuntimeConfigImpl::instance()->print(os);
 }
  
+bool
+RuntimeConfig::allow_read_env()
+{
+    return RuntimeConfigImpl::s_allow_read_env;
+}
+
+bool
+RuntimeConfig::allow_read_env(bool allow)
+{
+    RuntimeConfigImpl::s_allow_read_env = allow;
+    return RuntimeConfigImpl::s_allow_read_env;
+}
+
+// "hidden" function to be used by tests
+
+namespace cali
+{
+
+void
+clear_caliper_runtime_config()
+{
+    RuntimeConfigImpl::s_instance.reset();
+}
+
+}
