@@ -31,15 +31,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file cali-query.cpp
-/// A basic tool for Caliper metadata queries
+// A basic tool for Caliper metadata queries
 
 #include "AttributeExtract.h"
 #include "query_common.h"
 
 #include "caliper/tools-util/Args.h"
 
-#include "caliper/Annotation.h"
+#include "caliper/cali.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliperMetadataDB.h"
@@ -50,6 +49,7 @@
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include "caliper/common/csv/CsvReader.h"
 #include "caliper/common/csv/CsvWriter.h"
@@ -132,6 +132,14 @@ namespace
           "Execute a query in CalQL format",
           "QUERY STRING"
         },
+        { "profile", "profile", 'p', false,
+          "Show progress and cali-query performance summary",
+          nullptr
+        },
+        { "verbose", "verbose", 'v', false,
+          "Be verbose.",
+          nullptr
+        },
         { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
@@ -186,23 +194,44 @@ namespace
 }
 
 
+void setup_caliper_config(const Args& args)
+{
+    const char* progressmonitor_profile[][2] = {
+        { "CALI_SERVICES_ENABLE", "event:report:textlog:trace:timestamp" },
+        { "CALI_EVENT_TRIGGER",   "annotation:cali-query.stream"         },
+        { "CALI_TEXTLOG_TRIGGER", "cali-query.stream" },
+
+        { "CALI_TEXTLOG_FORMATSTRING",
+          "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" },
+
+        { "CALI_REPORT_CONFIG",
+          "SELECT annotation,time.inclusive.duration WHERE event.end#annotation FORMAT table" },
+
+        { NULL, NULL }
+    };
+    
+    cali::RuntimeConfig::preset("CALI_LOG_VERBOSITY", "0");
+    cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
+
+    cali::RuntimeConfig::allow_read_env(false);
+
+    cali::RuntimeConfig::define_profile("caliquery-progressmonitor", progressmonitor_profile);
+
+    cali::RuntimeConfig::set("CALI_CONFIG_FILE", "cali-query_caliper.config");
+    
+    if (args.is_set("verbose"))
+        cali::RuntimeConfig::preset("CALI_LOG_VERBOSITY", "1");
+    if (args.is_set("profile"))
+        cali::RuntimeConfig::set("CALI_CONFIG_PROFILE", "caliquery-progressmonitor");
+}
+
+
 //
 // --- main()
 //
 
 int main(int argc, const char* argv[])
 {
-    Annotation a_phase("cali-query.phase", CALI_ATTR_SCOPE_PROCESS);
-
-    Annotation::Guard g_p(a_phase);
-
-    a_phase.set("init");
-
-    cali::Annotation("cali-query.build.date").set(__DATE__);
-    cali::Annotation("cali-query.build.time").set(__TIME__);
-#ifdef __GNUC__
-    cali::Annotation("cali-query.build.compiler").set("gnu-" __VERSION__);
-#endif 
 
     Args args(::option_table);
 
@@ -230,6 +259,19 @@ int main(int argc, const char* argv[])
             return 0;
         }
     }
+
+    bool verbose = args.is_set("verbose");
+    
+    // The Caliper config setup must run before Caliper runtime initialization
+    setup_caliper_config(args);
+    
+    cali::Annotation("cali-query.build.date").set(__DATE__);
+    cali::Annotation("cali-query.build.time").set(__TIME__);
+#ifdef __GNUC__
+    cali::Annotation("cali-query.build.compiler").set("gnu-" __VERSION__);
+#endif 
+
+    CALI_MARK_BEGIN("Initialization");
 
     //
     // --- Create output stream (if requested)
@@ -280,33 +322,54 @@ int main(int argc, const char* argv[])
     unsigned num_threads =
         std::min<unsigned>(files.size(), std::stoul(args.get("threads", "4")));
 
-    std::cerr << "cali-query: processing " << files.size() << " files using "
-              << num_threads << " thread" << (num_threads == 1 ? "." : "s.")  << std::endl;
+    if (verbose)
+        std::cerr << "cali-query: Processing " << files.size()
+                  << " files using "
+                  << num_threads << " thread" << (num_threads == 1 ? "." : "s.")
+                  << std::endl;
 
-    Annotation("cali-query.num-threads", CALI_ATTR_SCOPE_PROCESS).set(static_cast<int>(num_threads));
+    Annotation("cali-query.num-threads", CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS).set(static_cast<int>(num_threads));
+
+    CALI_MARK_END("Initialization");
     
     //
     // --- Thread processing function
     //
 
-    a_phase.set("process");
+    CALI_MARK_BEGIN("Processing");
 
     CaliperMetadataDB     metadb;
     std::atomic<unsigned> index(0);
+    std::mutex            msgmutex;
     
     auto thread_fn = [&](unsigned t) {
         Annotation::Guard
             g_t(Annotation("thread").set(static_cast<int>(t)));
         
-        for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write 
-            Annotation::Guard 
-                g_s(Annotation("cali-query.stream").set(files[i].empty() ? "stdin" : files[i].c_str()));
+        for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write
+            const char* filename = (files[i].empty() ? "stdin" : files[i].c_str());
             
+            Annotation::Guard 
+                g_s(Annotation("cali-query.stream").begin(filename));
+
+            if (verbose) {
+                std::lock_guard<std::mutex>
+                    g(msgmutex);
+
+                std::cerr << "cali-query: Reading " << filename << std::endl;
+            }
+           
             CsvReader reader(files[i]);
             IdMap     idmap;
 
-            if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
-                cerr << "Could not read file " << files[i] << endl;
+            if (!reader.read([&](const RecordMap& rec){
+                        metadb.merge(rec, idmap, node_proc, snap_proc);
+                    })) {
+                std::lock_guard<std::mutex>
+                    g(msgmutex);
+                
+                std::cerr << "cali-query: Error: Could not read file " << filename << std::endl;
+            }
         }
     };
 
@@ -321,13 +384,17 @@ int main(int argc, const char* argv[])
 
     for (auto &t : threads)
         t.join();
+
+    CALI_MARK_END("Processing");
     
     //
     // --- Flush outputs
     //
 
-    a_phase.set("flush");
+    CALI_MARK_BEGIN("Writing");
 
     aggregate.flush(metadb, format);
     format.flush(metadb);
+
+    CALI_MARK_END("Writing");
 }
