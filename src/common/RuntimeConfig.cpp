@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -34,7 +34,7 @@
 
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
+#include "util/parse_util.h"
 
 #include <algorithm>
 #include <cctype>
@@ -50,7 +50,7 @@
 using namespace cali;
 using namespace std;
 
-namespace 
+namespace
 {
     const string prefix { "cali" };
 
@@ -129,7 +129,7 @@ struct ConfigSetImpl
                 auto it = profile.find(varname);
                 if (it != profile.end())
                     newent.value = it->second;
-                
+
                 if (read_env) {
                     // See if there is a config variable set
                     char* val = getenv(::config_var_name(name, e->key).c_str());
@@ -149,7 +149,7 @@ struct ConfigSetImpl
 //
 
 struct RuntimeConfigImpl
-{    
+{
     // --- data
 
     static unique_ptr<RuntimeConfigImpl>     s_instance;
@@ -160,7 +160,7 @@ struct RuntimeConfigImpl
     // combined profile: initially receives settings made through "add" API,
     // then merges all selected profiles in here
     ::config_profile_t                       m_combined_profile;
-    
+
     // top-priority profile: receives all settings made through "set" API
     // that overwrite other settings
     ::config_profile_t                       m_top_profile;
@@ -176,8 +176,8 @@ struct RuntimeConfigImpl
     void read_config_profiles(istream& in) {
         //
         // Parse config file line-by-line
-        // * '#' as the first character is a comment, or start of a new 
-        //   group if a string enclosed in square brackets ("[group]") exists 
+        // * '#' as the first character is a comment, or start of a new
+        //   group if a string enclosed in square brackets ("[group]") exists
         // * Other lines are parsed as NAME=VALUE, or ignored if no '=' is found
         //
 
@@ -194,7 +194,7 @@ struct RuntimeConfigImpl
                 string::size_type e = line.find_first_of(']');
 
                 if (b != string::npos && e != string::npos && b+1 < e) {
-                    if (current_profile.size() > 0) 
+                    if (current_profile.size() > 0)
                         m_config_profiles[current_profile_name].insert(current_profile.begin(), current_profile.end());
 
                     current_profile.clear();
@@ -206,26 +206,24 @@ struct RuntimeConfigImpl
 
             string::size_type s = line.find_first_of('=');
 
-            if (s > 0 && s < line.size())
-                current_profile[line.substr(0, s)] = line.substr(s+1);
+            if (s > 0 && s < line.size()) {
+                std::istringstream is(line.substr(s+1));
+                current_profile[line.substr(0, s)] = util::read_word(is, "");
+            }
         }
 
-        if (current_profile.size() > 0) 
+        if (current_profile.size() > 0)
             m_config_profiles[current_profile_name] = current_profile;
     }
 
-    void read_config_files(const std::string& filenames) {
+    void read_config_files(const std::vector<std::string>& filenames) {
         // read builtin profiles
 
         istringstream is(::builtin_profiles);
         read_config_profiles(is);
-        
-        // read config files
-        vector<string> files;
 
-        util::split(filenames, ':', back_inserter(files));
 
-        for (const auto &s : files) {
+        for (const auto &s : filenames) {
             ifstream fs(s.c_str());
 
             if (fs)
@@ -239,7 +237,7 @@ struct RuntimeConfigImpl
         init_config_cfg.init("config", s_configdata, s_allow_read_env, m_combined_profile, m_top_profile);
 
         // read config files
-        read_config_files(init_config_cfg.get("file").to_string());
+        read_config_files(init_config_cfg.get("file").to_stringlist());
 
         // merge "default" profile into combined profile
         {
@@ -254,9 +252,8 @@ struct RuntimeConfigImpl
         m_database.insert(make_pair("config", config_cfg));
 
         // get the selected config profile names
-        vector<string> profile_names;        
-        util::split(config_cfg->get("profile").to_string(), ',',
-                    std::back_inserter(profile_names));
+        vector<string> profile_names =
+            config_cfg->get("profile").to_stringlist();
 
         // merge all selected profiles
         for (const std::string& profile_name : profile_names) {
@@ -269,7 +266,7 @@ struct RuntimeConfigImpl
 
             for (auto &p : it->second)
                 m_combined_profile[p.first] = p.second;
-        }            
+        }
     }
 
     // --- interface
@@ -277,7 +274,7 @@ struct RuntimeConfigImpl
     StringConverter get(const char* set, const char* key) {
         if (m_database.empty())
             init_config_database();
-        
+
         auto it = m_database.find(set);
         return (it == m_database.end() ? StringConverter() : StringConverter(it->second->get(key)));
     }
@@ -289,11 +286,11 @@ struct RuntimeConfigImpl
     void set(const char* key, const std::string& value) {
         m_top_profile[key] = value;
     }
-    
+
     shared_ptr<ConfigSetImpl> init(const char* name, const ConfigSet::Entry* list) {
         if (m_database.empty())
             init_config_database();
-        
+
         auto it = m_database.find(name);
 
         if (it != m_database.end())
@@ -309,7 +306,7 @@ struct RuntimeConfigImpl
 
     void define_profile(const char* name, const char* keyvallist[][2]) {
         ::config_profile_t profile;
-        
+
         for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
             profile[string((*keyvallist)[0])] = string((*keyvallist)[1]);
 
@@ -320,7 +317,7 @@ struct RuntimeConfigImpl
         for ( auto set : m_database )
             for ( auto entry : set.second->m_dict )
                 os << "# " << entry.second.entry.descr
-                   << " (" << cali_type2string(entry.second.entry.type) << ")\n" 
+                   << " (" << cali_type2string(entry.second.entry.type) << ")\n"
                    << ::config_var_name(set.first, entry.first)
                    << '=' << entry.second.value << std::endl;
     }
@@ -338,11 +335,11 @@ unique_ptr<RuntimeConfigImpl> RuntimeConfigImpl::s_instance { nullptr };
 const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
     { "profile",  CALI_TYPE_STRING, "default",
       "Configuration profile",
-      "Configuration profile" 
+      "Configuration profile"
     },
     { "file",     CALI_TYPE_STRING, "caliper.config",
       "List of configuration files",
-      "Colon-serparated list of configuration files" 
+      "Colon-serparated list of configuration files"
     },
     ConfigSet::Terminator
 };
@@ -353,15 +350,15 @@ bool RuntimeConfigImpl::s_allow_read_env { true };
 
 
 //
-// --- ConfigSet public interface 
-// 
+// --- ConfigSet public interface
+//
 
 ConfigSet::ConfigSet(const shared_ptr<ConfigSetImpl>& p)
     : mP { p }
 { }
 
 StringConverter
-ConfigSet::get(const char* key) const 
+ConfigSet::get(const char* key) const
 {
     if (!mP)
         return std::string();
@@ -392,7 +389,7 @@ RuntimeConfig::set(const char* key, const std::string& value)
     RuntimeConfigImpl::instance()->set(key, value);
 }
 
-ConfigSet 
+ConfigSet
 RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
 {
     return ConfigSet(RuntimeConfigImpl::instance()->init(name, list));
@@ -410,7 +407,7 @@ RuntimeConfig::print(ostream& os)
 {
     RuntimeConfigImpl::instance()->print(os);
 }
- 
+
 bool
 RuntimeConfig::allow_read_env()
 {
