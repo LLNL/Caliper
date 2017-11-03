@@ -47,8 +47,6 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include "../services/Services.h"
 
 #include <signal.h>
@@ -59,7 +57,6 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <iterator>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -267,9 +264,8 @@ struct Caliper::GlobalData
     }
 
     void parse_attribute_property_presets() {
-        vector<string> attr_props;
-
-        util::split(config.get("attribute_properties").to_string(), ',', back_inserter(attr_props));
+        vector<string> attr_props = 
+            config.get("attribute_properties").to_stringlist();
 
         for (const string& s : attr_props) {
             auto p = s.find_first_of('=');

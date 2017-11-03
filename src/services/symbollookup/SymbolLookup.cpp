@@ -43,8 +43,6 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <Symtab.h>
 #include <LineInformation.h>
 #include <Function.h>
