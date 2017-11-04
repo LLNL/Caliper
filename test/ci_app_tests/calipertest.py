@@ -55,6 +55,15 @@ def run_test_with_query(target_cmd, query_cmd, env):
     return query_out
 
 
+def run_test(target_cmd, env):
+    """ Execute a command, and return its output """
+
+    target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE)
+    proc_out, proc_err = target_proc.communicate()
+
+    return proc_out
+
+
 def get_snapshots_from_text(query_output):
     """ Translate expanded snapshots from `cali-query -e` output into list of dicts 
 
