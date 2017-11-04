@@ -447,7 +447,7 @@ cali_config_set(const char* key, const char* value);
  *
  * This function only defines a configuration profile, but does not
  * enable it. %Caliper uses the profiles named in the
- * \t CALI_CONFIG_PROFILE configuration entry; to enable a profile
+ * \c CALI_CONFIG_PROFILE configuration entry; to enable a profile
  * set this configuration entry accordingly.
  *
  * Example:
