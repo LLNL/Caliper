@@ -339,7 +339,7 @@ const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
     },
     { "file",     CALI_TYPE_STRING, "caliper.config",
       "List of configuration files",
-      "Colon-serparated list of configuration files"
+      "Comma-separated list of configuration files"
     },
     ConfigSet::Terminator
 };

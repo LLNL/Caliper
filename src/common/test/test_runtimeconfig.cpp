@@ -76,7 +76,7 @@ TEST(RuntimeConfigTest, ConfigFile) {
     
     ConfigSet config = cali::RuntimeConfig::init("test", ::test_configdata);
 
-    EXPECT_EQ(config.get("string_val").to_string(), std::string("file-profile1-string"));
+    EXPECT_EQ(config.get("string_val").to_string(), std::string("profile1 string from file"));
     EXPECT_EQ(config.get("int_val").to_int(), 42);
     EXPECT_EQ(config.get("another_int").to_int(), 4242);
 }
