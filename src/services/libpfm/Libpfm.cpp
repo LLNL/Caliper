@@ -435,7 +435,9 @@ namespace {
         enable_sampling = config.get("enable_sampling").to_bool();
         record_counters = config.get("record_counters").to_bool();
 
-        event_list = config.get("events").to_stringlist();
+        events_string = config.get("events").to_string();
+        event_list    = StringConverter(events_string).to_stringlist();
+
         size_t events_listed = event_list.size();
 
         std::vector<std::string> sampling_period_strvec;
