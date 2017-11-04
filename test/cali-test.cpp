@@ -280,6 +280,11 @@ void test_instance()
     std::cout << "Caliper instance test OK" << std::endl;
 }
 
+void test_config_after_init()
+{
+    cali_config_set("CALI_SERVICES_ENABLE", "debug");
+}
+
 int main(int argc, char* argv[])
 {
     // instance test has to run before Caliper initialization
@@ -303,6 +308,7 @@ int main(int argc, char* argv[])
         { "aggr-warnings",            test_aggr_warnings      },
         { "cross-scope",              test_cross_scope        },
         { "attribute-prop-preset",    test_attr_prop_preset   },
+        { "config-after-init",        test_config_after_init  },
         { 0, 0 }
     };
     
