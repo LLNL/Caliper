@@ -49,7 +49,7 @@
 #include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
-#include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/StringConverter.h"
 
 #include "caliper/common/csv/CsvReader.h"
 #include "caliper/common/csv/CsvWriter.h"
@@ -136,6 +136,10 @@ namespace
           "Show progress and cali-query performance summary",
           nullptr
         },
+        { "caliper-config", "caliper-config", 0, true,
+          "Caliper configuration flags (for cali-query profiling)",
+          "KEY=VALUE,..."
+        },
         { "verbose", "verbose", 'v', false,
           "Be verbose.",
           nullptr
@@ -210,19 +214,34 @@ void setup_caliper_config(const Args& args)
         { NULL, NULL }
     };
     
-    cali::RuntimeConfig::preset("CALI_LOG_VERBOSITY", "0");
-    cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
+    cali_config_preset("CALI_LOG_VERBOSITY", "0");
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
 
-    cali::RuntimeConfig::allow_read_env(false);
+    cali_config_allow_read_env(false);
 
-    cali::RuntimeConfig::define_profile("caliquery-progressmonitor", progressmonitor_profile);
+    cali_config_define_profile("caliquery-progressmonitor", progressmonitor_profile);
 
-    cali::RuntimeConfig::set("CALI_CONFIG_FILE", "cali-query_caliper.config");
+    cali_config_set("CALI_CONFIG_FILE", "cali-query_caliper.config");
     
     if (args.is_set("verbose"))
-        cali::RuntimeConfig::preset("CALI_LOG_VERBOSITY", "1");
+        cali_config_preset("CALI_LOG_VERBOSITY", "1");
     if (args.is_set("profile"))
-        cali::RuntimeConfig::set("CALI_CONFIG_PROFILE", "caliquery-progressmonitor");
+        cali_config_set("CALI_CONFIG_PROFILE", "caliquery-progressmonitor");
+
+    std::vector<std::string> config_list = 
+        StringConverter(args.get("caliper-config")).to_stringlist();
+
+    for (const std::string entry : config_list) {
+        auto p = entry.find('=');
+
+        if (p == std::string::npos) {
+            std::cerr << "cali-query: error: invalid Caliper configuration flag format \"" 
+                      << entry << "\" (missing \"=\")" << std::endl;
+            continue;
+        }
+
+        cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
+    }
 }
 
 

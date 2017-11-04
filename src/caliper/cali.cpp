@@ -554,7 +554,35 @@ cali_end_byname(const char* attr_name)
 void
 cali_config_preset(const char* key, const char* value)
 {
+    if (Caliper::is_initialized())
+        Log(0).stream() << "Warning: Caliper is already initialized. "
+                        << "cali_config_preset(\"" << key << "\", \"" << value
+                        << "\") has no effect." << std::endl;
+
     RuntimeConfig::preset(key, value);
+}
+
+void
+cali_config_set(const char* key, const char* value)
+{
+    if (Caliper::is_initialized())
+        Log(0).stream() << "Warning: Caliper is already initialized. "
+                        << "cali_config_set(\"" << key << "\", \"" << value
+                        << "\") has no effect." << std::endl;
+
+    RuntimeConfig::set(key, value);
+}
+
+void
+cali_config_define_profile(const char* name, const char* keyvallist[][2])
+{
+    RuntimeConfig::define_profile(name, keyvallist);
+}
+
+void
+cali_config_allow_read_env(int allow)
+{
+    RuntimeConfig::allow_read_env(allow != 0);
 }
 
 void

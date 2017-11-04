@@ -35,79 +35,11 @@
 
 #include "caliper/common/StringConverter.h"
 
+#include "util/parse_util.h"
+
 #include <algorithm>
 #include <cctype>
 #include <sstream>
-
-namespace
-{
-
-inline bool 
-is_one_of(char c, const char* characters)
-{
-    for (const char* ptr = characters; *ptr != '\0'; ++ptr)
-        if (*ptr == c)
-            return true;
-
-    return false;
-}
-
-std::string
-parse_word(std::istream& is, const char* separators)
-{
-    std::string ret;
-    char c;
-
-    do {
-        c = is.get();
-    } while (is.good() && std::isspace(c));
-
-    if (is.good())
-        is.unget();
-
-    bool esc = false;
-
-    while (is.good()) {
-        c = is.get();
-
-        if (c == '\\') {
-            c = is.get();
-            if (is.good())
-                ret.push_back(c);
-            continue;
-        } else if (c == '"') {
-            esc = !esc;
-            continue;
-        }
-
-        if (!is.good())
-            break;
-
-        if (!esc && (isspace(c) || is_one_of(c, separators))) {
-            is.unget();
-            break;
-        }
-
-        ret.push_back(c);
-    }
-
-    return ret;
-}
-
-char
-parse_char(std::istream& is)
-{
-    char c = '\0';
-
-    do {
-        c = is.get();
-    } while (is.good() && std::isspace(c));
-
-    return c;
-}
-
-} // namespace [anonymous]
-
 
 cali_id_t
 cali::StringConverter::to_id() const
@@ -226,13 +158,13 @@ cali::StringConverter::to_stringlist(const char* separators, bool* okptr) const
     std::istringstream is(m_str);
 
     do { 
-        std::string str = parse_word(is, separators);
+        std::string str = util::read_word(is, separators);
 
         if (!str.empty())
             ret.push_back(str);
 
-        c = parse_char(is);
-    } while (is.good() && is_one_of(c, separators));
+        c = util::read_char(is);
+    } while (is.good() && util::is_one_of(c, separators));
 
     if (okptr)
         *okptr = true;
