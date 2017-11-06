@@ -7,7 +7,6 @@ set(CALIPER_READER_SOURCES
     QueryProcessor.cpp
     QuerySpec.cpp
     RecordSelector.cpp
-    SimpleReader.cpp
     SnapshotTree.cpp
     TableFormatter.cpp
     TreeFormatter.cpp
