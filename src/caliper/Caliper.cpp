@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -76,7 +76,7 @@ namespace
 {
     // --- helpers
 
-    inline cali_context_scope_t 
+    inline cali_context_scope_t
     attr2caliscope(const Attribute& attr) {
         switch (attr.properties() & CALI_ATTR_SCOPE_MASK) {
         case CALI_ATTR_SCOPE_THREAD:
@@ -84,14 +84,14 @@ namespace
         case CALI_ATTR_SCOPE_PROCESS:
             return CALI_SCOPE_PROCESS;
         case CALI_ATTR_SCOPE_TASK:
-            return CALI_SCOPE_TASK;    
+            return CALI_SCOPE_TASK;
         }
 
         // make thread scope the default
         return CALI_SCOPE_THREAD;
     }
 
-    
+
     // --- Exit handler
 
     void
@@ -107,7 +107,7 @@ namespace
             c.release_scope(c.default_scope(CALI_SCOPE_THREAD));
         }
 
-        // Don't delete global data, some thread-specific finalization may occur after this point 
+        // Don't delete global data, some thread-specific finalization may occur after this point
         // Caliper::release();
     }
 
@@ -124,12 +124,12 @@ namespace
 
         inline void lock()   { ++m_lock; }
         inline void unlock() { --m_lock; }
-        
+
         inline bool is_locked() const {
             return (m_lock > 0);
         }
     };
-    
+
 } // namespace
 
 
@@ -141,7 +141,7 @@ struct Caliper::Scope
 {
     MetadataTree         tree;
     ContextBuffer        blackboard;
-    
+
     cali_context_scope_t scope;
 
     ::siglock            lock;
@@ -161,16 +161,16 @@ struct Caliper::GlobalData
 
     static volatile sig_atomic_t  s_init_lock;
     static std::mutex             s_init_mutex;
-    
+
     static const ConfigSet::Entry s_configdata[];
 
     static GlobalData*            sG;
-    
+
     // --- static functions
 
     static void release_thread(void* ctx) {
         Scope* scope = static_cast<Scope*>(ctx);
-        
+
         Caliper(sG, scope, 0).release_scope(scope);
     }
 
@@ -192,7 +192,7 @@ struct Caliper::GlobalData
     // Key attribute: one attribute stands in as key for all auto-merged attributes
     Attribute              key_attr;
     bool                   automerge;
-    
+
     Events                 events;
 
     Scope*                 process_scope;
@@ -207,8 +207,8 @@ struct Caliper::GlobalData
         : config { RuntimeConfig::init("caliper", s_configdata) },
           get_thread_scope_cb { nullptr },
           get_task_scope_cb   { nullptr },
-          name_attr { Attribute::invalid }, 
-          type_attr { Attribute::invalid },  
+          name_attr { Attribute::invalid },
+          type_attr { Attribute::invalid },
           prop_attr { Attribute::invalid },
           key_attr  { Attribute::invalid },
           automerge { true },
@@ -217,7 +217,7 @@ struct Caliper::GlobalData
           default_task_scope   { new Scope(CALI_SCOPE_TASK)    }
     {
         automerge = config.get("automerge").to_bool();
-        
+
         name_attr = Attribute::make_attribute(default_thread_scope->tree.node( 8));
         type_attr = Attribute::make_attribute(default_thread_scope->tree.node( 9));
         prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(10));
@@ -225,7 +225,7 @@ struct Caliper::GlobalData
         attribute_nodes.insert(make_pair(name_attr.name(), default_thread_scope->tree.node(name_attr.id())));
         attribute_nodes.insert(make_pair(type_attr.name(), default_thread_scope->tree.node(type_attr.id())));
         attribute_nodes.insert(make_pair(prop_attr.name(), default_thread_scope->tree.node(prop_attr.id())));
-        
+
         assert(name_attr != Attribute::invalid);
         assert(type_attr != Attribute::invalid);
         assert(prop_attr != Attribute::invalid);
@@ -234,7 +234,7 @@ struct Caliper::GlobalData
         pthread_setspecific(thread_scope_key, default_thread_scope);
 
         parse_attribute_property_presets();
-        
+
         // now it is safe to use the Caliper interface
 
         init();
@@ -242,16 +242,16 @@ struct Caliper::GlobalData
 
     ~GlobalData() {
         Log(1).stream() << "Finished" << endl;
-        
+
         // prevent re-initialization
         s_init_lock = 2;
 
 	//freeing up context buffers
         delete process_scope;
-        delete default_thread_scope; 
+        delete default_thread_scope;
         delete default_task_scope;
     }
-    
+
     Scope* acquire_thread_scope(bool create = true) {
         Scope* scope = static_cast<Scope*>(pthread_getspecific(thread_scope_key));
 
@@ -264,7 +264,7 @@ struct Caliper::GlobalData
     }
 
     void parse_attribute_property_presets() {
-        vector<string> attr_props = 
+        vector<string> attr_props =
             config.get("attribute_properties").to_stringlist();
 
         for (const string& s : attr_props) {
@@ -278,15 +278,15 @@ struct Caliper::GlobalData
             attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
         }
     }
-    
+
     void init() {
         Caliper c(this, default_thread_scope, default_task_scope);
-        
+
         // Create and set key & version attributes
 
         key_attr =
             c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
-            
+
         c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS),
               Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
 
@@ -295,15 +295,15 @@ struct Caliper::GlobalData
         Services::register_services(&c);
 
         init_api_attributes(&c);
-        
+
         Log(1).stream() << "Initialized" << endl;
 
         if (Log::verbosity() >= 3)
             RuntimeConfig::print( Log(3).stream() << "Configuration:\n" );
 
-        c.events().post_init_evt(&c);        
+        c.events().post_init_evt(&c);
     }
-    
+
     const Attribute&
     get_key(const Attribute& attr) const {
         if (!automerge || attr.store_as_value() || !attr.is_autocombineable())
@@ -323,10 +323,10 @@ Caliper::GlobalData*   Caliper::GlobalData::sG = nullptr;
 const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
     { "automerge", CALI_TYPE_BOOL, "true",
-      "Automatically merge attributes into a common context tree", 
+      "Automatically merge attributes into a common context tree",
       "Automatically merge attributes into a common context tree.\n"
       "Decreases the size of context records, but may increase\n"
-      "the amount of metadata and reduce performance." 
+      "the amount of metadata and reduce performance."
     },
     { "attribute_properties", CALI_TYPE_STRING, "",
       "List of attribute property presets",
@@ -339,9 +339,9 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  thread_scope:  Thread-scope attribute\n"
       "  task_scope:    Task-scope attribute (currently not supported)\n"
       "  skip_events:   Do not invoke callback functions for updates\n"
-      "  hidden:        Do not include this attribute in snapshots\n" 
+      "  hidden:        Do not include this attribute in snapshots\n"
     },
-    ConfigSet::Terminator 
+    ConfigSet::Terminator
 };
 
 
@@ -354,7 +354,7 @@ Caliper::scope(cali_context_scope_t st) {
     switch (st) {
     case CALI_SCOPE_PROCESS:
         return mG->process_scope;
-        
+
     case CALI_SCOPE_THREAD:
 #if 0
         if (!m_thread_scope) {
@@ -364,7 +364,7 @@ Caliper::scope(cali_context_scope_t st) {
 #endif
         assert(m_thread_scope != 0);
         return m_thread_scope;
-        
+
     case CALI_SCOPE_TASK:
         if (!m_task_scope)
             m_task_scope =
@@ -382,40 +382,40 @@ Caliper::default_scope(cali_context_scope_t st)
     switch (st) {
     case CALI_SCOPE_THREAD:
         return mG->default_thread_scope;
-        
+
     case CALI_SCOPE_TASK:
         return mG->default_task_scope;
-        
+
     default:
         ;
     }
 
-    return mG->process_scope;    
+    return mG->process_scope;
 }
 
-void 
+void
 Caliper::set_scope_callback(cali_context_scope_t scope, ScopeCallbackFn cb) {
     if (!mG)
         return;
-    
+
     switch (scope) {
     case CALI_SCOPE_THREAD:
         if (mG->get_thread_scope_cb)
-            Log(0).stream() 
-                << "Caliper::set_context_callback(): error: thread callback already set" 
+            Log(0).stream()
+                << "Caliper::set_context_callback(): error: thread callback already set"
                 << endl;
         mG->get_thread_scope_cb = cb;
         break;
     case CALI_SCOPE_TASK:
         if (mG->get_task_scope_cb)
-            Log(0).stream() 
-                << "Caliper::set_context_callback(): error: task callback already set" 
+            Log(0).stream()
+                << "Caliper::set_context_callback(): error: task callback already set"
                 << endl;
         mG->get_task_scope_cb = cb;
         break;
     default:
-        Log(0).stream() 
-            << "Caliper::set_context_callback(): error: cannot set process callback" 
+        Log(0).stream()
+            << "Caliper::set_context_callback(): error: cannot set process callback"
             << endl;
     }
 }
@@ -426,7 +426,7 @@ Caliper::create_scope(cali_context_scope_t st)
     assert(mG != 0);
 
     Scope* s = new Scope(st);
-    
+
     switch (st) {
     case CALI_SCOPE_THREAD:
         m_thread_scope = s;
@@ -439,7 +439,7 @@ Caliper::create_scope(cali_context_scope_t st)
             << "Caliper::create_scope(): error: attempt to create a process scope"
             << endl;
 
-        delete s;        
+        delete s;
         return 0;
     }
 
@@ -473,15 +473,15 @@ Caliper::release_scope(Caliper::Scope* s)
         //      <Blackboard statistics>"
         //      <Metadata tree statistics>
 
-        s->tree.print_statistics(        
+        s->tree.print_statistics(
             s->blackboard.print_statistics(
-                Log(2).stream() << "Releasing " << scopestr << " scope:\n      " ) 
+                Log(2).stream() << "Releasing " << scopestr << " scope:\n      " )
             << "\n      ") << std::endl;
     }
-    
+
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
-    
+
     mG->events.release_scope_evt(this, s->scope);
     // do NOT delete this because we may still need the node data in the scope's memory pool
     // delete ctx;
@@ -491,13 +491,13 @@ Caliper::release_scope(Caliper::Scope* s)
 // --- Attribute interface
 
 /// \brief Create an attribute
-/// 
+///
 /// This function creates and returns an attribute key with the given name, type, and properties.
 /// Optionally, metadata can be added via attribute:value pairs.
-/// Attribute names must be unique. If an attribute with the given name already exists, the 
+/// Attribute names must be unique. If an attribute with the given name already exists, the
 /// existing attribute is returned.
 ///
-/// Before a new attribute is created, the pre_create_attr_evt callback will be invoked, 
+/// Before a new attribute is created, the pre_create_attr_evt callback will be invoked,
 /// which allows modifications of the user-provided parameters (such as the property flags).
 /// After a new attribute has been created, this function will invoke the create_attr_evt callback.
 /// If an attribute with the given name already exists, the callbacks will not be invoked.
@@ -506,7 +506,7 @@ Caliper::release_scope(Caliper::Scope* s)
 /// However, both threads will successfully return the new attribute.
 ///
 /// This function is not signal safe.
-/// 
+///
 /// \param name Name of the attribute
 /// \param type Type of the attribute
 /// \param prop Attribute property bitmap. Values of type cali_attr_properties combined with bitwise or.
@@ -515,14 +515,14 @@ Caliper::release_scope(Caliper::Scope* s)
 /// \param meta_val Metadata values. An array of n_meta values.
 /// \return The created attribute.
 
-Attribute 
+Attribute
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
                           int n_meta, const Attribute* meta_attr, const Variant* meta_val)
 {
     assert(mG != 0);
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);    
+        g(m_thread_scope->lock);
 
     Node* node        = nullptr;
     bool  created_now = false;
@@ -549,14 +549,15 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         if (n_meta > 0)
             node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
 
-        // Look for attribute properties in presets 
+        // Look for attribute properties in presets
         auto propit = mG->attribute_prop_presets.find(name);
         if (propit != mG->attribute_prop_presets.end())
             prop = propit->second;
 
-        // Run pre-attribute creation callbacks. This may add additional to our parent node.
+        // Run pre-attribute creation callbacks.
+        //   This may add additional nodes to our parent branch.
         mG->events.pre_create_attr_evt(this, name, type, &prop, &node);
-        
+
         // Add default SCOPE_THREAD property if no other is set
         if (((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_PROCESS) &&
             ((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_TASK))
@@ -565,13 +566,10 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
         Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
-        if (prop == CALI_ATTR_DEFAULT)
-            node = m_thread_scope->tree.get_path(1, &attr[1], &data[1], node);
-        else
-            node = m_thread_scope->tree.get_path(2, &attr[0], &data[0], node);
+        node = m_thread_scope->tree.get_path(2, &attr[0], &data[0], node);
 
         if (node) {
-            // Check again if attribute already exists; might have been created by 
+            // Check again if attribute already exists; might have been created by
             // another thread in the meantime.
             // We've created some redundant nodes then, but that's fine
             mG->attribute_lock.lock();
@@ -612,7 +610,7 @@ Caliper::get_attribute(const std::string& name) const
 
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
-    
+
     Node* node = nullptr;
 
     mG->attribute_lock.lock();
@@ -632,11 +630,11 @@ Caliper::get_attribute(const std::string& name) const
 /// \param id The attribute id
 /// \return Attribute object, or Attribute::invalid if not found.
 
-Attribute 
+Attribute
 Caliper::get_attribute(cali_id_t id) const
 {
     // no signal lock necessary
-    
+
     return Attribute::make_attribute(m_thread_scope->tree.node(id));
 }
 
@@ -663,24 +661,24 @@ Caliper::get_attributes() const
 
 // --- Snapshot interface
 
-/// \brief Trigger and return a snapshot. 
+/// \brief Trigger and return a snapshot.
 ///
 /// This function triggers a snapshot and returns a snapshot record to the caller.
-/// The returned snapshot record contains the current blackboard contents, measurement 
-/// values provided by service modules, and the contents of the trigger_info list 
+/// The returned snapshot record contains the current blackboard contents, measurement
+/// values provided by service modules, and the contents of the trigger_info list
 /// provided by the caller.
 ///
-/// The function invokes the snapshot callback, which instructs attached services to 
-/// take measurements (e.g., a timestamp) and add them to the returned record. The 
+/// The function invokes the snapshot callback, which instructs attached services to
+/// take measurements (e.g., a timestamp) and add them to the returned record. The
 /// caller-provided trigger_info list is passed to the snapshot callback.
-/// The returned snapshot record also contains contents of the current thread's and the  
+/// The returned snapshot record also contains contents of the current thread's and the
 /// process-wide blackboard, as specified in the scopes flag.
 ///
 /// The caller must provide a snapshot buffer with sufficient free space.
 ///
 /// \note This function is signal safe.
 ///
-/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer. 
+/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer.
 ///                     Bitfield of cali_scope_t values combined with bitwise OR.
 /// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
 ///                     callback, and added to the returned snapshot record.
@@ -708,33 +706,33 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
             scope(s)->blackboard.snapshot(sbuf);
 }
 
-/// \brief Trigger and process a snapshot. 
+/// \brief Trigger and process a snapshot.
 ///
-/// This function triggers a snapshot and processes it. The snapshot contains the 
-/// current blackboard contents, measurement values provided by service modules, 
+/// This function triggers a snapshot and processes it. The snapshot contains the
+/// current blackboard contents, measurement values provided by service modules,
 /// and the contents of the trigger_info list provided by the caller.
 /// The complete snapshot is then passed to snapshot processing services registered
 /// with Caliper.
 ///
-/// The function creates a snapshot record with measurements provided by the snapshot callbac, 
-/// the current thread's and/or processes' blackboard contents, as well as the contents of 
+/// The function creates a snapshot record with measurements provided by the snapshot callbac,
+/// the current thread's and/or processes' blackboard contents, as well as the contents of
 /// the trigger_info list provided by the caller.
 ///
 /// The function invokes the snapshot callback to obtain measurements.
-/// The fully assembled snapshot record is then passed to the process_snapshot callback.  
+/// The fully assembled snapshot record is then passed to the process_snapshot callback.
 ///
 /// \note This function is signal safe.
 ///
-/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer. 
+/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer.
 ///                     Bitfield of cali_scope_t values combined with bitwise OR.
 /// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
 ///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
-void 
+void
 Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
 {
     assert(mG != 0);
-    
+
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
@@ -756,10 +754,10 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 
     mG->events.pre_flush_evt(this, flush_info);
 
-    if (mG->events.postprocess_snapshot.empty()) { 
+    if (mG->events.postprocess_snapshot.empty()) {
         mG->events.flush_evt(this, flush_info, proc_fn);
     } else {
-        mG->events.flush_evt(this, flush_info, 
+        mG->events.flush_evt(this, flush_info,
                              [this,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
                                  SnapshotRecord::FixedSnapshotRecord<80> data;
                                  SnapshotRecord snapshot(data);
@@ -803,7 +801,7 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
 
     mG->events.pre_write_evt(this, &flush_info);
 
-    flush(&flush_info, 
+    flush(&flush_info,
           [this,&flush_info](const SnapshotRecord* snapshot){
               mG->events.write_snapshot(this, &flush_info, snapshot);
               return true;
@@ -829,7 +827,7 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
 /// \param attr Attribute key
 /// \param data Value to set
 
-cali_err 
+cali_err
 Caliper::begin(const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
@@ -846,7 +844,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     Scope* s = scope(attr2caliscope(attr));
     ContextBuffer* sb = &s->blackboard;
-    
+
     if (attr.store_as_value())
         ret = sb->set(attr, data);
     else
@@ -870,7 +868,7 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 ///
 /// \param attr Attribute key.
 
-cali_err 
+cali_err
 Caliper::end(const Attribute& attr)
 {
     if (!mG || attr == Attribute::invalid)
@@ -891,7 +889,7 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events())
-        if (!e.is_empty()) // prevent executing events for 
+        if (!e.is_empty()) // prevent executing events for
             mG->events.pre_end_evt(this, attr, e.value());
 
     if (attr.store_as_value())
@@ -901,7 +899,7 @@ Caliper::end(const Attribute& attr)
 
         if (node) {
             node = m_thread_scope->tree.remove_first_in_path(node, attr);
-                
+
             if (node == m_thread_scope->tree.root())
                 ret = sb->unset(mG->get_key(attr));
             else if (node)
@@ -932,7 +930,7 @@ Caliper::end(const Attribute& attr)
 /// \param attr Attribute key
 /// \param data Value to set
 
-cali_err 
+cali_err
 Caliper::set(const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
@@ -954,10 +952,10 @@ Caliper::set(const Attribute& attr, const Variant& data)
         ret = sb->set(attr, data);
     else {
         Attribute key = mG->get_key(attr);
-        
+
         ret = sb->set_node(key, m_thread_scope->tree.replace_first_in_path(sb->get_node(key), attr, data));
     }
-    
+
     // invoke callbacks
     if (!attr.skip_events())
         mG->events.post_set_evt(this, attr, data);
@@ -979,12 +977,12 @@ Caliper::set(const Attribute& attr, const Variant& data)
 /// \param n    Number of values in list
 /// \param data List (array) of values
 
-cali_err 
+cali_err
 Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
     cali_err ret = CALI_EINV;
 
     if (n < 1)
-        return CALI_SUCCESS;    
+        return CALI_SUCCESS;
     if (!mG || attr == Attribute::invalid)
         return CALI_EINV;
 
@@ -1003,11 +1001,11 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
         ret = CALI_EINV;
     } else {
         Attribute key = mG->get_key(attr);
-        
+
         ret = sb->set_node(key,
                            m_thread_scope->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
     }
-    
+
     // invoke callbacks
     if (!attr.skip_events())
         mG->events.post_set_evt(this, attr, data[n-1]);
@@ -1027,7 +1025,7 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
 ///         An empty Entry object if this attribute is not set.
 
 Entry
-Caliper::get(const Attribute& attr) 
+Caliper::get(const Attribute& attr)
 {
     Entry e {  Entry::empty };
 
@@ -1059,7 +1057,7 @@ Caliper::get(const Attribute& attr)
 /// \param list   Output record. Must be large enough to hold all entries.
 
 void
-Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list) 
+Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
@@ -1076,8 +1074,8 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         list.append(node);
 }
 
-/// \brief Create a snapshot record (entry list) from the given attribute and 
-///   list of values 
+/// \brief Create a snapshot record (entry list) from the given attribute and
+///   list of values
 ///
 /// This function is signal-safe.
 ///
@@ -1087,7 +1085,7 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
 /// \param list   Output record. Must be large enough to hold all entries.
 
 void
-Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, SnapshotRecord& list) 
+Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, SnapshotRecord& list)
 {
     if (n < 1)
         return;
@@ -1100,38 +1098,6 @@ Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, S
         list.append(attr.id(), value[0]);
     else
         list.append(m_thread_scope->tree.get_path(attr, n, value, nullptr));
-}
-
-/// \brief Create an Entry object from the given attribute:value pair.
-///
-/// Creates an Entry object from the given (attribute, value) pair with 
-/// either reference or immediate representation, depending on the storage
-/// type of \a attr. 
-///
-/// This function is signal safe.
-///
-/// \param attr  Attribute key
-/// \param value Value
-///
-/// \return Entry object. 
-
-Entry 
-Caliper::make_entry(const Attribute& attr, const Variant& value) 
-{
-    if (attr == Attribute::invalid)
-        return Entry::empty;
-    
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    Entry entry { Entry::empty };
-
-    if (attr.store_as_value())
-        return Entry(attr, value);
-    else
-        return Entry(m_thread_scope->tree.get_path(1, &attr, &value, nullptr));
-
-    return entry;
 }
 
 /// \brief Return a context tree path for the key:value pairs from a given list of
@@ -1159,7 +1125,7 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 /// \note This function is signal safe.
 ///
 /// \param attr   Attribute. Cannot have the AS VALUE property.
-/// \param data   Value 
+/// \param data   Value
 /// \param parent Construct path off this parent node
 ///
 /// \return Node pointing to the end of the new path
@@ -1244,7 +1210,7 @@ Caliper::Caliper()
 ///
 /// Caliper will initialize itself in the first instance object request on a
 /// process.
-/// 
+///
 /// \return Caliper instance object
 
 Caliper
@@ -1284,7 +1250,7 @@ Caliper::sigsafe_instance()
     if (GlobalData::s_init_lock != 0)
         return Caliper(0);
 
-    Scope* task_scope   = 0; // FIXME: figure out task scope 
+    Scope* task_scope   = 0; // FIXME: figure out task scope
     Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
 
     if (!thread_scope || thread_scope->lock.is_locked())
