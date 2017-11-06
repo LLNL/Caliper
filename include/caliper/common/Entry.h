@@ -84,12 +84,9 @@ public:
     static const Entry empty;
 
     friend bool operator == (const Entry&, const Entry&);
-    friend bool operator <  (const Entry&, const Entry&);
 };
 
 bool operator == (const Entry& lhs, const Entry& rhs);
-
-bool operator <  (const Entry& lhs, const Entry& rhs);    
     
 } // namespace cali
 

@@ -30,17 +30,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file ContextRecord.cpp
-/// ContextRecord implementation
-
 #include "caliper/common/ContextRecord.h"
 
-#include "caliper/common/CaliperMetadataAccessInterface.h"
-#include "caliper/common/Node.h"
 #include "caliper/common/StringConverter.h"
 
 using namespace cali;
-using namespace std;
 
 namespace 
 {
@@ -56,46 +50,3 @@ namespace
 }
 
 const RecordDescriptor ContextRecord::s_record { 0x101, "ctx", 3, ::RecordElements };
-
-
-RecordMap
-ContextRecord::unpack(const RecordMap& rec, const CaliperMetadataAccessInterface& metadb)
-{
-    RecordMap out;
-
-    auto entry_it = rec.find("__rec");
-
-    if (entry_it == rec.end() || entry_it->second.empty() || entry_it->second.front() != "ctx")
-        return out;
-
-    // implicit entries: 
-
-    entry_it = rec.find("ref");
-
-    if (entry_it != rec.end())
-        for (const std::string& str : entry_it->second) {
-            const Node* node = metadb.node(::id_from_string(str));
-
-            for ( ; node && node->id() != CALI_INV_ID; node = node->parent() ) {
-                Attribute attr = metadb.get_attribute(node->attribute());
-
-                if (attr != Attribute::invalid)
-                    out[attr.name()].push_back(node->data().to_string());
-            }
-        }
-
-    auto expl_entry_it = rec.find("attr");
-    auto data_entry_it = rec.find("data");
-
-    if (expl_entry_it == rec.end() || data_entry_it == rec.end() || expl_entry_it->second.empty())
-        return out;
-
-    for (unsigned i = 0; i < expl_entry_it->second.size() && i < data_entry_it->second.size(); ++i) {
-        Attribute attr = metadb.get_attribute(::id_from_string(expl_entry_it->second[i]));
-
-        if (attr != Attribute::invalid)
-            out[attr.name()].push_back(data_entry_it->second[i]);
-    }
-
-    return out;
-}

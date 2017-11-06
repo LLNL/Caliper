@@ -30,35 +30,23 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file ContextRecord.h
+/// \file ContextRecord.h
 /// ContextRecord class definition
 
 #ifndef CALI_CONTEXTRECORD_H
 #define CALI_CONTEXTRECORD_H
 
-#include "cali_types.h"
-
 #include "Record.h"
-#include "RecordMap.h"
-
-#include <functional>
 
 
 namespace cali
 {
-
-class CaliperMetadataAccessInterface;
-class Node;
  
 class ContextRecord
 {
     static const RecordDescriptor s_record;
 
 public:
-
-    static 
-    RecordMap
-    unpack(const RecordMap& rec, const CaliperMetadataAccessInterface& metadb);
 
     static const RecordDescriptor& record_descriptor() { return s_record; }
 };

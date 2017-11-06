@@ -30,8 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file Node.cpp
-/// Node class implementation
+// Node class implementation
 
 #include "caliper/common/Node.h"
 
@@ -50,14 +49,6 @@ const RecordDescriptor Node::s_record { 0x100, "node", 4, ::NodeRecordElements }
 Node::~Node()
 {
     // unlink();
-}
-
-bool Node::equals(cali_id_t attr, const void* data, size_t size) const
-{
-    if (m_attribute == attr)
-        return m_data == Variant(m_data.type(), data, size);
-
-    return false;
 }
 
 RecordMap Node::record() const

@@ -53,8 +53,7 @@ namespace cali
 {
 
 /// \brief A context tree node.
-///
-/// Represents a context tree node and its (attribute key, value) pair.
+///   Represents a context tree node and its (attribute key, value) pair.
 
 class Node : public IdType, public util::LockfreeIntrusiveTree<Node> 
 {
@@ -83,8 +82,6 @@ public:
     bool equals(cali_id_t attr, const Variant& v) const {
         return m_attribute == attr ? m_data == v : false;
     }
-
-    bool equals(cali_id_t attr, const void* data, size_t size) const;
 
     cali_id_t attribute() const { return m_attribute; }
     Variant   data() const      { return m_data;      }    

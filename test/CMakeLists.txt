@@ -15,8 +15,6 @@ add_executable(cali-perfproblem-branch-mispred cali-perfproblem-branch-mispred.c
 
 add_executable(cali-throughput-pthread cali-throughput-pthread.cpp)
 
-add_executable(cali-simplereader-test cali-simplereader-test.cpp)
-
 set_target_properties(cali-basic-c PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(cali-test-c PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(cali-print-snapshot PROPERTIES LINKER_LANGUAGE CXX)
@@ -33,8 +31,6 @@ target_link_libraries(cali-throughput-pthread caliper caliper-tools-util Threads
 # target_link_libraries(cali-wrap caliper)
 
 target_link_libraries(cali-perfproblem-branch-mispred caliper)
-
-target_link_libraries(cali-simplereader-test caliper-reader)
 
 if (BUILD_TESTING)
   add_subdirectory(ci_app_tests)

@@ -219,8 +219,6 @@ public:
                              const Variant    data[], 
                              SnapshotRecord&  list);
 
-    Entry     make_entry(const Attribute& attr, const Variant& value);
-
     // --- Metadata Access Interface
 
     /// \}
