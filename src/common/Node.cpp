@@ -52,14 +52,6 @@ Node::~Node()
     // unlink();
 }
 
-bool Node::equals(cali_id_t attr, const void* data, size_t size) const
-{
-    if (m_attribute == attr)
-        return m_data == Variant(m_data.type(), data, size);
-
-    return false;
-}
-
 RecordMap Node::record() const
 {
     RecordMap rec;
