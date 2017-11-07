@@ -56,7 +56,7 @@ spec_from_args(const util::Args& args);
 
 /// \class SnapshotFilterStep
 /// \brief Basically the chain link in the processing chain.
-///    Passes result of \param m_filter_fn to \param m_push_fn.
+///    Passes result of \a m_filter_fn to \a m_push_fn.
 struct SnapshotFilterStep {
     SnapshotFilterFn  m_filter_fn;  ///< This processing step
     SnapshotProcessFn m_push_fn;    ///< Next processing step

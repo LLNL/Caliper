@@ -324,7 +324,7 @@ int main(int argc, const char* argv[])
         snap_proc = aggregate;
     
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
-        snap_proc = ::SnapshotFilterStep(RecordSelector(spec), snap_proc);
+        snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
     
     if (args.is_set("list-attributes")) {
         node_proc = AttributeExtract(snap_proc);

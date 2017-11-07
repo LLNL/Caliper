@@ -39,20 +39,23 @@
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/RecordSelector.h"
 
 using namespace cali;
 
-namespace 
+namespace
 {
 
-class MpiReport 
+class MpiReport
 {
     static std::unique_ptr<MpiReport> s_instance;
     static const ConfigSet::Entry     s_configdata[];
 
     QuerySpec         m_spec;
     CaliperMetadataDB m_db;
+
     Aggregator        m_a;
+    RecordSelector    m_filter;
 
     std::string       m_filename;
 
@@ -63,10 +66,13 @@ class MpiReport
         SnapshotRecord::Sizes s = snapshot->size();
         SnapshotRecord::Data  d = snapshot->data();
 
-        m_a.add(m_db, 
-                m_db.merge_snapshot(s.n_nodes,     d.node_entries, 
-                                    s.n_immediate, d.immediate_attr, d.immediate_data, 
-                                    *c));
+        EntryList rec =
+            m_db.merge_snapshot(s.n_nodes,     d.node_entries,
+                                s.n_immediate, d.immediate_attr, d.immediate_data,
+                                *c);
+
+        if (m_filter.pass(m_db, rec))
+            m_a.add(m_db, rec);
     }
 
     void flush_finish(Caliper* c, const SnapshotRecord* flush_info) {
@@ -81,7 +87,7 @@ class MpiReport
 
         MPI_Comm_free(&comm);
 
-        // rank 0's aggregator contains the global result: 
+        // rank 0's aggregator contains the global result:
         //   create a formatter and print it out
         if (rank == 0) {
             // set default formatter to table if it hasn't been set
@@ -103,8 +109,8 @@ class MpiReport
 
 public:
 
-    MpiReport(const QuerySpec& spec, const std::string& filename) 
-        : m_spec(spec), m_a(spec), m_filename(filename)
+    MpiReport(const QuerySpec& spec, const std::string& filename)
+        : m_spec(spec), m_a(spec), m_filter(spec), m_filename(filename)
         { }
 
     static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
