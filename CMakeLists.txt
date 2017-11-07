@@ -105,7 +105,7 @@ if (WITH_PAPI)
   include(FindPAPI)
   if (PAPI_FOUND)
     set(CALIPER_HAVE_PAPI TRUE)
-    set(CALIPER_PAPI_MSG "Yes, using ${PAPI_LIBRARIES}")
+    set(CALIPER_PAPI_CMAKE_MSG "Yes, using ${PAPI_LIBRARIES}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
   else()
     message(WARNING "PAPI support was requested but PAPI was not found!\n"
@@ -148,7 +148,7 @@ if (WITH_CALLPATH)
   include(FindLibunwind)
   if (LIBUNWIND_FOUND)
     set(CALIPER_HAVE_LIBUNWIND TRUE)
-    set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNDIND_LIBRARY}")
+    set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNWIND_LIBRARY}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
   else()
     message(WARNING "Callpath support was requested but libunwind was not found!")
@@ -156,7 +156,7 @@ if (WITH_CALLPATH)
   if (WITH_LIBDW)
     # For some reason Dyninst crashes when libdw is linked.
     # Detect this here and disable libdw.
-    if (Dyninst_FOUND) 
+    if (Dyninst_FOUND)
       message(WARNING "Libdw option is incompatible with dyninst -- disabling libdw.")
     else()
       include(FindLibDw)
@@ -212,7 +212,7 @@ if (WITH_MPI)
   if (MPI_C_FOUND)
     set(CALIPER_HAVE_MPI TRUE)
     set(CALIPER_MPI_CMAKE_MSG "Yes, using ${MPI_C_LIBRARIES}")
-      
+
     if (WITH_MPIT)
       set(CALIPER_HAVE_MPIT TRUE)
       set(CALIPER_MPIT_CMAKE_MSG "Yes")
@@ -298,6 +298,7 @@ message(STATUS "Caliper configuration summary:")
 
 message(STATUS "Caliper version           : ${CALIPER_VERSION}")
 message(STATUS "Build type                : ${CMAKE_BUILD_TYPE}")
+message(STATUS "Compiler                  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
 message(STATUS "Install dir               : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
 
@@ -312,7 +313,7 @@ set(CALIPER_MODULES
   MPIT
   OMPT
   NVProf
-  CUpti)  
+  CUpti)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
