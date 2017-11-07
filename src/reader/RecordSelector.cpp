@@ -30,8 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file RecordSelector.cpp
-/// RecordSelector implementation
+// RecordSelector implementation
 
 #include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordSelector.h"
