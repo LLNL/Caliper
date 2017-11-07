@@ -1,3 +1,5 @@
+project(caliper-doc)
+
 find_package(Doxygen)
 find_package(Sphinx)
 

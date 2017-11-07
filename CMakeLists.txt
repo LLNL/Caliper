@@ -26,7 +26,7 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS     "Build Caliper tools" TRUE)
-option(WITH_TEST_APPS "Build Caliper test apps" TRUE)
+option(WITH_EXAMPLE_APPS "Build Caliper example apps" TRUE)
 option(WITH_DOCS      "Build Caliper documentation" FALSE)
 
 option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
@@ -228,6 +228,7 @@ if (WITH_SAMPLER)
   # Sampler is currently Linux-specific: check for Linux
   if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
     set(CALIPER_HAVE_SAMPLER TRUE)
+    set(CALIPER_Sampler_CMAKE_MSG "Yes")
     # Linux PC sampler needs -lrt
     list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
   else()
@@ -283,11 +284,14 @@ if (CALIPER_HAVE_MPI)
   add_subdirectory(mpi)
 endif()
 
-if (WITH_TEST_APPS)
+if (WITH_EXAMPLE_APPS)
+  add_subdirectory(examples/apps)
+endif()
+if (BUILD_TESTING)
   add_subdirectory(test)
 endif()
 if (WITH_DOCS)
-  add_subdirectory(doc)
+  add_subdirectory(doc EXCLUDE_FROM_ALL)
 endif()
 
 #
@@ -308,6 +312,7 @@ set(CALIPER_MODULES
   Libpfm
   Libunwind
   Dyninst
+  Sampler
   SOSFlow
   MPI
   MPIT
