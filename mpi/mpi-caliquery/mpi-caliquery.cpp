@@ -45,6 +45,7 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
+#include "caliper/common/StringConverter.h"
 #include "caliper/common/csv/CsvReader.h"
 #include "caliper/common/csv/CsvWriter.h"
 
@@ -106,6 +107,18 @@ const Args::Table option_table[] = {
       "Execute a query in CalQL format",
       "QUERY STRING"
     },
+    { "profile", "profile", 'p', false,
+      "Show progress and cali-query performance summary",
+      nullptr
+    },
+    { "caliper-config", "caliper-config", 0, true,
+      "Caliper configuration flags (for cali-query profiling)",
+      "KEY=VALUE,..."
+    },
+    { "verbose", "verbose", 'v', false,
+      "Be verbose.",
+      nullptr
+    },
     { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
     Args::Table::Terminator
 };
@@ -147,11 +160,63 @@ void process_my_input(int rank, const Args& args, CaliperMetadataDB& db, Aggrega
         std::cerr << "mpi-caliquery (" << rank << "): cannot read " << filename << std::endl;
 }
 
+void setup_caliper_config(const Args& args)
+{
+    const char* summary_profile[][2] = {
+        { "CALI_SERVICES_ENABLE", "aggregate:event:mpi:mpireport:textlog:timestamp" },
+        { "CALI_AGGREGATE_KEY", "function" },
+        { "CALI_EVENT_TRIGGER", "function" },
+
+        { "CALI_MPIREPORT_CONFIG",
+          "SELECT function,statistics(sum#time.inclusive.duration) GROUP BY function FORMAT table" },
+
+        { NULL, NULL }
+    };
+    
+    cali_config_preset("CALI_LOG_VERBOSITY", "0");
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
+
+    cali_config_allow_read_env(false);
+
+    cali_config_define_profile("mpi-caliquery_summary_profile", summary_profile);
+
+    cali_config_set("CALI_CONFIG_FILE", "mpi-caliquery_caliper.config");
+    
+    if (args.is_set("verbose"))
+        cali_config_preset("CALI_LOG_VERBOSITY", "1");
+    if (args.is_set("profile"))
+        cali_config_set("CALI_CONFIG_PROFILE", "mpi-caliquery_summary_profile");
+
+    std::vector<std::string> config_list = 
+        StringConverter(args.get("caliper-config")).to_stringlist();
+
+    for (const std::string entry : config_list) {
+        auto p = entry.find('=');
+
+        if (p == std::string::npos) {
+            std::cerr << "cali-query: error: invalid Caliper configuration flag format \"" 
+                      << entry << "\" (missing \"=\")" << std::endl;
+            continue;
+        }
+
+        cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
+    }
+}
+
 } // namespace [anonymous]
 
 
 int main(int argc, char* argv[])
 {
+    // --- Parse command line arguments
+    //
+
+    Args args(::option_table);
+    int first_unknown_arg = args.parse(argc, argv);
+
+    // must be done before Caliper initialization in MPI_Init wrapper
+    ::setup_caliper_config(args);
+    
     MPI_Init(&argc, &argv);
 
     int rank;
@@ -162,24 +227,15 @@ int main(int argc, char* argv[])
     
     CALI_CXX_MARK_FUNCTION;
     
-    // --- Parse command line arguments
-    //
-
-    Args args(::option_table);
-
-    {
-        int i;
-
-        if ((i = args.parse(argc, argv)) < argc) {
-            if (rank == 0) {
-                std::cerr << "cali-query: error: unknown option: " << argv[i] << '\n'
-                          << "  Available options: ";
+    if (first_unknown_arg < argc) {
+        if (rank == 0) {
+            std::cerr << "mpi-caliquery: error: unknown option: " << argv[first_unknown_arg] << '\n'
+                      << "  Available options: ";
                 
-                args.print_available_options(std::cerr);
-            }
-        
-            MPI_Abort(MPI_COMM_WORLD, -1);
+            args.print_available_options(std::cerr);
         }
+        
+        MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     QuerySpec  spec = spec_from_args(args);
