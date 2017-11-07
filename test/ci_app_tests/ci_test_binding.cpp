@@ -78,15 +78,8 @@ int main(int argc, const char** argv)
 
     AnnotationBinding::make_binding<TestBinding>(&c);
 
-    Variant   v_true(true);
-
-    Attribute class_nested = c.get_attribute("class.nested");
-
-    assert(class_nested != Attribute::invalid);
-
     Attribute nested_attr  =
-        c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-                            1, &class_nested, &v_true);
+        c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
     Attribute default_attr =
         c.create_attribute("binding.default", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 

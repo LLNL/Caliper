@@ -105,5 +105,22 @@ class CaliperBasicTraceTest(unittest.TestCase):
                 'postprocess.val'  : '42',
                 'postprocess.node' : '36' }))
 
+    def test_binding(self):
+        target_cmd = [ './ci_test_binding' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0',
+        }
+
+        query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = calitest.get_snapshots_from_text(query_output)
+
+        self.assertTrue(calitest.has_snapshot_with_attributes(
+            snapshots, { 'testbinding' : 'binding.nested=outer/binding.nested=inner' }))
+
+
 if __name__ == "__main__":
     unittest.main()
