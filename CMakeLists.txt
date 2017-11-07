@@ -38,7 +38,8 @@ option(WITH_LIBDW     "Enable libdw support (for module detection in callpath se
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" TRUE)
 option(WITH_MPI       "Enable MPI" TRUE)
 option(WITH_MPIT      "Enable MPI-T" TRUE)
-option(WITH_SAMPLER   "Enable sampler (x86 Linux only)" TRUE)
+option(WITH_OMPT      "Enable OMPT" FALSE)
+option(WITH_SAMPLER   "Enable Linux sampler (x86 Linux only)" TRUE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
@@ -72,6 +73,7 @@ if(WITH_NVPROF)
 
    message(STATUS "NVidia tools extension library found in " ${NVTX_LIBRARY})
    set(CALIPER_HAVE_NVPROF ON)
+   set(CALIPER_NVProf_CMAKE_MSG "Yes, using ${NVTX_LIBRARY}")
    list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
 endif()
 
@@ -80,6 +82,7 @@ if(WITH_CUPTI)
   include(FindCUPTI)
   if (CUPTI_FOUND)
     set(CALIPER_HAVE_CUPTI TRUE)
+    set(CALIPER_CUpti_CMAKE_MSG "Yes, using ${CUPTI_LIBRARY}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${CUPTI_LIBRARY})
   endif()
 endif()
@@ -102,7 +105,11 @@ if (WITH_PAPI)
   include(FindPAPI)
   if (PAPI_FOUND)
     set(CALIPER_HAVE_PAPI TRUE)
+    set(CALIPER_PAPI_MSG "Yes, using ${PAPI_LIBRARIES}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
+  else()
+    message(WARNING "PAPI support was requested but PAPI was not found!\n"
+  "Set PAPI_PREFIX to the PAPI installation path and re-run cmake.")
   endif()
 endif()
 
@@ -113,11 +120,12 @@ if (WITH_LIBPFM)
     message(STATUS "Found perfmon/pfmlib_perf_event.h in " ${LIBPFM_INCLUDE_DIR})
     message(STATUS "Found libpfm.so in " ${LIBPFM_LIBRARY})
     set(CALIPER_HAVE_LIBPFM TRUE)
+    set(CALIPER_Libpfm_CMAKE_MSG "Yes, using ${LIBPFM_LIBRARY}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${LIBPFM_LIBRARY})
   else()
-    message(STATUS "Could not find libpfm header. \
-      use -DLIBPFM_INSTALL=<path to libpfm src directory> \
-      e.g. -DLIBPFM_INSTALL=~/papi/src/libpfm4")
+    message(WARNING "Libpfm support was requested but libpfm.so was not found!\n"
+      "Set -DLIBPFM_INSTALL=<path to libpfm src directory (e.g. -DLIBPFM_INSTALL=~/papi/src/libpfm4)"
+      "and re-run cmake")
   endif()
 endif()
 
@@ -127,10 +135,12 @@ if (WITH_DYNINST)
   if (Dyninst_FOUND)
     message(STATUS "Found Dyninst in " ${Dyninst_DIR})
     set(CALIPER_HAVE_DYNINST TRUE)
+    set(CALIPER_Dyninst_CMAKE_MSG "Yes, using installation in ${Dyninst_DIR}")
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
     list(APPEND CALIPER_EXTERNAL_LIBS instructionAPI)
     list(APPEND CALIPER_EXTERNAL_LIBS parseAPI)
   endif()
+  # CMake already provides useful error message if DyninstConfig.cmake isn't found
 endif()
 
 # Find libunwind
@@ -138,7 +148,10 @@ if (WITH_CALLPATH)
   include(FindLibunwind)
   if (LIBUNWIND_FOUND)
     set(CALIPER_HAVE_LIBUNWIND TRUE)
+    set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNDIND_LIBRARY}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
+  else()
+    message(WARNING "Callpath support was requested but libunwind was not found!")
   endif()
   if (WITH_LIBDW)
     # For some reason Dyninst crashes when libdw is linked.
@@ -158,6 +171,7 @@ endif()
 
 if (WITH_GOTCHA)
   set(CALIPER_HAVE_GOTCHA TRUE)
+  set(CALIPER_GOTCHA_CMAKE_MSG "Yes")
   set(GOTCHA_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ext/gotcha/gotcha-download/gotcha-src/include)
   list(APPEND CALIPER_EXTERNAL_LIBS gotcha)
 endif()
@@ -168,6 +182,7 @@ if (WITH_SOS)
     message(STATUS "Found sosflow in " ${SOSFlow_LIBRARY})
     list(APPEND CALIPER_EXTERNAL_LIBS ${SOSFlow_LIBRARY})
     set(CALIPER_HAVE_SOS TRUE)
+    set(CALIPER_SOSFlow_CMAKE_MSG "Yes, using ${SOSFlow_LIBRARY}")
   endif()
 endif()
 
@@ -175,28 +190,32 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG On)
 find_package(Threads REQUIRED)
 
-# Find OMPT header
-find_path(OMPT_INCLUDE_DIR ompt.h
-  PATH_SUFFIXES include
-  HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
+if (WITH_OMPT)
+  # Find OMPT header
+  find_path(OMPT_INCLUDE_DIR ompt.h
+    PATH_SUFFIXES include
+    HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
 
-if (OMPT_INCLUDE_DIR)
-  set(OMPT_FOUND TRUE)
-  set(CALIPER_HAVE_OMPT TRUE)
-  message(STATUS "OpenMP tools interface header ompt.h found in " ${OMPT_INCLUDE_DIR})
-else()
-  message(STATUS "OpenMP tools interface header ompt.h not found")
+  if (OMPT_INCLUDE_DIR)
+    set(OMPT_FOUND TRUE)
+    set(CALIPER_HAVE_OMPT TRUE)
+    set(CALIPER_OMPT_CMAKE_MSG "Yes, using ${OMPT_INCLUDE_DIR}")
+  else()
+    message(WARNING "OpenMP tools interface (OMPT) support requested but ompt.h not found!\n"
+      "Set OMPT_DIR to OpenMP tools interface installation directory and re-run cmake.")
+  endif()
 endif()
 
 # Find MPI
-
 if (WITH_MPI)
   find_package(MPI)
   if (MPI_C_FOUND)
     set(CALIPER_HAVE_MPI TRUE)
-
+    set(CALIPER_MPI_CMAKE_MSG "Yes, using ${MPI_C_LIBRARIES}")
+      
     if (WITH_MPIT)
       set(CALIPER_HAVE_MPIT TRUE)
+      set(CALIPER_MPIT_CMAKE_MSG "Yes")
     endif()
   endif()
 endif()
@@ -211,7 +230,8 @@ if (WITH_SAMPLER)
     set(CALIPER_HAVE_SAMPLER TRUE)
     # Linux PC sampler needs -lrt
     list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
-    message(STATUS "Linux detected, adding sampler service")
+  else()
+    message(WARNING "Sampler is not supported on ${CMAKE_SYSTEM_NAME}")
   endif()
 endif()
 
@@ -269,6 +289,42 @@ endif()
 if (WITH_DOCS)
   add_subdirectory(doc)
 endif()
+
+#
+# Print config summary
+#
+
+message(STATUS "Caliper configuration summary:")
+
+message(STATUS "Caliper version           : ${CALIPER_VERSION}")
+message(STATUS "Build type                : ${CMAKE_BUILD_TYPE}")
+message(STATUS "Install dir               : ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
+
+set(CALIPER_MODULES
+  GOTCHA
+  PAPI
+  Libpfm
+  Libunwind
+  Dyninst
+  SOSFlow
+  MPI
+  MPIT
+  OMPT
+  NVProf
+  CUpti)  
+
+foreach(_caliper_module ${CALIPER_MODULES})
+  string(LENGTH "${_caliper_module}" _strlen)
+  string(SUBSTRING "                " ${_strlen} "-1" _padding)
+  set(_prefix "${_caliper_module} support ${_padding}")
+
+  if (DEFINED CALIPER_${_caliper_module}_CMAKE_MSG)
+    message(STATUS "${_prefix} : ${CALIPER_${_caliper_module}_CMAKE_MSG}")
+  else()
+    message(STATUS "${_prefix} : No")
+  endif()
+endforeach()
 
 # Install exports
 #install(EXPORT caliper DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
