@@ -68,8 +68,12 @@ using namespace std;
 
 namespace cali
 {
-    extern void init_attribute_classes(Caliper* c);
-    extern void init_api_attributes(Caliper* c);
+
+extern void init_attribute_classes(Caliper* c);
+extern void init_api_attributes(Caliper* c);
+
+extern void config_sanity_check();
+
 }
 
 namespace
@@ -298,6 +302,8 @@ struct Caliper::GlobalData
 
         Log(1).stream() << "Initialized" << endl;
 
+        if (config.get("config_sanity_check").to_bool())
+            config_sanity_check();
         if (Log::verbosity() >= 3)
             RuntimeConfig::print( Log(3).stream() << "Configuration:\n" );
 
@@ -340,6 +346,10 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  task_scope:    Task-scope attribute (currently not supported)\n"
       "  skip_events:   Do not invoke callback functions for updates\n"
       "  hidden:        Do not include this attribute in snapshots\n"
+    },
+    { "config_sanity_check", CALI_TYPE_BOOL, "true",
+      "Perform configuration sanity check at initialization",
+      "Perform configuration sanity check at initialization"
     },
     ConfigSet::Terminator
 };
