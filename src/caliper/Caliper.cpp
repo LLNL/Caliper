@@ -302,7 +302,7 @@ struct Caliper::GlobalData
 
         Log(1).stream() << "Initialized" << endl;
 
-        if (config.get("config_sanity_check").to_bool())
+        if (config.get("config_check").to_bool())
             config_sanity_check();
         if (Log::verbosity() >= 3)
             RuntimeConfig::print( Log(3).stream() << "Configuration:\n" );
@@ -347,7 +347,7 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  skip_events:   Do not invoke callback functions for updates\n"
       "  hidden:        Do not include this attribute in snapshots\n"
     },
-    { "config_sanity_check", CALI_TYPE_BOOL, "true",
+    { "config_check", CALI_TYPE_BOOL, "true",
       "Perform configuration sanity check at initialization",
       "Perform configuration sanity check at initialization"
     },

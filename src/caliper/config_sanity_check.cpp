@@ -111,9 +111,9 @@ check_service_dependency(const service_group_t dependent,
     if (depcy && *depcy)
         return;
 
-    Log(0).stream() << "config check: Warning: " << dependent.group_name
+    Log(1).stream() << "Config check: Warning: " << dependent.group_name
                     << " service \"" << *dept << "\" requires " << dependency.group_name
-                    << " services, but none are active.\n  Add "
+                    << " services, but none are active.\n     Add "
                     << format_group(dependency.services, ", ", " or ")
                     << " to CALI_SERVICES_ENABLE to generate Caliper output." << std::endl;
 }
@@ -147,7 +147,7 @@ void config_sanity_check()
         RuntimeConfig::get("services", "enable").to_stringlist();
 
     if (services.empty()) {
-        Log(1).stream() << "config check: No services enabled. Caliper will not collect data."
+        Log(1).stream() << "Config check: No services enabled. Caliper will not record data."
                         << std::endl;
         return;
     }
@@ -158,7 +158,7 @@ void config_sanity_check()
     if (std::find(services.begin(), services.end(), "validator") != services.end())
         return;
 
-    check_services(services);
+    ::check_services(services);
 }
 
 }
