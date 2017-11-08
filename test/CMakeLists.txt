@@ -1,38 +1,26 @@
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c99")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+if (${CMAKE_CXX_COMPILER_ID} MATCHES Intel)
+  # CMake does not have proper compiler feature support for Intel compilers :-/
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99")
+else()
+  set(CMAKE_C_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON) 
 
-add_executable(cali-basic cali-basic.cpp)
-add_executable(cali-functional cali-functional.cpp)
-add_executable(cali-memtracking cali-memtracking.cpp)
-add_executable(cali-memtracking-macros cali-memtracking-macros.cpp)
-# add_executable(cali-wrap cali-wrap.cpp)
-add_executable(cali-test cali-test.cpp)
-add_executable(cali-basic-c cali-basic-c.c)
-add_executable(cali-test-c cali-test-c.c)
-add_executable(cali-print-snapshot cali-print-snapshot.c)
-
-add_executable(cali-perfproblem-branch-mispred cali-perfproblem-branch-mispred.cpp)
-
-add_executable(cali-throughput-pthread cali-throughput-pthread.cpp)
-
-set_target_properties(cali-basic-c PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(cali-test-c PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(cali-print-snapshot PROPERTIES LINKER_LANGUAGE CXX)
-
-target_link_libraries(cali-test caliper)
-target_link_libraries(cali-functional caliper)
-target_link_libraries(cali-memtracking caliper caliper-tools-util)
-target_link_libraries(cali-memtracking-macros caliper caliper-tools-util)
-target_link_libraries(cali-basic caliper)
-target_link_libraries(cali-basic-c caliper)
-target_link_libraries(cali-test-c caliper)
-target_link_libraries(cali-print-snapshot caliper)
-target_link_libraries(cali-throughput-pthread caliper caliper-tools-util Threads::Threads)
-# target_link_libraries(cali-wrap caliper)
-
-target_link_libraries(cali-perfproblem-branch-mispred caliper)
-
-if (BUILD_TESTING)
-  add_subdirectory(ci_app_tests)
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_C_STANDARD   99)
 endif()
 
+set(CALIPER_TEST_APPS
+  cali-test
+  cali-throughput-pthread)
+
+foreach(app ${CALIPER_TEST_APPS})
+  add_executable(${app} ${app}.cpp)
+  target_link_libraries(${app} caliper)
+endforeach()
+
+target_link_libraries(cali-throughput-pthread
+  caliper-tools-util
+  Threads::Threads)
+
+add_subdirectory(ci_app_tests)

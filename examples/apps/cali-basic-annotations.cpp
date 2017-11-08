@@ -36,18 +36,28 @@
 
 int main(int argc, char* argv[])
 {
+    // Mark begin/end of the current function.
+    //   Sets "function=main" in Caliper.
     CALI_CXX_MARK_FUNCTION;
 
+    
+    // Mark begin and end of a code region.
+    //   Sets "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
-    int count = 4;
-    CALI_MARK_END("init");
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
-
+    int    count = 4;
     double t = 0, delta_t = 0.42;
 
+    CALI_MARK_END("init");
+
+    
+    // Mark begin and end of a loop.
+    //   Sets "loop=mainloop" in Caliper.
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
+
     for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
+        // Mark each loop iteration of an annotated loop.
+        //   Sets "iteration#mainloop=<i> in Caliper."
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
