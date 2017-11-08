@@ -1,3 +1,5 @@
+project(caliper-examples)
+
 if (${CMAKE_CXX_COMPILER_ID} MATCHES Intel)
   # CMake does not have proper compiler feature support for Intel compilers :-/
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
