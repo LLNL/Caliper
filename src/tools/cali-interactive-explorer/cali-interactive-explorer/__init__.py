@@ -1,7 +1,6 @@
-import pandas,argparse,sh,StringIO,glob,json
+import pandas,argparse,sh,StringIO,glob,json,sys
 import matplotlib.pyplot as plt
-
-plt.ioff()
+plt.ion()
 parser = argparse.ArgumentParser()
 parser.add_argument("--inputs", nargs="*")
 parser.add_argument("--initial-query-file")
@@ -31,7 +30,6 @@ def to_pandas(poorly_formatted_string):
   return pandas.read_json(json.dumps(polished_json))
 
 def query(query_string='', additional_args = []):
-  #full_query = ["-q ",  query_string ,'format', 'json()']  
   full_query = ["-q", query_string +' format '+ 'json()']
   full_query.extend([input for input in inputs])
   full_query.extend(additional_args)
@@ -50,14 +48,47 @@ for index,row in attribute_frame.iterrows():
         attribute_data[row['cali.attribute.name']] = {}
     attribute_data[row[0]]["type"] = row['cali.attribute.type']
 
+def get_column_types(cl, search_type):
+    integral_types = ["uint", "float","int"]
+    stringy_types = ["string"]
+    choice_map = {"numeric" : integral_types , "string" : stringy_types}
+    if search_type not in choice_map:
+        print "Invalid search type"
+        sys.exit(1)
+    search_list = choice_map[search_type]    
+    return [column for column in cl if attribute_data[column]["type"] in search_list]
+
+def graph_lines(frame, independent_set, dependent_set):
+    series = get_column_types(dependent_set,"string")
+    xAxes = get_column_types(dependent_set,"numeric")
+
+    values = {}
+    for independent in independent_set:
+      for value in series:
+          split_by = frame.groupby(value) 
+          for xAxis in xAxes:
+            for label,df in split_by:
+              df = df.sort(xAxis)
+              finalXAxis = df[xAxis]
+              finalIndependent = df[independent]
+              plt.plot(finalXAxis,finalIndependent,label = label)
+              plt.xlabel(xAxis)
+              plt.ylabel(independent)
+              plt.legend()
 
 def graph(query_string=''):
+  calql_keywords = ["where ","group by","select"]
   def map_column(column):
       if column == 'count()':
           return 'aggregate.count'
       else:
           return column
-  def get_between_keywords(full_string, keyword, other_keywords, separator=","):
+  def unmap_column(column):
+      if column == 'aggregate.count':
+          return 'count()'
+      else:
+          return column
+  def keyword_boundaries(full_string, keyword, other_keywords):
       keywords = [word for word in other_keywords]
       try:
           del(keywords[keyword])
@@ -68,32 +99,39 @@ def graph(query_string=''):
           return []
       locations = sorted([(kw,full_string.find(kw)) for kw in keywords],key = lambda (x,y): y)
       nearest_location = next((loc for kw,loc in locations if loc > kw_loc), len(full_string))
+      return kw_loc,nearest_location
+  def get_between_keywords(full_string, keyword, other_keywords, separator=","):
+      kw_loc,nearest_location = keyword_boundaries(full_string,keyword,other_keywords)
       split = [x.strip() for x in full_string[kw_loc:nearest_location].split(separator)]
       return split
   def get_columns(raw_query,frame,keyword):
       query_to_parse = raw_query.lower()
-      keywords = ["where ","group by","select"]
       columns = set([])
-      split = get_between_keywords(query_to_parse,keyword,keywords)
+      split = get_between_keywords(query_to_parse,keyword,calql_keywords)
       for column in split:
           if column == "*":
-              for df_column in frame.columns:
-                  columns.add(df_column)
+              if frame is not None:
+                for df_column in frame.columns:
+                    columns.add(df_column)
+              else:
+                  print("Wildcard requests not supported here, this is an implementation bug for now")
           else:
               columns.add(map_column(column))
       return list(columns)
-  frame = query(query_string)
-  select_columns = get_columns(query_string,frame,"select") 
-  where_columns = get_columns(query_string,frame,"where") 
-  group_columns = get_columns(query_string,frame,"group by") 
-  #num_numeric_grouped = [column for column in group_columns if attribute_data[column]["type"] in ["uint", "float"]]
-  num_numeric_grouped = [(column,attribute_data[column]["type"]) for column in group_columns if True]
-  print num_numeric_grouped
+  start,end = keyword_boundaries(query_string.lower(), "select" ,calql_keywords)
+  new_select = ""
+  select_columns = get_columns(query_string,None,"select")
+  where_columns = get_columns(query_string,None,"where")
+  group_columns = get_columns(query_string,None,"group by")
+  new_select =" "+ ",".join(set([unmap_column(x) for x in select_columns]) | set([unmap_column(x) for x in group_columns]))+ " "
+  new_query = query_string[:start] + new_select + query_string[end:]
+  num_numeric_grouped = len(get_column_types(group_columns,"numeric"))
+  num_character_grouped = get_column_types(group_columns,"string")
+  frame = query(new_query)
+  if num_numeric_grouped == 1:
+      graph_lines(frame,select_columns,group_columns)
   return frame
 if initial_query_file is not None:
     with open(initial_query_file,"r") as input_file:
         joined_query = " ".join(input_file.readlines())
         initial_query_result = query(joined_query) 
-
-frame = graph("SELECT count(),program,run_size,time.inclusive.duration GROUP BY program,run_size WHERE program,run_size")
-print frame
