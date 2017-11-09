@@ -11,6 +11,6 @@ From here, two main commands exist, "query" and "graph"
 
 "Graph" similarly queries the files, except it also plots the end results. Imaginging you had a pile of profiles each with a different Caliper-annotated value for "num_particles", you could graph the times of your functions by
 
-graph("select time.inclusive.duration group by function,num_particles WHERE function,num_particles")
+graph("select time.inclusive.duration group by function,num_particles where function,num_particles")
 
 This usage will quickly change as the software is improved
