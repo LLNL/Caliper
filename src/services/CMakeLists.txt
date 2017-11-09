@@ -95,6 +95,9 @@ if (CALIPER_HAVE_OMPT)
   add_subdirectory(ompt)
 endif()
 add_subdirectory(validator)
+if (CALIPER_HAVE_VTUNE)
+  add_subdirectory(vtune)
+endif()
 
 add_service_sources(Services.cpp)
 
