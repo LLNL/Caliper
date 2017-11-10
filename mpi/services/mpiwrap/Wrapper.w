@@ -3,9 +3,8 @@
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/StringConverter.h"
 #include "caliper/common/Variant.h"
-
-#include "caliper/common/util/split.hpp"
 
 #include <mpi.h>
 
@@ -48,11 +47,10 @@ namespace
     {{endforallfn}}
 
     void setup_filter() {
-        std::vector<std::string> whitelist;
-        std::vector<std::string> blacklist;
-
-        util::split(mpi_whitelist_string, ':', std::back_inserter(whitelist));
-        util::split(mpi_blacklist_string, ':', std::back_inserter(blacklist));
+        std::vector<std::string> whitelist =
+            StringConverter(mpi_whitelist_string).to_stringlist(",:");
+        std::vector<std::string> blacklist =
+            StringConverter(mpi_blacklist_string).to_stringlist(",:");
 
         bool have_whitelist = whitelist.size() > 0;
         bool have_blacklist = blacklist.size() > 0;

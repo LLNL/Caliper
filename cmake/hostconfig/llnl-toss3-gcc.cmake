@@ -5,6 +5,7 @@ set(MPI_C_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.2-gcc-4.9.3/bin/mpicc"
 set(MPI_CXX_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.2-gcc-4.9.3/bin/mpicxx" CACHE PATH "")
 
 set(PAPI_PREFIX "/usr/tce/packages/papi/papi-5.4.3" CACHE PATH "")
+set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
 
 set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-9.3.1/lib/cmake" CACHE PATH "")
 
@@ -17,5 +18,6 @@ set(WITH_SAMPLER  On  Cache BOOL "")
 set(WITH_MPI      On  CACHE BOOL "")
 set(WITH_MPIT     Off CACHE BOOL "") # default toss3 mvapich2-2.2 doesn't have any MPI-T stuff
 set(WITH_GOTCHA   On  CACHE BOOL "")
+set(WITH_VTUNE    On  CACHE BOOL "")
 
 set(WITH_DOCS     Off CACHE BOOL "")

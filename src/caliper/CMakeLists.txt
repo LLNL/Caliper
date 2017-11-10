@@ -9,7 +9,8 @@ set(CALIPER_SOURCES
     MetadataTree.cpp
     api.cpp
     cali.cpp
-    cali_datatracker.cpp)
+    cali_datatracker.cpp
+    config_sanity_check.cpp)
 
 add_subdirectory(report)
   

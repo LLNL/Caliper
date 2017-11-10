@@ -42,6 +42,7 @@ option(WITH_SAMPLER   "Enable Linux sampler (x86 Linux only)" TRUE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
+option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
@@ -62,6 +63,19 @@ else()
   # Disable rpaths
   set(CMAKE_SKIP_RPATH TRUE)
 endif(BUILD_SHARED_LIBS)
+
+if(WITH_VTUNE)
+  include(FindITTAPI)
+  if (ITT_FOUND)
+    set(CALIPER_HAVE_VTUNE TRUE)
+    set(CALIPER_VTune_CMAKE_MSG "Yes, using ${ITT_LIBRARY}")
+    # libittnotify.a needs libdl
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ITT_LIBRARY} "-ldl")
+  else()
+    message(WARNING "VTune bindings requested but Intel ITT API was not found!\n"
+  "Set ITT_PREFIX to ittnotify installation path and re-run cmake.")
+  endif()
+endif()
 
 if(WITH_NVPROF)
    find_package(CUDA REQUIRED)
@@ -316,7 +330,8 @@ set(CALIPER_MODULES
   MPIT
   OMPT
   NVProf
-  CUpti)
+  CUpti
+  VTune)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
