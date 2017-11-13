@@ -50,6 +50,7 @@
 #include <mutex>
 #include <set>
 #include <sstream>
+#include <iostream>
 
 using namespace cali;
 using namespace std;
@@ -234,8 +235,7 @@ struct JsonFormatter::JsonFormatterImpl
         }
 
         if (!m_opt_split) 
-            os << (m_first_row ? '[' : ',');
-        m_first_row = false;
+            os << (m_first_row ? "[\n" : ",");
 
         os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
 
@@ -253,6 +253,7 @@ struct JsonFormatter::JsonFormatterImpl
                 g(m_os_lock);
             
             m_os.stream() << os.str();
+            m_first_row = false;
         }
     }
 };
