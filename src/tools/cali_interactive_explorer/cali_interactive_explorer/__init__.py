@@ -7,8 +7,9 @@ parser.add_argument("--initial-query-file")
 
 cali_query = sh.cali_query
 
+files_to_analyze = []
 
-args = parser.parse_args()
+args = parser.parse_known_args()
 
 initial_query_file = None
 try:
@@ -16,37 +17,65 @@ try:
 except:
   pass
 
-inputs = args.inputs  
+inputs = []
+try:
+  inputs = args.inputs  
+except:
+  pass
 initial_query_result = None
 
 def to_pandas(poorly_formatted_string):
-  raw_json = json.loads(poorly_formatted_string) 
-  polished_json = []
-  for row in raw_json["rows"]:
-    row_dict = {}
-    for index,item in enumerate(row):
-       row_dict[raw_json["attributes"][index]] = item
-    polished_json.append(row_dict)
-  return pandas.read_json(json.dumps(polished_json))
+  formatted = poorly_formatted_string
+  return pandas.read_json(formatted)
 
-def query(query_string='', additional_args = []):
-  full_query = ["-q", query_string +' format '+ 'json()']
-  full_query.extend([input for input in inputs])
-  full_query.extend(additional_args)
-  cmd_output = StringIO.StringIO()
-  a=cali_query(full_query,_out=cmd_output)
-  full_out = cmd_output.getvalue()
-  full_out=full_out.strip().replace(",\x08","").replace("\n","").replace("\\","\\\\")
-  return to_pandas(full_out)
-
-attribute_frame = query("SELECT cali.attribute.name,cali.attribute.type",["--list-attributes"])
 attribute_data = { 
             "aggregate.count" : { "type" : "uint"}
         }
-for index,row in attribute_frame.iterrows():
-    if row['cali.attribute.name'] not in attribute_data:
-        attribute_data[row['cali.attribute.name']] = {}
-    attribute_data[row[0]]["type"] = row['cali.attribute.type']
+
+#TODO: program -> function in group_keys, this is for demo
+def condense_dataframe(dataframe, group_keys = ["program","run_size"], required_items = ["time.inclusive.duration"]):
+  grouped = dataframe.groupby(group_keys)  
+  processed_frame = dataframe
+  for label,df in grouped:
+    pass
+    #print label
+    #print df
+    #final_frame = 
+    #for index,row in df.iterrows():
+  return processed_frame
+   
+    
+
+def query(query_string='', additional_args = [], **kwargs):
+  full_query = ['--query=' +query_string +' format '+ 'json()']
+  full_query.extend([input for input in inputs])
+  full_query.extend(additional_args)
+  cmd_output = StringIO.StringIO()
+  a = cali_query(full_query,_out=cmd_output)
+  full_out = cmd_output.getvalue()
+  panda_frame = to_pandas(full_out)
+  if "condense" in kwargs:
+    panda_frame = condense_dataframe(panda_frame)
+  return panda_frame
+
+def load_data(new_inputs, raw=False):
+  global inputs
+  if raw:
+    inputs = new_inputs
+  else:
+    inputs = glob.glob(new_inputs)
+  attribute_frame = query("SELECT cali.attribute.name,cali.attribute.type,class.aggregatable",["--list-attributes"])
+  for index,row in attribute_frame.iterrows():
+      if row['cali.attribute.name'] not in attribute_data:
+          attribute_data[row['cali.attribute.name']] = {}
+      attribute_data[row[0]]["type"] = row['cali.attribute.type']
+      if 'class.aggregatable' in row and row['class.aggregatable'] == 'true':
+        attribute_data[row[0]]["aggregatable"] = True
+      else:
+        attribute_data[row[0]]["aggregatable"] = False
+
+if inputs:
+  load_data(inputs,True)
 
 def get_column_types(cl, search_type):
     integral_types = ["uint", "float","int"]
@@ -135,3 +164,4 @@ if initial_query_file is not None:
     with open(initial_query_file,"r") as input_file:
         joined_query = " ".join(input_file.readlines())
         initial_query_result = query(joined_query) 
+

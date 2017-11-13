@@ -5,7 +5,9 @@ To launch
 
   python -i __init__.py --inputs [caliper_files]
 
-From here, two main commands exist, "query" and "graph"
+From here, three main commands exist, "load_data," "query" and "graph"
+
+"load_data" allows you to change your mind about which Caliper profiles you're operating on
 
 "Query" queries the Caliper files you ran this against and stores the results in a Pandas dataframe (note: please omit "FORMAT" arguments from queries)
 
