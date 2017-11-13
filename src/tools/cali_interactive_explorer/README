@@ -1,0 +1,18 @@
+Basic use
+=====================
+
+To launch
+
+  python -i __init__.py --inputs [caliper_files]
+
+From here, three main commands exist, "load_data," "query" and "graph"
+
+"load_data" allows you to change your mind about which Caliper profiles you're operating on
+
+"Query" queries the Caliper files you ran this against and stores the results in a Pandas dataframe (note: please omit "FORMAT" arguments from queries)
+
+"Graph" similarly queries the files, except it also plots the end results. Imaginging you had a pile of profiles each with a different Caliper-annotated value for "num_particles", you could graph the times of your functions by
+
+graph("select time.inclusive.duration group by function,num_particles where function,num_particles")
+
+This usage will quickly change as the software is improved

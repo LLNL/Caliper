@@ -59,6 +59,8 @@ const std::string opt_split = std::string("split");
 const std::string opt_pretty = std::string("pretty");
 const std::string opt_quote_all = std::string("quote-all");
 
+bool g_first_row = true;
+
 struct JsonFormatter::JsonFormatterImpl
 {
     set<string>  m_selected;
@@ -67,8 +69,6 @@ struct JsonFormatter::JsonFormatterImpl
     OutputStream m_os;
 
     std::mutex   m_os_lock;
-
-    bool         m_first_row = true;
 
     bool         m_opt_split = false;
     bool         m_opt_pretty = false;
@@ -234,11 +234,6 @@ struct JsonFormatter::JsonFormatterImpl
             }
         }
 
-        if (!m_opt_split) 
-            os << (m_first_row ? "[\n" : ",");
-
-        os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
-
         for(size_t i = 0; i < key_value_pairs.size(); ++i)
         {
             if(i != 0)
@@ -246,14 +241,16 @@ struct JsonFormatter::JsonFormatterImpl
             os << key_value_pairs[i];
         }
 
-        os << (m_opt_pretty ? "\n" : "" ) << "}";
-        
         if (!key_value_pairs.empty()) {
             std::lock_guard<std::mutex>
                 g(m_os_lock);
             
+            m_os.stream() << (m_opt_split ? "" : (g_first_row ? "[\n" : ","));
+            m_os.stream() << (g_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
             m_os.stream() << os.str();
-            m_first_row = false;
+            m_os.stream() << (m_opt_pretty ? "\n" : "" ) << "}";
+            
+            g_first_row = false;
         }
     }
 };
