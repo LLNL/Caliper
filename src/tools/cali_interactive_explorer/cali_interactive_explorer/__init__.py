@@ -1,10 +1,9 @@
-import pandas, argparse, sh, StringIO, glob, json, sys, math
-import plotly.plotly as py
+import pandas, argparse, sh, StringIO, glob, sys, math
 import plotly.graph_objs as go
 import matplotlib.pyplot as plt
 import inspect
-import copy
 import enum
+import networkx as nx
 
 plt.ion()
 parser = argparse.ArgumentParser()
@@ -16,6 +15,7 @@ class DocumentationType(enum.Enum):
     Off = 0
     CopyPaste = 1
     Google = 2
+    Default = 3
 
 
 documentation_type = 0
@@ -23,7 +23,8 @@ documentation_type = 0
 documentation_map = {
     "Off": DocumentationType.Off,
     "CopyPaste": DocumentationType.CopyPaste,
-    "Google": DocumentationType.Google
+    "Google": DocumentationType.Google,
+    "Default" : DocumentationType.Default
 }
 
 
@@ -87,8 +88,15 @@ def global_name():
     return __name__
 
 
-def get_module_name():
-    if documentation_type == DocumentationType.Google:
+def resolve_documentation_level(doc_level):
+    if doc_level == DocumentationType.Default:
+        return documentation_type
+    else:
+        return doc_level
+
+def get_module_name(raw_doc_level):
+    doc_level =resolve_documentation_level(raw_doc_level)
+    if doc_level == DocumentationType.Google:
         return global_name()
     else:
         return local_name()
@@ -192,12 +200,14 @@ def graph_lines(frame, independent_set, dependent_set):
 
 #Phase: Fluid
 class CaliperFrame(object):
-    def __init__(self, query_text=None, new_inputs=None, **kwargs):
+    def __init__(self, query_text=None, new_inputs=None, doc_level = DocumentationType.Default, **kwargs):
         self._ready = False
         self.valid_metadata = False
+        self.documentation_level = doc_level
         self._query = query_text
         self._inputs = None
-        self._skip_attributes = "skip_attributes" in kwargs and kwargs["skip_attributes"] == True
+        self.input_specification = lambda x : str(x)
+        self._skip_attributes = "skip_attributes" in kwargs and kwargs["skip_attributes"]
         self._attributes = None
         if type(new_inputs) == list:
             self.inputs = new_inputs
@@ -205,7 +215,8 @@ class CaliperFrame(object):
             self.inputs = list(glob.glob(new_inputs))
         self._results = None
         self._documentation = None
-
+    def resolve_documentation(self):
+        self.documentation = "query_result = " + get_module_name(self.documentation_level) + ".CaliperFrame(\"" + self.query + "\"," + self.input_specification(self.inputs) + ")"
     def debug_print(self):
         print "query: " + self._query
         print "inputs: " + str(self._inputs)
@@ -223,11 +234,26 @@ class CaliperFrame(object):
         panda_frame = to_pandas(full_out)
         if "condense" in kwargs:
             panda_frame = condense_dataframe(panda_frame)
-        self.documentation = "query_result = " + get_module_name() + ".CaliperFrame(" + self.query + "," + str(
-            self.inputs) + ")"
-        if documentation_type != DocumentationType.Off:
+        self.resolve_documentation()
+        if resolve_documentation_level(self.documentation_level) != DocumentationType.Off:
             print self.documentation
         return panda_frame
+
+    @property
+    def input_specification(self):
+        return self._input_specification
+
+    @input_specification.setter
+    def input_specification(self, value):
+        self._input_specification=value
+
+    @property
+    def documentation_level(self):
+        return self._documentation_level
+
+    @documentation_level.setter
+    def documentation_level(self, value):
+        self._documentation_level=value
 
     @property
     def ready(self):
@@ -266,7 +292,7 @@ class CaliperFrame(object):
         self.ready = False
         if not self._skip_attributes:
             attribute_califrame = CaliperFrame("SELECT cali.attribute.name,cali.attribute.type,class.aggregatable",
-                                               self._inputs, skip_attributes=True)
+                                               self._inputs, DocumentationType.Off,skip_attributes=True)
             attribute_dataframe = attribute_califrame.run_query(additional_args=["--list-attributes"])
             self.attributes = process_attribute_dataframe(attribute_dataframe)
 
@@ -319,6 +345,13 @@ class Analysis(object):
     def analysis_frame(self, value):
         self._analysis_frame=value
 
+    @property
+    def documentation(self):
+        return self._documentation
+
+    @documentation.setter
+    def documentation(self, value):
+        self._documentation=value
 
 class Graphable:
     def __init(self, frame, series, independent, dependent):
