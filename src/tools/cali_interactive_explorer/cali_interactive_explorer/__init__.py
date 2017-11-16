@@ -24,7 +24,7 @@ documentation_map = {
     "Off": DocumentationType.Off,
     "CopyPaste": DocumentationType.CopyPaste,
     "Google": DocumentationType.Google,
-    "Default" : DocumentationType.Default
+    "Default": DocumentationType.Default
 }
 
 
@@ -94,8 +94,9 @@ def resolve_documentation_level(doc_level):
     else:
         return doc_level
 
+
 def get_module_name(raw_doc_level):
-    doc_level =resolve_documentation_level(raw_doc_level)
+    doc_level = resolve_documentation_level(raw_doc_level)
     if doc_level == DocumentationType.Google:
         return global_name()
     else:
@@ -164,12 +165,12 @@ def get_columns(raw_query, frame, keyword, other_keywords=calql_keywords):
                 print("Wildcard requests not supported here, this is an implementation bug for now")
         else:
             columns.add(map_column(column))
-    return [item for item in list(columns) if len(item)>0]
+    return [item for item in list(columns) if len(item) > 0]
 
 
 ##TODO: remove goofy holdover default attribute_dict value
 def get_column_types(cl_raw, search_type, attribute_dict=attribute_data):
-    cl = [column for column in cl_raw if len(column)>0]
+    cl = [column for column in cl_raw if len(column) > 0]
     integral_types = ["uint", "float", "int"]
     stringy_types = ["string"]
     choice_map = {"numeric": integral_types, "string": stringy_types}
@@ -198,15 +199,15 @@ def graph_lines(frame, independent_set, dependent_set):
                     plt.legend()
 
 
-#Phase: Fluid
+# Phase: Fluid
 class CaliperFrame(object):
-    def __init__(self, query_text=None, new_inputs=None, doc_level = DocumentationType.Default, **kwargs):
+    def __init__(self, query_text=None, new_inputs=None, doc_level=DocumentationType.Default, **kwargs):
         self._ready = False
         self.valid_metadata = False
         self.documentation_level = doc_level
         self._query = query_text
         self._inputs = None
-        self.input_specification = lambda x : str(x)
+        self.input_specification = lambda x: str(x)
         self._skip_attributes = "skip_attributes" in kwargs and kwargs["skip_attributes"]
         self._attributes = None
         if type(new_inputs) == list:
@@ -215,8 +216,12 @@ class CaliperFrame(object):
             self.inputs = list(glob.glob(new_inputs))
         self._results = None
         self._documentation = None
+
     def resolve_documentation(self):
-        self.documentation = "query_result = " + get_module_name(self.documentation_level) + ".CaliperFrame(\"" + self.query + "\"," + self.input_specification(self.inputs) + ")"
+        self.documentation = "query_result = " + get_module_name(
+            self.documentation_level) + ".CaliperFrame(\"" + self.query + "\"," + self.input_specification(
+            self.inputs) + ")"
+
     def debug_print(self):
         print "query: " + self._query
         print "inputs: " + str(self._inputs)
@@ -245,7 +250,7 @@ class CaliperFrame(object):
 
     @input_specification.setter
     def input_specification(self, value):
-        self._input_specification=value
+        self._input_specification = value
 
     @property
     def documentation_level(self):
@@ -253,7 +258,7 @@ class CaliperFrame(object):
 
     @documentation_level.setter
     def documentation_level(self, value):
-        self._documentation_level=value
+        self._documentation_level = value
 
     @property
     def ready(self):
@@ -292,7 +297,7 @@ class CaliperFrame(object):
         self.ready = False
         if not self._skip_attributes:
             attribute_califrame = CaliperFrame("SELECT cali.attribute.name,cali.attribute.type,class.aggregatable",
-                                               self._inputs, DocumentationType.Off,skip_attributes=True)
+                                               self._inputs, DocumentationType.Off, skip_attributes=True)
             attribute_dataframe = attribute_califrame.run_query(additional_args=["--list-attributes"])
             self.attributes = process_attribute_dataframe(attribute_dataframe)
 
@@ -321,9 +326,9 @@ class CaliperFrame(object):
             self.results = self.run_query()
 
 
-#Phase: Prototype
+# Phase: Prototype
 class Analysis(object):
-    def __init__(self,cali_frame,analysis_frame):
+    def __init__(self, cali_frame, analysis_frame):
         self.cali_frame = cali_frame
         self.analysis_frame = analysis_frame
 
@@ -331,19 +336,19 @@ class Analysis(object):
     def cali_frame(self):
         # type: () -> CaliperFrame
         return self._cali_frame
-    
+
     @cali_frame.setter
     def cali_frame(self, value):
-        self._cali_frame=value
-    
+        self._cali_frame = value
+
     @property
     def analysis_frame(self):
         # type: () -> pandas.DataFrame
         return self._analysis_frame
-    
+
     @analysis_frame.setter
     def analysis_frame(self, value):
-        self._analysis_frame=value
+        self._analysis_frame = value
 
     @property
     def documentation(self):
@@ -351,7 +356,8 @@ class Analysis(object):
 
     @documentation.setter
     def documentation(self, value):
-        self._documentation=value
+        self._documentation = value
+
 
 class Graphable:
     def __init(self, frame, series, independent, dependent):
@@ -431,18 +437,18 @@ def get_series_data(analysis, all_set, dependent_set):
 
     :type all_set: list
     :type dependent_set: list
-    :type frame: pandas.DataFrame
+    :type analysis: Analysis
     """
     frame = analysis.analysis_frame
-    attribute_data = analysis.cali_frame.attributes
+    attributes = analysis.cali_frame.attributes
     independent_set = list(set(all_set) - set(dependent_set))
-    series = get_column_types(dependent_set, "string",attribute_data)
-    xAxes = get_column_types(dependent_set, "numeric",attribute_data)
+    series = get_column_types(dependent_set, "string", attributes)
+    xAxes = get_column_types(dependent_set, "numeric", attributes)
     traces = []
-    #TODO: this is broken for multidimensional. Make it less bad
+    # TODO: this is broken for multidimensional. Make it less bad
     for independent in independent_set:
-        current_trace = {"data" : [],
-                         "yAxis" : independent}
+        current_trace = {"data": [],
+                         "yAxis": independent}
         for value in series:
             split_by = frame.groupby(value)
             for xAxis in xAxes:
@@ -471,18 +477,19 @@ def to_graph(query_frame):
     select_columns = get_columns(query_string, None, "select")
     group_columns = get_columns(query_string, None, "group by")
     selected = list(set(select_columns) - set(group_columns))
-    numeric_selects = get_column_types(select_columns, "numeric",query_frame.attributes)
-    numeric_groups = get_column_types(group_columns, "numeric",query_frame.attributes)
+    numeric_selects = get_column_types(select_columns, "numeric", query_frame.attributes)
+    numeric_groups = get_column_types(group_columns, "numeric", query_frame.attributes)
     num_numeric_grouped = len(numeric_selects) - len(numeric_groups)
-    num_character_grouped = get_column_types(group_columns, "string",query_frame.attributes) # TODO: handle multiple character groups
+    num_character_grouped = get_column_types(group_columns, "string",
+                                             query_frame.attributes)  # TODO: handle multiple character groups
     condensed = condense_dataframe(query_frame, group_columns, selected)
-    analysis = Analysis(query_frame,condensed)
+    analysis = Analysis(query_frame, condensed)
     scatters = []
     if num_numeric_grouped == 1:
         scatters = get_series_data(analysis, select_columns, group_columns)
     layout = go.Layout(showlegend=True,
-                       xaxis = {
-                           "title" : scatters[0]["xAxis"]
+                       xaxis={
+                           "title": scatters[0]["xAxis"]
                        },
                        yaxis={
                            "title": scatters[0]["yAxis"]
@@ -492,34 +499,165 @@ def to_graph(query_frame):
     return go.Figure(data=scatters[0]["data"], layout=layout)
 
 
-# OLD: JUST SAVING THIS
-# def graph(query_string=''):
-#    def map_column(column):
-#        if column == 'count()':
-#            return 'aggregate.count'
-#        else:
-#            return column
-#
-#    def unmap_column(column):
-#        if column == 'aggregate.count':
-#            return 'count()'
-#        else:
-#            return column
-#
-#    start, end = keyword_boundaries(query_string.lower(), "select", calql_keywords)
-#    new_select = ""
-#    select_columns = get_columns(query_string, None, "select")
-#    where_columns = get_columns(query_string, None, "where")
-#    group_columns = get_columns(query_string, None, "group by")
-#    new_select = " " + ",".join(
-#        set([unmap_column(x) for x in select_columns]) | set([unmap_column(x) for x in group_columns])) + " "
-#    new_query = query_string[:start] + new_select + query_string[end:]
-#    num_numeric_grouped = len(get_column_types(group_columns, "numeric"))
-#    num_character_grouped = get_column_types(group_columns, "string")
-#    frame = query(new_query)
-#    if num_numeric_grouped == 1:
-#        graph_lines(frame, select_columns, group_columns)
-#    return frame
+def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusive.duration"], reroot=None):
+    """
+
+    :type caliper_frame: CaliperFrame
+    """
+
+    def contextualize_label(label):
+        return label
+
+    metric_totals = {}
+
+    def get_edge_color_value(name, metric, value):
+        fraction = (1.0 * value) / (1.0 * metric_totals[metric])
+        remaining_part = 1.0 - fraction
+        red_value = str(int(256.0 * fraction))
+        green_value = str(int(256.0 * remaining_part))
+        blue_value = "0"
+        alpha_value = "0.5"
+        return "rgba(" + red_value + "," + green_value + "," + blue_value + "," + alpha_value + ")"
+
+    def get_node_color_value(name, metric, value):
+        fraction = (1.0 * value) / (1.0 * metric_totals[metric])
+        remaining_part = 1.0 - fraction
+        red_value = str(int(256.0 * fraction))
+        green_value = str(int(256.0 * remaining_part))
+        blue_value = "0"
+        alpha_value = "0.5"
+        return "rgba(" + red_value + "," + green_value + "," + blue_value + "," + alpha_value + ")"
+
+    sankey = {
+        "data": [
+            {
+                "type": "sankey",
+                "domain":
+                    {
+                        "x": [0, 1],
+                        "y": [0, 1]
+                    },
+                "orientation": "h",
+                "valueformat": ".0f",
+                "valuesuffix": "TWh",
+                "node": {
+                    "pad": 15,
+                    "thickness": 15,
+                    "line": {
+                        "color": "black",
+                        "width": 0.5
+                    },
+                    "label": [],
+                    "color": []
+                },
+                "link": {
+                    "source": [],
+                    "target": [],
+                    "color": [],
+                    "value": [],
+                    "label": []
+                }
+            }
+        ],
+        "layout": {
+            "title": "How cool are dogs?",
+            "width": 1118,
+            "height": 772,
+            "font": {
+                "size": 10
+            }
+        }
+    }
+    metric_per_tree = {}
+    node_to_idx = {}
+    panda_frame = caliper_frame.results.copy()
+
+    for metric in metrics:
+        metric_per_tree[metric] = dict((key, val) for (key, val) in sankey.iteritems())
+
+    common_prefix = panda_frame[tree_attribute][0].split("/")[0]
+
+    offset = 0
+
+    def get_total_for_metric(metric):
+        if offset == 1:
+            return panda_frame[metric].sum()
+        else:
+            return panda_frame[metric].max()
+
+    if any(name for name in panda_frame[tree_attribute] if name.split("/")[0] != common_prefix):
+        panda_frame[tree_attribute] = panda_frame[tree_attribute].apply(lambda x: "problem/" + x)
+        node_to_idx["problem"] = 0
+        for metric in metrics:
+            offset = 1
+            data_dictionary = metric_per_tree[metric]["data"][0]
+            data_dictionary["node"]["label"].append("problem")
+            data_dictionary["node"]["color"].append(
+                get_node_color_value("problem", metric, get_total_for_metric(metric)))
+    for metric in metrics:
+        metric_totals[metric] = get_total_for_metric(metric)
+
+    for raw_index, (raw_label, subframe) in enumerate(
+            sorted(panda_frame.groupby(tree_attribute), key=lambda (label, frame): label.count("/"))):
+        index = raw_index + offset
+        label = contextualize_label(raw_label)
+        node_to_idx[label] = index
+        for metric in metrics:
+            metric_for_frame = subframe[metric].sum()
+            data_dictionary = metric_per_tree[metric]["data"][0]
+            print data_dictionary
+            end_label = label.split("/")[-1]
+            data_dictionary["node"]["label"].append(end_label)
+            data_dictionary["node"]["color"].append(get_node_color_value(label, metric, metric_for_frame))
+            uptick = 0
+            if "/" in label:
+                uptick = "/".join(label.split("/")[:-1])
+                edge_dictionary = data_dictionary["link"]
+                edge_dictionary["source"].append(node_to_idx[uptick])
+                edge_dictionary["target"].append(node_to_idx[label])
+                edge_dictionary["color"].append(get_edge_color_value(label, metric, metric_for_frame))
+                edge_dictionary["value"].append(metric_for_frame)
+                edge_dictionary["label"].append(label)
+        print(str(label))
+        print(subframe)
+    sankeys = {}
+    for metric in metric_per_tree:
+        data = metric_per_tree[metric]
+        sankeys[metric] = {}
+        sankeys[metric]["data"] = [dict(
+            type='sankey',
+            domain=dict(
+                x=[0, 1],
+                y=[0, 1]
+            ),
+            orientation="h",
+            valueformat=".0f",
+            valuesuffix="",
+            node=dict(
+                pad=15,
+                thickness=15,
+                line=dict(
+                    color="black",
+                    width=0.5
+                ),
+                label=data['data'][0]['node']['label'],
+                color=data['data'][0]['node']['color']
+            ),
+            link=dict(
+                source=data['data'][0]['link']['source'],
+                target=data['data'][0]['link']['target'],
+                value=data['data'][0]['link']['value'],
+                label=data['data'][0]['link']['label']
+            )
+        )]
+        sankeys[metric]["layout"] = dict(
+            title=metric,
+            font=dict(
+                size=10
+            )
+        )
+
+    return sankeys
 
 
 if initial_query_file is not None:
