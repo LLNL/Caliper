@@ -217,6 +217,9 @@ class CaliperFrame(object):
         self._results = None
         self._documentation = None
 
+    def recalculate_query(self):
+        self.calculated_query = self.query
+
     def resolve_documentation(self):
         self.documentation = "query_result = " + get_module_name(
             self.documentation_level) + ".CaliperFrame(\"" + self.query + "\"," + self.input_specification(
@@ -243,6 +246,22 @@ class CaliperFrame(object):
         if resolve_documentation_level(self.documentation_level) != DocumentationType.Off:
             print self.documentation
         return panda_frame
+
+    @property
+    def calculated_query(self):
+        return self._calculated_query
+
+    @calculated_query.setter
+    def calculated_query(self, value):
+        self._calculated_query = value
+
+    @property
+    def time_metric(self):
+        return self._time_metric
+
+    @time_metric.setter
+    def time_metric(self, value):
+        self._time_metric = value
 
     @property
     def input_specification(self):
@@ -284,6 +303,19 @@ class CaliperFrame(object):
     def attributes(self, value):
         self._attributes = value
 
+    # Fluid logic:
+    # "If I have aggregates, let Caliper do the aggregation and request aggregated values.
+    #  else do it myself"
+    def guess_time_metric(self, get_exclusive=False):
+        search_key = "time.duration" if get_exclusive else "time.inclusive.duration"
+        time_metrics = [attr for attr in self.attributes if search_key in attr]
+        if not any(time_metrics):
+            return None
+        aggregates = [metric for metric in time_metrics if "aggregate.sum" in metric]
+        if not any(aggregates):
+            return "sum(" + time_metrics.pop() + ")"
+        return aggregates.pop()
+
     @property
     def inputs(self):
         return self._inputs
@@ -300,6 +332,8 @@ class CaliperFrame(object):
                                                self._inputs, DocumentationType.Off, skip_attributes=True)
             attribute_dataframe = attribute_califrame.run_query(additional_args=["--list-attributes"])
             self.attributes = process_attribute_dataframe(attribute_dataframe)
+            self.time_metric = self.guess_time_metric()
+            self.recalculate_query()
 
     @property
     def results(self):
@@ -321,9 +355,9 @@ class CaliperFrame(object):
 
     @query.setter
     def query(self, query_text):
+        self._query = query_text
         if query_text is not None:
-            self._query = query_text
-            self.results = self.run_query()
+            self.recalculate_query()
 
 
 # Phase: Prototype
@@ -499,7 +533,19 @@ def to_graph(query_frame):
     return go.Figure(data=scatters[0]["data"], layout=layout)
 
 
-def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusive.duration"], reroot=None):
+sankey_themes = {
+    "light": {},
+    "dark": {
+        "plot_bgcolor": "black",
+        "paper_bgcolor": 'black'
+
+    }
+
+}
+
+
+def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusive.duration"], theme="light",
+               globalism=False):
     """
 
     :type caliper_frame: CaliperFrame
@@ -570,6 +616,7 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
     }
     metric_per_tree = {}
     node_to_idx = {}
+    edge_to_idx = {}
     panda_frame = caliper_frame.results.copy()
 
     for metric in metrics:
@@ -578,14 +625,18 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
     common_prefix = panda_frame[tree_attribute][0].split("/")[0]
 
     offset = 0
+    edge_num = 0
 
-    def get_total_for_metric(metric):
-        if offset == 1:
-            return panda_frame[metric].sum()
+    def get_total_for_metric(frame, metric, share_prefix):
+        if not share_prefix:
+            return frame[metric].sum()
         else:
-            return panda_frame[metric].max()
+            return frame[metric].max()
 
-    if any(name for name in panda_frame[tree_attribute] if name.split("/")[0] != common_prefix):
+    share_prefix = not any(name for name in panda_frame[tree_attribute] if name.split("/")[0] != common_prefix)
+    for metric in metrics:
+        metric_totals[metric] = get_total_for_metric(panda_frame, metric, share_prefix)
+    if not share_prefix:
         panda_frame[tree_attribute] = panda_frame[tree_attribute].apply(lambda x: "problem/" + x)
         node_to_idx["problem"] = 0
         for metric in metrics:
@@ -593,33 +644,88 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
             data_dictionary = metric_per_tree[metric]["data"][0]
             data_dictionary["node"]["label"].append("problem")
             data_dictionary["node"]["color"].append(
-                get_node_color_value("problem", metric, get_total_for_metric(metric)))
-    for metric in metrics:
-        metric_totals[metric] = get_total_for_metric(metric)
-
+                get_node_color_value("problem", metric, get_total_for_metric(panda_frame, metric, share_prefix)))
+    max_index = 0
+    # Child relations
     for raw_index, (raw_label, subframe) in enumerate(
             sorted(panda_frame.groupby(tree_attribute), key=lambda (label, frame): label.count("/"))):
+        max_index = raw_index
         index = raw_index + offset
         label = contextualize_label(raw_label)
         node_to_idx[label] = index
         for metric in metrics:
-            metric_for_frame = subframe[metric].sum()
+            metric_for_frame = get_total_for_metric(subframe, metric, share_prefix)
             data_dictionary = metric_per_tree[metric]["data"][0]
-            print data_dictionary
             end_label = label.split("/")[-1]
             data_dictionary["node"]["label"].append(end_label)
             data_dictionary["node"]["color"].append(get_node_color_value(label, metric, metric_for_frame))
-            uptick = 0
+            print "Establishing value of " + str(metric_for_frame) + " for node " + str(label)
             if "/" in label:
-                uptick = "/".join(label.split("/")[:-1])
+                path = label.split("/")
+                uptick = "/".join(path[:-1])
                 edge_dictionary = data_dictionary["link"]
                 edge_dictionary["source"].append(node_to_idx[uptick])
                 edge_dictionary["target"].append(node_to_idx[label])
+                edge_to_idx[label] = edge_num
+                edge_num += 1
                 edge_dictionary["color"].append(get_edge_color_value(label, metric, metric_for_frame))
                 edge_dictionary["value"].append(metric_for_frame)
                 edge_dictionary["label"].append(label)
-        print(str(label))
-        print(subframe)
+                substrings = [path[:y] for y in [x + 1 for x in range(1, len(path) - 2)]]
+    # Establishing "others"
+    # for raw_index, (raw_label, subframe) in enumerate(
+    #        sorted(panda_frame.groupby(tree_attribute), key=lambda (label, frame): label.count("/"))):
+    for skip_this_loop in []:
+        index = raw_index + max_index + 1
+
+        label = contextualize_label(raw_label)
+        depth = label.count("/")
+        label_for_exclusive = label + "/other"
+        node_to_idx[label_for_exclusive] = index
+        for metric in metrics:
+            metric_for_frame = get_total_for_metric(subframe, metric, share_prefix)
+            child_frames = [(child_label, child_frame) for (child_label, child_frame) in
+                            panda_frame.groupby(tree_attribute) if
+                            (child_label.count("/") == depth + 1) and (label in child_label)]
+            child_contributions = 0
+            print "Analyzing: " + str(label) + ", total value: " + str(metric_for_frame)
+            for child_label, child_frame in child_frames:
+                print "  Subtracting via " + str(child_label) + " a value of: " + str(
+                    get_total_for_metric(child_frame, metric, share_prefix))
+                child_contributions += get_total_for_metric(child_frame, metric, share_prefix)
+            # child_contributions = sum(
+            #    [get_total_for_metric(child_frame, metric, share_prefix) for (child_label, child_frame) in
+            #        panda_frame.groupby(tree_attribute) if (child_label.count("/") == depth + 1) and (label in child_label)])
+            other_contributions = metric_for_frame - child_contributions
+            data_dictionary = metric_per_tree[metric]["data"][0]
+            end_label = label.split("/")[-1]
+            data_dictionary["node"]["label"].append("other")
+            data_dictionary["node"]["color"].append(
+                get_node_color_value(label, metric, other_contributions))
+            edge_dictionary = data_dictionary["link"]
+            edge_dictionary["source"].append(node_to_idx[label])
+            edge_dictionary["target"].append(node_to_idx[label_for_exclusive])
+            edge_to_idx[label_for_exclusive] = edge_num
+            edge_num += 1
+            edge_dictionary["color"].append(get_edge_color_value(label, metric, other_contributions))
+            edge_dictionary["value"].append(other_contributions)
+            edge_dictionary["label"].append(label)
+
+            # print "Establishing value of " + str(other_contributions) + " for node " + str(label_for_exclusive)
+
+            # if globalism:
+            #   for ancestor in substrings:
+            #      ancestor_name = "/".join(ancestor)
+            #     uptick = "/".join(ancestor[:-1])
+        #
+        #                       edge_dictionary["value"][edge_to_idx[ancestor_name]] -= metric_for_frame
+        #                      edge_dictionary["source"].append(node_to_idx[ancestor_name])
+        #                     edge_dictionary["target"].append(node_to_idx[uptick])
+        #                    edge_dictionary["color"].append(get_edge_color_value(label, metric, metric_for_frame))
+        #                   edge_dictionary["value"].append(metric_for_frame)
+        #                  edge_dictionary["label"].append(label)
+        #                 edge_num+=1
+
     sankeys = {}
     for metric in metric_per_tree:
         data = metric_per_tree[metric]
@@ -654,9 +760,19 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
             title=metric,
             font=dict(
                 size=10
-            )
-        )
+            ),
 
+        )
+        for key in sankey_themes[theme]:
+            sankeys[metric]["layout"][key] = sankey_themes[theme][key]
+    return sankeys
+
+
+def sankey_plot(files, metrics=["aggregate.sum#time.inclusive.duration"], against="function"):
+    sankey_califrame = CaliperFrame("SELECT " + ",".join(metrics) + "," + against, files)
+    sankeys = get_sankey(sankey_califrame, against, metrics)
+    if len(sankeys) == 1:
+        return sankeys[metrics[0]]
     return sankeys
 
 
