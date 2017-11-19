@@ -854,7 +854,7 @@ struct Aggregator::AggregatorImpl
         // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
         //       Keeps nested attributes separate.
 
-        auto nonnested_begin = std::partition(nodes.begin(), nodes.end(), [&db](const Node* node) {
+        auto nonnested_begin = std::stable_partition(nodes.begin(), nodes.end(), [&db](const Node* node) {
                 return db.get_attribute(node->attribute()).is_nested(); } );
 
         std::stable_sort(nonnested_begin, nodes.end(), [](const Node* a, const Node* b) {
