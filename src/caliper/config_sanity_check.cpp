@@ -144,7 +144,7 @@ namespace cali
 void config_sanity_check()
 {
     std::vector<std::string> services =
-        RuntimeConfig::get("services", "enable").to_stringlist();
+        RuntimeConfig::get("services", "enable").to_stringlist(",:");
 
     if (services.empty()) {
         Log(1).stream() << "Config check: No services enabled. Caliper will not record data."
