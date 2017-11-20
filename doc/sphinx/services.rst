@@ -364,7 +364,7 @@ The libpfm service performs per-thread event-based sampling. The user
 may configure the event upon which to sample, the values to record for
 each sample, and the sampling period.
 
-.. envvar:: CALI_LIBPFM_EVENT_LIST
+.. envvar:: CALI_LIBPFM_EVENTS
 
    Comma-separated list of events to sample. Event names are resolved
    through libpfm, and may include software and hardware events (see
@@ -373,6 +373,22 @@ each sample, and the sampling period.
    to obtain a list of events available on a particular system).
 
    Default: cycles
+
+.. envvar:: CALI_LIBPFM_ENABLE_SAMPLING
+
+   Whether to record event samples. If set, will trigger a snapshot
+   containing all sampled attributes listed in 
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have 
+   occurred.
+
+   Default: true
+
+.. envvar:: CALI_LIBPFM_RECORD_COUNTERS
+
+    If set, counter values of all active events will be recorded
+    at every Caliper snapshot.
+
+    Default: true
 
 .. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
 
@@ -397,8 +413,12 @@ each sample, and the sampling period.
 
 .. envvar:: CALI_LIBPFM_PERIOD
 
-   Sampling period. When set to a value N, a sample will be recorded
-   after every N number of events has occurred.
+   Sampling period for each event (valid when sampling is enabled). 
+   When set to a value N, a sample will  be recorded after every N 
+   number of events has occurred.
+
+   For multiple events, this should be a comma-separated list for the 
+   periods of respective events.
 
    Default: 20000000
 
@@ -409,6 +429,9 @@ each sample, and the sampling period.
    output of libpfm's showevtinfo tool
    https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
    to determine when it is available or required).
+
+   For multiple events, this should be a comma-separated list for the 
+   precise_ip values of respective events.
 
    May be set to either 0, 1, or 2.
 
@@ -422,6 +445,9 @@ each sample, and the sampling period.
    https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
    to determine when it is available or required).
 
+   For multiple events, this should be a comma-separated list for the 
+   config1 values of respective events.
+
    Default: 0
 
 The following example shows how to configure PEBS memory access sampling
@@ -430,7 +456,7 @@ Haswell):
 
 .. code-block:: sh
 
-   $ export CALI_LIBPFM_EVENT_LIST=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   $ export CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
    $ export CALI_LIBPFM_PERIOD=100
    $ export CALI_LIBPFM_PRECISE_IP=2
    $ export CALI_LIBPFM_CONFIG1=100
