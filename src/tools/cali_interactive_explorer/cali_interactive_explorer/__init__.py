@@ -339,7 +339,7 @@ class CaliperFrame(object):
     def results(self):
         if self.query is None:
             raise Exception('Attempted to get results on CaliperFrame with invalid query')  # TODO: this better
-        if not self._ready:
+        if not self.ready:
             self._results = self.run_query()
             self.ready = True
         assert isinstance(self._results, pandas.DataFrame)
@@ -617,7 +617,11 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
     metric_per_tree = {}
     node_to_idx = {}
     edge_to_idx = {}
-    panda_frame = caliper_frame.results.copy()
+    panda_frame = pandas.DataFrame
+    if type(caliper_frame)==CaliperFrame:
+        panda_frame = caliper_frame.results.copy()
+    else:
+        panda_frame = caliper_frame.copy()
 
     for metric in metrics:
         metric_per_tree[metric] = dict((key, val) for (key, val) in sankey.iteritems())
@@ -659,7 +663,7 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
             end_label = label.split("/")[-1]
             data_dictionary["node"]["label"].append(end_label)
             data_dictionary["node"]["color"].append(get_node_color_value(label, metric, metric_for_frame))
-            print "Establishing value of " + str(metric_for_frame) + " for node " + str(label)
+            #print "Establishing value of " + str(metric_for_frame) + " for node " + str(label)
             if "/" in label:
                 path = label.split("/")
                 uptick = "/".join(path[:-1])
@@ -688,14 +692,9 @@ def get_sankey(caliper_frame, tree_attribute="function", metrics=["time.inclusiv
                             panda_frame.groupby(tree_attribute) if
                             (child_label.count("/") == depth + 1) and (label in child_label)]
             child_contributions = 0
-            print "Analyzing: " + str(label) + ", total value: " + str(metric_for_frame)
             for child_label, child_frame in child_frames:
-                print "  Subtracting via " + str(child_label) + " a value of: " + str(
-                    get_total_for_metric(child_frame, metric, share_prefix))
+                get_total_for_metric(child_frame, metric, share_prefix)
                 child_contributions += get_total_for_metric(child_frame, metric, share_prefix)
-            # child_contributions = sum(
-            #    [get_total_for_metric(child_frame, metric, share_prefix) for (child_label, child_frame) in
-            #        panda_frame.groupby(tree_attribute) if (child_label.count("/") == depth + 1) and (label in child_label)])
             other_contributions = metric_for_frame - child_contributions
             data_dictionary = metric_per_tree[metric]["data"][0]
             end_label = label.split("/")[-1]
