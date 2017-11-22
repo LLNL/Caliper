@@ -5,6 +5,7 @@
 
 #include "caliper/MemoryPool.h"
 
+#include <cstring>
 #include <mutex>
 #include <iostream>
 
@@ -14,13 +15,19 @@ using namespace DataTracker;
 namespace cali
 {
 extern Attribute alloc_label_attr;
+extern Attribute alloc_fn_attr;
 }
 
+extern cali_id_t cali_alloc_fn_attr_id;
 extern cali_id_t cali_alloc_label_attr_id;
 extern cali_id_t cali_alloc_addr_attr_id;
 extern cali_id_t cali_alloc_elem_size_attr_id;
 extern cali_id_t cali_alloc_num_elems_attr_id;
 extern cali_id_t cali_alloc_total_size_attr_id;
+
+const Allocation Allocation::invalid("INVALID", 0, 0, nullptr, 0);
+const std::string AllocTracker::cali_alloc("Caliper Alloc");
+const std::string AllocTracker::cali_free("Caliper Free");
 
 size_t Allocation::num_bytes(const size_t elem_size,
                              const size_t dimensions[],
@@ -53,6 +60,20 @@ Allocation::Allocation(const std::string &label,
 { 
     for(int i=0; i<num_dimensions; i++) 
         m_dimensions[i] = dimensions[i];
+}
+
+Allocation::Allocation(const Allocation &other)
+        : m_label(other.m_label),
+          m_start_address(other.m_start_address),
+          m_elem_size(other.m_elem_size),
+          m_dimensions(other.m_dimensions),
+          m_num_elems(other.m_num_elems),
+          m_bytes(other.m_bytes),
+          m_end_address(other.m_end_address),
+          m_num_dimensions(other.m_num_dimensions),
+          m_index_ret(new size_t[m_num_dimensions])
+{
+    std::memcpy(m_index_ret, other.m_index_ret, m_num_dimensions*sizeof(size_t));
 }
 
 Allocation::~Allocation() {
@@ -114,6 +135,10 @@ struct AllocTracker::AllocTree {
                   key(allocation->m_start_address)
         { }
 
+        ~AllocNode() {
+            delete allocation;
+        }
+
         AllocNode* insert(Allocation *allocation) {
             if (allocation->m_start_address < key) {
                 if (left)
@@ -173,9 +198,16 @@ struct AllocTracker::AllocTree {
 
     AllocNode *root;
     std::map<uint64_t, AllocNode*> alloc_map;
+    bool m_map_only;
 
-    AllocTree(AllocNode *root = nullptr) 
-        : root(root)
+    void set_map_only(bool map_only) {
+        m_map_only = map_only;
+    }
+
+
+    AllocTree(AllocNode *root = nullptr, bool map_only = false) 
+        : root(root),
+          m_map_only(map_only)
     { }
 
     void rotate_left(AllocNode *node) {
@@ -257,6 +289,13 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> process_lock(process_mutex);
 
+        if (m_map_only) {
+            AllocNode *newNode = 
+                new AllocNode(allocation, nullptr, nullptr, nullptr, NA);
+            alloc_map[allocation->m_start_address] = newNode;
+            return newNode;
+        }
+
         if (root == nullptr) {
             root = new AllocNode(allocation, nullptr, nullptr, nullptr, NA);
         }
@@ -269,14 +308,24 @@ struct AllocTracker::AllocTree {
         return root;
     }
 
-    bool remove(uint64_t start_address) {
+    Allocation remove(uint64_t start_address) {
 
         std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
         if(!thread_lock.owns_lock()){
-            return false;
+            return Allocation::invalid;
         }
 
         std::unique_lock<std::mutex> process_lock(process_mutex);
+
+        if (m_map_only) {
+            AllocNode *node = alloc_map[start_address];
+            if (node) {
+                Allocation ret(*node->allocation);
+                delete node;
+                alloc_map.erase(start_address);
+                return ret;
+            }
+        }
 
         if (root == nullptr) {
             // Nothing to do here
@@ -302,12 +351,13 @@ struct AllocTracker::AllocTree {
                 } else {
                     root = nullptr;
                 }
-                delete node->allocation;
+                Allocation ret = *(node->allocation);
                 delete node;
-                return true;
+                alloc_map.erase(start_address);
+                return ret;
             }
         }
-        return false;
+        return Allocation::invalid;
     }
 
     AllocNode* get_allocation_at(uint64_t address) {
@@ -344,19 +394,29 @@ struct AllocTracker::AllocTree {
 
 thread_local std::mutex AllocTracker::AllocTree::thread_mutex;
 
-AllocTracker::AllocTracker() 
-    : alloc_tree(new AllocTree)
+AllocTracker::AllocTracker(bool track_ranges) 
+    : alloc_tree(new AllocTree(nullptr, !track_ranges))
 { }
+
+void 
+AllocTracker::set_track_ranges(bool track_ranges) {
+    alloc_tree->set_map_only(!track_ranges);
+}
 
 void 
 AllocTracker::add_allocation(const std::string &label,
                              const uint64_t addr,
                              const size_t elem_size,
                              const size_t dimensions[],
-                             const size_t num_dimensions) {
+                             const size_t num_dimensions,
+                             const std::string fn_name,
+                             bool record_snapshot) {
     // Insert into splay tree
     Allocation *a = new Allocation(label, addr, elem_size, dimensions, num_dimensions);
     AllocTree::AllocNode *newNode = alloc_tree->insert(a);
+
+    if (!record_snapshot)
+        return;
 
     Caliper c = Caliper();
 
@@ -375,15 +435,34 @@ AllocTracker::add_allocation(const std::string &label,
         Variant(cali_make_variant_from_uint(a->m_bytes))
     };
 
-    Node *n = c.make_tree_entry(alloc_label_attr,
-        Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size()));
+    Node *string_nodes[] = {
+        c.make_tree_entry(alloc_label_attr, Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size())),
+        c.make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, fn_name.data(), fn_name.size()))
+    };
 
-    SnapshotRecord trigger_info(1, &n, 4, attrs, data);
+    SnapshotRecord trigger_info(2, string_nodes, 4, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 }
 
-bool AllocTracker::remove_allocation(uint64_t address) {
-    return alloc_tree->remove(address);
+Allocation AllocTracker::remove_allocation(uint64_t address, 
+                                           const std::string fn_name,
+                                           bool record_snapshot) {
+    Allocation removed = alloc_tree->remove(address);
+
+    if (!record_snapshot)
+        return removed;
+
+    Caliper c = Caliper();
+    
+    Node *string_nodes[] = {
+        c.make_tree_entry(alloc_label_attr, Variant(CALI_TYPE_STRING, removed.m_label.data(), removed.m_label.size())),
+        c.make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, fn_name.data(), fn_name.size()))
+    };
+
+    SnapshotRecord trigger_info(2, string_nodes, 0, nullptr, nullptr);
+    c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+
+    return removed;
 }
 
 Allocation *AllocTracker::get_allocation_at(uint64_t address) {
