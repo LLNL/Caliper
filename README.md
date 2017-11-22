@@ -5,27 +5,32 @@ Caliper: A Performance Analysis Toolbox in a Library
 [![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
 Caliper is a program instrumentation and performance measurement
-framework. It is primarily aimed at HPC applications, but works for
-any C/C++/Fortran program on Unix/Linux. With the Caliper library,
-performance analysis capabilities can directly be integrated into
-applications and activated on demand. Caliper's data collection
-mechanisms and source-code annotation API support a variety of
-performance engineering use cases, e.g., performance profiling,
-tracing, monitoring, and auto-tuning. Features include:
+framework. It is designed as a performance analysis toolbox in a
+library, allowing one to bake performance analysis capabilities
+directly into applications and activate them at runtime.
+Caliper is primarily aimed at HPC applications, but works for
+any C/C++/Fortran program on Unix/Linux.
+
+Caliper's data collection mechanisms and source-code annotation API
+support a variety of performance engineering use cases, such as
+performance profiling, tracing, monitoring, and auto-tuning.
+
+Features include:
 
 * Low-overhead source-code annotation API
 * Flexible key:value data model: capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
-  models
-* Synchronous and asynchronous data collection (sampling)
+  models like MPI
+* Synchronous (event-based) and asynchronous (sampling) performance
+  data collection
+* Trace and profile recording
 * Connection to third-party tools, e.g. NVidia NVProf or
   Intel(R) VTune(tm)
 * Measurement and profiling functionality such as timers, PAPI
-  hardware counters, and Linux perf_events.
-* Runtime-configurable performance data recording toolbox: combine 
-  independent building blocks for custom analysis tasks
-
+  hardware counters, and Linux perf_events
+* Memory allocation annotations: associate performance measurements
+  with named memory regions
 
 Documentation
 ------------------------------------------
@@ -48,11 +53,11 @@ as follows:
      $ git clone https://github.com/LLNL/Caliper.git
      $ cd Caliper
      $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
+     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \
          -DCMAKE_C_COMPILER=<path to c-compiler> \
          -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
          ..
-     $ make 
+     $ make
      $ make install
 
 See the "Build and install" section in the documentation for further
@@ -61,15 +66,12 @@ information.
 Getting started
 ------------------------------------------
 
-Caliper is a performance analysis toolbox in a library. This way, we
-can bake performance analysis capabilities directly into applications
-and activate them at runtime. Typically, we integrate Caliper into a
-program by marking source-code sections of interest with descriptive
-annotations. Performance measurements, trace or profile collection,
-and reporting functionality can then be enabled with runtime
-configuration options. Alternatively, third-party tools can connect to
-Caliper and access information provided by the source-code
-annotations.
+Typically, we integrate Caliper into a program by marking source-code
+sections of interest with descriptive annotations. Performance
+measurements, trace or profile collection, and reporting functionality
+can then be enabled with runtime configuration options. Alternatively,
+third-party tools can connect to Caliper and access information
+provided by the source-code annotations.
 
 ### Source-code annotations
 
@@ -79,7 +81,7 @@ high-level context information. Second, we can trigger user-defined
 actions at the instrumentation points, e.g. to measure the time spent
 in individual regions. Measurement actions can be defined at runtime
 and are disabled by default; generally, the source-code annotations
-are lightweight enough to be left in production code. 
+are lightweight enough to be left in production code.
 
 The annotation APIs are available for C, C++, and Fortran. There are
 high-level annotation macros for common scenarios such as marking
@@ -105,11 +107,11 @@ int main(int argc, char* argv[])
     double t = 0.0, delta_t = 1e-6;
     CALI_MARK_END("initialization");
 
-    // Mark the loop 
+    // Mark the loop
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
-        
+
     for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration  
+        // Mark each loop iteration
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
@@ -151,10 +153,10 @@ microseconds) spent in each code path based on the nesting of
 annotated code regions:
 
     $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
-    Path          sum#time.duration 
-    main                  20.000000 
-      main loop            8.000000 
-      init                10.000000 
+    Path          sum#time.duration
+    main                  20.000000
+      main loop            8.000000
+      init                10.000000
 
 The example shows Caliper output for the `runtime-report`
 configuration profile for the source-code annotation example above.
@@ -205,23 +207,21 @@ print the recorded trace data in a human-readable json format:
     },
     ...
 
-### Where to go from here?
-
-Caliper allows a great amount of flexibility and control in utilizing
-source-code annotations. The "Usage examples" section in the
-documentation demonstrates some of the many ways to use Caliper.  Much
-of Caliper's functionality is implemented by built-in "services",
-which can be enabled or disabled as needed. Refer to the "Caliper
-services" section to learn about functionality they provide.  Finally,
-the "Annotation API" section in the documentation provides reference
-documentation for Caliper's C, C++, and Fortran annotation APIs.
+As mentioned earlier, Caliper's performance measurement and data
+collection functionality is provided by independent building blocks
+called *services*, each implementing specific functionality (e.g.,
+tracing, I/O, timing, report formatting, sampling, etc.). The services
+can be enabled at runtime in any combination. This makes Caliper
+highly flexible, but the runtime configuration can be complex. Refer
+to the [Caliper documentation](https://llnl.github.io/Caliper/)
+to learn more.
 
 Authors
 ------------------------------------------
 
 Caliper was created by [David Boehme](https://github.com/daboehme), boehme3@llnl.gov.
 
-A complete [list of contributors](https://github.com/LLNL/Caliper/graphs/contributors) is available on GitHub. 
+A complete [list of contributors](https://github.com/LLNL/Caliper/graphs/contributors) is available on GitHub.
 
 Major contributors include:
 
