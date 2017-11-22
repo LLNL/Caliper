@@ -3,6 +3,7 @@ import plotly.graph_objs as go
 import matplotlib.pyplot as plt
 import inspect
 import enum
+import uuid
 import networkx as nx
 
 plt.ion()
@@ -229,6 +230,36 @@ class CaliperFrame(object):
         print "query: " + self._query
         print "inputs: " + str(self._inputs)
 
+    def run_query_across_files(self, **kwargs):
+        additional_args = []
+        if 'additional_args' in kwargs:
+            additional_args = kwargs['additional_args']
+        cmd_outputs = []
+        for query_input in self.inputs:
+            full_query = ['--query=' + self.query + ' format ' + 'json()']
+            full_query.extend([query_input])
+            full_query.extend(additional_args)
+            cmd_output = StringIO.StringIO()
+            cali_query(full_query, _out=cmd_output)
+            cmd_outputs.append(cmd_output)
+        dataframes = []
+        for output in cmd_outputs:
+            full_out = output.getvalue()
+            panda_frame = to_pandas(full_out)
+            if "condense" in kwargs:
+                panda_frame = condense_dataframe(panda_frame)
+            panda_frame.loc[:, 'cali_primary_key'] = pandas.Series([str(uuid.uuid4())] * panda_frame.count(), index=panda_frame.index)
+            dataframes.append(panda_frame)
+        final_frame = dataframes[0]
+        for frame in dataframes[1:]:
+            final_frame.merge(frame)
+        self.resolve_documentation()
+        if resolve_documentation_level(self.documentation_level) != DocumentationType.Off:
+            print self.documentation
+        return final_frame
+
+    # This function is what the query should eventually look
+    # like when we have primary keys per file in .cali files
     def run_query(self, **kwargs):
         additional_args = []
         if 'additional_args' in kwargs:
@@ -774,6 +805,36 @@ def sankey_plot(files, metrics=["aggregate.sum#time.inclusive.duration"], agains
         return sankeys[metrics[0]]
     return sankeys
 
+
+def process_trace(df,key,oper):
+    def colloquialize_key(verbose):
+        return verbose[verbose.find("#")+1:]
+    begin_key = [("event.begin#"+item) for item in key]
+    end_key=["event.end#"+item for item in key]
+    set_key=["event.set#"+item for item in key]
+    states = dict(((axis,[]) for axis in key))
+    def get_grouping_key():
+        return tuple((attribute,"/".join(value)) for attribute,value in states.iteritems())
+    blackboards = {}
+    for index,row in df.iterrows():
+        key,val = next(((key,val) for key,val in zip(df.keys(),row) if key in begin_key and not pandas.isnull(val)),(None,None))
+        if val is not None:
+            in_user_terms = colloquialize_key(key)
+            states[in_user_terms].append(val)
+            active_blackboard = get_grouping_key()
+            blackboards[active_blackboard] = {}
+        active_blackboard = get_grouping_key()
+        key,val = next(((key,val) for key,val in zip(df.keys(),row) if key in end_key and not pandas.isnull(val)),(None,None))
+        if val is not None:
+            in_user_terms = colloquialize_key(key)
+            blackboards[active_blackboard] = {}
+            states[in_user_terms].pop()
+        key,val = next(((key,val) for key,val in zip(df.keys(),row) if key in set_key and not pandas.isnull(val)),(None,None))
+        if val is not None:
+            in_user_terms = colloquialize_key(key)
+            blackboards[active_blackboard] = {}
+            states[in_user_terms][-1] = val
+        oper(dict((key,val) for key,val in active_blackboard),blackboards[active_blackboard],row)
 
 if initial_query_file is not None:
     with open(initial_query_file, "r") as input_file:
