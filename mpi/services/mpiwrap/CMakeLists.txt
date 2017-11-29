@@ -1,7 +1,7 @@
 set(WRAP ${CMAKE_CURRENT_SOURCE_DIR}/wrap.py)
 include(${PROJECT_SOURCE_DIR}/cmake/WrapConfig.cmake)
 
-add_wrapped_file(Wrapper.cpp Wrapper.w)
+add_wrapped_file(Wrapper.cpp Wrapper.w "-w")
 
 set(CALIPER_PMPI_SOURCES
     Wrapper.cpp)
