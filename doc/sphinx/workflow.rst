@@ -1,7 +1,7 @@
 Architecture and Workflow
 ================================
 
-Caliper's highly modular architecture allow for a wide range of use
+Caliper's highly modular architecture allows for a wide range of use
 cases. For example, it can be used as a library to access application
 context information from third-party tools, or it can be configured as
 a stand-alone performance data recorder.
@@ -20,8 +20,23 @@ pipeline:
 
 Caliper services can be used in any combination. However, to produce
 any output, at least one component must be active in each stage of the
-recording pipeline. The following sections discuss the pipeline stages
-in detail.
+recording pipeline.
+
+To activate services, add them to the ``CALI_SERVICES_ENABLE``
+configuration variable. The following example activates the event,
+trace, timestamp, and recorder services to create an event trace with
+timing information for annotated regions (this is the setup of the
+pre-defined ``serial-trace`` configuration profile)::
+
+  $ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
+
+Caliper warns if the configuration is missing a processing pipeline stage while others are active::
+
+  $ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
+  == CALIPER: Config check: Warning: snapshot buffer service "trace" requires offline output services, but none are active.
+       Add "recorder", "report", "sos" or "mpireport" to CALI_SERVICES_ENABLE to generate Caliper output.
+
+The following sections discuss the pipeline stages in detail.
 
 Context Information and Event Hooks
 --------------------------------
@@ -87,6 +102,50 @@ collecting exact statistics and performance measurements for annotated
 code regions. The ``sampler`` service triggers snapshots periodically
 with a configurable frequency. This asynchronous data collection mode
 is less exact (we may miss some annotated code regions if they are
-very short), but may incur less overhead. Moreover, sampling can
-provide basic information about code regions that have not been
-annotated, in particular in combination with call stack unwinding.
+very short), but may incur less overhead. Moreover, in combination
+with call stack unwinding, sampling can provide basic information
+about code regions that have not been annotated. Event and sampled
+snapshot triggers can be active at the same time.
+
+Snapshot Buffering/Processing
+--------------------------------
+
+The snapshot processing stage defines what to do with snapshot records
+at runtime. Caliper provides two options: tracing and aggregation. The
+``trace`` service simply stores each snapshot record in an in-memory
+buffer. The ``aggregate`` service performs in-situ aggregation, where
+only aggregate performance data is kept for different program contexts
+(e.g., the total runtime spent in each function). This can greatly
+reduce the amount of data that needs to be kept, especcially for
+long-running, iterative programs.
+
+Flush and Snapshot Post-Processing
+--------------------------------
+
+A flush will push the trace buffer and/or aggregation database
+contents into the reporting and I/O stage. Flushing can be triggered
+explicitly through Caliper's API. Caliper will automatically trigger a
+flush at program exit.
+
+While the flush itself does not require extra configuration at
+runtime, we can add snapshot post-processing services in this
+stage. Notably, the ``symbollookup`` service will look up source file,
+line number, and function name information from binary program
+addresses provided by e.g. the ``callpath`` or ``sampler`` service.
+
+Reporting and I/O
+--------------------------------
+
+The final pipeline stage formats and writes the collected
+records. There are multiple options here.
+
+The ``recorder`` service writes records into Caliper-specific
+``.cali`` format files (one per process), which can be examined
+off-line with the ``cali-query`` tool.  The ``report`` service can
+filter, aggregate, and sort output records, and produce JSON output or
+human-readable reports in table or hierachical form. The reports can
+be written into files or to standard output. As with ``recorder``,
+reports will be written per process.  Finally, the ``mpireport``
+service aggregates or gathers output records from all ranks in an MPI
+program, and writes a single output report. Like ``report``, it can
+produce JSON or human-readable output as well as ``.cali`` files.
