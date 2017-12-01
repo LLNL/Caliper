@@ -1,0 +1,1 @@
+for x in $(ls *.uninstrumented); do inst=$(echo $x | sed "s,.uninstrumented,,"); cp $x $inst; done

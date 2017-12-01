@@ -1,0 +1,23 @@
+matcher=$1
+annotation_name=$2
+annotation_value=$3
+file_to_instrument=$4
+backup_name=""
+if [ ! -f "$filename.uninstrumented" ]; then
+  backup_name=".uninstrumented";
+fi
+cali_annot_function_matches=$(clang-query -c 'match functionDecl(matchesName("cali::Annotation"))' laghos_assembly_s.cpp 2>/dev/null | grep "[0-9][0-9]* matches" | sed "s, matches[.],," | tr -d '\n')
+if [[ "x$cali_annot_function_matches" =~ "x0" ]]; then
+  sed -i$backup_name "1 a\\#include<caliper/Annotation.h>" $file_to_instrument
+fi;
+matches=$(clang-query --extra-arg="-w" -c "match compoundStmt(allOf(hasParent($matcher),isExpansionInMainFile()))" $file_to_instrument 2>&1 | grep -v "error" | grep -v "included" | grep "[0-9]*:[0-9][0-9]*" | sed "s,:[0-9]*: note:.*,,g")  
+rev_matches=$(echo $matches | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
+for x in $rev_matches; do
+  filename=$(echo $x | sed "s,:.*,,")
+  lineno=$(echo $x | sed "s,.*:,,")
+  backup_name="";
+  if [ ! -f "$filename.uninstrumented" ]; then
+    backup_name=".uninstrumented";
+  fi
+  sed -i$backup_name "$lineno a\\cali::Annotation::Guard compiler_generated_guard_$annotation_name(cali::Annotation(\"$annotation_name\").begin($annotation_value));" $filename
+done
