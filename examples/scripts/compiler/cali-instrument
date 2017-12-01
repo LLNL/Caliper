@@ -6,18 +6,11 @@ backup_name=""
 if [ ! -f "$filename.uninstrumented" ]; then
   backup_name=".uninstrumented";
 fi
-echo "Matcher: $matcher"
-echo "Annot_name: $annotation_name"
-echo "Annot_value: $annotation_value"
-echo "File target: $file_to_instrument"
 cali_annot_function_matches=$(clang-query -c 'match functionDecl(matchesName("cali::Annotation"))' laghos_assembly_s.cpp 2>/dev/null | grep "[0-9][0-9]* matches" | sed "s, matches[.],," | tr -d '\n')
 if [[ "x$cali_annot_function_matches" =~ "x0" ]]; then
   sed -i$backup_name "1 a\\#include<caliper/Annotation.h>" $file_to_instrument
 fi;
-echo "Num matches: $cali_annot_function_matches"
-echo "Running: clang-query --extra-arg=\"-w\" -c 'match compoundStmt(allOf(hasParent($matcher),isExpansionInMainFile()))' $file_to_instrument 2>&1 | grep -v \"error\" | grep -v \"included\" | grep \"[0-9]*:[0-9][0-9]*\" | sed \"s,:[0-9]*: note:.*,,g\""  
 matches=$(clang-query --extra-arg="-w" -c "match compoundStmt(allOf(hasParent($matcher),isExpansionInMainFile()))" $file_to_instrument 2>&1 | grep -v "error" | grep -v "included" | grep "[0-9]*:[0-9][0-9]*" | sed "s,:[0-9]*: note:.*,,g")  
-#echo "Matches: $matches"
 rev_matches=$(echo $matches | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
 for x in $rev_matches; do
   filename=$(echo $x | sed "s,:.*,,")
