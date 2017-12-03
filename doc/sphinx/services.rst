@@ -1,4 +1,4 @@
-Caliper services
+Caliper Services
 ================================
 
 Caliper comes with a number of optional modules (*services*) that
@@ -10,7 +10,7 @@ range of usage scenarios.
 You can enable the services required for your measurement with the
 ``CALI_SERVICES_ENABLE`` configuration variable, e.g.::
 
-  export CALI_SERVICES_ENABLE=event:recorder:trace
+  export CALI_SERVICES_ENABLE=event,recorder,trace
 
 to create event-triggered context traces for an application.
 
@@ -505,7 +505,7 @@ MPI_Finalize.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create xindividual
+   service description), for example to create individual
    ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
    multi-process program.
 

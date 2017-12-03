@@ -46,7 +46,6 @@ Contents
    build
    workflow
    AnnotationAPI
-   link
    configuration
    services
    tools
@@ -242,7 +241,7 @@ provided by independent building blocks called *services*, each
 implementing specific functionality (e.g., tracing, I/O, timing,
 report formatting, sampling, etc.). The services can be enabled at
 runtime in any combination. This makes Caliper highly flexible, but
-the runtime configuration can be complex. The :doc:`concepts` section
+the runtime configuration can be complex. The :doc:`workflow` section
 explains more about Caliper's internal dataflow and how services
 interact.
 

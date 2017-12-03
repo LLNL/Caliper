@@ -116,7 +116,7 @@ at runtime. Caliper provides two options: tracing and aggregation. The
 buffer. The ``aggregate`` service performs in-situ aggregation, where
 only aggregate performance data is kept for different program contexts
 (e.g., the total runtime spent in each function). This can greatly
-reduce the amount of data that needs to be kept, especcially for
+reduce the amount of data that needs to be kept, especially for
 long-running, iterative programs.
 
 Flush and Snapshot Post-Processing
@@ -143,7 +143,7 @@ The ``recorder`` service writes records into Caliper-specific
 ``.cali`` format files (one per process), which can be examined
 off-line with the ``cali-query`` tool.  The ``report`` service can
 filter, aggregate, and sort output records, and produce JSON output or
-human-readable reports in table or hierachical form. The reports can
+human-readable reports in table or hierarchical form. The reports can
 be written into files or to standard output. As with ``recorder``,
 reports will be written per process.  Finally, the ``mpireport``
 service aggregates or gathers output records from all ranks in an MPI
