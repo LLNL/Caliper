@@ -55,7 +55,7 @@ namespace
 {
     thread_local std::mutex thread_mutex;
     bool record_system_allocs { false };
-    bool track_ranges { false };
+    bool track_ranges { true };
     bool track_system_alloc_ranges { false };
     bool record_active_mem { false };
 

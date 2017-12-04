@@ -12,7 +12,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace:event',
+            'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -20,7 +20,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = calitest.get_snapshots_from_text(query_output)
 
-        self.assertTrue(len(snapshots) == 14)
+        self.assertTrue(len(snapshots) == 4)
 
         # test allocated.0
 
@@ -115,13 +115,13 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
     def test_alloc_hooks(self):
         target_cmd = [ './ci_test_alloc_hooks' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', 'alloc_hooks.cali' ]
 
         caliper_config = {
-            'CALI_ALLOC_TRACK_ALL'   : 'true',
-            'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace',
-            'CALI_RECORDER_FILENAME' : 'stdout',
-            'CALI_LOG_VERBOSITY'     : '0'
+            'CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES' : 'true',
+            'CALI_SERVICES_ENABLE'             : 'alloc:recorder:trace',
+            'CALI_RECORDER_FILENAME'           : 'alloc_hooks.cali',
+            'CALI_LOG_VERBOSITY'               : '0'
         }
 
         query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
