@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// A minimal Caliper instrumentation demo 
+// A C++ Caliper instrumentation demo
 
 #include <caliper/cali.h>
 
@@ -40,7 +40,6 @@ int main(int argc, char* argv[])
     //   Sets "function=main" in Caliper.
     CALI_CXX_MARK_FUNCTION;
 
-    
     // Mark begin and end of a code region.
     //   Sets "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
@@ -50,18 +49,17 @@ int main(int argc, char* argv[])
 
     CALI_MARK_END("init");
 
-    
     // Mark begin and end of a loop.
     //   Sets "loop=mainloop" in Caliper.
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");        
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
 
     for (int i = 0; i < count; ++i) {
         // Mark each loop iteration of an annotated loop.
-        //   Sets "iteration#mainloop=<i> in Caliper."
+        //   Sets "iteration#main loop=<i> in Caliper."
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
         // A Caliper snapshot taken at this point will contain
-        // { function="main", loop=mainloop", iteration#mainloop=<i> }
+        // { "function"="main", "loop"="main loop", "iteration#main loop"=<i> }
 
         t += delta_t;
     }

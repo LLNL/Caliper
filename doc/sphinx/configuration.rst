@@ -1,4 +1,4 @@
-Configuration
+Runtime Configuration
 ================================
 
 This section describes the general configuration of the Caliper
@@ -29,8 +29,8 @@ In general, Caliper configuration variables have the form
                 CALI_<MODULE>_<KEY>=<VALUE>
 
 Values can be strings, lists, numbers, or boolean values, depending on
-the variable. List elements are typically separated by the colon (':')
-character. Boolean values can be given as '1', 'true', or '0', 'false'
+the variable. List elements are typically separated by commas.
+Boolean values can be given as '1', 'true', or '0', 'false'
 for *true* and *false*, respectively.
 
 Set caliper configuration variables through environment variables,
@@ -129,45 +129,58 @@ Configuration variables reference
 This section describes the configuration variables of the Caliper
 runtime system.
 
-.. envvar:: CALI_CONFIG_PROFILE = <profile name>
-            
-   Configuration profile name. 
+Many Caliper services define additional configuration variables. See
+:doc:`services` for a list of Caliper services and their
+configuration.
 
-.. envvar:: CALI_CONFIG_FILE = <list of config files>
+.. envvar:: CALI_CONFIG_PROFILE
             
-   Colon-separated list of configuration files. The provided
+   A configuration profile name. This can be a profile defined in a
+   configuration file, or one of Caliper's pre-defined configuration
+   profiles. E.g. ``CALI_CONFIG_PROFILE=runtime-report`` selects the
+   built-in runtime-report config profile.
+
+.. envvar:: CALI_CONFIG_FILE
+            
+   Comma-separated list of configuration files. The provided
    configuration files are read in order. Note: this variable can only
-   be set as an environment variable.
+   be set as an environment variable or through the configuration API.
 
    Default: ``caliper.config``
 
-.. envvar:: CALI_LOG_VERBOSITY = (0|1|2)
+.. envvar:: CALI_SERVICES_ENABLE
+            
+   Comma-separated list of Caliper service modules to enable.
+
+   Default: Not set. Caliper will not record performance data. 
+
+.. envvar:: CALI_LOG_VERBOSITY
             
    | Verbosity level. Default: 1
-   |   0: no output
-   |   1: basic informational runtime output
-   |   2: debug output
+   |   0: No output except for severe errors.
+   |   1: Basic informational runtime output and warning messages.
+   |   2: Debug output. Shows e.g. memory usage of context trees,
+   |   trace buffers, and aggregation database.
+   |   3: More debug output. Shows configuration settings.
 
-.. envvar:: CALI_LOG_LOGFILE = (stdout|stderr|<filename>)
+.. envvar:: CALI_LOG_LOGFILE
             
    Log file name, or 'stdout'/'stderr' for streaming to standard out or
    standard error, respectively. Default: stderr
 
-.. envvar:: CALI_CALIPER_AUTOMERGE = (true|false)
+.. envvar:: CALI_CALIPER_AUTOMERGE
             
    Automatically merge attributes into a common context tree.
    Decreases the size of context records, but may increase the amount
    of metadata and reduce performance.
 
-   Default: true
+   Default: enabled (``true``)
 
-.. envvar:: CALI_SERVICES_ENABLE = (service1:service2:...)
+.. envvar:: CALI_CALIPER_CONFIG_CHECK
+
+   Perform basic configuration sanity checks. Caliper prints warnings
+   for incomplete configurations, e.g., if a snapshot trigger service
+   is enabled but no output service.
             
-   List of Caliper service modules to enable.
-
-   Default: not set.
-
-Many Caliper services define additional configuration variables. See
-:doc:`services` for a list of Caliper services and their
-configuration.
-
+   Default: enabled (``true``)
+   
