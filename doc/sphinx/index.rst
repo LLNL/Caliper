@@ -88,6 +88,8 @@ as follows:
      $ make
      $ make install
 
+See :doc:`build` for more details.
+
 Source-code annotations
 ................................
 

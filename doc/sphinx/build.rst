@@ -33,14 +33,14 @@ You can configure the Caliper build with the following CMake variables:
 
 +---------------------------+----------------------------------------+
 | ``CMAKE_INSTALL_PREFIX``  | Directory where Caliper should be      |
-|                           | installed                              |
+|                           | installed.                             |
 +---------------------------+----------------------------------------+
 | ``CMAKE_C_COMPILER``      | C compiler (with absolute path!)       |
 +---------------------------+----------------------------------------+
 | ``CMAKE_CXX_COMPILER``    | C++ compiler (with absolute path!)     |
 +---------------------------+----------------------------------------+
 | ``WITH_FORTRAN``          | Build Fortran test cases and install   |
-|                           | Fortran wrapper module                 |
+|                           | Fortran wrapper module.                |
 +---------------------------+----------------------------------------+
 | ``WITH_TOOLS``            | Build `cali-query`, `cali-graph`, and  |
 |                           | `cali-stat` tools.                     |
@@ -107,7 +107,7 @@ installation location. For example, to enable PAPI::
 |              | Set CUpti installation dir in ``CUPTI_PREFIX``.       |
 +--------------+-------------------------------------------------------+
 |libpfm        | ``WITH_LIBPFM=On``.                                   |
-|              | Set libpfm installation dir in ``LIBPFM_INSTALL``     |
+|              | Set libpfm installation dir in ``LIBPFM_INSTALL``.    |
 +--------------+-------------------------------------------------------+
 |mpi           | ``WITH_MPI=On``.                                      |
 |              | Set ``MPI_C_COMPILER`` to path to MPI C compiler.     |
