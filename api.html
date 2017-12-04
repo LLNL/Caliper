@@ -6,15 +6,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Annotation API &mdash; Caliper 1.5.0 documentation</title>
+    <title>Example: High-level annotation macros in C &mdash; Caliper 1.6.0 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.5.0',
+        VERSION:     '1.6.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,9 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
-    <link rel="next" title="Linking Caliper programs" href="link.html" />
-    <link rel="prev" title="Concepts" href="concepts.html" /> 
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -34,13 +33,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="link.html" title="Linking Caliper programs"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
-          <a href="concepts.html" title="Concepts"
-             accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -49,161 +42,10 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="annotation-api">
-<h1>Annotation API<a class="headerlink" href="#annotation-api" title="Permalink to this headline">¶</a></h1>
-<p>Caliper provides source-code instrumentation APIs for C and C++ to
-create and access Caliper context attributes.</p>
-<div class="section" id="high-level-annotation-macros">
-<h2>High-level annotation macros<a class="headerlink" href="#high-level-annotation-macros" title="Permalink to this headline">¶</a></h2>
-<p>For most source-code markup use cases, we recommend using Caliper&#8217;s
-annotation macros. They provide the easiest way to annotate functions,
-loops, statements, and user-defined source-code regions.</p>
-<dl class="macro">
-<dt id="c.CALI_MARK_FUNCTION_BEGIN">
-<code class="descname">CALI_MARK_FUNCTION_BEGIN</code><a class="headerlink" href="#c.CALI_MARK_FUNCTION_BEGIN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="macro">
-<dt id="c.CALI_MARK_FUNCTION_END">
-<code class="descname">CALI_MARK_FUNCTION_END</code><a class="headerlink" href="#c.CALI_MARK_FUNCTION_END" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark begin and end of a function. The annotations must be placed at
-the top and on <em>all</em> function exit points, respectively. Will
-export the annotated functions by name in the pre-defined <cite>function</cite>
-attribute.</p>
-<p>For C++ codes, we recommend using <a class="reference internal" href="#c.CALI_CXX_MARK_FUNCTION" title="CALI_CXX_MARK_FUNCTION"><code class="xref c c-macro docutils literal"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code></a>
-instead.</p>
-</dd></dl>
-
-<dl class="macro">
-<dt id="c.CALI_CXX_MARK_FUNCTION">
-<code class="descname">CALI_CXX_MARK_FUNCTION</code><a class="headerlink" href="#c.CALI_CXX_MARK_FUNCTION" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark begin and end of a function. Should be placed at the top of the
-function, and will automatically &#8220;close&#8221; the function at any return
-point. Will export the annotated function by name in the pre-defined
-<cite>function</cite> attribute. Only available in C++.</p>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_LOOP_BEGIN">
-<code class="descname">CALI_MARK_LOOP_BEGIN</code><span class="sig-paren">(</span>loop_id, name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_BEGIN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_LOOP_END">
-<code class="descname">CALI_MARK_LOOP_END</code><span class="sig-paren">(</span>loop_id<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_LOOP_END" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark begin and end of a loop. Will export the user-provided loop name
-in the pre-defined <cite>loop</cite> attribute.</p>
-<p>The macros should be placed before and after the loop of interest.
-Users must ensure proper begin/end matching: If the surrounding
-function can be exited from within the loop (e.g., from a <cite>return</cite>
-statement within the loop), an exit marker must be placed there
-as well.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>loop_id</strong> &#8211; Alphanumerical identifier. Must be unique within the
-surrounding scope.</li>
-<li><strong>name</strong> &#8211; The loop name which will be exported to the <cite>loop</cite>
-attribute. This macro argument must be convertible
-into a <cite>const char*</cite>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_ITERATION_BEGIN">
-<code class="descname">CALI_MARK_ITERATION_BEGIN</code><span class="sig-paren">(</span>loop_id, iteration<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_BEGIN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_ITERATION_END">
-<code class="descname">CALI_MARK_ITERATION_END</code><span class="sig-paren">(</span>loop_id<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_ITERATION_END" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark begin and end of a loop iteration. The loop must be
-annotated with the loop annotation macros
-(<a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a> / <a class="reference internal" href="#c.CALI_MARK_LOOP_END" title="CALI_MARK_LOOP_END"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_END()</span></code></a>).</p>
-<p>The macros should be placed at the top and bottom of the loop body.
-If an iteration can be left prematurely (e.g., from a <cite>continue</cite>,
-<cite>break</cite>, or <cite>return</cite> statement), an end marker must be placed there
-as well.</p>
-<p>The iteration number will be exported in the attribute <cite>iteration#name</cite>,
-where <cite>name</cite> is the loop name given to <a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>loop_id</strong> &#8211; Loop identifier, must match the identifier given to
-<a class="reference internal" href="#c.CALI_MARK_LOOP_BEGIN" title="CALI_MARK_LOOP_BEGIN"><code class="xref c c-func docutils literal"><span class="pre">CALI_MARK_LOOP_BEGIN()</span></code></a>.</li>
-<li><strong>iteration</strong> &#8211; Current iteration number. This macro argument must be
-convertible to <cite>int</cite>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_BEGIN">
-<code class="descname">CALI_MARK_BEGIN</code><span class="sig-paren">(</span>name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_BEGIN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_MARK_END">
-<code class="descname">CALI_MARK_END</code><span class="sig-paren">(</span>name<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_MARK_END" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mark begin and end of a user-defined code region. The macros should be
-placed around the code region of interest. The user-provided region name
-will be exported in the pre-defined <cite>annotation</cite> attribute.</p>
-<p>Users must ensure proper nesting: Each region <cite>begin</cite> must be
-matched by a corresponding <cite>end</cite> in the correct order.  Regions may
-be nested within another, but they cannot overlap partially.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; The user-defined region name. Must be convertible into
-a <cite>const char*</cite>.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="function">
-<dt id="c.CALI_WRAP_STATEMENT">
-<code class="descname">CALI_WRAP_STATEMENT</code><span class="sig-paren">(</span>name, statement<span class="sig-paren">)</span><a class="headerlink" href="#c.CALI_WRAP_STATEMENT" title="Permalink to this definition">¶</a></dt>
-<dd><p>&#8220;Wraps&#8221; Caliper annotations around a C/C++ statement, or group of statments.
-The user-provided name will be exported to the <cite>statement</cite> attribute.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> &#8211; The user-defined region name. Must be convertible into
-a <cite>const char*</cite>.</li>
-<li><strong>statement</strong> &#8211; C/C++ statement(s) that should be wrapped. The
-statements must complete within the wrapped
-region, that is, they cannot branch out of the
-macro (e.g.  with <cite>goto</cite>, <cite>continue</cite>, <cite>break</cite>, or
-<cite>return</cite>).</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<div class="section" id="example-high-level-annotation-macros-in-c">
-<h3>Example: High-level annotation macros in C<a class="headerlink" href="#example-high-level-annotation-macros-in-c" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
-<span class="cp">#include &lt;stdlib.h&gt;</span>
+  <div class="section" id="example-high-level-annotation-macros-in-c">
+<h1>Example: High-level annotation macros in C<a class="headerlink" href="#example-high-level-annotation-macros-in-c" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
 
 <span class="kt">int</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">)</span>
 <span class="p">{</span>
@@ -246,7 +88,7 @@ macro (e.g.  with <cite>goto</cite>, <cite>continue</cite>, <cite>break</cite>, 
 </div>
 <p>In an event trace configuration, this program produces the following snapshot
 records:</p>
-<div class="highlight-python"><div class="highlight"><pre>function statement      loop              annotation iteration#example.fooloop
+<div class="highlight-python"><div class="highlight"><pre><span></span>function statement      loop              annotation iteration#example.fooloop
 main
 main     example.init
 main
@@ -268,10 +110,10 @@ main
 </div>
 </div>
 <div class="section" id="id1">
-<h3>Example: High-level annotation macros in C++<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h1>Example: High-level annotation macros in C++<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h1>
 <p>A C++ example producing the same output as above:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
-<span class="cp">#include &lt;cstdlib&gt;</span>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;cstdlib&gt;</span><span class="cp"></span>
 
 <span class="kt">int</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">)</span>
 <span class="p">{</span>
@@ -279,6 +121,9 @@ main
 
   <span class="k">if</span> <span class="p">(</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
     <span class="k">return</span><span class="p">;</span>
+
+  <span class="kt">int</span> <span class="o">*</span><span class="n">array</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="p">[</span><span class="n">count</span><span class="p">];</span>
+  <span class="n">CALI_CXX_TRACK_ALLOCATION</span><span class="p">(</span><span class="n">array</span><span class="p">);</span>
 
   <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">fooloop</span><span class="p">,</span> <span class="s">&quot;example.fooloop&quot;</span><span class="p">);</span>
 
@@ -306,8 +151,6 @@ main
 <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-</div>
 <div class="section" id="c-annotation-api">
 <h2>C++ annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>cali::Annotation</cite> class provides the C++ instrumentation interface.</p>
@@ -321,7 +164,7 @@ for Caliper. Annotation objects provide access to named Caliper context
 attributes. If the referenced attribute key does not exist yet, it will be
 created automatically.</p>
 <p>Example:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">phase_ann</span><span class="p">(</span><span class="s">&quot;myprogram.phase&quot;</span><span class="p">);</span>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span> <span class="n">phase_ann</span><span class="p">(</span><span class="s">&quot;myprogram.phase&quot;</span><span class="p">);</span>
 
 <span class="n">phase_ann</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;Initialization&quot;</span><span class="p">);</span>
   <span class="c1">// ...</span>
@@ -433,6 +276,12 @@ overwrites the existing value.</p>
 </dd></dl>
 
 </div>
+<div class="section" id="c-data-tracking-api">
+<h2>C++ data tracking API<a class="headerlink" href="#c-data-tracking-api" title="Permalink to this headline">¶</a></h2>
+<p>Caliper also supports tracking allocated data, using the <cite>cali::DataTracker</cite> namespace.
+Doing so provides advanced data-centric attributes, such as recording allocation events
+and determining the containers for memory addresses provided by services like libpfm.</p>
+</div>
 <div class="section" id="c-and-fortran-annotation-api">
 <h2>C and Fortran annotation API<a class="headerlink" href="#c-and-fortran-annotation-api" title="Permalink to this headline">¶</a></h2>
 <p>Like the C++ <code class="xref cpp cpp-class docutils literal"><span class="pre">Annotation</span></code> class, the C/Fortran API provides
@@ -463,7 +312,7 @@ exists, return its ID instead.</p>
 </tbody>
 </table>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_create_attribute(name, type, properties, id)
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_create_attribute(name, type, properties, id)
   character(len=*),        intent(in)  :: name
   integer,                 intent(in)  :: type
   integer,                 intent(in)  :: properties
@@ -502,7 +351,7 @@ assigned to attributes with type <code class="docutils literal"><span class="pre
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string(id, val, err)
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_begin_string(id, val, err)
   integer(kind=C_INT64_T),     intent(in) :: id
   character(len=*),            intent(in) :: val
   integer(kind(CALI_SUCCESS)), intent(out), optional :: err
@@ -527,7 +376,7 @@ subroutine cali_begin_double(id, val, err)
 regions without having to set a specific value. Internally, this
 will set a boolean-type attribute to <code class="docutils literal"><span class="pre">true</span></code>.</p>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin(id, err)
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_begin(id, err)
   integer(kind=C_INT64_T),     intent(in) :: id
   integer(kind(CALI_SUCCESS)), intent(out), optional :: err
 </pre></div>
@@ -561,7 +410,7 @@ except instead of stacking a new value on top of an existing one,
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_set_string(id, val, err)
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_set_string(id, val, err)
   integer(kind=C_INT64_T),     intent(in) :: id
   character(len=*),            intent(in) :: val
   integer(kind(CALI_SUCCESS)), intent(out), optional :: err
@@ -609,7 +458,7 @@ particular user-defined raw data (<cite>CALI_TYPE_USR</cite>).</p>
 <a class="reference internal" href="#c.cali_err" title="cali_err">cali_err</a> <code class="descname">cali_end</code><span class="sig-paren">(</span>cali_id_t<em>&nbsp;attr</em><span class="sig-paren">)</span><a class="headerlink" href="#c.cali_end" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove top-most value of the referenced attribute from the blackboard.</p>
 <p>Fortran signature:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_end(id, err)
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_end(id, err)
   integer(kind=C_INT64_T),     intent(in) :: id
   integer(kind(CALI_SUCCESS)), intent(out), optional :: err
 </pre></div>
@@ -637,13 +486,13 @@ particular user-defined raw data (<cite>CALI_TYPE_USR</cite>).</p>
 through their name. If no attribute key with the given name exists
 yet, it will be created. Thus, the following examples produce the
 same result:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">cali_id_t</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">cali_id_t</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span>
   <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
 
 <span class="n">cali_set_int</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
 </pre></div>
 </div>
-<div class="highlight-c"><div class="highlight"><pre><span class="n">cali_set_int_byname</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="n">cali_set_int_byname</span><span class="p">(</span><span class="s">&quot;my.attribute&quot;</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>As the <code class="docutils literal"><span class="pre">_byname</span></code> variants do perform an extra string lookup, it
@@ -665,7 +514,7 @@ sections.</p>
 </tbody>
 </table>
 <p>Fortran signatures:</p>
-<div class="highlight-python"><div class="highlight"><pre>subroutine cali_begin_string_byname
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_begin_string_byname
   character(len=*), intent(in) :: attr_name
   character(len=*), intent(in) :: val
   integer(kind(CALI_SUCCESS)), intent(out), optional :: err
@@ -702,15 +551,17 @@ subroutine cali_end_byname
 </div>
 </dd></dl>
 
+</div>
+</div>
 <div class="section" id="examples">
-<h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <p>The following examples demonstrate basic Caliper source-code
 annotations in C and Fortran. Similar to the C++ example in
 <a class="reference internal" href="usage.html"><em>Getting started</em></a>, they mark <em>initialization</em> and <em>loop</em> phases in a
 program, and export the main loop&#8217;s iteration counter in the
 <em>iteration</em> attribute.</p>
 <p>C:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
 <span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
   <span class="cm">/* Mark &quot;initialization&quot; phase */</span>
@@ -723,7 +574,7 @@ program, and export the main loop&#8217;s iteration counter in the
     <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;loop&quot;</span><span class="p">);</span>
 
     <span class="cm">/* Create iteration counter attribute with CALI_ATTR_ASVALUE property */</span>
-    <span class="kt">cali_id_t</span> <span class="n">iter_attr</span> <span class="o">=</span>
+    <span class="n">cali_id_t</span> <span class="n">iter_attr</span> <span class="o">=</span>
       <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_INT</span><span class="p">,</span> <span class="n">CALI_ATTR_ASVALUE</span><span class="p">);</span>
 
     <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
@@ -749,7 +600,7 @@ program, and export the main loop&#8217;s iteration counter in the
 </pre></div>
 </div>
 <p>Fortran:</p>
-<div class="highlight-python"><div class="highlight"><pre>program testf03
+<div class="highlight-python"><div class="highlight"><pre><span></span>program testf03
   use Caliper
 
   implicit none
@@ -795,8 +646,6 @@ program, and export the main loop&#8217;s iteration counter in the
   end if
 end program testf03
 </pre></div>
-</div>
-</div>
 </div>
 <div class="section" id="constants-and-types">
 <h2>Constants and types<a class="headerlink" href="#constants-and-types" title="Permalink to this headline">¶</a></h2>
@@ -956,21 +805,21 @@ the generated snapshot, but not retained on the blackboard.</p>
 <p>Example:</p>
 </dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="c1">// ...</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="c1">// ...</span>
 
 <span class="n">cali_begin_byname</span><span class="p">(</span><span class="s">&quot;push_snapshot_example&quot;</span><span class="p">);</span>
 
-<span class="kt">cali_id_t</span> <span class="n">int_attr</span> <span class="o">=</span>
+<span class="n">cali_id_t</span> <span class="n">int_attr</span> <span class="o">=</span>
   <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;snapshot.intarg&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_INT</span><span class="p">,</span>
     <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
-<span class="kt">cali_id_t</span> <span class="n">str_attr</span> <span class="o">=</span>
+<span class="n">cali_id_t</span> <span class="n">str_attr</span> <span class="o">=</span>
   <span class="n">cali_create_attribute</span><span class="p">(</span><span class="s">&quot;snapshot.strarg&quot;</span><span class="p">,</span> <span class="n">CALI_TYPE_STRING</span><span class="p">,</span>
     <span class="n">CALI_ATTR_DEFAULT</span><span class="p">);</span>
 
 <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">strval</span> <span class="o">=</span> <span class="s">&quot;MySnapshot&quot;</span><span class="p">;</span>
 <span class="kt">int64_t</span>     <span class="n">intval</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
 
-<span class="kt">cali_id_t</span> <span class="n">trigger_attr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">int_attr</span><span class="p">,</span> <span class="n">str_attr</span> <span class="p">};</span>
+<span class="n">cali_id_t</span> <span class="n">trigger_attr</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="n">int_attr</span><span class="p">,</span> <span class="n">str_attr</span> <span class="p">};</span>
 <span class="kt">void</span><span class="o">*</span>     <span class="n">trigger_vals</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="o">&amp;</span><span class="n">intval</span><span class="p">,</span>  <span class="n">strval</span>   <span class="p">};</span>
 <span class="kt">size_t</span>    <span class="n">trigger_size</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">),</span>
                               <span class="n">strlen</span><span class="p">(</span><span class="n">strval</span><span class="p">)</span> <span class="p">};</span>
@@ -989,7 +838,7 @@ the generated snapshot, but not retained on the blackboard.</p>
 </div>
 <p>This example program will generate a snapshot with (at least) the
 following contents:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">push_snapshot_example</span><span class="o">=</span><span class="n">true</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">intarg</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">strarg</span><span class="o">=</span><span class="n">MySnapshot</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">push_snapshot_example</span><span class="o">=</span><span class="n">true</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">intarg</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="n">snapshot</span><span class="o">.</span><span class="n">strarg</span><span class="o">=</span><span class="n">MySnapshot</span>
 </pre></div>
 </div>
 </div>
@@ -1006,29 +855,20 @@ following contents:</p>
             </a></p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Annotation API</a><ul>
-<li><a class="reference internal" href="#high-level-annotation-macros">High-level annotation macros</a><ul>
-<li><a class="reference internal" href="#example-high-level-annotation-macros-in-c">Example: High-level annotation macros in C</a></li>
-<li><a class="reference internal" href="#id1">Example: High-level annotation macros in C++</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">Example: High-level annotation macros in C</a></li>
+<li><a class="reference internal" href="#id1">Example: High-level annotation macros in C++</a><ul>
 <li><a class="reference internal" href="#c-annotation-api">C++ annotation API</a></li>
-<li><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a><ul>
-<li><a class="reference internal" href="#examples">Examples</a></li>
+<li><a class="reference internal" href="#c-data-tracking-api">C++ data tracking API</a></li>
+<li><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
 <li><a class="reference internal" href="#constants-and-types">Constants and types</a></li>
 <li><a class="reference internal" href="#c-control-api">C control API</a></li>
 </ul>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="concepts.html"
-                        title="previous chapter">Concepts</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="link.html"
-                        title="next chapter">Linking Caliper programs</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -1059,18 +899,12 @@ following contents:</p>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
-        <li class="right" >
-          <a href="link.html" title="Linking Caliper programs"
-             >next</a> |</li>
-        <li class="right" >
-          <a href="concepts.html" title="Concepts"
-             >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
     </div>
   </body>
 </html>

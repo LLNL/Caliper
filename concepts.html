@@ -6,15 +6,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Concepts &mdash; Caliper 1.5.0 documentation</title>
+    <title>Concepts &mdash; Caliper 1.6.0 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.5.0',
+        VERSION:     '1.6.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,8 +24,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
-    <link rel="next" title="Annotation API" href="api.html" />
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
+    <link rel="next" title="Source-code Annotations" href="AnnotationAPI.html" />
     <link rel="prev" title="Getting started" href="usage.html" /> 
   </head>
   <body role="document">
@@ -35,12 +36,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="api.html" title="Annotation API"
+          <a href="AnnotationAPI.html" title="Source-code Annotations"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="usage.html" title="Getting started"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -82,7 +83,7 @@ datatypes. It is also possible to store raw binary data.</p>
 interface: with <code class="docutils literal"><span class="pre">begin</span></code>, a new value will be added on top of the
 stack, while <code class="docutils literal"><span class="pre">end</span></code> removes the top-most value. For example, we can
 create an attribute to track the call stack:</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">bar</span><span class="p">()</span>
+<div class="highlight-c"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">bar</span><span class="p">()</span>
 <span class="p">{</span>
   <span class="n">cali_begin_string_byname</span><span class="p">(</span><span class="s">&quot;callstack&quot;</span><span class="p">,</span> <span class="s">&quot;bar&quot;</span><span class="p">);</span>
   <span class="c1">// ...</span>
@@ -107,7 +108,7 @@ create an attribute to track the call stack:</p>
 </div>
 <p>Assuming we take a snapshot with each update of the <code class="docutils literal"><span class="pre">callstack</span></code>
 attribute, we will get the following sequence:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">bar</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span>
 <span class="n">callstack</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span>
@@ -198,8 +199,8 @@ to add measurements such as timestamps to a snapshot.</p>
   <p class="topless"><a href="usage.html"
                         title="previous chapter">Getting started</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="api.html"
-                        title="next chapter">Annotation API</a></p>
+  <p class="topless"><a href="AnnotationAPI.html"
+                        title="next chapter">Source-code Annotations</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -231,17 +232,17 @@ to add measurements such as timestamps to a snapshot.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="api.html" title="Annotation API"
+          <a href="AnnotationAPI.html" title="Source-code Annotations"
              >next</a> |</li>
         <li class="right" >
           <a href="usage.html" title="Getting started"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
     </div>
   </body>
 </html>

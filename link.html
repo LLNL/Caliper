@@ -6,15 +6,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Linking Caliper programs &mdash; Caliper 1.5.0 documentation</title>
+    <title>Linking Caliper programs &mdash; Caliper 1.6.0 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.5.0',
+        VERSION:     '1.6.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,9 +24,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
     <link rel="next" title="Configuration" href="configuration.html" />
-    <link rel="prev" title="Annotation API" href="api.html" /> 
+    <link rel="prev" title="Source-code Annotations" href="AnnotationAPI.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -38,9 +39,9 @@
           <a href="configuration.html" title="Configuration"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="api.html" title="Annotation API"
+          <a href="AnnotationAPI.html" title="Source-code Annotations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -55,7 +56,7 @@
 to link it with the Caliper runtime library, which resides in
 <code class="docutils literal"><span class="pre">libcaliper.so</span></code>. An example link command for a C++ program built
 with g++ could look like this:</p>
-<div class="highlight-python"><div class="highlight"><pre>CALIPER_DIR  = /path/to/caliper/installation
+<div class="highlight-python"><div class="highlight"><pre><span></span>CALIPER_DIR  = /path/to/caliper/installation
 
 g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper
 </pre></div>
@@ -73,7 +74,7 @@ multi-process friendly, e.g. by reducing log output on most ranks. The
 wrapper library <em>is</em> required to use Caliper&#8217;s MPI service.</p>
 <p>To use the wrapper library, add it before the Caliper libraries in a
 link command:</p>
-<div class="highlight-python"><div class="highlight"><pre>mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
+<div class="highlight-python"><div class="highlight"><pre><span></span>mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
 </pre></div>
 </div>
 </div>
@@ -85,7 +86,7 @@ directory. This way, we avoid potential incompatibilities between
 compilers used to build Caliper and the target program.
 We recommend to simply add the Caliper module to the target
 program. An example Makefile may look like this:</p>
-<div class="highlight-python"><div class="highlight"><pre>F90         = gfortran
+<div class="highlight-python"><div class="highlight"><pre><span></span>F90         = gfortran
 
 CALIPER_DIR = /path/to/caliper/installation
 OBJECTS     = main.o
@@ -104,11 +105,11 @@ caliper.o : $(CALIPER_DIR)/share/fortran/caliper.f90
 </div>
 <p>Note that it is necessary to link in the C++ standard library as
 well. With <code class="docutils literal"><span class="pre">gfortran</span></code>, add <code class="docutils literal"><span class="pre">-lstdc++</span></code>:</p>
-<div class="highlight-python"><div class="highlight"><pre>gfortran -o target-program *.o -L/path/to/caliper/lib -lcaliper -lstdc++
+<div class="highlight-python"><div class="highlight"><pre><span></span>gfortran -o target-program *.o -L/path/to/caliper/lib -lcaliper -lstdc++
 </pre></div>
 </div>
 <p>With Intel <code class="docutils literal"><span class="pre">ifort</span></code>, you can use the <code class="docutils literal"><span class="pre">-cxxlib</span></code> option:</p>
-<div class="highlight-python"><div class="highlight"><pre>ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib -lcaliper
+<div class="highlight-python"><div class="highlight"><pre><span></span>ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib -lcaliper
 </pre></div>
 </div>
 <p>The wrapper module uses Fortran 2003 C bindings. Thus, it requires a
@@ -137,8 +138,8 @@ integrate it with Fortran 77 codes.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="api.html"
-                        title="previous chapter">Annotation API</a></p>
+  <p class="topless"><a href="AnnotationAPI.html"
+                        title="previous chapter">Source-code Annotations</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="configuration.html"
                         title="next chapter">Configuration</a></p>
@@ -176,14 +177,14 @@ integrate it with Fortran 77 codes.</p>
           <a href="configuration.html" title="Configuration"
              >next</a> |</li>
         <li class="right" >
-          <a href="api.html" title="Annotation API"
+          <a href="AnnotationAPI.html" title="Source-code Annotations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
     </div>
   </body>
 </html>

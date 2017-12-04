@@ -1,4 +1,4 @@
-Caliper services
+Caliper Services
 ================================
 
 Caliper comes with a number of optional modules (*services*) that
@@ -10,7 +10,7 @@ range of usage scenarios.
 You can enable the services required for your measurement with the
 ``CALI_SERVICES_ENABLE`` configuration variable, e.g.::
 
-  export CALI_SERVICES_ENABLE=event:recorder:trace
+  export CALI_SERVICES_ENABLE=event,recorder,trace
 
 to create event-triggered context traces for an application.
 
@@ -40,11 +40,11 @@ durations) of snapshots with a similar `key`, creating a profile.
    with the ``ASVALUE`` storage property can be aggregation
    attributes.
 
-   By default, the aggregation service determines aggregatable 
+   By default, the aggregation service determines aggregatable
    attributes automatically. With this configuration variable,
    the aggregation attributes can be set specifically (e.g., to
    select a subset). When set to `none`, the `aggregate` service
-   will not aggregate any attributes, and only count the number of 
+   will not aggregate any attributes, and only count the number of
    snapshots with similar keys.
 
    Default: Empty (determine aggregation attributes automatically).
@@ -58,7 +58,7 @@ generate an aggregate snapshot record for each unique combination of
 key values found in the input snapshots.  The values of the
 aggregation attributes in the input snapshots will be accumulated and
 appended to the aggregate snapshot.  The aggregate snapshot records
-also include an `aggregate.count` attribute that indicates how many
+also include a `count` attribute that indicates how many
 input snapshots with the given aggregation key were found. Attributes
 that are neither aggregation attributes nor part of the aggregation
 key will not appear in the aggregate snapshot records.
@@ -68,7 +68,7 @@ As an example, consider the following program:
 .. code-block:: c++
 
     #include <caliper/Annotation.h>
-    
+
     void foo(int c) {
         cali::Annotation::Guard
           g( cali::Annotation("function").begin("foo") );
@@ -81,9 +81,9 @@ As an example, consider the following program:
       { // "A" loop
         cali::Annotation::Guard
           g( cali::Annotation("loop.id").begin("A") );
-        
+
         for (int i = 0; i < 3; ++i) {
-            cali::Annotation("iteration").set(i);            
+            cali::Annotation("iteration").set(i);
 
             foo(1);
             foo(2);
@@ -93,10 +93,10 @@ As an example, consider the following program:
       { // "B" loop
         cali::Annotation::Guard
           g( cali::Annotation("loop.id").begin("B") );
-        
+
         for (int i = 0; i < 4; ++i) {
             cali::Annotation("iteration").set(i);
-            
+
             foo(1);
         }
       }
@@ -107,20 +107,20 @@ the aggregation key contains the `function`, `loop.id`, and
 `iteration` attributes, the `aggregate` service will generate the
 following aggregate snapshots : ::
 
-    loop.id=A  iteration=0  function=foo  aggregate.count=2
-    loop.id=A  iteration=1  function=foo  aggregate.count=2
-    loop.id=A  iteration=2  function=foo  aggregate.count=2
-    loop.id=B  iteration=0  function=foo  aggregate.count=1
-    loop.id=B  iteration=1  function=foo  aggregate.count=1
-    loop.id=B  iteration=2  function=foo  aggregate.count=1
-    loop.id=B  iteration=3  function=foo  aggregate.count=1
+    loop.id=A  iteration=0  function=foo  count=2
+    loop.id=A  iteration=1  function=foo  count=2
+    loop.id=A  iteration=2  function=foo  count=2
+    loop.id=B  iteration=0  function=foo  count=1
+    loop.id=B  iteration=1  function=foo  count=1
+    loop.id=B  iteration=2  function=foo  count=1
+    loop.id=B  iteration=3  function=foo  count=1
 
 Removing the `iteration` attribute from the aggregation key will
 collapse input snapshots with different iteration values into a
 single aggregate snapshot: ::
 
-    loop.id=A  function=foo  aggregate.count=6
-    loop.id=B  function=foo  aggregate.count=4
+    loop.id=A  function=foo  count=6
+    loop.id=B  function=foo  count=4
 
 Aggregation attributes
 ................................
@@ -129,7 +129,7 @@ The aggregate service accumulates values of aggregation attributes in
 input snapshots with similar aggregation keys. Specifically, it
 reports the minimum and maximum value, and computes the sum of the
 aggregation attributes in the input snapshots. Aggregate snapshots
-include `aggregate.(min|max|sum)#attribute-name` attributes with the
+include `(min|max|sum)#attribute-name` attributes with the
 minimum, maximum, and sum values for each aggregation attribute,
 respectively.
 
@@ -152,25 +152,51 @@ annotations of interest in the aggregation key (e.g.,
        CALI_EVENT_TRIGGER=function \
        CALI_AGGREGATE_KEY=event.end#function:loop.id \
          ./test/cali-basic-aggregate
-   == CALIPER: Registered aggregation service   
-   == CALIPER: Registered event service   
-   == CALIPER: Registered recorder service   
-   == CALIPER: Registered timestamp service   
+   == CALIPER: Registered aggregation service
+   == CALIPER: Registered event service
+   == CALIPER: Registered recorder service
+   == CALIPER: Registered timestamp service
    == CALIPER: Initialized
    == CALIPER: aggregate: flushed 4 snapshots.
    == CALIPER: Wrote 57 records.
 
 The resulting file has the following contents: ::
 
-   loop.id=A  event.end#function=foo  aggregate.count=6
-     aggregate.min#time.inclusive.duration=25
-     aggregate.max#time.inclusive.duration=26
-     aggregate.sum#time.inclusice.duration=151
-   loop.id=B  event.end#function=foo  aggregate.count=4
-     aggregate.min#time.inclusive.duration=25
-     aggregate.max#time.inclusive.duration=26
-     aggregate.sum#time.inclusice.duration=102
-   
+   loop.id=A  event.end#function=foo  count=6
+     min#time.inclusive.duration=25
+     max#time.inclusive.duration=26
+     sum#time.inclusice.duration=151
+   loop.id=B  event.end#function=foo  count=4
+     min#time.inclusive.duration=25
+     max#time.inclusive.duration=26
+     sum#time.inclusice.duration=102
+
+Alloc
+--------------------------------
+
+The `alloc` service adds data tracking information to Caliper.
+It will resolve the data container of any attribute of class
+"class.memoryaddress", for example the array containing a
+memory address sampled by the `Libpfm` service.
+By default, it will only use data tracking information provided
+via the ``cali::DataTracker`` API, but it may be configured to
+record and/or track any allocations by hooking system allocation
+calls.
+
+.. envvar:: CALI_ALLOC_RECORD_ALL=(true|false)
+
+   Record all allocations captured by hooking malloc/calloc/realloc.
+   May cause high overhead for codes that frequently allocate memory.
+
+   Default: false.
+
+.. envvar:: CALI_ALLOC_TRACK_ALL=(true|false)
+
+   Track all allocations captured by hooking malloc/calloc/realloc.
+   May cause high overhead for codes that frequently allocate memory.
+
+   Default: false.
+
 
 Callpath
 --------------------------------
@@ -192,17 +218,17 @@ function names on-line. Call-path addresses are provided in the
   $ callpath.address=401207/2aaaac052d5d/400fd9,callpath.regname=main/__libc_start_main/_start
 
 The example shows the ``callpath.address`` and ``callpath.regname``
-attributes in Caliper context records.  
+attributes in Caliper context records.
 
 .. envvar:: CALI_CALLPATH_USE_NAME=(true|false)
-            
+
    Provide region names for call paths. Incurs higher overhead. Note
    that region names for C++ and Fortran functions are not demangled.
-   
+
    Default: false.
 
 .. envvar:: CALI_CALLPATH_USE_ADDRESS=(true|false)
-            
+
    Record region addresses for call paths.
 
    Default: true.
@@ -252,10 +278,10 @@ form: ::
 
   event.<begin|set|end>#<attribute name>=<value>
 
-For example, a snapshot triggered by the call 
+For example, a snapshot triggered by the call
 ``cali_set_int_byname("my.iteration", 42);`` includes the attribute
 `event.set#my.iteration=42` to describe the triggering event.
-  
+
 The following example shows the snapshots generated by the example
 program in :doc:`usage`:
 
@@ -278,7 +304,7 @@ By setting ``CALI_EVENT_TRIGGER``, we can configure the example to
 only trigger snapshot for "iteration" attribute updates:
 
 .. code-block:: sh
-                
+
                 $ export CALI_SERVICES_ENABLE=event:recorder:trace
                 $ export CALI_EVENT_TRIGGER=iteration
                 $ ./test/cali-basic
@@ -290,12 +316,12 @@ only trigger snapshot for "iteration" attribute updates:
                 event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
 
 .. envvar:: CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
-            
+
    List of attributes that trigger measurement snapshots.
    If empty, all user attributes trigger snapshots.
 
    Default: empty
-  
+
 Debug
 --------------------------------
 
@@ -331,6 +357,111 @@ Example:
                 == CALIPER: Event: finish
                 == CALIPER: Finished
 
+Libpfm
+--------------------------------
+
+The libpfm service performs per-thread event-based sampling. The user
+may configure the event upon which to sample, the values to record for
+each sample, and the sampling period.
+
+.. envvar:: CALI_LIBPFM_EVENTS
+
+   Comma-separated list of events to sample. Event names are resolved
+   through libpfm, and may include software and hardware events (see
+   libpfm's showevtinfo tool
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to obtain a list of events available on a particular system).
+
+   Default: cycles
+
+.. envvar:: CALI_LIBPFM_ENABLE_SAMPLING
+
+   Whether to record event samples. If set, will trigger a snapshot
+   containing all sampled attributes listed in 
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have 
+   occurred.
+
+   Default: true
+
+.. envvar:: CALI_LIBPFM_RECORD_COUNTERS
+
+    If set, counter values of all active events will be recorded
+    at every Caliper snapshot.
+
+    Default: true
+
+.. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
+
+   Comma-separated list of attributes to record for each sample.
+
+   Available entries are:
+     ip             Instruction pointer
+     id             Sample id
+     stream_id      Stream id
+     time           Timestamp
+     tid            Thread id
+     period         Current sampling period
+     cpu            CPU
+     transaction    Type of transaction
+     addr           Data address*
+     weight         Latency*
+     data_src       Encoding for memory resource (L1, L2, DRAM etc.)*
+
+     \*available only for certain events.
+
+   Default: ip,time,tid,cpu
+
+.. envvar:: CALI_LIBPFM_PERIOD
+
+   Sampling period for each event (valid when sampling is enabled). 
+   When set to a value N, a sample will  be recorded after every N 
+   number of events has occurred.
+
+   For multiple events, this should be a comma-separated list for the 
+   periods of respective events.
+
+   Default: 20000000
+
+.. envvar:: CALI_LIBPFM_PRECISE_IP
+
+   Whether to set (precise) for events that support precise ip. Some
+   events require (precise) to be set, for others it is optional (see
+   output of libpfm's showevtinfo tool
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to determine when it is available or required).
+
+   For multiple events, this should be a comma-separated list for the 
+   precise_ip values of respective events.
+
+   May be set to either 0, 1, or 2.
+
+   Default: 0
+
+.. envvar:: CALI_LIBPFM_CONFIG1
+
+   Extra event configuration. Some events require an additional
+   parameter to configure behavior, such as latency threshold (see
+   output of libpfm's showevtinfo tool
+   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
+   to determine when it is available or required).
+
+   For multiple events, this should be a comma-separated list for the 
+   config1 values of respective events.
+
+   Default: 0
+
+The following example shows how to configure PEBS memory access sampling
+with a latency threshold (available on SandyBridge, IvyBridge,
+Haswell):
+
+.. code-block:: sh
+
+   $ export CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   $ export CALI_LIBPFM_PERIOD=100
+   $ export CALI_LIBPFM_PRECISE_IP=2
+   $ export CALI_LIBPFM_CONFIG1=100
+   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+
 MPI
 --------------------------------
 
@@ -348,16 +479,100 @@ application in addition to the regular Caliper libraries to obtain MPI
 information.
 
 .. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
-            
+
    List of MPI functions to instrument. If set, only whitelisted
    functions will be instrumented.
 
 .. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
-            
+
    List of MPI functions that fill be filtered. Note: if both
    whitelist and blacklist are set, only whitelisted functions will
    be instrumented, and the blacklist will be applied to the
    whitelisted functions.
+
+MPIT
+--------------------------------
+
+The MPIT service records MPI performance variables (PVARs) exported by
+the MPI 3 tools interface (MPI-T). Users can provide a list of PVARs
+to record. By default, all available PVARs will be recorded.  Note
+that PVARs are MPI implementation specific; MPI implementations do not
+necessarily export the same or similar PVARs, or any at all.
+
+This service is part of the Caliper MPI wrapper library
+(`libcaliper-mpiwrap`), which must be linked to the application in
+addition to the regular Caliper runtime library.
+
+.. envvar:: CALI_MPIT_PVARS
+
+   A comma-separated list of PVARs to export. PVAR names are defined
+   by the MPI implementation. Default: empty, records all available
+   PVARs.
+
+MPI Report
+--------------------------------
+
+The MPI report service (`mpireport`) aggregates, formats, and writes
+collected Caliper records from all ranks in an MPI program into a
+single global report.  By default, the mpireport service prints a
+tabular, human-readable report of the collected snapshots. Users can
+provide a query specification in CalQL syntax to define filter,
+aggregation, and formatting options.
+
+The mpireport service aggregates Caliper data across MPI processes
+before printing it. This happens on every Caliper flush event.
+Enabling the mpireport service will trigger a flush during
+MPI_Finalize.
+
+.. envvar:: CALI_MPIREPORT_FILENAME
+
+   File name of the output file. May be set to ``stdout`` or ``stderr``
+   to print to the standard output or error streams, respectively.
+
+   Similar to the `recorder` service, the file name may contain fields
+   which will be substituted by attribute values (see `recorder`
+   service description), for example to create individual
+   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
+   multi-process program.
+
+   Default: stdout
+
+.. envvar:: CALI_MPIREPORT_CONFIG
+
+   An aggregation and formatting specification in CalQL syntax.
+
+   Default: empty; all attributes in the snapshots will be printed.
+
+PAPI
+--------------------------------
+
+The PAPI service collects hardware counter information through the
+PAPI library.
+
+.. envvar:: CALI_PAPI_COUNTERS
+
+   The PAPI counters to read as comma-separated list.
+   Available counters can be found with the `papi_avail` command
+   provided by PAPI. If successfull, snapshots will contain
+   attributes named ``papi.COUNTER_NAME``. Their value represents the
+   increase of that counter since the previous snapshot.
+
+Example:
+
+.. code-block:: sh
+
+   $ CALI_SERVICES_ENABLE=event:papi:trace:report
+   $ CALI_PAPI_COUNTERS=PAPI_TOT_CYC,PAPI_L1_DCM
+   $ ./test/cali-basic
+   papi.PAPI_TOT_CYC papi.PAPI_L1_DCM function annotation loop     iteration#mainloop
+               36146              431
+               28328              372 main
+               20601              311 main     init
+               37010              546 main
+                7147              150 main                mainloop
+                8425              115 main                mainloop                  0
+
+
 
 Recorder
 --------------------------------
@@ -378,21 +593,21 @@ by default, the recorder service will auto-generate a
 file name.
 
 .. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)
-            
+
    File name of the output file. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
 
    The file name string can contain fields, denoted by ``%attribute_name%``,
    which will be replaced with attribute values. For example, in an MPI
    program with the `mpi` service enabled, the string ``caliper-%mpi.rank%.cali``
-   will create files ``caliper-0.cali``, ``caliper-1.cali``, etc. for each 
-   mpi rank. For this to work, the attributes named in the fields need to 
+   will create files ``caliper-0.cali``, ``caliper-1.cali``, etc. for each
+   mpi rank. For this to work, the attributes named in the fields need to
    be set on the blackboard during the flush phase.
-   
+
    Default: not set, auto-generates a unique file name.
 
 .. envvar:: CALI_RECORDER_DIRECTORY=(directory name)
-            
+
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
@@ -400,16 +615,18 @@ file name.
 Report
 --------------------------------
 
-The report service prints a tabular, human-readable report of the
-collected snapshots. Similar to the `recorder` service, this report is
-generated and printed in a flush phase, typically at the end of the
-program execution. In contrast, the `textlog` service prints snapshots
-at the moment they are taken.
+The report service aggregates, formats, and writes collected Caliper
+records into files or stdout on Caliper flush events (typically, at
+program end). By default, the report service prints a tabular,
+human-readable report of the collected snapshots. Users can provide a
+query specification in CalQL syntax to define filter, aggregation, and
+formatting options.
+
 
 .. envvar:: CALI_REPORT_FILENAME
 
    File name of the output file. May be set to ``stdout`` or ``stderr``
-   to print to the standard output or error streams, respectively. 
+   to print to the standard output or error streams, respectively.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
@@ -419,31 +636,16 @@ at the moment they are taken.
 
    Default: stdout
 
-.. envvar:: CALI_REPORT_ATTRIBUTES
+.. envvar:: CALI_REPORT_CONFIG
 
-   Colon-separated list of attribute names. Selects which attributes
-   in the snapshots should be printed (i.e., the table columns).
+   A formatting specification in CalQL syntax.
 
    Default: empty; all attributes in the snapshots will be printed.
-
-.. envvar:: CALI_REPORT_FILTER
-
-   Selects which snapshots to print (i.e., the table rows). This is a
-   colon-seeparated list of filter specifications of the form
-   ``attribute name`` (selects snapshots which contain this attribute,
-   with any value), or ``attribute name=value`` (selects snapshots
-   where the attribute is set to the given value).
-
-.. envvar:: CALI_REPORT_SORT_BY
-
-   A colon-separated list of attributes to sort snapshots (rows) by.
 
 Example: Consider the following report configuration and list of
 flushed snapshots: ::
 
-   CALI_REPORT_FILTER=phase=loop
-   CALI_REPORT_ATTRIBUTES=function:time.duration
-   CALI_REPORT_SORT_BY=time.duration
+   CALI_REPORT_CONFIG="SELECT function,time.duration WHERE phase=loop ORDER BY time.duration FORMAT table"
 
    phase=init,function=foo,time.duration=42
    phase=loop,function=foo,time.duration=2000
@@ -455,7 +657,7 @@ This configuration will create the following report output: ::
    function time.duration
    bar                 12
    foo                100
-   foo		     2000 
+   foo		     2000
 
 Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
@@ -513,21 +715,21 @@ test application with Caliper's auto-generated format string:
                 == CALIPER: Registered timestamp service
                 == CALIPER: Registered text log service
                 == CALIPER: Initialized
-                phase=main/init                                                       21      
-                phase=main/loop                                                       84      
-                phase=main                                                            219     
+                phase=main/init                                                       21
+                phase=main/loop                                                       84
+                phase=main                                                            219
                 == CALIPER: Finished
-                
+
 
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
-            
+
    Select attributes which trigger a text log output. Note that the `event`
    service must be active in order to trigger snapshots in the first place,
    and the attributes selected here must be in the list of attributes that
    trigger snapshots (defined by `CALI_EVENT_TRIGGER`).
 
 .. envvar:: CALI_TEXTLOG_FORMATSTRING=(formatstring)
-            
+
    Define what to print. The formatstring can contain fields, denoted by
    ``%attribute_name%``, which prints the value of an attribute. Optionally,
    a field can contain a width specification, denoted by ``[width]``, to set
@@ -539,17 +741,17 @@ test application with Caliper's auto-generated format string:
    log entry might look like this:
 
    .. code-block:: sh
-                   
+
       Phase: main/loop                       7018
-   
+
    Default: empty; Caliper will automatically create a format string based on
    the selected trigger attributes.
-  
+
 .. envvar:: CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)
-            
+
    File name for the text log. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
-   
+
    Default: stdout
 
 Timestamp
@@ -560,7 +762,7 @@ context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 
 .. envvar:: CALI_TIMER_SNAPSHOT_DURATION=(true|false)
-            
+
    Measure duration (in microseconds) of the context epoch (i.e., the
    time between two consecutive context snapshots). The value will be
    saved in the snapshot record as attribute ``time.duration``.
@@ -568,7 +770,7 @@ nodes in a distributed-memory program.
    Default: false
 
 .. envvar:: CALI_TIMER_OFFSET=(true|false)
-            
+
    Include the time offset (time since program start, in microseconds)
    with each context snapshot. The value will be saved in the snapshot
    record as attribute ``time.offset``.
@@ -576,13 +778,13 @@ nodes in a distributed-memory program.
    Default: false
 
 .. envvar:: CALI_TIMER_TIMESTAMP=(true|false)
-            
+
    Include absolute timestamp (time since UNIX epoch, in seconds) with
    each context snapshot. The value will be saved in the snapshot record
    as attribute ``time.timestamp``.
 
 .. envvar:: CALI_TIMER_INCLUSIVE_DURATION=(true|false)
-            
+
    For snapshots triggered by ``set`` or ``end`` events, calculate the
    duration of the corresponding ``begin-end``, ``set-set``, or
    ``set-end`` phase. The value will be saved in the snapshot record
@@ -592,7 +794,7 @@ nodes in a distributed-memory program.
    to be enabled for this feature.
 
    Default: true
-  
+
 Trace
 --------------------------------
 
@@ -610,7 +812,7 @@ Stop
     Stop recording when the buffer is full.
 
 Flush
-    Flush the buffer when it is full and continue recording. Note that 
+    Flush the buffer when it is full and continue recording. Note that
     buffer flushes can significantly perturb the program's
     performance.
 
@@ -618,92 +820,13 @@ Flush
 
    Size of the trace buffer, in Megabytes. With the `grow` buffer
    policy, this is the size of a trace buffer *chunk*: When the buffer
-   is full, another chunk of this size is added. 
-   
+   is full, another chunk of this size is added.
+
    Default: 2 (MiB).
 
 .. envvar:: CALI_TRACE_BUFFER_POLICY
 
    Sets the trace buffer policy (see above). Either `grow`, `stop`, or
-   `flush`. 
-   
+   `flush`.
+
    Default: `grow`.
-   
-Libpfm
---------------------------------
-
-The libpfm service performs per-thread event-based sampling. The user
-may configure the event upon which to sample, the values to record for
-each sample, and the sampling period.
-
-.. envvar:: CALI_LIBPFM_EVENT_LIST
-   
-   Comma-separated list of events to sample. Event names are resolved
-   through libpfm, and may include software and hardware events (see
-   libpfm's showevtinfo tool
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to obtain a list of events available on a particular system).
-
-   Default: cycles
-
-.. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
-   
-   Comma-separated list of attributes to record for each sample.
-
-   Available entries are:
-     ip             Instruction pointer
-     id             Sample id
-     stream_id      Stream id
-     time           Timestamp
-     tid            Thread id
-     period         Current sampling period
-     cpu            CPU
-     transaction    Type of transaction
-     addr           Data address*
-     weight         Latency*
-     data_src       Encoding for memory resource (L1, L2, DRAM etc.)*
-
-     \*available only for certain events.
-
-   Default: ip,time,tid,cpu
-
-.. envvar:: CALI_LIBPFM_PERIOD
-
-   Sampling period. When set to a value N, a sample will be recorded
-   after every N number of events has occurred.
-
-   Default: 20000000
-
-.. envvar:: CALI_LIBPFM_PRECISE_IP
-
-   Whether to set (precise) for events that support precise ip. Some
-   events require (precise) to be set, for others it is optional (see
-   output of libpfm's showevtinfo tool 
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to determine when it is available or required).
-
-   May be set to either 0, 1, or 2.
-
-   Default: 0
-
-.. envvar:: CALI_LIBPFM_CONFIG1
-
-   Extra event configuration. Some events require an additional
-   parameter to configure behavior, such as latency threshold (see
-   output of libpfm's showevtinfo tool 
-   https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
-   to determine when it is available or required).
-
-   Default: 0
-
-The following example shows how to configure PEBS memory access sampling
-with a latency threshold (available on SandyBridge, IvyBridge,
-Haswell):
-
-.. code-block:: sh
-
-   $ export CALI_LIBPFM_EVENT_LIST=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-   $ export CALI_LIBPFM_PERIOD=100
-   $ export CALI_LIBPFM_PRECISE_IP=2
-   $ export CALI_LIBPFM_CONFIG1=100
-   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight

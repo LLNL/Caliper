@@ -1,10 +1,13 @@
-Build and install
+Build and Link
 ================================
 
 Building and installing Caliper requires cmake (version 3.0 or
 greater), a current C++11-compatible compiler (GNU 4.8 and greater,
 LLVM clang 3.7 and greater are known to work), a Python interpreter,
 and the POSIX threads library.
+
+Building Caliper
+--------------------------------
 
 To obtain Caliper, clone it from the
 `github repository <https://github.com/LLNL/Caliper>`_.
@@ -22,79 +25,190 @@ Next, configure and build Caliper:
      $ make 
      $ make install
 
-Optional modules
---------------------------------
 
-Caliper contains a number of modules (*services*) that
-provide additional measurement or context data. Some of these services
-have additional dependencies:
-
-+------------+------------------------------+------------------------+
-|Service     | Provides                     | Depends on             |
-+============+==============================+========================+
-|callpath    | Call path information        | libunwind              |
-+------------+------------------------------+------------------------+
-|libpfm      | Linux perf_event sampling    | Libpfm / Linux OS      |
-+------------+------------------------------+------------------------+
-|mpi         | MPI rank and function calls  | MPI                    |
-+------------+------------------------------+------------------------+
-|ompt        | OpenMP thread and status     | OpenMP tools interface |
-+------------+------------------------------+------------------------+
-|papi        | PAPI hardware counters       | PAPI library           |
-+------------+------------------------------+------------------------+
-|sampler     | Timer-based sampling         | Linux OS               |
-+------------+------------------------------+------------------------+
-
-These services are optional and will only be built when their
-dependencies are found.
-
-Common CMake Flags
---------------------------------
+CMake Flags
+................................
 
 You can configure the Caliper build with the following CMake variables:
 
 +---------------------------+----------------------------------------+
 | ``CMAKE_INSTALL_PREFIX``  | Directory where Caliper should be      |
-|                           | installed                              |
+|                           | installed.                             |
 +---------------------------+----------------------------------------+
 | ``CMAKE_C_COMPILER``      | C compiler (with absolute path!)       |
 +---------------------------+----------------------------------------+
 | ``CMAKE_CXX_COMPILER``    | C++ compiler (with absolute path!)     |
 +---------------------------+----------------------------------------+
-| ``MPI_C_COMPILER``,       | MPI C and C++ compilers for optional   |
-| ``MPI_CXX_COMPILER``      | MPI wrapper module                     |
-+---------------------------+----------------------------------------+
-| ``OMPT_DIR``              | Path to the OpenMP tools interface     |
-|                           | header (ompt.h                         |
-+---------------------------+----------------------------------------+
 | ``WITH_FORTRAN``          | Build Fortran test cases and install   |
-|                           | Fortran wrapper module                 |
-+---------------------------+----------------------------------------+
-| ``WITH_TESTS``            | Build small example test programs      |
+|                           | Fortran wrapper module.                |
 +---------------------------+----------------------------------------+
 | ``WITH_TOOLS``            | Build `cali-query`, `cali-graph`, and  |
 |                           | `cali-stat` tools.                     |
 +---------------------------+----------------------------------------+
-| ``WITH_DOCS``             | Build Sphinx documentation.            |
+| ``WITH_DOCS``             | Enable documentation builds.           |
++---------------------------+----------------------------------------+
+| ``BUILD_TESTING``         | Build unit test infrastructure and     |
+|                           | programs.                              |
 +---------------------------+----------------------------------------+
 
-Building on BG/Q
+
+Optional modules
+................................
+
+Caliper contains a number of modules (*services*) that
+provide additional measurement or context data. Some of these services
+have additional dependencies.
+
++--------------+------------------------------+------------------------+
+|Service       | Provides                     | Depends on             |
++==============+==============================+========================+
+|callpath      | Call path information        | libunwind              |
++--------------+------------------------------+------------------------+
+|cupti         | CUDA driver/runtime calls    | CUDA, CUpti            |
++--------------+------------------------------+------------------------+
+|libpfm        | Linux perf_event sampling    | Libpfm                 |
++--------------+------------------------------+------------------------+
+|mpi           | MPI rank and function calls  | MPI                    |
++--------------+------------------------------+------------------------+
+|mpit          | MPI tools interface:         | MPI                    |
+|              | MPI-internal counters        |                        |
++--------------+------------------------------+------------------------+
+|ompt          | OpenMP thread and status     | OpenMP tools interface |
++--------------+------------------------------+------------------------+
+|papi          | PAPI hardware counters       | PAPI library           |
++--------------+------------------------------+------------------------+
+|sampler       | Time-based sampling          | x64 Linux              |
++--------------+------------------------------+------------------------+
+|symbollookup  | Lookup file/line/function    | Dyninst                |
+|              | info from program addresses  |                        |
++--------------+------------------------------+------------------------+
+|nvprof        | NVidia NVProf annotation     | CUDA                   |
+|              | bindings                     |                        |
++--------------+------------------------------+------------------------+
+|vtune         | Intel VTune annotation       | VTune                  |
+|              | bindings                     |                        |
++--------------+------------------------------+------------------------+
+
+Building the optional services can be controlled with
+``WITH_<service>`` CMake flags. If a flag is set to ``On``, CMake will
+try to find the corresponding dependencies. For cases where
+dependencies are not found automatically or a specific version is
+required, there are typically additional CMake flags to specify the
+installation location. For example, to enable PAPI::
+
+    cmake -DWITH_PAPI=On -DPAPI_PREFIX=<path to PAPI installation>
+
++--------------+-------------------------------------------------------+
+|Service       | CMake flags                                           |
++==============+=======================================================+
+|callpath      | ``WITH_CALLPATH=On``                                  |
++--------------+-------------------------------------------------------+
+|cupti         | ``WITH_CUPTI=On``.                                    |
+|              | Set CUpti installation dir in ``CUPTI_PREFIX``.       |
++--------------+-------------------------------------------------------+
+|libpfm        | ``WITH_LIBPFM=On``.                                   |
+|              | Set libpfm installation dir in ``LIBPFM_INSTALL``.    |
++--------------+-------------------------------------------------------+
+|mpi           | ``WITH_MPI=On``.                                      |
+|              | Set ``MPI_C_COMPILER`` to path to MPI C compiler.     |
++--------------+-------------------------------------------------------+
+|mpit          | ``WITH_MPIT=On``.                                     |
+|              | MPI must be enabled.                                  |
++--------------+-------------------------------------------------------+
+|papi          | ``WITH_PAPI=On``.                                     |
+|              | Set PAPI installation dir in ``PAPI_PREFIX``.         |
++--------------+-------------------------------------------------------+
+|sampler       | ``WITH_SAMPLER=On``.                                  |
++--------------+-------------------------------------------------------+
+|symbollookup  | ``WITH_DYNINST=On``.                                  |
+|              | Set path to ``DyninstConfig.cmake``                   |
+|              | in ``Dyninst_DIR``.                                   |
++--------------+-------------------------------------------------------+
+|nvprof        | ``WITH_NVPROF=On``.                                   |
+|              | Set CUPTI installation dir in ``CUPTI_PREFIX``.       |
++--------------+-------------------------------------------------------+
+|vtune         | ``WITH_VTUNE=On``.                                    |
+|              | Set Intel ITT API installation dir in ``ITT_PREFIX``. |
++--------------+-------------------------------------------------------+
+
+Linking Caliper programs
 --------------------------------
 
-When building on a BlueGene/Q system, the libraries must be cross-compiled to
-work correctly on the compute nodes. Use the provided toolchain file to build
-with clang, like so:
+Typically, all that is needed to create a Caliper-enabled program is
+to link it with the Caliper runtime library, which resides in
+``libcaliper.so``. An example link command for a C++ program built
+with g++ could look like this: ::
+  
+  CALIPER_DIR = /path/to/caliper/installation
 
-.. code-block:: sh
+  g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 
-     $ cd <path to caliper root directory>
-     $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \ 
-         -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/bgq-dynamic.toolchain \
-         -DCMAKE_CXX_FLAGS=-stdlib=libc++ \
-         ..
-     $ make 
-     $ make install
+Static libraries
+................................
 
-When processing the created cali files, make sure to use a version of
-`cali-query` complied for the frontend node. 
+It is possible to build Caliper as a static library. To do so, set
+``BUILD_SHARED_LIBS=Off``::
+
+    cmake -DBUILD_SHARED_LIBS=Off ..
+
+In this case, the ``libcaliper-reader.a`` and ``libcaliper-common.a``
+libraries must be added explicitly in addition to
+``libcaliper.a``. Example::
+
+    g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lcaliper-reader -lcaliper-common
+
+MPI
+................................
+
+Caliper provides wrappers for MPI calls in the separate
+``libcaliper-mpiwrap.so`` library. It is not strictly necessary to use
+the wrapper library for MPI programs with Caliper
+annotations. However, it will make Caliper's behavior more
+multi-process friendly, e.g. by reducing log output on most ranks. The
+wrapper library *is* required to use Caliper's MPI service.
+
+To use the wrapper library, add it before the Caliper libraries in a
+link command: ::
+
+  mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
+
+Fortran
+................................
+
+Caliper provides a Fortran wrapper module in source code form under
+``share/fortran/caliper.f90`` in the Caliper installation
+directory. This way, we avoid potential incompatibilities between
+compilers used to build Caliper and the target program.
+We recommend to simply add the Caliper module to the target
+program. An example Makefile may look like this: ::
+
+  F90         = gfortran
+  
+  CALIPER_DIR = /path/to/caliper/installation
+  OBJECTS     = main.o
+  
+  target-program : $(OBJECTS) caliper.o
+      $(F90) -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lstdc++
+
+  %.o : %.f90 caliper.mod
+      $(F90) -c $<
+
+  caliper.mod : caliper.o
+      
+  caliper.o : $(CALIPER_DIR)/share/fortran/caliper.f90
+      $(F90) -std=f2003 -c $<
+
+Note that it is necessary to link in the C++ standard library as
+well. With ``gfortran``, add ``-lstdc++``: ::
+
+  gfortran -o target-program *.o -L/path/to/caliper/lib64 -lcaliper -lstdc++
+  
+With Intel ``ifort``, you can use the ``-cxxlib`` option: ::
+
+  ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib64 -lcaliper
+
+The wrapper module uses Fortran 2003 C bindings. Thus, it requires a
+Fortran 2003 compatible compiler to build, but should be usable with
+any reasonably "modern" Fortran code. More work may be required to
+integrate it with Fortran 77 codes.
+

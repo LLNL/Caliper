@@ -6,15 +6,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Getting started &mdash; Caliper 1.5.0 documentation</title>
+    <title>Getting started &mdash; Caliper 1.6.0 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.5.0',
+        VERSION:     '1.6.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
     <link rel="next" title="Concepts" href="concepts.html" />
     <link rel="prev" title="Build and install" href="build.html" /> 
   </head>
@@ -40,7 +41,7 @@
         <li class="right" >
           <a href="build.html" title="Build and install"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -83,7 +84,7 @@ profile. By default, the annotations perform no actions other than
 updating the Caliper-internal <em>blackboard</em> buffer.</p>
 <p>The following example marks &#8220;initialization&#8221; and &#8220;loop&#8221; phases in a
 C++ code, and exports the main loop&#8217;s current iteration counter.</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;caliper/cali.h&gt;</span>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
 <span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
 <span class="p">{</span>
@@ -94,7 +95,7 @@ C++ code, and exports the main loop&#8217;s current iteration counter.</p>
     <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
     <span class="c1">// perform initialization tasks</span>
     <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-    <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="kt">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
     <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;initialization&quot;</span><span class="p">);</span>
 
     <span class="c1">// Mark the loop</span>
@@ -110,7 +111,7 @@ C++ code, and exports the main loop&#8217;s current iteration counter.</p>
         <span class="c1">//   &quot;iteration#mainloop&quot; : &lt;i&gt; }</span>
 
         <span class="c1">// perform computation</span>
-        <span class="n">t</span> <span class="o">+=</span> <span class="kt">delta_t</span><span class="p">;</span>
+        <span class="n">t</span> <span class="o">+=</span> <span class="n">delta_t</span><span class="p">;</span>
     <span class="p">}</span>
 
     <span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop</span><span class="p">);</span>
@@ -124,7 +125,7 @@ various runtime actions in built-in Caliper service modules, such as
 triggering snapshots or writing traces.</p>
 <p>In addition to the high-level macro API shown above, Caliper also
 provides lower-level C, C++, and Fortran APIs that can be used to
-define application-specific attributes.  See <a class="reference internal" href="api.html"><em>Annotation API</em></a> for examples
+define application-specific attributes.  See <a class="reference internal" href="api.html"><em>Example: High-level annotation macros in C</em></a> for examples
 in C and Fortran.</p>
 </div>
 <div class="section" id="build-and-link-caliper-programs">
@@ -132,7 +133,7 @@ in C and Fortran.</p>
 <p>To use Caliper, add annotation statements to your program and link it
 against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper) and infrastructure libraries (libcaliper-common).</p>
-<div class="highlight-python"><div class="highlight"><pre>CALIPER_LIBS = -L$(CALIPER_DIR)/lib64 -lcaliper
+<div class="highlight-python"><div class="highlight"><pre><span></span>CALIPER_LIBS = -L$(CALIPER_DIR)/lib64 -lcaliper
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="link.html"><em>Linking Caliper programs</em></a> for more information.</p>
@@ -148,7 +149,7 @@ data.</p>
 trigger and write snapshots whenever any or specific attributes are
 updated, generating a snapshot trace. A configuration profile can be
 selected with the <cite>CALI_CONFIG_PROFILE</cite> environment variable:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ CALI_CONFIG_PROFILE</span><span class="o">=</span>thread-trace ./cali-basic
+<div class="highlight-sh"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_CONFIG_PROFILE</span><span class="o">=</span>thread-trace ./cali-basic
 <span class="o">==</span> CALIPER: Registered pthread <span class="nv">service</span>
 <span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
 <span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
@@ -169,9 +170,9 @@ directory.</p>
 traces. For example, the following command will show us the time spent
 in the &#8220;initialization&#8221; phase, in the entire &#8220;loop&#8221; phase, and in each
 iteration of the example program:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>ls *.cali
+<div class="highlight-sh"><div class="highlight"><pre><span></span>$ ls *.cali
 160219-095419_5623_LQfNQTNgpqdM.cali
-<span class="nv">$ </span>cali-query -s time.inclusive.duration --table <span class="se">\</span>
+$ cali-query -s time.inclusive.duration --table <span class="se">\</span>
       160219-095419_5623_LQfNQTNgpqdM.cali
 <span class="k">function</span> phase          loop      iter..loop time.inc..ation
 main     initialization                                  100
@@ -191,7 +192,7 @@ better.</p>
 <p>Much of Caliper&#8217;s functionality is implemented by built-in &#8220;services&#8221;,
 which can be enabled or disabled as needed. Refer to the
 <a class="reference internal" href="services.html"><em>Caliper services</em></a> section to learn about functionality they provide.</p>
-<p>The <a class="reference internal" href="api.html"><em>Annotation API</em></a> section in the documentation provides reference
+<p>The <a class="reference internal" href="api.html"><em>Example: High-level annotation macros in C</em></a> section in the documentation provides reference
 documentation for Caliper&#8217;s C, C++, and Fortran annotation APIs.
 Finally, the <a class="reference internal" href="tools.html"><em>Caliper Tools</em></a> section documents the command-line tools
 used to analyze and export the data streams produced by Caliper&#8217;s
@@ -262,12 +263,12 @@ tracing and profiling services.</p>
         <li class="right" >
           <a href="build.html" title="Build and install"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
     </div>
   </body>
 </html>

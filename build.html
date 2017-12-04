@@ -6,15 +6,16 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Build and install &mdash; Caliper 1.5.0 documentation</title>
+    <title>Build and Link &mdash; Caliper 1.6.0 documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.5.0',
+        VERSION:     '1.6.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,9 +24,9 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.5.0 documentation" href="index.html" />
-    <link rel="next" title="Getting started" href="usage.html" />
-    <link rel="prev" title="Caliper: Context Annotation Library (for Performance)" href="index.html" /> 
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
+    <link rel="next" title="Architecture and Workflow" href="workflow.html" />
+    <link rel="prev" title="Caliper: A Performance Analysis Toolbox in a Library" href="index.html" /> 
   </head>
   <body role="document">
     <div class="related" role="navigation" aria-label="related navigation">
@@ -35,12 +36,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="usage.html" title="Getting started"
+          <a href="workflow.html" title="Architecture and Workflow"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Caliper: Context Annotation Library (for Performance)"
+          <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -49,35 +50,74 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="build-and-install">
-<h1>Build and install<a class="headerlink" href="#build-and-install" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="build-and-link">
+<h1>Build and Link<a class="headerlink" href="#build-and-link" title="Permalink to this headline">¶</a></h1>
 <p>Building and installing Caliper requires cmake (version 3.0 or
 greater), a current C++11-compatible compiler (GNU 4.8 and greater,
 LLVM clang 3.7 and greater are known to work), a Python interpreter,
 and the POSIX threads library.</p>
+<div class="section" id="building-caliper">
+<h2>Building Caliper<a class="headerlink" href="#building-caliper" title="Permalink to this headline">¶</a></h2>
 <p>To obtain Caliper, clone it from the
 <a class="reference external" href="https://github.com/LLNL/Caliper">github repository</a>.</p>
 <p>Next, configure and build Caliper:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">cd</span> &lt;path to caliper root directory&gt;
-<span class="nv">$ </span>mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
-<span class="nv">$ </span>cmake -DCMAKE_INSTALL_PREFIX<span class="o">=</span>&lt;path to install location&gt; <span class="se">\</span>
+<div class="highlight-sh"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> &lt;path to caliper root directory&gt;
+$ mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> build
+$ cmake -DCMAKE_INSTALL_PREFIX<span class="o">=</span>&lt;path to install location&gt; <span class="se">\</span>
     -DCMAKE_C_COMPILER<span class="o">=</span>&lt;path to c-compiler&gt; <span class="se">\</span>
     -DCMAKE_CXX_COMPILER<span class="o">=</span>&lt;path to c++-compiler&gt; <span class="se">\</span>
     ..
-<span class="nv">$ </span>make
-<span class="nv">$ </span>make install
+$ make
+$ make install
 </pre></div>
 </div>
-<div class="section" id="optional-modules">
-<h2>Optional modules<a class="headerlink" href="#optional-modules" title="Permalink to this headline">¶</a></h2>
-<p>Caliper contains a number of modules (<em>services</em>) that
-provide additional measurement or context data. Some of these services
-have additional dependencies:</p>
+<div class="section" id="cmake-flags">
+<h3>CMake Flags<a class="headerlink" href="#cmake-flags" title="Permalink to this headline">¶</a></h3>
+<p>You can configure the Caliper build with the following CMake variables:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="18%" />
-<col width="45%" />
-<col width="36%" />
+<col width="40%" />
+<col width="60%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">CMAKE_INSTALL_PREFIX</span></code></td>
+<td>Directory where Caliper should be
+installed.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">CMAKE_C_COMPILER</span></code></td>
+<td>C compiler (with absolute path!)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">CMAKE_CXX_COMPILER</span></code></td>
+<td>C++ compiler (with absolute path!)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">WITH_FORTRAN</span></code></td>
+<td>Build Fortran test cases and install
+Fortran wrapper module.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">WITH_TOOLS</span></code></td>
+<td>Build <cite>cali-query</cite>, <cite>cali-graph</cite>, and
+<cite>cali-stat</cite> tools.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">WITH_DOCS</span></code></td>
+<td>Enable documentation builds.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">BUILD_TESTING</span></code></td>
+<td>Build unit test infrastructure and
+programs.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="optional-modules">
+<h3>Optional modules<a class="headerlink" href="#optional-modules" title="Permalink to this headline">¶</a></h3>
+<p>Caliper contains a number of modules (<em>services</em>) that
+provide additional measurement or context data. Some of these services
+have additional dependencies.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="44%" />
+<col width="35%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Service</th>
@@ -90,12 +130,21 @@ have additional dependencies:</p>
 <td>Call path information</td>
 <td>libunwind</td>
 </tr>
-<tr class="row-odd"><td>libpfm</td>
-<td>Linux perf_event sampling</td>
-<td>Libpfm / Linux OS</td>
+<tr class="row-odd"><td>cupti</td>
+<td>CUDA driver/runtime calls</td>
+<td>CUDA, CUpti</td>
 </tr>
-<tr class="row-even"><td>mpi</td>
+<tr class="row-even"><td>libpfm</td>
+<td>Linux perf_event sampling</td>
+<td>Libpfm</td>
+</tr>
+<tr class="row-odd"><td>mpi</td>
 <td>MPI rank and function calls</td>
+<td>MPI</td>
+</tr>
+<tr class="row-even"><td>mpit</td>
+<td>MPI tools interface:
+MPI-internal counters</td>
 <td>MPI</td>
 </tr>
 <tr class="row-odd"><td>ompt</td>
@@ -107,76 +156,167 @@ have additional dependencies:</p>
 <td>PAPI library</td>
 </tr>
 <tr class="row-odd"><td>sampler</td>
-<td>Timer-based sampling</td>
-<td>Linux OS</td>
+<td>Time-based sampling</td>
+<td>x64 Linux</td>
+</tr>
+<tr class="row-even"><td>symbollookup</td>
+<td>Lookup file/line/function
+info from program addresses</td>
+<td>Dyninst</td>
+</tr>
+<tr class="row-odd"><td>nvprof</td>
+<td>NVidia NVProf annotation
+bindings</td>
+<td>CUDA</td>
+</tr>
+<tr class="row-even"><td>vtune</td>
+<td>Intel VTune annotation
+bindings</td>
+<td>VTune</td>
 </tr>
 </tbody>
 </table>
-<p>These services are optional and will only be built when their
-dependencies are found.</p>
-</div>
-<div class="section" id="common-cmake-flags">
-<h2>Common CMake Flags<a class="headerlink" href="#common-cmake-flags" title="Permalink to this headline">¶</a></h2>
-<p>You can configure the Caliper build with the following CMake variables:</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="40%" />
-<col width="60%" />
-</colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">CMAKE_INSTALL_PREFIX</span></code></td>
-<td>Directory where Caliper should be
-installed</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">CMAKE_C_COMPILER</span></code></td>
-<td>C compiler (with absolute path!)</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">CMAKE_CXX_COMPILER</span></code></td>
-<td>C++ compiler (with absolute path!)</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">MPI_C_COMPILER</span></code>,
-<code class="docutils literal"><span class="pre">MPI_CXX_COMPILER</span></code></td>
-<td>MPI C and C++ compilers for optional
-MPI wrapper module</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">OMPT_DIR</span></code></td>
-<td>Path to the OpenMP tools interface
-header (ompt.h</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">WITH_FORTRAN</span></code></td>
-<td>Build Fortran test cases and install
-Fortran wrapper module</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">WITH_TESTS</span></code></td>
-<td>Build small example test programs</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">WITH_TOOLS</span></code></td>
-<td>Build <cite>cali-query</cite>, <cite>cali-graph</cite>, and
-<cite>cali-stat</cite> tools.</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">WITH_DOCS</span></code></td>
-<td>Build Sphinx documentation.</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="building-on-bg-q">
-<h2>Building on BG/Q<a class="headerlink" href="#building-on-bg-q" title="Permalink to this headline">¶</a></h2>
-<p>When building on a BlueGene/Q system, the libraries must be cross-compiled to
-work correctly on the compute nodes. Use the provided toolchain file to build
-with clang, like so:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">cd</span> &lt;path to caliper root directory&gt;
-<span class="nv">$ </span>mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
-<span class="nv">$ </span>cmake -DCMAKE_INSTALL_PREFIX<span class="o">=</span>&lt;path to install location&gt; <span class="se">\</span>
-    -DCMAKE_TOOLCHAIN_FILE<span class="o">=</span>../cmake/toolchains/bgq-dynamic.toolchain <span class="se">\</span>
-    -DCMAKE_CXX_FLAGS<span class="o">=</span>-stdlib<span class="o">=</span>libc++ <span class="se">\</span>
-    ..
-<span class="nv">$ </span>make
-<span class="nv">$ </span>make install
+<p>Building the optional services can be controlled with
+<code class="docutils literal"><span class="pre">WITH_&lt;service&gt;</span></code> CMake flags. If a flag is set to <code class="docutils literal"><span class="pre">On</span></code>, CMake will
+try to find the corresponding dependencies. For cases where
+dependencies are not found automatically or a specific version is
+required, there are typically additional CMake flags to specify the
+installation location. For example, to enable PAPI:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>cmake -DWITH_PAPI=On -DPAPI_PREFIX=&lt;path to PAPI installation&gt;
 </pre></div>
 </div>
-<p>When processing the created cali files, make sure to use a version of
-<cite>cali-query</cite> complied for the frontend node.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Service</th>
+<th class="head">CMake flags</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>callpath</td>
+<td><code class="docutils literal"><span class="pre">WITH_CALLPATH=On</span></code></td>
+</tr>
+<tr class="row-odd"><td>cupti</td>
+<td><code class="docutils literal"><span class="pre">WITH_CUPTI=On</span></code>.
+Set CUpti installation dir in <code class="docutils literal"><span class="pre">CUPTI_PREFIX</span></code>.</td>
+</tr>
+<tr class="row-even"><td>libpfm</td>
+<td><code class="docutils literal"><span class="pre">WITH_LIBPFM=On</span></code>.
+Set libpfm installation dir in <code class="docutils literal"><span class="pre">LIBPFM_INSTALL</span></code>.</td>
+</tr>
+<tr class="row-odd"><td>mpi</td>
+<td><code class="docutils literal"><span class="pre">WITH_MPI=On</span></code>.
+Set <code class="docutils literal"><span class="pre">MPI_C_COMPILER</span></code> to path to MPI C compiler.</td>
+</tr>
+<tr class="row-even"><td>mpit</td>
+<td><code class="docutils literal"><span class="pre">WITH_MPIT=On</span></code>.
+MPI must be enabled.</td>
+</tr>
+<tr class="row-odd"><td>papi</td>
+<td><code class="docutils literal"><span class="pre">WITH_PAPI=On</span></code>.
+Set PAPI installation dir in <code class="docutils literal"><span class="pre">PAPI_PREFIX</span></code>.</td>
+</tr>
+<tr class="row-even"><td>sampler</td>
+<td><code class="docutils literal"><span class="pre">WITH_SAMPLER=On</span></code>.</td>
+</tr>
+<tr class="row-odd"><td>symbollookup</td>
+<td><code class="docutils literal"><span class="pre">WITH_DYNINST=On</span></code>.
+Set path to <code class="docutils literal"><span class="pre">DyninstConfig.cmake</span></code>
+in <code class="docutils literal"><span class="pre">Dyninst_DIR</span></code>.</td>
+</tr>
+<tr class="row-even"><td>nvprof</td>
+<td><code class="docutils literal"><span class="pre">WITH_NVPROF=On</span></code>.
+Set CUPTI installation dir in <code class="docutils literal"><span class="pre">CUPTI_PREFIX</span></code>.</td>
+</tr>
+<tr class="row-odd"><td>vtune</td>
+<td><code class="docutils literal"><span class="pre">WITH_VTUNE=On</span></code>.
+Set Intel ITT API installation dir in <code class="docutils literal"><span class="pre">ITT_PREFIX</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="linking-caliper-programs">
+<h2>Linking Caliper programs<a class="headerlink" href="#linking-caliper-programs" title="Permalink to this headline">¶</a></h2>
+<p>Typically, all that is needed to create a Caliper-enabled program is
+to link it with the Caliper runtime library, which resides in
+<code class="docutils literal"><span class="pre">libcaliper.so</span></code>. An example link command for a C++ program built
+with g++ could look like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>CALIPER_DIR = /path/to/caliper/installation
+
+g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
+</pre></div>
+</div>
+<div class="section" id="static-libraries">
+<h3>Static libraries<a class="headerlink" href="#static-libraries" title="Permalink to this headline">¶</a></h3>
+<p>It is possible to build Caliper as a static library. To do so, set
+<code class="docutils literal"><span class="pre">BUILD_SHARED_LIBS=Off</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>cmake -DBUILD_SHARED_LIBS=Off ..
+</pre></div>
+</div>
+<p>In this case, the <code class="docutils literal"><span class="pre">libcaliper-reader.a</span></code> and <code class="docutils literal"><span class="pre">libcaliper-common.a</span></code>
+libraries must be added explicitly in addition to
+<code class="docutils literal"><span class="pre">libcaliper.a</span></code>. Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lcaliper-reader -lcaliper-common
+</pre></div>
+</div>
+</div>
+<div class="section" id="mpi">
+<h3>MPI<a class="headerlink" href="#mpi" title="Permalink to this headline">¶</a></h3>
+<p>Caliper provides wrappers for MPI calls in the separate
+<code class="docutils literal"><span class="pre">libcaliper-mpiwrap.so</span></code> library. It is not strictly necessary to use
+the wrapper library for MPI programs with Caliper
+annotations. However, it will make Caliper&#8217;s behavior more
+multi-process friendly, e.g. by reducing log output on most ranks. The
+wrapper library <em>is</em> required to use Caliper&#8217;s MPI service.</p>
+<p>To use the wrapper library, add it before the Caliper libraries in a
+link command:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
+</pre></div>
+</div>
+</div>
+<div class="section" id="fortran">
+<h3>Fortran<a class="headerlink" href="#fortran" title="Permalink to this headline">¶</a></h3>
+<p>Caliper provides a Fortran wrapper module in source code form under
+<code class="docutils literal"><span class="pre">share/fortran/caliper.f90</span></code> in the Caliper installation
+directory. This way, we avoid potential incompatibilities between
+compilers used to build Caliper and the target program.
+We recommend to simply add the Caliper module to the target
+program. An example Makefile may look like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>F90         = gfortran
+
+CALIPER_DIR = /path/to/caliper/installation
+OBJECTS     = main.o
+
+target-program : $(OBJECTS) caliper.o
+    $(F90) -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lstdc++
+
+%.o : %.f90 caliper.mod
+    $(F90) -c $&lt;
+
+caliper.mod : caliper.o
+
+caliper.o : $(CALIPER_DIR)/share/fortran/caliper.f90
+    $(F90) -std=f2003 -c $&lt;
+</pre></div>
+</div>
+<p>Note that it is necessary to link in the C++ standard library as
+well. With <code class="docutils literal"><span class="pre">gfortran</span></code>, add <code class="docutils literal"><span class="pre">-lstdc++</span></code>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>gfortran -o target-program *.o -L/path/to/caliper/lib64 -lcaliper -lstdc++
+</pre></div>
+</div>
+<p>With Intel <code class="docutils literal"><span class="pre">ifort</span></code>, you can use the <code class="docutils literal"><span class="pre">-cxxlib</span></code> option:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib64 -lcaliper
+</pre></div>
+</div>
+<p>The wrapper module uses Fortran 2003 C bindings. Thus, it requires a
+Fortran 2003 compatible compiler to build, but should be usable with
+any reasonably &#8220;modern&#8221; Fortran code. More work may be required to
+integrate it with Fortran 77 codes.</p>
+</div>
 </div>
 </div>
 
@@ -191,20 +331,28 @@ with clang, like so:</p>
             </a></p>
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Build and install</a><ul>
+<li><a class="reference internal" href="#">Build and Link</a><ul>
+<li><a class="reference internal" href="#building-caliper">Building Caliper</a><ul>
+<li><a class="reference internal" href="#cmake-flags">CMake Flags</a></li>
 <li><a class="reference internal" href="#optional-modules">Optional modules</a></li>
-<li><a class="reference internal" href="#common-cmake-flags">Common CMake Flags</a></li>
-<li><a class="reference internal" href="#building-on-bg-q">Building on BG/Q</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#linking-caliper-programs">Linking Caliper programs</a><ul>
+<li><a class="reference internal" href="#static-libraries">Static libraries</a></li>
+<li><a class="reference internal" href="#mpi">MPI</a></li>
+<li><a class="reference internal" href="#fortran">Fortran</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">Caliper: Context Annotation Library (for Performance)</a></p>
+                        title="previous chapter">Caliper: A Performance Analysis Toolbox in a Library</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="usage.html"
-                        title="next chapter">Getting started</a></p>
+  <p class="topless"><a href="workflow.html"
+                        title="next chapter">Architecture and Workflow</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -236,17 +384,17 @@ with clang, like so:</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="usage.html" title="Getting started"
+          <a href="workflow.html" title="Architecture and Workflow"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Caliper: Context Annotation Library (for Performance)"
+          <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.5.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
     </div>
   </body>
 </html>

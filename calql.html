@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The Caliper Query Language &mdash; Caliper 1.6.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.6.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
+    <link rel="next" title="Service API" href="serviceapi.html" />
+    <link rel="prev" title="Caliper Tools" href="tools.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="serviceapi.html" title="Service API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper Tools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="the-caliper-query-language">
+<h1>The Caliper Query Language<a class="headerlink" href="#the-caliper-query-language" title="Permalink to this headline">¶</a></h1>
+<p>The Caliper Query Language (CalQL) is used to filter, aggregate, and
+create reports from Caliper data in Caliper&#8217;s data processing tools
+(cali-query) and report services. Its syntax is very similar to SQL.</p>
+<p>For example, filtering and aggregating a trace into a function time
+profile for an application&#8217;s main loop and printing results in a
+table, sorted by time, is accomplished with the following statement:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT *, count(), sum(time.duration)
+WHERE loop=mainloop
+GROUP BY function
+FORMAT table
+ORDER BY time.duration
+</pre></div>
+</div>
+<div class="section" id="select">
+<h2>SELECT<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h2>
+<p>The SELECT statement selects which attributes in snapshot records
+should be printed, and defines aggregations. <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span></code> selects all
+attributes. <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">op(arg)</span></code> enables aggregation operation <cite>op</cite> with
+argument <cite>arg</cite>. Generally, attributes will be printed in the order
+given in the SELECT statement.</p>
+<p>Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT *, count()
+</pre></div>
+</div>
+<p>Print all attributes and enable visit count aggregation.</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT function, annotation, sum(time.duration)
+</pre></div>
+</div>
+<p>Aggregate <cite>time.duration</cite> using <cite>sum</cite> and print <cite>function</cite> and
+<cite>annotation</cite> attributes from snapshot records.</p>
+</div>
+<div class="section" id="where">
+<h2>WHERE<a class="headerlink" href="#where" title="Permalink to this headline">¶</a></h2>
+<p>The WHERE statement can be used to filter the records to aggregate/print.
+The statement takes a comma-separated list of clauses. Records that don&#8217;t
+match all of the clauses are filtered out.</p>
+<p>Currently, there are clauses to test for existance of an attribute
+label in a record, and to filter for specific attribute
+values. Clauses can be negated with <code class="docutils literal"><span class="pre">NOT</span></code>. Example:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>WHERE loop,function=foo
+</pre></div>
+</div>
+<p>Select records that contain <code class="docutils literal"><span class="pre">loop</span></code> attributes where function equals
+<code class="docutils literal"><span class="pre">foo</span></code>. Note: for nested attributes, the match may occur on any
+level. The above example matches the following:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>{ loop=mainloop, iteration=5, function=main/foo }      Matches
+{ loop=mainloop, iteration=5, function=main/foo/bar }  Matches (&#39;function=foo&#39; will be matched on any nesting level)
+{ function=main/foo }                                  No match: &#39;loop&#39; attribute missing
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">NOT</span></code> keyword negates clauses:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>WHERE NOT iteration#mainloop=4
+</pre></div>
+</div>
+<p>matches every record where <code class="docutils literal"><span class="pre">iteration#mainloop</span></code> is not 4 (including
+records without <code class="docutils literal"><span class="pre">iteration#mainloop</span></code> attributes.</p>
+</div>
+<div class="section" id="group-by">
+<h2>GROUP BY<a class="headerlink" href="#group-by" title="Permalink to this headline">¶</a></h2>
+<p>The GROUP BY statement defines the <cite>aggregation key</cite> for aggregation
+operations. The aggregation key defines for which attributes separate
+(aggregate) records will be kept. That is, the aggregator will
+generate an aggregate record for each unique combination of key values
+found in the input records.  The values of the aggregation attributes
+in the input records will be accumulated and appended to the aggregate
+record.</p>
+<p>Consider the following table of input records:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>function loop     iteration
+         mainloop
+foo      mainloop         0
+bar      mainloop         0
+foo      mainloop         1
+bar      mainloop         1
+foo      mainloop         2
+bar      mainloop         2
+</pre></div>
+</div>
+<p>With this input, the following GROUP BY statement will create a
+function profile:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT *, count() GROUP BY function
+
+function aggregate.count
+foo                    3
+bar                    3
+</pre></div>
+</div>
+</div>
+<div class="section" id="format">
+<h2>FORMAT<a class="headerlink" href="#format" title="Permalink to this headline">¶</a></h2>
+<p>The FORMAT statement selects the output format option. Caliper can
+produce machine-readable (e.g., json or Caliper&#8217;s own csv-style) or
+human-readable output (text tables or a tree representation).</p>
+<p>Currently available formatters are</p>
+<ul class="simple">
+<li>csv (Caliper&#8217;s default machine-readable format)</li>
+<li>json</li>
+<li>expand (expanded attr1=value1,attr2=value2,... records)</li>
+<li>table (human-readable text table)</li>
+<li>tree (print records in a tree based on the hierarchy of selected path attributes)</li>
+</ul>
+</div>
+<div class="section" id="order-by">
+<h2>ORDER BY<a class="headerlink" href="#order-by" title="Permalink to this headline">¶</a></h2>
+<p>Sort output records by the given sort criteria. The statement defines
+a list of attributes to sort output records by. Records can be sorted
+ascending (using the ASC keyword) or descending (using DESC). Note
+that the sorting is performed by the output formatter and only
+available in some formatters (e.g., table).</p>
+<p>The following example prints a iteration/function profile ordered by
+time and iteration number:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT *, sum(time.duration) FORMAT table ORDER BY time.inclusive.duration DESC, iteration#mainloop
+
+function loop     iteration#mainloop time.inclusive.duration
+main                                                  100000
+main     mainloop                                      80000
+main/foo mainloop                  0                    2500
+main     mainloop                  0                    1500
+main/foo mainloop                  1                    3500
+main     mainloop                  1                    2000
+main     mainloop                  2                    1000
+main/foo mainloop                  2                     600
+...
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">The Caliper Query Language</a><ul>
+<li><a class="reference internal" href="#select">SELECT</a></li>
+<li><a class="reference internal" href="#where">WHERE</a></li>
+<li><a class="reference internal" href="#group-by">GROUP BY</a></li>
+<li><a class="reference internal" href="#format">FORMAT</a></li>
+<li><a class="reference internal" href="#order-by">ORDER BY</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="tools.html"
+                        title="previous chapter">Caliper Tools</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="serviceapi.html"
+                        title="next chapter">Service API</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/calql.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="serviceapi.html" title="Service API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper Tools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+    </div>
+  </body>
+</html>
