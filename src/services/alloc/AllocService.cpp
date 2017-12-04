@@ -59,6 +59,8 @@ namespace
     bool track_system_alloc_ranges { false };
     bool record_active_mem { false };
 
+    std::atomic<unsigned long> alloc_count(0);
+
     ConfigSet config;
 
     const ConfigSet::Entry s_configdata[] = {
@@ -88,9 +90,6 @@ namespace
     };
 
     std::vector<alloc_attrs> memoryaddress_attrs;
-
-    std::atomic<uint64_t> alloc_count { 0 };
-    std::atomic<uint64_t> active_memory { 0 };
 
     Attribute class_memoryaddress_attr = Attribute::invalid;
 
@@ -133,11 +132,8 @@ namespace
 
             if (c) {
                 size_t dims[] = {size};
-                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), 
-                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, record_system_allocs);
-
-                active_memory += size;
-                alloc_count++;
+                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count++), 
+                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, record_system_allocs, track_system_alloc_ranges);
             }
         }
 
@@ -156,10 +152,7 @@ namespace
             if (c) {
                 size_t dims[] = {num};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count), (uint64_t)ret, size, dims, 1, calloc_str, record_system_allocs);
-
-                active_memory += num*size;
-                alloc_count++;
+                        std::to_string(alloc_count++), (uint64_t)ret, size, dims, 1, calloc_str, record_system_allocs, track_system_alloc_ranges);
             }
         }
 
@@ -181,14 +174,7 @@ namespace
 
                 size_t dims[] = {size};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, record_system_allocs);
-
-                if (removed.isValid()) {
-                    active_memory -= removed.m_bytes;
-                }
-
-                active_memory += size;
-                alloc_count++;
+                        std::to_string(alloc_count++), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, record_system_allocs, track_system_alloc_ranges);
             }
         }
 
@@ -207,12 +193,6 @@ namespace
             if (c) {
                 cali::DataTracker::Allocation removed = 
                     DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, free_str, record_system_allocs);
-
-                if (removed.isValid()) {
-                    active_memory -= removed.m_bytes;
-                }
-
-                alloc_count++;
             }
         }
     }
@@ -231,7 +211,7 @@ namespace
                 active_mem_attr
             };
             Variant data[1] = {
-                Variant(active_memory),
+                Variant(cali::DataTracker::g_alloc_tracker.get_active_bytes()),
             };
 
             c->make_entrylist(1, attr, data, *snapshot);

@@ -7,6 +7,7 @@
 #include <vector>
 #include <numeric>
 #include <memory>
+#include <atomic>
 
 namespace cali 
 {
@@ -63,11 +64,13 @@ class AllocTracker {
     static const std::string cali_free;
 
     bool m_track_ranges;
+    std::atomic<uint64_t> m_active_bytes;
 
 public:
     AllocTracker(bool track_ranges = true);
 
     void set_track_ranges(bool track_ranges);
+    uint64_t get_active_bytes();
 
     void add_allocation(const std::string &label,
                         const uint64_t addr,

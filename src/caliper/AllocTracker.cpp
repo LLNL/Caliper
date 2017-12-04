@@ -394,6 +394,10 @@ void AllocTracker::set_track_ranges(bool track_ranges) {
     m_track_ranges = track_ranges;
 }
 
+uint64_t AllocTracker::get_active_bytes() {
+    return m_active_bytes;
+}
+
 void 
 AllocTracker::add_allocation(const std::string &label,
                              const uint64_t addr,
@@ -403,9 +407,10 @@ AllocTracker::add_allocation(const std::string &label,
                              const std::string fn_name,
                              bool record_snapshot,
                              bool track_range) {
-    // Insert into splay tree
+    // Create allocation and update tracking info
     Allocation *a = new Allocation(label, addr, elem_size, dimensions, num_dimensions);
     AllocTree::AllocNode *newNode = alloc_tree->insert(a, track_range && m_track_ranges);
+    m_active_bytes += a->m_bytes;
 
     if (!record_snapshot)
         return;
