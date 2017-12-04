@@ -446,7 +446,10 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
                                            bool record_snapshot) {
     Allocation removed = alloc_tree->remove(address);
 
-    if (!record_snapshot)
+    if (removed.isValid())
+        m_active_bytes -= removed.m_bytes;
+
+    if (!record_snapshot || !removed.isValid())
         return removed;
 
     Caliper c = Caliper();
