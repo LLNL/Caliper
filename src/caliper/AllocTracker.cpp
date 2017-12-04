@@ -122,17 +122,21 @@ struct AllocTracker::AllocTree {
         HAND handedness;
         uint64_t key;
 
+        bool tracked;
+
         AllocNode(Allocation *allocation,
                   AllocNode *parent,
                   AllocNode *left,
                   AllocNode *right,
-                  HAND handedness)
+                  HAND handedness,
+                  bool tracked = true)
                 : allocation(allocation),
                   parent(parent),
                   left(left),
                   right(right),
                   handedness(handedness),
-                  key(allocation->m_start_address)
+                  key(allocation->m_start_address),
+                  tracked(tracked)
         { }
 
         ~AllocNode() {
@@ -198,16 +202,10 @@ struct AllocTracker::AllocTree {
 
     AllocNode *root;
     std::map<uint64_t, AllocNode*> alloc_map;
-    bool m_map_only;
-
-    void set_map_only(bool map_only) {
-        m_map_only = map_only;
-    }
 
 
-    AllocTree(AllocNode *root = nullptr, bool map_only = false) 
-        : root(root),
-          m_map_only(map_only)
+    AllocTree(AllocNode *root = nullptr, bool track_ranges = false) 
+        : root(root)
     { }
 
     void rotate_left(AllocNode *node) {
@@ -280,7 +278,7 @@ struct AllocTracker::AllocTree {
         root = node;
     }
 
-    AllocNode* insert(Allocation *allocation) {
+    AllocNode* insert(Allocation *allocation, bool track_range) {
 
         std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
         if(!thread_lock.owns_lock()){
@@ -289,15 +287,15 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> process_lock(process_mutex);
 
-        if (m_map_only) {
+        if (!track_range) {
             AllocNode *newNode = 
-                new AllocNode(allocation, nullptr, nullptr, nullptr, NA);
+                new AllocNode(allocation, nullptr, nullptr, nullptr, NA, false);
             alloc_map[allocation->m_start_address] = newNode;
             return newNode;
         }
 
         if (root == nullptr) {
-            root = new AllocNode(allocation, nullptr, nullptr, nullptr, NA);
+            root = new AllocNode(allocation, nullptr, nullptr, nullptr, NA, true);
         }
         else {
             AllocNode *newNode = root->insert(allocation);
@@ -317,22 +315,15 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> process_lock(process_mutex);
 
-        if (m_map_only) {
-            AllocNode *node = alloc_map[start_address];
-            if (node) {
+        AllocNode *node = alloc_map[start_address];
+
+        if (node) {
+            if (!node->tracked) {
                 Allocation ret(*node->allocation);
                 delete node;
                 alloc_map.erase(start_address);
                 return ret;
-            }
-        }
-
-        if (root == nullptr) {
-            // Nothing to do here
-        }
-        else {
-            AllocNode *node = alloc_map[start_address];
-            if (node) {
+            } else {
                 splay(node);
                 AllocTree leftTree(node->left);
                 if (leftTree.root) {
@@ -357,6 +348,7 @@ struct AllocTracker::AllocTree {
                 return ret;
             }
         }
+
         return Allocation::invalid;
     }
 
@@ -395,12 +387,11 @@ struct AllocTracker::AllocTree {
 thread_local std::mutex AllocTracker::AllocTree::thread_mutex;
 
 AllocTracker::AllocTracker(bool track_ranges) 
-    : alloc_tree(new AllocTree(nullptr, !track_ranges))
+    : alloc_tree(new AllocTree(nullptr, track_ranges))
 { }
 
-void 
-AllocTracker::set_track_ranges(bool track_ranges) {
-    alloc_tree->set_map_only(!track_ranges);
+void AllocTracker::set_track_ranges(bool track_ranges) {
+    m_track_ranges = track_ranges;
 }
 
 void 
@@ -410,10 +401,11 @@ AllocTracker::add_allocation(const std::string &label,
                              const size_t dimensions[],
                              const size_t num_dimensions,
                              const std::string fn_name,
-                             bool record_snapshot) {
+                             bool record_snapshot,
+                             bool track_range) {
     // Insert into splay tree
     Allocation *a = new Allocation(label, addr, elem_size, dimensions, num_dimensions);
-    AllocTree::AllocNode *newNode = alloc_tree->insert(a);
+    AllocTree::AllocNode *newNode = alloc_tree->insert(a, track_range && m_track_ranges);
 
     if (!record_snapshot)
         return;

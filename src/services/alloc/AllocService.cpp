@@ -54,20 +54,25 @@ using namespace cali;
 namespace
 {
     thread_local std::mutex thread_mutex;
-    bool record_all_allocs { false };
-    bool track_all_allocs { false };
+    bool record_system_allocs { false };
+    bool track_ranges { false };
+    bool track_system_alloc_ranges { false };
     bool record_active_mem { false };
 
     ConfigSet config;
 
     const ConfigSet::Entry s_configdata[] = {
-            { "record_all", CALI_TYPE_BOOL, "false",
-              "Record all allocations made by malloc/calloc/realloc.",
-              "Record all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
+            { "record_system_allocs", CALI_TYPE_BOOL, "false",
+              "Record allocations made by malloc/calloc/realloc.",
+              "Record allocations made by malloc/calloc/realloc."
             },
-            { "track_all", CALI_TYPE_BOOL, "false",
-              "Track all allocations made by malloc/calloc/realloc.",
-              "Track all allocations made by malloc/calloc/realloc. May incur high overhead for code with frequent allocations."
+            { "track_system_alloc_ranges", CALI_TYPE_BOOL, "false",
+              "Track allocations ranges made by malloc/calloc/realloc.",
+              "Track allocations ranges made by malloc/calloc/realloc."
+            },
+            { "track_ranges", CALI_TYPE_BOOL, "true",
+              "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES).",
+              "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES). If enabled, will resolve addresses to their containing allocations."
             },
             { "record_active_mem", CALI_TYPE_BOOL, "false",
               "Record the total allocated memory at each snapshot.",
@@ -129,7 +134,7 @@ namespace
             if (c) {
                 size_t dims[] = {size};
                 DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count), 
-                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, record_all_allocs);
+                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, record_system_allocs);
 
                 active_memory += size;
                 alloc_count++;
@@ -151,7 +156,7 @@ namespace
             if (c) {
                 size_t dims[] = {num};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count), (uint64_t)ret, size, dims, 1, calloc_str, record_all_allocs);
+                        std::to_string(alloc_count), (uint64_t)ret, size, dims, 1, calloc_str, record_system_allocs);
 
                 active_memory += num*size;
                 alloc_count++;
@@ -172,11 +177,11 @@ namespace
 
             if (c) {
                 DataTracker::Allocation removed = 
-                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, realloc_free_str, record_all_allocs);
+                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, realloc_free_str, record_system_allocs);
 
                 size_t dims[] = {size};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, record_all_allocs);
+                        std::to_string(alloc_count), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, record_system_allocs);
 
                 if (removed.isValid()) {
                     active_memory -= removed.m_bytes;
@@ -201,7 +206,7 @@ namespace
 
             if (c) {
                 cali::DataTracker::Allocation removed = 
-                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, free_str, record_all_allocs);
+                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, free_str, record_system_allocs);
 
                 if (removed.isValid()) {
                     active_memory -= removed.m_bytes;
@@ -309,11 +314,12 @@ namespace
     {
         config = RuntimeConfig::init("alloc", s_configdata);
 
-        record_all_allocs = config.get("record_all").to_bool();
-        track_all_allocs = config.get("track_all").to_bool();
+        record_system_allocs = config.get("record_system_allocs").to_bool();
+        track_system_alloc_ranges = config.get("track_system_alloc_ranges").to_bool();
+        track_ranges = config.get("track_ranges").to_bool();
         record_active_mem = config.get("record_active_mem").to_bool();
 
-        DataTracker::g_alloc_tracker.set_track_ranges(track_all_allocs);
+        cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
 
         c->events().create_attr_evt.connect(create_attr_cb);
         c->events().post_init_evt.connect(post_init_cb);

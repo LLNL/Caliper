@@ -12,7 +12,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace',
+            'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace:event',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -20,7 +20,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = calitest.get_snapshots_from_text(query_output)
 
-        self.assertTrue(len(snapshots) == 4)
+        self.assertTrue(len(snapshots) == 14)
 
         # test allocated.0
 
