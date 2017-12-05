@@ -57,7 +57,7 @@ namespace
     bool record_system_allocs { false };
     bool track_ranges { true };
     bool track_system_alloc_ranges { false };
-    bool record_active_mem { false };
+    bool record_active_mem { true };
     bool record_active_mem_by_size { false };
     bool count_allocs_by_size { false };
 
@@ -78,7 +78,7 @@ namespace
               "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES).",
               "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES). If enabled, will resolve addresses to their containing allocations."
             },
-            { "record_active_mem", CALI_TYPE_BOOL, "false",
+            { "record_active_mem", CALI_TYPE_BOOL, "true",
               "Record the active allocated memory at each snapshot.",
               "Record the active allocated memory at each snapshot."
             },
