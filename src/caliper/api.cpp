@@ -46,12 +46,13 @@ cali_id_t cali_loop_attr_id         = CALI_INV_ID;
 cali_id_t cali_statement_attr_id    = CALI_INV_ID;
 cali_id_t cali_annotation_attr_id   = CALI_INV_ID;
 
-cali_id_t cali_alloc_fn_attr_id		        = CALI_INV_ID;
-cali_id_t cali_alloc_label_attr_id		    = CALI_INV_ID;
-cali_id_t cali_alloc_addr_attr_id		    = CALI_INV_ID;
-cali_id_t cali_alloc_elem_size_attr_id		= CALI_INV_ID;
-cali_id_t cali_alloc_num_elems_attr_id		= CALI_INV_ID;
-cali_id_t cali_alloc_total_size_attr_id		= CALI_INV_ID;
+cali_id_t cali_alloc_fn_attr_id		            = CALI_INV_ID;
+cali_id_t cali_alloc_label_attr_id		        = CALI_INV_ID;
+cali_id_t cali_alloc_addr_attr_id		        = CALI_INV_ID;
+cali_id_t cali_alloc_elem_size_attr_id		    = CALI_INV_ID;
+cali_id_t cali_alloc_num_elems_attr_id		    = CALI_INV_ID;
+cali_id_t cali_alloc_total_size_attr_id		    = CALI_INV_ID;
+cali_id_t cali_alloc_same_size_count_attr_id    = CALI_INV_ID;
 
 namespace cali
 {
@@ -71,6 +72,7 @@ namespace cali
     Attribute alloc_elem_size_attr;
     Attribute alloc_num_elems_attr;
     Attribute alloc_total_size_attr;
+    Attribute alloc_same_size_count_attr;
 
     void init_attribute_classes(Caliper* c) {
         struct attr_info_t {
@@ -138,6 +140,9 @@ namespace cali
             },
             { "alloc.total_size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT,
               &alloc_total_size_attr, &cali_alloc_total_size_attr_id
+            },
+            { "alloc.same_sized_allocs", CALI_TYPE_UINT, CALI_ATTR_DEFAULT,
+              &alloc_same_size_count_attr, &cali_alloc_same_size_count_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };

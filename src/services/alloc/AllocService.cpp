@@ -58,6 +58,8 @@ namespace
     bool track_ranges { true };
     bool track_system_alloc_ranges { false };
     bool record_active_mem { false };
+    bool record_active_mem_by_size { false };
+    bool count_allocs_by_size { false };
 
     std::atomic<unsigned long> alloc_count(0);
 
@@ -77,8 +79,12 @@ namespace
               "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES). If enabled, will resolve addresses to their containing allocations."
             },
             { "record_active_mem", CALI_TYPE_BOOL, "false",
-              "Record the total allocated memory at each snapshot.",
-              "Record the total allocated memory at each snapshot."
+              "Record the active allocated memory at each snapshot.",
+              "Record the active allocated memory at each snapshot."
+            },
+            { "count_allocs_by_size", CALI_TYPE_BOOL, "false",
+              "Count the number of active allocations of the same size as the one being recorded.",
+              "Count the number of active allocations of the same size as the one being recorded. Recorded whenever an allocation snapshot is taken."
             },
             ConfigSet::Terminator
     };
@@ -133,7 +139,8 @@ namespace
             if (c) {
                 size_t dims[] = {size};
                 DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count++), 
-                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, record_system_allocs, track_system_alloc_ranges);
+                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, 
+                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
             }
         }
 
@@ -152,7 +159,8 @@ namespace
             if (c) {
                 size_t dims[] = {num};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count++), (uint64_t)ret, size, dims, 1, calloc_str, record_system_allocs, track_system_alloc_ranges);
+                        std::to_string(alloc_count++), (uint64_t)ret, size, dims, 1, calloc_str, 
+                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
             }
         }
 
@@ -174,7 +182,8 @@ namespace
 
                 size_t dims[] = {size};
                 DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count++), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, record_system_allocs, track_system_alloc_ranges);
+                        std::to_string(alloc_count++), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, 
+                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
             }
         }
 
@@ -298,6 +307,7 @@ namespace
         track_system_alloc_ranges = config.get("track_system_alloc_ranges").to_bool();
         track_ranges = config.get("track_ranges").to_bool();
         record_active_mem = config.get("record_active_mem").to_bool();
+        count_allocs_by_size = config.get("count_allocs_by_size").to_bool();
 
         cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
 

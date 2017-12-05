@@ -64,7 +64,6 @@ class AllocTracker {
     static const std::string cali_free;
 
     bool m_track_ranges;
-    std::atomic<uint64_t> m_active_bytes;
 
 public:
     AllocTracker(bool track_ranges = true);
@@ -79,7 +78,8 @@ public:
                         const size_t num_dimensions,
                         const std::string fn_name = cali_alloc,
                         bool record_snapshot = true,
-                        bool track_range = true);
+                        bool track_range = true,
+                        bool count_same_sized_allocs = false);
     Allocation remove_allocation(uint64_t address, 
                                  const std::string fn_name = cali_free,
                                  bool record_snapshot = true);
