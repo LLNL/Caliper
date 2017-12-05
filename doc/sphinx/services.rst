@@ -175,25 +175,48 @@ Alloc
 --------------------------------
 
 The `alloc` service adds data tracking information to Caliper.
-It will resolve the data container of any attribute of class
-"class.memoryaddress", for example the array containing a
-memory address sampled by the `Libpfm` service.
+It records snapshots of allocation calls with their arguments and
+return values, and resolves the containing allocations of any memory
+addresses produced by other Caliper services, such as the `Libpfm` 
+service.
 By default, it will only use data tracking information provided
 via the ``cali::DataTracker`` API, but it may be configured to
 record and/or track any allocations by hooking system allocation
 calls.
+This service may potentially incur significant amounts of overhead when 
+recording/tracking frequent allocations/deallocations.
 
-.. envvar:: CALI_ALLOC_RECORD_ALL=(true|false)
+.. envvar:: CALI_ALLOC_TRACK_RANGES=(true|false)
 
-   Record all allocations captured by hooking malloc/calloc/realloc.
-   May cause high overhead for codes that frequently allocate memory.
+    When set, snapshots with memory addresses produced by other services 
+    (e.g., Libpfm)  will be appended with the allocations that contain them.
+
+    Default: true
+
+.. envvar:: CALI_ALLOC_RECORD_ACTIVE_MEM=(true|false)
+
+    Record the amount of active allocated memory, in bytes, at each snapshot.
+
+    Default: true
+
+.. envvar:: CALI_ALLOC_COUNT_ALLOCS_BY_SIZE=(true|false)
+
+    Count the number of active allocations of the same size.
+    At each allocation snapshot, this will append the number of allocations
+    of the same size as the current allocation.
+
+    Default: false
+
+.. envvar:: CALI_ALLOC_RECORD_SYSTEM_ALLOCS=(true|false)
+
+   Record calls to malloc/calloc/realloc/free with their arguments as Caliper snapshots.
 
    Default: false.
 
-.. envvar:: CALI_ALLOC_TRACK_ALL=(true|false)
+.. envvar:: CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES=(true|false)
 
-   Track all allocations captured by hooking malloc/calloc/realloc.
-   May cause high overhead for codes that frequently allocate memory.
+   Track all allocations created/deleted using malloc/calloc/realloc/free.
+   This requires CALI_ALLOC_TRACK_RANGES=true (which is default).
 
    Default: false.
 
