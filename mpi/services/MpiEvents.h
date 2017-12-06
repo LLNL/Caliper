@@ -1,3 +1,8 @@
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
+// Produced at the Lawrence Livermore National Laboratory.
+//
+// This file is part of Caliper.
+// Written by David Boehme, boehme3@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -25,41 +30,31 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// This is the Caliper runtime part of the MPI-T service, which will be part of libcaliper.
-// Must not contain any MPI dependencies.
+/// \file  MpiEvents.h
+/// \brief Caliper-MPI internal callbacks
 
-#include "../CaliperService.h"
-
-#include <caliper/Caliper.h>
-
-#include <caliper/common/Log.h>
-
-using namespace cali;
+#include "caliper/common/util/callback.hpp"
 
 namespace cali
 {
 
-void __attribute__((weak)) mpit_init(Caliper* c);
+class Caliper;
 
-}
+/// \brief The MPI callbacks
+struct MpiEvents {
+    typedef util::callback<void(Caliper*)> 
+        mpi_env_cbvec;
 
-namespace
-{
+    /// \brief MPI has been initialized. 
+    /// 
+    ///   This callback will be called by the MPI wrapper service (mpi) once 
+    /// when MPI is initialized. This may happen during or after MPI_Init().
+    mpi_env_cbvec mpi_init_evt;
 
-// Register the service and initalize the MPI-T interface
+    /// \brief MPI is about to be finalized.
+    mpi_env_cbvec mpi_finalize_evt;
 
-void mpit_register(Caliper* c) {
-    if (mpit_init) {
-        mpit_init(c);
-        Log(1).stream() << "Registered MPI-T service" << std::endl;
-    } else {
-        Log(0).stream() << "mpit: MPI wrapper implementation not found: Is caliper-mpiwrap linked?" << std::endl;
-    }
-}
+    static MpiEvents events;
+};
 
-}
-
-namespace cali 
-{
-    CaliperService mpit_service = { "mpit", ::mpit_register };
 }

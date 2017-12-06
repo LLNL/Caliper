@@ -25,9 +25,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-/// \file MpitService.cpp
-/// \brief Caliper MPIT service
-/// This is the MPI part of the MPI-T service, which will be part of libcaliper-mpiwrap.
+
+// MpitService.cpp
+// Caliper MPIT service
+// This is the MPI part of the MPI-T service, which will be part of libcaliper-mpiwrap.
+
+#include "../MpiEvents.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
@@ -53,6 +56,7 @@ using namespace std;
 
 namespace cali
 {
+    bool mpit_enabled;
     // vector<cali_id_t> mpit_pvar_attr;
     // vector<cali_id_t> watermark_changed_attr;
     // vector<cali_id_t> watermark_change_attr;
@@ -615,10 +619,6 @@ namespace
 
 namespace cali 
 {
-    void mpit_init(Caliper* c) {
-        ::do_mpit_init(c);
-    }
-
     /*Thin wrapper functions to invoke pvar allocation function from another module*/
     void mpit_allocate_pvar_handles() {
         Caliper c;
@@ -629,5 +629,12 @@ namespace cali
         Caliper c;
         ::do_mpit_allocate_bound_pvar_handles(&c, handle, bind);
     }
-} // namespace cali
 
+    void mpit_init(Caliper* c) {
+        mpit_enabled = true;
+
+        MpiEvents::events.mpi_init_evt.connect(::do_mpit_allocate_pvar_handles);
+
+        ::do_mpit_init(c);
+    }
+} // namespace cali
