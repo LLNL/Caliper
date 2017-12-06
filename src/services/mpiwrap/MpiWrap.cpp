@@ -30,9 +30,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  MpiWrap.cpp
-///@brief Caliper MPI service
-
 #include "../CaliperService.h"
 
 #include "caliper/Caliper.h"
@@ -45,14 +42,19 @@ using namespace std;
 
 namespace cali
 {
-    Attribute mpifn_attr   { Attribute::invalid };
-    Attribute mpirank_attr { Attribute::invalid };
-    Attribute mpisize_attr { Attribute::invalid };
 
-    bool      mpi_enabled  { false };
+Attribute mpifn_attr   { Attribute::invalid };
+Attribute mpirank_attr { Attribute::invalid };
+Attribute mpisize_attr { Attribute::invalid };
 
-    string    mpi_whitelist_string;
-    string    mpi_blacklist_string;
+bool      mpi_enabled  { false };
+
+string    mpi_whitelist_string;
+string    mpi_blacklist_string;
+
+// This is in libcaliper-mpiwrap
+void __attribute__((weak)) mpiwrap_init(Caliper* c);
+
 }
 
 namespace
@@ -87,12 +89,17 @@ void mpi_register(Caliper* c)
         c->create_attribute("mpi.size", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
-    mpi_enabled = true;
-
     mpi_whitelist_string = config.get("whitelist").to_string();
     mpi_blacklist_string = config.get("blacklist").to_string();
 
-    Log(1).stream() << "Registered MPI service" << endl;
+    if (mpiwrap_init) {
+        mpi_enabled = true;
+        mpiwrap_init(c);
+
+        Log(1).stream() << "Registered MPI service" << endl;
+    } else {
+        Log(0).stream() << "mpiwrap: MPI wrapper implementation not found: Is libcaliper-mpiwrap linked?" << std::endl;
+    }
 }
 
 } // anonymous namespace 

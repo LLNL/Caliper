@@ -32,11 +32,12 @@
 #################################################################################################
 from __future__ import print_function
 usage_string = \
-'''Usage: wrap.py [-fgd] [-i pmpi_init] [-c mpicc_name] [-o file] wrapper.w [...]
+'''Usage: wrap.py [-Gfgd] [-i pmpi_init] [-c mpicc_name] [-o file] wrapper.w [...]
  Python script for creating PMPI wrappers. Roughly follows the syntax of
    the Argonne PMPI wrapper generator, with some enhancements.
  Options:"
    -d             Just dump function declarations parsed out of mpi.h
+   -G             Generate GOTCHA instead of PMPI wrappers
    -f             Generate fortran wrappers in addition to C wrappers.
    -g             Generate reentry guards around wrapper functions.
    -s             Skip writing #includes, #defines, and other front-matter (for non-C output).
@@ -64,6 +65,7 @@ output_guards = False              # Don't print reentry guards by default
 skip_headers = False               # Skip header information and defines (for non-C output)
 dump_prototypes = False            # Just exit and dump MPI protos if false.
 ignore_deprecated = False          # Do not print compiler warnings for deprecated MPI functions
+generate_gotcha = False            # Generate GOTCHA instead of PMPI wrappers
 
 # Possible legal bindings for the fortran version of PMPI_Init()
 pmpi_init_bindings = ["PMPI_INIT", "pmpi_init", "pmpi_init_", "pmpi_init__"]
@@ -133,6 +135,11 @@ _EXTERN_C_ void pmpi_init_(MPI_Fint *ierr);
 _EXTERN_C_ void pmpi_init__(MPI_Fint *ierr);
 
 '''
+
+gotcha_wrapper_includes = ''' 
+#include <gotcha/gotcha.h>
+
+''' 
 
 # Macros used to suppress MPI deprecation warnings.
 wrapper_diagnosics_macros = '''
@@ -496,7 +503,7 @@ class Declaration:
         return self.argsNoEllipsis()[index].name
 
     def fortranFormals(self):
-        formals = map(Param.fortranFormal, self.argsNoEllipsis())
+        formals = list(map(Param.fortranFormal, self.argsNoEllipsis()))
         if self.name == "MPI_Init": formals = []    # Special case for init: no args in fortran
 
         ierr = []
@@ -518,6 +525,10 @@ class Declaration:
     def pmpi_prototype(self, modifiers=""):
         if modifiers: modifiers = joinlines(modifiers, " ")
         return "%s%s P%s(%s)" % (modifiers, self.retType(), self.name, ", ".join(self.formals()))
+
+    def gotcha_prototype(self, modifiers=""):
+        if modifiers: modifiers = joinlines(modifiers, " ")
+        return "%s%s wrap_%s(%s)" % (modifiers, self.retType(), self.name, ", ".join(self.formals()))
 
     def fortranPrototype(self, name=None, modifiers=""):
         if not name: name = self.name
@@ -630,8 +641,25 @@ def write_exit_guard(out):
     if output_guards:
         out.write("    in_wrapper = 0;\n")
 
+def write_gotcha_c_wrapper(out, decl, return_val, write_body):
+    """Write the C wrapper for an MPI function."""
+    # Write the pointer to the original function
+    out.write("%s (*wrap_%s_orig)(%s) = NULL;\n" % (decl.retType(), decl.name, ", ".join(decl.formals())))
 
-def write_c_wrapper(out, decl, return_val, write_body):
+    # Now write the wrapper function, which will call the original function through the pointer
+    out.write(decl.gotcha_prototype(default_modifiers))
+    out.write(" { \n")
+    out.write("    %s %s = 0;\n" % (decl.retType(), return_val))
+
+    write_body(out)
+
+    out.write("    return %s;\n" % return_val)
+    out.write("}\n\n")
+
+    # Write the GOTCHA binding struct
+    out.write("struct gotcha_binding_t wrap_%s_binding = { \"%s\", (void*) wrap_%s, &wrap_%s_orig };\n\n" % (decl.name, decl.name, decl.name, decl.name))
+
+def write_pmpi_c_wrapper(out, decl, return_val, write_body):
     """Write the C wrapper for an MPI function."""
     # Write the PMPI prototype here in case mpi.h doesn't define it
     # (sadly the case with some MPI implementaitons)
@@ -650,6 +678,12 @@ def write_c_wrapper(out, decl, return_val, write_body):
     out.write("    return %s;\n" % return_val)
     out.write("}\n\n")
 
+def write_c_wrapper(out, decl, return_val, write_body):
+    """Write the C wrapper for an MPI function."""
+    if generate_gotcha:
+        write_gotcha_c_wrapper(out, decl, return_val, write_body)
+    else:
+        write_pmpi_c_wrapper(out, decl, return_val, write_body)
 
 def write_fortran_binding(out, decl, delegate_name, binding, stmts=None):
     """Outputs a wrapper for a particular fortran binding that delegates to the
@@ -948,7 +982,9 @@ def fn(out, scope, args, children):
         fn_scope["ret_val"] = return_val
         fn_scope["returnVal"]  = fn_scope["ret_val"]  # deprecated name.
 
-        if ignore_deprecated:
+        if generate_gotcha:
+            c_call = "%s = (*wrap_%s_orig)(%s);" % (return_val, fn.name, ", ".join(fn.argNames()))
+        elif ignore_deprecated:
             c_call = "%s\n%s = P%s(%s);\n%s" % ("WRAP_MPI_CALL_PREFIX", return_val, fn.name, ", ".join(fn.argNames()), "WRAP_MPI_CALL_POSTFIX")
         else:
             c_call = "%s = P%s(%s);" % (return_val, fn.name, ", ".join(fn.argNames()))
@@ -1277,13 +1313,14 @@ output = sys.stdout
 output_filename = None
 
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fsgdwc:o:i:I:")
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "Gfsgdwc:o:i:I:")
 except getopt.GetoptError as err:
     sys.stderr.write(err + "\n")
     usage()
 
 for opt, arg in opts:
     if opt == "-d": dump_prototypes = True
+    if opt == "-G": generate_gotcha = True
     if opt == "-f": output_fortran_wrappers = True
     if opt == "-s": skip_headers = True
     if opt == "-g": output_guards = True
@@ -1302,6 +1339,10 @@ for opt, arg in opts:
 
 if len(args) < 1 and not dump_prototypes:
     usage()
+
+if generate_gotcha and output_fortran_wrappers:
+    sys.stderr.write("gotcha: Error: Cannot write fortran wrappers in GOTCHA mode")
+    sys.exit(1)
 
 # Parse mpi.h and put declarations into a map.
 for decl in enumerate_mpi_declarations(mpicc, includes):
@@ -1328,6 +1369,8 @@ try:
     # Start with some headers and definitions.
     if not skip_headers:
         output.write(wrapper_includes)
+        if generate_gotcha:
+            output.write(gotcha_wrapper_includes)
         if output_guards: output.write("static int in_wrapper = 0;\n")
 
     # Print the macros for disabling MPI function deprecation warnings.

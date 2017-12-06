@@ -1,5 +1,9 @@
 set(CALIPER_MPIWRAP_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(CALIPER_MPI_SERVICE_SOURCES
+  MpiEvents.cpp
+  setup_mpi.cpp)
+
 macro(add_mpi_service_sources)
   file(RELATIVE_PATH _relpath "${CALIPER_MPIWRAP_ROOT_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
   foreach(_src ${ARGN})

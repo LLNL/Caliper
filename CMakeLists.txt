@@ -230,6 +230,13 @@ if (WITH_MPI)
       set(CALIPER_HAVE_MPIT TRUE)
       set(CALIPER_MPIT_CMAKE_MSG "Yes")
     endif()
+
+    if (CALIPER_HAVE_GOTCHA)
+      set(CALIPER_MPIWRAP_USE_GOTCHA TRUE)
+      set(CALIPER_MPIWRAP_CMAKE_MSG "Yes, using GOTCHA")
+    else()
+      set(CALIPER_MPIWRAP_CMAKE_MSG "Yes, using PMPI")
+    endif()
   endif()
 endif()
 
@@ -327,6 +334,7 @@ set(CALIPER_MODULES
   Sampler
   SOSFlow
   MPI
+  MPIWRAP
   MPIT
   OMPT
   NVProf
