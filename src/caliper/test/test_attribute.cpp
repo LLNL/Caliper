@@ -1,0 +1,51 @@
+// Tests for the attribute APIs
+
+#include "caliper/cali.h"
+#include "caliper/Caliper.h"
+
+#include "caliper/common/Attribute.h"
+
+#include <gtest/gtest.h>
+
+using namespace cali;
+
+TEST(AttributeAPITest, ValidAttribute) {
+    Caliper c;
+    
+    Attribute meta_attr =
+        c.create_attribute("test.attribute.api.meta", CALI_TYPE_INT, CALI_ATTR_HIDDEN);
+
+    ASSERT_NE(meta_attr, Attribute::invalid);
+
+    EXPECT_TRUE(meta_attr.is_hidden());
+
+    EXPECT_FALSE(meta_attr.is_nested());
+    EXPECT_FALSE(meta_attr.store_as_value());
+
+    cali_id_t   meta_ids[1]   = { meta_attr.id()  };
+    int64_t     meta_val      = 42;
+    const void* meta_vals[1]  = { &meta_val };
+    size_t      meta_sizes[1] = { sizeof(int64_t) };
+    
+    cali_id_t attr_id =
+        cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING, CALI_ATTR_NESTED,
+                                            1, meta_ids, meta_vals, meta_sizes);
+
+    ASSERT_NE(attr_id, CALI_INV_ID);
+
+    EXPECT_STREQ(cali_attribute_name(attr_id), "test.attribute.api");
+    EXPECT_EQ(cali_attribute_type(attr_id), CALI_TYPE_STRING);
+    EXPECT_EQ(cali_find_attribute("test.attribute.api"), attr_id);
+
+    Attribute attr = c.get_attribute(attr_id);
+
+    EXPECT_EQ(attr.name(), "test.attribute.api");
+    EXPECT_EQ(attr.get(meta_attr).to_int(), 42);
+    EXPECT_TRUE(attr.is_nested());
+}
+
+TEST(AttributeAPITest, InvalidAttribute) {
+    EXPECT_EQ(cali_attribute_type(CALI_INV_ID), CALI_TYPE_INV);
+    EXPECT_EQ(cali_attribute_name(CALI_INV_ID), nullptr);
+    EXPECT_EQ(cali_find_attribute("test.attribute.api.nope"), CALI_INV_ID);
+}
