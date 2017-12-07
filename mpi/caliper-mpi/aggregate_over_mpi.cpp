@@ -70,7 +70,7 @@ void recursive_append_path(const CaliperMetadataAccessInterface& db,
     buf.append(node);
 }    
 
-void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& aggregator)
+void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& aggregator, MPI_Comm comm)
 {
     NodeBuffer     nodebuf;
     SnapshotBuffer snapbuf;
@@ -93,41 +93,41 @@ void pack_and_send(int dest, CaliperMetadataAccessInterface& db, Aggregator& agg
     {
         unsigned nodecount = nodebuf.count();
 
-        MPI_Send(&nodecount,     1,              MPI_UNSIGNED,
-                 dest, 1, MPI_COMM_WORLD);
+        MPI_Send(&nodecount, 1, MPI_UNSIGNED,
+                 dest, 1, comm);
         // Work with pre-3.0 MPIs that take non-const void* :-/
         MPI_Send(const_cast<unsigned char*>(nodebuf.data()), nodebuf.size(), MPI_BYTE,
-                 dest, 2, MPI_COMM_WORLD);
+                 dest, 2, comm);
     }
 
     {
         unsigned snapcount = snapbuf.count();
 
-        MPI_Send(&snapcount,     1,              MPI_UNSIGNED,
-                 dest, 3, MPI_COMM_WORLD);
+        MPI_Send(&snapcount, 1, MPI_UNSIGNED,
+                 dest, 3, comm);
         MPI_Send(const_cast<unsigned char*>(snapbuf.data()), snapbuf.size(), MPI_BYTE,
-                 dest, 4, MPI_COMM_WORLD);
+                 dest, 4, comm);
     }        
 }
 
 
-size_t receive_and_merge_nodes(int source, CaliperMetadataDB& db, IdMap& idmap)
+size_t receive_and_merge_nodes(int source, CaliperMetadataDB& db, IdMap& idmap, MPI_Comm comm)
 {
     unsigned count;
 
     MPI_Recv(&count, 1, MPI_UNSIGNED,
-             source, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+             source, 1, comm, MPI_STATUS_IGNORE);
 
     MPI_Status status;
     int size;
 
-    MPI_Probe(source, 2, MPI_COMM_WORLD, &status);
+    MPI_Probe(source, 2, comm, &status);
     MPI_Get_count(&status, MPI_BYTE, &size);
 
     NodeBuffer nodebuf;
 
     MPI_Recv(nodebuf.import(size, count), size, MPI_BYTE,
-             source, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+             source, 2, comm, MPI_STATUS_IGNORE);
 
     nodebuf.for_each([&db,&idmap](const NodeBuffer::NodeInfo& info)
                      {
@@ -139,23 +139,24 @@ size_t receive_and_merge_nodes(int source, CaliperMetadataDB& db, IdMap& idmap)
 
 size_t receive_and_merge_snapshots(int source, 
                                    CaliperMetadataDB& db, const IdMap& idmap, 
-                                   SnapshotProcessFn snap_fn)
+                                   SnapshotProcessFn snap_fn,
+                                   MPI_Comm comm)
 {
     unsigned count;
 
     MPI_Recv(&count, 3, MPI_UNSIGNED,
-             source, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+             source, 3, comm, MPI_STATUS_IGNORE);
 
     MPI_Status status;
     int size;
 
-    MPI_Probe(source, 4, MPI_COMM_WORLD, &status);
+    MPI_Probe(source, 4, comm, &status);
     MPI_Get_count(&status, MPI_BYTE, &size);
 
     SnapshotBuffer snapbuf;
 
     MPI_Recv(snapbuf.import(size, count), size, MPI_BYTE,
-             source, 4, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+             source, 4, comm, MPI_STATUS_IGNORE);
 
     size_t pos = 0;
 
@@ -178,13 +179,13 @@ size_t receive_and_merge_snapshots(int source,
     return snapbuf.size();
 }
 
-size_t receive_and_merge(int source, CaliperMetadataDB& db, SnapshotProcessFn snap_fn)
+size_t receive_and_merge(int source, CaliperMetadataDB& db, SnapshotProcessFn snap_fn, MPI_Comm comm)
 {
     IdMap  idmap;
     size_t bytes = 0;
 
-    bytes += receive_and_merge_nodes(source, db, idmap);
-    bytes += receive_and_merge_snapshots(source, db, idmap, snap_fn);
+    bytes += receive_and_merge_nodes(source, db, idmap, comm);
+    bytes += receive_and_merge_snapshots(source, db, idmap, snap_fn, comm);
 
     return bytes;
 }
@@ -209,11 +210,11 @@ aggregate_over_mpi(CaliperMetadataDB& metadb, Aggregator& aggr, MPI_Comm comm)
         
         // receive and merge
         if (rank % (2*steppow2) == 0 && rank + steppow2 < commsize)
-            bytes = ::receive_and_merge(rank + steppow2, metadb, aggr);
+            bytes = ::receive_and_merge(rank + steppow2, metadb, aggr, comm);
 
         // send up the tree (happens only in one step for each rank, and never for rank 0)
         if (rank % steppow2 == 0 && rank % (2*steppow2) != 0)
-            ::pack_and_send(rank - steppow2, metadb, aggr);
+            ::pack_and_send(rank - steppow2, metadb, aggr, comm);
     }
 }
 
