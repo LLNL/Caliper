@@ -27,6 +27,18 @@ TEST(C_Variant_Test, CreateIntVariant) {
     EXPECT_EQ(cali_variant_to_int(v, NULL), val);
     EXPECT_EQ(cali_variant_get_size(v), sizeof(int));
 
+    cali_variant_t vz = cali_make_variant_from_uint(0);
+
+    bool ok = false;
+    EXPECT_EQ(cali_variant_to_bool(v, &ok), true);
+    EXPECT_TRUE(ok);
+    ok = false;
+    EXPECT_EQ(cali_variant_to_bool(vz, &ok), false);
+    EXPECT_TRUE(ok);
+    ok = true;
+    EXPECT_EQ(cali_variant_to_type(v, &ok), CALI_TYPE_INV);
+    EXPECT_FALSE(ok);
+
     cali_variant_t v2 = cali_make_variant(CALI_TYPE_INT, &val, sizeof(int));
     EXPECT_EQ(cali_variant_compare(v, v2), 0);
 }
@@ -42,6 +54,18 @@ TEST(C_Variant_Test, CreateUintVariant) {
 
     cali_variant_t v2 = cali_make_variant(CALI_TYPE_UINT, &val, sizeof(uint64_t));
     EXPECT_EQ(cali_variant_compare(v, v2), 0);
+
+    cali_variant_t vz = cali_make_variant_from_uint(0);
+
+    bool ok = false;
+    EXPECT_EQ(cali_variant_to_bool(v, &ok), true);
+    EXPECT_TRUE(ok);
+    ok = false;
+    EXPECT_EQ(cali_variant_to_bool(vz, &ok), false);
+    EXPECT_TRUE(ok);
+    ok = true;
+    EXPECT_EQ(cali_variant_to_type(v, &ok), CALI_TYPE_INV);
+    EXPECT_FALSE(ok);
 
     // also test ADDR type here, basically the same as UINT
 
@@ -85,6 +109,22 @@ TEST(C_Variant_Test, CreateStringVariant) {
     EXPECT_EQ(cali_variant_get_size(v), strlen(mystring)+1);
     EXPECT_EQ(cali_variant_get_data(&v), mystring);
     EXPECT_STREQ(static_cast<const char*>(cali_variant_get_data(&v)), mystring);
+
+    bool ok = true;
+    cali_variant_to_int(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_uint(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_double(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_bool(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    EXPECT_EQ(cali_variant_to_type(v, &ok), CALI_TYPE_INV);
+    EXPECT_FALSE(ok);
 }
 
 TEST(C_Variant_Test, CreateBoolVariant) {
@@ -166,6 +206,17 @@ TEST(C_Variant_Test, Compare) {
     
     EXPECT_EQ(cali_variant_compare(v_inv, v_inv), 0);
     EXPECT_NE(cali_variant_compare(v_inv, v_uint_l), 0);
+
+    const char* str_ul = "abcd";
+    const char* str_us = "abc";
+
+    cali_variant_t v_usr_s = 
+        cali_make_variant(CALI_TYPE_USR, (void*) str_us, strlen(str_us));
+    cali_variant_t v_usr_l = 
+        cali_make_variant(CALI_TYPE_USR, (void*) str_ul, strlen(str_ul));
+
+    EXPECT_EQ(cali_variant_compare(v_usr_l, v_usr_l), 0);
+    EXPECT_NE(cali_variant_compare(v_usr_s, v_usr_l), 0);
 }
 
 //
