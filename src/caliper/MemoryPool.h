@@ -54,7 +54,7 @@ class MemoryPool
 {
     struct MemoryPoolImpl;
 
-    std::unique_ptr<MemoryPoolImpl> mP;
+    std::shared_ptr<MemoryPoolImpl> mP;
 
 
 public:

@@ -5,7 +5,13 @@
 
 #include "caliper/common/Attribute.h"
 
+#include "caliper/common/util/split.hpp"
+
 #include <gtest/gtest.h>
+
+#include <algorithm>
+#include <iterator>
+#include <vector>
 
 using namespace cali;
 
@@ -28,7 +34,8 @@ TEST(AttributeAPITest, ValidAttribute) {
     size_t      meta_sizes[1] = { sizeof(int64_t) };
     
     cali_id_t attr_id =
-        cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING, CALI_ATTR_NESTED,
+        cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING,
+                                            CALI_ATTR_NESTED | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_NOMERGE,
                                             1, meta_ids, meta_vals, meta_sizes);
 
     ASSERT_NE(attr_id, CALI_INV_ID);
@@ -41,7 +48,24 @@ TEST(AttributeAPITest, ValidAttribute) {
 
     EXPECT_EQ(attr.name(), "test.attribute.api");
     EXPECT_EQ(attr.get(meta_attr).to_int(), 42);
+    EXPECT_FALSE(attr.is_autocombineable());
     EXPECT_TRUE(attr.is_nested());
+
+    char buf[120];
+    ASSERT_GE(cali_prop2string(cali_attribute_properties(attr_id), buf, 120), 1);
+    
+    std::vector<std::string> props;
+    util::split(std::string(buf), ':',  std::back_inserter(props));
+
+    std::vector<std::string> props_exp { "nested", "process_scope", "nomerge", "default" };
+
+    for (auto s : props) {
+        auto it = std::find(props_exp.begin(), props_exp.end(), s);
+        ASSERT_NE(it, props_exp.end()) << s << " is not an expected property" << std::endl;
+        props_exp.erase(it);
+    }
+
+    EXPECT_TRUE(props_exp.empty());
 }
 
 TEST(AttributeAPITest, InvalidAttribute) {

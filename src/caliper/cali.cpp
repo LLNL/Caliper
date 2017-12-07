@@ -110,6 +110,13 @@ cali_attribute_type(cali_id_t attr_id)
     return a.type();
 }
 
+int
+cali_attribute_properties(cali_id_t attr_id)
+{
+    Attribute a = Caliper::instance().get_attribute(attr_id);
+    return a.properties();
+}
+
 const char*
 cali_attribute_name(cali_id_t attr_id)
 {

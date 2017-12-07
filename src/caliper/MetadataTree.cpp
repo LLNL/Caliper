@@ -43,8 +43,12 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
+#include "caliper/common/util/spinlock.hpp"
+
 #include <atomic>
 #include <cstring>
+#include <mutex>
+#include <utility>
 
 // #define METADATATREE_BENCHMARK
 
@@ -114,16 +118,24 @@ struct MetadataTree::MetadataTreeImpl
 
         static const ConfigSet::Entry s_configdata[];
 
-        ConfigSet              config;
+        ConfigSet               config;
 
-        Node                   root;
-        std::atomic<unsigned>  next_block;
-        NodeBlock*             node_blocks;
+        Node                    root;
+        std::atomic<unsigned>   next_block;
+        NodeBlock*              node_blocks;
 
-        size_t                 num_blocks;
-        size_t                 nodes_per_block;
+        size_t                  num_blocks;
+        size_t                  nodes_per_block;
 
-        Node*                  type_nodes[CALI_MAXTYPE+1];
+        Node*                   type_nodes[CALI_MAXTYPE+1];
+
+        //   Keep the memory pools from tree objects that have been deleted
+        // because we still need to access their node data.
+        //
+        //   TODO: find a strategy to merge them into someone else's mempool
+        // and free up the unallocated memory in the pool.
+        std::vector<MemoryPool> orphaned_mempools;
+        util::spinlock          orphaned_mempool_lock;
     };
 
     static std::atomic<GlobalData*> mG;
@@ -172,7 +184,12 @@ struct MetadataTree::MetadataTreeImpl
         }
 
     ~MetadataTreeImpl() {
-        // Node mempools might have been removed already ... don't do anything here
+        GlobalData* g = mG.load();
+        
+        std::lock_guard<util::spinlock>
+            lock(g->orphaned_mempool_lock);
+
+        g->orphaned_mempools.push_back(std::move(m_mempool));
         
         // for ( auto& n : m_root )
         //     n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here

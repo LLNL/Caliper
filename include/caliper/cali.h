@@ -142,6 +142,14 @@ cali_attr_type
 cali_attribute_type(cali_id_t attr_id);
 
 /**
+ * \brief Return attribute property flags of the attribute with given ID
+ * \param attr_id Attribute id
+ * \return Attribute properties, OR'ed 
+ */
+int
+cali_attribute_properties(cali_id_t attr_id);
+
+/**
  * \} 
  */
 
