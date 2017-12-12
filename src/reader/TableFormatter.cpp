@@ -201,7 +201,6 @@ struct TableFormatter::TableImpl
                 continue;
 
             std::string val;
-            std::size_t width = 0;
 
             for (Entry e : list) {
                 if (e.node()) {
@@ -210,8 +209,6 @@ struct TableFormatter::TableImpl
                     for (const Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == cols[c].attr.id())
                             str = node->data().to_string().append(str.empty() ? "" : "/").append(str);
-
-                    width = std::max(str.size(), width);
 
                     if (!str.empty()) {
                         val = str;
@@ -226,6 +223,8 @@ struct TableFormatter::TableImpl
             if (!val.empty()) {
                 active = true;
                 row[c] = val;
+
+                size_t width = val.length();
 
                 if (width > cols[c].max_width) {
                     cols[c].max_width = width;
