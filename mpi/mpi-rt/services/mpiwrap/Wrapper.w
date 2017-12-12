@@ -34,7 +34,7 @@ namespace
 bool enable_wrapper = false;
 
 {{forallfn foo}}
-bool enable_{{foo}} = true;
+bool enable_{{foo}} = false;
 {{endforallfn}}
 
 void setup_filter() {
@@ -49,6 +49,13 @@ void setup_filter() {
     if (!have_whitelist && !have_blacklist)
         return;
 
+    bool enable_all = false;
+
+    if (have_whitelist && whitelist.front() == "all") {
+        enable_all = true;
+        whitelist.erase(whitelist.begin());
+    }
+
     const struct fntable_elem {
         const char* name;
         bool*       enableptr; 
@@ -60,15 +67,18 @@ void setup_filter() {
     };
 
     for (const fntable_elem* e = table; e->name && e->enableptr; ++e) {
+        if (enable_all)
+            *(e->enableptr) = true;
+
         std::string fnstr(e->name);
 
         if (have_whitelist) {
             vector<string>::iterator it = std::find(whitelist.begin(), whitelist.end(), fnstr);
 
-            if (it != whitelist.end())
+            if (it != whitelist.end()) {
+                *(e->enableptr) = true;
                 whitelist.erase(it);
-            else
-                *(e->enableptr) = false;
+            }
         }
         if (have_blacklist) {
             vector<string>::iterator it = std::find(blacklist.begin(), blacklist.end(), fnstr);
@@ -76,6 +86,8 @@ void setup_filter() {
             if (it != blacklist.end()) {
                 blacklist.erase(it);
                 *(e->enableptr) = false;
+            } else if (!have_whitelist) {
+                *(e->enableptr) = true;
             }
         }
     }
@@ -104,8 +116,8 @@ post_init_cb(Caliper* c)
     int initialized = 0;
     int finalized   = 0;
 
-    MPI_Initialized(&initialized);
-    MPI_Finalized(&finalized);
+    PMPI_Initialized(&initialized);
+    PMPI_Finalized(&finalized);
 
     if (initialized && !finalized)
         MpiEvents::events.mpi_init_evt(c);
@@ -172,6 +184,8 @@ void mpiwrap_init(Caliper* c)
     setup_filter();
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
+    Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;
+
     std::vector<struct gotcha_binding_t> bindings;
 
     // we always wrap init & finalize
@@ -185,6 +199,8 @@ void mpiwrap_init(Caliper* c)
     {{endforallfn}}
 
     gotcha_wrap(bindings.data(), bindings.size(), "Caliper");
+#else
+    Log(2).stream() << "mpiwrap: Using PMPI wrappers." << std::endl;
 #endif
 }
 
