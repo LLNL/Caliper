@@ -30,7 +30,7 @@
 // Caliper MPIT service
 // This is the MPI part of the MPI-T service, which will be part of libcaliper-mpiwrap.
 
-#include "../MpiEvents.h"
+#include "MpiEvents.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

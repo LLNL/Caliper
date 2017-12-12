@@ -1,5 +1,4 @@
 include_directories(${GOTCHA_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../) # for MpiEvents.h
 
 set(WRAP_FLAGS "-w")
 
@@ -12,9 +11,9 @@ include(${PROJECT_SOURCE_DIR}/cmake/WrapConfig.cmake)
 
 add_wrapped_file(Wrapper.cpp Wrapper.w)
 
-set(CALIPER_PMPI_SOURCES
+set(CALIPER_MPIWRAP_SOURCES
     Wrapper.cpp)
 
-add_library(caliper-pmpi OBJECT ${CALIPER_PMPI_SOURCES})
+add_library(caliper-mpiwrap OBJECT ${CALIPER_MPIWRAP_SOURCES})
 
-add_mpi_service_objlib(caliper-pmpi)
+add_mpi_service_objlib(caliper-mpiwrap)
