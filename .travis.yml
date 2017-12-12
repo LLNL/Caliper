@@ -5,10 +5,6 @@ dist: trusty
 matrix:
   include:
     - compiler: gcc
-    - addons:
-        apt:
-          packages:
-            - libunwind-dev
       env: MATRIX_EVAL="CC=gcc && CXX=g++ && CFLAGS=-coverage && CXXFLAGS=-coverage" COVERAGE=t
 
     - compiler: gcc
