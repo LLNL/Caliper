@@ -26,7 +26,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS     "Build Caliper tools" TRUE)
-option(WITH_DOCS      "Build Caliper documentation" FALSE)
 
 option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
@@ -45,7 +44,8 @@ option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
-option(BUILD_TESTING  "Build continuous integration app and unit tests" ON)
+option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
+option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
 if (BUILD_TESTING)
   enable_testing()
@@ -302,7 +302,7 @@ add_subdirectory(examples/apps EXCLUDE_FROM_ALL)
 if (BUILD_TESTING)
   add_subdirectory(test)
 endif()
-if (WITH_DOCS)
+if (BUILD_DOCS)
   add_subdirectory(doc EXCLUDE_FROM_ALL)
 endif()
 
@@ -317,6 +317,7 @@ message(STATUS "Build type                : ${CMAKE_BUILD_TYPE}")
 message(STATUS "Compiler                  : ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} (${CMAKE_CXX_COMPILER})")
 message(STATUS "Install dir               : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
+message(STATUS "Build Caliper tools       : ${WITH_TOOLS}")
 
 set(CALIPER_MODULES
   GOTCHA
