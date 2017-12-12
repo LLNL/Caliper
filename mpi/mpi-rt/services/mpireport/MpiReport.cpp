@@ -26,7 +26,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "../MpiEvents.h"
+#include "MpiEvents.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
