@@ -26,6 +26,8 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
+#include "MpiEvents.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -157,6 +159,10 @@ public:
         s_instance->flush_finish(c, flush_info);
         s_instance.reset();
     }
+
+    static void mpi_finalize_cb(Caliper* c) {
+        c->flush_and_write(nullptr);
+    }
 };
 
 std::unique_ptr<MpiReport> MpiReport::s_instance { nullptr };
@@ -181,6 +187,8 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
 namespace cali
 {
     void mpireport_init(Caliper* c) {
+        MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
+
         c->events().pre_flush_evt.connect(::MpiReport::pre_flush_cb);
         c->events().write_snapshot.connect(::MpiReport::flush_snapshot_cb);
         c->events().post_write_evt.connect(::MpiReport::flush_finish_cb);

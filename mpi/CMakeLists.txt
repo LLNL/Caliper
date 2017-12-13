@@ -1,5 +1,5 @@
 include_directories("include")
-include_directories(${MPI_C_INCLUDE_PATH})
+include_directories(${MPI_CXX_INCLUDE_PATH})
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES Intel)
   # CMake does not have proper compiler feature support for Intel compilers :-/
@@ -13,8 +13,8 @@ else()
   set(CMAKE_C_STANDARD   99)
 endif()
 
-add_subdirectory(caliper-mpi)
-add_subdirectory(services)
+add_subdirectory(mpi-common)
+add_subdirectory(mpi-rt)
 
 if (WITH_TOOLS)
   add_subdirectory(mpi-caliquery)

@@ -39,7 +39,9 @@ using namespace cali;
 namespace cali
 {
 
-bool mpireport_enabled { false };
+void __attribute__((weak)) mpireport_init(Caliper* c);
+
+bool mpireport_enabled = false;
 
 }
 
@@ -49,8 +51,15 @@ namespace
 // Register the service and initalize the MPI-T interface
 
 void mpireport_register(Caliper* c) {
-    mpireport_enabled = true;
-    Log(1).stream() << "Registered MPI report service" << std::endl;
+    if (mpireport_init) {
+        mpireport_init(c);
+
+        mpireport_enabled = true;
+
+        Log(1).stream() << "Registered MPI report service" << std::endl;
+    } else {
+        Log(0).stream() << "mpireport: MPI wrapper implementation not found: Is libcaliper-mpiwrap linked?" << std::endl;
+    }
 }
 
 }

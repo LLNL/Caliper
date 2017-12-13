@@ -74,6 +74,8 @@ extern void init_api_attributes(Caliper* c);
 
 extern void config_sanity_check();
 
+void __attribute__((weak)) setup_mpi(); // This is in libcaliper-mpiwrap.so
+
 }
 
 namespace
@@ -284,6 +286,11 @@ struct Caliper::GlobalData
     }
 
     void init() {
+        // If cali::setup_mpi is found (from libcaliper-mpiwrap), do MPI setup. 
+        //   Will reduce log level on non non-rank 0 ranks etc.
+        if (cali::setup_mpi)
+            cali::setup_mpi();
+
         Caliper c(this, default_thread_scope, default_task_scope);
 
         // Create and set key & version attributes

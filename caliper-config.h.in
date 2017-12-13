@@ -19,6 +19,8 @@
 #cmakedefine CALIPER_HAVE_LIBDW
 #cmakedefine CALIPER_HAVE_VTUNE
 
+#cmakedefine CALIPER_MPIWRAP_USE_GOTCHA
+
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@
 #define CALIPER_MINOR_VERSION @CALIPER_MINOR_VERSION@
