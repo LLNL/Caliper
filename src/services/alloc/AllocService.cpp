@@ -315,7 +315,7 @@ namespace
 
         c->events().create_attr_evt.connect(create_attr_cb);
         c->events().post_init_evt.connect(post_init_cb);
-        //c->events().snapshot.connect(snapshot_cb);
+        c->events().snapshot.connect(snapshot_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
 
         if (record_system_allocs || track_system_alloc_ranges)
