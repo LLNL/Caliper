@@ -47,13 +47,7 @@ Attribute mpifn_attr   { Attribute::invalid };
 Attribute mpirank_attr { Attribute::invalid };
 Attribute mpisize_attr { Attribute::invalid };
 
-bool      mpi_enabled  { false };
-
-string    mpi_whitelist_string;
-string    mpi_blacklist_string;
-
-// This is in libcaliper-mpiwrap
-void __attribute__((weak)) mpiwrap_init(Caliper* c);
+extern void mpiwrap_init(Caliper* c, const std::string&, const std::string&);
 
 }
 
@@ -89,17 +83,9 @@ void mpi_register(Caliper* c)
         c->create_attribute("mpi.size", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
-    mpi_whitelist_string = config.get("whitelist").to_string();
-    mpi_blacklist_string = config.get("blacklist").to_string();
+    mpiwrap_init(c, config.get("whitelist").to_string(), config.get("blacklist").to_string());
 
-    if (mpiwrap_init) {
-        mpi_enabled = true;
-        mpiwrap_init(c);
-
-        Log(1).stream() << "Registered MPI service" << endl;
-    } else {
-        Log(0).stream() << "mpiwrap: MPI wrapper implementation not found: Is libcaliper-mpiwrap linked?" << std::endl;
-    }
+    Log(1).stream() << "Registered MPI service" << endl;
 }
 
 } // anonymous namespace 
@@ -107,5 +93,5 @@ void mpi_register(Caliper* c)
 
 namespace cali 
 {
-    CaliperService mpi_service = { "mpi", ::mpi_register };
+    CaliperService mpiwrap_service = { "mpi", ::mpi_register };
 } // namespace cali

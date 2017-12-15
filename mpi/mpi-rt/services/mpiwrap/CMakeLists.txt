@@ -12,7 +12,8 @@ include(${PROJECT_SOURCE_DIR}/cmake/WrapConfig.cmake)
 add_wrapped_file(Wrapper.cpp Wrapper.w)
 
 set(CALIPER_MPIWRAP_SOURCES
-    Wrapper.cpp)
+  MpiWrap.cpp
+  Wrapper.cpp)
 
 add_library(caliper-mpiwrap OBJECT ${CALIPER_MPIWRAP_SOURCES})
 

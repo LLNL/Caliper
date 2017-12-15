@@ -32,6 +32,8 @@
 
 #include "MpiEvents.h"
 
+#include "caliper/CaliperService.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -615,10 +617,6 @@ namespace
     	Log(1).stream() << "mpit: MPI-T initialized." << endl;
     }
 
-} // anonymous namespace 
-
-namespace cali 
-{
     /*Thin wrapper functions to invoke pvar allocation function from another module*/
     void mpit_allocate_pvar_handles() {
         Caliper c;
@@ -631,10 +629,16 @@ namespace cali
     }
 
     void mpit_init(Caliper* c) {
-        mpit_enabled = true;
-
         MpiEvents::events.mpi_init_evt.connect(::do_mpit_allocate_pvar_handles);
 
         ::do_mpit_init(c);
     }
+
+} // anonymous namespace 
+
+namespace cali 
+{
+
+CaliperService mpit_service = { "mpit", ::mpit_init };
+
 } // namespace cali

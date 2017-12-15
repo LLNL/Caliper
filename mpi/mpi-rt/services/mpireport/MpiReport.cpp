@@ -28,6 +28,8 @@
 
 #include "MpiEvents.h"
 
+#include "caliper/CaliperService.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -182,15 +184,17 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
     ConfigSet::Terminator
 };
 
+void mpireport_init(Caliper* c) {
+    MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
+
+    c->events().pre_flush_evt.connect(::MpiReport::pre_flush_cb);
+    c->events().write_snapshot.connect(::MpiReport::flush_snapshot_cb);
+    c->events().post_write_evt.connect(::MpiReport::flush_finish_cb);
 }
+
+} // namespace [anonymous]
 
 namespace cali
 {
-    void mpireport_init(Caliper* c) {
-        MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
-
-        c->events().pre_flush_evt.connect(::MpiReport::pre_flush_cb);
-        c->events().write_snapshot.connect(::MpiReport::flush_snapshot_cb);
-        c->events().post_write_evt.connect(::MpiReport::flush_finish_cb);
-    }
+    CaliperService mpireport_service = { "mpireport", ::mpireport_init };
 }
