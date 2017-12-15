@@ -30,11 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file CaliperService.h
-/// @definition of CaliperService struct
+/// \file  CaliperService.h
+/// \brief Definition of CaliperService struct
 
-#ifndef CALI_CALIPERSERVICE_H
-#define CALI_CALIPERSERVICE_H
+#pragma once
 
 namespace cali
 {
@@ -43,11 +42,13 @@ class Caliper;
 
 typedef void (*ServiceRegisterFn)(Caliper* c);
 
+/// \brief Name and entry point for services.
+///
+/// To register services, provide a list of CaliperService entries
+/// to Caliper::add_services() _before_ %Caliper is initialized.
 struct CaliperService {
-    const char*       name;
-    ServiceRegisterFn register_fn;
+    const char*       name;        ///< Service name (short, no spaces).
+    ServiceRegisterFn register_fn; ///< Registration function.
 };
 
 } // namespace cali
-
-#endif
