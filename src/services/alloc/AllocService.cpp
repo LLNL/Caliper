@@ -207,6 +207,7 @@ namespace
     }
 
     void init_alloc_hooks(Caliper *c) {
+        Log(1).stream() << "alloc: Initializing system alloc hooks" << std::endl;
         gotcha_wrap(alloc_bindings, 
                     sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), 
                     "Caliper AllocService Wrap");
@@ -280,8 +281,6 @@ namespace
 
         class_memoryaddress_attr = c->get_attribute("class.memoryaddress");
 
-        active_mem_attr  = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
-
         std::vector<Attribute> memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
 
         for (auto attr : memory_address_attrs) {
@@ -309,14 +308,18 @@ namespace
         record_active_mem = config.get("record_active_mem").to_bool();
         count_allocs_by_size = config.get("count_allocs_by_size").to_bool();
 
+        if (record_active_mem)
+            active_mem_attr = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+
         cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
 
         c->events().create_attr_evt.connect(create_attr_cb);
         c->events().post_init_evt.connect(post_init_cb);
-        c->events().snapshot.connect(snapshot_cb);
+        //c->events().snapshot.connect(snapshot_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
 
-        init_alloc_hooks(c);
+        if (record_system_allocs || track_system_alloc_ranges)
+            init_alloc_hooks(c);
 
         Log(1).stream() << "Registered alloc service" << std::endl;
     }

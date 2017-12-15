@@ -71,6 +71,7 @@ namespace cali
 
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
+extern void init_alloc_tree_entries(Caliper* c);
 
 extern void config_sanity_check();
 
@@ -302,6 +303,7 @@ struct Caliper::GlobalData
               Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
 
         init_attribute_classes(&c);
+        init_alloc_tree_entries(&c);
 
         Services::register_services(&c);
 

@@ -48,6 +48,7 @@ cali_id_t cali_annotation_attr_id   = CALI_INV_ID;
 
 cali_id_t cali_alloc_fn_attr_id                 = CALI_INV_ID;
 cali_id_t cali_alloc_label_attr_id              = CALI_INV_ID;
+cali_id_t cali_alloc_uid_attr_id              = CALI_INV_ID;
 cali_id_t cali_alloc_addr_attr_id               = CALI_INV_ID;
 cali_id_t cali_alloc_elem_size_attr_id          = CALI_INV_ID;
 cali_id_t cali_alloc_num_elems_attr_id          = CALI_INV_ID;
@@ -68,6 +69,7 @@ namespace cali
     // DataTracker attributes
     Attribute alloc_fn_attr;
     Attribute alloc_label_attr;
+    Attribute alloc_uid_attr;
     Attribute alloc_addr_attr;
     Attribute alloc_elem_size_attr;
     Attribute alloc_num_elems_attr;
@@ -128,6 +130,9 @@ namespace cali
             },
             { "alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
               &alloc_label_attr, &cali_alloc_label_attr_id
+            },
+            { "alloc.uid", CALI_TYPE_UINT, CALI_ATTR_DEFAULT,
+              &alloc_uid_attr, &cali_alloc_uid_attr_id
             },
             { "alloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
               &alloc_addr_attr, &cali_alloc_addr_attr_id

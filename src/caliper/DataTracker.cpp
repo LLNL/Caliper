@@ -70,13 +70,16 @@ void* Allocate(const std::string &label,
     return ret;
 }
 
+const std::string cali_track("Caliper Track");
+const std::string cali_untrack("Caliper Untrack");
+
 void TrackAllocation(void *ptr,
                      const std::string &label,
                      size_t size) {
 
     // size_t size[] = {malloc_usable_size(ptr)};
     // if (size[0] > 0)
-    g_alloc_tracker.add_allocation(label, (uint64_t)ptr, (size_t)1, &size, (size_t)1);
+    g_alloc_tracker.add_allocation(label, (uint64_t)ptr, (size_t)1, &size, (size_t)1, cali_track);
     // else
     //     std::cerr << "Invalid allocation to track!" << std::endl;
 }
@@ -87,13 +90,13 @@ void TrackAllocation(void *ptr,
                      const std::vector<size_t> &dimensions) {
     // size_t size = malloc_usable_size(ptr);
     // if (size >= Allocation::num_bytes(elem_size, (size_t*)dimensions.data(), (size_t)dimensions.size()))
-    g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions.data(), (size_t)dimensions.size());
+    g_alloc_tracker.add_allocation(label, (uint64_t)ptr, elem_size, dimensions.data(), (size_t)dimensions.size(), cali_track);
     // else
     //     std::cerr << "Invalid allocation tracking information!" << std::endl;
 }
 
 void UntrackAllocation(void *ptr) {
-    g_alloc_tracker.remove_allocation((uint64_t)ptr);
+    g_alloc_tracker.remove_allocation((uint64_t)ptr, cali_untrack, false);
 }
 
 void Free(void *ptr)
