@@ -1,7 +1,7 @@
-/// \file  TextLog.cpp
-/// \brief Caliper text log service
+// TextLog.cpp
+// Caliper text log service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

@@ -35,7 +35,7 @@
 
 #pragma once
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/caliper-config.h"
 #include "caliper/Caliper.h"

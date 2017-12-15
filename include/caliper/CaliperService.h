@@ -1,3 +1,8 @@
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Produced at the Lawrence Livermore National Laboratory.
+//
+// This file is part of Caliper.
+// Written by David Boehme, boehme3@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -25,41 +30,25 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// This is the Caliper runtime part of the MPI-T service, which will be part of libcaliper.
-// Must not contain any MPI dependencies.
+/// \file  CaliperService.h
+/// \brief Definition of CaliperService struct
 
-#include "../CaliperService.h"
-
-#include <caliper/Caliper.h>
-
-#include <caliper/common/Log.h>
-
-using namespace cali;
+#pragma once
 
 namespace cali
 {
 
-void __attribute__((weak)) mpit_init(Caliper* c);
+class Caliper;
 
-}
+typedef void (*ServiceRegisterFn)(Caliper* c);
 
-namespace
-{
+/// \brief Name and entry point for services.
+///
+/// To register services, provide a list of CaliperService entries
+/// to Caliper::add_services() _before_ %Caliper is initialized.
+struct CaliperService {
+    const char*       name;        ///< Service name (short, no spaces).
+    ServiceRegisterFn register_fn; ///< Registration function.
+};
 
-// Register the service and initalize the MPI-T interface
-
-void mpit_register(Caliper* c) {
-    if (mpit_init) {
-        mpit_init(c);
-        Log(1).stream() << "Registered MPI-T service" << std::endl;
-    } else {
-        Log(0).stream() << "mpit: MPI wrapper implementation not found: Is caliper-mpiwrap linked?" << std::endl;
-    }
-}
-
-}
-
-namespace cali 
-{
-    CaliperService mpit_service = { "mpit", ::mpit_register };
-}
+} // namespace cali

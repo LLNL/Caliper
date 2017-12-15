@@ -42,6 +42,7 @@ namespace cali
 {
 
 class Caliper;
+class CaliperService;
 
 class Services
 {
@@ -50,7 +51,11 @@ class Services
 
 public:
 
-    static void register_services(Caliper* c = nullptr);
+    static void add_services(const CaliperService* services);
+
+    static void add_default_services();
+
+    static void register_services(Caliper* c);
 };
 
 } // namespace cali

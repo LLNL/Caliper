@@ -1,7 +1,7 @@
 /// \file  NetOut.cpp
 /// \brief Caliper text log service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include <curl/curl.h>
 

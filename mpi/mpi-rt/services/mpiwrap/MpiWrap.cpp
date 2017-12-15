@@ -30,24 +30,68 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// @file CaliperService.h
-/// @definition of CaliperService struct
+#include "caliper/CaliperService.h"
 
-#ifndef CALI_CALIPERSERVICE_H
-#define CALI_CALIPERSERVICE_H
+#include "caliper/Caliper.h"
+
+#include "caliper/common/Log.h"
+#include "caliper/common/RuntimeConfig.h"
+
+using namespace cali;
+using namespace std;
 
 namespace cali
 {
 
-class Caliper;
+Attribute mpifn_attr   { Attribute::invalid };
+Attribute mpirank_attr { Attribute::invalid };
+Attribute mpisize_attr { Attribute::invalid };
 
-typedef void (*ServiceRegisterFn)(Caliper* c);
+extern void mpiwrap_init(Caliper* c, const std::string&, const std::string&);
 
-struct CaliperService {
-    const char*       name;
-    ServiceRegisterFn register_fn;
+}
+
+namespace
+{
+
+ConfigSet        config;
+
+ConfigSet::Entry configdata[] = {
+    { "whitelist", CALI_TYPE_STRING, "", 
+      "List of MPI functions to instrument", 
+      "Colon-separated list of MPI functions to instrument.\n"
+      "If set, only whitelisted MPI functions will be instrumented.\n"
+      "By default, all MPI functions are instrumented." 
+    },
+    { "blacklist", CALI_TYPE_STRING, "",
+      "List of MPI functions to filter",
+      "Colon-separated list of functions to blacklist." 
+    },
+    ConfigSet::Terminator
 };
 
-} // namespace cali
+void mpi_register(Caliper* c)
+{
+    config = RuntimeConfig::init("mpi", configdata);
 
-#endif
+    mpifn_attr   = 
+        c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    mpirank_attr = 
+        c->create_attribute("mpi.rank", CALI_TYPE_INT, 
+                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+    mpisize_attr = 
+        c->create_attribute("mpi.size", CALI_TYPE_INT, 
+                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
+
+    mpiwrap_init(c, config.get("whitelist").to_string(), config.get("blacklist").to_string());
+
+    Log(1).stream() << "Registered MPI service" << endl;
+}
+
+} // anonymous namespace 
+
+
+namespace cali 
+{
+    CaliperService mpiwrap_service = { "mpi", ::mpi_register };
+} // namespace cali

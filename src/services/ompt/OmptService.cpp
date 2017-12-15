@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  OmptService.cpp
-///@brief Service for OpenMP Tools interface 
+// OmptService.cpp
+// Service for OpenMP Tools interface 
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 

@@ -33,7 +33,7 @@
 ///\file  AllocService.cpp
 ///\brief Service for hooking memory allocation calls
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/DataTracker.h"
 #include "caliper/AllocTracker.h"

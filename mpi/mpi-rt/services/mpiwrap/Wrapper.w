@@ -20,9 +20,6 @@ namespace cali
     extern Attribute   mpifn_attr;
     extern Attribute   mpirank_attr;
     extern Attribute   mpisize_attr;
-
-    extern std::string mpi_whitelist_string;
-    extern std::string mpi_blacklist_string;
 }
 
 using namespace cali;
@@ -37,11 +34,11 @@ bool enable_wrapper = false;
 bool enable_{{foo}} = false;
 {{endforallfn}}
 
-void setup_filter() {
+void setup_filter(const std::string& whitelist_string, const std::string& blacklist_string) {
     std::vector<std::string> whitelist =
-        StringConverter(mpi_whitelist_string).to_stringlist(",:");
+        StringConverter(whitelist_string).to_stringlist(",:");
     std::vector<std::string> blacklist =
-        StringConverter(mpi_blacklist_string).to_stringlist(",:");
+        StringConverter(blacklist_string).to_stringlist(",:");
 
     bool have_whitelist = whitelist.size() > 0;
     bool have_blacklist = blacklist.size() > 0;
@@ -170,7 +167,7 @@ namespace cali
 // --- Init function
 //
 
-void mpiwrap_init(Caliper* c)
+void mpiwrap_init(Caliper* c, const std::string& whitelist, const std::string& blacklist)
 {
     // --- register callbacks
 
@@ -181,7 +178,7 @@ void mpiwrap_init(Caliper* c)
 
     ::enable_wrapper = true;
 
-    setup_filter();
+    setup_filter(whitelist, blacklist);
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;

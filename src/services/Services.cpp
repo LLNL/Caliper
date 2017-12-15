@@ -37,7 +37,7 @@
 
 #include "Services.h"
 
-#include "CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
@@ -53,9 +53,22 @@ using namespace std;
 // List of services, defined in services.inc.cpp
 #include "services.inc.cpp"
 
+namespace
+{
+
+struct ServicesList {
+    const CaliperService* services;
+    ServicesList* next;
+};
+
+ServicesList* s_services_list { nullptr };
+
+}
+
+
 namespace cali
 {
-    
+
 struct Services::ServicesImpl
 {
     // --- data
@@ -74,8 +87,9 @@ struct Services::ServicesImpl
         if (Log::verbosity() >= 2) {
             ostringstream sstr;
 
-            for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s)
-                sstr << ' ' << s->name;
+            for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+                for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
+                    sstr << ' ' << s->name;
 
             Log(2).stream() << "Available services:" << sstr.str() << endl;
         }
@@ -84,14 +98,15 @@ struct Services::ServicesImpl
 
         // register caliper services
 
-        for (const CaliperService* s = caliper_services; s->name && s->register_fn; ++s) {
-            auto it = find(services.begin(), services.end(), string(s->name));
+        for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+            for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s) {
+                auto it = find(services.begin(), services.end(), string(s->name));
 
-            if (it != services.end()) {
-                (*s->register_fn)(c);
-                services.erase(it);
+                if (it != services.end()) {
+                    (*s->register_fn)(c);
+                    services.erase(it);
+                }
             }
-        }
 
         for ( const string& s : services )
             Log(0).stream() << "Warning: service \"" << s << "\" not found" << endl;
@@ -109,7 +124,7 @@ struct Services::ServicesImpl
     }
 };
 
-unique_ptr<Services::ServicesImpl> Services::ServicesImpl::s_instance { nullptr };
+unique_ptr<Services::ServicesImpl> Services::ServicesImpl::s_instance      { nullptr };
 
 const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
     // key, type, value, short description, long description
@@ -126,6 +141,17 @@ const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
 //
 // --- Services public interface
 //
+
+void Services::add_services(const CaliperService* services)
+{
+    ::ServicesList* elem = new ServicesList { services, ::s_services_list };
+    ::s_services_list = elem;
+}
+
+void Services::add_default_services()
+{
+    add_services(caliper_services);
+}
 
 void Services::register_services(Caliper* c)
 {
