@@ -33,7 +33,7 @@
 /// \file  Aggregate.cpp
 /// \brief Caliper on-line aggregation service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

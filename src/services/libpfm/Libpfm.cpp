@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file  Libpfm.cpp
-///@brief libpfm sampling provider for caliper records
+// Libpfm.cpp
+// libpfm sampling provider for caliper records
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "../../caliper/MemoryPool.h"

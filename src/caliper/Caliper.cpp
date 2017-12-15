@@ -74,8 +74,6 @@ extern void init_api_attributes(Caliper* c);
 
 extern void config_sanity_check();
 
-void __attribute__((weak)) setup_mpi(); // This is in libcaliper-mpiwrap.so
-
 }
 
 namespace
@@ -172,12 +170,29 @@ struct Caliper::GlobalData
 
     static GlobalData*            sG;
 
+    struct InitHookList {
+        void          (*hook)();
+        InitHookList* next;
+    };
+
+    static InitHookList*          s_init_hooks;
+    
     // --- static functions
 
     static void release_thread(void* ctx) {
         Scope* scope = static_cast<Scope*>(ctx);
 
         Caliper(sG, scope, 0).release_scope(scope);
+    }
+
+    static void add_init_hook(void (*hook)()) {
+        InitHookList* elem = new InitHookList { hook, s_init_hooks };
+        s_init_hooks = elem;
+    }
+
+    static void run_init_hooks() {
+        for (InitHookList* lp = s_init_hooks; lp; lp = lp->next)
+            (*(lp->hook))();
     }
 
     // --- data
@@ -286,11 +301,8 @@ struct Caliper::GlobalData
     }
 
     void init() {
-        // If cali::setup_mpi is found (from libcaliper-mpiwrap), do MPI setup. 
-        //   Will reduce log level on non non-rank 0 ranks etc.
-        if (cali::setup_mpi)
-            cali::setup_mpi();
-
+        run_init_hooks();
+        
         Caliper c(this, default_thread_scope, default_task_scope);
 
         // Create and set key & version attributes
@@ -303,6 +315,7 @@ struct Caliper::GlobalData
 
         init_attribute_classes(&c);
 
+        Services::add_default_services();
         Services::register_services(&c);
 
         init_api_attributes(&c);
@@ -332,6 +345,8 @@ volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
 mutex                  Caliper::GlobalData::s_init_mutex;
 
 Caliper::GlobalData*   Caliper::GlobalData::sG = nullptr;
+
+Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
 
 const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
@@ -1289,4 +1304,22 @@ bool
 Caliper::is_initialized()
 {
     return GlobalData::sG != nullptr;
+}
+
+void
+Caliper::add_services(const CaliperService* s)
+{
+    if (is_initialized())
+        Log(0).stream() << "add_services(): Caliper is already initialized - cannot add new services" << std::endl;
+    else    
+        Services::add_services(s);
+}
+
+void
+Caliper::add_init_hook(void (*hook)())
+{
+    if (is_initialized())
+        Log(0).stream() << "add_init_hook(): Caliper is already initialized - cannot add init hook" << std::endl;
+    else
+        GlobalData::add_init_hook(hook);
 }

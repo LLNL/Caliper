@@ -51,6 +51,7 @@ namespace cali
 
 // Forward declarations
 
+class CaliperService;
 class Node;    
 class SnapshotRecord;
     
@@ -262,6 +263,9 @@ public:
     static Caliper sigsafe_instance();
 
     static bool    is_initialized();
+
+    static void    add_services(const CaliperService*);
+    static void    add_init_hook(void(*fn)());
 
     friend struct GlobalData;
 };

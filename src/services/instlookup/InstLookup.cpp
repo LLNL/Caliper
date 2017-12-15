@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file InstLookup.cpp
-/// \brief Caliper instruction lookup service
+// InstLookup.cpp
+// Caliper instruction lookup service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "x86_util.h"
 

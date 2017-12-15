@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file SymbolLookup.cpp
-/// \brief Caliper symbol lookup service
+// SymbolLookup.cpp
+// Caliper symbol lookup service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "../../caliper/MemoryPool.h"

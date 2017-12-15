@@ -1,7 +1,7 @@
-/// \file  Sos.cpp
-/// \brief Caliper Sos Integration Service
+// Sos.cpp
+// Caliper Sos Integration Service
 
-#include "../CaliperService.h"
+#include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
