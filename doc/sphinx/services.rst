@@ -17,6 +17,7 @@ to create event-triggered context traces for an application.
 The following sections describe the available service modules and
 their configuration.
 
+.. _aggregate-service:
 
 Aggregate
 --------------------------------
@@ -171,6 +172,8 @@ The resulting file has the following contents: ::
      max#time.inclusive.duration=26
      sum#time.inclusice.duration=102
 
+.. _alloc-service:
+
 Alloc
 --------------------------------
 
@@ -220,6 +223,7 @@ recording/tracking frequent allocations/deallocations.
 
    Default: false.
 
+.. _callpath-service:
 
 Callpath
 --------------------------------
@@ -285,6 +289,8 @@ variable defined at program start on the Caliper blackboard.
    List of extra environment variables to import.
 
    Default: empty
+
+.. _event-service:
 
 Event
 --------------------------------
@@ -379,6 +385,8 @@ Example:
                 == CALIPER: Event: pre_end (attr = phase)
                 == CALIPER: Event: finish
                 == CALIPER: Finished
+
+.. _libpfm-service:
 
 Libpfm
 --------------------------------
@@ -485,6 +493,8 @@ Haswell):
    $ export CALI_LIBPFM_CONFIG1=100
    $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
 
+.. _mpi-service:
+
 MPI
 --------------------------------
 
@@ -532,6 +542,8 @@ addition to the regular Caliper runtime library.
    by the MPI implementation. Default: empty, records all available
    PVARs.
 
+.. _mpireport-service:
+
 MPI Report
 --------------------------------
 
@@ -554,9 +566,7 @@ MPI_Finalize.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create individual
-   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
-   multi-process program.
+   service description).
 
    Default: stdout
 
@@ -565,6 +575,8 @@ MPI_Finalize.
    An aggregation and formatting specification in CalQL syntax.
 
    Default: empty; all attributes in the snapshots will be printed.
+
+.. _papi-service:
 
 PAPI
 --------------------------------
@@ -584,7 +596,7 @@ Example:
 
 .. code-block:: sh
 
-   $ CALI_SERVICES_ENABLE=event:papi:trace:report
+   $ CALI_SERVICES_ENABLE=event,papi,trace,report
    $ CALI_PAPI_COUNTERS=PAPI_TOT_CYC,PAPI_L1_DCM
    $ ./test/cali-basic
    papi.PAPI_TOT_CYC papi.PAPI_L1_DCM function annotation loop     iteration#mainloop
@@ -596,6 +608,15 @@ Example:
                 8425              115 main                mainloop                  0
 
 
+Pthread
+--------------------------------
+
+The pthread service wraps ``pthread_create()`` and creates a Caliper
+context on the new thread. This is useful to, for example,
+automatically start sampling on new threads when there are no Caliper
+annotations in the new thread.
+
+.. _recorder-service: 
 
 Recorder
 --------------------------------
@@ -634,6 +655,8 @@ file name.
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
+
+.. _report-service:
 
 Report
 --------------------------------
@@ -686,6 +709,42 @@ Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
 
+.. _sampler-service:
+
+Sampler
+--------------------------------
+
+The sampler service implements time-based sampling. It triggers
+snapshots at regular intervals. Sampling allows for low-overhead
+performance data collection, and can provide insights into code
+regions that are not or only sparsely covered with source-code
+annotations. 
+
+Caliper must be initialized on each thread that should be
+sampled. This can be done explicitly via the annotation API, or via
+the pthread service for child threads.
+
+.. envvar:: CALI_SAMPLER_FREQUENCY
+
+   Sampling frequency in Hz. Default: 10
+
+When active, the sampler service regularly triggers snapshots with the
+specified frequency. Each snapshot triggered by the sampler service
+contains a ``cali.sampler.pc`` attribute with the program address
+where the target program was interrupted. The symbollookup service can
+use this to retrieve function name as well as source file and line
+information.
+
+The following example generates a sampling trace at 100Hz, uses the
+symbollookup service to retrieve function name information, and prints
+a flat profile of the number of samples per function::
+
+    CALI_SERVICES_ENABLE=report,sampler,symbollookup,trace
+    CALI_SAMPLER_FREQUENCY=100
+    CALI_REPORT_CONFIG="SELECT source.function#cali.sampler.pc,count() GROUP BY source.function#cali.sampler.pc FORMAT table ORDER BY count DESC"
+
+.. _symbollookup-service:
+
 Symbollookup
 --------------------------------
 
@@ -731,17 +790,17 @@ test application with Caliper's auto-generated format string:
 
 .. code-block:: sh
 
-                $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
-                $ export CALI_TEXTLOG_TRIGGER=phase
-                $ ./test/cali-basic
-                == CALIPER: Registered event trigger service
-                == CALIPER: Registered timestamp service
-                == CALIPER: Registered text log service
-                == CALIPER: Initialized
-                phase=main/init                                                       21
-                phase=main/loop                                                       84
-                phase=main                                                            219
-                == CALIPER: Finished
+      $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
+      $ export CALI_TEXTLOG_TRIGGER=phase
+      $ ./test/cali-basic
+      == CALIPER: Registered event trigger service
+      == CALIPER: Registered timestamp service
+      == CALIPER: Registered text log service
+      == CALIPER: Initialized
+      phase=main/init                                                       21
+      phase=main/loop                                                       84
+      phase=main                                                            219
+      == CALIPER: Finished
 
 
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
@@ -776,6 +835,8 @@ test application with Caliper's auto-generated format string:
    to print to the standard output or error streams, respectively.
 
    Default: stdout
+
+.. _timestamp-service:
 
 Timestamp
 --------------------------------
@@ -817,6 +878,8 @@ nodes in a distributed-memory program.
    to be enabled for this feature.
 
    Default: true
+
+.. _trace-service:
 
 Trace
 --------------------------------
