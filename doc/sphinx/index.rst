@@ -50,7 +50,7 @@ Contents
    services
    tools
    calql
-   serviceapi
+   DeveloperGuide
 
 Getting started
 --------------------------------

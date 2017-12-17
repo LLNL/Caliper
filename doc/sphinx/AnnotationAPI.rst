@@ -173,9 +173,17 @@ model. The high-level annotation API uses pre-defined attribute keys,
 but users can create their own. Attribute keys have a unique name, and
 store the attribute's data type as well as optional property flags.
 Property flags control how the Caliper runtime system handles the
-associated attributes (see :c:type:`cali_attr_properties`).
+associated attributes. 
 
-C and Fortran annotation API
+.. doxygenenum:: cali_attr_properties
+   :project: caliper
+
+Attribute keys can be created with :c:func:`cali_create_attribute()`:
+
+.. doxygenfunction:: cali_create_attribute
+   :project: caliper
+
+C annotation API
 ................................
 
 The C and Fortran annotation API provides the
@@ -218,6 +226,140 @@ Example:
    /* Closes CustomAttribute="My great example" */
    cali_end_byname("CustomAttribute");
 
+Fortran annotation API
+................................
+
+The Fortran API is a thin wrapper around the C API. Fortran subroutine
+names and semantics are identical to the respective C versions.
+
+Fortran API signatures::
+
+     subroutine cali_create_attribute(name, type, properties, id)
+       character(len=*),        intent(in)  :: name
+       integer,                 intent(in)  :: type
+       integer,                 intent(in)  :: properties
+       integer(kind=C_INT64_T), intent(out) :: id
+
+     subroutine cali_begin_string(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       character(len=*),            intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_begin_int(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       integer,                     intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_begin_double(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       real*8,                      intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_set_string(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       character(len=*),            intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_set_int(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       integer,                     intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_set_double(id, val, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       real*8,                      intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_end(id, err)
+       integer(kind=C_INT64_T),     intent(in) :: id
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_begin_string_byname
+       character(len=*), intent(in) :: attr_name
+       character(len=*), intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+       
+     subroutine cali_begin_int_byname
+       character(len=*), intent(in) :: attr_name
+       integer,          intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_begin_double_byname
+       character(len=*), intent(in) :: attr_name
+       real*8,           intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_set_string_byname
+       character(len=*), intent(in) :: attr_name
+       character(len=*), intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+       
+     subroutine cali_set_int_byname
+       character(len=*), intent(in) :: attr_name
+       integer,          intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_set_double_byname
+       character(len=*), intent(in) :: attr_name
+       real*8,           intent(in) :: val
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+     subroutine cali_end_byname
+       character(len=*), intent(in) :: attr_name
+       integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+Fortran API example
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+  program testf03
+    use Caliper
+
+    implicit none
+
+    integer                    :: cali_ret
+    integer(kind(CALI_INV_ID)) :: iter_attr
+    integer                    :: i, count
+
+    ! Mark "initialization" phase
+    call cali_begin_byname('initialization')
+    count = 4
+    call cali_end_byname('initialization')
+
+    if (count .gt. 0) then
+       ! Mark "loop" phase
+       call cali_begin_byname('loop')
+
+       ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
+       call cali_create_attribute('iteration', CALI_TYPE_INT, &
+            CALI_ATTR_ASVALUE, iter_attr)
+
+       do i = 1,count
+          ! Update iteration counter attribute
+          call cali_set_int(iter_attr, i)
+
+          ! A Caliper snapshot taken at this point will contain
+          ! { "loop", "iteration"=<i> } 
+
+          ! perform calculation
+       end do
+
+       ! Clear the iteration counter attribute (otherwise, snapshots taken
+       ! after the loop will still contain the last iteration value)
+       call cali_end(iter_attr, cali_ret)
+
+       ! Checking return value (not required, but good style)
+       if (cali_ret .ne. CALI_SUCCESS) then
+          print *, "cali_end returned with", cali_ret
+       end if
+
+       ! End "loop" phase
+       call cali_end_byname('loop')
+    end if
+  end program testf03
+
+
 C++ annotation API
 ................................
 
@@ -225,6 +367,56 @@ The C++ annotation API is implemented in the class :cpp:class:`cali::Annotation`
 
 .. doxygenclass:: cali::Annotation
    :project: caliper
+
+C++ data tracking API      
+................................
+
+Caliper also supports tracking allocated data, using the `cali::DataTracker` namespace.
+Doing so provides advanced data-centric attributes, such as recording allocation events 
+and determining the containers for memory addresses provided by services like libpfm.
+
+.. cpp:class:: cali::DataTracker
+
+   Example:
+
+   .. code-block:: c++
+      
+       double* matC = (double*)cali::DataTracker::Allocate("C", sizeof(double), {M,N});
+
+      This example allocates a 2-dimensional matrix of ``double`` sized elements and 
+      tracks it under the label "C".
+
+   .. code-block:: c++
+      
+       double* matC = new double[M,N];
+
+       cali::DataTracker::TrackAllocation(matC, "C", sizeof(double), {M,N});
+
+      This example tracks an existing 2-dimensional matrix of ``double`` sized elements 
+      under the label "C".
+
+   .. cpp:function:: TrackAllocation(void* ptr, 
+                                     const std::string &label)
+
+      Track the allocation pointed to by ``ptr`` under the label ``label``.
+
+   .. cpp:function:: TrackAllocation(void* ptr,
+                                     const std::string &label,
+                                     const size_t elem_size,
+                                     const std::vector<size_t> &dimensions)
+
+      Same as above, with additional semantics for element size and dimensionality.
+
+   .. cpp:function:: Allocate(const std::string &label,
+                              const size_t size)
+
+      Allocates memory using ``malloc`` and tracks the resulting allocation.
+
+   .. cpp:function:: Allocate(const std::string &label,
+                              const size_t elem_size,
+                              const std::vector<size_t> &dimensions)
+
+      Same as above with additional semantics for element size and dimensionality.
 
 API Reference
 --------------------------------

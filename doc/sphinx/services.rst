@@ -511,17 +511,24 @@ Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
-.. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_WHITELIST
 
-   List of MPI functions to instrument. If set, only whitelisted
-   functions will be instrumented.
+   Comma-separated list of MPI functions to instrument. 
+   Only whitelisted functions will be instrumented. Set to ``all`` 
+   to instrument all MPI functions.
 
-.. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
+   Default: Empty
 
-   List of MPI functions that fill be filtered. Note: if both
-   whitelist and blacklist are set, only whitelisted functions will
-   be instrumented, and the blacklist will be applied to the
-   whitelisted functions.
+.. envvar:: CALI_MPI_BLACKLIST
+
+   Comma-separated list of MPI functions that will *not* be
+   instrumented.
+
+   Note: if both whitelist and blacklist are set, only whitelisted
+   functions will be instrumented, and the blacklist will be applied
+   to the whitelisted functions.
+
+   Default: Empty
 
 MPIT
 --------------------------------
@@ -542,6 +549,9 @@ addition to the regular Caliper runtime library.
    by the MPI implementation. Default: empty, records all available
    PVARs.
 
+The :ref:`mpi <mpi-service>` service must be enabled for mpit
+to work.
+
 .. _mpireport-service:
 
 MPI Report
@@ -558,6 +568,9 @@ The mpireport service aggregates Caliper data across MPI processes
 before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.
+
+The :ref:`mpi <mpi-service>` service must be enabled for mpireport
+to work.
 
 .. envvar:: CALI_MPIREPORT_FILENAME
 
@@ -607,6 +620,7 @@ Example:
                 7147              150 main                mainloop
                 8425              115 main                mainloop                  0
 
+.. _pthread-service:
 
 Pthread
 --------------------------------
@@ -676,7 +690,7 @@ formatting options.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create xindividual
+   service description), for example to create individual
    ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
    multi-process program.
 
@@ -722,7 +736,7 @@ annotations.
 
 Caliper must be initialized on each thread that should be
 sampled. This can be done explicitly via the annotation API, or via
-the pthread service for child threads.
+the :ref:`pthread <pthread-service` service for child threads.
 
 .. envvar:: CALI_SAMPLER_FREQUENCY
 
