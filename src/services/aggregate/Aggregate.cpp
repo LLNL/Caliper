@@ -44,6 +44,7 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
+#include "caliper/common/c-util/unitfmt.h"
 #include "caliper/common/c-util/vlenc.h"
 
 #include "caliper/common/util/spinlock.hpp"
@@ -796,14 +797,18 @@ public:
     }
 
     static void finish_cb(Caliper* c) {
-        Log(2).stream() << "Aggregate: max key len " << s_global_max_keylen << ", "
-                        << s_global_num_kernel_entries << " entries, "
-                        << s_global_num_trie_entries << " nodes, "
-                        << s_global_num_trie_blocks + s_global_num_kernel_blocks << " blocks ("
-                        << s_global_num_trie_blocks * sizeof(TrieNode) * 1024
-            + s_global_num_kernel_blocks * sizeof(AggregateKernel) * 1024
-                        << " bytes reserved)"
-                        << std::endl;
+        if (Log::verbosity() >= 2) {
+            unitfmt_result bytes_reserved = 
+                unitfmt(s_global_num_trie_blocks * sizeof(TrieNode) * 1024
+                        + s_global_num_kernel_blocks * sizeof(AggregateKernel) * 1024, unitfmt_bytes);
+
+            Log(2).stream() << "Aggregate: max key len " << s_global_max_keylen << ", "
+                            << s_global_num_kernel_entries << " entries, "
+                            << s_global_num_trie_entries << " nodes, "
+                            << s_global_num_trie_blocks + s_global_num_kernel_blocks << " blocks ("
+                            << bytes_reserved.val << " " << bytes_reserved.symbol << " reserved)"
+                            << std::endl;
+        }
 
         // report attribute keys we haven't found 
         for (size_t i = 0; i < s_key_attribute_ids.size(); ++i)
