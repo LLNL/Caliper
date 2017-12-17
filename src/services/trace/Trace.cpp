@@ -43,6 +43,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include "caliper/common/c-util/unitfmt.h"
+
 #include "caliper/common/util/spinlock.hpp"
 
 #include <pthread.h>
@@ -262,9 +264,16 @@ namespace
         }
 
         if (Log::verbosity() > 1) {
+            unitfmt_result bytes_reserved 
+                = unitfmt(aggregate_info.reserved, unitfmt_bytes);
+            unitfmt_result bytes_used     
+                = unitfmt(aggregate_info.used,     unitfmt_bytes);
+
             Log(2).stream() << "Trace: "
-                            << aggregate_info.reserved << " bytes reserved, "
-                            << aggregate_info.used     << " bytes used in "
+                            << bytes_reserved.val      << " " 
+                            << bytes_reserved.symbol   << " reserved, "
+                            << bytes_used.val          << " " 
+                            << bytes_used.symbol       << " used, "
                             << aggregate_info.nchunks  << " chunks." << std::endl;
         }
         

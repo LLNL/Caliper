@@ -34,6 +34,8 @@
 
 #include "caliper/common/RuntimeConfig.h"
 
+#include "caliper/common/c-util/unitfmt.h"
+
 #include "caliper/common/util/spinlock.hpp"
 
 #include <algorithm>
@@ -103,9 +105,14 @@ struct MemoryPool::MemoryPoolImpl
     }
 
     std::ostream& print_statistics(std::ostream& os) const {
+        unitfmt_result bytes_reserved 
+            = unitfmt(m_total_reserved, unitfmt_bytes);
+        unitfmt_result bytes_used     
+            = unitfmt(m_total_used,     unitfmt_bytes);
+
         os << "Metadata memory pool: "
-           << m_total_reserved << " bytes reserved, "
-           << m_total_used << " bytes used";
+           << bytes_reserved.val << " " << bytes_reserved.symbol << " reserved, "
+           << bytes_used.val     << " " << bytes_used.symbol     << " used";
 
         return os;
     }

@@ -1,4 +1,5 @@
 set(C_UTIL_SOURCES
+    unitfmt.c
     vlenc.c)
 
 add_library(c-util OBJECT ${C_UTIL_SOURCES})
