@@ -2,36 +2,62 @@ language: cpp
 sudo: false
 dist: trusty
 
-matrix:
-  include:
-    - compiler: gcc
-      env: MATRIX_EVAL="CC=gcc && CXX=g++ && CFLAGS=-coverage && CXXFLAGS=-coverage" COVERAGE=t
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-4.0
+    packages:
+      - openmpi-bin
+      - libopenmpi-dev
+      - g++-6
+      - clang-4.0
 
-    - compiler: gcc
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-      env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-
-    - compiler: clang
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-4.0
-          packages:
-            - clang-4.0
-      env: MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
-
-before_install:
-  - eval "${MATRIX_EVAL}"
+env:
+  matrix:
+    # Coverage test
+    - CALI_TRAVIS_TESTNAME=coverage
+      CALI_CC=gcc
+      CALI_CXX=g++
+      WITH_MPI=Off
+      WITH_GOTCHA=On
+      COVERAGE=On
+    # Test with mpi using GOTCHA
+    - CALI_TRAVIS_TESTNAME=mpi-gotcha
+      CALI_CC=gcc
+      CALI_CXX=g++
+      WITH_MPI=On
+      WITH_GOTCHA=On
+    # Test with mpi without GOTCHA (using PMPI)
+    - CALI_TRAVIS_TESTNAME=mpi-pmpi
+      CALI_CC=gcc
+      CALI_CXX=g++
+      WITH_MPI=On
+      WITH_GOTCHA=Off
+    # Build test with clang
+    - CALI_TRAVIS_TESTNAME=clang-4
+      CALI_CC=clang-4.0
+      CALI_CXX=clang++-4.0
+      WITH_MPI=Off
+      WITH_GOTCHA=On
+    # Build test with gcc-6
+    - CALI_TRAVIS_TESTNAME=gcc-6
+      CALI_CC=gcc-6
+      CALI_CXX=g++-6
+      WITH_MPI=Off
+      WITH_GOTCHA=On
 
 script:
-  - mkdir build-${CC}
-  - cd build-${CC}
-  - cmake -DCMAKE_C_COMPILER=`which $CC` -DCMAKE_CXX_COMPILER=`which $CXX` -DCMAKE_C_FLAGS="${CFLAGS}" -DCMAKE_CXX_FLAGS="${CXXFLAGS}" -DBUILD_TESTING=On ..
+  - mkdir build-${CALI_TRAVIS_TESTNAME}
+  - cd build-${CALI_TRAVIS_TESTNAME}
+  - CMAKE_OPTS="-DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=On"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_COMPILER=${CALI_CC} -DCMAKE_CXX_COMPILER=${CALI_CXX}"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_LIBPFM=Off"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_PAPI=Off"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_MPI=${WITH_MPI} -DWITH_MPIT=Off"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_GOTCHA=${WITH_GOTCHA}"
+  - if [[ -n "${COVERAGE}" ]] ; then CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"; fi
+  - cmake ${CMAKE_OPTS} ..
   - make -j4
   - make test
 
