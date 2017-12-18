@@ -144,6 +144,11 @@ const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
 
 void Services::add_services(const CaliperService* services)
 {
+    if (services && services[0].name)
+        std::cerr << "Adding services: " << services << "; first: " << services[0].name << "; s_services_list: " << s_services_list << std::endl;
+    else
+        std::cerr << "Adding services: " << services << "; s_services_list: " << s_services_list << std::endl;
+    
     ::ServicesList* elem = new ServicesList { services, ::s_services_list };
     ::s_services_list = elem;
 }

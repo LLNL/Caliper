@@ -100,6 +100,7 @@ mpirt_constructor()
 {
     Caliper::add_services(cali_mpi_services);
     Caliper::add_init_hook(setup_mpi);
+    std::cerr << "Executed caliper-mpi constructor" << std::endl;
 }
 
 }
