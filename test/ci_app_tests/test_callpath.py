@@ -12,7 +12,7 @@ class CaliperCallpathTest(unittest.TestCase):
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'callpath:trace:recorder',
+            'CALI_SERVICES_ENABLE'   : 'callpath:trace:recorder:alloc',
             'CALI_CALLPATH_USE_NAME' : 'true',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'

@@ -91,7 +91,8 @@ namespace
 
     struct alloc_attrs {
         Attribute memoryaddress_attr;
-        Attribute alloc_label_attr;
+        //Attribute alloc_label_attr;
+        Attribute alloc_uid_attr;
         Attribute alloc_index_attr;
     };
 
@@ -245,11 +246,13 @@ namespace
                     //const size_t *index = alloc->index_ND(memory_address);
 
                     Attribute attr[NUM_TRACKED_ALLOC_ATTRS] = {
-                        attrs.alloc_label_attr,
+                        // attrs.alloc_label_attr,
+                        attrs.alloc_uid_attr,
                         attrs.alloc_index_attr
                     };
                     Variant data[NUM_TRACKED_ALLOC_ATTRS] = {
-                        Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
+                        // Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
+                        Variant(cali_make_variant_from_uint(alloc->m_uid)),
                         Variant(index),
                     };
 
@@ -268,7 +271,8 @@ namespace
 
             struct alloc_attrs attrs = {
                 attr,
-                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                //c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                c->create_attribute("alloc.uid#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT),
                 c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
             };
 

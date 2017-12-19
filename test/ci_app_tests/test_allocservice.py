@@ -13,6 +13,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'alloc:recorder:trace',
+            'CALI_ALLOC_TRACK_RANGES': 'true',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -29,12 +30,12 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {'test_alloc.allocated.0' : 'true',
-                        'alloc.label#ptr_in'     : 'test_alloc_A',
+                        'alloc.uid#ptr_in'       : '0',
                         'alloc.index#ptr_in'     : '0'
                     }))
 
         self.assertFalse(calitest.has_snapshot_with_keys(
-            snapshots, { 'test_alloc.allocated.0', 'alloc.label#ptr_out' }))
+            snapshots, { 'test_alloc.allocated.0', 'alloc.uid#ptr_out' }))
 
         # test allocated.1
 
@@ -43,12 +44,12 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
         self.assertTrue(calitest.has_snapshot_with_attributes(
             snapshots, {'test_alloc.allocated.1' : 'true',
-                        'alloc.label#ptr_in'     : 'test_alloc_A',
+                        'alloc.uid#ptr_in'       : '0',
                         'alloc.index#ptr_in'     : '41'
                     }))
 
         self.assertFalse(calitest.has_snapshot_with_keys(
-            snapshots, { 'test_alloc.allocated.1', 'alloc.label#ptr_out' }))
+            snapshots, { 'test_alloc.allocated.1', 'alloc.uid#ptr_out' }))
 
         # test allocated.freed
 
@@ -56,7 +57,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
             snapshots, { 'test_alloc.freed', 'ptr_in', 'ptr_out' }))
 
         self.assertFalse(calitest.has_snapshot_with_keys(
-            snapshots, { 'test_alloc.freed', 'alloc.label#ptr_in' }))
+            snapshots, { 'test_alloc.freed', 'alloc.uid#ptr_in' }))
 
 
     def helper_test_hook(self, hook):
@@ -66,7 +67,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.assertTrue(calitest.has_snapshot_with_keys(
             self.snapshots, { 'test_alloc.' + hook + '_hook',
                              'test_alloc.allocated.0',
-                             'alloc.label#ptr_in',
+                             'alloc.uid#ptr_in',
                              'ptr_in', 'ptr_out' }))
 
         self.assertTrue(calitest.has_snapshot_with_attributes(
@@ -78,14 +79,14 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.assertFalse(calitest.has_snapshot_with_keys(
             self.snapshots, { 'test_alloc.' + hook + '_hook',
                              'test_alloc.allocated.0',
-                             'alloc.label#ptr_out' }))
+                             'alloc.uid#ptr_out' }))
 
         # test allocated.1
 
         self.assertTrue(calitest.has_snapshot_with_keys(
             self.snapshots, { 'test_alloc.' + hook + '_hook',
                              'test_alloc.allocated.1',
-                             'alloc.label#ptr_in',
+                             'alloc.uid#ptr_in',
                              'ptr_in', 'ptr_out' }))
 
         index = '41' if hook == 'calloc' else '167'  # 41*sizeof(int)-1
@@ -98,7 +99,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.assertFalse(calitest.has_snapshot_with_keys(
             self.snapshots, { 'test_alloc.' + hook + '_hook',
                              'test_alloc.allocated.1',
-                             'alloc.label#ptr_out' }))
+                             'alloc.uid#ptr_out' }))
 
         # test allocated.freed
 
@@ -110,7 +111,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.assertFalse(calitest.has_snapshot_with_keys(
             self.snapshots, { 'test_alloc.' + hook + '_hook',
                              'test_alloc.freed',
-                             'alloc.label#ptr_in' }))
+                             'alloc.uid#ptr_in' }))
 
 
     def test_alloc_hooks(self):

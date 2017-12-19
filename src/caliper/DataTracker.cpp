@@ -101,6 +101,7 @@ void UntrackAllocation(void *ptr) {
 
 void Free(void *ptr)
 {
+    UntrackAllocation(ptr);
     free(ptr);
 }
 
