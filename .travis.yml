@@ -59,7 +59,8 @@ script:
   - if [[ -n "${COVERAGE}" ]] ; then CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"; fi
   - cmake ${CMAKE_OPTS} ..
   - make -j4
-  - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+  - CALI_LOG_VERBOSITY=2 ./test/ci_app_tests/ci_test_mpi_before_cali
+  - make test || (cat Testing/Temporary/LastTest.log; exit 1) && cat Testing/Temporary/LastTest.log
 
 after_success:
   - if [[ -n "${COVERAGE}" ]] ; then bash <(curl -s https://codecov.io/bash) ; fi
