@@ -65,12 +65,14 @@ class AllocTracker {
     static const std::string cali_alloc;
     static const std::string cali_free;
 
+    bool m_record_snapshots;
     bool m_track_ranges;
 
 public:
-    AllocTracker(bool track_ranges = false);
+    AllocTracker(bool record_snapshots = false, bool track_ranges = false);
     ~AllocTracker();
 
+    void set_record_snapshots(bool record_snapshots);
     void set_track_ranges(bool track_ranges);
     uint64_t get_active_bytes();
 

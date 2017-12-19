@@ -311,6 +311,7 @@ namespace
         if (record_active_mem)
             active_mem_attr = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
+        cali::DataTracker::g_alloc_tracker.set_record_snapshots(true);
         cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
 
         c->events().create_attr_evt.connect(create_attr_cb);

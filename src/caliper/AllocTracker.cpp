@@ -220,7 +220,7 @@ struct AllocTracker::AllocTree {
     std::map<uint64_t, AllocNode*> m_alloc_map;
     std::map<uint64_t,uint64_t> m_count_for_size;
 
-    AllocTree(AllocNode *root = nullptr, bool track_ranges = false) 
+    AllocTree(AllocNode *root = nullptr) 
         : m_root(root),
           m_active_bytes(0)
     { }
@@ -415,14 +415,20 @@ struct AllocTracker::AllocTree {
 
 thread_local std::mutex AllocTracker::AllocTree::thread_mutex;
 
-AllocTracker::AllocTracker(bool track_ranges) 
-    : alloc_tree(new AllocTree(nullptr, track_ranges))
+AllocTracker::AllocTracker(bool record_snapshots, bool track_ranges) 
+    : m_record_snapshots(record_snapshots),
+      m_track_ranges(track_ranges),
+      alloc_tree(new AllocTree(nullptr))
 { 
 }
 
 AllocTracker::~AllocTracker() 
 {
     // TODO: delete all allocations
+}
+
+void AllocTracker::set_record_snapshots(bool record_snapshots) {
+    m_record_snapshots = record_snapshots;
 }
 
 void AllocTracker::set_track_ranges(bool track_ranges) {
@@ -449,7 +455,7 @@ AllocTracker::add_allocation(const std::string &label,
     Allocation *a = new Allocation(allocation_id++, label, addr, elem_size, dimensions, num_dimensions);
     AllocTree::AllocNode *newNode = alloc_tree->insert(a, track_range && m_track_ranges);
 
-    if (!record_snapshot)
+    if (!m_record_snapshots || !record_snapshot)
         return;
 
     Caliper c = Caliper();
@@ -473,6 +479,8 @@ AllocTracker::add_allocation(const std::string &label,
         Variant(cali_make_variant_from_uint(a->m_uid))
     };
 
+    // TODO: When string type are available, add string labels here
+
     SnapshotRecord trigger_info(0, nullptr, 6, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 }
@@ -482,7 +490,7 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
                                            bool record_snapshot) {
     Allocation removed = alloc_tree->remove(address);
 
-    if (!record_snapshot || !removed.isValid())
+    if (!m_record_snapshots || !record_snapshot || !removed.isValid())
         return removed;
 
     Caliper c = Caliper();
@@ -504,6 +512,8 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
         Variant(cali_make_variant_from_uint(alloc_tree->count_for_size(removed.m_bytes))),
         Variant(cali_make_variant_from_uint(removed.m_uid))
     };
+
+    // TODO: When string type are available, add string labels here
 
     SnapshotRecord trigger_info(0, nullptr, 6, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
