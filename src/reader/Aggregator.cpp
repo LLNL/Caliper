@@ -486,11 +486,11 @@ public:
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
             m_sum1_attr = 
-                db.create_attribute("sum#" + m_target_attr1_name, 
+                db.create_attribute("pc.sum#" + m_target_attr1_name, 
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
             m_sum2_attr = 
-                db.create_attribute("sum#" + m_target_attr2_name, 
+                db.create_attribute("pc.sum#" + m_target_attr2_name, 
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
             percentage_attr = m_percentage_attr;
@@ -571,23 +571,154 @@ private:
     Config*    m_config;
 };
 
-enum KernelID {
-    Count       = 0,
-    Sum         = 1,
-    Statistics  = 2,
-    Percentage  = 3,
+//
+// --- PercentTotalKernel
+//
+
+class PercentTotalKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_target_attr_name;
+        Attribute   m_target_attr;
+        Attribute   m_sum_attr;
+
+        Attribute   m_percentage_attr;
+
+        std::mutex  m_total_lock;
+        double      m_total;
+
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+            return m_target_attr;
+        }
+
+        bool get_percentage_attribute(CaliperMetadataAccessInterface& db, 
+                                      Attribute& percentage_attr,
+                                      Attribute& sum_attr) {
+            if (m_target_attr == Attribute::invalid)
+                return false;
+            if (m_percentage_attr != Attribute::invalid) {
+                percentage_attr = m_percentage_attr;
+                sum_attr = m_sum_attr;
+                return true;
+            }
+
+            m_percentage_attr = 
+                db.create_attribute("percent_total#" + m_target_attr_name, 
+                                    CALI_TYPE_DOUBLE,
+                                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            m_sum_attr = 
+                db.create_attribute("pct.sum#" + m_target_attr_name, 
+                                    CALI_TYPE_DOUBLE,
+                                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
+
+            percentage_attr = m_percentage_attr;
+            sum_attr = m_sum_attr;
+
+            return true;
+        }
+                
+        AggregateKernel* make_kernel() {
+            return new PercentTotalKernel(this);
+        }
+
+        void add(double val) {
+            std::lock_guard<std::mutex>
+                g(m_total_lock);
+
+            m_total += val;
+        }
+
+        double get_total() {
+            return m_total;
+        }
+
+        Config(const std::vector<std::string>& names)
+            : m_target_attr_name(names.front()),
+              m_target_attr(Attribute::invalid),
+              m_total(0)
+        {
+            Log(2).stream() << "aggregate: creating percent_total kernel for attribute " 
+                            << m_target_attr_name << std::endl;
+        }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg);
+        }        
+    };
+
+    PercentTotalKernel(Config* config)
+        : m_sum(0), m_config(config)
+        { }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        Attribute target_attr = m_config->get_target_attr(db);
+        Attribute percentage_attr, sum_attr;
+
+        if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
+            return;
+
+        cali_id_t target_id = target_attr.id();
+        cali_id_t sum_id    = sum_attr.id();
+
+        for (const Entry& e : list) {
+            cali_id_t id = e.attribute();
+            
+            if (id == target_id || id == sum_id) {
+                double val = e.value().to_double();
+                m_sum += val;
+                m_config->add(val);
+            } 
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        double total = m_config->get_total();
+        
+        if (total > 0) {
+            Attribute percentage_attr, sum_attr;
+
+            if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
+                return;
+
+            list.push_back(Entry(sum_attr, Variant(m_sum)));
+            list.push_back(Entry(percentage_attr, Variant(100.0 * m_sum / total)));
+        }
+    }
+
+private:
+
+    double     m_sum;
+    
+    std::mutex m_lock;    
+    Config*    m_config;
 };
 
-#define MAX_KERNEL_ID 3
+enum KernelID {
+    Count        = 0,
+    Sum          = 1,
+    Statistics   = 2,
+    Percentage   = 3,
+    PercentTotal = 4
+};
+
+#define MAX_KERNEL_ID 4
 
 const char* kernel_args[] = { "attribute" };
 const char* kernel_2args[] = { "numerator", "denominator" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
-    { KernelID::Count,      "count",      0, 0, nullptr     },
-    { KernelID::Sum,        "sum",        1, 1, kernel_args },
-    { KernelID::Statistics, "statistics", 1, 1, kernel_args },
-    { KernelID::Percentage, "percentage", 2, 2, kernel_2args },
+    { KernelID::Count,        "count",         0, 0, nullptr      },
+    { KernelID::Sum,          "sum",           1, 1, kernel_args  },
+    { KernelID::Statistics,   "statistics",    1, 1, kernel_args  },
+    { KernelID::Percentage,   "percentage",    2, 2, kernel_2args },
+    { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
     
     QuerySpec::FunctionSignatureTerminator
 };
@@ -596,10 +727,11 @@ const struct KernelInfo {
     const char* name;
     AggregateKernelConfig* (*create)(const std::vector<std::string>& cfg);
 } kernel_list[] = {
-    { "count",      CountKernel::Config::create      },
-    { "sum",        SumKernel::Config::create        },
-    { "statistics", StatisticsKernel::Config::create },
-    { "percentage", PercentageKernel::Config::create },
+    { "count",         CountKernel::Config::create        },
+    { "sum",           SumKernel::Config::create          },
+    { "statistics",    StatisticsKernel::Config::create   },
+    { "percentage",    PercentageKernel::Config::create   },
+    { "percent_total", PercentTotalKernel::Config::create },
     { 0, 0 }
 };
 
@@ -1036,6 +1168,9 @@ Aggregator::aggregation_attribute_names(const QuerySpec& spec)
                 break;        
             case KernelID::Percentage:
                 ret.push_back(op.args[0] + std::string("/") + op.args[1]);
+                break;
+            case KernelID::PercentTotal:
+                ret.push_back(std::string("percent_total#") + op.args[0]);
                 break;
             }
         }
