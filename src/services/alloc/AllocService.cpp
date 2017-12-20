@@ -91,7 +91,8 @@ namespace
 
     struct alloc_attrs {
         Attribute memoryaddress_attr;
-        Attribute alloc_label_attr;
+        //Attribute alloc_label_attr;
+        Attribute alloc_uid_attr;
         Attribute alloc_index_attr;
     };
 
@@ -207,6 +208,7 @@ namespace
     }
 
     void init_alloc_hooks(Caliper *c) {
+        Log(1).stream() << "alloc: Initializing system alloc hooks" << std::endl;
         gotcha_wrap(alloc_bindings, 
                     sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), 
                     "Caliper AllocService Wrap");
@@ -244,11 +246,13 @@ namespace
                     //const size_t *index = alloc->index_ND(memory_address);
 
                     Attribute attr[NUM_TRACKED_ALLOC_ATTRS] = {
-                        attrs.alloc_label_attr,
+                        // attrs.alloc_label_attr,
+                        attrs.alloc_uid_attr,
                         attrs.alloc_index_attr
                     };
                     Variant data[NUM_TRACKED_ALLOC_ATTRS] = {
-                        Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
+                        // Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
+                        Variant(cali_make_variant_from_uint(alloc->m_uid)),
                         Variant(index),
                     };
 
@@ -267,7 +271,8 @@ namespace
 
             struct alloc_attrs attrs = {
                 attr,
-                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                //c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
+                c->create_attribute("alloc.uid#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT),
                 c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
             };
 
@@ -279,8 +284,6 @@ namespace
     static void post_init_cb(Caliper *c) {
 
         class_memoryaddress_attr = c->get_attribute("class.memoryaddress");
-
-        active_mem_attr  = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
         std::vector<Attribute> memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
 
@@ -309,6 +312,10 @@ namespace
         record_active_mem = config.get("record_active_mem").to_bool();
         count_allocs_by_size = config.get("count_allocs_by_size").to_bool();
 
+        if (record_active_mem)
+            active_mem_attr = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
+
+        cali::DataTracker::g_alloc_tracker.set_record_snapshots(true);
         cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
 
         c->events().create_attr_evt.connect(create_attr_cb);
@@ -316,7 +323,8 @@ namespace
         c->events().snapshot.connect(snapshot_cb);
         c->events().pre_flush_evt.connect(pre_flush_cb);
 
-        init_alloc_hooks(c);
+        if (record_system_allocs || track_system_alloc_ranges)
+            init_alloc_hooks(c);
 
         Log(1).stream() << "Registered alloc service" << std::endl;
     }

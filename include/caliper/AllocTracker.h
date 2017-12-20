@@ -25,7 +25,8 @@ public:
                             const size_t num_dimensions);
 
 public:
-    Allocation(const std::string &label,
+    Allocation(const uint64_t uid,
+               const std::string &label,
                const uint64_t start_address,
                const size_t elem_size,
                const size_t dimensions[],
@@ -41,6 +42,7 @@ public:
     size_t index_1D(uint64_t address);
     const size_t* index_ND(uint64_t address);
 
+    const uint64_t      m_uid;
     const std::string   m_label;
     const uint64_t      m_start_address;
     const size_t        m_elem_size;
@@ -63,11 +65,14 @@ class AllocTracker {
     static const std::string cali_alloc;
     static const std::string cali_free;
 
+    bool m_record_snapshots;
     bool m_track_ranges;
 
 public:
-    AllocTracker(bool track_ranges = true);
+    AllocTracker(bool record_snapshots = false, bool track_ranges = false);
+    ~AllocTracker();
 
+    void set_record_snapshots(bool record_snapshots);
     void set_track_ranges(bool track_ranges);
     uint64_t get_active_bytes();
 
