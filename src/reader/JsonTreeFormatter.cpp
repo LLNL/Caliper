@@ -76,10 +76,21 @@ class Hierarchy
         { }
 
         const std::string& label() const { return m_label; }
+
+        std::ostream& write_json(std::ostream& os) const {
+            os << "{ \"label\": \"" << m_label << "\"";
+
+            if (parent() && parent()->id() != CALI_INV_ID)
+                os << ", \"parent\": " << parent()->id();
+
+            os << " }";
+        }
     };
 
-    HierarchyNode*         m_root;
-    std::atomic<cali_id_t> m_next_id;
+    HierarchyNode*              m_root;
+    
+    std::mutex                  m_nodes_lock;
+    std::vector<HierarchyNode*> m_nodes;
 
     void recursive_delete(HierarchyNode* node) {
         HierarchyNode* child = node->first_child();
@@ -93,7 +104,7 @@ class Hierarchy
         delete node;
     }
 
-    void write_node_json(std::ostream& os, HierarchyNode* node) {
+    void write_recursive(std::ostream& os, HierarchyNode* node) {
         os << "{ \"id\": "      << node->id()
            << ", \"label\": \"" << node->label() << "\"";
 
@@ -101,18 +112,18 @@ class Hierarchy
             os << ", \"children\": [";
             int count = 0;
             for (HierarchyNode* child = node->first_child(); child; child = child->next_sibling())
-                write_node_json(os << ((count++ > 0) ? ", " : " "), child);
+                write_recursive(os << ((count++ > 0) ? ", " : " "), child);
             os << " ]";
         }
 
         os << " }";
     }
-    
+
+
 public:
 
     Hierarchy()
-        : m_root(new HierarchyNode(CALI_INV_ID, "")),
-          m_next_id(1)
+        : m_root(new HierarchyNode(CALI_INV_ID, ""))
     { }
 
     ~Hierarchy() {
@@ -133,7 +144,12 @@ public:
                 ;
 
             if (!node) {
-                node = new HierarchyNode(m_next_id++, label);
+                std::lock_guard<std::mutex>
+                    g(m_nodes_lock);
+                
+                node = new HierarchyNode(m_nodes.size(), label);
+                m_nodes.push_back(node);
+                
                 parent->append(node);
             }
         }
@@ -141,14 +157,29 @@ public:
         return node->id();
     }
 
-    std::ostream& write_json(std::ostream& os) {
+    std::ostream& write_recursive(std::ostream& os) {
         os << "\"hierarchy\": [";
 
         int count = 0;
         for (HierarchyNode* node = m_root->first_child(); node; node = node->next_sibling())
-            write_node_json(os << (count++ > 0 ? ", " : " "), node);
+            write_recursive(os << (count++ > 0 ? ", " : " "), node);
 
         return os << " ]";
+    }
+
+    std::ostream& write_nodes(std::ostream& os) {
+        std::lock_guard<std::mutex>
+            g(m_nodes_lock);
+        
+        os << "\"nodes\": [";
+
+        int count = 0;
+        for (const HierarchyNode* node : m_nodes)
+            node->write_json(os << (count++ > 0 ? ", " : " "));
+                    
+        os << " ]";
+
+        return os;
     }
 };
 
@@ -258,6 +289,8 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
 
         if (id != CALI_INV_ID)
             os << id;
+        else
+            os << "null";
     }
 
     void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& path_attr) {
@@ -265,7 +298,9 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
             if (e.attribute() == path_attr.id()) {
                 os << "\"" << e.value().to_string() << "\"";
                 return;
-            }   
+            }
+
+        os << "null";
     }
     
     void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -295,7 +330,7 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
                 write_immediate_entry(os, list, c.attributes.front());
         }
 
-        os << "]";
+        os << " ]";
 
         {
             std::lock_guard<std::mutex>
@@ -313,8 +348,8 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
         for (const Column& c : m_columns)
             m_os.stream() << (count++ > 0 ? ", " : " ") << "\"" << c.title << "\"";
 
-        // close "columns", write hierarchy "
-        m_hierarchy.write_json(m_os.stream() << " ],\n  ") << "\n}" << std::endl;
+        // close "columns", write "nodes"
+        m_hierarchy.write_nodes(m_os.stream() << " ],\n  ") << "\n}" << std::endl;
     }
 };
 
