@@ -293,10 +293,17 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
             os << "null";
     }
 
-    void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& path_attr) {
+    void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& attr) {
+        cali_attr_type type = attr.type();
+        bool quote = !(type == CALI_TYPE_INT || type == CALI_TYPE_UINT || type == CALI_TYPE_DOUBLE);
+        
         for (const Entry& e : list)
-            if (e.attribute() == path_attr.id()) {
-                os << "\"" << e.value().to_string() << "\"";
+            if (e.attribute() == attr.id()) {
+                if (quote)
+                    os << "\"" << e.value().to_string() << "\"";
+                else
+                    os << e.value().to_string();
+                
                 return;
             }
 
