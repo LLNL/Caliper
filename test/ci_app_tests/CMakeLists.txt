@@ -40,6 +40,7 @@ set(PYTHON_SCRIPTS
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
+  test_json.py
   test_log.py
   test_report.py
   test_thread.py
