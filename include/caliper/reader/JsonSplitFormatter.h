@@ -51,16 +51,16 @@ class QuerySpec;
 
 /// \brief Prints snapshot records as sparse JSON
 /// \ingroup ReaderAPI
-class JsonTreeFormatter : public Formatter
+class JsonSplitFormatter : public Formatter
 {
-    struct JsonTreeFormatterImpl;
-    std::shared_ptr<JsonTreeFormatterImpl> mP;
+    struct JsonSplitFormatterImpl;
+    std::shared_ptr<JsonSplitFormatterImpl> mP;
 
 public:
 
-    JsonTreeFormatter(OutputStream& os, const QuerySpec& spec);
+    JsonSplitFormatter(OutputStream& os, const QuerySpec& spec);
 
-    ~JsonTreeFormatter();
+    ~JsonSplitFormatter();
 
     void process_record(CaliperMetadataAccessInterface&, const EntryList&);
 

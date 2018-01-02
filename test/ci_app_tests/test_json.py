@@ -13,7 +13,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         target_cmd = [ './ci_test_macros' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
-                       '-q', 'SELECT count(),sum(time.inclusive.duration),loop,iteration#mainloop group by loop,iteration#mainloop format json-tree' ]
+                       '-q', 'SELECT count(),sum(time.inclusive.duration),loop,iteration#mainloop group by loop,iteration#mainloop format json-split' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -49,7 +49,6 @@ class CaliperJSONTest(unittest.TestCase):
         iterindex = columns.index('iteration#mainloop')
 
         self.assertEqual(data[6][iterindex], 3)
-
         
 if __name__ == "__main__":
     unittest.main()

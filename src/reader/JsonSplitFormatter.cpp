@@ -32,7 +32,7 @@
 
 // Print web-readable table in sparse format
 
-#include "caliper/reader/JsonTreeFormatter.h"
+#include "caliper/reader/JsonSplitFormatter.h"
 
 #include "caliper/reader/QuerySpec.h"
 
@@ -186,7 +186,7 @@ public:
 }
 
 
-struct JsonTreeFormatter::JsonTreeFormatterImpl
+struct JsonSplitFormatter::JsonSplitFormatterImpl
 { 
     bool                     m_select_all;
     std::vector<std::string> m_attr_names;
@@ -219,7 +219,7 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
     std::mutex               m_os_lock;
 
     
-    JsonTreeFormatterImpl(OutputStream& os)
+    JsonSplitFormatterImpl(OutputStream& os)
         : m_initialized(false),
           m_row_count(0),
           m_os(os)
@@ -377,24 +377,24 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
 };
 
 
-JsonTreeFormatter::JsonTreeFormatter(OutputStream &os, const QuerySpec& spec)
-    : mP { new JsonTreeFormatterImpl(os) }
+JsonSplitFormatter::JsonSplitFormatter(OutputStream &os, const QuerySpec& spec)
+    : mP { new JsonSplitFormatterImpl(os) }
 {
     mP->configure(spec);
 }
 
-JsonTreeFormatter::~JsonTreeFormatter()
+JsonSplitFormatter::~JsonSplitFormatter()
 {
     mP.reset();
 }
 
 void 
-JsonTreeFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
+JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process_record(db, list);
 }
 
-void JsonTreeFormatter::flush(CaliperMetadataAccessInterface&, std::ostream&)
+void JsonSplitFormatter::flush(CaliperMetadataAccessInterface&, std::ostream&)
 {
     mP->write_metadata();
 }
