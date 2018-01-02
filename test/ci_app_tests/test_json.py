@@ -23,7 +23,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
-        self.assertTrue( { 'data', 'columns', 'nodes' }.issubset(set(obj.keys())) )
+        self.assertTrue( { 'data', 'columns', 'column_metadata', 'nodes' }.issubset(set(obj.keys())) )
 
         columns = obj['columns']
 
@@ -33,6 +33,12 @@ class CaliperJSONTest(unittest.TestCase):
 
         self.assertEqual(len(data), 7)
         self.assertEqual(len(data[0]), 4)
+
+        meta = obj['column_metadata']
+
+        self.assertEqual(len(meta), 4)
+        self.assertTrue(meta[columns.index('count')]['is_value'])
+        self.assertFalse(meta[columns.index('path')]['is_value'])
 
         nodes = obj['nodes']
 

@@ -347,15 +347,31 @@ struct JsonTreeFormatter::JsonTreeFormatterImpl
         }
     }
 
-    void write_footer() {
+    void write_metadata() {
         // close "data" field, start "columns" 
         m_os.stream() << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
 
-        int count = 0;
-        for (const Column& c : m_columns)
-            m_os.stream() << (count++ > 0 ? ", " : " ") << "\"" << c.title << "\"";
-
-        // close "columns", write "nodes"
+        {
+            int count = 0;
+            for (const Column& c : m_columns)
+                m_os.stream() << (count++ > 0 ? ", " : " ") << "\"" << c.title << "\"";
+        }
+        
+        // close "columns", start "column_metadata"
+        m_os.stream() << " ],\n  \"column_metadata\": [";
+        
+        {
+            int count = 0;
+            
+            for (const Column& c : m_columns) 
+                m_os.stream() << (count++ > 0 ? " }, { " : " { ")
+                              << "\"is_value\": " << (c.is_hierarchy ? "false" : "true");
+            
+            if (count > 0)
+                m_os.stream() << " } ";
+        }
+        
+        // close "column_metadata", write "nodes"
         m_hierarchy.write_nodes(m_os.stream() << " ],\n  ") << "\n}" << std::endl;
     }
 };
@@ -380,5 +396,5 @@ JsonTreeFormatter::process_record(CaliperMetadataAccessInterface& db, const Entr
 
 void JsonTreeFormatter::flush(CaliperMetadataAccessInterface&, std::ostream&)
 {
-    mP->write_footer();
+    mP->write_metadata();
 }
