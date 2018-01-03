@@ -276,5 +276,6 @@ void JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
 {
     if (!mP->m_opt_split)
         os << "\n]";
+    os << std::endl;
 }
 
