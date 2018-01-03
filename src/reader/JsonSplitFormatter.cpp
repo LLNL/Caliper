@@ -84,6 +84,8 @@ class Hierarchy
                 os << ", \"parent\": " << parent()->id();
 
             os << " }";
+
+            return os;
         }
     };
 
