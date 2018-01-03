@@ -220,12 +220,15 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
     
     JsonSplitFormatterImpl(OutputStream& os)
-        : m_initialized(false),
+        : m_select_all(false),
+          m_initialized(false),
           m_row_count(0),
           m_os(os)
     { }
 
     void configure(const QuerySpec& spec) {
+        m_select_all = false;
+
         switch (spec.attribute_selection.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
@@ -241,9 +244,9 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
     void init_columns(const CaliperMetadataAccessInterface& db) {
         m_columns.clear();
-        
+
         std::vector<Attribute> attrs;
-            
+
         if (m_select_all)
             attrs = db.get_attributes();
         else {
