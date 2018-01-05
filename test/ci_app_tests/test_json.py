@@ -49,6 +49,32 @@ class CaliperJSONTest(unittest.TestCase):
         iterindex = columns.index('iteration#mainloop')
 
         self.assertEqual(data[6][iterindex], 3)
+
+        
+    def test_esc(self):
+        target_cmd = [ './ci_test_esc' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query',
+                       '-q', 'select *,count() format json-split' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
+
+        columns = obj['columns']
+
+        self.assertTrue('event.set# =\\weird ""attribute"=  ' in columns)
+
+        data  = obj['data']
+        nodes = obj['nodes']
+
+        index = columns.index('event.set# =\\weird ""attribute"=  ')
+
+        self.assertEqual(nodes[data[0][index]]['label'], '  \\\\ weird," name",' )
+
         
 if __name__ == "__main__":
     unittest.main()

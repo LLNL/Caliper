@@ -45,6 +45,8 @@
 
 #include "caliper/common/util/lockfree-tree.hpp"
 
+#include "../common/util/write_util.h"
+
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -78,7 +80,7 @@ class Hierarchy
         const std::string& label() const { return m_label; }
 
         std::ostream& write_json(std::ostream& os) const {
-            os << "{ \"label\": \"" << m_label << "\"";
+            util::write_esc_string(os << "{ \"label\": \"", m_label) << "\"";
 
             if (parent() && parent()->id() != CALI_INV_ID)
                 os << ", \"parent\": " << parent()->id();
@@ -305,7 +307,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         for (const Entry& e : list)
             if (e.attribute() == attr.id()) {
                 if (quote)
-                    os << "\"" << e.value().to_string() << "\"";
+                    util::write_esc_string(os << "\"", e.value().to_string()) << "\"";
                 else
                     os << e.value().to_string();
                 
@@ -359,7 +361,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         {
             int count = 0;
             for (const Column& c : m_columns)
-                m_os.stream() << (count++ > 0 ? ", " : " ") << "\"" << c.title << "\"";
+                util::write_esc_string(m_os.stream() << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
         }
         
         // close "columns", start "column_metadata"

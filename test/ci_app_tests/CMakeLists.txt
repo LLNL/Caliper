@@ -6,6 +6,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
   ci_test_binding
+  ci_test_esc
   ci_test_macros
   ci_test_nesting
   ci_test_postprocess_snapshot

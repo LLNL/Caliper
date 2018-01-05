@@ -39,6 +39,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/Variant.h"
 
+#include "../util/write_util.h"
+
 #include <vector>
 
 using namespace cali;
@@ -51,28 +53,9 @@ struct CsvSpecImpl
 {
     static CsvSpecImpl s_caliper_csvspec;
 
-    string m_sep       { ","      }; ///< separator character
-    char   m_esc       { '\\'     }; ///< escape character
-    string m_esc_chars { "\\,=\n" }; ///< characters that need to be escaped
-
-    // --- write interface
-
-    void write_string(ostream& os, const char* str, size_t size) const {
-        // os << '"';
-
-        for (size_t i = 0; i < size; ++i) {
-            if (m_esc_chars.find(str[i]) != string::npos)
-                os << m_esc;
-            os << str[i];
-        }
-
-        // os << '"';
-    }
-
-    void write_string(ostream& os, const string& str) const {
-        write_string(os, str.data(), str.size());
-    }
-
+    const char  m_sep       { ','      }; ///< separator character
+    char        m_esc       { '\\'     };
+    const char* m_esc_chars { "\\,=\n" }; ///< characters that need to be escaped
 
     // --- read interface
 
@@ -107,10 +90,8 @@ struct CsvSpecImpl
         for (unsigned e = 0; e < record.num_entries; ++e) {
             if (count[e] > 0)
                 os << "," << record.entries[e];
-            for (int c = 0; c < count[e]; ++c) {
-                os << "=";
-                write_string(os, data[e][c].to_string());
-            }
+            for (int c = 0; c < count[e]; ++c)
+                util::write_esc_string(os << '=', data[e][c].to_string(), m_esc_chars);
         }
 
         os << endl;
@@ -122,10 +103,8 @@ struct CsvSpecImpl
         for (const auto &entry : record) {
             if (!entry.second.empty())
                 os << (count++ ? "," : "") << entry.first;
-            for (const auto &elem : entry.second) {
-                os << '=';
-                write_string(os, elem);
-            }
+            for (const auto &elem : entry.second)
+                util::write_esc_string(os << '=', elem, m_esc_chars);
         }
 
         if (count)
@@ -133,7 +112,7 @@ struct CsvSpecImpl
     }
 
     RecordMap read_record(const string& line) {
-        vector<string> entries = split(line, m_sep[0], true /* keep escape */ );
+        vector<string> entries = split(line, m_sep, true /* keep escape */ );
         RecordMap      rec;
 
         for (const string& entry : entries) {

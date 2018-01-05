@@ -44,6 +44,8 @@
 
 #include "caliper/common/util/split.hpp"
 
+#include "../common/util/write_util.h"
+
 #include <algorithm>
 #include <functional>
 #include <iterator>
@@ -177,7 +179,7 @@ struct JsonFormatter::JsonFormatterImpl
 
                         // Start new attribute
                         quotes = m_opt_quote_all | false;
-                        ss_key_value << '"' << attr.name() << '"' << ':';
+                        util::write_esc_string(ss_key_value << '"', attr.name()) << '"' << ':';
 
                         // If STRING or USR, or if nested attribute values x/y/z, start quotes
                         if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR 
@@ -196,7 +198,7 @@ struct JsonFormatter::JsonFormatterImpl
                         ss_key_value << '/';
                     }
 
-                    ss_key_value << (*it)->data().to_string();
+                    util::write_esc_string(ss_key_value, (*it)->data().to_string());
                 }
 
                 if (writing_attr_data) {
@@ -218,7 +220,7 @@ struct JsonFormatter::JsonFormatterImpl
 
                 bool quotes = m_opt_quote_all | false;
 
-                ss_key_value << '"' << name << '"' << ':' ;
+                util::write_esc_string(ss_key_value << '"', name) << '"' << ':' ;
                 
                 string data = e.value().to_string();
                 if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR)
