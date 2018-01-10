@@ -12,6 +12,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/WrapConfig.cmake)
 add_wrapped_file(Wrapper.cpp Wrapper.w)
 
 set(CALIPER_MPIWRAP_SOURCES
+  MpiTracing.cpp
   MpiWrap.cpp
   Wrapper.cpp)
 
