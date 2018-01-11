@@ -69,7 +69,7 @@ ConfigSet::Entry configdata[] = {
       "List of MPI functions to filter",
       "Colon-separated list of functions to blacklist." 
     },
-    { "enable_msg_tracing", CALI_TYPE_BOOL, "false",
+    { "msg_tracing", CALI_TYPE_BOOL, "false",
       "Enable MPI message tracing",
       "Enable MPI message tracing"
     },
@@ -80,7 +80,7 @@ void mpi_register(Caliper* c)
 {
     config = RuntimeConfig::init("mpi", configdata);
 
-    enable_msg_tracing = config.get("enable_msg_tracing").to_bool();
+    enable_msg_tracing = config.get("msg_tracing").to_bool();
 
     mpifn_attr   = 
         c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);

@@ -72,7 +72,7 @@ public:
     void handle_recv (Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
     void handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
 
-    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, const MPI_Status* statuses);
+    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses);
 
     // --- collectives
 

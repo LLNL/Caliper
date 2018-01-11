@@ -80,16 +80,16 @@ struct MpiTracing::MpiTracingImpl
         Node*        comm_node;
     };
 
-    static_assert(sizeof(MPI_Comm)    <= sizeof(uint64_t), "MPI_Comm is larger than u64");
-    static_assert(sizeof(MPI_Request) <= sizeof(uint64_t), "MPI_Request is larger than u64");
+    std::atomic<int>                             comm_id;
 
-    std::atomic<int>                          comm_id;
+    // We hope that whatever MPI_Comm and MPI_Request is is default-hashable.
+    // So far it works ...
 
-    std::unordered_map<uint64_t, cali::Node*> comm_map; ///< Communicator map
-    std::mutex                                comm_map_lock;
+    std::unordered_map<MPI_Comm,    cali::Node*> comm_map; ///< Communicator map
+    std::mutex                                   comm_map_lock;
     
-    std::unordered_map<uint64_t, RequestInfo> req_map;
-    std::mutex                                req_map_lock;
+    std::unordered_map<MPI_Request, RequestInfo> req_map;
+    std::mutex                                   req_map_lock;
 
     
     // --- Other global
@@ -169,19 +169,16 @@ struct MpiTracing::MpiTracingImpl
     }
 
     Node* lookup_comm(Caliper* c, MPI_Comm comm) {
-        uint64_t key = 0;
-        key |= reinterpret_cast<uint64_t>(comm);
-
         std::lock_guard<std::mutex>
             g(comm_map_lock);
 
-        auto it = comm_map.find(key);
+        auto it = comm_map.find(comm);
 
         if (it != comm_map.end())
             return it->second;
 
         Node* node = make_comm_entry(c, comm);
-        comm_map[key] = node;
+        comm_map[comm] = node;
 
         return node;
     }
@@ -240,24 +237,18 @@ struct MpiTracing::MpiTracingImpl
         info.count         = count;
         info.comm_node     = lookup_comm(c, comm);
 
-        uint64_t key = 0;
-        key |= reinterpret_cast<uint64_t>(*req);
-
         std::lock_guard<std::mutex>
             g(req_map_lock);
 
-        req_map[key] = info;
+        req_map[*req] = info;
     }
 
-    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, const MPI_Status* statuses) {
+    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
         for (int i = 0; i < nreq; ++i) {
-            uint64_t key = 0;
-            key |= reinterpret_cast<uint64_t>(reqs[i]);
-
             std::lock_guard<std::mutex>
                 g(req_map_lock);
             
-            auto it = req_map.find(key);
+            auto it = req_map.find(reqs[i]);
 
             if (it == req_map.end())
                 continue;
@@ -349,7 +340,7 @@ MpiTracing::handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int 
 }
 
 void
-MpiTracing::handle_requests(Caliper* c, int nreq, MPI_Request* reqs, const MPI_Status* statuses)
+MpiTracing::handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses)
 {
     mP->handle_requests(c, nreq, reqs, statuses);
 }
