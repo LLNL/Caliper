@@ -35,11 +35,12 @@
 
 #include <iostream>
 
-// malloc_usable_size() is Linux-specific
-// #include <malloc.h>
+using namespace cali;
+using namespace cali::DataTracker;
 
 namespace cali
 {
+
 namespace DataTracker
 {
 
@@ -105,5 +106,6 @@ void Free(void *ptr)
     free(ptr);
 }
 
-}
+} // namespace datatracker
+
 }

@@ -31,12 +31,11 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file DataTracker.h
-/// Caliper C++ data tracking interface
+/// \brief Caliper C++ data tracking interface
 
-#ifndef CALIPER_DATATRACKER_H
-#define CALIPER_DATATRACKER_H
+#pragma once
 
-#include "AllocTracker.h"
+#include "common/util/callback.hpp"
 
 #include <vector>
 #include <string>
@@ -49,30 +48,38 @@ namespace cali
 namespace DataTracker
 {
 
-extern AllocTracker g_alloc_tracker;
+struct Events {
+    util::callback<void(void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])>
+    track_memory_evt;
+    
+    util::callback<void(void* ptr)>
+    untrack_memory_evt;
+};
 
-void* Allocate(const std::string &label,
-               const size_t size);
+Events* events();
 
-void* Allocate(const std::string &label,
-               const size_t elem_size,
-               const std::vector<size_t> &dimensions);
+void* Allocate(const char*        label,
+               const size_t       size);
+
+void* Allocate(const char*        label,
+               const size_t       elem_size,
+               const size_t       ndims,
+               const size_t       dimensions[]);
 
 void Free(void *ptr);
 
-void TrackAllocation(void *ptr,
-                     const std::string &label,
-                     size_t size);
+void TrackAllocation(void         *ptr,
+                     const char*  label,
+                     size_t       size);
 
 void TrackAllocation(void *ptr,
-                     const std::string &label,
+                     const char*  label,
                      const size_t elem_size,
-                     const std::vector<size_t> &dimensions);
+                     const size_t ndims,
+                     const size_t dimensions[]);
 
 void UntrackAllocation(void *ptr);
 
-}
-}
+} // namespace DataTracker
 
-
-#endif //CALIPER_DATATRACKER_H
+} // namespace cali

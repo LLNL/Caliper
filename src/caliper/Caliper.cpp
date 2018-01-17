@@ -71,7 +71,6 @@ namespace cali
 
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
-extern void init_alloc_tree_entries(Caliper* c);
 
 extern void config_sanity_check();
 
@@ -315,7 +314,6 @@ struct Caliper::GlobalData
               Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
 
         init_attribute_classes(&c);
-        init_alloc_tree_entries(&c);
 
         Services::add_default_services();
         Services::register_services(&c);
@@ -1079,6 +1077,26 @@ Caliper::get(const Attribute& attr)
     return e;
 }
 
+// --- Memory region tracking
+
+void
+Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    mG->events.track_mem_evt(this, ptr, label, elem_size, ndims, dims);    
+}
+
+void
+Caliper::memory_region_end(const void* ptr)
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    mG->events.untrack_mem_evt(this, ptr);
+}
+
 // --- Generic entry API
 
 /// \brief Create a snapshot record (entry list) from the given attribute:value pairs
@@ -1089,14 +1107,14 @@ Caliper::get(const Attribute& attr)
 /// \param attr   Attribute list
 /// \param value  Value list
 /// \param list   Output record. Must be large enough to hold all entries.
-
+/// \param parent (Optional) parent node for any treee elements.
 void
-Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list)
+Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
 {
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    Node* node = 0;
+    Node* node = parent;
 
     for (size_t i = 0; i < n; ++i)
         if (attr[i].store_as_value())
@@ -1104,7 +1122,7 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         else
             node = m_thread_scope->tree.get_path(1, &attr[i], &value[i], node);
 
-    if (node)
+    if (node && node != parent)
         list.append(node);
 }
 
