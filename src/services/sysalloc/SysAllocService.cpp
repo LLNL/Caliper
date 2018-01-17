@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -33,6 +33,8 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+
+#include "caliper/common/Log.h"
 
 #include <gotcha/gotcha.h>
 
@@ -73,8 +75,8 @@ void* cali_malloc_wrapper(size_t size)
 
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-    if (c) {
-        c->memory_region_begin(ret, "malloc", 1, 1, &size);
+    if (c)
+        c.memory_region_begin(ret, "malloc", 1, 1, &size);
 
     return ret;
 }
@@ -86,7 +88,7 @@ void* cali_calloc_wrapper(size_t num, size_t size)
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        c->memory_region_begin(ret, "calloc", size, 1, &num);
+        c.memory_region_begin(ret, "calloc", size, 1, &num);
 
     return ret;
 }
@@ -94,12 +96,12 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 void* cali_realloc_wrapper(void *ptr, size_t size)
 {
     void *ret = (*orig_realloc)(ptr, size);
-    
+
     Caliper c = Caliper::sigsafe_instance();
 
     if (c) {
-        c->memory_region_end(ptr);
-        c->memory_region_begin(ret, "realloc", 1, 1, &size);
+        c.memory_region_end(ptr);
+        c.memory_region_begin(ret, "realloc", 1, 1, &size);
     }
 
     return ret;
@@ -112,25 +114,23 @@ void cali_free_wrapper(void *ptr)
     Caliper c = Caliper::sigsafe_instance();
 
     if (c)
-        c->memory_region_end(ptr);
+        c.memory_region_end(ptr);
 }
 
- 
+
 void init_alloc_hooks(Caliper *c) {
     Log(1).stream() << "sysalloc: Initializing system alloc hooks" << std::endl;
 
-    gotcha_wrap(alloc_bindings, 
-                sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), 
+    gotcha_wrap(alloc_bindings,
+                sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t),
                 "Caliper AllocService Wrap");
 }
 
-
- 
 void sysalloc_initialize(Caliper* c) {
     c->events().post_init_evt.connect(init_alloc_hooks);
 }
-     
- 
+
+
 } // namespace [anonymous]
 
 
