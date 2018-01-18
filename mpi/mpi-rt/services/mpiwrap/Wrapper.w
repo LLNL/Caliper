@@ -535,7 +535,7 @@ post_init_cb(Caliper* c)
                 
             std::copy_n({{1}}, nreq, tmp_req);
 
-            if ({{4}} == MPI_STATUS_IGNORE)
+            if ({{4}} == MPI_STATUSES_IGNORE)
                 {{4}} = tmp_statuses;
         }
 
