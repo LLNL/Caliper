@@ -64,6 +64,7 @@ namespace
 {
 
 bool g_resolve_addresses        { false };
+bool g_track_allocations        { true  };
 bool g_record_active_mem        { false };
 
 // DataTracker attributes
@@ -88,6 +89,7 @@ struct AllocInfo {
     uint64_t                 start_addr;
     uint64_t                 total_size;
     Variant                  v_uid;
+    Variant                  v_size;
     size_t                   elem_size;
     size_t                   num_elems;
     std::vector<cali::Node*> memattr_label_nodes;
@@ -168,6 +170,10 @@ const ConfigSet::Entry s_configdata[] = {
       "Whether to resolve memory addresses in snapshots.",
       "Whether to resolve memory addresses in snapshots.\n"
     },
+    { "track_allocations", CALI_TYPE_BOOL, "true",
+      "Whether to record snapshots for annotated memory allocations.",
+      "Whether to record snapshots for annotated memory allocations.\n"
+    },
     { "record_active_mem", CALI_TYPE_BOOL, "false",
       "Record the active allocated memory at each snapshot.",
       "Record the active allocated memory at each snapshot."
@@ -179,38 +185,41 @@ const ConfigSet::Entry s_configdata[] = {
 #define NUM_TRACKED_ALLOC_ATTRS 2
 
 
+void track_mem_snapshot(Caliper* c, 
+                        const Attribute& alloc_or_free_attr, 
+                        const Variant&   v_label, 
+                        const Variant&   v_size, 
+                        const Variant&   v_uid)
+{
+    Attribute attr[] = {
+        alloc_or_free_attr,
+        alloc_total_size_attr,
+        alloc_uid_attr
+    };
+    Variant   data[] = {
+        v_label,
+        v_size,
+        v_uid
+    };
+
+    SnapshotRecord::FixedSnapshotRecord<3> snapshot_data;
+    SnapshotRecord trigger_info(snapshot_data);
+
+    c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
+    c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
+}
+
 void track_mem_cb(Caliper* c, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims)
 {
     size_t total_size =
         std::accumulate(dims, dims+ndims, elem_size, std::multiplies<size_t>());
 
-    Variant v_label(CALI_TYPE_STRING, label, strlen(label));
-    Variant v_uid(cali_make_variant_from_uint(++g_alloc_uid));
-    
-    Attribute attr[] = {
-        mem_alloc_attr,
-        alloc_total_size_attr,
-        //        alloc_addr_attr,
-        alloc_uid_attr
-    };
-    Variant   data[] = {
-        v_label,
-        Variant(cali_make_variant_from_uint(total_size)),
-        //        Variant(CALI_TYPE_ADDR, &ptr, sizeof(ptr)),
-        v_uid
-    };
-
-    SnapshotRecord::FixedSnapshotRecord<4> fixed_rec;
-    SnapshotRecord trigger_info(fixed_rec);
-
-    c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
-    c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
-
     AllocInfo info;
 
     info.start_addr = reinterpret_cast<uint64_t>(ptr);
     info.total_size = total_size;
-    info.v_uid      = v_uid;
+    info.v_uid      = Variant(cali_make_variant_from_uint(++g_alloc_uid));
+    info.v_size     = Variant(cali_make_variant_from_uint(total_size));
     info.elem_size  = elem_size;
     info.num_elems  = total_size / elem_size;
 
@@ -218,6 +227,8 @@ void track_mem_cb(Caliper* c, const void* ptr, const char* label, size_t elem_si
     info.dimensions.assign(dims, dims+ndims);
 
     info.label      = label;
+
+    Variant v_label(CALI_TYPE_STRING, label, strlen(label));
         
     // make label nodes for each memory address attribute
     for (std::vector<cali::Node*>::size_type i = 0; i < g_memoryaddress_attrs.size(); ++i)
@@ -234,6 +245,9 @@ void track_mem_cb(Caliper* c, const void* ptr, const char* label, size_t elem_si
         g_active_mem  += total_size;
         ++g_total_tracked;
     }
+
+    if (g_track_allocations)
+        track_mem_snapshot(c, mem_alloc_attr, v_label, info.v_size, info.v_uid);
 }
 
 void untrack_mem_cb(Caliper* c, const void* ptr)
@@ -244,26 +258,17 @@ void untrack_mem_cb(Caliper* c, const void* ptr)
     auto tree_node = g_tree.find(HasStartAddress(reinterpret_cast<uint64_t>(ptr)));
     
     if (tree_node) {
-        Attribute attr[] = {
-            mem_free_attr,
-            alloc_total_size_attr,
-            alloc_uid_attr
-        };
-        Variant   data[] = {
-            Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),
-            Variant(cali_make_variant_from_uint((*tree_node).total_size)),
-            Variant((*tree_node).v_uid)
-        };
+        size_t size = (*tree_node).total_size;
 
-        SnapshotRecord::FixedSnapshotRecord<3> snapshot_data;
-        SnapshotRecord trigger_info(snapshot_data);
+        if (g_track_allocations)
+            track_mem_snapshot(c, mem_free_attr,
+                               Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),
+                               (*tree_node).v_size,
+                               (*tree_node).v_uid);
 
-        c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
-        
         g_tree.remove(tree_node);
         
-        g_active_mem -= data[1].to_uint();
+        g_active_mem -= (*tree_node).total_size;
         --g_current_tracked;
     } else {
         ++g_failed_untrack;
@@ -296,8 +301,8 @@ void resolve_addresses(Caliper* c, const SnapshotRecord* trigger_info, SnapshotR
             if (!tree_node)
                 continue;
 
-            data[0]    = (*tree_node).v_uid;
-            data[1]    = cali_make_variant_from_uint((*tree_node).index_1D(addr));
+            data[0] = (*tree_node).v_uid;
+            data[1] = cali_make_variant_from_uint((*tree_node).index_1D(addr));
 
             if (i < (*tree_node).memattr_label_nodes.size())
                 label_node = (*tree_node).memattr_label_nodes[i];
@@ -406,6 +411,7 @@ void allocservice_initialize(Caliper* c)
     ConfigSet config = RuntimeConfig::init("alloc", s_configdata);
     
     g_resolve_addresses = config.get("resolve_addresses").to_bool();
+    g_track_allocations = config.get("track_allocations").to_bool();
     g_record_active_mem = config.get("record_active_mem").to_bool();
 
     c->events().track_mem_evt.connect(track_mem_cb);

@@ -186,6 +186,12 @@ hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when 
 recording/tracking frequent allocations/deallocations.
 
+.. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
+
+    Record snapshots when tracking or untracking marked memory regions.
+
+    Default: true
+
 .. envvar:: CALI_ALLOC_RESOLVE_ADDRESSES
 
     When set, snapshots with memory addresses produced by other services 
