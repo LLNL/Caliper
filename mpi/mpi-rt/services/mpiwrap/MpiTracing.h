@@ -67,12 +67,17 @@ public:
 
     // --- point-to-point
 
-    void handle_send (Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+    void handle_send(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+    void handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req);
 
-    void handle_recv (Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
+    void handle_recv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
     void handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
 
-    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses);
+    void handle_start(Caliper* c, int nreq, MPI_Request* reqs);
+    void handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses);
+
+    void request_free(Caliper* c, MPI_Request* req);
 
     // --- collectives
 

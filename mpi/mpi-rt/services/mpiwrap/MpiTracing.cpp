@@ -76,6 +76,7 @@ struct MpiTracing::MpiTracingImpl
         int          tag;
         int          count;
         MPI_Datatype type;
+        int          size;
 
         Node*        comm_node;
     };
@@ -187,22 +188,36 @@ struct MpiTracing::MpiTracingImpl
     // --- point-to-point
     //
 
-    void handle_send(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm) {
-        int size = 0;
-        PMPI_Type_size(type, &size);
-        size *= count;
-
+    void push_send_event(Caliper* c, int size, int dest, int tag, cali::Node* comm_node) {
         cali_id_t attr[3] = {
             msg_dst_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
         };
         Variant   data[3] = {
             Variant(dest),     Variant(tag),      Variant(size)
         };
-
-        Node* comm_node = lookup_comm(c, comm);
         
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
         c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+    }
+    
+    void handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
+        RequestInfo info;
+
+        info.op            = RequestInfo::Send;
+        info.is_persistent = true;
+        info.target        = dest;
+        info.tag           = tag;
+        info.count         = count;
+        info.type          = type;
+        info.comm_node     = lookup_comm(c, comm);
+        
+        PMPI_Type_size(type, &info.size);
+        info.size *= count;
+
+        std::lock_guard<std::mutex>
+            g(req_map_lock);
+
+        req_map[*req] = info;            
     }
 
     void push_recv_event(Caliper* c, int src, int size, int tag, Node* comm_node) {
@@ -236,14 +251,49 @@ struct MpiTracing::MpiTracingImpl
         info.type          = type;
         info.count         = count;
         info.comm_node     = lookup_comm(c, comm);
-
+        
         std::lock_guard<std::mutex>
             g(req_map_lock);
 
         req_map[*req] = info;
     }
 
-    void handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
+    void handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
+        RequestInfo info;
+
+        info.op            = RequestInfo::Recv;
+        info.is_persistent = true;
+        info.target        = src;
+        info.tag           = tag;
+        info.type          = type;
+        info.count         = count;
+        info.comm_node     = lookup_comm(c, comm);
+        info.size          = 0;
+        
+        std::lock_guard<std::mutex>
+            g(req_map_lock);
+
+        req_map[*req] = info;
+    }
+
+    void handle_start(Caliper* c, int nreq, MPI_Request* reqs) {
+        for (int i = 0; i < nreq; ++i) {
+            std::lock_guard<std::mutex>
+                g(req_map_lock);
+
+            auto it = req_map.find(reqs[i]);
+
+            if (it == req_map.end())
+                continue;
+
+            RequestInfo info = it->second;
+
+            if (info.op == RequestInfo::Send)
+                push_send_event(c, info.size, info.target, info.tag, info.comm_node);
+        }
+    }
+    
+    void handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex>
                 g(req_map_lock);
@@ -269,6 +319,12 @@ struct MpiTracing::MpiTracingImpl
         }
     }
 
+    void request_free(MPI_Request* req) {
+        std::lock_guard<std::mutex>
+            g(req_map_lock);
+
+        req_map.erase(*req);
+    }
 
     // --- collectives
     //
@@ -324,7 +380,17 @@ MpiTracing::init_mpi(Caliper* c)
 void
 MpiTracing::handle_send(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
 {
-    mP->handle_send(c, count, type, dest, tag, comm);
+    int size = 0;
+    PMPI_Type_size(type, &size);
+    size *= count;
+
+    mP->push_send_event(c, size, dest, tag, mP->lookup_comm(c, comm));
+}
+
+void
+MpiTracing::handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req)
+{
+    mP->handle_send_init(c, count, type, dest, tag, comm, req);
 }
 
 void
@@ -340,9 +406,27 @@ MpiTracing::handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int 
 }
 
 void
-MpiTracing::handle_requests(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses)
+MpiTracing::handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req)
 {
-    mP->handle_requests(c, nreq, reqs, statuses);
+    mP->handle_recv_init(c, count, type, src, tag, comm, req);
+}
+
+void
+MpiTracing::handle_start(Caliper* c, int nreq, MPI_Request* reqs)
+{
+    mP->handle_start(c, nreq, reqs);
+}
+
+void
+MpiTracing::handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses)
+{
+    mP->handle_completion(c, nreq, reqs, statuses);
+}
+
+void
+MpiTracing::request_free(Caliper*, MPI_Request* req)
+{
+    mP->request_free(req);
 }
 
 void

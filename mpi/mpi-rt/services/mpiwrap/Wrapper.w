@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iterator>
+#include <numeric>
 #include <string>
 
 namespace cali
@@ -162,6 +163,33 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Send_init MPI_Bsend_init MPI_Rsend_init MPI_Ssend_init}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+        
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));        
+
+        {{callfn}}
+
+        if (enable_msg_tracing)
+            ::tracing.handle_send_init(&c, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+
+        c.end(mpifn_attr);
+
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
 {{fn func MPI_Recv}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
@@ -194,6 +222,74 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Sendrecv}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+        
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+
+        MPI_Status tmp_status;
+        
+        if ({{11}} == MPI_STATUS_IGNORE)
+            {{11}} = &tmp_status;
+
+        {{callfn}}
+
+        if (enable_msg_tracing) {
+            ::tracing.handle_send(&c, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
+            ::tracing.handle_recv(&c, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
+        }
+        
+        c.end(mpifn_attr);
+
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);        
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif    
+}{{endfn}}
+
+{{fn func MPI_Sendrecv_replace}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+        
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+
+        MPI_Status tmp_status;
+        
+        if ({{8}} == MPI_STATUS_IGNORE)
+            {{8}} = &tmp_status;
+
+        {{callfn}}
+
+        if (enable_msg_tracing) {
+            ::tracing.handle_send(&c, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
+            ::tracing.handle_recv(&c, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
+        }
+        
+        c.end(mpifn_attr);
+
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);        
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif    
+}{{endfn}}
+
 {{fn func MPI_Irecv}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
@@ -211,6 +307,86 @@ post_init_cb(Caliper* c)
 
         c.end(mpifn_attr);
 
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Recv_init}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+        
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        
+        if (enable_msg_tracing)
+            ::tracing.handle_recv_init(&c, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+
+        c.end(mpifn_attr);
+
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Start}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        
+        {{callfn}}
+        
+        if (enable_msg_tracing)
+            ::tracing.handle_start(&c, 1, {{0}});
+
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Startall}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        
+        {{callfn}}
+        
+        if (enable_msg_tracing)
+            ::tracing.handle_start(&c, {{0}}, {{1}});
+
+        c.end(mpifn_attr);
+        
         if (enable_msg_tracing)
             ::tracing.pop_call_id(&c);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -240,7 +416,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing)
-            ::tracing.handle_requests(&c, 1, &tmp_req, {{1}});
+            ::tracing.handle_completion(&c, 1, &tmp_req, {{1}});
 
         c.end(mpifn_attr);
         
@@ -281,7 +457,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing)
-            ::tracing.handle_requests(&c, nreq, tmp_req, {{2}});
+            ::tracing.handle_completion(&c, nreq, tmp_req, {{2}});
 
         c.end(mpifn_attr);
         
@@ -324,7 +500,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing && nreq > 0)
-            ::tracing.handle_requests(&c, 1, tmp_req+(*{{2}}), {{3}});
+            ::tracing.handle_completion(&c, 1, tmp_req+(*{{2}}), {{3}});
 
         c.end(mpifn_attr);
         
@@ -369,7 +545,7 @@ post_init_cb(Caliper* c)
         
         if (enable_msg_tracing > 0)
             for (int i = 0; i < *{{2}}; ++i)
-                ::tracing.handle_requests(&c, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
+                ::tracing.handle_completion(&c, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
 
         c.end(mpifn_attr);
         
@@ -406,7 +582,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing && *{{1}})
-            ::tracing.handle_requests(&c, 1, &tmp_req, {{2}});
+            ::tracing.handle_completion(&c, 1, &tmp_req, {{2}});
 
         c.end(mpifn_attr);
         
@@ -447,7 +623,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing && *{{2}})
-            ::tracing.handle_requests(&c, nreq, tmp_req, {{3}});
+            ::tracing.handle_completion(&c, nreq, tmp_req, {{3}});
 
         c.end(mpifn_attr);
         
@@ -490,7 +666,7 @@ post_init_cb(Caliper* c)
         {{callfn}}
         
         if (enable_msg_tracing && *{{3}})
-            ::tracing.handle_requests(&c, 1, tmp_req+(*{{2}}), {{4}});
+            ::tracing.handle_completion(&c, 1, tmp_req+(*{{2}}), {{4}});
 
         c.end(mpifn_attr);
         
@@ -506,6 +682,32 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Request_free}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        
+        if (enable_msg_tracing)
+            ::tracing.request_free(&c, {{0}});
+
+        {{callfn}}
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
 
 //
 // --- Collectives
@@ -589,6 +791,37 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Scatterv}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+
+        if (enable_msg_tracing) {
+            int tmp_commsize = 0;
+            PMPI_Comm_size({{8}}, &tmp_commsize);
+            int total_count  = std::accumulate({{2}}, {{2}}+tmp_commsize, 0);
+            
+            ::tracing.handle_12n(&c, total_count, {{3}}, {{7}}, {{8}});
+        }
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
 {{fn func MPI_Gather}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
@@ -615,6 +848,32 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Gatherv}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+
+        if (enable_msg_tracing)
+            ::tracing.handle_n21(&c, {{1}}, {{2}}, {{7}}, {{8}});
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
 {{fn func MPI_Reduce}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
@@ -629,6 +888,62 @@ post_init_cb(Caliper* c)
 
         if (enable_msg_tracing)
             ::tracing.handle_n21(&c, {{2}}, {{3}}, {{5}}, {{6}});
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Reduce_scatter_block MPI_Scan MPI_Exscan}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+
+        if (enable_msg_tracing)
+            ::tracing.handle_n2n(&c, {{2}}, {{3}}, {{5}});
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
+{{fn func MPI_Reduce_scatter}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+
+        if (enable_msg_tracing) {
+            int tmp_rank = 0;
+            PMPI_Comm_rank({{5}}, &tmp_rank);
+
+            ::tracing.handle_n2n(&c, {{2}}[tmp_rank], {{3}}, {{5}});
+        }
         
         c.end(mpifn_attr);
         
@@ -693,6 +1008,32 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Allgatherv}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+
+        if (enable_msg_tracing)
+            ::tracing.handle_n2n(&c, {{1}}, {{2}}, {{7}});
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
+
 {{fn func MPI_Alltoall}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
@@ -723,6 +1064,36 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
+{{fn func MPI_Alltoallv}}{
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    if (::enable_wrapper && ::enable_{{func}}) {
+#endif
+        Caliper c;
+
+        if (enable_msg_tracing)
+            ::tracing.push_call_id(&c);
+
+        c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+        {{callfn}}
+        
+        if (enable_msg_tracing) {
+            int tmp_commsize = 0;
+            PMPI_Comm_size({{8}}, &tmp_commsize);
+            int total_count  = std::accumulate({{1}}, {{1}}+tmp_commsize, 0);
+
+            ::tracing.handle_n2n(&c, total_count, {{3}}, {{8}});
+        }
+        
+        c.end(mpifn_attr);
+        
+        if (enable_msg_tracing)
+            ::tracing.pop_call_id(&c);
+#ifndef CALIPER_MPIWRAP_USE_GOTCHA
+    } else {
+        {{callfn}}
+    }
+#endif
+}{{endfn}}
 
 //
 // --- Init/finalize
@@ -759,12 +1130,17 @@ post_init_cb(Caliper* c)
     MPI_Finalize
     MPI_Send  MPI_Bsend  MPI_Rsend  MPI_Ssend
     MPI_Isend MPI_Ibsend MPI_Irsend MPI_Issend
-    MPI_Recv MPI_Irecv
+    MPI_Send_init MPI_Bsend_init MPI_Rsend_init MPI_Ssend_init
+    MPI_Recv MPI_Irecv MPI_Recv_init
+    MPI_Sendrecv MPI_Sendrecv_replace
+    MPI_Start MPI_Startall MPI_Request_free
     MPI_Wait MPI_Waitall MPI_Waitany MPI_Waitsome
     MPI_Test MPI_Testall MPI_Testany MPI_Testsome        
     MPI_Barrier
     MPI_Bcast MPI_Gather MPI_Scatter MPI_Reduce
-    MPI_Allreduce MPI_Allgather MPI_Alltoall         
+    MPI_Allreduce MPI_Allgather MPI_Alltoall
+    MPI_Reduce_scatter MPI_Reduce_scatter_block MPI_Scan MPI_Exscan
+    MPI_Allgatherv MPI_Alltoallv MPI_Gatherv MPI_Scatterv
 }}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
