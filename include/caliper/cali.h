@@ -503,16 +503,31 @@ cali_config_allow_read_env(int allow);
  * \{
  */
 
+/**
+ * Flush options
+ */
 typedef enum {
+  /** Clear trace and aggregation buffers after flush. */
   CALI_FLUSH_CLEAR_BUFFERS = 1
-} cali_flush_opt_t;
+} cali_flush_opt;
 
 /**
  * \brief Forward aggregation or trace buffer contents to output services.
+ *
+ * Flushes trace buffers and/or aggreation database in the trace and 
+ * aggregation services, respectively. This will forward all buffered snapshot
+ * records to output services, e.g., recorder, report, or mpireport.
+ *
+ * By default, the trace/aggregation buffers will not be cleared after the 
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to 
+ * the \a flush_opts flags.
+ *
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags. 
+ *    Use 0 for default behavior.
  */
 
 void
-cali_flush(int flush_opt);
+cali_flush(int flush_opts);
 
 /**
  * \}

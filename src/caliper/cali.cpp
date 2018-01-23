@@ -592,6 +592,16 @@ cali_config_allow_read_env(int allow)
 }
 
 void
+cali_flush(int flush_opts)
+{
+    Caliper c;
+    c.flush_and_write(nullptr);
+
+    if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
+        c.clear();
+}
+
+void
 cali_init()
 {
     Caliper::instance();
