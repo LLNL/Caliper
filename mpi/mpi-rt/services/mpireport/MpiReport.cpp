@@ -52,8 +52,7 @@ namespace
 
 class MpiReport
 {
-    static std::unique_ptr<MpiReport> s_instance;
-    static const ConfigSet::Entry     s_configdata[];
+    static const ConfigSet::Entry s_configdata[];
 
     QuerySpec         m_spec;
     CaliperMetadataDB m_db;
@@ -117,7 +116,7 @@ public:
         : m_spec(spec), m_a(spec), m_filter(spec), m_filename(filename)
         { }
 
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
+    static MpiReport* make_reporter() {
         // check if we can use MPI
 
         int initialized = 0;
@@ -127,7 +126,7 @@ public:
         MPI_Finalized(&finalized);
 
         if (!initialized || finalized)
-            return;
+            return nullptr;
 
         // set up the reporter
 
@@ -141,33 +140,33 @@ public:
             if (rank == 0)
                 Log(0).stream() << "mpireport: config parse error: " << parser.error_msg() << std::endl;
 
-            return;
+            return nullptr;
         }
 
-        s_instance.reset(new MpiReport(parser.spec(), config.get("filename").to_string()));
-    }
-
-    static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        if (!s_instance)
-            return;
-
-        s_instance->add(c, snapshot);
-    }
-
-    static void flush_finish_cb(Caliper* c, const SnapshotRecord* flush_info) {
-        if (!s_instance)
-            return;
-
-        s_instance->flush_finish(c, flush_info);
-        s_instance.reset();
+        return new MpiReport(parser.spec(), config.get("filename").to_string());
     }
 
     static void mpi_finalize_cb(Caliper* c) {
-        c->flush_and_write(nullptr);
+        MpiReport* reporter = make_reporter();
+
+        if (!reporter)
+            return;
+
+        SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+        SnapshotRecord flush_snapshot(snapshot_data);
+
+        c->pull_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &flush_snapshot);
+
+        c->flush(&flush_snapshot, [reporter,c](const SnapshotRecord* snapshot){
+                reporter->add(c, snapshot);
+                return true;
+            } );
+
+        reporter->flush_finish(c, &flush_snapshot);
+
+        delete reporter;
     }
 };
-
-std::unique_ptr<MpiReport> MpiReport::s_instance { nullptr };
 
 const ConfigSet::Entry     MpiReport::s_configdata[] = {
     { "filename", CALI_TYPE_STRING, "stdout",
@@ -184,12 +183,9 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void mpireport_init(Caliper* c) {
+void mpireport_init(Caliper*) 
+{
     MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
-
-    c->events().pre_flush_evt.connect(::MpiReport::pre_flush_cb);
-    c->events().write_snapshot.connect(::MpiReport::flush_snapshot_cb);
-    c->events().post_write_evt.connect(::MpiReport::flush_finish_cb);
 }
 
 } // namespace [anonymous]

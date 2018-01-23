@@ -105,6 +105,8 @@ namespace
 
         if (c) {
             c.flush_and_write(nullptr);
+            c.clear();
+
             c.events().finish_evt(&c);
 
             c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
@@ -842,6 +844,23 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
           });
 
     mG->events.post_write_evt(this, &flush_info);
+}
+
+
+/// Clear aggregation and/or trace buffers.
+///
+/// Clears aggregation and trace buffers. Data in those buffers
+/// that has not been written yet will be lost.
+///
+/// \note This function is not signal safe.
+
+void
+Caliper::clear()
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    mG->events.clear_evt(this);
 }
 
 
