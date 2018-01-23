@@ -45,6 +45,8 @@
 #include "caliper/reader/FormatProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 
+#include <memory>
+
 using namespace cali;
 
 namespace
@@ -52,7 +54,9 @@ namespace
 
 class MpiReport
 {
-    static const ConfigSet::Entry s_configdata[];
+    static std::unique_ptr<MpiReport> s_instance;
+
+    static const ConfigSet::Entry     s_configdata[];
 
     QuerySpec         m_spec;
     CaliperMetadataDB m_db;
@@ -110,13 +114,9 @@ class MpiReport
         }
     }
 
-public:
+    static void pre_write_cb(Caliper* c, const SnapshotRecord*) {
+        s_instance.reset();
 
-    MpiReport(const QuerySpec& spec, const std::string& filename)
-        : m_spec(spec), m_a(spec), m_filter(spec), m_filename(filename)
-        { }
-
-    static MpiReport* make_reporter() {
         // check if we can use MPI
 
         int initialized = 0;
@@ -126,7 +126,7 @@ public:
         MPI_Finalized(&finalized);
 
         if (!initialized || finalized)
-            return nullptr;
+            return;
 
         // set up the reporter
 
@@ -140,33 +140,49 @@ public:
             if (rank == 0)
                 Log(0).stream() << "mpireport: config parse error: " << parser.error_msg() << std::endl;
 
-            return nullptr;
+            return;
         }
 
-        return new MpiReport(parser.spec(), config.get("filename").to_string());
+        s_instance.reset(new MpiReport(parser.spec(), config.get("filename").to_string()));
+    }
+
+    static void write_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
+        if (!s_instance)
+            return;
+
+        s_instance->add(c, snapshot);
+    }
+
+    static void post_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
+        if (!s_instance)
+            return;
+
+        s_instance->flush_finish(c, flush_info);
     }
 
     static void mpi_finalize_cb(Caliper* c) {
-        MpiReport* reporter = make_reporter();
+        c->flush_and_write(nullptr);
+    }
 
-        if (!reporter)
-            return;
+public:
 
-        SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
-        SnapshotRecord flush_snapshot(snapshot_data);
+    MpiReport(const QuerySpec& spec, const std::string& filename)
+        : m_spec(spec), m_a(spec), m_filter(spec), m_filename(filename)
+        { }
 
-        c->pull_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &flush_snapshot);
+    static void init(Caliper* c) {
+        ConfigSet config = RuntimeConfig::init("mpireport", s_configdata);
 
-        c->flush(&flush_snapshot, [reporter,c](const SnapshotRecord* snapshot){
-                reporter->add(c, snapshot);
-                return true;
-            } );
+        if (config.get("write_on_finalize").to_bool() == true)
+            MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
 
-        reporter->flush_finish(c, &flush_snapshot);
-
-        delete reporter;
+        c->events().pre_write_evt.connect(pre_write_cb);
+        c->events().write_snapshot.connect(write_snapshot_cb);
+        c->events().post_write_evt.connect(post_write_cb);
     }
 };
+
+std::unique_ptr<MpiReport> MpiReport::s_instance;
 
 const ConfigSet::Entry     MpiReport::s_configdata[] = {
     { "filename", CALI_TYPE_STRING, "stdout",
@@ -180,17 +196,16 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
       "Cross-process aggregation and report configuration/query specification in CalQL",
       "Cross-process aggregation and report configuration/query specification in CalQL"
     },
+    { "write_on_finalize", CALI_TYPE_BOOL, "true",
+      "Flush Caliper buffers on MPI_Finalize",
+      "Flush Caliper buffers on MPI_Finalize"      
+    },
     ConfigSet::Terminator
 };
-
-void mpireport_init(Caliper*) 
-{
-    MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
-}
 
 } // namespace [anonymous]
 
 namespace cali
 {
-    CaliperService mpireport_service = { "mpireport", ::mpireport_init };
+    CaliperService mpireport_service = { "mpireport", ::MpiReport::init };
 }

@@ -493,6 +493,30 @@ cali_config_allow_read_env(int allow);
 /**
  * \}
  */
+
+/*
+ * --- Runtime system management
+ */
+
+/**
+ * \name Reporting
+ * \{
+ */
+
+typedef enum {
+  CALI_FLUSH_CLEAR_BUFFERS = 1
+} cali_flush_opt_t;
+
+/**
+ * \brief Forward aggregation or trace buffer contents to output services.
+ */
+
+void
+cali_flush(int flush_opt);
+
+/**
+ * \}
+ */
     
 /*
  * --- Runtime system management

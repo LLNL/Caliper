@@ -810,7 +810,7 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 /// Forward aggregation/trace buffer contents to output services.
 ///
 /// Flushes trace buffers and / or the aggregation database in the trace and aggregation
-/// services, respectively. This will empty the trace/aggregation buffers and
+/// services, respectively. This will 
 /// forward all buffered snapshot records to output services, e.g., report and recorder.
 ///
 /// This function will invoke the pre_flush, flush, and flush_finish callbacks.
