@@ -37,6 +37,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <numeric>
 #include <unordered_map>
 
 using namespace cali;
@@ -163,8 +164,25 @@ struct MpiTracing::MpiTracingImpl
 
         if (cmp == MPI_IDENT || cmp == MPI_CONGRUENT)
             node = c->make_tree_entry(comm_is_world_attr, Variant(true), node);
+        else {
+            std::vector<int> ranks_in(size, 0);
+            std::iota(ranks_in.begin(), ranks_in.end(), 0); // create sequence 0,1, ... n-1
 
-        // TODO: handle lists
+            std::vector<int> ranks_out(size, 0);
+
+            MPI_Group world_grp;
+            MPI_Group comm_grp;
+
+            PMPI_Comm_group(MPI_COMM_WORLD, &world_grp);
+            PMPI_Comm_group(comm, &comm_grp);
+
+            PMPI_Group_translate_ranks(comm_grp, size, ranks_in.data(), world_grp, ranks_out.data());
+
+            node =
+                c->make_tree_entry(comm_list_attr,
+                                   Variant(CALI_TYPE_USR, ranks_out.data(), ranks_out.size()*sizeof(int)),
+                                   node);
+        }
 
         return c->make_tree_entry(comm_attr, Variant(id), node);
     }
