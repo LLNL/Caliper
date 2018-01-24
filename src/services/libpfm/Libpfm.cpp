@@ -275,6 +275,27 @@ namespace {
         }
     }
 
+    static void setup_process_events(Caliper *c) {
+        int check_num_events = 0;
+        perf_event_desc_t *check_fds = NULL;
+        int ret = perf_setup_list_events(events_string.c_str(), &check_fds, &check_num_events);
+
+        if (ret || !check_num_events)
+            Log(0).stream() << "libpfm: WARNING: invalid event(s) specified!" << std::endl;
+        
+        if (num_events > MAX_EVENTS)
+            Log(0).stream() << "libpfm: WARNING: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
+
+        for(int i=0; i < check_num_events; i++) {
+            if (enable_sampling) {
+                // Store Caliper nodes for each event name
+                event_name_nodes.push_back(
+                        c->make_tree_entry(libpfm_event_name_attr,
+                                           Variant(CALI_TYPE_STRING, check_fds[i].name, strlen(check_fds[i].name))));
+            }
+        }
+    }
+
     static void setup_thread_events(Caliper *c) {
         struct thread_state *ts;
         struct f_owner_ex fown_ex;
@@ -295,12 +316,7 @@ namespace {
         // Get perf_event from string
         fds = NULL;
         num_events = 0;
-        ret = perf_setup_list_events(events_string.c_str(), &fds, &num_events);
-        if (ret || !num_events)
-            Log(0).stream() << "libpfm: invalid event(s) specified!" << std::endl;
-        
-        if (num_events > MAX_EVENTS)
-            Log(0).stream() << "libpfm: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
+        perf_setup_list_events(events_string.c_str(), &fds, &num_events);
 
         for(i=0; i < num_events; i++) {
 
@@ -339,14 +355,6 @@ namespace {
                 Log(0).stream() << "libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
 
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
-
-            if (enable_sampling) {
-                // Store Caliper nodes for each event name
-                event_name_nodes.push_back(
-                        c->make_tree_entry(libpfm_event_name_attr,
-                                           Variant(CALI_TYPE_STRING, fds[i].name, strlen(fds[i].name))));
-            }
-
         }
     }
 
@@ -649,6 +657,7 @@ namespace {
 
     void post_init_cb(Caliper* c) {
         // Run on master thread initialization
+        setup_process_events(c);
         setup_thread_events(c);
         setup_thread_pointers();
         begin_thread_sampling();
