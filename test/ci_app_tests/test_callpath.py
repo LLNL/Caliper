@@ -21,7 +21,7 @@ class CaliperCallpathTest(unittest.TestCase):
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
-        self.assertTrue(len(snapshots) == 4)
+        self.assertTrue(len(snapshots) == 5)
 
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'callpath.address', 'callpath.regname', 'test_alloc.allocated.0', 'function' }))

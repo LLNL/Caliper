@@ -16,6 +16,7 @@ set(CALIPER_CXX_EXAMPLE_APPS
   cali-basic-annotations
   cali-memtracking
   cali-memtracking-macros
+  cali-perfproblem-branch-mispred
   cali-functional)
 set(CALIPER_C_EXAMPLE_APPS
   cali-basic-annotations-c

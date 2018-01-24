@@ -129,6 +129,11 @@ public:
         typedef util::callback<void(Caliper*,const SnapshotRecord*)>
             write_cbvec;
 
+        typedef util::callback<void(Caliper*,const void*, const char*, size_t, size_t, const size_t*)>
+            track_mem_cbvec;
+        typedef util::callback<void(Caliper*,const void*)>
+            untrack_mem_cbvec;
+                                            
         pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
 
@@ -156,6 +161,9 @@ public:
         write_cbvec            pre_write_evt;
         process_snapshot_cbvec write_snapshot;
         write_cbvec            post_write_evt;
+
+        track_mem_cbvec        track_mem_evt;
+        untrack_mem_cbvec      untrack_mem_evt;
 
         caliper_cbvec          clear_evt;
     };
@@ -209,6 +217,14 @@ public:
 
     Entry     get(const Attribute& attr);
 
+    /// \}
+    /// \name Memory region tracking
+    /// \{
+
+    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+
+    void      memory_region_end(const void* ptr);
+
     // --- Direct metadata / data access API
 
     /// \}
@@ -218,7 +234,8 @@ public:
     void      make_entrylist(size_t n, 
                              const Attribute  attr[], 
                              const Variant    data[], 
-                             SnapshotRecord&  list);
+                             SnapshotRecord&  list,
+                             cali::Node*      parent = nullptr);
     void      make_entrylist(const Attribute& attr, 
                              size_t           n,
                              const Variant    data[], 
