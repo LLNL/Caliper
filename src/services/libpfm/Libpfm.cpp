@@ -705,21 +705,6 @@ namespace {
 
     struct DataSrcAttrs data_src_attrs;
 
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
-            data_src_attrs.mem_lvl_attr = c->create_attribute("libpfm.memory_level",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_hit_attr = c->create_attribute("libpfm.hit_type",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_op_attr = c->create_attribute("libpfm.operation",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_snoop_attr = c->create_attribute("libpfm.snoop",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_tlb_attr = c->create_attribute("libpfm.tlb",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        }
-    }
-
     static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
 
         std::vector<Attribute> attr;
@@ -773,12 +758,30 @@ namespace {
 
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        libpfm_event_name_attr = c->create_attribute("libpfm.event_sample_name",
-                                                     CALI_TYPE_STRING, 
-                                                     CALI_ATTR_SCOPE_THREAD
-                                                     | CALI_ATTR_SKIP_EVENTS);
+        libpfm_event_name_attr = 
+            c->create_attribute("libpfm.event_sample_name",
+                                CALI_TYPE_STRING, 
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+
         libpfm_event_name_attr_id = libpfm_event_name_attr.id();
 
+        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
+            data_src_attrs.mem_lvl_attr   = 
+                c->create_attribute("libpfm.memory_level",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_hit_attr   = 
+                c->create_attribute("libpfm.hit_type",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_op_attr    = 
+                c->create_attribute("libpfm.operation",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_snoop_attr = 
+                c->create_attribute("libpfm.snoop",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_tlb_attr   = 
+                c->create_attribute("libpfm.tlb",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        }
 
         setup_process_signals();
         
@@ -786,10 +789,8 @@ namespace {
         c->events().post_init_evt.connect(post_init_cb);
         c->events().finish_evt.connect(finish_cb);
 
-        if (enable_sampling) {
-            c->events().pre_flush_evt.connect(pre_flush_cb);
+        if (enable_sampling)
             c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
-        }
 
         if (record_counters)
             c->events().snapshot.connect(snapshot_cb);

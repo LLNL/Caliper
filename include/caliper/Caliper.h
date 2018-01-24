@@ -164,6 +164,8 @@ public:
 
         track_mem_cbvec        track_mem_evt;
         untrack_mem_cbvec      untrack_mem_evt;
+
+        caliper_cbvec          clear_evt;
     };
 
     Events&   events();
@@ -193,6 +195,8 @@ public:
 
     void      flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
     void      flush_and_write(const SnapshotRecord* flush_info);
+
+    void      clear();
 
     // --- Annotation API
 

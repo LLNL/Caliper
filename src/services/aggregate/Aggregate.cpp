@@ -56,7 +56,6 @@
 #include <limits>
 #include <mutex>
 #include <vector>
-#include <unordered_set>
 
 using namespace cali;
 using namespace std;
@@ -690,11 +689,11 @@ public:
         }
 
         size_t num_written = 0;
-        std::unordered_set<cali_id_t> written_node_cache;
 
-        while (db) {
+        for ( ; db; db = db->m_next) {
             db->m_stopped.store(true);
             num_written += db->flush(c, proc_fn);
+            db->m_stopped.store(false);
 
             s_global_num_trie_entries   += db->m_num_trie_entries;
             s_global_num_kernel_entries += db->m_num_kernel_entries;
@@ -703,9 +702,24 @@ public:
             s_global_num_skipped_keys   += db->m_num_skipped_keys;
             s_global_num_dropped        += db->m_num_dropped;
             s_global_max_keylen = std::max(s_global_max_keylen, db->m_max_keylen);
-            
+        }
+
+        Log(1).stream() << "Aggregate: flushed " << num_written << " snapshots." << std::endl;
+    }
+
+    static void clear_cb(Caliper* c) {
+        AggregateDB* db = nullptr;
+
+        {
+            std::lock_guard<util::spinlock>
+                g(s_list_lock);
+
+            db = s_list;
+        }
+
+        while (db) {
+            db->m_stopped.store(true);
             db->clear();
-            
             db->m_stopped.store(false);
 
             if (db->m_retired) {
@@ -726,9 +740,7 @@ public:
             } else {
                 db = db->m_next;
             }
-        }
-
-        Log(1).stream() << "Aggregate: flushed " << num_written << " snapshots." << std::endl;
+        }        
     }
 
     static void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
@@ -841,6 +853,7 @@ public:
         c->events().create_scope_evt.connect(create_scope_cb);
         c->events().process_snapshot.connect(process_snapshot_cb);
         c->events().flush_evt.connect(flush_cb);
+        c->events().clear_evt.connect(clear_cb);
         c->events().finish_evt.connect(finish_cb);
 
         Log(1).stream() << "Registered aggregation service" << std::endl;

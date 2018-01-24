@@ -72,6 +72,9 @@ void TraceBufferChunk::reset()
     m_nrec = 0;
             
     memset(m_data, 0, m_size);
+
+    delete m_next;
+    m_next = 0;
 }
 
 
@@ -111,18 +114,14 @@ size_t TraceBufferChunk::flush(Caliper* c, Caliper::SnapshotFlushFn proc_fn)
         proc_fn(&snapshot);
     }
 
-    written += m_nrec;            
-    reset();
+    written += m_nrec;
             
     //
     // flush subsequent buffers in list
     // 
             
-    if (m_next) {
+    if (m_next)
         written += m_next->flush(c, proc_fn);
-        delete m_next;
-        m_next = 0;
-    }
             
     return written;
 }

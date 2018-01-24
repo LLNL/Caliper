@@ -78,6 +78,8 @@ extern void config_sanity_check();
 
 namespace
 {
+    bool flush_on_exit { true };
+
     // --- helpers
 
     inline cali_context_scope_t
@@ -103,7 +105,11 @@ namespace
         Caliper c = Caliper::instance();
 
         if (c) {
-            c.flush_and_write(nullptr);
+            if (flush_on_exit)
+                c.flush_and_write(nullptr);
+
+            c.clear();
+
             c.events().finish_evt(&c);
 
             c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
@@ -239,6 +245,8 @@ struct Caliper::GlobalData
     {
         automerge = config.get("automerge").to_bool();
 
+        ::flush_on_exit = config.get("flush_on_exit").to_bool();
+
         name_attr = Attribute::make_attribute(default_thread_scope->tree.node( 8));
         type_attr = Attribute::make_attribute(default_thread_scope->tree.node( 9));
         prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(10));
@@ -372,6 +380,10 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     { "config_check", CALI_TYPE_BOOL, "true",
       "Perform configuration sanity check at initialization",
       "Perform configuration sanity check at initialization"
+    },
+    { "flush_on_exit", CALI_TYPE_BOOL, "true",
+      "Flush Caliper buffers at program exit",
+      "Flush Caliper buffers at program exit"
     },
     ConfigSet::Terminator
 };
@@ -806,7 +818,7 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 /// Forward aggregation/trace buffer contents to output services.
 ///
 /// Flushes trace buffers and / or the aggregation database in the trace and aggregation
-/// services, respectively. This will empty the trace/aggregation buffers and
+/// services, respectively. This will 
 /// forward all buffered snapshot records to output services, e.g., report and recorder.
 ///
 /// This function will invoke the pre_flush, flush, and flush_finish callbacks.
@@ -840,6 +852,23 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
           });
 
     mG->events.post_write_evt(this, &flush_info);
+}
+
+
+/// Clear aggregation and/or trace buffers.
+///
+/// Clears aggregation and trace buffers. Data in those buffers
+/// that has not been written yet will be lost.
+///
+/// \note This function is not signal safe.
+
+void
+Caliper::clear()
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    mG->events.clear_evt(this);
 }
 
 

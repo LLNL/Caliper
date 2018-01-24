@@ -4,6 +4,8 @@
 
 int main()
 {
+  cali_config_preset("CALI_CALIPER_FLUSH_ON_EXIT", "false");
+
   cali_id_t iter_attr = 
     cali_create_attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
@@ -39,4 +41,6 @@ int main()
   cali_set_string_byname("attr.str", "fidibus");
 
   cali_end_byname("ci_test_c_ann.setbyname");
+
+  cali_flush(CALI_FLUSH_CLEAR_BUFFERS);
 }
