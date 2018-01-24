@@ -266,9 +266,9 @@ void untrack_mem_cb(Caliper* c, const void* ptr)
                                (*tree_node).v_size,
                                (*tree_node).v_uid);
 
+        g_active_mem -= (*tree_node).total_size;
         g_tree.remove(tree_node);
         
-        g_active_mem -= (*tree_node).total_size;
         --g_current_tracked;
     } else {
         ++g_failed_untrack;
