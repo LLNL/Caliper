@@ -581,6 +581,15 @@ Example:
                 8425              115 main                mainloop                  0
 
 
+Pthread
+--------------------------------
+
+The Pthread service wraps `pthread_create` using GOTCHA, and adds a
+``pthread.id`` attribute with a numeric thread ID for the new child
+thread. In doing so, the pthread service automatically creates a
+Caliper thread scope on the child thread: this is useful to
+automatically start sampling (e.g. with the `sampler` service) on each
+new thread.
 
 Recorder
 --------------------------------
@@ -670,6 +679,26 @@ This configuration will create the following report output: ::
 Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
+
+Sampler
+--------------------------------
+
+The sampler service implements periodic sampling. It triggers
+snapshots periodically with a given frequency. Snapshot records
+triggered by the sampler service contain a ``cali.sampler.pc``
+attribute with the program address that was interrupted by the sample
+(the `symbollookup` service can translate this address to function,
+file and line information).
+
+Note that the sampler has to be activated on each thread that should
+be sampled. This can be accomplished by a Caliper annotation on
+the thread. Alternatively, use the `pthread` service to automatically
+activate sampling on each new thread.
+
+.. envvar:: CALI_SAMPLER_FREQUENCY
+
+   The frequency, in Hz, in which snapshots are triggered.
+   Default: 20.
 
 Symbollookup
 --------------------------------
