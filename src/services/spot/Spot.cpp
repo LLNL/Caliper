@@ -39,6 +39,7 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
+#include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/QueryProcessor.h"
 
@@ -46,9 +47,17 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
+#include "caliper/common/util/split.hpp"
+
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/document.h"
+#include "rapidjson/ostreamwrapper.h"
+#include "rapidjson/writer.h"
 
 #include <iostream>
 #include <sstream>
+#include <iterator>
+#include <fstream>
 using namespace cali;
 
 namespace
@@ -57,80 +66,140 @@ namespace
     class Spot {
         static std::unique_ptr<Spot> s_instance;
         static const ConfigSet::Entry  s_configdata[];
-
-        std::vector<std::pair<std::stringstream*,QueryProcessor*>> m_queries;
-
+        static int divisor;
+        template<typename T>
+        using List = std::vector<T>;
+        using AggregationHandler = cali::Aggregator*;
+        using TimeType = unsigned int;
+        using SingleJsonEntryType = List<std::pair<std::string,TimeType>>;
+        using JsonListType = List<SingleJsonEntryType>;
+        using AggregationDescriptor = std::pair<std::string, std::string>;
+        using AggregationDescriptorList = List<AggregationDescriptor>;
+        static List<AggregationHandler> m_queries;
+        static AggregationDescriptorList m_annotations_and_places;
+        static JsonListType m_jsons;
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            for(auto entry : m_queries){
-              m_query = entry.first;
-              m_query.process_record(*c, snapshot->to_entrylist());
+            for(auto& m_query : m_queries){
+              m_query->add(*c, snapshot->to_entrylist());
             }
         }
 
         void flush(Caliper* c, const SnapshotRecord*) {
-            for(auto entry : m_queries){
-              m_query = entry.first;
-              m_query.flush(*c);
+          for(int i =0 ;i<m_queries.size();i++) {
+            auto& m_query = m_queries[i];
+            auto& m_json = m_jsons[i];
+            std::string grouping = m_annotations_and_places[i].first;
+            std::vector<std::string> metrics_of_interest { "time.inclusive.duration", grouping };
+            m_query->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
+                std::string name;
+                TimeType value;
+                for(const auto& entry: list) {
+                  for(std::string& attribute_key : metrics_of_interest) {
+                       Attribute attr = db.get_attribute(attribute_key);
+                       Variant value_iter = entry.value(attr);
+                       if(!value_iter.empty()){
+                          if(attribute_key == grouping) {
+                            name = value_iter.to_string(); 
+                          }
+                          else {
+                            value = value_iter.to_uint();
+                          }
+                       }
+                   }
+                }
+                m_json.push_back(std::make_pair(name,value));
+            });
+          }
+          for(int i =0 ;i<m_jsons.size();i++) {
+            auto place = m_annotations_and_places[i].second;
+            auto json = m_jsons[i];
+            std::ifstream ifs(place);
+            std::string str(std::istreambuf_iterator<char>{ifs}, {});
+            rapidjson::Document doc;
+            if(str.size() > 0){
+              doc.Parse(str.c_str());
+              auto& json_series_values = doc["series"];
+              for(auto datum : json){
+                 std::string series_name = datum.first;
+                 for(auto& existing_series_name : json_series_values.GetArray()){
+                    if(series_name == existing_series_name.GetString()){
+                      auto series_data = doc[series_name.c_str()].GetArray();
+                      rapidjson::Value arrarr;
+                      arrarr.SetArray();
+                      arrarr.PushBack(0,doc.GetAllocator());
+                      arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
+                      series_data.PushBack(arrarr,doc.GetAllocator());
+                    } 
+                 }
+                 TimeType value = datum.second;
+              } 
             }
+            std::ofstream ofs(place.c_str());
+            rapidjson::OStreamWrapper osw(ofs);
+            rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+            doc.Accept(writer);
+          }
         }
-
-        Spot(const QueryProcessor& query) 
-            : m_query(query)
+        // TODO: reimplement
+        Spot()
             { }
 
         //
         // --- callback functions
         //
-        static std::pair<std::stringstream*, QueryProcessor*> create_query_processor(std::string query){
+        static AggregationHandler create_query_processor(std::string query){
            CalQLParser parser(query.c_str()); 
-           std::stringstream* new_stream = new std::stringstream();
            if (parser.error()) {
                Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
-               return;
+               return nullptr;
            }
            QuerySpec    spec(parser.spec());
-           OutputStream stream;
-           stream.set_stream(*new_stream);
-           QueryProcessor* new_proc = new QueryPorcessor(spec,stream);
-           return std::make_pair(new_stream,new_proc);
+           return new Aggregator(spec);
         }
-        std::string query_for_annotation(std::string grouping, std::string metric = "time.inclusive.duration"){
-          group_comma_metric = " " +grouping+","+metric+" ";
-          return "SELECT" + group_comma_metric + "WHERE" + group_comma_metric + "GROUP BY " +groupind + " FORMAT JSON()";
+        static std::string query_for_annotation(std::string grouping, std::string metric = "time.inclusive.duration"){
+          std::string group_comma_metric = " " +grouping+","+metric+" ";
+          return "SELECT " + grouping+",sum("+metric+") " + "WHERE" + group_comma_metric + "GROUP BY " + grouping;
         }
         static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
-            std::string  config_string = config.get("config").to_string().c_str();
+            const std::string&  config_string = config.get("config").to_string().c_str();
+            divisor = config.get("time_divisor").to_int();
             std::vector<std::string> logging_configurations;
-            util::split(config_string,",",std::back_inserter(logging_configurations));
+            util::split(config_string,',',std::back_inserter(logging_configurations));
             for(const auto log_config : logging_configurations){
+              m_jsons.emplace_back(std::vector<std::pair<std::string,TimeType>>());
               std::vector<std::string> annotation_and_place;
-              util::split(log_config,",",std::back_inserter(annotation_and_place));
-              m_queries.emplace_back(create_query_processor(query_for_annotation(annotation_and_place[0])));
+              util::split(log_config,':',std::back_inserter(annotation_and_place));
+              std::string& annotation = annotation_and_place[0];
+              std::string& place = annotation_and_place[1];
+              std::string query = query_for_annotation(annotation);
+              Log(0).stream() << "Spot: establishing query \"" <<query<<'"'<<std::endl;
+              m_queries.emplace_back(create_query_processor(query));
+              m_annotations_and_places.push_back(std::make_pair(annotation,place));
             }
-            CalQLParser  parser(config.get("config").to_string().c_str());
+            //CalQLParser  parser(config.get("config").to_string().c_str());
 
-            if (parser.error()) {
-                Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
-                return;
-            }
+            //if (parser.error()) {
+            //    Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
+            //    return;
+            //}
 
-            QuerySpec    spec(parser.spec());
+            //QuerySpec    spec(parser.spec());
 
-            // set format default to table if it hasn't been set in the query config
-            if (spec.format.opt == QuerySpec::FormatSpec::Default)
-                spec.format = CalQLParser("format table").spec().format;
-                
-            OutputStream stream;
+            //// set format default to table if it hasn't been set in the query config
+            //if (spec.format.opt == QuerySpec::FormatSpec::Default)
+            //    spec.format = CalQLParser("format table").spec().format;
+            //    
+            //OutputStream stream;
 
-            stream.set_stream(OutputStream::StdOut);
+            //stream.set_stream(OutputStream::StdOut);
 
-            std::string filename = config.get("filename").to_string();
+            //std::string filename = config.get("filename").to_string();
 
-            if (!filename.empty())
-                stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
-            
-            s_instance.reset(new Spot(QueryProcessor(spec, stream)));
+            //if (!filename.empty())
+            //    stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+            //
+            s_instance.reset(new Spot());
         }
 
         static void write_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
@@ -162,7 +231,10 @@ namespace
     };
 
     std::unique_ptr<Spot> Spot::s_instance { nullptr };
-    
+    int Spot::divisor = 1000000;
+    Spot::List<Spot::AggregationHandler> Spot::m_queries;
+    Spot::JsonListType Spot::m_jsons;
+    Spot::AggregationDescriptorList Spot::m_annotations_and_places; 
     const ConfigSet::Entry  Spot::s_configdata[] = {
         { "config", CALI_TYPE_STRING, "function:default.json",
           "Attribute:Filename pairs in which to dump Spot data",
@@ -178,6 +250,10 @@ namespace
         { "code_version", CALI_TYPE_STRING, "",
           "Version number (or git hash) to represent this run of the code",
           "Version number (or git hash) to represent this run of the code"
+        },
+        { "time_divisor", CALI_TYPE_INT, "1000000",
+          "Caliper records time in microseconds, this is what we divide by to get time in your units",
+          "Caliper records time in microseconds, this is what we divide by to get time in your units. 1000 if you record in milliseconds, 1000000 if seconds"
         },
         ConfigSet::Terminator
     };
