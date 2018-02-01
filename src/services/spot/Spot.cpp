@@ -134,6 +134,9 @@ namespace
                  TimeType value = datum.second;
               } 
             }
+            else{
+              doc.StartObject();
+            }
             std::ofstream ofs(place.c_str());
             rapidjson::OStreamWrapper osw(ofs);
             rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
