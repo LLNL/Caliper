@@ -94,12 +94,12 @@ namespace
             }
         }
         std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration"){
-          if(!node){
-            return "";
-          }
-          if(node && node->attribute() && db.get_attribute(node->attribute()).name()!=metric){
-            return extract_parent_name(db,node->parent(),metric);
-          }
+          //if(!node){
+          //  return "";
+          //}
+          //if(node && node->attribute() && db.get_attribute(node->attribute()).name()!=metric){
+          //  return extract_parent_name(db,node->parent(),metric);
+          //}
           std::string my_name = node->data().to_string();
           if(my_name.size()>0){
             std::string parent_name = extract_parent_name(db,node->parent(),metric);
