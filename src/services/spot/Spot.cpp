@@ -93,7 +93,7 @@ namespace
               }
             }
         }
-        std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration"){
+        std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration",bool initcall=false){
           //if(!node){
           //  return "";
           //}
@@ -103,7 +103,7 @@ namespace
           std::string my_name = node->data().to_string();
           if(my_name.size()>0){
             std::string parent_name = extract_parent_name(db,node->parent(),metric);
-            return parent_name+my_name+"/";
+            return parent_name+my_name+(initcall ? "" : "/");
           }
           return my_name;
         } 
@@ -130,7 +130,7 @@ namespace
                     if((attribute_key==grouping)){
                       if(entry.is_reference()){
                         if(entry.node()->parent()){
-                        parent_name = extract_parent_name(db,entry.node()->parent(),grouping);
+                          parent_name = extract_parent_name(db,entry.node()->parent(),grouping,true);
                         }
                       }
                       if(!value_iter.empty()){
