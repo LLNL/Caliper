@@ -139,7 +139,7 @@ namespace
                     }
                   }
                 }
-                m_json.push_back(std::make_pair(parent_name+local_name,value));
+                m_json.push_back(std::make_pair(parent_name,value));
             });
           }
           for(int i =0 ;i<m_jsons.size();i++) {
