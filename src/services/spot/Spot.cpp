@@ -97,7 +97,7 @@ namespace
           if(!node){
             return "";
           }
-          if(node && node->attribute() && db.get_attribute(node->attribute()).name()!="function"){
+          if(node && node->attribute() && db.get_attribute(node->attribute()).name()!=metric){
             return extract_parent_name(db,node->parent(),metric);
           }
           std::string my_name = node->data().to_string();
@@ -130,7 +130,7 @@ namespace
                     if((attribute_key==grouping)){
                       if(entry.is_reference()){
                         if(entry.node()->parent()){
-                        parent_name = extract_parent_name(db,entry.node()->parent());
+                        parent_name = extract_parent_name(db,entry.node()->parent(),grouping);
                         }
                       }
                       if(!value_iter.empty()){
