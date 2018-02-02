@@ -86,20 +86,20 @@ namespace
         static std::string recorded_time;
         static std::vector<std::string> title;
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            for(auto& m_query : m_queries){
-              auto entries = snapshot->to_entrylist();
-              if(m_query.second->pass(*c,entries)){
-                m_query.first->add(*c, entries);
-              }
+          for(auto& m_query : m_queries){
+            auto entries = snapshot->to_entrylist();
+            if(m_query.second->pass(*c,entries)){
+              m_query.first->add(*c, entries);
             }
+          }
         }
         std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration",bool initcall=false){
-          //if(!node){
-          //  return "";
-          //}
-          //if(node && node->attribute() && db.get_attribute(node->attribute()).name()!=metric){
-          //  return extract_parent_name(db,node->parent(),metric);
-          //}
+          if((!node) ||(!node->attribute()) ){
+            return "";
+          }
+          if(db.get_attribute(node->attribute()).name()!=metric){
+            return extract_parent_name(db,node->parent(),metric);
+          }
           std::string my_name = node->data().to_string();
           if(my_name.size()>0){
             std::string parent_name = extract_parent_name(db,node->parent(),metric);
@@ -139,7 +139,12 @@ namespace
                     }
                   }
                 }
-                m_json.push_back(std::make_pair(parent_name,value));
+                if(parent_name.size() > 0){
+                  m_json.push_back(std::make_pair(parent_name+"/"+local_name,value));
+                }
+                else{
+                m_json.push_back(std::make_pair(local_name,value));
+                }
             });
           }
           for(int i =0 ;i<m_jsons.size();i++) {
@@ -161,16 +166,21 @@ namespace
                json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
                json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
                for(auto datum : json){
+                  bool found = false;
                   std::string series_name = datum.first;
-                  for(auto& existing_series_name : json_series_values.GetArray()){
-                     if(series_name == existing_series_name.GetString()){
+                  //for(auto& existing_series_name : json_series_values.GetArray()){
+                     //if(!series_name.compare(existing_series_name.GetString())){
+                       found = true;
                        auto series_data = doc[series_name.c_str()].GetArray();
                        rapidjson::Value arrarr;
                        arrarr.SetArray();
                        arrarr.PushBack(0,doc.GetAllocator());
                        arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
                        series_data.PushBack(arrarr,doc.GetAllocator());
-                     } 
+                     //} 
+                  //}
+                  if(!found){
+                     std::cout << "Error in adding record, bumped into unknown series "<<series_name<<std::endl;
                   }
                   TimeType value = datum.second;
                } 
@@ -214,6 +224,7 @@ namespace
                    outarr.PushBack(arrarr,doc.GetAllocator());
                    value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                    doc.AddMember(value_series_name,outarr,doc.GetAllocator());
+                   std::cout << "New series entry: "<<series_name<<std::endl;
                  }
               } 
             }
