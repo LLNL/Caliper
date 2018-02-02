@@ -85,6 +85,7 @@ namespace
         static std::string code_version;
         static std::string recorded_time;
         static std::vector<std::string> title;
+        static bool include_local;
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
           for(auto& m_query : m_queries){
             auto entries = snapshot->to_entrylist();
@@ -139,11 +140,17 @@ namespace
                     }
                   }
                 }
+                
                 if(parent_name.size() > 0){
-                  m_json.push_back(std::make_pair(parent_name+"/"+local_name,value));
+                  if(include_local){
+                    m_json.push_back(std::make_pair(parent_name+"/"+local_name,value));
+                  }
+                  else{
+                    m_json.push_back(std::make_pair(parent_name,value));
+                  }
                 }
                 else{
-                m_json.push_back(std::make_pair(local_name,value));
+                  m_json.push_back(std::make_pair(local_name,value));
                 }
             });
           }
@@ -257,6 +264,7 @@ namespace
         static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
             const std::string&  config_string = config.get("config").to_string().c_str();
+            include_local = config.get("include_local").to_string().compare("NO");
             divisor = config.get("time_divisor").to_int();
             code_version = config.get("code_version").to_string();
             recorded_time = config.get("recorded_time").to_string();
@@ -334,6 +342,7 @@ namespace
     std::string Spot::code_version;
     std::string Spot::recorded_time;
     std::vector<std::string> Spot::title;
+    bool Spot::include_local;
     const ConfigSet::Entry  Spot::s_configdata[] = {
         { "config", CALI_TYPE_STRING, "function:default.json",
           "Attribute:Filename pairs in which to dump Spot data",
@@ -357,6 +366,9 @@ namespace
         { "y_axes", CALI_TYPE_INT, "microseconds",
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)",
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)"},
+        { "include_local", CALI_TYPE_STRING, "YES",
+          "In some instrumentations, this option will prevent duplication of a record",
+          "In some instrumentations, this option will prevent duplication of a record"},
         { "title", CALI_TYPE_INT, "",
           "Title for this test",
           "Title for this test"
