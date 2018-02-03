@@ -6,6 +6,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
   ci_test_binding
+  ci_test_esc
   ci_test_macros
   ci_test_nesting
   ci_test_postprocess_snapshot
@@ -17,6 +18,9 @@ set(CALIPER_CI_C_TEST_APPS
   ci_test_alloc_hooks
   ci_test_c_ann
   ci_test_c_snapshot)
+set(CALIPER_CI_MPI_TEST_APPS
+  ci_test_cali_before_mpi
+  ci_test_mpi_before_cali)
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
@@ -34,9 +38,11 @@ endforeach()
 
 # add symlinks to the python test driver scripts
 set(PYTHON_SCRIPTS
+  test_allocservice.py
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
+  test_json.py
   test_log.py
   test_report.py
   test_thread.py
@@ -47,7 +53,7 @@ if (CALIPER_HAVE_LIBUNWIND)
 endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS 
-    test_allocservice.py
+    test_alloc_hooks.py
     test_pthread.py)
 endif()
 if (CALIPER_HAVE_PAPI)
@@ -58,6 +64,19 @@ if (CALIPER_HAVE_LIBPFM)
 endif()
 if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_DYNINST)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
+endif()
+
+if (CALIPER_HAVE_MPI)
+  include_directories(${MPI_CXX_INCLUDE_PATH})
+  
+  foreach(app ${CALIPER_CI_MPI_TEST_APPS})
+    add_executable(${app} ${app}.cpp)
+    target_link_libraries(${app} caliper caliper-mpi ${MPI_CXX_LIBRARIES})
+  endforeach()
+
+  if (RUN_MPI_TESTS)
+    list(APPEND PYTHON_SCRIPTS test_mpi.py)
+  endif()
 endif()
 
 foreach(file ${PYTHON_SCRIPTS})

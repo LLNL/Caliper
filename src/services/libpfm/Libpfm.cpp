@@ -275,6 +275,27 @@ namespace {
         }
     }
 
+    static void setup_process_events(Caliper *c) {
+        int check_num_events = 0;
+        perf_event_desc_t *check_fds = NULL;
+        int ret = perf_setup_list_events(events_string.c_str(), &check_fds, &check_num_events);
+
+        if (ret || !check_num_events)
+            Log(0).stream() << "libpfm: WARNING: invalid event(s) specified!" << std::endl;
+        
+        if (num_events > MAX_EVENTS)
+            Log(0).stream() << "libpfm: WARNING: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
+
+        for(int i=0; i < check_num_events; i++) {
+            if (enable_sampling) {
+                // Store Caliper nodes for each event name
+                event_name_nodes.push_back(
+                        c->make_tree_entry(libpfm_event_name_attr,
+                                           Variant(CALI_TYPE_STRING, check_fds[i].name, strlen(check_fds[i].name))));
+            }
+        }
+    }
+
     static void setup_thread_events(Caliper *c) {
         struct thread_state *ts;
         struct f_owner_ex fown_ex;
@@ -295,12 +316,7 @@ namespace {
         // Get perf_event from string
         fds = NULL;
         num_events = 0;
-        ret = perf_setup_list_events(events_string.c_str(), &fds, &num_events);
-        if (ret || !num_events)
-            Log(0).stream() << "libpfm: invalid event(s) specified!" << std::endl;
-        
-        if (num_events > MAX_EVENTS)
-            Log(0).stream() << "libpfm: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
+        perf_setup_list_events(events_string.c_str(), &fds, &num_events);
 
         for(i=0; i < num_events; i++) {
 
@@ -339,14 +355,6 @@ namespace {
                 Log(0).stream() << "libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
 
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
-
-            if (enable_sampling) {
-                // Store Caliper nodes for each event name
-                event_name_nodes.push_back(
-                        c->make_tree_entry(libpfm_event_name_attr,
-                                           Variant(CALI_TYPE_STRING, fds[i].name, strlen(fds[i].name))));
-            }
-
         }
     }
 
@@ -649,6 +657,7 @@ namespace {
 
     void post_init_cb(Caliper* c) {
         // Run on master thread initialization
+        setup_process_events(c);
         setup_thread_events(c);
         setup_thread_pointers();
         begin_thread_sampling();
@@ -695,21 +704,6 @@ namespace {
     };
 
     struct DataSrcAttrs data_src_attrs;
-
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
-            data_src_attrs.mem_lvl_attr = c->create_attribute("libpfm.memory_level",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_hit_attr = c->create_attribute("libpfm.hit_type",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_op_attr = c->create_attribute("libpfm.operation",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_snoop_attr = c->create_attribute("libpfm.snoop",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            data_src_attrs.mem_tlb_attr = c->create_attribute("libpfm.tlb",
-                                                              CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-        }
-    }
 
     static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
 
@@ -764,12 +758,30 @@ namespace {
 
         config = RuntimeConfig::init("libpfm", s_configdata);
 
-        libpfm_event_name_attr = c->create_attribute("libpfm.event_sample_name",
-                                                     CALI_TYPE_STRING, 
-                                                     CALI_ATTR_SCOPE_THREAD
-                                                     | CALI_ATTR_SKIP_EVENTS);
+        libpfm_event_name_attr = 
+            c->create_attribute("libpfm.event_sample_name",
+                                CALI_TYPE_STRING, 
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+
         libpfm_event_name_attr_id = libpfm_event_name_attr.id();
 
+        if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
+            data_src_attrs.mem_lvl_attr   = 
+                c->create_attribute("libpfm.memory_level",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_hit_attr   = 
+                c->create_attribute("libpfm.hit_type",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_op_attr    = 
+                c->create_attribute("libpfm.operation",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_snoop_attr = 
+                c->create_attribute("libpfm.snoop",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_tlb_attr   = 
+                c->create_attribute("libpfm.tlb",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        }
 
         setup_process_signals();
         
@@ -777,10 +789,8 @@ namespace {
         c->events().post_init_evt.connect(post_init_cb);
         c->events().finish_evt.connect(finish_cb);
 
-        if (enable_sampling) {
-            c->events().pre_flush_evt.connect(pre_flush_cb);
+        if (enable_sampling)
             c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
-        }
 
         if (record_counters)
             c->events().snapshot.connect(snapshot_cb);

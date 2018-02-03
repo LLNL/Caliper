@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
+// Written by David Boehme, boehme3@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,56 +30,41 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file DataTracker.h
-/// \brief Caliper C++ data tracking interface
+/// \file Json.h
+/// Json output formatter
 
 #pragma once
 
-#include "common/util/callback.hpp"
+#include "Formatter.h"
+#include "RecordProcessor.h"
 
-#include <vector>
-#include <string>
-#include <cstdlib>
-#include <cinttypes>
+#include "../common/RecordMap.h"
+#include "../common/OutputStream.h"
+
+#include <memory>
 
 namespace cali
 {
 
-namespace DataTracker
+class CaliperMetadataAccessInterface;
+class QuerySpec;
+
+/// \brief Prints snapshot records as sparse JSON
+/// \ingroup ReaderAPI
+class JsonSplitFormatter : public Formatter
 {
+    struct JsonSplitFormatterImpl;
+    std::shared_ptr<JsonSplitFormatterImpl> mP;
 
-struct Events {
-    util::callback<void(void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])>
-    track_memory_evt;
-    
-    util::callback<void(void* ptr)>
-    untrack_memory_evt;
+public:
+
+    JsonSplitFormatter(OutputStream& os, const QuerySpec& spec);
+
+    ~JsonSplitFormatter();
+
+    void process_record(CaliperMetadataAccessInterface&, const EntryList&);
+
+    void flush(CaliperMetadataAccessInterface&, std::ostream& os);
 };
-
-Events* events();
-
-void* Allocate(const char*        label,
-               const size_t       size);
-
-void* Allocate(const char*        label,
-               const size_t       elem_size,
-               const size_t       ndims,
-               const size_t       dimensions[]);
-
-void Free(void *ptr);
-
-void TrackAllocation(void         *ptr,
-                     const char*  label,
-                     size_t       size);
-
-void TrackAllocation(void *ptr,
-                     const char*  label,
-                     const size_t elem_size,
-                     const size_t ndims,
-                     const size_t dimensions[]);
-
-void UntrackAllocation(void *ptr);
-
-} // namespace DataTracker
 
 } // namespace cali

@@ -108,7 +108,7 @@ cali_datatracker_free(void *ptr);
  */
 
 void 
-cali_datatracker_track(void *ptr, 
+cali_datatracker_track(const void *ptr, 
                        const char *label,
                        size_t size);
 
@@ -123,7 +123,7 @@ cali_datatracker_track(void *ptr,
  */
 
 void 
-cali_datatracker_track_dimensional(void         *ptr, 
+cali_datatracker_track_dimensional(const void   *ptr, 
                                    const char   *label,
                                    size_t        elem_size,
                                    const size_t *dimensions,
@@ -136,7 +136,7 @@ cali_datatracker_track_dimensional(void         *ptr,
  */
 
 void 
-cali_datatracker_untrack(void *ptr);
+cali_datatracker_untrack(const void *ptr);
 
 #ifdef __cplusplus
 } // extern "C"

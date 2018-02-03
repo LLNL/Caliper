@@ -76,7 +76,7 @@ namespace
         // --- callback functions
         //
 
-        static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
+        static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("report", s_configdata));
 
             CalQLParser  parser(config.get("config").to_string().c_str());
@@ -104,14 +104,14 @@ namespace
             s_instance.reset(new Report(QueryProcessor(spec, stream)));
         }
 
-        static void flush_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
+        static void write_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
             if (!s_instance)
                 return;
 
             s_instance->process_snapshot(c, snapshot);
         }
 
-        static void flush_finish_cb(Caliper* c, const SnapshotRecord* flush_info) {
+        static void post_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             if (!s_instance)
                 return;
 
@@ -124,9 +124,9 @@ namespace
             { }
 
         static void create(Caliper* c) {
-            c->events().pre_flush_evt.connect(pre_flush_cb);
-            c->events().write_snapshot.connect(flush_snapshot_cb);
-            c->events().post_write_evt.connect(flush_finish_cb);
+            c->events().pre_write_evt.connect(pre_write_cb);
+            c->events().write_snapshot.connect(write_snapshot_cb);
+            c->events().post_write_evt.connect(post_write_cb);
 
             Log(1).stream() << "Registered report service" << std::endl;
         }

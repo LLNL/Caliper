@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
+// Written by David Boehme, boehme3@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,56 +30,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file DataTracker.h
-/// \brief Caliper C++ data tracking interface
+/// \file write_util.h
+/// Helper functions to write strings.
 
-#pragma once
+#include "write_util.h"
 
-#include "common/util/callback.hpp"
-
-#include <vector>
-#include <string>
-#include <cstdlib>
-#include <cinttypes>
-
-namespace cali
+std::ostream&
+write_string(std::ostream& os, const char* str, const char* mask_chars, char esc)
 {
+    os << '\"';
 
-namespace DataTracker
-{
-
-struct Events {
-    util::callback<void(void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])>
-    track_memory_evt;
-    
-    util::callback<void(void* ptr)>
-    untrack_memory_evt;
-};
-
-Events* events();
-
-void* Allocate(const char*        label,
-               const size_t       size);
-
-void* Allocate(const char*        label,
-               const size_t       elem_size,
-               const size_t       ndims,
-               const size_t       dimensions[]);
-
-void Free(void *ptr);
-
-void TrackAllocation(void         *ptr,
-                     const char*  label,
-                     size_t       size);
-
-void TrackAllocation(void *ptr,
-                     const char*  label,
-                     const size_t elem_size,
-                     const size_t ndims,
-                     const size_t dimensions[]);
-
-void UntrackAllocation(void *ptr);
-
-} // namespace DataTracker
-
-} // namespace cali
+    return os << '\"';
+}

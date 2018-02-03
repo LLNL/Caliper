@@ -16,17 +16,26 @@ namespace cali
 {
 extern Attribute alloc_label_attr;
 extern Attribute alloc_fn_attr;
+
+Node *tree_entry_alloc;
+Node *tree_entry_free;
+
+void init_alloc_tree_entries(Caliper *c) {
+    tree_entry_alloc = c->make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, "alloc", 6));
+    tree_entry_free = c->make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, "free", 5));
+}
 }
 
 extern cali_id_t cali_alloc_fn_attr_id;
 extern cali_id_t cali_alloc_label_attr_id;
+extern cali_id_t cali_alloc_uid_attr_id;
 extern cali_id_t cali_alloc_addr_attr_id;
 extern cali_id_t cali_alloc_elem_size_attr_id;
 extern cali_id_t cali_alloc_num_elems_attr_id;
 extern cali_id_t cali_alloc_total_size_attr_id;
 extern cali_id_t cali_alloc_same_size_count_attr_id;
 
-const Allocation Allocation::invalid("INVALID", 0, 0, nullptr, 0);
+const Allocation Allocation::invalid(-1, "INVALID", 0, 0, nullptr, 0);
 const std::string AllocTracker::cali_alloc("Caliper Alloc");
 const std::string AllocTracker::cali_free("Caliper Free");
 
@@ -44,12 +53,14 @@ size_t Allocation::num_elems(const size_t dimensions[],
     return ret;
 }
 
-Allocation::Allocation(const std::string &label,
+Allocation::Allocation(const uint64_t uid,
+                       const std::string &label,
                        const uint64_t start_address,
                        const size_t elem_size,
                        const size_t dimensions[],
                        const size_t num_dimensions)
-        : m_label(label),
+        : m_uid(uid),
+          m_label(label),
           m_start_address(start_address),
           m_elem_size(elem_size),
           m_dimensions(new size_t[num_dimensions]),
@@ -64,20 +75,23 @@ Allocation::Allocation(const std::string &label,
 }
 
 Allocation::Allocation(const Allocation &other)
-        : m_label(other.m_label),
+        : m_uid(other.m_uid),
+          m_label(other.m_label),
           m_start_address(other.m_start_address),
           m_elem_size(other.m_elem_size),
-          m_dimensions(other.m_dimensions),
+          m_dimensions(new size_t[other.m_num_dimensions]),
           m_num_elems(other.m_num_elems),
           m_bytes(other.m_bytes),
           m_end_address(other.m_end_address),
           m_num_dimensions(other.m_num_dimensions),
           m_index_ret(new size_t[m_num_dimensions])
 {
+    std::memcpy(m_dimensions, other.m_dimensions, m_num_dimensions*sizeof(size_t));
     std::memcpy(m_index_ret, other.m_index_ret, m_num_dimensions*sizeof(size_t));
 }
 
 Allocation::~Allocation() {
+    delete[] m_dimensions;
     delete[] m_index_ret;
 }
 
@@ -206,7 +220,7 @@ struct AllocTracker::AllocTree {
     std::map<uint64_t, AllocNode*> m_alloc_map;
     std::map<uint64_t,uint64_t> m_count_for_size;
 
-    AllocTree(AllocNode *root = nullptr, bool track_ranges = false) 
+    AllocTree(AllocNode *root = nullptr) 
         : m_root(root),
           m_active_bytes(0)
     { }
@@ -289,6 +303,7 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
         if(!thread_lock.owns_lock()){
+            std::cerr << "Thread Lock Failed!" << std::endl;
             return nullptr;
         }
 
@@ -321,6 +336,7 @@ struct AllocTracker::AllocTree {
 
         std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
         if(!thread_lock.owns_lock()){
+            std::cerr << "Thread Lock Failed!" << std::endl;
             return Allocation::invalid;
         }
 
@@ -399,9 +415,21 @@ struct AllocTracker::AllocTree {
 
 thread_local std::mutex AllocTracker::AllocTree::thread_mutex;
 
-AllocTracker::AllocTracker(bool track_ranges) 
-    : alloc_tree(new AllocTree(nullptr, track_ranges))
-{ }
+AllocTracker::AllocTracker(bool record_snapshots, bool track_ranges) 
+    : m_record_snapshots(record_snapshots),
+      m_track_ranges(track_ranges),
+      alloc_tree(new AllocTree(nullptr))
+{ 
+}
+
+AllocTracker::~AllocTracker() 
+{
+    // TODO: delete all allocations
+}
+
+void AllocTracker::set_record_snapshots(bool record_snapshots) {
+    m_record_snapshots = record_snapshots;
+}
 
 void AllocTracker::set_track_ranges(bool track_ranges) {
     m_track_ranges = track_ranges;
@@ -410,6 +438,8 @@ void AllocTracker::set_track_ranges(bool track_ranges) {
 uint64_t AllocTracker::get_active_bytes() {
     return alloc_tree->m_active_bytes;
 }
+
+std::atomic<uint64_t> allocation_id(0);
 
 void 
 AllocTracker::add_allocation(const std::string &label,
@@ -422,10 +452,10 @@ AllocTracker::add_allocation(const std::string &label,
                              bool track_range,
                              bool count_same_sized_allocs) {
     // Create allocation and update tracking info
-    Allocation *a = new Allocation(label, addr, elem_size, dimensions, num_dimensions);
+    Allocation *a = new Allocation(allocation_id++, label, addr, elem_size, dimensions, num_dimensions);
     AllocTree::AllocNode *newNode = alloc_tree->insert(a, track_range && m_track_ranges);
 
-    if (!record_snapshot)
+    if (!m_record_snapshots || !record_snapshot)
         return;
 
     Caliper c = Caliper();
@@ -436,7 +466,8 @@ AllocTracker::add_allocation(const std::string &label,
         cali_alloc_elem_size_attr_id,
         cali_alloc_num_elems_attr_id,
         cali_alloc_total_size_attr_id,
-        cali_alloc_same_size_count_attr_id
+        cali_alloc_same_size_count_attr_id,
+        cali_alloc_label_attr_id
     };
     
     Variant data[] = {
@@ -444,15 +475,13 @@ AllocTracker::add_allocation(const std::string &label,
         Variant(cali_make_variant_from_uint(a->m_elem_size)),
         Variant(cali_make_variant_from_uint(a->m_num_elems)),
         Variant(cali_make_variant_from_uint(a->m_bytes)),
-        Variant(cali_make_variant_from_uint(alloc_tree->count_for_size(a->m_bytes)))
+        Variant(cali_make_variant_from_uint(alloc_tree->count_for_size(a->m_bytes))),
+        Variant(cali_make_variant_from_uint(a->m_uid))
     };
 
-    Node *string_nodes[] = {
-        c.make_tree_entry(alloc_label_attr, Variant(CALI_TYPE_STRING, a->m_label.data(), a->m_label.size())),
-        c.make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, fn_name.data(), fn_name.size()))
-    };
+    // TODO: When string type are available, add string labels here
 
-    SnapshotRecord trigger_info(2, string_nodes, 5, attrs, data);
+    SnapshotRecord trigger_info(0, nullptr, 6, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 }
 
@@ -461,7 +490,7 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
                                            bool record_snapshot) {
     Allocation removed = alloc_tree->remove(address);
 
-    if (!record_snapshot || !removed.isValid())
+    if (!m_record_snapshots || !record_snapshot || !removed.isValid())
         return removed;
 
     Caliper c = Caliper();
@@ -471,7 +500,8 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
         cali_alloc_elem_size_attr_id,
         cali_alloc_num_elems_attr_id,
         cali_alloc_total_size_attr_id,
-        cali_alloc_same_size_count_attr_id
+        cali_alloc_same_size_count_attr_id,
+        cali_alloc_uid_attr_id
     };
     
     Variant data[] = {
@@ -479,15 +509,13 @@ Allocation AllocTracker::remove_allocation(uint64_t address,
         Variant(cali_make_variant_from_uint(removed.m_elem_size)),
         Variant(cali_make_variant_from_uint(removed.m_num_elems)),
         Variant(cali_make_variant_from_uint(removed.m_bytes)),
-        Variant(cali_make_variant_from_uint(alloc_tree->count_for_size(removed.m_bytes)))
-    };
-    
-    Node *string_nodes[] = {
-        c.make_tree_entry(alloc_label_attr, Variant(CALI_TYPE_STRING, removed.m_label.data(), removed.m_label.size())),
-        c.make_tree_entry(alloc_fn_attr, Variant(CALI_TYPE_STRING, fn_name.data(), fn_name.size()))
+        Variant(cali_make_variant_from_uint(alloc_tree->count_for_size(removed.m_bytes))),
+        Variant(cali_make_variant_from_uint(removed.m_uid))
     };
 
-    SnapshotRecord trigger_info(2, string_nodes, 5, attrs, data);
+    // TODO: When string type are available, add string labels here
+
+    SnapshotRecord trigger_info(0, nullptr, 6, attrs, data);
     c.push_snapshot(CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 
     return removed;

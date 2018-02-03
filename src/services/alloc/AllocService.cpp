@@ -33,297 +33,405 @@
 ///\file  AllocService.cpp
 ///\brief Service for hooking memory allocation calls
 
+#include "SplayTree.hpp"
+
 #include "caliper/CaliperService.h"
 
-#include "caliper/DataTracker.h"
-#include "caliper/AllocTracker.h"
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
 
 #include <atomic>
 #include <cstring>
 #include <mutex>
+#include <numeric>
 
-#include <gotcha/gotcha.h>
 
 using namespace cali;
-
-namespace
-{
-    thread_local std::mutex thread_mutex;
-    bool record_system_allocs { false };
-    bool track_ranges { true };
-    bool track_system_alloc_ranges { false };
-    bool record_active_mem { true };
-    bool record_active_mem_by_size { false };
-    bool count_allocs_by_size { false };
-
-    std::atomic<unsigned long> alloc_count(0);
-
-    ConfigSet config;
-
-    const ConfigSet::Entry s_configdata[] = {
-            { "record_system_allocs", CALI_TYPE_BOOL, "false",
-              "Record allocations made by malloc/calloc/realloc.",
-              "Record allocations made by malloc/calloc/realloc."
-            },
-            { "track_system_alloc_ranges", CALI_TYPE_BOOL, "false",
-              "Track allocations ranges made by malloc/calloc/realloc.",
-              "Track allocations ranges made by malloc/calloc/realloc."
-            },
-            { "track_ranges", CALI_TYPE_BOOL, "true",
-              "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES).",
-              "Whether to track active memory ranges (not including system allocations, unless used with CALI_ALLOC_TRACK_SYSTEM_ALLOC_RANGES). If enabled, will resolve addresses to their containing allocations."
-            },
-            { "record_active_mem", CALI_TYPE_BOOL, "true",
-              "Record the active allocated memory at each snapshot.",
-              "Record the active allocated memory at each snapshot."
-            },
-            { "count_allocs_by_size", CALI_TYPE_BOOL, "false",
-              "Count the number of active allocations of the same size as the one being recorded.",
-              "Count the number of active allocations of the same size as the one being recorded. Recorded whenever an allocation snapshot is taken."
-            },
-            ConfigSet::Terminator
-    };
-
-    struct alloc_attrs {
-        Attribute memoryaddress_attr;
-        Attribute alloc_label_attr;
-        Attribute alloc_index_attr;
-    };
-
-    std::vector<alloc_attrs> memoryaddress_attrs;
-
-    Attribute class_memoryaddress_attr = Attribute::invalid;
-
-    Attribute active_mem_attr = Attribute::invalid;
-
-#define NUM_TRACKED_ALLOC_ATTRS 2
-
-    void* (*orig_malloc)(size_t size) = nullptr;
-    void* (*orig_calloc)(size_t num, size_t size) = nullptr;
-    void* (*orig_realloc)(void* ptr, size_t size) = nullptr;
-    void  (*orig_free)(void* ptr) = nullptr;
-
-    void* cali_malloc_wrapper(size_t size);
-    void* cali_calloc_wrapper(size_t num, size_t size);
-    void* cali_realloc_wrapper(void *ptr, size_t size);
-    void cali_free_wrapper(void *ptr);
-
-    const char *malloc_str = "malloc";
-    const char *calloc_str = "calloc";
-    const char *realloc_str = "realloc";
-    const char *realloc_free_str = "realloc(free)";
-    const char *realloc_alloc_str = "realloc(alloc)";
-    const char *free_str = "free";
-
-    struct gotcha_binding_t alloc_bindings[] = {
-            { malloc_str,   (void*) cali_malloc_wrapper,    &orig_malloc },
-            { calloc_str,   (void*) cali_calloc_wrapper,    &orig_calloc },
-            { realloc_str,  (void*) cali_realloc_wrapper,   &orig_realloc },
-            { free_str,     (void*) cali_free_wrapper,      &orig_free }
-    };
-
-    void* cali_malloc_wrapper(size_t size)
-    {
-        void *ret = (*orig_malloc)(size);
-
-        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
-        if(thread_lock.owns_lock()) {
-
-            Caliper c = Caliper::sigsafe_instance();
-
-            if (c) {
-                size_t dims[] = {size};
-                DataTracker::g_alloc_tracker.add_allocation(std::to_string(alloc_count++), 
-                        (uint64_t)ret, (size_t)1, dims, (size_t)1, malloc_str, 
-                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
-            }
-        }
-
-        return ret;
-    }
-
-    void* cali_calloc_wrapper(size_t num, size_t size)
-    {
-        void *ret = (*orig_calloc)(num, size);
-
-        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
-        if(thread_lock.owns_lock()) {
-
-            Caliper c = Caliper::sigsafe_instance();
-
-            if (c) {
-                size_t dims[] = {num};
-                DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count++), (uint64_t)ret, size, dims, 1, calloc_str, 
-                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
-            }
-        }
-
-        return ret;
-    }
-
-    void* cali_realloc_wrapper(void *ptr, size_t size)
-    {
-        void *ret = (*orig_realloc)(ptr, size);
-
-        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
-        if(thread_lock.owns_lock()) {
-
-            Caliper c = Caliper::sigsafe_instance();
-
-            if (c) {
-                DataTracker::Allocation removed = 
-                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, realloc_free_str, record_system_allocs);
-
-                size_t dims[] = {size};
-                DataTracker::g_alloc_tracker.add_allocation(
-                        std::to_string(alloc_count++), (uint64_t)ret, (size_t)1, dims, 1, realloc_alloc_str, 
-                        record_system_allocs, track_system_alloc_ranges, count_allocs_by_size);
-            }
-        }
-
-        return ret;
-    }
-
-    void cali_free_wrapper(void *ptr)
-    {
-        (*orig_free)(ptr);
-
-        std::unique_lock<std::mutex> thread_lock(thread_mutex, std::try_to_lock);
-        if(thread_lock.owns_lock()) {
-
-            Caliper c = Caliper::sigsafe_instance();
-
-            if (c) {
-                cali::DataTracker::Allocation removed = 
-                    DataTracker::g_alloc_tracker.remove_allocation((uint64_t)ptr, free_str, record_system_allocs);
-            }
-        }
-    }
-
-    void init_alloc_hooks(Caliper *c) {
-        gotcha_wrap(alloc_bindings, 
-                    sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t), 
-                    "Caliper AllocService Wrap");
-    }
-
-    static void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
-
-        // Record currently active amount of allocated memory
-        if (record_active_mem) {
-            Attribute attr[1] = {
-                active_mem_attr
-            };
-            Variant data[1] = {
-                Variant(cali::DataTracker::g_alloc_tracker.get_active_bytes()),
-            };
-
-            c->make_entrylist(1, attr, data, *snapshot);
-        }
-
-        // Attribute any memory addresses with their allocations
-        for (auto attrs : memoryaddress_attrs) {
-
-            Entry e = snapshot->get(attrs.memoryaddress_attr);
-
-            if (!e.is_empty()) {
-
-                uint64_t memory_address = e.value().to_uint();
-                cali::DataTracker::Allocation *alloc = DataTracker::g_alloc_tracker.find_allocation_containing(memory_address);
-
-                if (alloc) {
-                    const size_t index = alloc->index_1D(memory_address);
-
-                    // TODO: for n-dimensional indices:
-                    // TODO:    support tuples? or custom ways to print CALI_TYPE_USR data?
-                    //const size_t *index = alloc->index_ND(memory_address);
-
-                    Attribute attr[NUM_TRACKED_ALLOC_ATTRS] = {
-                        attrs.alloc_label_attr,
-                        attrs.alloc_index_attr
-                    };
-                    Variant data[NUM_TRACKED_ALLOC_ATTRS] = {
-                        Variant(CALI_TYPE_STRING, alloc->m_label.data(), alloc->m_label.size()),
-                        Variant(index),
-                    };
-
-                    c->make_entrylist(NUM_TRACKED_ALLOC_ATTRS, attr, data, *snapshot);
-                }
-            }
-        }
-    }
-
-    static void create_attr_cb(Caliper* c, const Attribute& attr) {
-        if (class_memoryaddress_attr == Attribute::invalid) // not initialized yet; skip
-            return;
-
-        if (attr.get(class_memoryaddress_attr) == Variant(true)) {
-            Log(2).stream() << "alloc: Creating alloc label attributes for attribute " << attr.name() << std::endl;
-
-            struct alloc_attrs attrs = {
-                attr,
-                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
-                c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
-            };
-
-            std::lock_guard<std::mutex> thread_lock(thread_mutex);
-            memoryaddress_attrs.push_back(attrs);            
-        }
-    }
-
-    static void post_init_cb(Caliper *c) {
-
-        class_memoryaddress_attr = c->get_attribute("class.memoryaddress");
-
-        active_mem_attr  = c->create_attribute("alloc.active_memory", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
-
-        std::vector<Attribute> memory_address_attrs = c->find_attributes_with(class_memoryaddress_attr);
-
-        for (auto attr : memory_address_attrs) {
-            struct alloc_attrs attrs = {
-                attr,
-                c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING, CALI_ATTR_DEFAULT),
-                c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT, CALI_ATTR_DEFAULT)
-            };
-            memoryaddress_attrs.push_back(attrs);
-        }
-
-    }
-
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        thread_mutex.lock();
-    }
-
-    void allocservice_initialize(Caliper* c)
-    {
-        config = RuntimeConfig::init("alloc", s_configdata);
-
-        record_system_allocs = config.get("record_system_allocs").to_bool();
-        track_system_alloc_ranges = config.get("track_system_alloc_ranges").to_bool();
-        track_ranges = config.get("track_ranges").to_bool();
-        record_active_mem = config.get("record_active_mem").to_bool();
-        count_allocs_by_size = config.get("count_allocs_by_size").to_bool();
-
-        cali::DataTracker::g_alloc_tracker.set_track_ranges(track_ranges);
-
-        c->events().create_attr_evt.connect(create_attr_cb);
-        c->events().post_init_evt.connect(post_init_cb);
-        c->events().snapshot.connect(snapshot_cb);
-        c->events().pre_flush_evt.connect(pre_flush_cb);
-
-        init_alloc_hooks(c);
-
-        Log(1).stream() << "Registered alloc service" << std::endl;
-    }
-
-} // namespace [anonymous]
+using namespace util;
 
 namespace cali
 {
-    CaliperService alloc_service { "alloc", ::allocservice_initialize };
+
+extern Attribute class_memoryaddress_attr;
+
+}
+
+namespace
+{
+
+bool g_resolve_addresses        { false };
+bool g_track_allocations        { true  };
+bool g_record_active_mem        { false };
+
+// DataTracker attributes
+Attribute mem_alloc_attr        { Attribute::invalid };
+Attribute mem_free_attr         { Attribute::invalid };
+Attribute alloc_uid_attr        { Attribute::invalid };
+Attribute alloc_addr_attr       { Attribute::invalid };
+Attribute alloc_elem_size_attr  { Attribute::invalid };
+Attribute alloc_num_elems_attr  { Attribute::invalid };
+Attribute alloc_total_size_attr { Attribute::invalid };
+Attribute active_mem_attr       { Attribute::invalid };
+
+// Derived attributes for class.memoryaddress attributes 
+struct alloc_attrs {
+    Attribute memoryaddress_attr;
+    Attribute alloc_label_attr;
+    Attribute alloc_uid_attr;
+    Attribute alloc_index_attr;
+};
+
+struct AllocInfo {
+    uint64_t                 start_addr;
+    uint64_t                 total_size;
+    Variant                  v_uid;
+    Variant                  v_size;
+    size_t                   elem_size;
+    size_t                   num_elems;
+    std::vector<cali::Node*> memattr_label_nodes;
+    std::vector<size_t>      dimensions;
+    std::string              label;
+    
+    size_t index_1D(uint64_t addr) const {
+        return (addr - start_addr) / elem_size;
+    }
+};
+
+/// Three-way predicate to tell if given address is within AllocInfo's address range, less, or higher
+class ContainsAddress {
+    uint64_t address;
+
+public:
+
+    ContainsAddress(uint64_t a)
+        : address(a) { }
+
+    inline int operator ()(const AllocInfo& info) const {
+        if (address < info.start_addr)
+            return -1;
+        else if (address >= info.start_addr && address < info.start_addr + info.total_size)
+            return 0;
+        else 
+            return +1;
+    }
+};
+
+/// Three-way predicate to tell if given address is AllocInfo's start address, less, or higher
+class HasStartAddress {
+    uint64_t address;
+
+public:
+
+    HasStartAddress(uint64_t a)
+        : address(a) { }
+
+    inline int operator ()(const AllocInfo& info) const {
+        if (address < info.start_addr)
+            return -1;
+        else if (address == info.start_addr)
+            return 0;
+        else 
+            return +1;
+    }
+};
+
+struct AllocInfoCmp {
+    int operator ()(const AllocInfo& lhs, const AllocInfo& rhs) const {
+        if (lhs.start_addr < rhs.start_addr)
+            return -1;
+        else if (lhs.start_addr == rhs.start_addr)
+            return 0;
+        return 1;
+    }
+};
+
+std::atomic<unsigned long> g_alloc_uid       { 0 };
+std::vector<alloc_attrs>   g_memoryaddress_attrs;
+
+cali::Node                 g_alloc_root_node { CALI_INV_ID, CALI_INV_ID, Variant() };
+
+util::SplayTree<AllocInfo, AllocInfoCmp> g_tree;
+std::mutex                 g_tree_lock;
+
+uint64_t                   g_active_mem      { 0 };
+
+unsigned long              g_current_tracked { 0 };
+unsigned long              g_max_tracked     { 0 };
+unsigned long              g_total_tracked   { 0 };
+unsigned                   g_failed_untrack  { 0 };
+
+
+const ConfigSet::Entry s_configdata[] = {
+    { "resolve_addresses", CALI_TYPE_BOOL, "false",
+      "Whether to resolve memory addresses in snapshots.",
+      "Whether to resolve memory addresses in snapshots.\n"
+    },
+    { "track_allocations", CALI_TYPE_BOOL, "true",
+      "Whether to record snapshots for annotated memory allocations.",
+      "Whether to record snapshots for annotated memory allocations.\n"
+    },
+    { "record_active_mem", CALI_TYPE_BOOL, "false",
+      "Record the active allocated memory at each snapshot.",
+      "Record the active allocated memory at each snapshot."
+    },
+    
+    ConfigSet::Terminator
+};
+
+#define NUM_TRACKED_ALLOC_ATTRS 2
+
+
+void track_mem_snapshot(Caliper* c, 
+                        const Attribute& alloc_or_free_attr, 
+                        const Variant&   v_label, 
+                        const Variant&   v_size, 
+                        const Variant&   v_uid)
+{
+    Attribute attr[] = {
+        alloc_or_free_attr,
+        alloc_total_size_attr,
+        alloc_uid_attr
+    };
+    Variant   data[] = {
+        v_label,
+        v_size,
+        v_uid
+    };
+
+    SnapshotRecord::FixedSnapshotRecord<3> snapshot_data;
+    SnapshotRecord trigger_info(snapshot_data);
+
+    c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
+    c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
+}
+
+void track_mem_cb(Caliper* c, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims)
+{
+    size_t total_size =
+        std::accumulate(dims, dims+ndims, elem_size, std::multiplies<size_t>());
+
+    AllocInfo info;
+
+    info.start_addr = reinterpret_cast<uint64_t>(ptr);
+    info.total_size = total_size;
+    info.v_uid      = Variant(cali_make_variant_from_uint(++g_alloc_uid));
+    info.v_size     = Variant(cali_make_variant_from_uint(total_size));
+    info.elem_size  = elem_size;
+    info.num_elems  = total_size / elem_size;
+
+    info.memattr_label_nodes.resize(g_memoryaddress_attrs.size());
+    info.dimensions.assign(dims, dims+ndims);
+
+    info.label      = label;
+
+    Variant v_label(CALI_TYPE_STRING, label, strlen(label));
+        
+    // make label nodes for each memory address attribute
+    for (std::vector<cali::Node*>::size_type i = 0; i < g_memoryaddress_attrs.size(); ++i)
+        info.memattr_label_nodes[i] =
+            c->make_tree_entry(g_memoryaddress_attrs[i].alloc_label_attr, v_label, &g_alloc_root_node);
+
+    {
+        std::lock_guard<std::mutex>
+            g(g_tree_lock);
+        
+        g_tree.insert(info);
+        
+        g_max_tracked  = std::max(++g_current_tracked, g_max_tracked);
+        g_active_mem  += total_size;
+        ++g_total_tracked;
+    }
+
+    if (g_track_allocations)
+        track_mem_snapshot(c, mem_alloc_attr, v_label, info.v_size, info.v_uid);
+}
+
+void untrack_mem_cb(Caliper* c, const void* ptr)
+{    
+    std::lock_guard<std::mutex>
+        g(g_tree_lock);
+    
+    auto tree_node = g_tree.find(HasStartAddress(reinterpret_cast<uint64_t>(ptr)));
+    
+    if (tree_node) {
+        size_t size = (*tree_node).total_size;
+
+        if (g_track_allocations)
+            track_mem_snapshot(c, mem_free_attr,
+                               Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),
+                               (*tree_node).v_size,
+                               (*tree_node).v_uid);
+
+        g_active_mem -= (*tree_node).total_size;
+        g_tree.remove(tree_node);
+        
+        --g_current_tracked;
+    } else {
+        ++g_failed_untrack;
+    }
+}
+
+void resolve_addresses(Caliper* c, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
+{
+    for (std::vector<alloc_attrs>::size_type i = 0; i < g_memoryaddress_attrs.size(); ++i) {
+        Entry e = trigger_info->get(g_memoryaddress_attrs[i].memoryaddress_attr);
+
+        if (e.is_empty())
+            continue;
+
+        uint64_t addr = e.value().to_uint();
+
+        cali_id_t   attr[2] = {
+            g_memoryaddress_attrs[i].alloc_uid_attr.id(),
+            g_memoryaddress_attrs[i].alloc_index_attr.id()
+        };
+        Variant     data[2];
+        cali::Node* label_node = nullptr;
+
+        {
+            std::lock_guard<std::mutex>
+                g(g_tree_lock);
+
+            auto tree_node = g_tree.find(ContainsAddress(addr));
+
+            if (!tree_node)
+                continue;
+
+            data[0] = (*tree_node).v_uid;
+            data[1] = cali_make_variant_from_uint((*tree_node).index_1D(addr));
+
+            if (i < (*tree_node).memattr_label_nodes.size())
+                label_node = (*tree_node).memattr_label_nodes[i];
+        }
+
+        snapshot->append(2, attr, data);
+
+        if (label_node)
+            snapshot->append(label_node);
+    }
+}
+
+void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot)
+{
+    // Record currently active amount of allocated memory
+    if (g_record_active_mem)
+        snapshot->append(active_mem_attr.id(), Variant(cali_make_variant_from_uint(g_active_mem)));
+
+    if (g_resolve_addresses)
+        resolve_addresses(c, trigger_info, snapshot);
+}
+
+void make_address_attributes(Caliper* c, const Attribute& attr)
+{
+    struct alloc_attrs attrs = {
+        attr,
+        c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING,
+                            CALI_ATTR_DEFAULT),
+        c->create_attribute("alloc.uid#"   + attr.name(), CALI_TYPE_UINT,
+                            CALI_ATTR_ASVALUE),
+        c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT,
+                            CALI_ATTR_ASVALUE)
+    };
+
+    g_memoryaddress_attrs.push_back(attrs);    
+}
+
+void create_attr_cb(Caliper* c, const Attribute& attr)
+{
+    // Note: this isn't threadsafe!
+    if (attr.get(class_memoryaddress_attr).to_bool() == true)
+        make_address_attributes(c, attr);
+}
+
+void post_init_cb(Caliper *c)
+{
+    if (!g_resolve_addresses)
+        return;
+
+    std::vector<Attribute> address_attrs =
+        c->find_attributes_with(c->get_attribute("class.memoryaddress"));
+
+    for (auto attr : address_attrs)
+        make_address_attributes(c, attr);
+
+    c->events().create_attr_evt.connect(create_attr_cb);
+}
+
+void finish_cb(Caliper* c)
+{
+    Log(1).stream() << "alloc: "
+                    << g_total_tracked  << " memory allocations tracked (max "
+                    << g_max_tracked    << " simultaneous), "
+                    << g_failed_untrack << " untrack lookups failed."
+                    << std::endl;
+}
+
+void allocservice_initialize(Caliper* c)
+{
+    struct attr_info_t {
+        const char*    name;
+        cali_attr_type type;
+        int            prop;
+        Attribute*     attr;
+    } attr_info[] = {
+        { "mem.alloc",        CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+          &mem_alloc_attr
+        },
+        { "mem.free" ,        CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+          &mem_free_attr
+        },
+        { "mem.active" ,      CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+          &active_mem_attr
+        },
+        { "alloc.uid",        CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+          &alloc_uid_attr
+        },
+        { "alloc.address",    CALI_TYPE_ADDR,   CALI_ATTR_ASVALUE,
+          &alloc_addr_attr
+        },
+        { "alloc.elem_size",  CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+          &alloc_elem_size_attr
+        },
+        { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+          &alloc_num_elems_attr
+        },
+        { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+          &alloc_total_size_attr
+        },
+        { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, nullptr }
+    };
+        
+    for (attr_info_t *p = attr_info; p->name; ++p)
+        *(p->attr) = c->create_attribute(p->name, p->type, p->prop);
+    
+    ConfigSet config = RuntimeConfig::init("alloc", s_configdata);
+    
+    g_resolve_addresses = config.get("resolve_addresses").to_bool();
+    g_track_allocations = config.get("track_allocations").to_bool();
+    g_record_active_mem = config.get("record_active_mem").to_bool();
+
+    c->events().track_mem_evt.connect(track_mem_cb);
+    c->events().untrack_mem_evt.connect(untrack_mem_cb);
+
+    if (g_resolve_addresses || g_record_active_mem)
+        c->events().snapshot.connect(snapshot_cb);
+       
+    c->events().post_init_evt.connect(post_init_cb);
+    c->events().finish_evt.connect(finish_cb);
+
+    Log(1).stream() << "Registered alloc service" << std::endl;
+}
+
+} // namespace [anonymous]
+
+
+namespace cali
+{
+
+CaliperService alloc_service { "alloc", ::allocservice_initialize };
+
 }

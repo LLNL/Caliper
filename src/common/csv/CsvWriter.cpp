@@ -151,7 +151,7 @@ CsvWriter::~CsvWriter()
 
 size_t CsvWriter::num_written() const
 {
-    return mP->m_num_written;
+    return mP ? mP->m_num_written : 0;
 }
 
 void CsvWriter::write_snapshot(const CaliperMetadataAccessInterface& db,

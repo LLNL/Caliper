@@ -43,7 +43,7 @@ using namespace cali;
 namespace
 {
 
-const char* trigger_grp[] = { "event", "sampler", "libpfm", nullptr };
+const char* trigger_grp[] = { "event", "sampler", "libpfm", "alloc", nullptr };
 const char* buffer_grp[]  = { "aggregate", "trace", nullptr };
 const char* process_grp[] = { "aggregate", "trace", "textlog", nullptr };
 const char* online_grp[]  = { "textlog", nullptr };

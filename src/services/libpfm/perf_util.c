@@ -93,7 +93,7 @@ perf_setup_argv_events(const char **argv, perf_event_desc_t **fds, int *num_fds)
 
 		ret = pfm_get_os_event_encoding(*argv, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
 		if (ret != PFM_SUCCESS) {
-			warnx("event %s: %s", *argv, pfm_strerror(ret));
+			//warnx("event %s: %s", *argv, pfm_strerror(ret));
 			goto error;
 		}
 

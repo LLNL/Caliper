@@ -48,6 +48,7 @@ cali_id_t cali_annotation_attr_id   = CALI_INV_ID;
 
 cali_id_t cali_alloc_fn_attr_id                 = CALI_INV_ID;
 cali_id_t cali_alloc_label_attr_id              = CALI_INV_ID;
+cali_id_t cali_alloc_uid_attr_id              = CALI_INV_ID;
 cali_id_t cali_alloc_addr_attr_id               = CALI_INV_ID;
 cali_id_t cali_alloc_elem_size_attr_id          = CALI_INV_ID;
 cali_id_t cali_alloc_num_elems_attr_id          = CALI_INV_ID;
@@ -64,15 +65,6 @@ namespace cali
     Attribute loop_attr;
     Attribute statement_attr;
     Attribute annotation_attr;
-
-    // DataTracker attributes
-    Attribute alloc_fn_attr;
-    Attribute alloc_label_attr;
-    Attribute alloc_addr_attr;
-    Attribute alloc_elem_size_attr;
-    Attribute alloc_num_elems_attr;
-    Attribute alloc_total_size_attr;
-    Attribute alloc_same_size_count_attr;
 
     void init_attribute_classes(Caliper* c) {
         struct attr_info_t {
@@ -122,27 +114,6 @@ namespace cali
             },
             { "annotation", CALI_TYPE_STRING, CALI_ATTR_NESTED,
               &annotation_attr, &cali_annotation_attr_id
-            },
-            { "alloc.fn", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &alloc_fn_attr, &cali_alloc_fn_attr_id
-            },
-            { "alloc.label", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-              &alloc_label_attr, &cali_alloc_label_attr_id
-            },
-            { "alloc.address", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
-              &alloc_addr_attr, &cali_alloc_addr_attr_id
-            },
-            { "alloc.elem_size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
-              &alloc_elem_size_attr, &cali_alloc_elem_size_attr_id
-            },
-            { "alloc.num_elems", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
-              &alloc_num_elems_attr, &cali_alloc_num_elems_attr_id
-            },
-            { "alloc.total_size", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
-              &alloc_total_size_attr, &cali_alloc_total_size_attr_id
-            },
-            { "alloc.same_sized_allocs", CALI_TYPE_UINT, CALI_ATTR_DEFAULT | CALI_ATTR_ASVALUE,
-              &alloc_same_size_count_attr, &cali_alloc_same_size_count_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };

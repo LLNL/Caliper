@@ -34,6 +34,7 @@
 
 #include "caliper/reader/Expand.h"
 #include "caliper/reader/JsonFormatter.h"
+#include "caliper/reader/JsonSplitFormatter.h"
 #include "caliper/reader/TableFormatter.h"
 #include "caliper/reader/TreeFormatter.h"
 #include "caliper/reader/UserFormatter.h"
@@ -58,16 +59,18 @@ enum FormatterID {
     Expand      = 2,
     Format      = 3,
     Table       = 4,
-    Tree        = 5
+    Tree        = 5,
+    JsonSplit   = 6
 };
 
 const QuerySpec::FunctionSignature formatters[] = {
-    { FormatterID::Csv,    "csv",    0, 0, nullptr },
-    { FormatterID::Json,   "json",   0, 3, json_kernel_args },
-    { FormatterID::Expand, "expand", 0, 0, nullptr },
-    { FormatterID::Format, "format", 1, 2, format_kernel_args },
-    { FormatterID::Table,  "table",  0, 0, nullptr },
-    { FormatterID::Tree,   "tree",   0, 1, tree_kernel_args   },
+    { FormatterID::Csv,       "csv",        0, 0, nullptr },
+    { FormatterID::Json,      "json",       0, 3, json_kernel_args },
+    { FormatterID::Expand,    "expand",     0, 0, nullptr },
+    { FormatterID::Format,    "format",     1, 2, format_kernel_args },
+    { FormatterID::Table,     "table",      0, 0, nullptr },
+    { FormatterID::Tree,      "tree",       0, 1, tree_kernel_args   },
+    { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
     
     QuerySpec::FunctionSignatureTerminator
 };
@@ -116,6 +119,9 @@ struct FormatProcessor::FormatProcessorImpl
                 break;
             case FormatterID::Tree:
                 m_formatter = new TreeFormatter(spec);
+                break;
+            case FormatterID::JsonSplit:
+                m_formatter = new JsonSplitFormatter(m_stream, spec);
                 break;
             }
         }

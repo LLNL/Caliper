@@ -551,3 +551,119 @@ TEST(AggregatorTest, StatisticsKernel) {
     EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 66);
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
 }
+
+TEST(AggregatorTest, PercentTotalKernel) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+     // create some context attributes
+    
+    Attribute ctx =
+        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+    Attribute val_attr =
+        db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    // make some nodes
+    
+    const struct NodeInfo {
+        cali_id_t node_id;
+        cali_id_t attr_id;
+        cali_id_t prnt_id;
+        Variant   data;
+    } test_nodes[] = {
+        { 100, ctx.id(), CALI_INV_ID, Variant(-1) },
+        { 101, ctx.id(), 100,         Variant(42) },
+        { 102, ctx.id(), 100,         Variant(24) }
+    };
+
+    const Node* node = nullptr;
+
+    for ( const NodeInfo& nI : test_nodes )
+        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+
+    //
+    // --- Make spec with default key and statistics kernel for "val"
+    //
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+    
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("statistics",    "val"));
+    spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
+
+    // perform recursive aggregation from two aggregators
+
+    Aggregator a(spec), b(spec);
+
+    Variant    v_ints[4] = { Variant(4), Variant(24), Variant(16), Variant(36) };
+    cali_id_t  nodea_id = 101;
+    cali_id_t  nodeb_id = 102;
+    cali_id_t  val_id  = val_attr.id();
+
+    a.add(db, db.merge_snapshot(1, &nodea_id, 1, &val_id, &v_ints[0], idmap));
+    a.add(db, db.merge_snapshot(1, &nodeb_id, 1, &val_id, &v_ints[1], idmap));
+
+    b.add(db, db.merge_snapshot(1, &nodea_id, 1, &val_id, &v_ints[2], idmap));
+    b.add(db, db.merge_snapshot(1, &nodeb_id, 1, &val_id, &v_ints[3], idmap));
+
+    // merge b into a
+    b.flush(db, a);
+
+    Attribute attr_min = db.get_attribute("min#val");
+    Attribute attr_max = db.get_attribute("max#val");
+    Attribute attr_sum = db.get_attribute("sum#val");
+    Attribute attr_avg = db.get_attribute("avg#val");
+    Attribute attr_pct = db.get_attribute("percent_total#val");
+
+    ASSERT_NE(attr_min, Attribute::invalid);
+    ASSERT_NE(attr_max, Attribute::invalid);
+    ASSERT_NE(attr_sum, Attribute::invalid);
+    ASSERT_NE(attr_avg, Attribute::invalid);
+    ASSERT_NE(attr_pct, Attribute::invalid);
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    // check results
+    
+    EXPECT_EQ(resdb.size(), 2); // two entries
+
+    auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
+            for (const Entry& e : list)
+                if (e.value(ctx).to_int() == 42)
+                    return true;
+            return false;
+        });
+
+    ASSERT_NE(it, resdb.end());
+
+    auto dict  = make_dict_from_entrylist(*it);
+
+    EXPECT_EQ(dict[attr_min.id()].value().to_int(),  4);
+    EXPECT_EQ(dict[attr_max.id()].value().to_int(), 16);
+    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 20);
+    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 10.0);
+    EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 25.0);
+
+    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
+            for (const Entry& e : list)
+                if (e.value(ctx).to_int() == 24)
+                    return true;
+            return false;
+        });
+
+    ASSERT_NE(it, resdb.end());
+
+    dict  = make_dict_from_entrylist(*it);
+
+    EXPECT_EQ(dict[attr_min.id()].value().to_int(), 24);
+    EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
+    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 60);
+    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 30.0);
+    EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 75.0);
+}

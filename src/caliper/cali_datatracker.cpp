@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -33,54 +33,66 @@
 // Caliper data tracking C interface implementation
 
 #include "caliper/cali_datatracker.h"
+#include "caliper/Caliper.h"
 
-#include "caliper/DataTracker.h"
+#include <cstdlib>
+#include <numeric>
 
 using namespace cali;
+
 
 void*
 cali_datatracker_allocate(const char *label,
                           const size_t size) 
 {
-    return cali::DataTracker::Allocate(label, size);
+    void* ptr = malloc(size);
+    cali_datatracker_track(ptr, label, size);
+
+    return ptr;
 }
 
 void
 cali_datatracker_free(void *ptr) 
 {
-    cali::DataTracker::Free(ptr);
+    cali_datatracker_untrack(ptr);
+    free(ptr);
 }
 
 void 
-cali_datatracker_track(void *ptr, 
+cali_datatracker_track(const void *ptr, 
                        const char *label,
                        size_t size) 
 {
-    cali::DataTracker::TrackAllocation(ptr, label, size);
+    Caliper::instance().memory_region_begin(ptr, label, 1, 1, &size);
 }
 
 void 
-cali_datatracker_track_dimensional(void *ptr, 
-                                   const char *label,
-                                   size_t elem_size,
-                                   const size_t *dimensions,
-                                   size_t num_dimensions) 
+cali_datatracker_track_dimensional(const void      *ptr, 
+                                   const char      *label,
+                                   size_t           elem_size,
+                                   const size_t    *dimensions,
+                                   size_t           ndims) 
 {
-    std::vector<size_t> d(&dimensions[0], &dimensions[0]+num_dimensions);
-    cali::DataTracker::TrackAllocation(ptr, label, elem_size, d);
+    Caliper::instance().memory_region_begin(ptr, label, elem_size, ndims, dimensions);
 }
 
 void*
-cali_datatracker_allocate_dimensional(const char *label,
-                                      size_t elem_size, 
+cali_datatracker_allocate_dimensional(const char   *label,
+                                      size_t        elem_size, 
                                       const size_t *dimensions, 
-                                      size_t num_dimensions)
+                                      size_t        ndims)
 {
-    return cali::DataTracker::Allocate(label, elem_size, std::vector<size_t>(dimensions, dimensions+num_dimensions));
+    void* ptr =
+        malloc( std::accumulate(dimensions, dimensions+ndims, elem_size,
+                                std::multiplies<size_t>()) );
+
+    cali_datatracker_track_dimensional(ptr, label, elem_size, dimensions, ndims);
+
+    return ptr;
 }
 
 void 
-cali_datatracker_untrack(void *ptr) 
+cali_datatracker_untrack(const void *ptr) 
 {
-    cali::DataTracker::UntrackAllocation(ptr);
+    Caliper::instance().memory_region_end(ptr);
 }

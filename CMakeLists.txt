@@ -47,6 +47,8 @@ option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
 option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
+option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
+
 if (BUILD_TESTING)
   enable_testing()
 endif()
