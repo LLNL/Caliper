@@ -180,31 +180,41 @@ Alloc
 The `alloc` service adds data tracking information to Caliper.
 It records snapshots of allocation calls with their arguments and
 return values, and resolves the containing allocations of any memory
-addresses produced by other Caliper services, such as the `Libpfm` 
+addresses produced by other Caliper services, such as the `libpfm` 
 service.
 By default, it will only use data tracking information provided via
 the Caliper data tracking API, but in conjunction with the
-``sysalloc`` service it records and/or tracks any allocations by
+`sysalloc` service it records and/or tracks any allocations by
 hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when 
 recording/tracking frequent allocations/deallocations.
 
 .. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
 
-    Record snapshots when tracking or untracking marked memory regions.
+    Records snapshots when memory regions are being tracked or
+    untracked, storing the given label in the `mem.alloc` or
+    `mem.free` attribute, respectively. The snapshots also contain a
+    unique ID for the allocation in the `alloc.uid` attribute, and the
+    size of the allocated region in the `alloc.total_size` attribute.
 
     Default: true
 
 .. envvar:: CALI_ALLOC_RESOLVE_ADDRESSES
 
-    When set, snapshots with memory addresses produced by other services 
-    (e.g., Libpfm)  will be appended with the allocations that contain them.
+    When set, snapshots with memory addresses produced by other
+    services (e.g., Libpfm) will be appended with the allocations that
+    contain them. The snapshots then contain
+    `alloc.label#address_attribute`, `alloc.uid#address_attribute`,
+    and `alloc.index#address_attribute` attributes with the memory
+    region label, allocation ID, and array index for the memory
+    address attributes found in the snapshot.
 
     Default: false
 
 .. envvar:: CALI_ALLOC_RECORD_ACTIVE_MEM
 
-    Record the amount of active allocated memory, in bytes, at each snapshot.
+    Records the amount of active allocated memory, in bytes, at each
+    snapshot, in the `mem.active` attribute.
 
     Default: false
 
@@ -472,11 +482,11 @@ Haswell):
 
 .. code-block:: sh
 
-   $ export CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-   $ export CALI_LIBPFM_PERIOD=100
-   $ export CALI_LIBPFM_PRECISE_IP=2
-   $ export CALI_LIBPFM_CONFIG1=100
-   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+   CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   CALI_LIBPFM_PERIOD=100
+   CALI_LIBPFM_PRECISE_IP=2
+   CALI_LIBPFM_CONFIG1=100
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
 
 .. _mpi-service:
 
@@ -723,7 +733,7 @@ annotations.
 
 Caliper must be initialized on each thread that should be
 sampled. This can be done explicitly via the annotation API, or via
-the :ref:`pthread <pthread-service` service for child threads.
+the :ref:`pthread <pthread-service>` service for child threads.
 
 .. envvar:: CALI_SAMPLER_FREQUENCY
 

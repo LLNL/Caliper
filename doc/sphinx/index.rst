@@ -48,6 +48,7 @@ Contents
    AnnotationAPI
    configuration
    services
+   OutputFormats
    tools
    calql
    DeveloperGuide

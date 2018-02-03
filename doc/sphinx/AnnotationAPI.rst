@@ -368,55 +368,44 @@ The C++ annotation API is implemented in the class :cpp:class:`cali::Annotation`
 .. doxygenclass:: cali::Annotation
    :project: caliper
 
-C++ data tracking API      
-................................
+Data tracking API      
+--------------------------------
 
-Caliper also supports tracking allocated data, using the `cali::DataTracker` namespace.
-Doing so provides advanced data-centric attributes, such as recording allocation events 
-and determining the containers for memory addresses provided by services like libpfm.
+Caliper also supports tracking allocated data. Doing so provides
+advanced data-centric attributes, such as recording allocation events
+and determining the containers for memory addresses provided by
+services like libpfm. To take advantage of annotated memory
+allocations, the :ref:`alloc <alloc-service>` service must be enabled
+at runtime.
 
-.. cpp:class:: cali::DataTracker
+Memory allocation annotations are similar to code region annotations,
+we can define labels for allocations using macros, which will use the
+variable name of the given pointer as label for the memory
+allocations.  We can either label 1-dimensional ranges of bytes using
+`CALI_DATATRACKER_TRACK` or multi-dimensional ranges of specified
+element sizes using `CALI_DATATRACKER_TRACK_DIMENSIONAL`.  The
+following example shows both::
 
-   Example:
+    void do_work(size_t M, size_t W, size_t N)
+    {
+        double *arrayA = (double*)malloc(N);
+        CALI_DATATRACKER_TRACK(arrayA, N);
 
-   .. code-block:: c++
-      
-       double* matC = (double*)cali::DataTracker::Allocate("C", sizeof(double), {M,N});
+        double *matA =
+             (double*)malloc(sizeof(double)*M*W);
 
-      This example allocates a 2-dimensional matrix of ``double`` sized elements and 
-      tracks it under the label "C".
+        size_t num_dimensions = 2;
+        size_t A_dims[] = {M,W};
+        CALI_DATATRACKER_TRACK_DIMENSIONAL(
+                    matA,
+                    sizeof(double),
+                    A_dims,
+                    num_dimensions);
+            ...
 
-   .. code-block:: c++
-      
-       double* matC = new double[M,N];
-
-       cali::DataTracker::TrackAllocation(matC, "C", sizeof(double), {M,N});
-
-      This example tracks an existing 2-dimensional matrix of ``double`` sized elements 
-      under the label "C".
-
-   .. cpp:function:: TrackAllocation(void* ptr, 
-                                     const std::string &label)
-
-      Track the allocation pointed to by ``ptr`` under the label ``label``.
-
-   .. cpp:function:: TrackAllocation(void* ptr,
-                                     const std::string &label,
-                                     const size_t elem_size,
-                                     const std::vector<size_t> &dimensions)
-
-      Same as above, with additional semantics for element size and dimensionality.
-
-   .. cpp:function:: Allocate(const std::string &label,
-                              const size_t size)
-
-      Allocates memory using ``malloc`` and tracks the resulting allocation.
-
-   .. cpp:function:: Allocate(const std::string &label,
-                              const size_t elem_size,
-                              const std::vector<size_t> &dimensions)
-
-      Same as above with additional semantics for element size and dimensionality.
+        CALI_DATATRACKER_FREE(arrayA);
+        CALI_DATATRACKER_FREE(matA);
+    }
 
 API Reference
 --------------------------------
