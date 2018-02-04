@@ -54,7 +54,7 @@ const char* tree_kernel_args[]   = { "path-attributes" };
 const char* json_kernel_args[]   = { "split", "pretty", "quote-all" }; 
 
 enum FormatterID {
-    Csv         = 0,
+    Cali        = 0,
     Json        = 1,
     Expand      = 2,
     Format      = 3,
@@ -64,7 +64,8 @@ enum FormatterID {
 };
 
 const QuerySpec::FunctionSignature formatters[] = {
-    { FormatterID::Csv,       "csv",        0, 0, nullptr },
+    { FormatterID::Cali,      "cali",       0, 0, nullptr },
+    { FormatterID::Cali,      "csv",        0, 0, nullptr }, // keep old "csv" name for backwards compatibility
     { FormatterID::Json,      "json",       0, 3, json_kernel_args },
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
@@ -75,13 +76,13 @@ const QuerySpec::FunctionSignature formatters[] = {
     QuerySpec::FunctionSignatureTerminator
 };
 
-class CsvFormatter : public Formatter
+class CaliFormatter : public Formatter
 {
     CsvWriter m_writer;
 
 public:
 
-    CsvFormatter(OutputStream& os)
+    CaliFormatter(OutputStream& os)
         : m_writer(CsvWriter(os))
     { }
 
@@ -99,11 +100,11 @@ struct FormatProcessor::FormatProcessorImpl
 
     void create_formatter(const QuerySpec& spec) {
         if (spec.format.opt == QuerySpec::FormatSpec::Default) {
-            m_formatter = new CsvFormatter(m_stream);
+            m_formatter = new CaliFormatter(m_stream);
         } else {
             switch (spec.format.formatter.id) {
-            case FormatterID::Csv:
-                m_formatter = new CsvFormatter(m_stream);
+            case FormatterID::Cali:
+                m_formatter = new CaliFormatter(m_stream);
                 break;
             case FormatterID::Json:
                 m_formatter = new JsonFormatter(m_stream, spec);
