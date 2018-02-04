@@ -48,9 +48,10 @@ Contents
    AnnotationAPI
    configuration
    services
+   OutputFormats
    tools
    calql
-   serviceapi
+   DeveloperGuide
 
 Getting started
 --------------------------------

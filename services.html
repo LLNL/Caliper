@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Caliper Services &mdash; Caliper 1.6.0 documentation</title>
+    <title>Caliper Services &mdash; Caliper 1.7.0-dev documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.6.0',
+        VERSION:     '1.7.0-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,8 +24,8 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
-    <link rel="next" title="Caliper Tools" href="tools.html" />
+    <link rel="top" title="Caliper 1.7.0-dev documentation" href="index.html" />
+    <link rel="next" title="Output formatting" href="OutputFormats.html" />
     <link rel="prev" title="Runtime Configuration" href="configuration.html" /> 
   </head>
   <body role="document">
@@ -36,12 +36,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="OutputFormats.html" title="Output formatting"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Runtime Configuration"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -66,7 +66,7 @@ range of usage scenarios.</p>
 <p>The following sections describe the available service modules and
 their configuration.</p>
 <div class="section" id="aggregate">
-<h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this headline">¶</a></h2>
+<span id="aggregate-service"></span><h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>aggregate</cite> service accumulates aggregation attributes (e.g., time
 durations) of snapshots with a similar <cite>key</cite>, creating a profile.</p>
 <dl class="envvar">
@@ -212,34 +212,53 @@ loop.id=B  event.end#function=foo  count=4
 </div>
 </div>
 <div class="section" id="alloc">
-<h2>Alloc<a class="headerlink" href="#alloc" title="Permalink to this headline">¶</a></h2>
+<span id="alloc-service"></span><h2>Alloc<a class="headerlink" href="#alloc" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>alloc</cite> service adds data tracking information to Caliper.
-It will resolve the data container of any attribute of class
-&#8220;class.memoryaddress&#8221;, for example the array containing a
-memory address sampled by the <cite>Libpfm</cite> service.
-By default, it will only use data tracking information provided
-via the <code class="docutils literal"><span class="pre">cali::DataTracker</span></code> API, but it may be configured to
-record and/or track any allocations by hooking system allocation
-calls.</p>
+It records snapshots of allocation calls with their arguments and
+return values, and resolves the containing allocations of any memory
+addresses produced by other Caliper services, such as the <cite>libpfm</cite>
+service.
+By default, it will only use data tracking information provided via
+the Caliper data tracking API, but in conjunction with the
+<cite>sysalloc</cite> service it records and/or tracks any allocations by
+hooking system allocation calls.
+This service may potentially incur significant amounts of overhead when
+recording/tracking frequent allocations/deallocations.</p>
 <dl class="envvar">
-<dt id="envvar-CALI_ALLOC_RECORD_ALL=(true|false)">
-<code class="descname">CALI_ALLOC_RECORD_ALL=(true|false)</code><a class="headerlink" href="#envvar-CALI_ALLOC_RECORD_ALL=(true|false)" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record all allocations captured by hooking malloc/calloc/realloc.
-May cause high overhead for codes that frequently allocate memory.</p>
-<p>Default: false.</p>
+<dt id="envvar-CALI_ALLOC_TRACK_ALLOCATIONS">
+<code class="descname">CALI_ALLOC_TRACK_ALLOCATIONS</code><a class="headerlink" href="#envvar-CALI_ALLOC_TRACK_ALLOCATIONS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records snapshots when memory regions are being tracked or
+untracked, storing the given label in the <cite>mem.alloc</cite> or
+<cite>mem.free</cite> attribute, respectively. The snapshots also contain a
+unique ID for the allocation in the <cite>alloc.uid</cite> attribute, and the
+size of the allocated region in the <cite>alloc.total_size</cite> attribute.</p>
+<p>Default: true</p>
 </dd></dl>
 
 <dl class="envvar">
-<dt id="envvar-CALI_ALLOC_TRACK_ALL=(true|false)">
-<code class="descname">CALI_ALLOC_TRACK_ALL=(true|false)</code><a class="headerlink" href="#envvar-CALI_ALLOC_TRACK_ALL=(true|false)" title="Permalink to this definition">¶</a></dt>
-<dd><p>Track all allocations captured by hooking malloc/calloc/realloc.
-May cause high overhead for codes that frequently allocate memory.</p>
-<p>Default: false.</p>
+<dt id="envvar-CALI_ALLOC_RESOLVE_ADDRESSES">
+<code class="descname">CALI_ALLOC_RESOLVE_ADDRESSES</code><a class="headerlink" href="#envvar-CALI_ALLOC_RESOLVE_ADDRESSES" title="Permalink to this definition">¶</a></dt>
+<dd><p>When set, snapshots with memory addresses produced by other
+services (e.g., Libpfm) will be appended with the allocations that
+contain them. The snapshots then contain
+<cite>alloc.label#address_attribute</cite>, <cite>alloc.uid#address_attribute</cite>,
+and <cite>alloc.index#address_attribute</cite> attributes with the memory
+region label, allocation ID, and array index for the memory
+address attributes found in the snapshot.</p>
+<p>Default: false</p>
+</dd></dl>
+
+<dl class="envvar">
+<dt id="envvar-CALI_ALLOC_RECORD_ACTIVE_MEM">
+<code class="descname">CALI_ALLOC_RECORD_ACTIVE_MEM</code><a class="headerlink" href="#envvar-CALI_ALLOC_RECORD_ACTIVE_MEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records the amount of active allocated memory, in bytes, at each
+snapshot, in the <cite>mem.active</cite> attribute.</p>
+<p>Default: false</p>
 </dd></dl>
 
 </div>
 <div class="section" id="callpath">
-<h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
+<span id="callpath-service"></span><h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>callpath</cite> service uses libunwind to add callpaths to Caliper
 context snapshots. By default, the callpath service provides
 call-stack addresses. Set <code class="docutils literal"><span class="pre">CALI_CALLPATH_USE_NAMES=true</span></code> to retrieve
@@ -305,7 +324,7 @@ variable defined at program start on the Caliper blackboard.</p>
 
 </div>
 <div class="section" id="event">
-<h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
+<span id="event-service"></span><h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
 <p>The event trigger service triggers snapshots when attributes are
 updated. It is possible to select a list of snapshot-triggering
 attributes, or have any attribute update trigger snapshots.
@@ -391,7 +410,7 @@ $ ./test/cali-basic
 </div>
 </div>
 <div class="section" id="libpfm">
-<h2>Libpfm<a class="headerlink" href="#libpfm" title="Permalink to this headline">¶</a></h2>
+<span id="libpfm-service"></span><h2>Libpfm<a class="headerlink" href="#libpfm" title="Permalink to this headline">¶</a></h2>
 <p>The libpfm service performs per-thread event-based sampling. The user
 may configure the event upon which to sample, the values to record for
 each sample, and the sampling period.</p>
@@ -488,16 +507,16 @@ config1 values of respective events.</p>
 <p>The following example shows how to configure PEBS memory access sampling
 with a latency threshold (available on SandyBridge, IvyBridge,
 Haswell):</p>
-<div class="highlight-sh"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_LIBPFM_EVENTS</span><span class="o">=</span>MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-$ <span class="nb">export</span> <span class="nv">CALI_LIBPFM_PERIOD</span><span class="o">=</span>100
-$ <span class="nb">export</span> <span class="nv">CALI_LIBPFM_PRECISE_IP</span><span class="o">=</span>2
-$ <span class="nb">export</span> <span class="nv">CALI_LIBPFM_CONFIG1</span><span class="o">=</span>100
-$ <span class="nb">export</span> <span class="nv">CALI_LIBPFM_SAMPLE_ATTRIBUTES</span><span class="o">=</span>ip,time,tid,cpu,addr,weight
+<div class="highlight-sh"><div class="highlight"><pre><span></span><span class="nv">CALI_LIBPFM_EVENTS</span><span class="o">=</span>MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+<span class="nv">CALI_LIBPFM_PERIOD</span><span class="o">=</span>100
+<span class="nv">CALI_LIBPFM_PRECISE_IP</span><span class="o">=</span>2
+<span class="nv">CALI_LIBPFM_CONFIG1</span><span class="o">=</span>100
+<span class="nv">CALI_LIBPFM_SAMPLE_ATTRIBUTES</span><span class="o">=</span>ip,time,tid,cpu,addr,weight
 </pre></div>
 </div>
 </div>
 <div class="section" id="mpi">
-<h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this headline">¶</a></h2>
+<span id="mpi-service"></span><h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this headline">¶</a></h2>
 <p>The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting <code class="docutils literal"><span class="pre">CALI_MPI_WHITELIST</span></code> or
@@ -509,19 +528,23 @@ the MPI rank in the <code class="docutils literal"><span class="pre">mpi.rank</s
 application in addition to the regular Caliper libraries to obtain MPI
 information.</p>
 <dl class="envvar">
-<dt id="envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)">
-<code class="descname">CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)</code><a class="headerlink" href="#envvar-CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of MPI functions to instrument. If set, only whitelisted
-functions will be instrumented.</p>
+<dt id="envvar-CALI_MPI_WHITELIST">
+<code class="descname">CALI_MPI_WHITELIST</code><a class="headerlink" href="#envvar-CALI_MPI_WHITELIST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comma-separated list of MPI functions to instrument.
+Only whitelisted functions will be instrumented. Set to <code class="docutils literal"><span class="pre">all</span></code>
+to instrument all MPI functions.</p>
+<p>Default: Empty</p>
 </dd></dl>
 
 <dl class="envvar">
-<dt id="envvar-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)">
-<code class="descname">CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)</code><a class="headerlink" href="#envvar-CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)" title="Permalink to this definition">¶</a></dt>
-<dd><p>List of MPI functions that fill be filtered. Note: if both
-whitelist and blacklist are set, only whitelisted functions will
-be instrumented, and the blacklist will be applied to the
-whitelisted functions.</p>
+<dt id="envvar-CALI_MPI_BLACKLIST">
+<code class="descname">CALI_MPI_BLACKLIST</code><a class="headerlink" href="#envvar-CALI_MPI_BLACKLIST" title="Permalink to this definition">¶</a></dt>
+<dd><p>Comma-separated list of MPI functions that will <em>not</em> be
+instrumented.</p>
+<p>Note: if both whitelist and blacklist are set, only whitelisted
+functions will be instrumented, and the blacklist will be applied
+to the whitelisted functions.</p>
+<p>Default: Empty</p>
 </dd></dl>
 
 </div>
@@ -543,9 +566,11 @@ by the MPI implementation. Default: empty, records all available
 PVARs.</p>
 </dd></dl>
 
+<p>The <a class="reference internal" href="#mpi-service"><span>mpi</span></a> service must be enabled for mpit
+to work.</p>
 </div>
 <div class="section" id="mpi-report">
-<h2>MPI Report<a class="headerlink" href="#mpi-report" title="Permalink to this headline">¶</a></h2>
+<span id="mpireport-service"></span><h2>MPI Report<a class="headerlink" href="#mpi-report" title="Permalink to this headline">¶</a></h2>
 <p>The MPI report service (<cite>mpireport</cite>) aggregates, formats, and writes
 collected Caliper records from all ranks in an MPI program into a
 single global report.  By default, the mpireport service prints a
@@ -556,6 +581,8 @@ aggregation, and formatting options.</p>
 before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.</p>
+<p>The <a class="reference internal" href="#mpi-service"><span>mpi</span></a> service must be enabled for mpireport
+to work.</p>
 <dl class="envvar">
 <dt id="envvar-CALI_MPIREPORT_FILENAME">
 <code class="descname">CALI_MPIREPORT_FILENAME</code><a class="headerlink" href="#envvar-CALI_MPIREPORT_FILENAME" title="Permalink to this definition">¶</a></dt>
@@ -563,9 +590,7 @@ MPI_Finalize.</p>
 to print to the standard output or error streams, respectively.</p>
 <p>Similar to the <cite>recorder</cite> service, the file name may contain fields
 which will be substituted by attribute values (see <cite>recorder</cite>
-service description), for example to create individual
-<code class="docutils literal"><span class="pre">report-0.txt</span></code>, <code class="docutils literal"><span class="pre">report-1.txt</span></code> etc. files for each rank in a
-multi-process program.</p>
+service description).</p>
 <p>Default: stdout</p>
 </dd></dl>
 
@@ -578,7 +603,7 @@ multi-process program.</p>
 
 </div>
 <div class="section" id="papi">
-<h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this headline">¶</a></h2>
+<span id="papi-service"></span><h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this headline">¶</a></h2>
 <p>The PAPI service collects hardware counter information through the
 PAPI library.</p>
 <dl class="envvar">
@@ -592,7 +617,7 @@ increase of that counter since the previous snapshot.</p>
 </dd></dl>
 
 <p>Example:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event:papi:trace:report
+<div class="highlight-sh"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,papi,trace,report
 $ <span class="nv">CALI_PAPI_COUNTERS</span><span class="o">=</span>PAPI_TOT_CYC,PAPI_L1_DCM
 $ ./test/cali-basic
 papi.PAPI_TOT_CYC papi.PAPI_L1_DCM <span class="k">function</span> annotation loop     iteration#mainloop
@@ -605,8 +630,17 @@ papi.PAPI_TOT_CYC papi.PAPI_L1_DCM <span class="k">function</span> annotation lo
 </pre></div>
 </div>
 </div>
+<div class="section" id="pthread">
+<span id="pthread-service"></span><h2>Pthread<a class="headerlink" href="#pthread" title="Permalink to this headline">¶</a></h2>
+<p>The Pthread service wraps <cite>pthread_create</cite> using GOTCHA, and adds a
+<code class="docutils literal"><span class="pre">pthread.id</span></code> attribute with a numeric thread ID for the new child
+thread. In doing so, the pthread service automatically creates a
+Caliper thread scope on the child thread: this is useful to
+automatically start sampling (e.g. with the <cite>sampler</cite> service) on each
+new thread.</p>
+</div>
 <div class="section" id="recorder">
-<h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
+<span id="recorder-service"></span><h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
 <p>The recorder service writes Caliper snapshot records into a file
 using a custom text-based I/O format. These files can be read
 with the <cite>cali-query</cite> tool.</p>
@@ -643,7 +677,7 @@ directory.</p>
 
 </div>
 <div class="section" id="report">
-<h2>Report<a class="headerlink" href="#report" title="Permalink to this headline">¶</a></h2>
+<span id="report-service"></span><h2>Report<a class="headerlink" href="#report" title="Permalink to this headline">¶</a></h2>
 <p>The report service aggregates, formats, and writes collected Caliper
 records into files or stdout on Caliper flush events (typically, at
 program end). By default, the report service prints a tabular,
@@ -657,7 +691,7 @@ formatting options.</p>
 to print to the standard output or error streams, respectively.</p>
 <p>Similar to the <cite>recorder</cite> service, the file name may contain fields
 which will be substituted by attribute values (see <cite>recorder</cite>
-service description), for example to create xindividual
+service description), for example to create individual
 <code class="docutils literal"><span class="pre">report-0.txt</span></code>, <code class="docutils literal"><span class="pre">report-1.txt</span></code> etc. files for each rank in a
 multi-process program.</p>
 <p>Default: stdout</p>
@@ -691,8 +725,39 @@ foo               2000
 configuration), and the <code class="docutils literal"><span class="pre">function</span></code> and <code class="docutils literal"><span class="pre">time.duration</span></code> attributes
 are printed, in ascending order of <code class="docutils literal"><span class="pre">time.duration</span></code>.</p>
 </div>
+<div class="section" id="sampler">
+<span id="sampler-service"></span><h2>Sampler<a class="headerlink" href="#sampler" title="Permalink to this headline">¶</a></h2>
+<p>The sampler service implements time-based sampling. It triggers
+snapshots at regular intervals. Sampling allows for low-overhead
+performance data collection, and can provide insights into code
+regions that are not or only sparsely covered with source-code
+annotations.</p>
+<p>Caliper must be initialized on each thread that should be
+sampled. This can be done explicitly via the annotation API, or via
+the <a class="reference internal" href="#pthread-service"><span>pthread</span></a> service for child threads.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_SAMPLER_FREQUENCY">
+<code class="descname">CALI_SAMPLER_FREQUENCY</code><a class="headerlink" href="#envvar-CALI_SAMPLER_FREQUENCY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sampling frequency in Hz. Default: 10</p>
+</dd></dl>
+
+<p>When active, the sampler service regularly triggers snapshots with the
+specified frequency. Each snapshot triggered by the sampler service
+contains a <code class="docutils literal"><span class="pre">cali.sampler.pc</span></code> attribute with the program address
+where the target program was interrupted. The symbollookup service can
+use this to retrieve function name as well as source file and line
+information.</p>
+<p>The following example generates a sampling trace at 100Hz, uses the
+symbollookup service to retrieve function name information, and prints
+a flat profile of the number of samples per function:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">report</span><span class="p">,</span><span class="n">sampler</span><span class="p">,</span><span class="n">symbollookup</span><span class="p">,</span><span class="n">trace</span>
+<span class="n">CALI_SAMPLER_FREQUENCY</span><span class="o">=</span><span class="mi">100</span>
+<span class="n">CALI_REPORT_CONFIG</span><span class="o">=</span><span class="s2">&quot;SELECT source.function#cali.sampler.pc,count() GROUP BY source.function#cali.sampler.pc FORMAT table ORDER BY count DESC&quot;</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="symbollookup">
-<h2>Symbollookup<a class="headerlink" href="#symbollookup" title="Permalink to this headline">¶</a></h2>
+<span id="symbollookup-service"></span><h2>Symbollookup<a class="headerlink" href="#symbollookup" title="Permalink to this headline">¶</a></h2>
 <p>The symbollookup service provides function name, source file, and
 source line number lookup for binary program addresses from, e.g.,
 stack unwinding or program counter sampling. The symbol lookup takes
@@ -723,6 +788,12 @@ attributes automatically via <cite>class.symboladdress</cite> attribute class.</
 default <cite>TRUE</cite>.</p>
 </dd></dl>
 
+</div>
+<div class="section" id="sysalloc">
+<h2>Sysalloc<a class="headerlink" href="#sysalloc" title="Permalink to this headline">¶</a></h2>
+<p>The sysalloc service wraps <cite>malloc</cite>, <cite>free</cite>, <cite>calloc</cite>, and <cite>realloc</cite>
+memory allocation calls, and marks the allocated memory regions so
+they can be tracked with the alloc service.</p>
 </div>
 <div class="section" id="textlog">
 <h2>Textlog<a class="headerlink" href="#textlog" title="Permalink to this headline">¶</a></h2>
@@ -786,7 +857,7 @@ to print to the standard output or error streams, respectively.</p>
 
 </div>
 <div class="section" id="timestamp">
-<h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
+<span id="timestamp-service"></span><h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
 <p>The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
@@ -830,7 +901,7 @@ to be enabled for this feature.</p>
 
 </div>
 <div class="section" id="trace">
-<h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
+<span id="trace-service"></span><h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
 <p>The trace service creates an I/O record for each snapshot. With the
 <code class="docutils literal"><span class="pre">recorder</span></code> service enabled, this will create a snapshot trace file.</p>
 <p>The trace service maintains per-thread snapshot buffers. By default,
@@ -894,9 +965,12 @@ is full, another chunk of this size is added.</p>
 <li><a class="reference internal" href="#mpit">MPIT</a></li>
 <li><a class="reference internal" href="#mpi-report">MPI Report</a></li>
 <li><a class="reference internal" href="#papi">PAPI</a></li>
+<li><a class="reference internal" href="#pthread">Pthread</a></li>
 <li><a class="reference internal" href="#recorder">Recorder</a></li>
 <li><a class="reference internal" href="#report">Report</a></li>
+<li><a class="reference internal" href="#sampler">Sampler</a></li>
 <li><a class="reference internal" href="#symbollookup">Symbollookup</a></li>
+<li><a class="reference internal" href="#sysalloc">Sysalloc</a></li>
 <li><a class="reference internal" href="#textlog">Textlog</a></li>
 <li><a class="reference internal" href="#timestamp">Timestamp</a></li>
 <li><a class="reference internal" href="#trace">Trace</a></li>
@@ -908,8 +982,8 @@ is full, another chunk of this size is added.</p>
   <p class="topless"><a href="configuration.html"
                         title="previous chapter">Runtime Configuration</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tools.html"
-                        title="next chapter">Caliper Tools</a></p>
+  <p class="topless"><a href="OutputFormats.html"
+                        title="next chapter">Output formatting</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -941,12 +1015,12 @@ is full, another chunk of this size is added.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="OutputFormats.html" title="Output formatting"
              >next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Runtime Configuration"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

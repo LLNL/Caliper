@@ -30,7 +30,8 @@ pre-defined ``serial-trace`` configuration profile)::
 
   $ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
 
-Caliper warns if the configuration is missing a processing pipeline stage while others are active::
+Caliper warns if the configuration is missing a processing pipeline
+stage while others are active::
 
   $ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
   == CALIPER: Config check: Warning: snapshot buffer service "trace" requires offline output services, but none are active.
@@ -39,7 +40,7 @@ Caliper warns if the configuration is missing a processing pipeline stage while 
 The following sections discuss the pipeline stages in detail.
 
 Context Information and Event Hooks
---------------------------------
+----------------------------------------
 
 Context information is the key:value data provided by Caliper's
 annotation API. For example, an application can mark a section of code
@@ -61,7 +62,7 @@ snapshots (see below) or connect Caliper annotations to a third-party
 instrumentation API.
 
 Runtime Data Sources
---------------------------------
+----------------------------------------
 
 Runtime data sources provide the context and performance data that
 Caliper records. The primary data source is the *blackboard*, which
@@ -82,7 +83,7 @@ Note that enabling runtime data sources only makes them accessible:
 actual data collection happens through *snapshots*.
 
 Snapshots
---------------------------------
+----------------------------------------
 
 Snapshots are Caliper's mechanism to make performance measurements and
 collect data. Specifically, a snapshot collects data from all active
@@ -94,33 +95,34 @@ timestamps or hardware counter information).
 
 Snapshots can be triggered explicitly through the Caliper API, or by a
 snapshot trigger service. The two major snapshot trigger services in
-Caliper are ``event`` and ``sampler`` (some other services, such as
-``libpfm``, can also trigger snapshots). The ``event`` service
+Caliper are :ref:`event <event-service>` and :ref:`sampler
+<sampler-service>` (some other services, such as :ref:`libpfm
+<libpfm-service>`, can also trigger snapshots). The event service
 triggers a snapshot on each annotation *begin*, *set*, or *end*
 event. This allows us to create event-based traces and profiles,
 collecting exact statistics and performance measurements for annotated
-code regions. The ``sampler`` service triggers snapshots periodically
-with a configurable frequency. This asynchronous data collection mode
-is less exact (we may miss some annotated code regions if they are
-very short), but may incur less overhead. Moreover, in combination
-with call stack unwinding, sampling can provide basic information
-about code regions that have not been annotated. Event and sampled
-snapshot triggers can be active at the same time.
+code regions. The sampler service triggers snapshots periodically with
+a configurable frequency. This asynchronous data collection mode is
+less exact (we may miss some annotated code regions if they are very
+short), but may incur less overhead. Moreover, in combination with
+call stack unwinding, sampling can provide basic information about
+code regions that have not been annotated. Event and sampled snapshot
+triggers can be active at the same time.
 
 Snapshot Buffering/Processing
---------------------------------
+----------------------------------------
 
 The snapshot processing stage defines what to do with snapshot records
 at runtime. Caliper provides two options: tracing and aggregation. The
-``trace`` service simply stores each snapshot record in an in-memory
-buffer. The ``aggregate`` service performs in-situ aggregation, where
+:ref:`trace <trace-service>` service simply stores each snapshot record in an in-memory
+buffer. The :ref:`aggregate <aggregate-service>` service performs in-situ aggregation, where
 only aggregate performance data is kept for different program contexts
 (e.g., the total runtime spent in each function). This can greatly
 reduce the amount of data that needs to be kept, especially for
 long-running, iterative programs.
 
 Flush and Snapshot Post-Processing
---------------------------------
+----------------------------------------
 
 A flush will push the trace buffer and/or aggregation database
 contents into the reporting and I/O stage. Flushing can be triggered
@@ -129,23 +131,23 @@ flush at program exit.
 
 While the flush itself does not require extra configuration at
 runtime, we can add snapshot post-processing services in this
-stage. Notably, the ``symbollookup`` service will look up source file,
+stage. Notably, the :ref:`symbollookup <symbollookup-service>` service will look up source file,
 line number, and function name information from binary program
-addresses provided by e.g. the ``callpath`` or ``sampler`` service.
+addresses provided by e.g. the :ref:`callpath <callpath-service>` or :ref:`sampler <sampler-service>` service.
 
 Reporting and I/O
---------------------------------
+----------------------------------------
 
 The final pipeline stage formats and writes the collected
 records. There are multiple options here.
 
-The ``recorder`` service writes records into Caliper-specific
+The :ref:`recorder <recorder-service>` service writes records into Caliper-specific
 ``.cali`` format files (one per process), which can be examined
-off-line with the ``cali-query`` tool.  The ``report`` service can
+off-line with the ``cali-query`` tool.  The :ref:`report <report-service>` service can
 filter, aggregate, and sort output records, and produce JSON output or
 human-readable reports in table or hierarchical form. The reports can
 be written into files or to standard output. As with ``recorder``,
-reports will be written per process.  Finally, the ``mpireport``
+reports will be written per process.  Finally, the :ref:`mpireport <mpireport-service>`
 service aggregates or gathers output records from all ranks in an MPI
 program, and writes a single output report. Like ``report``, it can
 produce JSON or human-readable output as well as ``.cali`` files.

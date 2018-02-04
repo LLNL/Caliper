@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Source-code Annotations &mdash; Caliper 1.6.0 documentation</title>
+    <title>Source-code Annotations &mdash; Caliper 1.7.0-dev documentation</title>
     
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -15,7 +15,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.6.0',
+        VERSION:     '1.7.0-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.6.0 documentation" href="index.html" />
+    <link rel="top" title="Caliper 1.7.0-dev documentation" href="index.html" />
     <link rel="next" title="Runtime Configuration" href="configuration.html" />
     <link rel="prev" title="Architecture and Workflow" href="workflow.html" /> 
   </head>
@@ -41,7 +41,7 @@
         <li class="right" >
           <a href="workflow.html" title="Architecture and Workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -202,10 +202,62 @@ model. The high-level annotation API uses pre-defined attribute keys,
 but users can create their own. Attribute keys have a unique name, and
 store the attribute&#8217;s data type as well as optional property flags.
 Property flags control how the Caliper runtime system handles the
-associated attributes (see <a class="reference internal" href="api.html#c.cali_attr_properties" title="cali_attr_properties"><code class="xref c c-type docutils literal"><span class="pre">cali_attr_properties</span></code></a>).</p>
+associated attributes.</p>
+<dl class="enum">
+<dt>
+<span class="target" id="calipercali__types_8h_1ad496a3cf9ac87b91770747b187b5c5ca"></span><strong>cali_attr_properties enum</strong></dt>
+<dd><p>Attribute property flags. </p>
+<p>These flags control how the caliper runtime system handles the associated attributes. Flags can be combined with a bitwise OR (however, the scope flags are mutually exclusive). </p>
+<p><em>Values:</em></p>
+<ul class="breatheenumvalues">
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_DEFAULT</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span>&nbsp; <span class="pre">0</span></code> - <p>Default value. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_ASVALUE</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span>&nbsp; <span class="pre">1</span></code> - <p>Store directly as key:value pair, not in the context tree. </p>
+<p>Attributes with this property will be not be put into the context tree, but stored directly as key:value pairs on the blackboard and in snapshot records. ASVALUE attributes cannot be nested. Only applicable to scalar data types. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_NOMERGE</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span>&nbsp; <span class="pre">2</span></code> - <p>Create a separate context tree root node for this attribute. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_SCOPE_PROCESS</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">12</span></code> - <p>Process-scope attribute. Shared between all threads. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_SCOPE_THREAD</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">20</span></code> - <p>Thread-scope attribute. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_SCOPE_TASK</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">24</span></code> - <p>Task-scope attribute. Currently unused. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_SKIP_EVENTS</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">64</span></code> - <p>Skip event callbacks for blackboard updates with this attribute. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_HIDDEN</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">128</span></code> - <p>Do not include this attribute in snapshots. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">CALI_ATTR_NESTED</span></code><code class="docutils literal"> <span class="pre">=</span> <span class="pre">=</span> <span class="pre">256</span></code> - <p>Begin/end calls are properly aligned with the call stack. </p>
+<p>Indicates that <em>begin/end</em> calls for this attribute are correctly nested with the call stack and other NESTED attributes. That is, an active region of a NESTED attribute does not partially overlap function calls or other NESTED attribute regions. </p>
+</li>
+</ul>
+</dd></dl>
+
+<p>Attribute keys can be created with <code class="xref c c-func docutils literal"><span class="pre">cali_create_attribute()</span></code>:</p>
+<dl class="function">
+<dt>
+<span class="target" id="calipercali_8h_1a8b7546c4ceff7ed8047a406de6de1c5e"></span>cali_id_t <code class="descname">cali_create_attribute</code><span class="sig-paren">(</span>const char * <em>name</em>, cali_attr_type <em>type</em>, int <em>properties</em><span class="sig-paren">)</span></dt>
+<dd><p>Create an attribute. </p>
+<p><dl class="docutils">
+<dt><strong>Return</strong></dt>
+<dd>Attribute id </dd>
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">name</span></code> - <p>Name of the attribute </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">type</span></code> - <p>Type of the attribute </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">properties</span></code> - <p>Attribute properties </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
 </div>
-<div class="section" id="c-and-fortran-annotation-api">
-<h3>C and Fortran annotation API<a class="headerlink" href="#c-and-fortran-annotation-api" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="c-annotation-api">
+<h3>C annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this headline">¶</a></h3>
 <p>The C and Fortran annotation API provides the
 <code class="docutils literal"><span class="pre">cali_begin_*[byname]</span></code>, <code class="docutils literal"><span class="pre">cali_end[_byname]</span></code>, and
 <code class="docutils literal"><span class="pre">cali_set_*_[byname]</span></code> family of functions. Their behavior is as
@@ -223,7 +275,7 @@ attribute.</dd>
 <p>The <code class="docutils literal"><span class="pre">byname</span></code> variants refer to attribute keys by their name. If no
 attribute key with the given name exists, it will be created with
 default properties. The basic variants take an attribute ID, e.g.
-from <a class="reference internal" href="api.html#c.cali_create_attribute" title="cali_create_attribute"><code class="xref c c-func docutils literal"><span class="pre">cali_create_attribute()</span></code></a>.</p>
+from <code class="xref c c-func docutils literal"><span class="pre">cali_create_attribute()</span></code>.</p>
 <p>Example:</p>
 <div class="highlight-c"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
@@ -242,9 +294,140 @@ from <a class="reference internal" href="api.html#c.cali_create_attribute" title
 </pre></div>
 </div>
 </div>
-<div class="section" id="c-annotation-api">
-<h3>C++ annotation API<a class="headerlink" href="#c-annotation-api" title="Permalink to this headline">¶</a></h3>
-<p>The C++ annotation API is implemented in the class <a class="reference internal" href="api.html#_CPPv2N4cali10AnnotationE" title="cali::Annotation"><code class="xref cpp cpp-class docutils literal"><span class="pre">cali::Annotation</span></code></a>.</p>
+<div class="section" id="fortran-annotation-api">
+<h3>Fortran annotation API<a class="headerlink" href="#fortran-annotation-api" title="Permalink to this headline">¶</a></h3>
+<p>The Fortran API is a thin wrapper around the C API. Fortran subroutine
+names and semantics are identical to the respective C versions.</p>
+<p>Fortran API signatures:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>subroutine cali_create_attribute(name, type, properties, id)
+  character(len=*),        intent(in)  :: name
+  integer,                 intent(in)  :: type
+  integer,                 intent(in)  :: properties
+  integer(kind=C_INT64_T), intent(out) :: id
+
+subroutine cali_begin_string(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  character(len=*),            intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_int(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer,                     intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_double(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  real*8,                      intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_string(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  character(len=*),            intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_int(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer,                     intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_double(id, val, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  real*8,                      intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_end(id, err)
+  integer(kind=C_INT64_T),     intent(in) :: id
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_string_byname
+  character(len=*), intent(in) :: attr_name
+  character(len=*), intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_int_byname
+  character(len=*), intent(in) :: attr_name
+  integer,          intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_begin_double_byname
+  character(len=*), intent(in) :: attr_name
+  real*8,           intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_string_byname
+  character(len=*), intent(in) :: attr_name
+  character(len=*), intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_int_byname
+  character(len=*), intent(in) :: attr_name
+  integer,          intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_set_double_byname
+  character(len=*), intent(in) :: attr_name
+  real*8,           intent(in) :: val
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+
+subroutine cali_end_byname
+  character(len=*), intent(in) :: attr_name
+  integer(kind(CALI_SUCCESS)), intent(out), optional :: err
+</pre></div>
+</div>
+<div class="section" id="fortran-api-example">
+<h4>Fortran API example<a class="headerlink" href="#fortran-api-example" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-python"><div class="highlight"><pre><span></span>program testf03
+  use Caliper
+
+  implicit none
+
+  integer                    :: cali_ret
+  integer(kind(CALI_INV_ID)) :: iter_attr
+  integer                    :: i, count
+
+  ! Mark &quot;initialization&quot; phase
+  call cali_begin_byname(&#39;initialization&#39;)
+  count = 4
+  call cali_end_byname(&#39;initialization&#39;)
+
+  if (count .gt. 0) then
+     ! Mark &quot;loop&quot; phase
+     call cali_begin_byname(&#39;loop&#39;)
+
+     ! create attribute for iteration counter with CALI_ATTR_ASVALUE property
+     call cali_create_attribute(&#39;iteration&#39;, CALI_TYPE_INT, &amp;
+          CALI_ATTR_ASVALUE, iter_attr)
+
+     do i = 1,count
+        ! Update iteration counter attribute
+        call cali_set_int(iter_attr, i)
+
+        ! A Caliper snapshot taken at this point will contain
+        ! { &quot;loop&quot;, &quot;iteration&quot;=&lt;i&gt; }
+
+        ! perform calculation
+     end do
+
+     ! Clear the iteration counter attribute (otherwise, snapshots taken
+     ! after the loop will still contain the last iteration value)
+     call cali_end(iter_attr, cali_ret)
+
+     ! Checking return value (not required, but good style)
+     if (cali_ret .ne. CALI_SUCCESS) then
+        print *, &quot;cali_end returned with&quot;, cali_ret
+     end if
+
+     ! End &quot;loop&quot; phase
+     call cali_end_byname(&#39;loop&#39;)
+  end if
+end program testf03
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id1">
+<h3>C++ annotation API<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The C++ annotation API is implemented in the class <code class="xref cpp cpp-class docutils literal"><span class="pre">cali::Annotation</span></code>.</p>
 <dl class="class">
 <dt>
 <span class="target" id="caliperclasscali_1_1Annotation"></span><em>class</em> <code class="descname">cali::Annotation</code></dt>
@@ -265,6 +448,44 @@ phase_ann.end();
 </p>
 </dd></dl>
 
+</div>
+</div>
+<div class="section" id="data-tracking-api">
+<h2>Data tracking API<a class="headerlink" href="#data-tracking-api" title="Permalink to this headline">¶</a></h2>
+<p>Caliper also supports tracking allocated data. Doing so provides
+advanced data-centric attributes, such as recording allocation events
+and determining the containers for memory addresses provided by
+services like libpfm. To take advantage of annotated memory
+allocations, the <a class="reference internal" href="services.html#alloc-service"><span>alloc</span></a> service must be enabled
+at runtime.</p>
+<p>Memory allocation annotations are similar to code region annotations,
+we can define labels for allocations using macros, which will use the
+variable name of the given pointer as label for the memory
+allocations.  We can either label 1-dimensional ranges of bytes using
+<cite>CALI_DATATRACKER_TRACK</cite> or multi-dimensional ranges of specified
+element sizes using <cite>CALI_DATATRACKER_TRACK_DIMENSIONAL</cite>.  The
+following example shows both:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span>void do_work(size_t M, size_t W, size_t N)
+{
+    double *arrayA = (double*)malloc(N);
+    CALI_DATATRACKER_TRACK(arrayA, N);
+
+    double *matA =
+         (double*)malloc(sizeof(double)*M*W);
+
+    size_t num_dimensions = 2;
+    size_t A_dims[] = {M,W};
+    CALI_DATATRACKER_TRACK_DIMENSIONAL(
+                matA,
+                sizeof(double),
+                A_dims,
+                num_dimensions);
+        ...
+
+    CALI_DATATRACKER_FREE(arrayA);
+    CALI_DATATRACKER_FREE(matA);
+}
+</pre></div>
 </div>
 </div>
 <div class="section" id="api-reference">
@@ -398,6 +619,39 @@ phase_ann.end();
 </div>
 <div class="breathe-sectiondef container">
 <p class="breathe-sectiondef-title rubric">Defines</p>
+<dl class="define">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1ga06322a3c120ba44487f6542a91419b58"></span><strong>CALI_DATATRACKER_TRACK</strong>(<em>ptr</em>, <em>size</em>)</dt>
+<dd><p>Label and track the given memory region. </p>
+<p>Labels the memory region of size <em>size</em> bytes pointed to by <em>ptr</em> with the variable name of <em>ptr</em>. The memory region can then be tracked and resolved with the alloc service. </p>
+</dd></dl>
+
+<dl class="define">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1ga54562618bbe7904e4c5d083755663075"></span><strong>CALI_DATATRACKER_TRACK_DIMENSIONAL</strong>(<em>ptr</em>, <em>elem_size</em>, <em>dimensions</em>, <em>num_dimensions</em>)</dt>
+<dd><p>Label and track a multi-dimensional array. </p>
+<p>Labels a multi-dimensional array with with the variable name of <em>ptr</em>. The array can then be tracked and resolved with the alloc service.</p>
+<p><dl class="docutils">
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">elem_size</span></code> - <p>Size of the array elements in bytes </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">dimension</span></code> - <p>Array of type size_t[] with the sizes of each dimension. Must have <em>num_dimensions</em> entries. </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">num_dimensions</span></code> - <p>The number of dimensions </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="define">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1ga8f2bf02741e096aa719b16a043dd7dd7"></span><strong>CALI_DATATRACKER_UNTRACK</strong>(<em>ptr</em>)</dt>
+<dd><p>Stop tracking the memory region pointed to by <em>ptr</em>. </p>
+</dd></dl>
+
 <dl class="define">
 <dt>
 <span class="target" id="calipergroup__AnnotationAPI_1ga9b665c9c3cdbfb1afe2bcc3e59e721ae"></span><strong>CALI_CXX_MARK_FUNCTION</strong></dt>
@@ -625,6 +879,129 @@ CALI_WRAP_STATEMENT( &quot;sqrt&quot;, res = sqrt(49) );
 
 </div>
 <div class="breathe-sectiondef container">
+<p class="breathe-sectiondef-title rubric">Functions</p>
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1ga8d1ec6ad5b89ec370b809bb4bce63c14"></span>void * <code class="descname">cali_datatracker_allocate</code><span class="sig-paren">(</span>const char * <em>label</em>, size_t <em>size</em><span class="sig-paren">)</span></dt>
+<dd><p>Allocate and track the resulting allocation in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Note</strong></dt>
+<dd>Tracking information will be automatically removed if the allocation is freed</dd>
+<dt><strong>Return</strong></dt>
+<dd>A new allocation of size <code class="docutils literal"><span class="pre">size</span></code> </dd>
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">label</span></code> - <p>The unique label with which to track the allocation requested </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">size</span></code> - <p>The total size of the allocation requested </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1gab539209211ba9006aac3db8013b3f53d"></span>void * <code class="descname">cali_datatracker_allocate_dimensional</code><span class="sig-paren">(</span>const char * <em>label</em>, size_t <em>elem_size</em>, const size_t * <em>dimensions</em>, size_t <em>num_dimensions</em><span class="sig-paren">)</span></dt>
+<dd><p>Allocate and track the resulting allocation, with dimensions, in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Note</strong></dt>
+<dd>Tracking information will be automatically removed if the allocation is freed</dd>
+<dt><strong>Return</strong></dt>
+<dd>A new allocation of size <code class="docutils literal"><span class="pre">product(dimensions)*elem_size</span></code> </dd>
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">label</span></code> - <p>The unique label with which to track the allocation requested </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">elem_size</span></code> - <p>The size of an individual element in the allocation requested </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">dimensions</span></code> - <p>An array of the dimensions of the allocation requested </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">num_dimensions</span></code> - <p>The number of dimensions in <code class="docutils literal"><span class="pre">dimensions</span></code> </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1ga85420669a100cd7f4deb53f9eb5de95f"></span>void <code class="descname">cali_datatracker_free</code><span class="sig-paren">(</span>void * <em>ptr</em><span class="sig-paren">)</span></dt>
+<dd><p>Free and untrack an allocation in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">ptr</span></code> - <p>The pointer to the beginning of the allocation to free/untrack </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1gaca7d5eaad1e2ac74da2e106bf1aa8ee3"></span>void <code class="descname">cali_datatracker_track</code><span class="sig-paren">(</span>const void * <em>ptr</em>, const char * <em>label</em>, size_t <em>size</em><span class="sig-paren">)</span></dt>
+<dd><p>Track an existing allocation in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Note</strong></dt>
+<dd>This will track the entire allocation pointed to by ptr. To track a subset of a larger allocation, use <code class="docutils literal"><span class="pre">cali_datatracker_track_dimensional</span></code>.</dd>
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">ptr</span></code> - <p>The pointer to the beginning of the allocation to track </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">label</span></code> - <p>The unique label with which to track the allocation </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">size</span></code> - <p>Size of the allocation </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1gab96e1b5f408d10601d0c74b6f13d7d6b"></span>void <code class="descname">cali_datatracker_track_dimensional</code><span class="sig-paren">(</span>const void * <em>ptr</em>, const char * <em>label</em>, size_t <em>elem_size</em>, const size_t * <em>dimensions</em>, size_t <em>num_dimensions</em><span class="sig-paren">)</span></dt>
+<dd><p>Track an existing allocation in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">ptr</span></code> - <p>The pointer to the beginning of the allocation to track </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">label</span></code> - <p>The unique label with which to track the allocation </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">elem_size</span></code> - <p>The size of an individual element in the allocation </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">dimensions</span></code> - <p>An array of the dimensions of the allocation </p>
+</li>
+<li><code class="first docutils literal"><span class="pre">num_dimensions</span></code> - <p>The number of dimensions in <code class="docutils literal"><span class="pre">dimensions</span></code> </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<span class="target" id="calipergroup__AnnotationAPI_1gaea9b6341c9553bdd2040506bb8fd4e29"></span>void <code class="descname">cali_datatracker_untrack</code><span class="sig-paren">(</span>const void * <em>ptr</em><span class="sig-paren">)</span></dt>
+<dd><p>Untrack a previously tracked allocation in Caliper.</p>
+<p><dl class="docutils">
+<dt><strong>Parameters</strong></dt>
+<dd><ul class="breatheparameterlist first last">
+<li><code class="first docutils literal"><span class="pre">ptr</span></code> - <p>The pointer to the beginning of the allocation to untrack </p>
+</li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef container">
 <p class="breathe-sectiondef-title rubric">Variables</p>
 <dl class="variable">
 <dt>
@@ -750,7 +1127,7 @@ phase_ann.end();
 <dd><ul class="breatheparameterlist first last">
 <li><code class="first docutils literal"><span class="pre">name</span></code> - <p>The attribute name </p>
 </li>
-<li><code class="first docutils literal"><span class="pre">opt</span></code> - <p>Attribute flags. Bitwise OR combination of cali_attr_properties values. </p>
+<li><code class="first docutils literal"><span class="pre">opt</span></code> - <p>Attribute flags. Bitwise OR combination of <a class="reference internal" href="#calipercali__types_8h_1ad496a3cf9ac87b91770747b187b5c5ca"><span>cali_attr_properties</span></a> values. </p>
 </li>
 </ul>
 </dd>
@@ -808,10 +1185,15 @@ while (condition) {
 </li>
 <li><a class="reference internal" href="#low-level-annotation-api">Low-level Annotation API</a><ul>
 <li><a class="reference internal" href="#attribute-keys">Attribute keys</a></li>
-<li><a class="reference internal" href="#c-and-fortran-annotation-api">C and Fortran annotation API</a></li>
-<li><a class="reference internal" href="#c-annotation-api">C++ annotation API</a></li>
+<li><a class="reference internal" href="#c-annotation-api">C annotation API</a></li>
+<li><a class="reference internal" href="#fortran-annotation-api">Fortran annotation API</a><ul>
+<li><a class="reference internal" href="#fortran-api-example">Fortran API example</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#id1">C++ annotation API</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#data-tracking-api">Data tracking API</a></li>
 <li><a class="reference internal" href="#api-reference">API Reference</a></li>
 </ul>
 </li>
@@ -859,7 +1241,7 @@ while (condition) {
         <li class="right" >
           <a href="workflow.html" title="Architecture and Workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.6.0 documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
