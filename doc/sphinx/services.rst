@@ -17,6 +17,7 @@ to create event-triggered context traces for an application.
 The following sections describe the available service modules and
 their configuration.
 
+.. _aggregate-service:
 
 Aggregate
 --------------------------------
@@ -171,40 +172,53 @@ The resulting file has the following contents: ::
      max#time.inclusive.duration=26
      sum#time.inclusice.duration=102
 
+.. _alloc-service:
+
 Alloc
 --------------------------------
 
 The `alloc` service adds data tracking information to Caliper.
 It records snapshots of allocation calls with their arguments and
 return values, and resolves the containing allocations of any memory
-addresses produced by other Caliper services, such as the `Libpfm` 
+addresses produced by other Caliper services, such as the `libpfm` 
 service.
 By default, it will only use data tracking information provided via
 the Caliper data tracking API, but in conjunction with the
-``sysalloc`` service it records and/or tracks any allocations by
+`sysalloc` service it records and/or tracks any allocations by
 hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when 
 recording/tracking frequent allocations/deallocations.
 
 .. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
 
-    Record snapshots when tracking or untracking marked memory regions.
+    Records snapshots when memory regions are being tracked or
+    untracked, storing the given label in the `mem.alloc` or
+    `mem.free` attribute, respectively. The snapshots also contain a
+    unique ID for the allocation in the `alloc.uid` attribute, and the
+    size of the allocated region in the `alloc.total_size` attribute.
 
     Default: true
 
 .. envvar:: CALI_ALLOC_RESOLVE_ADDRESSES
 
-    When set, snapshots with memory addresses produced by other services 
-    (e.g., Libpfm)  will be appended with the allocations that contain them.
+    When set, snapshots with memory addresses produced by other
+    services (e.g., Libpfm) will be appended with the allocations that
+    contain them. The snapshots then contain
+    `alloc.label#address_attribute`, `alloc.uid#address_attribute`,
+    and `alloc.index#address_attribute` attributes with the memory
+    region label, allocation ID, and array index for the memory
+    address attributes found in the snapshot.
 
     Default: false
 
 .. envvar:: CALI_ALLOC_RECORD_ACTIVE_MEM
 
-    Record the amount of active allocated memory, in bytes, at each snapshot.
+    Records the amount of active allocated memory, in bytes, at each
+    snapshot, in the `mem.active` attribute.
 
     Default: false
 
+.. _callpath-service:
 
 Callpath
 --------------------------------
@@ -270,6 +284,8 @@ variable defined at program start on the Caliper blackboard.
    List of extra environment variables to import.
 
    Default: empty
+
+.. _event-service:
 
 Event
 --------------------------------
@@ -364,6 +380,8 @@ Example:
                 == CALIPER: Event: pre_end (attr = phase)
                 == CALIPER: Event: finish
                 == CALIPER: Finished
+
+.. _libpfm-service:
 
 Libpfm
 --------------------------------
@@ -464,11 +482,13 @@ Haswell):
 
 .. code-block:: sh
 
-   $ export CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-   $ export CALI_LIBPFM_PERIOD=100
-   $ export CALI_LIBPFM_PRECISE_IP=2
-   $ export CALI_LIBPFM_CONFIG1=100
-   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+   CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   CALI_LIBPFM_PERIOD=100
+   CALI_LIBPFM_PRECISE_IP=2
+   CALI_LIBPFM_CONFIG1=100
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+
+.. _mpi-service:
 
 MPI
 --------------------------------
@@ -486,17 +506,24 @@ Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
-.. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_WHITELIST
 
-   List of MPI functions to instrument. If set, only whitelisted
-   functions will be instrumented.
+   Comma-separated list of MPI functions to instrument. 
+   Only whitelisted functions will be instrumented. Set to ``all`` 
+   to instrument all MPI functions.
 
-.. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
+   Default: Empty
 
-   List of MPI functions that fill be filtered. Note: if both
-   whitelist and blacklist are set, only whitelisted functions will
-   be instrumented, and the blacklist will be applied to the
-   whitelisted functions.
+.. envvar:: CALI_MPI_BLACKLIST
+
+   Comma-separated list of MPI functions that will *not* be
+   instrumented.
+
+   Note: if both whitelist and blacklist are set, only whitelisted
+   functions will be instrumented, and the blacklist will be applied
+   to the whitelisted functions.
+
+   Default: Empty
 
 MPIT
 --------------------------------
@@ -517,6 +544,11 @@ addition to the regular Caliper runtime library.
    by the MPI implementation. Default: empty, records all available
    PVARs.
 
+The :ref:`mpi <mpi-service>` service must be enabled for mpit
+to work.
+
+.. _mpireport-service:
+
 MPI Report
 --------------------------------
 
@@ -532,6 +564,9 @@ before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.
 
+The :ref:`mpi <mpi-service>` service must be enabled for mpireport
+to work.
+
 .. envvar:: CALI_MPIREPORT_FILENAME
 
    File name of the output file. May be set to ``stdout`` or ``stderr``
@@ -539,9 +574,7 @@ MPI_Finalize.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create individual
-   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
-   multi-process program.
+   service description).
 
    Default: stdout
 
@@ -550,6 +583,8 @@ MPI_Finalize.
    An aggregation and formatting specification in CalQL syntax.
 
    Default: empty; all attributes in the snapshots will be printed.
+
+.. _papi-service:
 
 PAPI
 --------------------------------
@@ -569,7 +604,7 @@ Example:
 
 .. code-block:: sh
 
-   $ CALI_SERVICES_ENABLE=event:papi:trace:report
+   $ CALI_SERVICES_ENABLE=event,papi,trace,report
    $ CALI_PAPI_COUNTERS=PAPI_TOT_CYC,PAPI_L1_DCM
    $ ./test/cali-basic
    papi.PAPI_TOT_CYC papi.PAPI_L1_DCM function annotation loop     iteration#mainloop
@@ -580,6 +615,7 @@ Example:
                 7147              150 main                mainloop
                 8425              115 main                mainloop                  0
 
+.. _pthread-service:
 
 Pthread
 --------------------------------
@@ -590,6 +626,8 @@ thread. In doing so, the pthread service automatically creates a
 Caliper thread scope on the child thread: this is useful to
 automatically start sampling (e.g. with the `sampler` service) on each
 new thread.
+
+.. _recorder-service:
 
 Recorder
 --------------------------------
@@ -629,6 +667,8 @@ file name.
    Caliper does not create it. Default: not set, use current working
    directory.
 
+.. _report-service:
+
 Report
 --------------------------------
 
@@ -647,7 +687,7 @@ formatting options.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create xindividual
+   service description), for example to create individual
    ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
    multi-process program.
 
@@ -680,25 +720,41 @@ Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
 
+.. _sampler-service:
+
 Sampler
 --------------------------------
 
-The sampler service implements periodic sampling. It triggers
-snapshots periodically with a given frequency. Snapshot records
-triggered by the sampler service contain a ``cali.sampler.pc``
-attribute with the program address that was interrupted by the sample
-(the `symbollookup` service can translate this address to function,
-file and line information).
+The sampler service implements time-based sampling. It triggers
+snapshots at regular intervals. Sampling allows for low-overhead
+performance data collection, and can provide insights into code
+regions that are not or only sparsely covered with source-code
+annotations. 
 
-Note that the sampler has to be activated on each thread that should
-be sampled. This can be accomplished by a Caliper annotation on
-the thread. Alternatively, use the `pthread` service to automatically
-activate sampling on each new thread.
+Caliper must be initialized on each thread that should be
+sampled. This can be done explicitly via the annotation API, or via
+the :ref:`pthread <pthread-service>` service for child threads.
 
 .. envvar:: CALI_SAMPLER_FREQUENCY
 
-   The frequency, in Hz, in which snapshots are triggered.
-   Default: 20.
+   Sampling frequency in Hz. Default: 10
+
+When active, the sampler service regularly triggers snapshots with the
+specified frequency. Each snapshot triggered by the sampler service
+contains a ``cali.sampler.pc`` attribute with the program address
+where the target program was interrupted. The symbollookup service can
+use this to retrieve function name as well as source file and line
+information.
+
+The following example generates a sampling trace at 100Hz, uses the
+symbollookup service to retrieve function name information, and prints
+a flat profile of the number of samples per function::
+
+    CALI_SERVICES_ENABLE=report,sampler,symbollookup,trace
+    CALI_SAMPLER_FREQUENCY=100
+    CALI_REPORT_CONFIG="SELECT source.function#cali.sampler.pc,count() GROUP BY source.function#cali.sampler.pc FORMAT table ORDER BY count DESC"
+
+.. _symbollookup-service:
 
 Symbollookup
 --------------------------------
@@ -752,17 +808,17 @@ test application with Caliper's auto-generated format string:
 
 .. code-block:: sh
 
-                $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
-                $ export CALI_TEXTLOG_TRIGGER=phase
-                $ ./test/cali-basic
-                == CALIPER: Registered event trigger service
-                == CALIPER: Registered timestamp service
-                == CALIPER: Registered text log service
-                == CALIPER: Initialized
-                phase=main/init                                                       21
-                phase=main/loop                                                       84
-                phase=main                                                            219
-                == CALIPER: Finished
+      $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
+      $ export CALI_TEXTLOG_TRIGGER=phase
+      $ ./test/cali-basic
+      == CALIPER: Registered event trigger service
+      == CALIPER: Registered timestamp service
+      == CALIPER: Registered text log service
+      == CALIPER: Initialized
+      phase=main/init                                                       21
+      phase=main/loop                                                       84
+      phase=main                                                            219
+      == CALIPER: Finished
 
 
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
@@ -797,6 +853,8 @@ test application with Caliper's auto-generated format string:
    to print to the standard output or error streams, respectively.
 
    Default: stdout
+
+.. _timestamp-service:
 
 Timestamp
 --------------------------------
@@ -838,6 +896,8 @@ nodes in a distributed-memory program.
    to be enabled for this feature.
 
    Default: true
+
+.. _trace-service:
 
 Trace
 --------------------------------
