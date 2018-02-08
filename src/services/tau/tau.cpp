@@ -33,46 +33,47 @@
 /// @file  tau.cpp
 /// @brief Caliper TAU service
 
-#include "../common/ToolWrapper.h"
-#include "caliper/common/filters/RegexFilter.h"
-
-
+#include "../common/AnnotationBinding.h"
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Variant.h"
 #include <map>
 #include <TAU.h>
 
-namespace cali {
+using namespace cali;
 
+namespace {
 
-class TAUWrapper : public ToolWrapper {
-  public:
-    virtual void initialize(){
+class TAUBinding : public cali::AnnotationBinding {
+
+public:
+
+    const char* service_tag() const { return "tau"; };
+
+/*
+    void initialize(){
         TAU_PROFILE_SET_NODE(0);
     }
 
-    virtual std::string service_name() { 
-      return "TAU service";
+	void finalize(Caliper* c) {
     }
-    virtual std::string service_tag(){
-      return "tau";
-    }
-    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
+*/
 
-      TAU_START(name.c_str());
+    void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
+        if (value.type() == CALI_TYPE_STRING) {
+          TAU_PROFILE_START((const char*)(value.data()));
+        }
     }
 
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      TAU_STOP(name.c_str());
+    void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
+        if (value.type() == CALI_TYPE_STRING) {
+          TAU_PROFILE_STOP((const char*)(value.data()));
+        }
     }
 };
 
-CaliperService tau_service { "tau", &setCallbacks<TAUWrapper>};
+} // namespace
 
-
+namespace cali {
+    CaliperService tau_service { "tau", &AnnotationBinding::make_binding<::TAUBinding> };
 }
 

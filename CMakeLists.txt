@@ -42,6 +42,7 @@ option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
+option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
@@ -79,6 +80,19 @@ if(WITH_VTUNE)
   endif()
 endif()
 
+if(WITH_TAU)
+  include(FindTAU)
+  if (TAU_FOUND)
+    set(CALIPER_HAVE_TAU TRUE)
+    set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARY}")
+    # libittnotify.a needs libdl
+    #list(APPEND CALIPER_EXTERNAL_LIBS ${ITT_LIBRARY} "-ldl")
+  else()
+    message(WARNING "TAU bindings requested but TAU API was not found!\n"
+  "Set TAU_PREFIX to installation path and re-run cmake.")
+  endif()
+endif()
+
 if(WITH_NVPROF)
    find_package(CUDA REQUIRED)
 
@@ -103,8 +117,7 @@ if(WITH_CUPTI)
 endif()
 
 if(CALIPER_HAVE_TAU)
-    find_library(tau_lib libTAU.so)
-    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
+    list(APPEND CALIPER_EXTERNAL_LIBS ${TAU_LIBRARIES})
 endif()
 
 if (WITH_NETOUT)
