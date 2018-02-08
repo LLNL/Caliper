@@ -81,10 +81,10 @@ if(WITH_VTUNE)
 endif()
 
 if(WITH_TAU)
-  include(FindTAU)
+  find_package(TAU QUIET)
   if (TAU_FOUND)
     set(CALIPER_HAVE_TAU TRUE)
-    set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARY}")
+    set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARIES}")
     # libittnotify.a needs libdl
     #list(APPEND CALIPER_EXTERNAL_LIBS ${ITT_LIBRARY} "-ldl")
   else()
@@ -355,6 +355,7 @@ set(CALIPER_MODULES
   OMPT
   NVProf
   CUpti
+  TAU
   VTune)
 
 foreach(_caliper_module ${CALIPER_MODULES})
