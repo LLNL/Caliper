@@ -491,8 +491,8 @@ MPI
 The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting ``CALI_MPI_WHITELIST`` or
-``CALI_MPI_BLACKLIST`` filters. By default, all MPI functions are
-instrument.
+``CALI_MPI_BLACKLIST`` filters. By default, no MPI functions are
+instrumented.
 
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
@@ -501,17 +501,154 @@ Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
-.. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_WHITELIST
 
-   List of MPI functions to instrument. If set, only whitelisted
-   functions will be instrumented.
+   Comma-separated list of MPI functions to instrument. Only
+   whitelisted functions will be instrumented.
 
-.. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_BLACKLIST
 
-   List of MPI functions that fill be filtered. Note: if both
-   whitelist and blacklist are set, only whitelisted functions will
-   be instrumented, and the blacklist will be applied to the
-   whitelisted functions.
+   Comma-separated list of MPI functions that fill be filtered. If a
+   blacklist has been set, all functions except for the ones in the
+   blacklist will be instrumented.  If both whitelist and blacklist
+   are set, only whitelisted functions will be instrumented, and the
+   blacklist will be applied to the whitelisted functions.
+
+MPI message tracing (EXPERIMENTAL)
+................................
+
+The MPI service can record communication information about
+point-to-point messages being sent and received, as well as collective
+communications. When enabled, message tracing will create snapshot
+records for individual point-to-point messages sent or received
+and for collective operations a process participates in.
+
+.. envvar:: CALI_MPI_MSG_TRACING
+
+   Enable message tracing. Default: false
+
+Notes:
+
+* Communication records will only be created for MPI functions
+  that are instrumented (i.e., they must be listed in 
+  `CALI_MPI_WHITELIST`, and must not be listed 
+  in `CALI_MPI_BLACKLIST`).
+* This feature is experimental. Many implementation aspects such as
+  attribute names and the information being recorded can change
+  in future versions.
+* Caliper does not synchronize timestamps between MPI ranks, i.e. 
+  timestamps taken on different ranks may not be directly comparable
+
+Message tracing creates three types of records: 
+
+* Point-to-point message sent. Contains message destination, size, tag 
+  and communicator info.
+* Point-to-point message received. Contains message source, size, tag,
+  and communicator info.
+* Collective communication. Contains collective type, amount of bytes 
+  sent, and communicator info.
+
+Specifically, this information is encoded in the following attributes:
+
++----------------------+--------------------------------------------------+
+|                      | Integer.                                         |
+| `mpi.call.id`        | A unique ID for the MPI call the communication   |
+|                      | happened in. Can be used to associate the        |
+|                      | communication with the surrounding begin/end     |
+|                      | records for the MPI function. For MPI calls that |
+|                      | process multiple messages (e.g. `MPI_Waitall`),  |
+|                      | the records for all communications completed     |
+|                      | within the same function call have the same ID.  |
++----------------------+--------------------------------------------------+
+| `mpi.msg.src`        | Integer. Source rank, in the local communicator, |
+|                      | of a received message. Indicates a message       |
+|                      | received event.                                  |
++----------------------+--------------------------------------------------+
+| `mpi.msg.dst`        | Integer. Destination rank, in the local          |
+|                      | communicator, of a message being sent. Indicates |
+|                      | a message sent event.                            |
++----------------------+--------------------------------------------------+
+| `mpi.msg.tag`        | Integer. Tag of a message sent or received.      | 
++----------------------+--------------------------------------------------+
+| `mpi.msg.size`       | Integer. Size of message being sent or received  |
+|                      | in a point-to-point message, or the amount of    |
+|                      | data sent in a collective communication.         |
++----------------------+--------------------------------------------------+
+| `mpi.coll.type`      | Integer. The type of a collective communication. |
+|                      | Indicates a collective communication event.      |
+|                      | Possible values: 1: Barrier.                     |
+|                      | 2: N-to-N (e.g., `MPI_Allgather`).               |
+|                      | 3: 1-to-N (e.g., `MPI_Bcast`).                   |
+|                      | 4: N-to-1 (e.g., `MPI_Gather`).                  |
++----------------------+--------------------------------------------------+
+| `mpi.coll.root`      | Integer. Root rank, in the local communicator,   |
+|                      | of a 1-to-N or N-to-1 collective communication.  |
++----------------------+--------------------------------------------------+
+| `mpi.comm.comm`      | Integer. Unique ID for the communicator on which | 
+|                      | this communication occurs.                       |
++----------------------+--------------------------------------------------+
+| `mpi.comm.is_world`  | Boolean. Present and set to `true` if the        |
+|                      | communicator on which this communication occurs  |
+|                      | is congruent to `MPI_COMM_WORLD` (This applies   |
+|                      | `MPI_COMM_WORLD` itself and any duplicate of     |
+|                      | `MPI_COMM_WORLD`). If true, then the local       |
+|                      | source, destination, or collective root rank in  |
+|                      | the record is identical to its world rank;       |
+|                      | otherwise it is not.                             |
++----------------------+--------------------------------------------------+
+| `mpi.comm.size`      | Size of the communicator on which this           |
+|                      | communication occurs.                            |
++----------------------+--------------------------------------------------+
+| `mpi.comm.list`      | Lists the world ranks present in the local       |
+|                      | communicator. Currently encoded as a binary      |
+|                      | array.                                           |
++----------------------+--------------------------------------------------+
+
+Currently, we record communication information for the 
+following MPI functions:
+
++--------------------------------+----------------------------------------+
+| Function / function group      | Records                                |
++--------------------------------+----------------------------------------+
+| `MPI_Send` and `MPI_Isend`     | Message sent                           |
+|  variants                      |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Recv`                     | Message received                       |
++--------------------------------+----------------------------------------+
+| `MPI_Start`, `MPI_Startall`    | Message(s) sent                        |
++--------------------------------+----------------------------------------+
+| `MPI_Sendrecv`,                | Message sent, message received         |
+| `MPI_Sendrecv_replace`         |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Wait` variants            | Message(s) received                    |
++--------------------------------+----------------------------------------+
+| `MPI_Test` variants            | Message(s) received (for completed     |
+|                                | receive requests)                      |
++--------------------------------+----------------------------------------+
+| `MPI_Barrier`                  | Collective (barrier)                   |
++--------------------------------+----------------------------------------+
+| `MPI_Bcast`, `MPI_Scatter`,    | Collective (1-to-n)                    |
+| `MPI_Scatterv`                 |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Reduce` variants,         | Collective (n-to-1)                    |
+| `MPI_Gather`, `MPI_Gatherv`    |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Allgather`,               | Collective (n-to-n)                    |
+| `MPI_Allreduce`,               |                                        |
+| `MPI_Alltoall`,                |                                        |
+| `MPI_Allgatherv`,              |                                        |
+| `MPI_Alltoallv`,               |                                        |
+| `MPI_Reduce_scatter_block`,    |                                        |
+| `MPI_Scan`, `MPI_Exscan`       |                                        |
++--------------------------------+----------------------------------------+
+
+We do currently *not* cover:
+
+* `MPI_Alltoallw`
+* Non-blocking and neighborhood collectives
+* I/O
+* One-sided communication
+* Process creation and management
 
 MPIT
 --------------------------------
