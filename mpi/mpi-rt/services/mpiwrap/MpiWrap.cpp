@@ -46,6 +46,9 @@ namespace cali
 Attribute mpifn_attr   { Attribute::invalid };
 Attribute mpirank_attr { Attribute::invalid };
 Attribute mpisize_attr { Attribute::invalid };
+Attribute mpicall_attr { Attribute::invalid };
+
+bool      enable_msg_tracing = false;
 
 extern void mpiwrap_init(Caliper* c, const std::string&, const std::string&);
 
@@ -60,12 +63,15 @@ ConfigSet::Entry configdata[] = {
     { "whitelist", CALI_TYPE_STRING, "", 
       "List of MPI functions to instrument", 
       "Colon-separated list of MPI functions to instrument.\n"
-      "If set, only whitelisted MPI functions will be instrumented.\n"
-      "By default, all MPI functions are instrumented." 
+      "If set, the whitelisted MPI functions will be instrumented."
     },
     { "blacklist", CALI_TYPE_STRING, "",
       "List of MPI functions to filter",
       "Colon-separated list of functions to blacklist." 
+    },
+    { "msg_tracing", CALI_TYPE_BOOL, "false",
+      "Enable MPI message tracing",
+      "Enable MPI message tracing"
     },
     ConfigSet::Terminator
 };
@@ -73,6 +79,8 @@ ConfigSet::Entry configdata[] = {
 void mpi_register(Caliper* c)
 {
     config = RuntimeConfig::init("mpi", configdata);
+
+    enable_msg_tracing = config.get("msg_tracing").to_bool();
 
     mpifn_attr   = 
         c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);
