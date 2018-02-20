@@ -227,7 +227,7 @@ namespace
 
         TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
         
-        while (tbuf) {
+        for (; tbuf; tbuf = tbuf->next) {
             // Stop tracing while we flush: writers won't block
             // but just drop the snapshot
             
@@ -244,23 +244,6 @@ namespace
             
             num_written += tbuf->chunks->flush(c, proc_fn);
             tbuf->stopped.store(false);
-            
-            if (tbuf->retired.load()) {
-                // delete retired thread's trace buffer                
-                TraceBuffer* tmp = tbuf->next;
-
-                {
-                    std::lock_guard<util::spinlock>
-                        g(global_tbuf_lock);
-                
-                    tbuf->unlink();
-                }
-                
-                delete tbuf;
-                tbuf = tmp;
-            } else {
-                tbuf = tbuf->next;
-            }
         }
 
         if (Log::verbosity() > 1) {
@@ -278,6 +261,43 @@ namespace
         }
         
         Log(1).stream() << "Trace: Flushed " << num_written << " snapshots." << endl;
+    }
+
+    void clear_cb(Caliper* c) {
+        std::lock_guard<std::mutex>
+            g(global_flush_lock);
+
+        TraceBuffer* tbuf = nullptr;
+        
+        {
+            std::lock_guard<util::spinlock>
+                g(global_tbuf_lock);
+            
+            tbuf = global_tbuf_list;
+        }
+
+        while (tbuf) {
+            tbuf->stopped.store(true);
+            tbuf->chunks->reset();
+            tbuf->stopped.store(false);
+
+            if (tbuf->retired.load()) {
+                // delete retired thread's trace buffer                
+                TraceBuffer* tmp = tbuf->next;
+
+                {
+                    std::lock_guard<util::spinlock>
+                        g(global_tbuf_lock);
+                
+                    tbuf->unlink();
+                }
+                
+                delete tbuf;
+                tbuf = tmp;
+            } else {
+                tbuf = tbuf->next;
+            }
+        }        
     }
 
     void init_overflow_policy() {
@@ -325,6 +345,7 @@ namespace
         c->events().create_scope_evt.connect(&create_scope_cb);
         c->events().process_snapshot.connect(&process_snapshot_cb);
         c->events().flush_evt.connect(&flush_cb);
+        c->events().clear_evt.connect(&clear_cb);
         c->events().finish_evt.connect(&finish_cb);
 
         // Initialize trace buffer on master thread

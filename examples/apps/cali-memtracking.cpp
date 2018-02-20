@@ -32,8 +32,9 @@
 
 #include "caliper/tools-util/Args.h"
 
+#include "caliper/cali_datatracker.h"
+
 #include <caliper/Annotation.h>
-#include <caliper/DataTracker.h>
 #include <caliper/Caliper.h>
 
 #include <numeric>
@@ -49,9 +50,16 @@ void do_work(size_t M, size_t W, size_t N)
 
     cali::Annotation alloc_phase(cali::Annotation("phase").begin("allocate"));
 
-    double *matA = (double*)cali::DataTracker::Allocate("A", sizeof(double), {M,W});
-    double *matB = (double*)cali::DataTracker::Allocate("B", sizeof(double), {W,N});
-    double *matC = (double*)cali::DataTracker::Allocate("C", sizeof(double), {M,N});
+    const size_t dimA[] = { M, W };
+    const size_t dimB[] = { W, N };
+    const size_t dimC[] = { M, N };
+
+    double *matA = 
+        (double*) cali_datatracker_allocate_dimensional("A", sizeof(double), dimA, 2);
+    double *matB =
+        (double*) cali_datatracker_allocate_dimensional("B", sizeof(double), dimB, 2);
+    double *matC =
+        (double*) cali_datatracker_allocate_dimensional("C", sizeof(double), dimC, 2);
 
     alloc_phase.end();
     cali::Annotation init_phase(cali::Annotation("phase").begin("initialize_values"));
@@ -88,9 +96,9 @@ void do_work(size_t M, size_t W, size_t N)
     sum_phase.end();
     cali::Annotation free_phase(cali::Annotation("phase").begin("free"));
 
-    cali::DataTracker::Free(matA);
-    cali::DataTracker::Free(matB);
-    cali::DataTracker::Free(matC);
+    cali_datatracker_free(matA);
+    cali_datatracker_free(matB);
+    cali_datatracker_free(matC);
 
     free_phase.end();
 }
@@ -145,5 +153,4 @@ int main(int argc, const char* argv[])
     }
 
     phase_annotation.end();
-
 }

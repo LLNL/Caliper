@@ -1,9 +1,7 @@
-Service API
+Developer Guide
 ================================
 
-The Caliper service API provides access to low-level functionality,
-such as taking snapshots, updating the context tree, and registering
-callback functions.
+This section describes internal APIs for Caliper service developers.
 
 Caliper instance objects
 --------------------------------
@@ -115,5 +113,3 @@ Example:
       delete[] buf;
     }
   }
-
-

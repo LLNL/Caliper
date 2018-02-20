@@ -56,6 +56,11 @@ extern "C" {
  */
 
 /**
+ * \addtogroup AnnotationAPI
+ * \{
+ */
+
+/**
  * Allocate and track the resulting allocation in Caliper.
  *
  * \note Tracking information will be automatically removed if the allocation is freed
@@ -108,7 +113,7 @@ cali_datatracker_free(void *ptr);
  */
 
 void 
-cali_datatracker_track(void *ptr, 
+cali_datatracker_track(const void *ptr, 
                        const char *label,
                        size_t size);
 
@@ -123,7 +128,7 @@ cali_datatracker_track(void *ptr,
  */
 
 void 
-cali_datatracker_track_dimensional(void         *ptr, 
+cali_datatracker_track_dimensional(const void   *ptr, 
                                    const char   *label,
                                    size_t        elem_size,
                                    const size_t *dimensions,
@@ -136,7 +141,11 @@ cali_datatracker_track_dimensional(void         *ptr,
  */
 
 void 
-cali_datatracker_untrack(void *ptr);
+cali_datatracker_untrack(const void *ptr);
+
+/**
+ * \}
+ */
 
 #ifdef __cplusplus
 } // extern "C"
@@ -151,13 +160,46 @@ cali_datatracker_untrack(void *ptr);
 #define CALI_DATATRACKER_FREE(ptr) \
     cali_datatracker_free(ptr)
 
+/**
+ * \addtogroup AnnotationAPI
+ * \{
+ */
+
+/**
+ * \brief Label and track the given memory region.
+ *
+ * Labels the memory region of size \a size bytes pointed to by \a ptr
+ * with the variable name of \a ptr. The memory region can then be tracked
+ * and resolved with the alloc service.
+ */
+
 #define CALI_DATATRACKER_TRACK(ptr, size)            \
     cali_datatracker_track(ptr, #ptr, size)
+
+/**
+ * \brief Label and track a multi-dimensional array.
+ *
+ * Labels a multi-dimensional array with with the variable name of 
+ * \a ptr. The array can then be tracked and resolved with the alloc service.
+ *
+ * \param elem_size Size of the array elements in bytes
+ * \param dimension Array of type size_t[] with the sizes of each dimension.
+ *    Must have \a num_dimensions entries.
+ * \param num_dimensions The number of dimensions
+ */
 
 #define CALI_DATATRACKER_TRACK_DIMENSIONAL(ptr, elem_size, dimensions, num_dimensions) \
     cali_datatracker_track_dimensional(ptr, #ptr, elem_size, dimensions, num_dimensions)
 
+/**
+ * \brief Stop tracking the memory region pointed to by \a ptr
+ */
+
 #define CALI_DATATRACKER_UNTRACK(ptr) \
     cali_datatracker_untrack(ptr)
+
+/**
+ * \}
+ */
 
 #endif // CALI_CALI_DATATRACKER_H

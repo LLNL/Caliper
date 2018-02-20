@@ -35,15 +35,15 @@
 #include <cstdlib>
 #include <algorithm>
 
-#include <caliper/Annotation.h>
-#include <caliper/cali_macros.h>
-#include <caliper/DataTracker.h>
+#include <caliper/cali.h>
+#include <caliper/cali_datatracker.h>
 
 int* init(size_t arraySize, bool sort)
 {
     CALI_CXX_MARK_FUNCTION;
 
-    int *data = (int*)cali::DataTracker::Allocate("data", sizeof(int), {arraySize});
+    int *data = 
+        static_cast<int*>(cali_datatracker_allocate_dimensional("data", sizeof(int), &arraySize, 1));
 
     std::srand(1337);
     for (size_t c = 0; c < arraySize; ++c)
@@ -77,7 +77,7 @@ void cleanup(int *data)
 {
     CALI_CXX_MARK_FUNCTION;
 
-    cali::DataTracker::Free(data);
+    cali_datatracker_free(data);
 }
 
 void benchmark(size_t arraySize, bool sort)
