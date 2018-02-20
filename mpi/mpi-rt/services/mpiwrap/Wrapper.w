@@ -900,7 +900,7 @@ post_init_cb(Caliper* c)
 #endif
 }{{endfn}}
 
-{{fn func MPI_Reduce_scatter_block MPI_Scan MPI_Exscan}}{
+{{fn func MPI_Scan MPI_Exscan}}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     if (::enable_wrapper && ::enable_{{func}}) {
 #endif
@@ -1139,7 +1139,7 @@ post_init_cb(Caliper* c)
     MPI_Barrier
     MPI_Bcast MPI_Gather MPI_Scatter MPI_Reduce
     MPI_Allreduce MPI_Allgather MPI_Alltoall
-    MPI_Reduce_scatter MPI_Reduce_scatter_block MPI_Scan MPI_Exscan
+    MPI_Reduce_scatter MPI_Scan MPI_Exscan
     MPI_Allgatherv MPI_Alltoallv MPI_Gatherv MPI_Scatterv
 }}{
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
