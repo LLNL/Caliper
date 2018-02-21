@@ -82,6 +82,9 @@ void mpi_register(Caliper* c)
 
     enable_msg_tracing = config.get("msg_tracing").to_bool();
 
+    if (enable_msg_tracing)
+        Log(1).stream() << "MPI wrapper: enabling message tracing\n";
+
     mpifn_attr   = 
         c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);
     mpirank_attr = 
@@ -93,7 +96,7 @@ void mpi_register(Caliper* c)
 
     mpiwrap_init(c, config.get("whitelist").to_string(), config.get("blacklist").to_string());
 
-    Log(1).stream() << "Registered MPI service" << endl;
+    Log(1).stream() << "Registered MPI service" << std::endl;
 }
 
 } // anonymous namespace 
