@@ -171,17 +171,18 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
 namespace cali
 {
 
-QuerySpec
-spec_from_args(const Args& args)
+bool
+QueryArgsParser::parse_args(const Args& args)
 {
-    QuerySpec spec;
-    
-    spec.filter.selection              = QuerySpec::FilterSelection::Default;
-    spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
-    spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
-    spec.aggregation_key.selection     = QuerySpec::AttributeSelection::None;
-    spec.sort.selection                = QuerySpec::SortSelection::Default;
-    spec.format.opt                    = QuerySpec::FormatSpec::Default;
+    m_spec.filter.selection              = QuerySpec::FilterSelection::Default;
+    m_spec.attribute_selection.selection = QuerySpec::AttributeSelection::Default;
+    m_spec.aggregation_ops.selection     = QuerySpec::AggregationSelection::None;
+    m_spec.aggregation_key.selection     = QuerySpec::AttributeSelection::None;
+    m_spec.sort.selection                = QuerySpec::SortSelection::Default;
+    m_spec.format.opt                    = QuerySpec::FormatSpec::Default;
+
+    m_error = false;
+    m_error_msg.clear();
     
     // parse CalQL query (if any)
 
@@ -189,36 +190,38 @@ spec_from_args(const Args& args)
         std::string q = args.get("query");
         CalQLParser p(q.c_str());
 
-        if (p.error())
-            Log(0).stream() << "Query parse error: " << q << ": " << p.error_msg();
-        else
-            spec = p.spec();
+        if (p.error()) {
+            m_error     = true;
+            m_error_msg = p.error_msg();
+            return false;
+        } else
+            m_spec = p.spec();
     }
     
     // setup filter
 
     if (args.is_set("select")) {
-        spec.filter.selection = QuerySpec::FilterSelection::List;
-        spec.filter.list      = RecordSelector::parse(args.get("select"));
+        m_spec.filter.selection = QuerySpec::FilterSelection::List;
+        m_spec.filter.list      = RecordSelector::parse(args.get("select"));
     }
     
     // setup attribute selection
     
     if (args.is_set("attributes")) {
-        spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-        util::split(args.get("attributes"), ',', std::back_inserter(spec.attribute_selection.list));
+        m_spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
+        util::split(args.get("attributes"), ',', std::back_inserter(m_spec.attribute_selection.list));
     }
     
     // setup aggregation
     
     if (args.is_set("aggregate")) {
         // aggregation ops
-        spec.aggregation_ops.selection = QuerySpec::AggregationSelection::Default;
+        m_spec.aggregation_ops.selection = QuerySpec::AggregationSelection::Default;
 
         std::string opstr = args.get("aggregate");
 
         if (!opstr.empty()) {
-            spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
+            m_spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
 
             std::istringstream is(opstr);
             char c;
@@ -229,23 +232,23 @@ spec_from_args(const Args& args)
                 auto fpair = parse_functioncall(is, defs);
 
                 if (fpair.first >= 0)
-                    spec.aggregation_ops.list.emplace_back(defs[fpair.first], fpair.second, "");
+                    m_spec.aggregation_ops.list.emplace_back(defs[fpair.first], fpair.second, "");
 
                 c = parse_char(is);
             } while (is.good() && c == ',');
         }
 
         // aggregation key 
-        spec.aggregation_key.selection = QuerySpec::AttributeSelection::Default;
+        m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::Default;
         
         if (args.is_set("aggregate-key")) {
             std::string keystr = args.get("aggregate-key");
 
             if (keystr == "none") {
-                spec.aggregation_key.selection = QuerySpec::AttributeSelection::None;
+                m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::None;
             } else {
-                spec.aggregation_key.selection = QuerySpec::AttributeSelection::List;
-                util::split(keystr, ',', std::back_inserter(spec.aggregation_key.list));
+                m_spec.aggregation_key.selection = QuerySpec::AttributeSelection::List;
+                util::split(keystr, ',', std::back_inserter(m_spec.aggregation_key.list));
             }
         }
     }
@@ -253,13 +256,13 @@ spec_from_args(const Args& args)
     // setup sort
     
     if (args.is_set("sort")) {
-        spec.sort.selection = QuerySpec::SortSelection::List;
+        m_spec.sort.selection = QuerySpec::SortSelection::List;
         
         std::vector<std::string> list;
         util::split(args.get("sort"), ',', std::back_inserter(list));
 
         for (const std::string& s : list)
-            spec.sort.list.emplace_back(s);
+            m_spec.sort.list.emplace_back(s);
     }
 
     // setup formatter
@@ -267,25 +270,29 @@ spec_from_args(const Args& args)
     for (const QuerySpec::FunctionSignature* fmtsig = FormatProcessor::formatter_defs(); fmtsig && fmtsig->name; ++fmtsig) {
         // see if a formatting option is set        
         if (args.is_set(fmtsig->name)) {
-            spec.format.opt       = QuerySpec::FormatSpec::User;
-            spec.format.formatter = *fmtsig;
+            m_spec.format.opt       = QuerySpec::FormatSpec::User;
+            m_spec.format.formatter = *fmtsig;
 
             // Find formatter args (if any)
             for (int i = 0; i < fmtsig->max_args; ++i)
                 if (args.is_set(fmtsig->args[i])) {
-                    spec.format.args.resize(i+1);
-                    spec.format.args[i] = args.get(fmtsig->args[i]);
+                    m_spec.format.args.resize(i+1);
+                    m_spec.format.args[i] = args.get(fmtsig->args[i]);
                 }
 
             // NOTE: This check isn't complete yet.
-            if (spec.format.args.size() < fmtsig->min_args)
-                Log(0).stream() << "cali-query: Insufficient arguments for formatter " << fmtsig->name << std::endl;
+            if (m_spec.format.args.size() < fmtsig->min_args) {                
+                m_error     = true;
+                m_error_msg = std::string("Insufficient arguments for formatter ") + fmtsig->name;
 
+                return false;
+            }
+            
             break;
         }
     }
         
-    return spec;
+    return true;
 }
 
 }

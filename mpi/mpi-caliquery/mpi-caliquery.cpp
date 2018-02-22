@@ -243,7 +243,17 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
-    QuerySpec  spec = spec_from_args(args);
+    QueryArgsParser query_parser;
+
+    if (!query_parser.parse_args(args)) {
+        if (rank == 0)
+            std::cerr << "cali-query: Invalid query: " << query_parser.error_msg()
+                      << std::endl;
+        
+        MPI_Abort(MPI_COMM_WORLD, -2);
+    }
+
+    QuerySpec  spec = query_parser.spec();
     
     Aggregator aggregate(spec);
     CaliperMetadataDB metadb;
@@ -264,6 +274,7 @@ int main(int argc, char* argv[])
     if (rank == 0)
         ::format_output(args, spec, metadb, aggregate);
 
+    
     MPI_Finalize();
 
     return 0;
