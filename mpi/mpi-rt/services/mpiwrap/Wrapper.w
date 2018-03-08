@@ -1102,19 +1102,53 @@ post_init_cb(Caliper* c)
 {{fn func MPI_Init MPI_Init_thread}}{
     {{callfn}}
 
-    if (Caliper::is_initialized()) {
-        // MPI_Init after Caliper init: Invoke Caliper's mpi init event now.
-        Caliper c;
+    bool run_init_evts = Caliper::is_initialized();
+    
+    Caliper c;
+
+    //   Run mpi init events here if Caliper was initialized before MPI_Init
+    // Otherwise they will run via the Caliper initialization above.
+    if (run_init_evts)
         MpiEvents::events.mpi_init_evt(&c);
-    } else {
-        //   MPI_Init before Caliper init (PMPI case): Initialize Caliper here.
-        // Invokes Caliper's mpi init event in post_init_cb.
-        Caliper::instance();
-    }
+    
+    // cheat a bit: put begin/ends around a barrier here
+    
+    if (enable_msg_tracing)
+        ::tracing.push_call_id(&c);
+        
+    c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+
+    PMPI_Barrier(MPI_COMM_WORLD);
+
+    if (enable_msg_tracing)
+        ::tracing.handle_init(&c);
+
+    c.end(mpifn_attr);
+        
+    if (enable_msg_tracing)
+        ::tracing.pop_call_id(&c);
 }{{endfn}}
 
 {{fn func MPI_Finalize}}{
     Caliper c;
+
+    // cheat a bit: put begin/ends around a barrier here
+    
+    if (enable_msg_tracing)
+        ::tracing.push_call_id(&c);
+        
+    c.begin(mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+
+    PMPI_Barrier(MPI_COMM_WORLD);
+
+    if (enable_msg_tracing)
+        ::tracing.handle_finalize(&c);
+
+    c.end(mpifn_attr);
+        
+    if (enable_msg_tracing)
+        ::tracing.pop_call_id(&c);
+
     MpiEvents::events.mpi_finalize_evt(&c);
 
     {{callfn}}

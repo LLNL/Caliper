@@ -485,6 +485,18 @@ MpiTracing::handle_barrier(Caliper* c, MPI_Comm comm)
 }
 
 void
+MpiTracing::handle_init(Caliper* c)
+{
+    mP->push_coll_event(c, Coll_Init, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+}
+
+void
+MpiTracing::handle_finalize(Caliper* c)
+{
+    mP->push_coll_event(c, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+}
+
+void
 MpiTracing::push_call_id(Caliper* c)
 {
     c->begin(mP->call_id_attr, ++(mP->call_id));
