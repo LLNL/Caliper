@@ -52,7 +52,7 @@ class MpiTracing
 public:
 
     enum CollectiveType {
-        Unknown, Coll_Barrier, Coll_NxN, Coll_12N, Coll_N21
+        Unknown, Coll_Barrier, Coll_NxN, Coll_12N, Coll_N21, Coll_Init, Coll_Finalize
     };
 
     MpiTracing();
@@ -84,7 +84,9 @@ public:
     void handle_12n(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm);
     void handle_n21(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm);
     void handle_n2n(Caliper* c, int count, MPI_Datatype type, MPI_Comm comm);    
-    void handle_barrier(Caliper* c, MPI_Comm comm);    
+    void handle_barrier(Caliper* c, MPI_Comm comm);
+    void handle_init(Caliper* c);
+    void handle_finalize(Caliper* c);
 };
 
 }
