@@ -13,6 +13,8 @@ class CaliperSamplerTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'sampler:symbollookup:trace:recorder',
+            'CALI_SYMBOLLOOKUP_LOOKUP_FILE' : 'true',
+            'CALI_SYMBOLLOOKUP_LOOKUP_LINE' : 'true',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -27,6 +29,7 @@ class CaliperSamplerTest(unittest.TestCase):
                          'source.function#cali.sampler.pc', 
                          'source.file#cali.sampler.pc',
                          'source.line#cali.sampler.pc',
+                         'sourceloc#cali.sampler.pc',
                          'function' }))
 
         sfile = calitest.get_snapshot_with_keys(snapshots, { 'source.file#cali.sampler.pc' })

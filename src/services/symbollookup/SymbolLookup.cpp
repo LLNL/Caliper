@@ -71,13 +71,16 @@ class SymbolLookup
         Attribute file_attr;
         Attribute line_attr;
         Attribute func_attr;
+        Attribute loc_attr;
     };
 
     ConfigSet m_config;
 
     bool m_lookup_functions;
     bool m_lookup_sourceloc;
-
+    bool m_lookup_file;
+    bool m_lookup_line;
+    
     std::map<Attribute, SymbolAttributes> m_sym_attr_map;
     std::mutex m_sym_attr_mutex;
 
@@ -105,7 +108,10 @@ class SymbolLookup
         sym_attribs.func_attr = 
             c->create_attribute("source.function#" + attr.name(),
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-
+        sym_attribs.loc_attr  =
+            c->create_attribute("sourceloc#" + attr.name(),
+                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            
         std::lock_guard<std::mutex>
             g(m_sym_attr_mutex);
 
@@ -179,14 +185,43 @@ class SymbolLookup
                 lineno   = statements.front()->getLine();
             }
 
+            filename.append(":");
+            filename.append(std::to_string(lineno));
+
+            char* tmp_s = static_cast<char*>(mempool.allocate(filename.size()+1));
+            std::copy(filename.begin(), filename.end(), tmp_s);
+            tmp_s[filename.size()] = '\0';
+
+            attr.push_back(sym_attr.loc_attr);
+            attr.push_back(sym_attr.line_attr);
+
+            data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
+            data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
+        }
+
+        if (m_lookup_file) {
+            std::string filename = "UNKNOWN";
+
+            if (ret_line && statements.size() > 0) {
+                filename = statements.front()->getFile();
+            }
+
             char* tmp_s = static_cast<char*>(mempool.allocate(filename.size()+1));
             std::copy(filename.begin(), filename.end(), tmp_s);
             tmp_s[filename.size()] = '\0';
 
             attr.push_back(sym_attr.file_attr);
-            attr.push_back(sym_attr.line_attr);
-
             data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
+        }
+
+        if (m_lookup_line) {
+            uint64_t lineno = 0;
+
+            if (ret_line && statements.size() > 0) {
+                lineno = statements.front()->getLine();
+            }
+
+            attr.push_back(sym_attr.line_attr);
             data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
         }
 
@@ -208,7 +243,8 @@ class SymbolLookup
             data.push_back(Variant(CALI_TYPE_STRING, tmp_f, funcname.size()));
         }
 
-        if ((m_lookup_functions && !ret_func) || (m_lookup_sourceloc && !ret_line))
+        if ((m_lookup_functions && !ret_func) ||
+            ((m_lookup_sourceloc || m_lookup_file || m_lookup_line) && !ret_line))
             ++m_num_failed; // not locked, doesn't matter too much if it's slightly off
     }
 
@@ -306,6 +342,8 @@ class SymbolLookup
 
             m_lookup_functions = m_config.get("lookup_functions").to_bool();
             m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();
+            m_lookup_file      = m_config.get("lookup_file").to_bool();
+            m_lookup_line      = m_config.get("lookup_line").to_bool();
 
             register_callbacks(c);
 
@@ -331,8 +369,16 @@ const ConfigSet::Entry SymbolLookup::s_configdata[] = {
       "Perform function name lookup",
     },
     { "lookup_sourceloc", CALI_TYPE_BOOL, "true",
-      "Perform source location (filename/linenumber) lookup",
-      "Perform source location (filename/linenumber) lookup",
+      "Perform source location (combined filename/linenumber) lookup",
+      "Perform source location (combined filename/linenumber) lookup",
+    },
+    { "lookup_file", CALI_TYPE_BOOL, "false",
+      "Perform source file name lookup",
+      "Perform source file name lookup",
+    },
+    { "lookup_line", CALI_TYPE_BOOL, "false",
+      "Perform source line number lookup",
+      "Perform source line number lookup",
     },
     ConfigSet::Terminator
 };
