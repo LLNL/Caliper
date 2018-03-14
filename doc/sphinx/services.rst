@@ -894,9 +894,9 @@ source line number lookup for binary program addresses from, e.g.,
 stack unwinding or program counter sampling. The symbol lookup takes
 place during snapshot buffer flushes. It appends symbol attributes for
 each address attribute to the snapshots being flushed. For an address
-attribute ``address``, the function, file, and line number will be
-added in ``source.function#address``, ``source.file#address``, and
-``source.line#address`` attributes, respectively. If a symbol lookup
+attribute ``address``, the function and file/line number will be
+added in the ``source.function#address`` and ``sourceloc#address``
+attributes, respectively. If a symbol lookup
 was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
 .. envvar:: CALI_SYMBOLLOOKUP_ATTRIBUTES
@@ -912,7 +912,21 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
 .. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
 
    Perform source file and line number lookup. `TRUE` or `FALSE`,
-   default `TRUE`.
+   default `TRUE`. Combines file and line information in the
+   ``sourceloc#address`` attribute, e.g. ``mysource.cpp:42`` for file
+   "mysource.cpp" and line number 42.
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FILE
+
+   Perform source file lookup, and writes the file name in the
+   ``source.file#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_LINE
+
+   Perform source line lookup, and writes the line number in the
+   ``source.line#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
 
 Sysalloc
 --------------------------------
