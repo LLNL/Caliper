@@ -262,6 +262,72 @@ attributes in Caliper context records.
 
    Default: 10
 
+.. _cupti-service:
+
+CUpti
+--------------------------------
+
+The `cupti` service records CUDA events and wraps CUDA API calls
+through the CUpti interface. Specifically, it can intercept runtime
+API calls, driver API calls, resource creation and destruction events
+(contexts and streams), and synchronization events. It can also
+interpret NVTX source-code annotations as Caliper annotations.
+
+.. envvar:: CALI_CUPTI_CALLBACK_DOMAINS
+
+   String. A comma-separated list of CUpti callback domains to
+   intercept.  Values:
+
+   * `runtime`: The CUDA runtime API, e.g. ``cudaDeviceSynchronize``.
+   * `driver`:  The CUDA driver API, e.g. ``cuInit``. This category
+     tends to have significant overheads.
+   * `resource`: Stream and context creation.
+   * `sync`: Synchronization events.
+   * `nvtx`: Interpret NVTX annotations as Caliper annotations.
+   * `none`: Don't capture callbacks.
+
+   Default: `runtime,sync`
+
+.. envvar:: CALI_CUPTI_RECORD_SYMBOL
+
+   Boolean. Record the kernel symbol name for callbacks (typically
+   when launching kernels). Default: `true`.
+   
+.. envvar:: CALI_CUPTI_RECORD_CONTEXT
+
+   Boolean. Record CUDA context ID. Default: `true`.
+
+CUpti Attributes
+................................
+
+The `cupti` service adds the following attributes:
+
++----------------------+--------------------------------------------------+
+| cupti.runtimeAPI     | Name of CUDA runtime API call. Nested.           |
++----------------------+--------------------------------------------------+
+| cupti.driverAPI      | Name of CUDA driver API call. Nested.            |
++----------------------+--------------------------------------------------+
+| cupti.resource       | Resource being created or destroyed.             |
+|                      | (`create_context`, `destroy_context`,            |
+|                      | `create_stream`, `destroy_stream`).              |
++----------------------+--------------------------------------------------+
+| cupti.sync           | Object being synchronized (`context` or `stream`)|
++----------------------+--------------------------------------------------+
+| nvtx.range           | Name of NVTX range annotation.                   |
++----------------------+--------------------------------------------------+
+| cupti.symbolName     | Symbol name of a kernel being launched.          |
++----------------------+--------------------------------------------------+
+| cupti.contextID      | CUDA context ID. Recorded with synchronization   |
+|                      | and resource events.                             |
++----------------------+--------------------------------------------------+
+| cupti.deviceID       | CUDA device ID. Recorded with resource and sync  |
+|                      | events.                                          |
++----------------------+--------------------------------------------------+
+| cupti.streamID       | CUDA Stream ID. Recorded with stream resource    |
+|                      | sync events.                                     |
++----------------------+--------------------------------------------------+
+
+
 Environment Information
 --------------------------------
 
@@ -421,6 +487,7 @@ each sample, and the sampling period.
    Comma-separated list of attributes to record for each sample.
 
    Available entries are:
+
      ip             Instruction pointer
      id             Sample id
      stream_id      Stream id
