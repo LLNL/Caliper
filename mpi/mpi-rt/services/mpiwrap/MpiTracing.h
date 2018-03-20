@@ -1,8 +1,8 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
+// Written by David Boehme, boehme3@llnl.gov.
 // LLNL-CODE-678900
 // All rights reserved.
 //
@@ -30,56 +30,63 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file DataTracker.h
-/// \brief Caliper C++ data tracking interface
+/// \file MsgTrace.h
+/// \brief MPI communication tracer
+
+#include <mpi.h>
+
+#include <memory>
 
 #pragma once
-
-#include "common/util/callback.hpp"
-
-#include <vector>
-#include <string>
-#include <cstdlib>
-#include <cinttypes>
 
 namespace cali
 {
 
-namespace DataTracker
-{
+class Caliper;
 
-struct Events {
-    util::callback<void(void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])>
-    track_memory_evt;
-    
-    util::callback<void(void* ptr)>
-    untrack_memory_evt;
+class MpiTracing
+{
+    struct MpiTracingImpl;
+    std::unique_ptr<MpiTracingImpl> mP;
+
+public:
+
+    enum CollectiveType {
+        Unknown, Coll_Barrier, Coll_NxN, Coll_12N, Coll_N21, Coll_Init, Coll_Finalize
+    };
+
+    MpiTracing();
+
+    ~MpiTracing();
+
+    void init(Caliper* c);
+    void init_mpi(Caliper* c);
+
+    void push_call_id(Caliper* c);
+    void pop_call_id(Caliper* c);
+
+    // --- point-to-point
+
+    void handle_send(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+    void handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req);
+
+    void handle_recv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
+    void handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+
+    void handle_start(Caliper* c, int nreq, MPI_Request* reqs);
+    void handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses);
+
+    void request_free(Caliper* c, MPI_Request* req);
+
+    // --- collectives
+
+    void handle_12n(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n21(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n2n(Caliper* c, int count, MPI_Datatype type, MPI_Comm comm);    
+    void handle_barrier(Caliper* c, MPI_Comm comm);
+    void handle_init(Caliper* c);
+    void handle_finalize(Caliper* c);
 };
 
-Events* events();
-
-void* Allocate(const char*        label,
-               const size_t       size);
-
-void* Allocate(const char*        label,
-               const size_t       elem_size,
-               const size_t       ndims,
-               const size_t       dimensions[]);
-
-void Free(void *ptr);
-
-void TrackAllocation(void         *ptr,
-                     const char*  label,
-                     size_t       size);
-
-void TrackAllocation(void *ptr,
-                     const char*  label,
-                     const size_t elem_size,
-                     const size_t ndims,
-                     const size_t dimensions[]);
-
-void UntrackAllocation(void *ptr);
-
-} // namespace DataTracker
-
-} // namespace cali
+}

@@ -17,6 +17,7 @@ to create event-triggered context traces for an application.
 The following sections describe the available service modules and
 their configuration.
 
+.. _aggregate-service:
 
 Aggregate
 --------------------------------
@@ -171,40 +172,53 @@ The resulting file has the following contents: ::
      max#time.inclusive.duration=26
      sum#time.inclusice.duration=102
 
+.. _alloc-service:
+
 Alloc
 --------------------------------
 
 The `alloc` service adds data tracking information to Caliper.
 It records snapshots of allocation calls with their arguments and
 return values, and resolves the containing allocations of any memory
-addresses produced by other Caliper services, such as the `Libpfm` 
+addresses produced by other Caliper services, such as the `libpfm` 
 service.
 By default, it will only use data tracking information provided via
 the Caliper data tracking API, but in conjunction with the
-``sysalloc`` service it records and/or tracks any allocations by
+`sysalloc` service it records and/or tracks any allocations by
 hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when 
 recording/tracking frequent allocations/deallocations.
 
 .. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
 
-    Record snapshots when tracking or untracking marked memory regions.
+    Records snapshots when memory regions are being tracked or
+    untracked, storing the given label in the `mem.alloc` or
+    `mem.free` attribute, respectively. The snapshots also contain a
+    unique ID for the allocation in the `alloc.uid` attribute, and the
+    size of the allocated region in the `alloc.total_size` attribute.
 
     Default: true
 
 .. envvar:: CALI_ALLOC_RESOLVE_ADDRESSES
 
-    When set, snapshots with memory addresses produced by other services 
-    (e.g., Libpfm)  will be appended with the allocations that contain them.
+    When set, snapshots with memory addresses produced by other
+    services (e.g., Libpfm) will be appended with the allocations that
+    contain them. The snapshots then contain
+    `alloc.label#address_attribute`, `alloc.uid#address_attribute`,
+    and `alloc.index#address_attribute` attributes with the memory
+    region label, allocation ID, and array index for the memory
+    address attributes found in the snapshot.
 
     Default: false
 
 .. envvar:: CALI_ALLOC_RECORD_ACTIVE_MEM
 
-    Record the amount of active allocated memory, in bytes, at each snapshot.
+    Records the amount of active allocated memory, in bytes, at each
+    snapshot, in the `mem.active` attribute.
 
     Default: false
 
+.. _callpath-service:
 
 Callpath
 --------------------------------
@@ -248,6 +262,72 @@ attributes in Caliper context records.
 
    Default: 10
 
+.. _cupti-service:
+
+CUpti
+--------------------------------
+
+The `cupti` service records CUDA events and wraps CUDA API calls
+through the CUpti interface. Specifically, it can intercept runtime
+API calls, driver API calls, resource creation and destruction events
+(contexts and streams), and synchronization events. It can also
+interpret NVTX source-code annotations as Caliper annotations.
+
+.. envvar:: CALI_CUPTI_CALLBACK_DOMAINS
+
+   String. A comma-separated list of CUpti callback domains to
+   intercept.  Values:
+
+   * `runtime`: The CUDA runtime API, e.g. ``cudaDeviceSynchronize``.
+   * `driver`:  The CUDA driver API, e.g. ``cuInit``. This category
+     tends to have significant overheads.
+   * `resource`: Stream and context creation.
+   * `sync`: Synchronization events.
+   * `nvtx`: Interpret NVTX annotations as Caliper annotations.
+   * `none`: Don't capture callbacks.
+
+   Default: `runtime,sync`
+
+.. envvar:: CALI_CUPTI_RECORD_SYMBOL
+
+   Boolean. Record the kernel symbol name for callbacks (typically
+   when launching kernels). Default: `true`.
+   
+.. envvar:: CALI_CUPTI_RECORD_CONTEXT
+
+   Boolean. Record CUDA context ID. Default: `true`.
+
+CUpti Attributes
+................................
+
+The `cupti` service adds the following attributes:
+
++----------------------+--------------------------------------------------+
+| cupti.runtimeAPI     | Name of CUDA runtime API call. Nested.           |
++----------------------+--------------------------------------------------+
+| cupti.driverAPI      | Name of CUDA driver API call. Nested.            |
++----------------------+--------------------------------------------------+
+| cupti.resource       | Resource being created or destroyed.             |
+|                      | (`create_context`, `destroy_context`,            |
+|                      | `create_stream`, `destroy_stream`).              |
++----------------------+--------------------------------------------------+
+| cupti.sync           | Object being synchronized (`context` or `stream`)|
++----------------------+--------------------------------------------------+
+| nvtx.range           | Name of NVTX range annotation.                   |
++----------------------+--------------------------------------------------+
+| cupti.symbolName     | Symbol name of a kernel being launched.          |
++----------------------+--------------------------------------------------+
+| cupti.contextID      | CUDA context ID. Recorded with synchronization   |
+|                      | and resource events.                             |
++----------------------+--------------------------------------------------+
+| cupti.deviceID       | CUDA device ID. Recorded with resource and sync  |
+|                      | events.                                          |
++----------------------+--------------------------------------------------+
+| cupti.streamID       | CUDA Stream ID. Recorded with stream resource    |
+|                      | sync events.                                     |
++----------------------+--------------------------------------------------+
+
+
 Environment Information
 --------------------------------
 
@@ -270,6 +350,8 @@ variable defined at program start on the Caliper blackboard.
    List of extra environment variables to import.
 
    Default: empty
+
+.. _event-service:
 
 Event
 --------------------------------
@@ -365,6 +447,8 @@ Example:
                 == CALIPER: Event: finish
                 == CALIPER: Finished
 
+.. _libpfm-service:
+
 Libpfm
 --------------------------------
 
@@ -403,6 +487,7 @@ each sample, and the sampling period.
    Comma-separated list of attributes to record for each sample.
 
    Available entries are:
+
      ip             Instruction pointer
      id             Sample id
      stream_id      Stream id
@@ -464,11 +549,13 @@ Haswell):
 
 .. code-block:: sh
 
-   $ export CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-   $ export CALI_LIBPFM_PERIOD=100
-   $ export CALI_LIBPFM_PRECISE_IP=2
-   $ export CALI_LIBPFM_CONFIG1=100
-   $ export CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+   CALI_LIBPFM_EVENTS=MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+   CALI_LIBPFM_PERIOD=100
+   CALI_LIBPFM_PRECISE_IP=2
+   CALI_LIBPFM_CONFIG1=100
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES=ip,time,tid,cpu,addr,weight
+
+.. _mpi-service:
 
 MPI
 --------------------------------
@@ -476,8 +563,8 @@ MPI
 The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting ``CALI_MPI_WHITELIST`` or
-``CALI_MPI_BLACKLIST`` filters. By default, all MPI functions are
-instrument.
+``CALI_MPI_BLACKLIST`` filters. By default, no MPI functions are
+instrumented.
 
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
@@ -486,17 +573,154 @@ Note that you have to link the `libcaliper-mpiwrap` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
-.. envvar:: CALI_MPI_WHITELIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_WHITELIST
 
-   List of MPI functions to instrument. If set, only whitelisted
-   functions will be instrumented.
+   Comma-separated list of MPI functions to instrument. Only
+   whitelisted functions will be instrumented.
 
-.. envvar:: CALI_MPI_BLACKLIST=(MPI_Fn_1:MPI_Fn_2:...)
+.. envvar:: CALI_MPI_BLACKLIST
 
-   List of MPI functions that fill be filtered. Note: if both
-   whitelist and blacklist are set, only whitelisted functions will
-   be instrumented, and the blacklist will be applied to the
-   whitelisted functions.
+   Comma-separated list of MPI functions that fill be filtered. If a
+   blacklist has been set, all functions except for the ones in the
+   blacklist will be instrumented.  If both whitelist and blacklist
+   are set, only whitelisted functions will be instrumented, and the
+   blacklist will be applied to the whitelisted functions.
+
+MPI message tracing (EXPERIMENTAL)
+................................
+
+The MPI service can record communication information about
+point-to-point messages being sent and received, as well as collective
+communications. When enabled, message tracing will create snapshot
+records for individual point-to-point messages sent or received
+and for collective operations a process participates in.
+
+.. envvar:: CALI_MPI_MSG_TRACING
+
+   Enable message tracing. Default: false
+
+Notes:
+
+* Communication records will only be created for MPI functions
+  that are instrumented (i.e., they must be listed in 
+  `CALI_MPI_WHITELIST`, and must not be listed 
+  in `CALI_MPI_BLACKLIST`).
+* This feature is experimental. Many implementation aspects such as
+  attribute names and the information being recorded can change
+  in future versions.
+* Caliper does not synchronize timestamps between MPI ranks, i.e. 
+  timestamps taken on different ranks may not be directly comparable
+
+Message tracing creates three types of records: 
+
+* Point-to-point message sent. Contains message destination, size, tag 
+  and communicator info.
+* Point-to-point message received. Contains message source, size, tag,
+  and communicator info.
+* Collective communication. Contains collective type, amount of bytes 
+  sent, and communicator info.
+
+Specifically, this information is encoded in the following attributes:
+
++----------------------+--------------------------------------------------+
+|                      | Integer.                                         |
+| `mpi.call.id`        | A unique ID for the MPI call the communication   |
+|                      | happened in. Can be used to associate the        |
+|                      | communication with the surrounding begin/end     |
+|                      | records for the MPI function. For MPI calls that |
+|                      | process multiple messages (e.g. `MPI_Waitall`),  |
+|                      | the records for all communications completed     |
+|                      | within the same function call have the same ID.  |
++----------------------+--------------------------------------------------+
+| `mpi.msg.src`        | Integer. Source rank, in the local communicator, |
+|                      | of a received message. Indicates a message       |
+|                      | received event.                                  |
++----------------------+--------------------------------------------------+
+| `mpi.msg.dst`        | Integer. Destination rank, in the local          |
+|                      | communicator, of a message being sent. Indicates |
+|                      | a message sent event.                            |
++----------------------+--------------------------------------------------+
+| `mpi.msg.tag`        | Integer. Tag of a message sent or received.      | 
++----------------------+--------------------------------------------------+
+| `mpi.msg.size`       | Integer. Size of message being sent or received  |
+|                      | in a point-to-point message, or the amount of    |
+|                      | data sent in a collective communication.         |
++----------------------+--------------------------------------------------+
+| `mpi.coll.type`      | Integer. The type of a collective communication. |
+|                      | Indicates a collective communication event.      |
+|                      | Possible values: 1: Barrier.                     |
+|                      | 2: N-to-N (e.g., `MPI_Allgather`).               |
+|                      | 3: 1-to-N (e.g., `MPI_Bcast`).                   |
+|                      | 4: N-to-1 (e.g., `MPI_Gather`).                  |
++----------------------+--------------------------------------------------+
+| `mpi.coll.root`      | Integer. Root rank, in the local communicator,   |
+|                      | of a 1-to-N or N-to-1 collective communication.  |
++----------------------+--------------------------------------------------+
+| `mpi.comm.comm`      | Integer. Unique ID for the communicator on which | 
+|                      | this communication occurs.                       |
++----------------------+--------------------------------------------------+
+| `mpi.comm.is_world`  | Boolean. Present and set to `true` if the        |
+|                      | communicator on which this communication occurs  |
+|                      | is congruent to `MPI_COMM_WORLD` (This applies   |
+|                      | `MPI_COMM_WORLD` itself and any duplicate of     |
+|                      | `MPI_COMM_WORLD`). If true, then the local       |
+|                      | source, destination, or collective root rank in  |
+|                      | the record is identical to its world rank;       |
+|                      | otherwise it is not.                             |
++----------------------+--------------------------------------------------+
+| `mpi.comm.size`      | Size of the communicator on which this           |
+|                      | communication occurs.                            |
++----------------------+--------------------------------------------------+
+| `mpi.comm.list`      | Lists the world ranks present in the local       |
+|                      | communicator. Currently encoded as a binary      |
+|                      | array.                                           |
++----------------------+--------------------------------------------------+
+
+Currently, we record communication information for the 
+following MPI functions:
+
++--------------------------------+----------------------------------------+
+| Function / function group      | Records                                |
++--------------------------------+----------------------------------------+
+| `MPI_Send` and `MPI_Isend`     | Message sent                           |
+|  variants                      |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Recv`                     | Message received                       |
++--------------------------------+----------------------------------------+
+| `MPI_Start`, `MPI_Startall`    | Message(s) sent                        |
++--------------------------------+----------------------------------------+
+| `MPI_Sendrecv`,                | Message sent, message received         |
+| `MPI_Sendrecv_replace`         |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Wait` variants            | Message(s) received                    |
++--------------------------------+----------------------------------------+
+| `MPI_Test` variants            | Message(s) received (for completed     |
+|                                | receive requests)                      |
++--------------------------------+----------------------------------------+
+| `MPI_Barrier`                  | Collective (barrier)                   |
++--------------------------------+----------------------------------------+
+| `MPI_Bcast`, `MPI_Scatter`,    | Collective (1-to-n)                    |
+| `MPI_Scatterv`                 |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Reduce` variants,         | Collective (n-to-1)                    |
+| `MPI_Gather`, `MPI_Gatherv`    |                                        |
++--------------------------------+----------------------------------------+
+| `MPI_Allgather`,               | Collective (n-to-n)                    |
+| `MPI_Allreduce`,               |                                        |
+| `MPI_Alltoall`,                |                                        |
+| `MPI_Allgatherv`,              |                                        |
+| `MPI_Alltoallv`,               |                                        |
+| `MPI_Reduce_scatter_block`,    |                                        |
+| `MPI_Scan`, `MPI_Exscan`       |                                        |
++--------------------------------+----------------------------------------+
+
+We do currently *not* cover:
+
+* `MPI_Alltoallw`
+* Non-blocking and neighborhood collectives
+* I/O
+* One-sided communication
+* Process creation and management
 
 MPIT
 --------------------------------
@@ -517,6 +741,11 @@ addition to the regular Caliper runtime library.
    by the MPI implementation. Default: empty, records all available
    PVARs.
 
+The :ref:`mpi <mpi-service>` service must be enabled for mpit
+to work.
+
+.. _mpireport-service:
+
 MPI Report
 --------------------------------
 
@@ -532,6 +761,9 @@ before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.
 
+The :ref:`mpi <mpi-service>` service must be enabled for mpireport
+to work.
+
 .. envvar:: CALI_MPIREPORT_FILENAME
 
    File name of the output file. May be set to ``stdout`` or ``stderr``
@@ -539,9 +771,7 @@ MPI_Finalize.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create individual
-   ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
-   multi-process program.
+   service description).
 
    Default: stdout
 
@@ -550,6 +780,8 @@ MPI_Finalize.
    An aggregation and formatting specification in CalQL syntax.
 
    Default: empty; all attributes in the snapshots will be printed.
+
+.. _papi-service:
 
 PAPI
 --------------------------------
@@ -569,7 +801,7 @@ Example:
 
 .. code-block:: sh
 
-   $ CALI_SERVICES_ENABLE=event:papi:trace:report
+   $ CALI_SERVICES_ENABLE=event,papi,trace,report
    $ CALI_PAPI_COUNTERS=PAPI_TOT_CYC,PAPI_L1_DCM
    $ ./test/cali-basic
    papi.PAPI_TOT_CYC papi.PAPI_L1_DCM function annotation loop     iteration#mainloop
@@ -580,6 +812,7 @@ Example:
                 7147              150 main                mainloop
                 8425              115 main                mainloop                  0
 
+.. _pthread-service:
 
 Pthread
 --------------------------------
@@ -590,6 +823,8 @@ thread. In doing so, the pthread service automatically creates a
 Caliper thread scope on the child thread: this is useful to
 automatically start sampling (e.g. with the `sampler` service) on each
 new thread.
+
+.. _recorder-service:
 
 Recorder
 --------------------------------
@@ -629,6 +864,8 @@ file name.
    Caliper does not create it. Default: not set, use current working
    directory.
 
+.. _report-service:
+
 Report
 --------------------------------
 
@@ -647,7 +884,7 @@ formatting options.
 
    Similar to the `recorder` service, the file name may contain fields
    which will be substituted by attribute values (see `recorder`
-   service description), for example to create xindividual
+   service description), for example to create individual
    ``report-0.txt``, ``report-1.txt`` etc. files for each rank in a
    multi-process program.
 
@@ -680,25 +917,41 @@ Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
 
+.. _sampler-service:
+
 Sampler
 --------------------------------
 
-The sampler service implements periodic sampling. It triggers
-snapshots periodically with a given frequency. Snapshot records
-triggered by the sampler service contain a ``cali.sampler.pc``
-attribute with the program address that was interrupted by the sample
-(the `symbollookup` service can translate this address to function,
-file and line information).
+The sampler service implements time-based sampling. It triggers
+snapshots at regular intervals. Sampling allows for low-overhead
+performance data collection, and can provide insights into code
+regions that are not or only sparsely covered with source-code
+annotations. 
 
-Note that the sampler has to be activated on each thread that should
-be sampled. This can be accomplished by a Caliper annotation on
-the thread. Alternatively, use the `pthread` service to automatically
-activate sampling on each new thread.
+Caliper must be initialized on each thread that should be
+sampled. This can be done explicitly via the annotation API, or via
+the :ref:`pthread <pthread-service>` service for child threads.
 
 .. envvar:: CALI_SAMPLER_FREQUENCY
 
-   The frequency, in Hz, in which snapshots are triggered.
-   Default: 20.
+   Sampling frequency in Hz. Default: 10
+
+When active, the sampler service regularly triggers snapshots with the
+specified frequency. Each snapshot triggered by the sampler service
+contains a ``cali.sampler.pc`` attribute with the program address
+where the target program was interrupted. The symbollookup service can
+use this to retrieve function name as well as source file and line
+information.
+
+The following example generates a sampling trace at 100Hz, uses the
+symbollookup service to retrieve function name information, and prints
+a flat profile of the number of samples per function::
+
+    CALI_SERVICES_ENABLE=report,sampler,symbollookup,trace
+    CALI_SAMPLER_FREQUENCY=100
+    CALI_REPORT_CONFIG="SELECT source.function#cali.sampler.pc,count() GROUP BY source.function#cali.sampler.pc FORMAT table ORDER BY count DESC"
+
+.. _symbollookup-service:
 
 Symbollookup
 --------------------------------
@@ -708,9 +961,9 @@ source line number lookup for binary program addresses from, e.g.,
 stack unwinding or program counter sampling. The symbol lookup takes
 place during snapshot buffer flushes. It appends symbol attributes for
 each address attribute to the snapshots being flushed. For an address
-attribute ``address``, the function, file, and line number will be
-added in ``source.function#address``, ``source.file#address``, and
-``source.line#address`` attributes, respectively. If a symbol lookup
+attribute ``address``, the function and file/line number will be
+added in the ``source.function#address`` and ``sourceloc#address``
+attributes, respectively. If a symbol lookup
 was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
 .. envvar:: CALI_SYMBOLLOOKUP_ATTRIBUTES
@@ -726,7 +979,21 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
 .. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
 
    Perform source file and line number lookup. `TRUE` or `FALSE`,
-   default `TRUE`.
+   default `TRUE`. Combines file and line information in the
+   ``sourceloc#address`` attribute, e.g. ``mysource.cpp:42`` for file
+   "mysource.cpp" and line number 42.
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FILE
+
+   Perform source file lookup, and writes the file name in the
+   ``source.file#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_LINE
+
+   Perform source line lookup, and writes the line number in the
+   ``source.line#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
 
 Sysalloc
 --------------------------------
@@ -752,17 +1019,17 @@ test application with Caliper's auto-generated format string:
 
 .. code-block:: sh
 
-                $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
-                $ export CALI_TEXTLOG_TRIGGER=phase
-                $ ./test/cali-basic
-                == CALIPER: Registered event trigger service
-                == CALIPER: Registered timestamp service
-                == CALIPER: Registered text log service
-                == CALIPER: Initialized
-                phase=main/init                                                       21
-                phase=main/loop                                                       84
-                phase=main                                                            219
-                == CALIPER: Finished
+      $ export CALI_SERVICES_ENABLE=event:textlog:timestamp
+      $ export CALI_TEXTLOG_TRIGGER=phase
+      $ ./test/cali-basic
+      == CALIPER: Registered event trigger service
+      == CALIPER: Registered timestamp service
+      == CALIPER: Registered text log service
+      == CALIPER: Initialized
+      phase=main/init                                                       21
+      phase=main/loop                                                       84
+      phase=main                                                            219
+      == CALIPER: Finished
 
 
 .. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
@@ -797,6 +1064,8 @@ test application with Caliper's auto-generated format string:
    to print to the standard output or error streams, respectively.
 
    Default: stdout
+
+.. _timestamp-service:
 
 Timestamp
 --------------------------------
@@ -838,6 +1107,8 @@ nodes in a distributed-memory program.
    to be enabled for this feature.
 
    Default: true
+
+.. _trace-service:
 
 Trace
 --------------------------------

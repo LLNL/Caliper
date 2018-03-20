@@ -7,7 +7,7 @@ import calipertest as cat
 class CaliperReportTest(unittest.TestCase):
     """ Caliper Report / Reader CSV export / C config API test case """
 
-    def test_report_csvwriter(self):
+    def test_report_caliwriter(self):
         """ Test reader lib's CSV export via report service """
         
         target_cmd = [ './ci_test_macros' ]
@@ -16,7 +16,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'format csv',
+            'CALI_REPORT_CONFIG'     : 'format cali',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 

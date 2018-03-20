@@ -307,7 +307,14 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    QuerySpec         spec = spec_from_args(args);
+    QueryArgsParser   query_parser;
+
+    if (!query_parser.parse_args(args)) {
+        cerr << "cali-query: Invalid query: " << query_parser.error_msg() << std::endl;
+        return -2;
+    }
+    
+    QuerySpec         spec = query_parser.spec();
 
     // setup format spec
     

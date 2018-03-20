@@ -45,7 +45,7 @@ You can configure the Caliper build with the following CMake variables:
 | ``WITH_TOOLS``            | Build `cali-query`, `cali-graph`, and  |
 |                           | `cali-stat` tools.                     |
 +---------------------------+----------------------------------------+
-| ``WITH_DOCS``             | Enable documentation builds.           |
+| ``BUILD_DOCS``            | Enable documentation builds.           |
 +---------------------------+----------------------------------------+
 | ``BUILD_TESTING``         | Build unit test infrastructure and     |
 |                           | programs.                              |

@@ -57,6 +57,10 @@ namespace
     const char*  builtin_profiles =
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
+        "# [flat-function-profile]\n"
+        "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
+        "CALI_AGGREGATE_KEY=event.end#function\n"
+        "CALI_REPORT_CONFIG=\"select event.end#function,sum#time.inclusive.duration where event.end#function format table order by time.inclusive.duration desc\"\n"
         "# [runtime-report]\n"
         "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
         "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"

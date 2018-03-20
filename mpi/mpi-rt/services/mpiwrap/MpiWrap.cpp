@@ -46,6 +46,9 @@ namespace cali
 Attribute mpifn_attr   { Attribute::invalid };
 Attribute mpirank_attr { Attribute::invalid };
 Attribute mpisize_attr { Attribute::invalid };
+Attribute mpicall_attr { Attribute::invalid };
+
+bool      enable_msg_tracing = false;
 
 extern void mpiwrap_init(Caliper* c, const std::string&, const std::string&);
 
@@ -60,12 +63,15 @@ ConfigSet::Entry configdata[] = {
     { "whitelist", CALI_TYPE_STRING, "", 
       "List of MPI functions to instrument", 
       "Colon-separated list of MPI functions to instrument.\n"
-      "If set, only whitelisted MPI functions will be instrumented.\n"
-      "By default, all MPI functions are instrumented." 
+      "If set, the whitelisted MPI functions will be instrumented."
     },
     { "blacklist", CALI_TYPE_STRING, "",
       "List of MPI functions to filter",
       "Colon-separated list of functions to blacklist." 
+    },
+    { "msg_tracing", CALI_TYPE_BOOL, "false",
+      "Enable MPI message tracing",
+      "Enable MPI message tracing"
     },
     ConfigSet::Terminator
 };
@@ -74,18 +80,23 @@ void mpi_register(Caliper* c)
 {
     config = RuntimeConfig::init("mpi", configdata);
 
+    enable_msg_tracing = config.get("msg_tracing").to_bool();
+
+    if (enable_msg_tracing)
+        Log(1).stream() << "MPI wrapper: enabling message tracing\n";
+
     mpifn_attr   = 
         c->create_attribute("mpi.function", CALI_TYPE_STRING, CALI_ATTR_NESTED);
     mpirank_attr = 
         c->create_attribute("mpi.rank", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
     mpisize_attr = 
-        c->create_attribute("mpi.size", CALI_TYPE_INT, 
+        c->create_attribute("mpi.world.size", CALI_TYPE_INT, 
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
 
     mpiwrap_init(c, config.get("whitelist").to_string(), config.get("blacklist").to_string());
 
-    Log(1).stream() << "Registered MPI service" << endl;
+    Log(1).stream() << "Registered MPI service" << std::endl;
 }
 
 } // anonymous namespace 

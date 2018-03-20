@@ -19,7 +19,7 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format csv'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -42,7 +42,7 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format csv'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -65,7 +65,7 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format csv'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -88,7 +88,7 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_BLACKLIST'      : 'MPI_Barrier,MPI_Reduce',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format csv'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
@@ -112,7 +112,7 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast,MPI_Reduce',
             'CALI_MPI_BLACKLIST'      : 'MPI_Reduce',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format csv'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
