@@ -262,6 +262,72 @@ attributes in Caliper context records.
 
    Default: 10
 
+.. _cupti-service:
+
+CUpti
+--------------------------------
+
+The `cupti` service records CUDA events and wraps CUDA API calls
+through the CUpti interface. Specifically, it can intercept runtime
+API calls, driver API calls, resource creation and destruction events
+(contexts and streams), and synchronization events. It can also
+interpret NVTX source-code annotations as Caliper annotations.
+
+.. envvar:: CALI_CUPTI_CALLBACK_DOMAINS
+
+   String. A comma-separated list of CUpti callback domains to
+   intercept.  Values:
+
+   * `runtime`: The CUDA runtime API, e.g. ``cudaDeviceSynchronize``.
+   * `driver`:  The CUDA driver API, e.g. ``cuInit``. This category
+     tends to have significant overheads.
+   * `resource`: Stream and context creation.
+   * `sync`: Synchronization events.
+   * `nvtx`: Interpret NVTX annotations as Caliper annotations.
+   * `none`: Don't capture callbacks.
+
+   Default: `runtime,sync`
+
+.. envvar:: CALI_CUPTI_RECORD_SYMBOL
+
+   Boolean. Record the kernel symbol name for callbacks (typically
+   when launching kernels). Default: `true`.
+   
+.. envvar:: CALI_CUPTI_RECORD_CONTEXT
+
+   Boolean. Record CUDA context ID. Default: `true`.
+
+CUpti Attributes
+................................
+
+The `cupti` service adds the following attributes:
+
++----------------------+--------------------------------------------------+
+| cupti.runtimeAPI     | Name of CUDA runtime API call. Nested.           |
++----------------------+--------------------------------------------------+
+| cupti.driverAPI      | Name of CUDA driver API call. Nested.            |
++----------------------+--------------------------------------------------+
+| cupti.resource       | Resource being created or destroyed.             |
+|                      | (`create_context`, `destroy_context`,            |
+|                      | `create_stream`, `destroy_stream`).              |
++----------------------+--------------------------------------------------+
+| cupti.sync           | Object being synchronized (`context` or `stream`)|
++----------------------+--------------------------------------------------+
+| nvtx.range           | Name of NVTX range annotation.                   |
++----------------------+--------------------------------------------------+
+| cupti.symbolName     | Symbol name of a kernel being launched.          |
++----------------------+--------------------------------------------------+
+| cupti.contextID      | CUDA context ID. Recorded with synchronization   |
+|                      | and resource events.                             |
++----------------------+--------------------------------------------------+
+| cupti.deviceID       | CUDA device ID. Recorded with resource and sync  |
+|                      | events.                                          |
++----------------------+--------------------------------------------------+
+| cupti.streamID       | CUDA Stream ID. Recorded with stream resource    |
+|                      | sync events.                                     |
++----------------------+--------------------------------------------------+
+
+
 Environment Information
 --------------------------------
 
@@ -421,6 +487,7 @@ each sample, and the sampling period.
    Comma-separated list of attributes to record for each sample.
 
    Available entries are:
+
      ip             Instruction pointer
      id             Sample id
      stream_id      Stream id
@@ -894,9 +961,9 @@ source line number lookup for binary program addresses from, e.g.,
 stack unwinding or program counter sampling. The symbol lookup takes
 place during snapshot buffer flushes. It appends symbol attributes for
 each address attribute to the snapshots being flushed. For an address
-attribute ``address``, the function, file, and line number will be
-added in ``source.function#address``, ``source.file#address``, and
-``source.line#address`` attributes, respectively. If a symbol lookup
+attribute ``address``, the function and file/line number will be
+added in the ``source.function#address`` and ``sourceloc#address``
+attributes, respectively. If a symbol lookup
 was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
 .. envvar:: CALI_SYMBOLLOOKUP_ATTRIBUTES
@@ -912,7 +979,21 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
 .. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
 
    Perform source file and line number lookup. `TRUE` or `FALSE`,
-   default `TRUE`.
+   default `TRUE`. Combines file and line information in the
+   ``sourceloc#address`` attribute, e.g. ``mysource.cpp:42`` for file
+   "mysource.cpp" and line number 42.
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FILE
+
+   Perform source file lookup, and writes the file name in the
+   ``source.file#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_LINE
+
+   Perform source line lookup, and writes the line number in the
+   ``source.line#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
 
 Sysalloc
 --------------------------------
