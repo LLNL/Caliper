@@ -33,6 +33,8 @@
 // Cupti.cpp
 // Implementation of Cupti service
 
+#include "CuptiEventSampling.h"
+
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
@@ -75,6 +77,15 @@ namespace
           "Record CUDA context ID for CUDA runtime and driver callbacks",
           "Record CUDA context ID for CUDA runtime and driver callbacks"
         },
+        { "sample_events", CALI_TYPE_STRING, "",
+          "CUpti events to sample",
+          "CUpti events to sample"
+        },
+        { "sample_event_id", CALI_TYPE_UINT, "0",
+          "CUpti event ID to sample",
+          "CUpti event ID to sample"
+        },
+
         ConfigSet::Terminator
     };
 
@@ -115,6 +126,8 @@ namespace
     unsigned               num_sync_cb;
     unsigned               num_nvtx_cb;
 
+    Cupti::EventSampling   event_sampling;
+    
     //
     // --- Helper functions
     //
@@ -198,15 +211,19 @@ namespace
     {
         ++num_resource_cb;
 
-        Variant v_res;
-
         switch (cbid) {
         case CUPTI_CBID_RESOURCE_CONTEXT_CREATED:
+            if (event_sampling.is_enabled())
+                event_sampling.enable_sampling_for_context(cbInfo->context);
+            
             handle_context_event(cbInfo->context,
                                  cupti_info.resource_attr,
                                  Variant(CALI_TYPE_STRING, "create_context", 15));
             break;
         case CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING:
+            if (event_sampling.is_enabled())
+                event_sampling.disable_sampling_for_context(cbInfo->context);
+
             handle_context_event(cbInfo->context,
                                  cupti_info.resource_attr,
                                  Variant(CALI_TYPE_STRING, "destroy_context", 16));
@@ -366,16 +383,29 @@ namespace
     }
 
     void
+    snapshot_cb(Caliper* c, int /* scope */, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
+    {
+        event_sampling.snapshot(c, trigger_info, snapshot);
+    }
+    
+    void
     finish_cb(Caliper* c)
     {
-        Log(2).stream() << "Cupti: processed "
-                        << num_api_cb      << " API callbacks, "
-                        << num_resource_cb << " resource callbacks, "
-                        << num_sync_cb     << " sync callbacks, "
-                        << num_nvtx_cb     << " nvtx callbacks ("
-                        << num_cb          << " total)."
-                        << std::endl;
+        if (Log::verbosity() >= 2) {
+            Log(2).stream() << "Cupti: processed "
+                            << num_api_cb      << " API callbacks, "
+                            << num_resource_cb << " resource callbacks, "
+                            << num_sync_cb     << " sync callbacks, "
+                            << num_nvtx_cb     << " nvtx callbacks ("
+                            << num_cb          << " total)."
+                            << std::endl;
 
+            if (event_sampling.is_enabled())
+                event_sampling.print_statistics(Log(2).stream());
+        }
+        
+        event_sampling.stop_all();
+        
         cuptiUnsubscribe(subscriber);
         cuptiFinalize();
     }
@@ -383,6 +413,9 @@ namespace
     void
     post_init_cb(Caliper* c)
     {
+        //   Need to create attributes in post_init so they're created after
+        // the event service.
+
         Variant v_true(true);
 
         cupti_info.runtime_attr =
@@ -390,9 +423,9 @@ namespace
         cupti_info.driver_attr =
             c->create_attribute("cupti.driverAPI",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
         cupti_info.resource_attr =
-            c->create_attribute("cupti.event.resource", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("cupti.resource",   CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         cupti_info.sync_attr =
-            c->create_attribute("cupti.event.sync", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("cupti.sync",       CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         cupti_info.nvtx_range_attr =
             c->create_attribute("nvtx.range",       CALI_TYPE_STRING, CALI_ATTR_NESTED);
 
@@ -404,9 +437,6 @@ namespace
             c->create_attribute("cupti.deviceID",   CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
         cupti_info.stream_attr =
             c->create_attribute("cupti.streamID",   CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
-
-        cupti_info.record_context = config.get("record_context").to_bool();
-        cupti_info.record_symbol = config.get("record_symbol").to_bool();
     }
 
     bool
@@ -424,6 +454,17 @@ namespace
 
         std::vector<std::string> cb_domain_names =
             config.get("callback_domains").to_stringlist(",:");
+
+        // add "resource" domain when event sampling is enabled 
+        if (event_sampling.is_enabled() &&
+            std::find(cb_domain_names.begin(), cb_domain_names.end(),
+                      "resource") == cb_domain_names.end()) {
+            Log(1).stream() << "cupti: Event sampling requires resource callbacks, "
+                "adding \"resource\" callback domain."
+                            << std::endl;
+
+            cb_domain_names.push_back("resource");
+        }
 
         for (const std::string& s : cb_domain_names) {
             const CallbackDomainInfo* cbinfo = callback_domains;
@@ -465,8 +506,19 @@ namespace
         num_sync_cb     = 0;
         num_nvtx_cb     = 0;
 
+        uint64_t sample_event_id = config.get("sample_event_id").to_uint();
+
+        if (sample_event_id > 0)
+            event_sampling.setup(c, static_cast<CUpti_EventID>(sample_event_id));
+        
         if (!register_callback_domains())
             return;
+
+        cupti_info.record_context = config.get("record_context").to_bool();
+        cupti_info.record_symbol  = config.get("record_symbol").to_bool();
+
+        if (event_sampling.is_enabled())
+            c->events().snapshot.connect(&snapshot_cb);
 
         c->events().post_init_evt.connect(&post_init_cb);
         c->events().finish_evt.connect(&finish_cb);
