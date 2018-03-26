@@ -58,18 +58,18 @@ class Node;
 /// APIs, i.e., mapping %Caliper regions to another tool's begin/end style
 /// interface. To implement a mapping, create a derived class, overwrite
 /// the \a on_begin() and \a on_end() functions, and initialize the mapping
-/// during Caliper initialization with \a make_binding().
+/// during %Caliper initialization with \a make_binding().
 ///
 /// By default, the \a on_begin() and \a on_end() methods will be invoked
 /// only for properly nested annotations (i.e., attributes with the
-/// \a CALI_ATTR_NESTED flag), or attributes selected at runtime with the
+/// CALI_ATTR_NESTED flag), or attributes selected at runtime with the
 /// \a CALI_<tag_name>_ATTRIBUTES configuration variable.
 ///
 /// An annotation binding must be created during %Caliper initialization
 /// with the \a make_binding() template.
 ///
-/// Example: Bind Caliper annotations to an assumed \a mybegin(const char*),  
-/// \a myend() API.
+/// Example: Creating a service to bind %Caliper annotations to an
+/// assumed \a mybegin(const char*), \a myend() API.
 ///
 /// \code
 ///    class MyBinding : public cali::AnnotationBinding {
@@ -82,7 +82,7 @@ class Node;
 ///        void on_begin(cali::Caliper* c, const cali::Attribute& attr, const cali::Variant& value) {
 ///          std::string str = attr.name();
 ///          str.append("=");
-///          str.append(value.to_string()); // create "attrname=value" string
+///          str.append(value.to_string()); // create "<attribute name>=<value>" string
 ///          
 ///          mybegin(str.c_str());
 ///        }
@@ -92,11 +92,7 @@ class Node;
 ///        }
 ///   };
 ///
-///   int main()
-///   {
-///     Caliper c;
-///     cali::AnnotationBinding::make_binding<MyBinding>(&c);
-///   }
+///   CaliperService mybinding_service { "mybinding", AnnotationBinding::make_binding<MyBinding> };
 /// \endcode
 ///
 /// Also see the \a nvprof and \a vtune service implementations for examples of
@@ -129,9 +125,10 @@ protected:
     /// by overwriting \a node.
     ///
     /// \param c    The Caliper instance
-    /// \param name Attribute name
-    /// \param type Attribute datatype
-    /// \param prop Attribute properties. Can be overwritten.
+    /// \param name %Attribute name
+    /// \param type %Attribute datatype
+    /// \param prop %Attribute properties. Can be overwritten. Combination of
+    ///   cali_attr_properties flags.
     /// \param node Context tree node under which the attribute
     ///   information will be attached. Can be overwritten, but should
     ///   retain the original node as parent.
@@ -150,15 +147,15 @@ protected:
 
     /// \brief Callback for an annotation end event
     /// \param c     Caliper instance
-    /// \param attr  Attribute on which the %Caliper begin event was invoked.
+    /// \param attr  Attribute on which the %Caliper end event was invoked.
     /// \param value The annotation name/value. 
     virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value)   { }
 
-    /// \brief Initialization callback. Invoked after the Caliper
+    /// \brief Initialization callback. Invoked after the %Caliper
     ///   initialization completed.
     virtual void initialize(Caliper* c) { }
 
-    /// \brief Invoked on Caliper finalization.
+    /// \brief Invoked on %Caliper finalization.
     virtual void finalize(Caliper* c)   { }
 
 public:
@@ -181,7 +178,7 @@ public:
     /// \brief Create and setup a derived AnnotationBinding instance
     ///
     /// Creates the an instance of the binding and sets up all necessary
-    /// Caliper callback functions. Can be used as a %Caliper service
+    /// %Caliper callback functions. Can be used as a %Caliper service
     /// initialization function.
     template <class BindingT>
     static void make_binding(Caliper* c) {
