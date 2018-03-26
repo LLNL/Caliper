@@ -30,10 +30,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file  AnnotationBinding.cpp
-/// \brief Base class for implementing Caliper-to-X annotation bindings
+// AnnotationBinding.cpp
+// Base class for implementing Caliper-to-X annotation bindings
 
-#include "AnnotationBinding.h"
+#include "caliper/AnnotationBinding.h"
 
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
