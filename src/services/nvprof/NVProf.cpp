@@ -32,7 +32,7 @@
 
 // Caliper NVidia profiler annotation binding
 
-#include "../common/AnnotationBinding.h"
+#include "caliper/AnnotationBinding.h"
 
 #include "caliper/common/Attribute.h"
 
