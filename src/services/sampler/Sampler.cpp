@@ -52,7 +52,8 @@
 
 #include <sys/syscall.h>
 #include <sys/types.h>
-#include <ucontext.h>
+
+#include "context.h"
 
 using namespace cali;
 using namespace std;
@@ -93,12 +94,14 @@ namespace
         if (!c)
             return;
         
-        ucontext_t *ucontext = (ucontext_t *) context;
-
-        uint64_t  pc = static_cast<uint64_t>(ucontext->uc_mcontext.gregs[REG_RIP]);
+#ifdef CALI_SAMPLER_GET_PC
+        uint64_t  pc = static_cast<uint64_t>( CALI_SAMPLER_GET_PC(context) );
         Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
 
-        SnapshotRecord trigger_info(1, &sampler_attr_id, &v_pc);
+        SnapshotRecord trigger_info(1, &sampler_attr_id, &v_pc);        
+#else
+        SnapshotRecord trigger_info;
+#endif
 
         c.push_snapshot(sample_contexts, &trigger_info);
 
