@@ -86,7 +86,7 @@ cali_string2type(const char* str);
  */
 typedef enum {
   /** \brief Default value */
-  CALI_ATTR_DEFAULT       =  0,
+  CALI_ATTR_DEFAULT       =     0,
 
   /** 
    * \brief Store directly as key:value pair, not in the context tree.
@@ -96,21 +96,21 @@ typedef enum {
    * and in snapshot records. ASVALUE attributes cannot be
    * nested. Only applicable to scalar data types.
    */
-  CALI_ATTR_ASVALUE       =  1,
+  CALI_ATTR_ASVALUE       =     1,
   /** \brief Create a separate context tree root node for this attribute. */
-  CALI_ATTR_NOMERGE       =  2,
+  CALI_ATTR_NOMERGE       =     2,
   /** \brief Process-scope attribute. Shared between all threads. */
-  CALI_ATTR_SCOPE_PROCESS = 12, /* make scope flags mutually exclusive when &'ed with SCOPE_MASK */
+  CALI_ATTR_SCOPE_PROCESS =    12, /* scope flags are mutually exclusive */
   /** \brief Thread-scope attribute. */
-  CALI_ATTR_SCOPE_THREAD  = 20, 
+  CALI_ATTR_SCOPE_THREAD  =    20, 
   /** \brief Task-scope attribute. Currently unused. */
-  CALI_ATTR_SCOPE_TASK    = 24,
+  CALI_ATTR_SCOPE_TASK    =    24,
 
   /** \brief Skip event callbacks for blackboard updates with this attribute */
-  CALI_ATTR_SKIP_EVENTS   = 64,
+  CALI_ATTR_SKIP_EVENTS   =    64,
 
   /** \brief Do not include this attribute in snapshots */
-  CALI_ATTR_HIDDEN        = 128,
+  CALI_ATTR_HIDDEN        =   128,
 
   /** \brief Begin/end calls are properly aligned with the call stack.
    * 
@@ -120,7 +120,18 @@ typedef enum {
    * partially overlap function calls or other NESTED attribute
    * regions.
    */
-  CALI_ATTR_NESTED        = 256
+  CALI_ATTR_NESTED        =   256,
+  
+  /** \brief A metadata attribute describing global information
+   *    for a measurement run
+   *
+   * Global attributes represent metadata associated with an application
+   * run (e.g., application executable name and version, start date and 
+   * time, and so on). They may be written in a separate metadata section
+   * in some output formats. For distributed programs (e.g. MPI), 
+   * global attributes should have the same value on each process.
+   */
+  CALI_ATTR_GLOBAL        =   512
 } cali_attr_properties;
 
 #define CALI_ATTR_SCOPE_MASK 60
