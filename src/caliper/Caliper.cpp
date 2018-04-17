@@ -318,7 +318,7 @@ struct Caliper::GlobalData
         key_attr =
             c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
 
-        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_GLOBAL),
+        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
               Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
 
         init_attribute_classes(&c);
@@ -376,6 +376,7 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  task_scope:    Task-scope attribute (currently not supported)\n"
       "  skip_events:   Do not invoke callback functions for updates\n"
       "  hidden:        Do not include this attribute in snapshots\n"
+      "  nested:        Values are properly nested with the call stack and other nested attributes\n"
     },
     { "config_check", CALI_TYPE_BOOL, "true",
       "Perform configuration sanity check at initialization",
@@ -602,9 +603,13 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         //   This may add additional nodes to our parent branch.
         mG->events.pre_create_attr_evt(this, name, type, &prop, &node);
 
-        // Add default SCOPE_THREAD property if no other is set
-        if (((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_PROCESS) &&
-            ((prop & CALI_ATTR_SCOPE_MASK) != CALI_ATTR_SCOPE_TASK))
+        // Set scope to PROCESS for all global attributes
+        if (prop & CALI_ATTR_GLOBAL) {
+            prop &= ~CALI_ATTR_SCOPE_MASK;
+            prop |= CALI_ATTR_SCOPE_PROCESS;
+        }
+        // Set THREAD scope if none is set
+        if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
             prop |= CALI_ATTR_SCOPE_THREAD;
 
         Attribute attr[2] { mG->prop_attr, mG->name_attr };
@@ -699,6 +704,48 @@ Caliper::get_attributes() const
 
     for (auto it : mG->attribute_nodes)
         ret.push_back(Attribute::make_attribute(it.second));
+
+    return ret;
+}
+
+///   Returns all entries with CALI_ATTR_GLOBAL set from the current
+/// blackboard.
+
+std::vector<Entry>
+Caliper::get_globals()
+{
+    std::lock_guard<::siglock>
+        g(m_thread_scope->lock);
+
+    SnapshotRecord::FixedSnapshotRecord<80> rec_data;
+    SnapshotRecord rec(rec_data);
+    
+    // All global attributes are process scope, so just grab the process blackboard
+    mG->process_scope->blackboard.snapshot(&rec);
+
+    std::vector<const Node*> nodes;
+
+    SnapshotRecord::Data  data = rec.data();
+    SnapshotRecord::Sizes size = rec.size();
+
+    // Go through all process nodes and filter out the global entries
+    for (size_t i = 0; i < size.n_nodes; ++i)
+        for (const Node* node = data.node_entries[i]; node; node = node->parent())
+            if (get_attribute(node->attribute()).properties() & CALI_ATTR_GLOBAL)
+                nodes.push_back(node);
+
+    // Restore original order
+    std::reverse(nodes.begin(), nodes.end());
+
+    std::vector<Entry> ret;
+
+    if (!nodes.empty())
+        ret.push_back(Entry(make_tree_entry(nodes.size(), nodes.data(), nullptr)));
+
+    // Add potential AS_VALUE global entries
+    for (size_t i = 0; i < size.n_immediate; ++i)
+        if (get_attribute(data.immediate_attr[i]).properties() & CALI_ATTR_GLOBAL)
+            ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
 
     return ret;
 }
