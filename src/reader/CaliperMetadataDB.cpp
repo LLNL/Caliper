@@ -114,6 +114,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
     vector<const char*>       m_string_db;
     mutable mutex             m_string_db_lock;
+
+    vector<Entry>             m_globals;
+    mutex                     m_globals_lock;
     
     inline Node* node(cali_id_t id) const {
         std::lock_guard<std::mutex>
@@ -423,13 +426,21 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
             return rec;
 
-        if (rec_name_it->second.front() == "node") {
+        if (       rec_name_it->second.front() == "node"   ) {
             const Node* node = merge_node_record(rec, idmap);
 
             if (node)
                 return node->record();
-        } else if (rec_name_it->second.front() == "ctx" )
-            return merge_ctx_record (rec, idmap);
+        } else if (rec_name_it->second.front() == "ctx"    ) {
+            return merge_ctx_record(rec, idmap);
+        } else if (rec_name_it->second.front() == "globals") {
+            EntryList list = merge_ctx_record_to_list(rec, idmap);
+
+            std::lock_guard<std::mutex>
+                g(m_globals_lock);
+
+            m_globals = std::move(list);
+        }
 
         return rec;
     }
@@ -440,13 +451,21 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (rec_name_it == rec.end() || rec_name_it->second.empty())
             return;
 
-        if (rec_name_it->second.front() == "node") {
+        if (       rec_name_it->second.front() == "node"   ) {
             const Node* node = merge_node_record(rec, idmap);
 
             if (node)
                 node_fn(*db, node);
-        } else if (rec_name_it->second.front() == "ctx" )
+        } else if (rec_name_it->second.front() == "ctx"    ) {
             snap_fn(*db, merge_ctx_record_to_list(rec, idmap));
+        } else if (rec_name_it->second.front() == "globals") {
+            EntryList list = merge_ctx_record_to_list(rec, idmap);
+
+            std::lock_guard<std::mutex>
+                g(m_globals_lock);
+
+            m_globals = std::move(list);
+        }
     }
 
     Attribute attribute(cali_id_t id) const {
@@ -559,6 +578,69 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         
         return Attribute::make_attribute(node);
     }
+
+    std::vector<Entry> get_globals() {
+        std::lock_guard<std::mutex>
+            g(m_globals_lock);
+
+        return m_globals;
+    }
+
+    void set_global(const Attribute& attr, const Variant& value) {
+        if (!attr.is_global())
+            return;
+
+        std::lock_guard<std::mutex>
+            g(m_globals_lock);
+        
+        if (attr.store_as_value()) {
+            auto it = std::find_if(m_globals.begin(), m_globals.end(),
+                                   [attr](const Entry& e) {
+                                       return e.attribute() == attr.id();
+                                   } );
+
+            if (it == m_globals.end())
+                m_globals.push_back(Entry(attr, value));
+            else
+                *it = Entry(attr, value);
+        } else {
+            // check if we already have this value
+            if (std::find_if(m_globals.begin(), m_globals.end(),
+                             [attr,value](const Entry& e) {
+                                 for (const Node* node = e.node(); node; node = node->parent())
+                                     if (node->attribute() == attr.id() && node->data() == value)
+                                         return true;
+                             } ) != m_globals.end())
+                return;
+
+            auto it = std::find_if(m_globals.begin(), m_globals.end(),
+                                   [](const Entry& e) {
+                                       return e.is_reference();
+                                   } );
+
+            if (it == m_globals.end() || !attr.is_autocombineable())
+                m_globals.push_back(Entry(make_tree_entry(1, &attr, &value)));
+            else
+                *it = Entry(make_tree_entry(1, &attr, &value, node(it->node()->id())));
+        }
+    }
+
+    std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db) {
+        std::vector<Entry> import_globals = db.get_globals();
+
+        std::lock_guard<std::mutex>
+            g(m_globals_lock);
+
+        m_globals.clear();
+        
+        for (const Entry& e : import_globals)
+            if (e.is_reference())
+                m_globals.push_back(Entry(recursive_merge_node(e.node(), db)));
+            else if (e.is_immediate())
+                m_globals.push_back(Entry(recursive_merge_node(db.node(e.attribute()), db)->id(), e.value()));
+
+        return m_globals;
+    }
     
     CaliperMetadataDBImpl()
         : m_root { CALI_INV_ID, CALI_INV_ID, { } }
@@ -661,4 +743,22 @@ CaliperMetadataDB::create_attribute(const std::string& name, cali_attr_type type
                                     int meta, const Attribute* meta_attr, const Variant* meta_data)
 {
     return mP->create_attribute(name, type, prop, meta, meta_attr, meta_data);
+}
+
+std::vector<Entry>
+CaliperMetadataDB::get_globals()
+{
+    return mP->get_globals();
+}
+
+void
+CaliperMetadataDB::set_global(const Attribute& attr, const Variant& value)
+{
+    mP->set_global(attr, value);
+}
+
+std::vector<Entry>
+CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db)
+{
+    return mP->import_globals(db);
 }

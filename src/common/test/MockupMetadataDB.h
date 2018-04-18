@@ -127,6 +127,11 @@ public:
         return nullptr;
     }
 
+    inline std::vector<Entry>
+    get_globals() {
+        fail("get_globals() is not implemented in MockupMetadataDB!");
+        return std::vector<Entry>();
+    }
 };
 
 } // namespace
