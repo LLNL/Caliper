@@ -354,7 +354,31 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         }
     }
 
-    void write_metadata() {
+    std::ostream& write_globals(std::ostream& os, CaliperMetadataAccessInterface& db) {
+        std::vector<Entry> globals = db.get_globals();
+        std::map<cali_id_t, std::string> global_vals;
+
+        for (const Entry& e : globals)
+            if (e.is_reference())
+                for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent()) {
+                    std::string s = node->data().to_string();
+                    
+                    if (global_vals[node->attribute()].size() > 0)
+                        s.append("/").append(global_vals[node->attribute()]);
+
+                    global_vals[node->attribute()] = s;                        
+                }
+            else
+                global_vals[e.attribute()] = e.value().to_string();
+        
+        for (auto &p : global_vals)
+            os << ",\n  \"" << db.get_attribute(p.first).name() << "\": "
+               << '\"' << p.second << '\"';
+
+        return os;
+    }
+    
+    void write_metadata(CaliperMetadataAccessInterface& db) {
         // close "data" field, start "columns" 
         m_os.stream() << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
 
@@ -379,7 +403,10 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         }
         
         // close "column_metadata", write "nodes"
-        m_hierarchy.write_nodes(m_os.stream() << " ],\n  ") << "\n}" << std::endl;
+        m_hierarchy.write_nodes( m_os.stream() << " ],\n  " );
+
+        // write globals and finish
+        write_globals(m_os.stream(), db) << "\n}" << std::endl;
     }
 };
 
@@ -401,7 +428,7 @@ JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const Ent
     mP->process_record(db, list);
 }
 
-void JsonSplitFormatter::flush(CaliperMetadataAccessInterface&, std::ostream&)
+void JsonSplitFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
-    mP->write_metadata();
+    mP->write_metadata(db);
 }

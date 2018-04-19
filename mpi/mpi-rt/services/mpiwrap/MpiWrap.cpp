@@ -92,7 +92,7 @@ void mpi_register(Caliper* c)
                             CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
     mpisize_attr = 
         c->create_attribute("mpi.world.size", CALI_TYPE_INT, 
-                            CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_SKIP_EVENTS);
+                            CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
 
     mpiwrap_init(c, config.get("whitelist").to_string(), config.get("blacklist").to_string());
 
