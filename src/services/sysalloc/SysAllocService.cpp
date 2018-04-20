@@ -53,7 +53,6 @@ void* cali_calloc_wrapper(size_t num, size_t size);
 void* cali_realloc_wrapper(void *ptr, size_t size);
 void cali_free_wrapper(void *ptr);
 
-
 const char *malloc_str = "malloc";
 const char *calloc_str = "calloc";
 const char *realloc_str = "realloc";
@@ -61,13 +60,14 @@ const char *realloc_free_str = "realloc(free)";
 const char *realloc_alloc_str = "realloc(alloc)";
 const char *free_str = "free";
 
+bool bindings_are_active = false;
+
 struct gotcha_binding_t alloc_bindings[] = {
     { malloc_str,   (void*) cali_malloc_wrapper,    &orig_malloc  },
     { calloc_str,   (void*) cali_calloc_wrapper,    &orig_calloc  },
     { realloc_str,  (void*) cali_realloc_wrapper,   &orig_realloc },
     { free_str,     (void*) cali_free_wrapper,      &orig_free    }
 };
-
 
 void* cali_malloc_wrapper(size_t size)
 {
@@ -118,18 +118,43 @@ void cali_free_wrapper(void *ptr)
 }
 
 
-void init_alloc_hooks(Caliper *c) {
+void init_alloc_hooks(Caliper*) {
     Log(1).stream() << "sysalloc: Initializing system alloc hooks" << std::endl;
 
     gotcha_wrap(alloc_bindings,
                 sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t),
-                "Caliper AllocService Wrap");
+                "Caliper sysalloc wrap");
+
+    bindings_are_active = true;
+}
+
+void clear_alloc_hooks(Caliper*)
+{
+    if (!bindings_are_active)
+        return;
+    
+    Log(1).stream() << "sysalloc: Removing system alloc hooks" << std::endl;
+
+    void* dummy = nullptr;
+
+    struct gotcha_binding_t orig_bindings[] = {
+        { malloc_str,   (void*) orig_malloc,    &dummy },
+        { calloc_str,   (void*) orig_calloc,    &dummy },
+        { realloc_str,  (void*) orig_realloc,   &dummy },
+        { free_str,     (void*) orig_free,      &dummy }
+    };
+
+    gotcha_wrap(orig_bindings,
+                sizeof(orig_bindings)/sizeof(struct gotcha_binding_t),
+                "Caliper sysalloc unwrap");
+
+    bindings_are_active = false;
 }
 
 void sysalloc_initialize(Caliper* c) {
     c->events().post_init_evt.connect(init_alloc_hooks);
+    c->events().finish_evt.connect(clear_alloc_hooks);
 }
-
 
 } // namespace [anonymous]
 
