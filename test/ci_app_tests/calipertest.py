@@ -38,8 +38,17 @@
 import os
 import subprocess
 
+class CaliperExecError(Exception):
+    """ Error class when running a process fails
+    """
 
+    def __init__(self, msg):
+        self.msg = msg
 
+    def __str__(self):
+        return repr(self.msg)
+    
+    
 def run_test_with_query(target_cmd, query_cmd, env):
     """ Execute a command and query, and return query command's output
     
@@ -51,7 +60,13 @@ def run_test_with_query(target_cmd, query_cmd, env):
     query_proc  = subprocess.Popen(query_cmd, stdin=target_proc.stdout, stdout=subprocess.PIPE)
     target_proc.stdout.close()
     query_out, query_err = query_proc.communicate()
+    target_proc.wait()
 
+    if (target_proc.returncode != 0):
+        raise CaliperExecError('Command ' + str(target_cmd) + ' exited with ' + str(target_proc.returncode))
+    if (query_proc.returncode != 0):
+        raise CaliperExecError('Command ' + str(query_cmd) + ' exited with ' + str(query_proc.returncode))
+    
     return query_out
 
 
@@ -60,6 +75,9 @@ def run_test(target_cmd, env):
 
     target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE)
     proc_out, proc_err = target_proc.communicate()
+
+    if (target_proc.returncode != 0):
+        raise CaliperExecError('Command ' + str(target_cmd) + ' exited with ' + str(target_proc.returncode))
 
     return proc_out
 
