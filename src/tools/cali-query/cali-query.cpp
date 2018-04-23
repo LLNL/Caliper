@@ -148,6 +148,9 @@ namespace
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
           "Extract and list attributes in Caliper stream instead of snapshot records",
+        },
+        { "list-globals", "list-globals", 0, false,
+          "Extract and list global per-run attributes",
           nullptr
         },
         Args::Table::Terminator
@@ -284,10 +287,10 @@ int main(int argc, const char* argv[])
     // The Caliper config setup must run before Caliper runtime initialization
     setup_caliper_config(args);
     
-    cali::Annotation("cali-query.build.date").set(__DATE__);
-    cali::Annotation("cali-query.build.time").set(__TIME__);
+    cali::Annotation("cali-query.build.date", CALI_ATTR_GLOBAL).set(__DATE__);
+    cali::Annotation("cali-query.build.time", CALI_ATTR_GLOBAL).set(__TIME__);
 #ifdef __GNUC__
-    cali::Annotation("cali-query.build.compiler").set("gnu-" __VERSION__);
+    cali::Annotation("cali-query.build.compiler", CALI_ATTR_GLOBAL).set("gnu-" __VERSION__);
 #endif 
 
     CALI_MARK_BEGIN("Initialization");
@@ -325,19 +328,21 @@ int main(int argc, const char* argv[])
 
     Aggregator        aggregate(spec);
 
-    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
-        snap_proc = format;
-    else
-        snap_proc = aggregate;
+    if (!args.is_set("list-globals")) {
+        if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::None)
+            snap_proc = format;
+        else
+            snap_proc = aggregate;
     
-    if (spec.filter.selection == QuerySpec::FilterSelection::List)
-        snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
+        if (spec.filter.selection == QuerySpec::FilterSelection::List)
+            snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
     
-    if (args.is_set("list-attributes")) {
-        node_proc = AttributeExtract(snap_proc);
-        snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+        if (args.is_set("list-attributes")) {
+            node_proc = AttributeExtract(snap_proc);
+            snap_proc = [](CaliperMetadataAccessInterface&,const EntryList&){ return; };
+        }
     }
-
+        
     node_proc = ::NodeFilterStep(::FilterDuplicateNodes(), node_proc);
 
     std::vector<std::string> files = args.arguments();
@@ -418,9 +423,28 @@ int main(int argc, const char* argv[])
     //
 
     CALI_MARK_BEGIN("Writing");
+    
+    if (args.is_set("list-globals")) {
+        if (spec.attribute_selection.selection != QuerySpec::AttributeSelection::List) {
+            //   Global attributes will not be printed by default.
+            // If the user didn't provide a selection, add all global attributes
+            // to the selection list explictly.
 
-    aggregate.flush(metadb, format);
-    format.flush(metadb);
+            spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
+
+            for (const Attribute& attr : metadb.get_attributes())
+                if (attr.is_global())
+                    spec.attribute_selection.list.push_back(attr.name());
+
+            FormatProcessor global_format(spec, stream);
+
+            global_format.process_record(metadb, metadb.get_globals());
+            global_format.flush(metadb);
+        }
+    } else {
+        aggregate.flush(metadb, format);
+        format.flush(metadb);
+    }
 
     CALI_MARK_END("Writing");
 }

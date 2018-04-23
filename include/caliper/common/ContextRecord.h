@@ -45,10 +45,12 @@ namespace cali
 class ContextRecord
 {
     static const RecordDescriptor s_record;
+    static const RecordDescriptor s_globals_record;
 
 public:
 
     static const RecordDescriptor& record_descriptor() { return s_record; }
+    static const RecordDescriptor& globals_record_descriptor() { return s_globals_record; }
 };
 
 }

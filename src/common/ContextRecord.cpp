@@ -49,4 +49,6 @@ namespace
     }
 }
 
-const RecordDescriptor ContextRecord::s_record { 0x101, "ctx", 3, ::RecordElements };
+const RecordDescriptor ContextRecord::s_record         { 0x101, "ctx",     3, ::RecordElements };
+
+const RecordDescriptor ContextRecord::s_globals_record { 0x102, "globals", 3, ::RecordElements };

@@ -71,7 +71,7 @@ ConfigSet config;
 void read_cmdline(Caliper* c)
 {
     Attribute cmdline_attr = 
-        c->create_attribute("env.cmdline", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+        c->create_attribute("env.cmdline", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
     // Attempt to open /proc/self/cmdline and read it
 
@@ -100,7 +100,7 @@ void read_uname(Caliper* c)
 
         for (const uname_attr_info_t& uinfo : uname_attr_info) {
             Attribute attr = 
-                c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+                c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
             c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
         }
@@ -110,7 +110,7 @@ void read_uname(Caliper* c)
 void read_time(Caliper* c)
 {
     Attribute starttime_attr = 
-        c->create_attribute("env.starttime", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+        c->create_attribute("env.starttime", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
     time_t       t = time(NULL);
     struct tm *tmp = localtime(&t);
@@ -144,7 +144,7 @@ void read_extra(Caliper* c)
             continue;
         
         Attribute attr =
-            c->create_attribute("env."+env, CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
+            c->create_attribute("env."+env, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         
         char* val = getenv(env.c_str());
 
