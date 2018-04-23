@@ -610,6 +610,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                                  for (const Node* node = e.node(); node; node = node->parent())
                                      if (node->attribute() == attr.id() && node->data() == value)
                                          return true;
+                                 return false;
                              } ) != m_globals.end())
                 return;
 
