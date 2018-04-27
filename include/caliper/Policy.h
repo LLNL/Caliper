@@ -138,14 +138,14 @@ namespace cali{
     return Inclusive<cali::policy::tags::function, cali::policy::tags::loop>::policy<Tags...>();
   } 
 
-	//template<typename... Tags>
-	//using DefaultAnnotationTypeForTags = typename AnnotationSelector<
-	//                          policy::default_policy<Tags...>()
-	//                       >::AnnotationType;    
+	template<typename... Tags>
+	using DefaultAnnotationTypeForTags = typename AnnotationSelector<
+	                          policy::default_policy<Tags...>()
+	                       >::AnnotationType;    
 
-  //using DefaultFunctionAnnotation = DefaultAnnotationTypeForTags<cali::policy::tags::function>;
-  //using DefaultLoopAnnotation     = DefaultAnnotationTypeForTags<cali::policy::tags::loop>;
-  //using DefaultPackageAnnotation  = DefaultAnnotationTypeForTags<cali::policy::tags::package>;
+  using DefaultFunctionAnnotation = DefaultAnnotationTypeForTags<cali::policy::tags::function>;
+  using DefaultLoopAnnotation     = DefaultAnnotationTypeForTags<cali::policy::tags::loop>;
+  using DefaultPackageAnnotation  = DefaultAnnotationTypeForTags<cali::policy::tags::package>;
 
 } // end namespace policy  
 
