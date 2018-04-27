@@ -36,6 +36,7 @@
 
 #include <caliper/Caliper.h>
 #include <caliper/SnapshotRecord.h>
+#include <caliper/Policy.h>
 
 #include <caliper/common/RuntimeConfig.h>
 #include <caliper/common/Variant.h>
@@ -53,6 +54,56 @@ void begin_foo_op()
     cali::Annotation("foo").begin("fooing");
 }
 
+/** Policy Tests */
+using namespace cali::policy;
+
+/** Deep Annotation Policy Test */
+template<typename... Tags>
+static constexpr bool deep_policy(){
+  return Inclusive<tags::function,tags::loop>::policy<Tags...>();
+}
+
+template<typename... Tags>
+using DeepAnnotationType = typename AnnotationSelector<
+   deep_policy<Tags...>()
+>::AnnotationType;
+
+template<typename... Tags>
+using AnnotationType = DeepAnnotationType<Tags...>;
+
+using FunctionAnnotation = AnnotationType<tags::function>;
+
+void test_deep_policy(){
+  cali::Annotation("policy").begin("deep");
+  FunctionAnnotation("policy_function").begin("test_policy_function");
+  for(int i = 0 ; i<10;i++){
+    AnnotationType<tags::loop>("policy_loop").begin("test_policy_loop");  
+    AnnotationType<tags::loop>("policy_loop").end();
+  }
+  FunctionAnnotation("policy_function").end();
+  cali::Annotation("policy").end();
+}
+
+/** Shallow Annotation Policy Test */
+template<typename... Tags>
+static constexpr bool shallow_policy(){
+  return Inclusive<tags::function>::policy<Tags...>();
+}
+template<typename... Tags>
+using ShallowAnnotationType = typename AnnotationSelector<
+   shallow_policy<Tags...>()
+>::AnnotationType;
+
+void test_shallow_policy(){
+  cali::Annotation("policy").begin("shallow");
+  ShallowAnnotationType<tags::function>("policy_function").begin("test_policy_function");
+  for(int i = 0 ; i<10;i++){
+    ShallowAnnotationType<tags::loop>("policy_loop").begin("test_policy_loop");  
+    ShallowAnnotationType<tags::loop>("policy_loop").end();
+  }
+  ShallowAnnotationType<tags::function>("policy_function").end();
+  cali::Annotation("policy").end();
+}
 void end_foo_op()
 {
     // Explicitly end innermost level of "foo" annotation
@@ -305,6 +356,8 @@ int main(int argc, char* argv[])
         { "uninitialized-annotation", test_uninitialized      },
         { "end-mismatch",             test_end_mismatch       },
         { "escaping",                 test_escaping           },
+        { "deep-policy",              test_deep_policy        },
+        { "shallow-policy",           test_shallow_policy     },
         { "aggr-warnings",            test_aggr_warnings      },
         { "cross-scope",              test_cross_scope        },
         { "attribute-prop-preset",    test_attr_prop_preset   },
