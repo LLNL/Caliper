@@ -263,8 +263,7 @@ class SymbolLookup
         }
 
         if ((m_lookup_functions && !ret_func) ||
-            ((m_lookup_sourceloc || m_lookup_file || m_lookup_line) && !ret_line) ||
-            (m_lookup_mod && !ret_mod))
+            ((m_lookup_sourceloc || m_lookup_file || m_lookup_line) && !ret_line))
             ++m_num_failed; // not locked, doesn't matter too much if it's slightly off
     }
 
