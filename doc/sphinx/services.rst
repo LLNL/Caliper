@@ -1049,6 +1049,12 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
    ``source.line#address`` attribute. `TRUE` or `FALSE`,
    default `FALSE`. 
 
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_MODULE
+
+   Perform module name lookup, and writes the module number in the
+   ``module#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
+
 Sysalloc
 --------------------------------
 
