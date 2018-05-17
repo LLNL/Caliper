@@ -44,7 +44,13 @@
 #include "caliper/common/RuntimeConfig.h"
 
 #include <cupti.h>
+
+#include <cuda_runtime_api.h>
+
 #include <nvToolsExt.h>
+#if CUDART_VERSION >= 9000
+#include <nvToolsExtSync.h>
+#endif
 #include <generated_nvtx_meta.h>
 
 #include <vector>
