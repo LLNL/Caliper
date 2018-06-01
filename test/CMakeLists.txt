@@ -11,14 +11,23 @@ else()
 endif()
 
 set(CALIPER_TEST_APPS
+  cali-annotation-perftest
   cali-test
   cali-throughput-pthread)
+
+find_package(OpenMP)
 
 foreach(app ${CALIPER_TEST_APPS})
   add_executable(${app} ${app}.cpp)
   target_link_libraries(${app} caliper)
 endforeach()
 
+target_compile_options(cali-annotation-perftest
+  PRIVATE $<$<BOOL:OpenMP_FOUND>:${OpenMP_CXX_FLAGS}>)
+
+target_link_libraries(cali-annotation-perftest
+  caliper-tools-util
+  $<$<BOOL:OpenMP_FOUND>:${OpenMP_CXX_FLAGS}>)
 target_link_libraries(cali-throughput-pthread
   caliper-tools-util
   Threads::Threads)
