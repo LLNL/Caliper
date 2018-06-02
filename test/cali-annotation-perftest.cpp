@@ -39,6 +39,26 @@
 // OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 // SUCH DAMAGE.
 
+// -- cali-annotation-perftest
+//
+// Runs a performance test for caliper annotations. Essentially,
+// it creates nested begin/end annotation calls in a loop, and
+// reports the execution time of the whole loop.
+//
+// The benchmark builds up a context tree with a given width and
+// depth. In each iteration, the benchmark opens nested annotations up
+// to the given tree depth. The tree width specifies how many
+// different annotation nodes will be created at each level.
+//
+// The number of context tree nodes being created is
+//   Width x Depth
+//
+// The total number of annotation updates being executed is
+//   2 x Iterations x Depth
+//
+// The benchmark is multi-threaded: the loop is statically divided
+// between threads using OpenMP.
+
 #include <caliper/cali.h>
 #include <caliper/tools-util/Args.h>
 
