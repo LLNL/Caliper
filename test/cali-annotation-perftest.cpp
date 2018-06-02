@@ -70,7 +70,7 @@
 #endif
 
 
-cali::Annotation test_annotation("test.attr", CALI_ATTR_DEFAULT | CALI_ATTR_NESTED);
+cali::Annotation test_annotation("test.attr", CALI_ATTR_DEFAULT);
 
 int foo(int d, int w)
 {
@@ -118,13 +118,13 @@ int main(int argc, char* argv[])
     
     const util::Args::Table option_table[] = {
         { "width",      "tree-width", 'w', true,
-          "Context tree width", "20"
+          "Context tree width", "WIDTH"
         },
         { "depth",      "tree-width", 'd', true,
-          "Context tree depth", "10"
+          "Context tree depth", "DEPTH"
         },
         { "iterations", "iterations", 'i', true,
-          "Iterations",         "100000"
+          "Iterations",         "ITERATIONS"
         },
 
         { "help", "help", 'h', false, "Print help", nullptr },
@@ -212,9 +212,10 @@ int main(int argc, char* argv[])
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
     std::cout << "  " << updates << " annotation updates in "
-              << msec/1000.0     << " sec, "
-              << (msec    > 0 ? 1000.0*updates/msec : 0.0) << " updates/sec, "
-              << (updates > 0 ? 1000.0*msec/updates : 0.0) << " usec/update"
+              << msec/1000.0     << " sec ("
+              << updates/threads << " per thread), "
+              << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
+              << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
               << std::endl;
 
     return 0;
