@@ -126,6 +126,9 @@ int main(int argc, char* argv[])
         { "iterations", "iterations", 'i', true,
           "Iterations",         "ITERATIONS"
         },
+        { "csv",        "print-csv",  'c', false,
+          "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime."
+        },
 
         { "help", "help", 'h', false, "Print help", nullptr },
 
@@ -174,14 +177,17 @@ int main(int argc, char* argv[])
 
     // --- print info
 
-    std::cout << "cali-annotation-perftest:"
-              << "\n    Tree width: " << cfg.tree_width
-              << "\n    Tree depth: " << cfg.tree_depth
-              << "\n    Iterations: " << cfg.iter
+    bool print_csv = args.is_set("csv");
+
+    if (!print_csv)
+        std::cout << "cali-annotation-perftest:"
+                  << "\n    Tree width: " << cfg.tree_width
+                  << "\n    Tree depth: " << cfg.tree_depth
+                  << "\n    Iterations: " << cfg.iter
 #ifdef _OPENMP
-              << "\n    Threads:    " << omp_get_max_threads()
+                  << "\n    Threads:    " << omp_get_max_threads()
 #endif
-              << std::endl;
+                  << std::endl;
 
     // --- pre-timing loop. initializes OpenMP subsystem
 
@@ -211,12 +217,20 @@ int main(int argc, char* argv[])
 
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
-    std::cout << "  " << updates << " annotation updates in "
-              << msec/1000.0     << " sec ("
-              << updates/threads << " per thread), "
-              << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
-              << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
-              << std::endl;
+    if (print_csv)
+        std::cout << cfg.tree_width
+                  << "," << cfg.tree_depth
+                  << "," << updates
+                  << "," << threads
+                  << "," << msec/1000.0
+                  << std::endl;
+    else
+        std::cout << "  " << updates << " annotation updates in "
+                  << msec/1000.0     << " sec ("
+                  << updates/threads << " per thread), "
+                  << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
+                  << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
+                  << std::endl;
 
     return 0;
 }
