@@ -644,7 +644,7 @@ def write_exit_guard(out):
 def write_gotcha_c_wrapper(out, decl, return_val, write_body):
     """Write the C wrapper for an MPI function."""
     # Write the pointer to the original function
-    out.write("%s (*wrap_%s_orig)(%s) = NULL;\n" % (decl.retType(), decl.name, ", ".join(decl.formals())))
+    out.write("gotcha_wrappee_handle_t _wrap_py_%s_handle = 0x0;\n" % decl.name)
 
     # Now write the wrapper function, which will call the original function through the pointer
     out.write(decl.gotcha_prototype(default_modifiers))
@@ -657,7 +657,7 @@ def write_gotcha_c_wrapper(out, decl, return_val, write_body):
     out.write("}\n\n")
 
     # Write the GOTCHA binding struct
-    out.write("struct gotcha_binding_t wrap_%s_binding = { \"%s\", (void*) wrap_%s, &wrap_%s_orig };\n\n" % (decl.name, decl.name, decl.name, decl.name))
+    out.write("struct gotcha_binding_t wrap_%s_binding = { \"%s\", (void*) wrap_%s, &_wrap_py_%s_handle };\n\n" % (decl.name, decl.name, decl.name, decl.name))
 
 def write_pmpi_c_wrapper(out, decl, return_val, write_body):
     """Write the C wrapper for an MPI function."""
@@ -983,7 +983,7 @@ def fn(out, scope, args, children):
         fn_scope["returnVal"]  = fn_scope["ret_val"]  # deprecated name.
 
         if generate_gotcha:
-            c_call = "%s = (*wrap_%s_orig)(%s);" % (return_val, fn.name, ", ".join(fn.argNames()))
+            c_call = "%s = (*reinterpret_cast<decltype(&%s)>(gotcha_get_wrappee(_wrap_py_%s_handle)))(%s);" % (return_val, fn.name, fn.name, ", ".join(fn.argNames()))
         elif ignore_deprecated:
             c_call = "%s\n%s = P%s(%s);\n%s" % ("WRAP_MPI_CALL_PREFIX", return_val, fn.name, ", ".join(fn.argNames()), "WRAP_MPI_CALL_POSTFIX")
         else:
