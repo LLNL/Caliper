@@ -93,6 +93,7 @@ class SosService
                 pack_snapshot(sos_publication_handle, ++snapshot_id, snapshot->unpack(*c));
                 return true;
             });
+        c->clear(); //Avoids re-publishing snapshots.
     }
 
     void create_attr(const Attribute& attr) {
@@ -111,9 +112,11 @@ class SosService
 
     // Initialize the SOS runtime, and create our publication handle
     void post_init(Caliper* c) {
-        sos_runtime = NULL;
-        SOS_init(NULL, NULL, &sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
-        SOS_pub_create(sos_runtime, &sos_publication_handle, (char *)"caliper.data", SOS_NATURE_CREATE_OUTPUT);
+        sos_runtime            = NULL;
+        sos_publication_handle = NULL;
+        //
+        SOS_init(&sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
+        SOS_pub_init(sos_runtime, &sos_publication_handle, "caliper.data", SOS_NATURE_DEFAULT);
 
         // trigger_attr will be invalid if it's not found - still need to check attributes in create_attribute_cb
         trigger_attr = c->get_attribute(config.get("trigger_attr").to_string());
