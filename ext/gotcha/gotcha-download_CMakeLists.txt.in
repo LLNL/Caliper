@@ -5,6 +5,7 @@ project(libgotcha NONE)
 include(ExternalProject)
 ExternalProject_Add(libgotcha
   GIT_REPOSITORY    "https://github.com/LLNL/gotcha.git"
+  GIT_TAG           "1.0.2"
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/gotcha-download/gotcha-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/gotcha-download/gotcha-build"
   CMAKE_ARGS        ""

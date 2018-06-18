@@ -1,4 +1,4 @@
-include_directories(${GOTCHA_INCLUDE_DIR})
+include_directories(${gotcha_INCLUDE_DIRS})
 
 set(WRAP_FLAGS "-w")
 

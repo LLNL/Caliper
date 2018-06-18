@@ -135,7 +135,7 @@ void init_alloc_hooks(Caliper*) {
 
     gotcha_wrap(alloc_bindings,
                 sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t),
-                "Caliper sysalloc wrap");
+                "caliper/sysalloc");
 
     bindings_are_active = true;
 }
@@ -158,7 +158,7 @@ void clear_alloc_hooks(Caliper*)
 
     gotcha_wrap(orig_bindings,
                 sizeof(orig_bindings)/sizeof(struct gotcha_binding_t),
-                "Caliper sysalloc unwrap");
+                "caliper/sysalloc");
 
     bindings_are_active = false;
 }

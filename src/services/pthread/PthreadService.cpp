@@ -96,7 +96,8 @@ pthreadservice_initialize(Caliper* c)
         { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create_handle }
     };
 
-    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t), "Caliper");
+    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t),
+                "caliper/pthread");
 
     Log(1).stream() << "Registered pthread service" << std::endl;
 }
