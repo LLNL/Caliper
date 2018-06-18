@@ -195,7 +195,7 @@ if (WITH_GOTCHA)
       set(CALIPER_HAVE_GOTCHA TRUE)
       list(APPEND CALIPER_EXTERNAL_LIBS ${gotcha_LIBRARIES})
     else()
-      message(WARNING "External gotcha was requested but gotcha was not found!"
+      message(WARNING "External gotcha was requested but gotcha was not found!")
     endif()
   else()
     set(CALIPER_GOTCHA_CMAKE_MSG "Yes, using internal")
