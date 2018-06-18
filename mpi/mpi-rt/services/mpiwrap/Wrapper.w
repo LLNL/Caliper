@@ -1233,7 +1233,7 @@ void mpiwrap_init(Caliper* c, const std::string& whitelist, const std::string& b
         bindings.push_back(wrap_{{name}}_binding);
     {{endforallfn}}
 
-    gotcha_wrap(bindings.data(), bindings.size(), "Caliper");
+    gotcha_wrap(bindings.data(), bindings.size(), "caliper/mpi");
 #else
     Log(2).stream() << "mpiwrap: Using PMPI wrappers." << std::endl;
 #endif
