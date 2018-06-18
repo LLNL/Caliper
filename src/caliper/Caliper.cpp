@@ -72,7 +72,7 @@ namespace cali
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
 
-extern void config_sanity_check();
+extern void config_sanity_check(RuntimeConfig*);
 
 }
 
@@ -331,9 +331,9 @@ struct Caliper::GlobalData
         Log(1).stream() << "Initialized" << endl;
 
         if (config.get("config_check").to_bool())
-            config_sanity_check();
+            config_sanity_check(RuntimeConfig::get_default_config());
         if (Log::verbosity() >= 3)
-            RuntimeConfig::print( Log(3).stream() << "Configuration:\n" );
+            RuntimeConfig::get_default_config()->print( Log(3).stream() << "Configuration:\n" );
 
         c.events().post_init_evt(&c);
     }
