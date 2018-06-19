@@ -111,4 +111,21 @@ TEST(MetaDBTest, SetGlobal) {
     EXPECT_EQ(count_in_record(globals, g_int_attr, v_int  ), 1);
     EXPECT_EQ(count_in_record(globals, g_val_attr, v_val  ), 1);
     EXPECT_EQ(count_in_record(globals, no_g_attr,  v_no   ), 0);
+
+    CaliperMetadataDB db_imp;
+
+    db_imp.import_globals(db);
+
+    std::vector<Entry> imp_globals = db_imp.get_globals();
+
+    Attribute g_imp_str_attr = db_imp.get_attribute("global.str");
+    Attribute g_imp_int_attr = db_imp.get_attribute("global.int");
+    Attribute g_imp_val_attr = db_imp.get_attribute("global.val");
+
+    EXPECT_GE(imp_globals.size(), 2);
+
+    EXPECT_EQ(count_in_record(imp_globals, g_imp_str_attr, v_str_a), 1);
+    EXPECT_EQ(count_in_record(imp_globals, g_imp_str_attr, v_str_b), 1);
+    EXPECT_EQ(count_in_record(imp_globals, g_imp_int_attr, v_int  ), 1);
+    EXPECT_EQ(count_in_record(imp_globals, g_imp_val_attr, v_val  ), 1);
 }

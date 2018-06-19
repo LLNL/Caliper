@@ -70,25 +70,8 @@
 #endif
 
 
-cali::Annotation test_annotation("test.attr", CALI_ATTR_DEFAULT);
-
-int foo(int d, int w)
-{
-    if (d <= 0)
-        return 0;
-
-    std::string str("foo.");
-
-    str.append(std::to_string(d));
-    str.append(".");
-    str.append(std::to_string(w));
-
-    cali::Annotation::Guard
-        g_a(test_annotation.begin(str.c_str()));
-
-    return 2 + foo(d-1, w);
-}
-
+cali::Annotation         test_annotation("test.attr", CALI_ATTR_DEFAULT);
+std::vector<std::string> annotation_strings;
 
 struct Config
 {
@@ -99,18 +82,47 @@ struct Config
 };
 
 
+int foo(int d, int w, const Config& cfg)
+{
+    if (d <= 0)
+        return 0;
+
+    cali::Annotation::Guard
+        g_a(test_annotation.begin(annotation_strings[d*cfg.tree_width+w].c_str()));
+
+    return 2 + foo(d-1, w, cfg);
+}
+
 int run(const Config& cfg)
 {
     int n_updates = 0;
 
 #pragma omp parallel for schedule(static) reduction(+:n_updates)
     for (int i = 0; i < cfg.iter; ++i) {
-        n_updates += foo(cfg.tree_depth, i % cfg.tree_width);
+        n_updates += foo(cfg.tree_depth, i % cfg.tree_width, cfg);
     }
     
     return n_updates;
 }
 
+int make_strings(const Config& cfg)
+{
+    int depth = cfg.tree_depth + 1;
+    int width = std::max(1, cfg.tree_width);
+    
+    annotation_strings.resize(depth * width);
+
+    for (int d = 0; d < depth; ++d)
+        for (int w = 0; w < width; ++w) {
+            std::string str("foo.");
+            
+            str.append(std::to_string(d));
+            str.append(".");
+            str.append(std::to_string(w));
+            
+            annotation_strings[d*width+w] = std::move(str);
+        }
+}
 
 int main(int argc, char* argv[])
 {
@@ -175,6 +187,8 @@ int main(int argc, char* argv[])
     cali::Annotation("perftest.threads",    CALI_ATTR_GLOBAL).set(threads);
 #endif
 
+    make_strings(cfg);
+
     // --- print info
 
     bool print_csv = args.is_set("csv");
@@ -218,8 +232,8 @@ int main(int argc, char* argv[])
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
     if (print_csv)
-        std::cout << cfg.tree_width
-                  << "," << cfg.tree_depth
+        std::cout << cfg.tree_depth
+                  << "," << cfg.tree_width
                   << "," << updates
                   << "," << threads
                   << "," << msec/1000.0
