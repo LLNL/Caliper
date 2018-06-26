@@ -151,14 +151,13 @@ struct ConfigSetImpl
 // --- RuntimeConfig implementation
 //
 
-struct RuntimeConfigImpl
+struct RuntimeConfig::RuntimeConfigImpl
 {
     // --- data
-
-    static unique_ptr<RuntimeConfigImpl>     s_instance;
+    static unique_ptr<RuntimeConfig>         s_default_config;
     static const ConfigSet::Entry            s_configdata[];
 
-    static bool                              s_allow_read_env;
+    bool                                     m_allow_read_env = false;
 
     // combined profile: initially receives settings made through "add" API,
     // then merges all selected profiles in here
@@ -237,7 +236,7 @@ struct RuntimeConfigImpl
     void init_config_database() {
         // read pre-init config set to get config file name from env var
         ConfigSetImpl init_config_cfg;
-        init_config_cfg.init("config", s_configdata, s_allow_read_env, m_combined_profile, m_top_profile);
+        init_config_cfg.init("config", s_configdata, m_allow_read_env, m_combined_profile, m_top_profile);
 
         // read config files
         read_config_files(init_config_cfg.get("file").to_stringlist());
@@ -250,7 +249,7 @@ struct RuntimeConfigImpl
 
         // read "config" config again: profile may have been set in the file
         shared_ptr<ConfigSetImpl> config_cfg { new ConfigSetImpl };
-        config_cfg->init("config", s_configdata, s_allow_read_env, m_combined_profile, m_top_profile);
+        config_cfg->init("config", s_configdata, m_allow_read_env, m_combined_profile, m_top_profile);
 
         m_database.insert(make_pair("config", config_cfg));
 
@@ -290,7 +289,7 @@ struct RuntimeConfigImpl
         m_top_profile[key] = value;
     }
 
-    shared_ptr<ConfigSetImpl> init(const char* name, const ConfigSet::Entry* list) {
+    shared_ptr<ConfigSetImpl> init_configset(const char* name, const ConfigSet::Entry* list) {
         if (m_database.empty())
             init_config_database();
 
@@ -301,7 +300,7 @@ struct RuntimeConfigImpl
 
         shared_ptr<ConfigSetImpl> ret { new ConfigSetImpl };
 
-        ret->init(name, list, s_allow_read_env, m_combined_profile, m_top_profile);
+        ret->init(name, list, m_allow_read_env, m_combined_profile, m_top_profile);
         m_database.insert(it, make_pair(string(name), ret));
 
         return ret;
@@ -324,18 +323,11 @@ struct RuntimeConfigImpl
                    << ::config_var_name(set.first, entry.first)
                    << '=' << entry.second.value << std::endl;
     }
-
-    static RuntimeConfigImpl* instance() {
-        if (!s_instance)
-            s_instance.reset(new RuntimeConfigImpl);
-
-        return s_instance.get();
-    }
 };
 
-unique_ptr<RuntimeConfigImpl> RuntimeConfigImpl::s_instance { nullptr };
+unique_ptr<RuntimeConfig> RuntimeConfig::RuntimeConfigImpl::s_default_config { nullptr };
 
-const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
+const ConfigSet::Entry RuntimeConfig::RuntimeConfigImpl::s_configdata[] = {
     { "profile",  CALI_TYPE_STRING, "default",
       "Configuration profile",
       "Configuration profile"
@@ -346,8 +338,6 @@ const ConfigSet::Entry RuntimeConfigImpl::s_configdata[] = {
     },
     ConfigSet::Terminator
 };
-
-bool RuntimeConfigImpl::s_allow_read_env { true };
 
 } // namespace cali
 
@@ -374,65 +364,77 @@ ConfigSet::get(const char* key) const
 // --- RuntimeConfig public interface
 //
 
+RuntimeConfig::RuntimeConfig()
+    : mP(new RuntimeConfigImpl)
+{ }
+
 StringConverter
 RuntimeConfig::get(const char* set, const char* key)
 {
-    return RuntimeConfigImpl::instance()->get(set, key);
+    return mP->get(set, key);
+}
+
+ConfigSet
+RuntimeConfig::init_configset(const char* name, const ConfigSet::Entry* list)
+{
+    return ConfigSet(mP->init_configset(name, list));
 }
 
 void
 RuntimeConfig::preset(const char* key, const std::string& value)
 {
-    RuntimeConfigImpl::instance()->preset(key, value);
+    mP->preset(key, value);
 }
 
 void
 RuntimeConfig::set(const char* key, const std::string& value)
 {
-    RuntimeConfigImpl::instance()->set(key, value);
-}
-
-ConfigSet
-RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
-{
-    return ConfigSet(RuntimeConfigImpl::instance()->init(name, list));
+    mP->set(key, value);
 }
 
 void
 RuntimeConfig::define_profile(const char* name,
                               const char* keyvallist[][2])
 {
-    RuntimeConfigImpl::instance()->define_profile(name, keyvallist);
+    mP->define_profile(name, keyvallist);
 }
 
 void
 RuntimeConfig::print(ostream& os)
 {
-    RuntimeConfigImpl::instance()->print(os);
+    mP->print(os);
 }
 
 bool
 RuntimeConfig::allow_read_env()
 {
-    return RuntimeConfigImpl::s_allow_read_env;
+    return mP->m_allow_read_env;
 }
 
 bool
 RuntimeConfig::allow_read_env(bool allow)
 {
-    RuntimeConfigImpl::s_allow_read_env = allow;
-    return RuntimeConfigImpl::s_allow_read_env;
+    mP->m_allow_read_env = allow;
+    return mP->m_allow_read_env;
 }
 
-// "hidden" function to be used by tests
+//
+// static interface
+//
 
-namespace cali
+ConfigSet
+RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
 {
-
-void
-clear_caliper_runtime_config()
-{
-    RuntimeConfigImpl::s_instance.reset();
+    return ConfigSet(get_default_config()->init_configset(name, list));
 }
 
+RuntimeConfig*
+RuntimeConfig::get_default_config()
+{
+    if (!RuntimeConfigImpl::s_default_config) {
+        RuntimeConfigImpl::s_default_config.reset(new RuntimeConfig);
+        RuntimeConfigImpl::s_default_config->allow_read_env(true);
+    }
+    
+    return RuntimeConfigImpl::s_default_config.get();
 }

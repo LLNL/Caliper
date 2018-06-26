@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
 
     test_instance();
     
-    cali::RuntimeConfig::preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
 
     CALI_CXX_MARK_FUNCTION;
         

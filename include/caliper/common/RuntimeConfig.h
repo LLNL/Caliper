@@ -70,17 +70,26 @@ public:
 
     constexpr ConfigSet() = default;
 
-    StringConverter get(const char* key) const;
+    StringConverter  get(const char* key) const;
 };
+
 
 /// \brief Functionality to read and retrieve %Caliper config settings.
 class RuntimeConfig
 {
+    struct RuntimeConfigImpl;
 
+    std::shared_ptr<RuntimeConfigImpl> mP;
+    
 public:
 
+    RuntimeConfig();
+
     /// \brief Get config entry with given \a key from given \a set
-    static StringConverter get(const char* set, const char* key);
+    StringConverter get(const char* set, const char* key);
+
+    /// \brief Initialize a ConfigSet.
+    ConfigSet       init_configset(const char* name, const ConfigSet::Entry* set);
 
     /// \brief Pre-set config entry \a key to \a value.
     ///
@@ -89,7 +98,7 @@ public:
     ///
     /// \note: Only effective *before* initialization of the %Caliper
     ///   runtime system.
-    static void            preset(const char* key, const std::string& value);
+    void            preset(const char* key, const std::string& value);
 
     /// \brief Set config entry \a key to \a value.
     ///
@@ -98,10 +107,7 @@ public:
     ///
     /// \note: Only effective *before* initialization of the %Caliper
     ///   runtime system.
-    static void            set(const char* key, const std::string& value);
-
-    /// \brief Initialize a ConfigSet.
-    static ConfigSet       init(const char* name, const ConfigSet::Entry* set);
+    void            set(const char* key, const std::string& value);
 
     /// \brief Define a %Caliper configuration profile.
     ///
@@ -134,10 +140,10 @@ public:
     ///    in each entry is the configuration key, the second string is its
     ///    value. Keys must be all uppercase. Terminate the list with two
     ///    NULL entries: <tt> { NULL, NULL } </tt>.
-    static void            define_profile(const char* name,
-                                          const char* keyvallist[][2]);
-
-    static bool            allow_read_env();
+    void            define_profile(const char* name,
+                                   const char* keyvallist[][2]);
+    
+    bool            allow_read_env();
 
     /// \brief Enable or disable reading of configuration settings
     ///   from environment variables.
@@ -150,13 +156,22 @@ public:
     ///
     /// \note Only effective *before* initialization of the %Caliper
     ///   runtime system.
-    static bool            allow_read_env(bool allow);
+    bool            allow_read_env(bool allow);
 
     /// \brief Print the current configuration settings.
     ///
     /// \note Only effective after initialization of the %Caliper
     ///   runtime system.
-    static void print(std::ostream& os);
+    void print(std::ostream& os);
+
+    //
+    // --- Static API (temporary)
+    //
+
+    /// \brief Initialize a ConfigSet from the default config.
+    static ConfigSet      init(const char* name, const ConfigSet::Entry* set);
+
+    static RuntimeConfig* get_default_config(); 
 
 }; // class RuntimeConfig
 
