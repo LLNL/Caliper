@@ -68,19 +68,22 @@ class Hierarchy
     {
         util::LockfreeIntrusiveTree<HierarchyNode>::Node m_treenode;
         std::string m_label;
+        std::string m_column;
 
     public:
 
-        HierarchyNode(cali_id_t id, const std::string& label)
+        HierarchyNode(cali_id_t id, const std::string& label, const std::string& column)
             : IdType(id),
               util::LockfreeIntrusiveTree<HierarchyNode>(this, &HierarchyNode::m_treenode),
-            m_label(label)
+            m_label(label),
+            m_column(column)
         { }
 
         const std::string& label() const { return m_label; }
 
         std::ostream& write_json(std::ostream& os) const {
-            util::write_esc_string(os << "{ \"label\": \"", m_label) << "\"";
+            util::write_esc_string(os << "{ \"label\": \"",  m_label ) << "\"";
+            util::write_esc_string(os << ", \"column\": \"", m_column) << "\"";
 
             if (parent() && parent()->id() != CALI_INV_ID)
                 os << ", \"parent\": " << parent()->id();
@@ -127,7 +130,7 @@ class Hierarchy
 public:
 
     Hierarchy()
-        : m_root(new HierarchyNode(CALI_INV_ID, ""))
+        : m_root(new HierarchyNode(CALI_INV_ID, "", ""))
     { }
 
     ~Hierarchy() {
@@ -137,7 +140,7 @@ public:
     }
 
     /// \brief Return Node ID for the given path
-    cali_id_t get_id(const std::vector<Entry>& vec) {
+    cali_id_t get_id(const std::vector<Entry>& vec, const std::string& column) {
         HierarchyNode* node = m_root;
 
         for (const Entry& e : vec) {
@@ -151,7 +154,7 @@ public:
                 std::lock_guard<std::mutex>
                     g(m_nodes_lock);
                 
-                node = new HierarchyNode(m_nodes.size(), label);
+                node = new HierarchyNode(m_nodes.size(), label, column);
                 m_nodes.push_back(node);
                 
                 parent->append(node);
@@ -280,7 +283,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             m_columns.push_back(path);
     }
 
-    void write_hierarchy_entry(std::ostream& os, const EntryList& list, const std::vector<Attribute>& path_attrs) {
+    void write_hierarchy_entry(std::ostream& os, const EntryList& list, const std::vector<Attribute>& path_attrs, const std::string& column) {
         std::vector<Entry> path;
 
         for (const Entry& e : list)
@@ -292,7 +295,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                     }
 
         std::reverse(path.begin(), path.end());
-        cali_id_t id = m_hierarchy.get_id(path);
+        cali_id_t id = m_hierarchy.get_id(path, column);
 
         if (id != CALI_INV_ID)
             os << id;
@@ -339,7 +342,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                 os << ", ";
 
             if (c.is_hierarchy)
-                write_hierarchy_entry(os, list, c.attributes);
+                write_hierarchy_entry(os, list, c.attributes, c.title);
             else 
                 write_immediate_entry(os, list, c.attributes.front());
         }
