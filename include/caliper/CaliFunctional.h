@@ -262,5 +262,86 @@ ArgWrappedFunction<LB> wrap_function_and_args(const char* name, LB body){
     return ArgWrappedFunction<LB>(name,body);
 }
 
+template<typename InstanceType>
+struct Recordable{
+    static void record(InstanceType instance){};
+};
+
+template<typename... Args>
+struct MapRecordingOperator{
+    static auto record() -> void {
+    }
+};
+template<typename MaybeRecordable>
+void recordIfPossible(MaybeRecordable instance){
+    Recordable<MaybeRecordable>::record(instance);
+}
+cali::Annotation argument_number_annot("argument");
+template <typename Arg, typename... Args>
+struct MapRecordingOperator<Arg, Args...>{
+    static auto record(Arg arg, Args... args) -> void {
+        argument_number_annot.set(static_cast<int>(sizeof...(args)));
+        recordIfPossible(arg);
+        argument_number_annot.end(); // can be moved to callsite for speed, looks bad though
+        MapRecordingOperator<Args...>::record(args...);
+    }
+};
+
+
+
+template<typename... Args>
+void recordAll(Args... args){
+  MapRecordingOperator<Args...>::record(args...);
+}
+
+cali::Annotation recording_phase("recording_phase");
+template<class LB>
+struct RecordedFunction {
+    RecordedFunction(const char* func_name, LB func) : body(func){
+        name = func_name;
+    }
+    template <typename... Args>
+    auto operator()(Args... args) -> typename std::enable_if<
+        !std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
+        typename std::result_of<LB(Args...)>::type>::type {
+      recording_phase.begin("pre"); 
+      recordAll(args...);
+      recording_phase.end();
+      cali::Annotation::Guard func_annot(
+          cali::Annotation("debugged_function").begin(name)
+      );
+      auto return_value = body(args...);
+      //cali::Annotation return_value_annot("return");
+      //return_value_annot.set(return_value);
+      //return_value_annot.end();
+      recording_phase.begin("post");
+      recordAll(args...);
+      recording_phase.end();
+      return return_value;
+    }
+    template <typename... Args>
+    auto operator()(Args... args) -> typename std::enable_if<
+        std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
+        typename std::result_of<LB(Args...)>::type>::type {
+      cali::Annotation::Guard func_annot(
+          cali::Annotation("debugged_function").begin(name)
+      );
+      recording_phase.begin("pre"); 
+      recordAll(args...);
+      recording_phase.end();
+      body(args...);
+      recording_phase.begin("post"); 
+      recordAll(args...);
+      recording_phase.end(); 
+    }
+    LB body;
+    const char* name;
+};
+
+template<typename LB>
+RecordedFunction<LB> make_recorded_function(const char* name, LB body){
+    return RecordedFunction<LB>(name,body);
+}
+
 } // end namespace cali
 #endif //CALI_ANNOTATED_REGION_H
