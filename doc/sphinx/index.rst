@@ -48,6 +48,7 @@ Contents
    AnnotationAPI
    configuration
    services
+   ThirdPartyTools
    OutputFormats
    tools
    calql
@@ -154,6 +155,11 @@ against the Caliper library. Programs must be linked with the Caliper
 runtime (libcaliper.so), as shown in the example link command: ::
 
     g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
+
+For MPI programs, it is recommended to also link the Caliper MPI
+runtime library (libcaliper-mpi.so): ::
+
+    mpicxx -o mpiapp mpiapp.o -L<path to caliper installation>/lib64 -lcaliper-mpi -lcaliper
 
 Runtime configuration
 ................................
