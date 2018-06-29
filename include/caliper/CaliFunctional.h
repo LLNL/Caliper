@@ -276,6 +276,10 @@ template<typename MaybeRecordable>
 void recordIfPossible(MaybeRecordable instance){
     Recordable<MaybeRecordable>::record(instance);
 }
+template<typename MaybeRecordable>
+void recordIfPossible(MaybeRecordable* instance){
+    Recordable<MaybeRecordable>::record(*instance);
+}
 cali::Annotation argument_number_annot("argument");
 template <typename Arg, typename... Args>
 struct MapRecordingOperator<Arg, Args...>{
