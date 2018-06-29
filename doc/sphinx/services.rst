@@ -623,7 +623,7 @@ instrumented.
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
 
-Note that you have to link the `libcaliper-mpiwrap` library with the
+Note that you have to link the `libcaliper-mpi` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 

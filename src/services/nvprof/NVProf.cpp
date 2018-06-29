@@ -65,7 +65,7 @@ public:
                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
     }
 
-    const char* service_tag() const { return "nvvp"; }
+    const char* service_tag() const { return "nvprof"; }
 
     void on_create_attribute(Caliper* c, const std::string& name, cali_attr_type, int*, Node** node) {
         // Set the color flag
@@ -130,7 +130,7 @@ public:
                 auto it = m_domain_map.find(attr.id());
 
                 if (it == m_domain_map.end()) {
-                    Log(0).stream() << "nvvp: on_end(): error: domain for attribute "
+                    Log(0).stream() << "nvprof: on_end(): error: domain for attribute "
                                     << attr.name()
                                     << " not found!" << std::endl;
                     return;
