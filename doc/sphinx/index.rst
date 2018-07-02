@@ -35,8 +35,11 @@ Features include:
 * Memory allocation annotations: associate performance measurements
   with named memory regions
 
-Caliper is available for download on
-`GitHub <https://github.com/LLNL/Caliper>`_.
+Caliper is available for download on `GitHub
+<https://github.com/LLNL/Caliper>`_.  Example applications, runtime
+configurations, analysis scripts, and a tutorial are available in the
+`Caliper examples <https://github.com/LLNL/caliper-examples>`_
+repository.
 
 Contents
 --------------------------------
