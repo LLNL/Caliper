@@ -1,34 +1,32 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Architecture and Workflow &mdash; Caliper 1.7.0-dev documentation</title>
-    
+    <title>Architecture and Workflow &#8212; Caliper 2.0.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.7.0-dev',
+        VERSION:     '2.0.0-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.7.0-dev documentation" href="index.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Source-code Annotations" href="AnnotationAPI.html" />
     <link rel="prev" title="Build and Link" href="build.html" /> 
   </head>
-  <body role="document">
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -41,7 +39,7 @@
         <li class="right" >
           <a href="build.html" title="Build and Link"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -52,7 +50,7 @@
             
   <div class="section" id="architecture-and-workflow">
 <h1>Architecture and Workflow<a class="headerlink" href="#architecture-and-workflow" title="Permalink to this headline">¶</a></h1>
-<p>Caliper&#8217;s highly modular architecture allows for a wide range of use
+<p>Caliper’s highly modular architecture allows for a wide range of use
 cases. For example, it can be used as a library to access application
 context information from third-party tools, or it can be configured as
 a stand-alone performance data recorder.</p>
@@ -74,12 +72,12 @@ configuration variable. The following example activates the event,
 trace, timestamp, and recorder services to create an event trace with
 timing information for annotated regions (this is the setup of the
 pre-defined <code class="docutils literal"><span class="pre">serial-trace</span></code> configuration profile):</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>$ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
+<div class="highlight-default"><div class="highlight"><pre>$ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
 </pre></div>
 </div>
 <p>Caliper warns if the configuration is missing a processing pipeline
 stage while others are active:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>$ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
+<div class="highlight-default"><div class="highlight"><pre>$ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
 == CALIPER: Config check: Warning: snapshot buffer service &quot;trace&quot; requires offline output services, but none are active.
      Add &quot;recorder&quot;, &quot;report&quot;, &quot;sos&quot; or &quot;mpireport&quot; to CALI_SERVICES_ENABLE to generate Caliper output.
 </pre></div>
@@ -87,7 +85,7 @@ stage while others are active:</p>
 <p>The following sections discuss the pipeline stages in detail.</p>
 <div class="section" id="context-information-and-event-hooks">
 <h2>Context Information and Event Hooks<a class="headerlink" href="#context-information-and-event-hooks" title="Permalink to this headline">¶</a></h2>
-<p>Context information is the key:value data provided by Caliper&#8217;s
+<p>Context information is the key:value data provided by Caliper’s
 annotation API. For example, an application can mark a section of code
 with the <code class="docutils literal"><span class="pre">CALI_MARK_BEGIN</span></code> and <code class="docutils literal"><span class="pre">CALI_MARK_END</span></code> macros, or export
 any application-specific information that may be relevant for
@@ -124,7 +122,7 @@ actual data collection happens through <em>snapshots</em>.</p>
 </div>
 <div class="section" id="snapshots">
 <h2>Snapshots<a class="headerlink" href="#snapshots" title="Permalink to this headline">¶</a></h2>
-<p>Snapshots are Caliper&#8217;s mechanism to make performance measurements and
+<p>Snapshots are Caliper’s mechanism to make performance measurements and
 collect data. Specifically, a snapshot collects data from all active
 runtime data sources and creates a snapshot record. The snapshot
 record thus contains the blackboard contents (with the program context
@@ -133,7 +131,7 @@ provided by the active runtime data source services (such as
 timestamps or hardware counter information).</p>
 <p>Snapshots can be triggered explicitly through the Caliper API, or by a
 snapshot trigger service. The two major snapshot trigger services in
-Caliper are <a class="reference internal" href="services.html#event-service"><span>event</span></a> and <a class="reference internal" href="services.html#sampler-service"><span>sampler</span></a> (some other services, such as <a class="reference internal" href="services.html#libpfm-service"><span>libpfm</span></a>, can also trigger snapshots). The event service
+Caliper are <a class="reference internal" href="services.html#event-service"><span class="std std-ref">event</span></a> and <a class="reference internal" href="services.html#sampler-service"><span class="std std-ref">sampler</span></a> (some other services, such as <a class="reference internal" href="services.html#libpfm-service"><span class="std std-ref">libpfm</span></a>, can also trigger snapshots). The event service
 triggers a snapshot on each annotation <em>begin</em>, <em>set</em>, or <em>end</em>
 event. This allows us to create event-based traces and profiles,
 collecting exact statistics and performance measurements for annotated
@@ -149,8 +147,8 @@ triggers can be active at the same time.</p>
 <h2>Snapshot Buffering/Processing<a class="headerlink" href="#snapshot-buffering-processing" title="Permalink to this headline">¶</a></h2>
 <p>The snapshot processing stage defines what to do with snapshot records
 at runtime. Caliper provides two options: tracing and aggregation. The
-<a class="reference internal" href="services.html#trace-service"><span>trace</span></a> service simply stores each snapshot record in an in-memory
-buffer. The <a class="reference internal" href="services.html#aggregate-service"><span>aggregate</span></a> service performs in-situ aggregation, where
+<a class="reference internal" href="services.html#trace-service"><span class="std std-ref">trace</span></a> service simply stores each snapshot record in an in-memory
+buffer. The <a class="reference internal" href="services.html#aggregate-service"><span class="std std-ref">aggregate</span></a> service performs in-situ aggregation, where
 only aggregate performance data is kept for different program contexts
 (e.g., the total runtime spent in each function). This can greatly
 reduce the amount of data that needs to be kept, especially for
@@ -160,25 +158,25 @@ long-running, iterative programs.</p>
 <h2>Flush and Snapshot Post-Processing<a class="headerlink" href="#flush-and-snapshot-post-processing" title="Permalink to this headline">¶</a></h2>
 <p>A flush will push the trace buffer and/or aggregation database
 contents into the reporting and I/O stage. Flushing can be triggered
-explicitly through Caliper&#8217;s API. Caliper will automatically trigger a
+explicitly through Caliper’s API. Caliper will automatically trigger a
 flush at program exit.</p>
 <p>While the flush itself does not require extra configuration at
 runtime, we can add snapshot post-processing services in this
-stage. Notably, the <a class="reference internal" href="services.html#symbollookup-service"><span>symbollookup</span></a> service will look up source file,
+stage. Notably, the <a class="reference internal" href="services.html#symbollookup-service"><span class="std std-ref">symbollookup</span></a> service will look up source file,
 line number, and function name information from binary program
-addresses provided by e.g. the <a class="reference internal" href="services.html#callpath-service"><span>callpath</span></a> or <a class="reference internal" href="services.html#sampler-service"><span>sampler</span></a> service.</p>
+addresses provided by e.g. the <a class="reference internal" href="services.html#callpath-service"><span class="std std-ref">callpath</span></a> or <a class="reference internal" href="services.html#sampler-service"><span class="std std-ref">sampler</span></a> service.</p>
 </div>
 <div class="section" id="reporting-and-i-o">
 <h2>Reporting and I/O<a class="headerlink" href="#reporting-and-i-o" title="Permalink to this headline">¶</a></h2>
 <p>The final pipeline stage formats and writes the collected
 records. There are multiple options here.</p>
-<p>The <a class="reference internal" href="services.html#recorder-service"><span>recorder</span></a> service writes records into Caliper-specific
+<p>The <a class="reference internal" href="services.html#recorder-service"><span class="std std-ref">recorder</span></a> service writes records into Caliper-specific
 <code class="docutils literal"><span class="pre">.cali</span></code> format files (one per process), which can be examined
-off-line with the <code class="docutils literal"><span class="pre">cali-query</span></code> tool.  The <a class="reference internal" href="services.html#report-service"><span>report</span></a> service can
+off-line with the <code class="docutils literal"><span class="pre">cali-query</span></code> tool.  The <a class="reference internal" href="services.html#report-service"><span class="std std-ref">report</span></a> service can
 filter, aggregate, and sort output records, and produce JSON output or
 human-readable reports in table or hierarchical form. The reports can
 be written into files or to standard output. As with <code class="docutils literal"><span class="pre">recorder</span></code>,
-reports will be written per process.  Finally, the <a class="reference internal" href="services.html#mpireport-service"><span>mpireport</span></a>
+reports will be written per process.  Finally, the <a class="reference internal" href="services.html#mpireport-service"><span class="std std-ref">mpireport</span></a>
 service aggregates or gathers output records from all ranks in an MPI
 program, and writes a single output report. Like <code class="docutils literal"><span class="pre">report</span></code>, it can
 produce JSON or human-readable output as well as <code class="docutils literal"><span class="pre">.cali</span></code> files.</p>
@@ -216,21 +214,18 @@ produce JSON or human-readable output as well as <code class="docutils literal">
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/workflow.txt"
+      <li><a href="_sources/workflow.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -249,12 +244,12 @@ produce JSON or human-readable output as well as <code class="docutils literal">
         <li class="right" >
           <a href="build.html" title="Build and Link"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>

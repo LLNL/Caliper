@@ -1,0 +1,171 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Connection to third-party tools &#8212; Caliper 2.0.0-dev documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '2.0.0-dev',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Output formatting" href="OutputFormats.html" />
+    <link rel="prev" title="Caliper Services" href="services.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="OutputFormats.html" title="Output formatting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="services.html" title="Caliper Services"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="connection-to-third-party-tools">
+<h1>Connection to third-party tools<a class="headerlink" href="#connection-to-third-party-tools" title="Permalink to this headline">¶</a></h1>
+<p>Caliper provides bindings to export Caliper annotations to third-party
+tools. Currently, Nvidia’s NVProf/NVVP and Intel VTune Amplifier are
+supported.</p>
+<div class="section" id="nvprof">
+<h2>NVProf<a class="headerlink" href="#nvprof" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>nvprof</cite> service translates Caliper annotations into NVTX ranges
+(Nvidia’s source-code annoatation interface). Caliper-annotated
+regions will then be visible in the “Markers and Ranges” section of
+the NVVP timeline display.</p>
+<p>To use the NVprof bindings, enable the <cite>nvprof</cite> service and run the
+target application under nvprof:</p>
+<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ CALI_SERVICES_ENABLE</span><span class="o">=</span>nvprof nvprof &lt;nvprof-options&gt; app &lt;app-options&gt;
+</pre></div>
+</div>
+<p>Then, load the measurement result file created by nvprof in nvvp (use
+the -o flag for nvprof to write output into a file).</p>
+<p>By default, Caliper exports all regions with the NESTED attribute
+property. This includes the regions created by Caliper’s annotation
+macros (CALI_CXX_MARK_FUNCTION, CALI_MARK_BEGIN/END
+etc.). Alternatively, the region attributes to export can be specified
+explicitly in the <cite>CALI_NVPROF_TRIGGER_ATTRIBUTES</cite> configuration
+variable.</p>
+<dl class="envvar">
+<dt id="envvar-CALI_NVPROF_TRIGGER_ATTRIBUTES">
+<code class="descname">CALI_NVPROF_TRIGGER_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_NVPROF_TRIGGER_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specify which attributes should be exported as NVTX
+ranges. Comma-separated list.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="intel-vtune">
+<h2>Intel VTune<a class="headerlink" href="#intel-vtune" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>vtune</cite> service translates Caliper annotations into Intel “itt”
+markups that can be shown as “tasks” in the Intel VTune GUI.</p>
+<p>To use the vtune bindings, run the target application in VTune with
+the <cite>vtune</cite> service enabled. To do so in the VTune GUI, do the
+following:</p>
+<ul class="simple">
+<li>In the “Analysis Target” tab, go to the “User-defined environment
+variables” section, and add an entry setting “CALI_SERVICES_ENABLE”
+to “vtune”</li>
+<li>In the “Analysis Type” tab, check the “Analyze user tasks, events,
+and counters” checkbox.</li>
+</ul>
+<p>Caliper-annotated regions will then be visible as “tasks” in the VTune
+analysis views.</p>
+<p>By default, Caliper exports all regions with the NESTED attribute
+property. Alternatively, the region attributes to export can be
+specified explicitly in the <cite>CALI_VTUNE_TRIGGER_ATTRIBUTES</cite>
+configuration variable.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Connection to third-party tools</a><ul>
+<li><a class="reference internal" href="#nvprof">NVProf</a></li>
+<li><a class="reference internal" href="#intel-vtune">Intel VTune</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="services.html"
+                        title="previous chapter">Caliper Services</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="OutputFormats.html"
+                        title="next chapter">Output formatting</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/ThirdPartyTools.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="OutputFormats.html" title="Output formatting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="services.html" title="Caliper Services"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+    </div>
+  </body>
+</html>

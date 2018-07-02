@@ -1,34 +1,32 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Output formatting &mdash; Caliper 1.7.0-dev documentation</title>
-    
+    <title>Output formatting &#8212; Caliper 2.0.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/breathe.css" type="text/css" />
-    
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.7.0-dev',
+        VERSION:     '2.0.0-dev',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
       };
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Caliper 1.7.0-dev documentation" href="index.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Caliper Tools" href="tools.html" />
-    <link rel="prev" title="Caliper Services" href="services.html" /> 
+    <link rel="prev" title="Connection to third-party tools" href="ThirdPartyTools.html" /> 
   </head>
-  <body role="document">
+  <body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -39,9 +37,9 @@
           <a href="tools.html" title="Caliper Tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="services.html" title="Caliper Services"
+          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -59,9 +57,9 @@ services, as well as the report generation API.</p>
 <div class="section" id="formatter-configuration">
 <h2>Formatter configuration<a class="headerlink" href="#formatter-configuration" title="Permalink to this headline">¶</a></h2>
 <p>To select a formatter, use the <cite>FORMAT</cite> statement in CalQL. Some
-formatters, e.g. <cite>tree</cite>, take additional arguments in a &#8220;function
-call&#8221; syntax, e.g.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>FORMAT tree(source.function#callpath.address)
+formatters, e.g. <cite>tree</cite>, take additional arguments in a “function
+call” syntax, e.g.</p>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">FORMAT</span> <span class="n">tree</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">function</span><span class="c">#callpath.address)</span>
 </pre></div>
 </div>
 <p>The <cite>SELECT</cite> CalQL statement determines the attributes that will be
@@ -82,17 +80,17 @@ to print records in a given order, but not all of them do.</p>
 lists, with each record in a single line. Hierachical values are
 written with slash <code class="docutils literal"><span class="pre">/</span></code> separators.</p>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT event.end#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT expand
+<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT expand</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=TimeIncrement,count=100,time.inclusive.duration=1280</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=IntegrateStressForElems,count=100,time.inclusive.duration=358512</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcFBHourglassForceForElems,count=100,time.inclusive.duration=700886</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcHourglassControlForElems,count=100,time.inclusive.duration=1073630</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcVolumeForceForElems,count=100,time.inclusive.duration=1456613</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcForceForNodes,count=100,time.inclusive.duration=1466051</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=LagrangeNodal,count=100,time.inclusive.duration=1508828</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=TimeIncrement,count=100,time.inclusive.duration=1280</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=IntegrateStressForElems,count=100,time.inclusive.duration=358512</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcFBHourglassForceForElems,count=100,time.inclusive.duration=700886</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcHourglassControlForElems,count=100,time.inclusive.duration=1073630</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcVolumeForceForElems,count=100,time.inclusive.duration=1456613</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcForceForNodes,count=100,time.inclusive.duration=1466051</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=LagrangeNodal,count=100,time.inclusive.duration=1508828</span>
 </pre></div>
 </div>
 </div>
@@ -101,35 +99,35 @@ written with slash <code class="docutils literal"><span class="pre">/</span></co
 <p>The <cite>table</cite> formatter prints a human-readable text table with
 automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT event.end#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT table ORDER BY time.inclusive.duration DESC
+<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT table ORDER BY time.inclusive.duration DESC</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>event.end#function              count time.inclusive.duration
-main                                1                 3395643
-LagrangeLeapFrog                  100                 3379753
-LagrangeElements                  100                 1755059
-LagrangeNodal                     100                 1508828
-CalcForceForNodes                 100                 1466051
-CalcVolumeForceForElems           100                 1456613
-ApplyMaterialPropertiesForElems   100                 1163596
-EvalEOSForElems                  1100                 1113417
-CalcHourglassControlForElems      100                 1073630
-CalcEnergyForElems               3500                  805605
-CalcFBHourglassForceForElems      100                  700886
-IntegrateStressForElems           100                  358512
-CalcPressureForElems            10500                  324182
-CalcQForElems                     100                  309658
-CalcLagrangeElements              100                  266492
-CalcKinematicsForElems            100                  241132
-CalcMonotonicQGradientsForElems   100                  149492
-CalcTimeConstraintsForElems       100                  110236
-CalcMonotonicQRegionForElems     1100                   98944
-CalcCourantConstraintForElems    1100                   49281
-CalcHydroConstraintForElems      1100                   33125
-CalcSoundSpeedForElems           1100                   27975
-UpdateVolumesForElems             100                    8147
-TimeIncrement                     100                    1280
+<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function              count time.inclusive.duration</span>
+<span class="n">main</span>                                <span class="mi">1</span>                 <span class="mi">3395643</span>
+<span class="n">LagrangeLeapFrog</span>                  <span class="mi">100</span>                 <span class="mi">3379753</span>
+<span class="n">LagrangeElements</span>                  <span class="mi">100</span>                 <span class="mi">1755059</span>
+<span class="n">LagrangeNodal</span>                     <span class="mi">100</span>                 <span class="mi">1508828</span>
+<span class="n">CalcForceForNodes</span>                 <span class="mi">100</span>                 <span class="mi">1466051</span>
+<span class="n">CalcVolumeForceForElems</span>           <span class="mi">100</span>                 <span class="mi">1456613</span>
+<span class="n">ApplyMaterialPropertiesForElems</span>   <span class="mi">100</span>                 <span class="mi">1163596</span>
+<span class="n">EvalEOSForElems</span>                  <span class="mi">1100</span>                 <span class="mi">1113417</span>
+<span class="n">CalcHourglassControlForElems</span>      <span class="mi">100</span>                 <span class="mi">1073630</span>
+<span class="n">CalcEnergyForElems</span>               <span class="mi">3500</span>                  <span class="mi">805605</span>
+<span class="n">CalcFBHourglassForceForElems</span>      <span class="mi">100</span>                  <span class="mi">700886</span>
+<span class="n">IntegrateStressForElems</span>           <span class="mi">100</span>                  <span class="mi">358512</span>
+<span class="n">CalcPressureForElems</span>            <span class="mi">10500</span>                  <span class="mi">324182</span>
+<span class="n">CalcQForElems</span>                     <span class="mi">100</span>                  <span class="mi">309658</span>
+<span class="n">CalcLagrangeElements</span>              <span class="mi">100</span>                  <span class="mi">266492</span>
+<span class="n">CalcKinematicsForElems</span>            <span class="mi">100</span>                  <span class="mi">241132</span>
+<span class="n">CalcMonotonicQGradientsForElems</span>   <span class="mi">100</span>                  <span class="mi">149492</span>
+<span class="n">CalcTimeConstraintsForElems</span>       <span class="mi">100</span>                  <span class="mi">110236</span>
+<span class="n">CalcMonotonicQRegionForElems</span>     <span class="mi">1100</span>                   <span class="mi">98944</span>
+<span class="n">CalcCourantConstraintForElems</span>    <span class="mi">1100</span>                   <span class="mi">49281</span>
+<span class="n">CalcHydroConstraintForElems</span>      <span class="mi">1100</span>                   <span class="mi">33125</span>
+<span class="n">CalcSoundSpeedForElems</span>           <span class="mi">1100</span>                   <span class="mi">27975</span>
+<span class="n">UpdateVolumesForElems</span>             <span class="mi">100</span>                    <span class="mi">8147</span>
+<span class="n">TimeIncrement</span>                     <span class="mi">100</span>                    <span class="mi">1280</span>
 </pre></div>
 </div>
 </div>
@@ -146,35 +144,35 @@ annotations.</p>
 tree node in the input data. It is best to aggregate data so that
 there is only one record for each node.</p>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT count(),sum(time.inclusive.duration) WHERE event.end#function GROUP BY function FORMAT tree
+<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function GROUP BY function FORMAT tree</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>Path                                       count time.inclusive.duration
-main                                           1                 3395643
-  LagrangeLeapFrog                           100                 3379753
-    CalcTimeConstraintsForElems              100                  110236
-      CalcHydroConstraintForElems           1100                   33125
-      CalcCourantConstraintForElems         1100                   49281
-    LagrangeElements                         100                 1755059
-      UpdateVolumesForElems                  100                    8147
-      ApplyMaterialPropertiesForElems        100                 1163596
-        EvalEOSForElems                     1100                 1113417
-          CalcSoundSpeedForElems            1100                   27975
-          CalcEnergyForElems                3500                  805605
-            CalcPressureForElems           10500                  324182
-      CalcQForElems                          100                  309658
-        CalcMonotonicQRegionForElems        1100                   98944
-        CalcMonotonicQGradientsForElems      100                  149492
-      CalcLagrangeElements                   100                  266492
-        CalcKinematicsForElems               100                  241132
-    LagrangeNodal                            100                 1508828
-      CalcForceForNodes                      100                 1466051
-        CalcVolumeForceForElems              100                 1456613
-          CalcHourglassControlForElems       100                 1073630
-            CalcFBHourglassForceForElems     100                  700886
-          IntegrateStressForElems            100                  358512
-  TimeIncrement                              100                    1280
+<div class="highlight-default"><div class="highlight"><pre><span class="n">Path</span>                                       <span class="n">count</span> <span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span>
+<span class="n">main</span>                                           <span class="mi">1</span>                 <span class="mi">3395643</span>
+  <span class="n">LagrangeLeapFrog</span>                           <span class="mi">100</span>                 <span class="mi">3379753</span>
+    <span class="n">CalcTimeConstraintsForElems</span>              <span class="mi">100</span>                  <span class="mi">110236</span>
+      <span class="n">CalcHydroConstraintForElems</span>           <span class="mi">1100</span>                   <span class="mi">33125</span>
+      <span class="n">CalcCourantConstraintForElems</span>         <span class="mi">1100</span>                   <span class="mi">49281</span>
+    <span class="n">LagrangeElements</span>                         <span class="mi">100</span>                 <span class="mi">1755059</span>
+      <span class="n">UpdateVolumesForElems</span>                  <span class="mi">100</span>                    <span class="mi">8147</span>
+      <span class="n">ApplyMaterialPropertiesForElems</span>        <span class="mi">100</span>                 <span class="mi">1163596</span>
+        <span class="n">EvalEOSForElems</span>                     <span class="mi">1100</span>                 <span class="mi">1113417</span>
+          <span class="n">CalcSoundSpeedForElems</span>            <span class="mi">1100</span>                   <span class="mi">27975</span>
+          <span class="n">CalcEnergyForElems</span>                <span class="mi">3500</span>                  <span class="mi">805605</span>
+            <span class="n">CalcPressureForElems</span>           <span class="mi">10500</span>                  <span class="mi">324182</span>
+      <span class="n">CalcQForElems</span>                          <span class="mi">100</span>                  <span class="mi">309658</span>
+        <span class="n">CalcMonotonicQRegionForElems</span>        <span class="mi">1100</span>                   <span class="mi">98944</span>
+        <span class="n">CalcMonotonicQGradientsForElems</span>      <span class="mi">100</span>                  <span class="mi">149492</span>
+      <span class="n">CalcLagrangeElements</span>                   <span class="mi">100</span>                  <span class="mi">266492</span>
+        <span class="n">CalcKinematicsForElems</span>               <span class="mi">100</span>                  <span class="mi">241132</span>
+    <span class="n">LagrangeNodal</span>                            <span class="mi">100</span>                 <span class="mi">1508828</span>
+      <span class="n">CalcForceForNodes</span>                      <span class="mi">100</span>                 <span class="mi">1466051</span>
+        <span class="n">CalcVolumeForceForElems</span>              <span class="mi">100</span>                 <span class="mi">1456613</span>
+          <span class="n">CalcHourglassControlForElems</span>       <span class="mi">100</span>                 <span class="mi">1073630</span>
+            <span class="n">CalcFBHourglassForceForElems</span>     <span class="mi">100</span>                  <span class="mi">700886</span>
+          <span class="n">IntegrateStressForElems</span>            <span class="mi">100</span>                  <span class="mi">358512</span>
+  <span class="n">TimeIncrement</span>                              <span class="mi">100</span>                    <span class="mi">1280</span>
 </pre></div>
 </div>
 </div>
@@ -190,22 +188,22 @@ produces larger files than <cite>json-split</cite>.</p>
 <dt>pretty</dt>
 <dd>More human-readable output (inserts extra whitespace and line breaks).</dd>
 <dt>split</dt>
-<dd>Just write the records, skip the outer &#8220;[ ]&#8221; array delimiters.</dd>
+<dd>Just write the records, skip the outer “[ ]” array delimiters.</dd>
 <dt>quote-all</dt>
 <dd>Write all values as strings using <code class="docutils literal"><span class="pre">&quot;</span></code> quotes, even numerical ones.</dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT function,loop,count(),sum(time.inclusive.duration) WHERE event.end#function GROUP BY function,loop FORMAT json
+<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function GROUP BY function,loop FORMAT json</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>[
-{&quot;function&quot;:&quot;main&quot;,&quot;count&quot;:1,&quot;time.inclusive.duration&quot;:3395643},
-{&quot;loop&quot;:&quot;lulesh.cycle&quot;,&quot;function&quot;:&quot;main/TimeIncrement&quot;,&quot;count&quot;:100,&quot;time.inclusive.duration&quot;:1280},
-{&quot;loop&quot;:&quot;lulesh.cycle&quot;,&quot;function&quot;:&quot;main/LagrangeLeapFrog&quot;,&quot;count&quot;:100,&quot;time.inclusive.duration&quot;:3379753},
-{&quot;loop&quot;:&quot;lulesh.cycle&quot;,&quot;function&quot;:&quot;main/LagrangeLeapFrog/LagrangeNodal&quot;,&quot;count&quot;:100,&quot;time.inclusive.duration&quot;:1508828},
-{&quot;loop&quot;:&quot;lulesh.cycle&quot;,&quot;function&quot;:&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes&quot;,&quot;count&quot;:100,&quot;time.inclusive.duration&quot;:1466051},
-{&quot;loop&quot;:&quot;lulesh.cycle&quot;,&quot;function&quot;:&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes/CalcVolumeForceForElems&quot;,&quot;count&quot;:100,&quot;time.inclusive.duration&quot;:1456613},
+<div class="highlight-default"><div class="highlight"><pre><span class="p">[</span>
+<span class="p">{</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3395643</span><span class="p">},</span>
+<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/TimeIncrement&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1280</span><span class="p">},</span>
+<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3379753</span><span class="p">},</span>
+<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1508828</span><span class="p">},</span>
+<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1466051</span><span class="p">},</span>
+<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes/CalcVolumeForceForElems&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1456613</span><span class="p">},</span>
 </pre></div>
 </div>
 </div>
@@ -242,20 +240,20 @@ data column stores a value or a reference entry.</dd>
 <dd><p class="first">An array of metadata node objects. A reference entry in a data
 record refers to the node at the corresponding index in this array.</p>
 <p class="last">The metadata nodes generally form a tree (or forest), retaining
-hierarchical information. Nodes have a <cite>label</cite> entry with the nodes&#8217;
+hierarchical information. Nodes have a <cite>label</cite> entry with the nodes’
 value, and an optional <cite>parent</cite> entry, which is the index of the
-node&#8217;s hierarchical parent node in the <cite>nodes</cite> array. It is
+node’s hierarchical parent node in the <cite>nodes</cite> array. It is
 guaranteed that a parent node is placed before all of its children
 in the array.</p>
 </dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span>SELECT function,loop,count(),sum(time.inclusive.duration) GROUP BY function,loop FORMAT json-split
+<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span> <span class="n">FORMAT</span> <span class="n">json</span><span class="o">-</span><span class="n">split</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="p">{</span>
-   <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span>
+   <span class="s">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">[</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3395643</span><span class="p">,</span> <span class="mi">0</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1280</span><span class="p">,</span> <span class="mi">2</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">3379753</span><span class="p">,</span> <span class="mi">3</span> <span class="p">],</span>
@@ -281,9 +279,9 @@ in the array.</p>
     <span class="p">[</span> <span class="mi">1100</span><span class="p">,</span> <span class="mi">49281</span><span class="p">,</span> <span class="mi">23</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">1100</span><span class="p">,</span> <span class="mi">33125</span><span class="p">,</span> <span class="mi">24</span> <span class="p">]</span>
   <span class="p">],</span>
-  <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span> <span class="p">],</span>
-  <span class="s2">&quot;column_metadata&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">false</span> <span class="p">}</span>  <span class="p">],</span>
-  <span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;main&quot;</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;TimeIncrement&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeLeapFrog&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeNodal&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcForceForNodes&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcVolumeForceForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">5</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;IntegrateStressForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcHourglassControlForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcFBHourglassForceForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeElements&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcLagrangeElements&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcKinematicsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">11</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcQForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcMonotonicQGradientsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcMonotonicQRegionForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;ApplyMaterialPropertiesForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;EvalEOSForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">16</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcEnergyForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcPressureForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">18</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcSoundSpeedForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;UpdateVolumesForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcTimeConstraintsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcCourantConstraintForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcHydroConstraintForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">}</span> <span class="p">]</span>
+  <span class="s">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s">&quot;count&quot;</span><span class="p">,</span> <span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">,</span> <span class="s">&quot;path&quot;</span> <span class="p">],</span>
+  <span class="s">&quot;column_metadata&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">false</span> <span class="p">}</span>  <span class="p">],</span>
+  <span class="s">&quot;nodes&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;main&quot;</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;TimeIncrement&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeLeapFrog&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeNodal&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcForceForNodes&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcVolumeForceForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">5</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;IntegrateStressForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcHourglassControlForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcFBHourglassForceForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeElements&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcLagrangeElements&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcKinematicsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">11</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcQForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcMonotonicQGradientsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcMonotonicQRegionForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;ApplyMaterialPropertiesForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;EvalEOSForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">16</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcEnergyForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcPressureForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">18</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcSoundSpeedForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;UpdateVolumesForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcTimeConstraintsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcCourantConstraintForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcHydroConstraintForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">}</span> <span class="p">]</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -314,29 +312,26 @@ in the array.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="services.html"
-                        title="previous chapter">Caliper Services</a></p>
+  <p class="topless"><a href="ThirdPartyTools.html"
+                        title="previous chapter">Connection to third-party tools</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="tools.html"
                         title="next chapter">Caliper Tools</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/OutputFormats.txt"
+      <li><a href="_sources/OutputFormats.rst.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -353,14 +348,14 @@ in the array.</p>
           <a href="tools.html" title="Caliper Tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="services.html" title="Caliper Services"
+          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 1.7.0-dev documentation</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &copy; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.6.
+        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
     </div>
   </body>
 </html>
