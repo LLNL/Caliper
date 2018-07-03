@@ -1,0 +1,7 @@
+#pragma once
+
+#cmakedefine CALI_HAVE_CONTEXT_H
+
+#ifdef CALI_HAVE_CONTEXT_H
+#include "@CALI_CONTEXT_H@"
+#endif

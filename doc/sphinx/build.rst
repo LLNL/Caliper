@@ -1,7 +1,7 @@
 Build and Link
 ================================
 
-Building and installing Caliper requires cmake (version 3.0 or
+Building and installing Caliper requires cmake (version 3.1 or
 greater), a current C++11-compatible compiler (GNU 4.8 and greater,
 LLVM clang 3.7 and greater are known to work), a Python interpreter,
 and the POSIX threads library.
@@ -161,16 +161,67 @@ MPI
 ................................
 
 Caliper provides wrappers for MPI calls in the separate
-``libcaliper-mpiwrap.so`` library. It is not strictly necessary to use
-the wrapper library for MPI programs with Caliper
-annotations. However, it will make Caliper's behavior more
-multi-process friendly, e.g. by reducing log output on most ranks. The
-wrapper library *is* required to use Caliper's MPI service.
+``libcaliper-mpi.so`` library. It is not strictly necessary to use the
+wrapper library for MPI programs with Caliper annotations. However, it
+will make Caliper's behavior more multi-process friendly, e.g. by
+reducing log output on most ranks. The wrapper library *is* required
+to use Caliper's "mpi" and "mpireport" services.
 
 To use the wrapper library, add it before the Caliper libraries in a
 link command: ::
 
-  mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpiwrap -lcaliper
+  mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpi -lcaliper
+
+CMake
+................................
+
+Caliper creates a CMake package file (caliper-config.cmake) and
+installs it in <caliper-installation-dir>/share/cmake/caliper. The
+package file defines Caliper's include directories and exports targets
+for the Caliper libraries. Projects using CMake can use find_package()
+and target_link_libraries() to integrate Caliper as a dependency.
+
+This example CMakeLists.txt builds a program which depends on Caliper: ::
+
+  cmake_minimum_required(VERSION 3.0)
+
+  project(MyExample CXX)
+  
+  find_package(caliper)
+
+  add_executable(MyExample MyExample.cpp)
+
+  target_include_directories(MyExample
+    PRIVATE ${caliper_INCLUDE_DIR})
+
+  target_link_libraries(MyExample
+    caliper)
+
+When configuring the target program, point CMake to the desired
+Caliper installation with `caliper_DIR`: ::
+
+  cmake -Dcaliper_DIR=<caliper-installation-dir>/share/cmake/caliper ..
+
+The CMake package defines the following variables and targets:
+
++----------------------------+------------------------------------------+
+| caliper_INCLUDE_DIR        | Caliper include directory (variable)     |
++----------------------------+------------------------------------------+
+| caliper                    | The Caliper runtime library (target)     |
++----------------------------+------------------------------------------+
+| caliper-common             | Common data structures used by Caliper   |
+|                            | (target)                                 |
++----------------------------+------------------------------------------+
+| caliper-mpi                | Caliper MPI runtime library (target)     |
++----------------------------+------------------------------------------+
+| caliper-reader             | Library for processing caliper output    |
+|                            | (target)                                 |
++----------------------------+------------------------------------------+
+| caliper-tools-util         | Utilities for caliper tools (target)     |
++----------------------------+------------------------------------------+
+
+To use Caliper annotations and services, it is sufficient to link the
+"caliper" (and "caliper-mpi" for MPI programs) target(s).
 
 Fortran
 ................................

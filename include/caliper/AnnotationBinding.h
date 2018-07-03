@@ -52,6 +52,52 @@ namespace cali
 class Filter;
 class Node;
 
+/// \brief Base class for bindings to third-party annotation APIs
+///
+/// This is a convenient base class for bindings to third-party annotation
+/// APIs, i.e., mapping %Caliper regions to another tool's begin/end style
+/// interface. To implement a mapping, create a derived class, overwrite
+/// the \a on_begin() and \a on_end() functions, and initialize the mapping
+/// during %Caliper initialization with \a make_binding().
+///
+/// By default, the \a on_begin() and \a on_end() methods will be invoked
+/// only for properly nested annotations (i.e., attributes with the
+/// CALI_ATTR_NESTED flag), or attributes selected at runtime with the
+/// \a CALI_<tag_name>_ATTRIBUTES configuration variable.
+///
+/// An annotation binding must be created during %Caliper initialization
+/// with the \a make_binding() template.
+///
+/// Example: Creating a service to bind %Caliper annotations to an
+/// assumed \a mybegin(const char*), \a myend() API.
+///
+/// \code
+///    class MyBinding : public cali::AnnotationBinding {
+///      public:
+///
+///        const char* service_tag() const { 
+///          return "mybinding"; 
+///        }
+///
+///        void on_begin(cali::Caliper* c, const cali::Attribute& attr, const cali::Variant& value) {
+///          std::string str = attr.name();
+///          str.append("=");
+///          str.append(value.to_string()); // create "<attribute name>=<value>" string
+///          
+///          mybegin(str.c_str());
+///        }
+///
+///        void on_end(cali::Caliper* c, const cali::Attribute& attr, const cali::Variant& value) {
+///          myend();
+///        }
+///   };
+///
+///   CaliperService mybinding_service { "mybinding", AnnotationBinding::make_binding<MyBinding> };
+/// \endcode
+///
+/// Also see the \a nvprof and \a vtune service implementations for examples of
+/// using AnnotationBinding in a %Caliper service.
+
 class AnnotationBinding 
 {
     ConfigSet m_config;
@@ -71,16 +117,50 @@ protected:
 
     void pre_initialize(Caliper* c);
 
-    virtual void on_create_attribute(Caliper*,const std::string&, cali_attr_type, int*, Node**) { }
+    /// \brief Attribute creation callback
+    ///
+    /// This callback is invoked before a %Caliper attribute is being created 
+    /// (only for properly nested or runtime-selected attributes).
+    /// The callback allows additional metadata to be attached to the attribute
+    /// by overwriting \a node.
+    ///
+    /// \param c    The Caliper instance
+    /// \param name %Attribute name
+    /// \param type %Attribute datatype
+    /// \param prop %Attribute properties. Can be overwritten. Combination of
+    ///   cali_attr_properties flags.
+    /// \param node Context tree node under which the attribute
+    ///   information will be attached. Can be overwritten, but should
+    ///   retain the original node as parent.
+    virtual void on_create_attribute(Caliper*           c,
+                                     const std::string& name,
+                                     cali_attr_type     type,
+                                     int*               prop,
+                                     Node**             node)
+    { }
 
+    /// \brief Callback for an annotation begin event
+    /// \param c     Caliper instance
+    /// \param attr  Attribute on which the %Caliper begin event was invoked.
+    /// \param value The annotation name/value. 
     virtual void on_begin(Caliper* c, const Attribute& attr, const Variant& value) { }
+
+    /// \brief Callback for an annotation end event
+    /// \param c     Caliper instance
+    /// \param attr  Attribute on which the %Caliper end event was invoked.
+    /// \param value The annotation name/value. 
     virtual void on_end(Caliper* c, const Attribute& attr, const Variant& value)   { }
 
+    /// \brief Initialization callback. Invoked after the %Caliper
+    ///   initialization completed.
     virtual void initialize(Caliper* c) { }
+
+    /// \brief Invoked on %Caliper finalization.
     virtual void finalize(Caliper* c)   { }
 
 public:
 
+    /// \brief Constructor. Usually invoked through \a make_binding().
     AnnotationBinding()
         : m_filter(nullptr),
           m_marker_attr(Attribute::invalid)
@@ -88,8 +168,18 @@ public:
 
     virtual ~AnnotationBinding();
 
+    /// \brief Name for the binding
+    ///
+    /// Name for the binding. This is used to derive the runtime configuration
+    /// variable names. Must be overwritten. The name cannot contain spaces
+    /// or special characters.
     virtual const char* service_tag() const = 0;
 
+    /// \brief Create and setup a derived AnnotationBinding instance
+    ///
+    /// Creates the an instance of the binding and sets up all necessary
+    /// %Caliper callback functions. Can be used as a %Caliper service
+    /// initialization function.
     template <class BindingT>
     static void make_binding(Caliper* c) {
         BindingT* binding = new BindingT();

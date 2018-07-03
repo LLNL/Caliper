@@ -49,7 +49,7 @@ using namespace cali;
 namespace
 {
 
-int (*orig_pthread_create)(pthread_t*, const pthread_attr_t*, void*(*)(void*), void*) = NULL;
+gotcha_wrappee_handle_t orig_pthread_create_handle = 0x0;
 
 Attribute id_attr = Attribute::invalid;
 
@@ -80,6 +80,9 @@ int
 cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
                             void *(*fn)(void*), void* arg)
 {
+    decltype(&pthread_create) orig_pthread_create =
+        reinterpret_cast<decltype(&pthread_create)>(gotcha_get_wrappee(orig_pthread_create_handle));
+    
     return (*orig_pthread_create)(thread, attr, thread_wrapper, new wrapper_args({ fn, arg }));
 }
 
@@ -90,10 +93,11 @@ pthreadservice_initialize(Caliper* c)
     id_attr = c->create_attribute("pthread.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
     struct gotcha_binding_t pthread_binding[] = { 
-        { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create }
+        { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create_handle }
     };
 
-    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t), "Caliper");
+    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t),
+                "caliper/pthread");
 
     Log(1).stream() << "Registered pthread service" << std::endl;
 }

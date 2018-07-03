@@ -1,5 +1,6 @@
 set(CALIPER_SOURCES
     Annotation.cpp
+    AnnotationBinding.cpp
     Caliper.cpp
     ContextBuffer.cpp
     SnapshotRecord.cpp

@@ -327,7 +327,61 @@ The `cupti` service adds the following attributes:
 |                      | sync events.                                     |
 +----------------------+--------------------------------------------------+
 
+CUpti event sampling (EXPERIMENTAL)
+................................
 
+The CUpti service can read hardware "events" from CUDA devices at
+every snapshot using CUpti's continuous event collection. However,
+note that this capability is only available on Tesla devices, and it
+also tends to have very high overhead.
+
+To activate it, provide the event ID for the event to read in
+`CALI_CUPTI_SAMPLE_EVENT_ID`. The possible event IDs can be obtained
+with the ``cupti_query`` program that is provided as a sample with the
+CUDA/CUpti toolkit. Values will be stored in the
+cupti.event.EVENT_NAME attribute.
+
+As an example, consider sampling instructions executed on the
+device. From the ``cupti_query`` output, we learn that the event ID
+for this event is 83886156 ::
+
+  Event# 13
+  Id        = 83886156
+  Name      = inst_executed
+  Shortdesc = inst_executed
+  Longdesc  = Number of instructions executed per warp.
+  Category  = CUPTI_EVENT_CATEGORY_INSTRUCTION
+
+We can now add instructions executed to Caliper snapshots. The
+following configuration can do that::
+
+  CALI_SERVICES_ENABLE=cupti,event,recorder,trace,timestamp
+  CALI_CUPTI_CALLBACK_DOMAINS=runtime,resource
+  CALI_CUPTI_SAMPLE_EVENT_ID=83886156
+  CALI_TIMER_SNAPSHOT_DURATION=true
+
+Results::
+
+  cali-query -q "select sum(time.duration),sum(cupti.event.inst_executed) group by function,cupti.runtimeAPI format tree"
+
+  Path                                     time.duration cupti.event.inst_executed 
+  main                                             42123                         0 
+    LagrangeLeapFrog                              192340                         0 
+      CalcTimeConstraintsForElems                  13768                         0 
+        cudaStreamSynchronize                      65776                         0 
+        cudaPeekAtLastError                        66714                         0 
+        cudaLaunch                                 76372                    214944 
+        cudaSetupArgument                         190416                         0 
+        cudaConfigureCall                          60859                         0 
+      CalcEnergyForElems                          695449                         0 
+        cudaStreamSynchronize                     532691                         0 
+        cudaPeekAtLastError                      1138736                         0 
+        cudaLaunch                               1223774                   1766400 
+        cudaSetupArgument                        1510537                         0 
+        cudaConfigureCall                         310107                         0 
+  ...
+
+   
 Environment Information
 --------------------------------
 
@@ -569,7 +623,7 @@ instrumented.
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
 
-Note that you have to link the `libcaliper-mpiwrap` library with the
+Note that you have to link the `libcaliper-mpi` library with the
 application in addition to the regular Caliper libraries to obtain MPI
 information.
 
@@ -993,6 +1047,12 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
    Perform source line lookup, and writes the line number in the
    ``source.line#address`` attribute. `TRUE` or `FALSE`,
+   default `FALSE`. 
+
+.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_MODULE
+
+   Perform module name lookup, and writes the module number in the
+   ``module#address`` attribute. `TRUE` or `FALSE`,
    default `FALSE`. 
 
 Sysalloc

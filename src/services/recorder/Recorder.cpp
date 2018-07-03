@@ -130,6 +130,10 @@ class Recorder
                                 sizes.n_immediate, data.immediate_attr, data.immediate_data);
     }
 
+    void post_flush(Caliper* c) {
+        m_writer.write_globals(*c, c->get_globals());
+    }
+
     static void flush_snapshot_cb(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
         if (!s_instance)
             return;
@@ -144,6 +148,13 @@ class Recorder
         s_instance->pre_flush(c, flush_info);
     }
 
+    static void post_write_cb(Caliper* c, const SnapshotRecord*) {
+        if (!s_instance)
+            return;
+        
+        s_instance->post_flush(c);
+    }
+
     static void finish_cb(Caliper* c) {
         if (s_instance)
             Log(1).stream() << "Recorder: Wrote " << s_instance->m_writer.num_written() << " records." << endl;
@@ -152,6 +163,7 @@ class Recorder
     void register_callbacks(Caliper* c) {
         c->events().pre_write_evt.connect(pre_flush_cb);
         c->events().write_snapshot.connect(flush_snapshot_cb);
+        c->events().post_write_evt.connect(post_write_cb);
         c->events().finish_evt.connect(finish_cb);
     }
 

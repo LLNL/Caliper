@@ -72,6 +72,7 @@ class SymbolLookup
         Attribute line_attr;
         Attribute func_attr;
         Attribute loc_attr;
+        Attribute mod_attr;
     };
 
     ConfigSet m_config;
@@ -80,6 +81,7 @@ class SymbolLookup
     bool m_lookup_sourceloc;
     bool m_lookup_file;
     bool m_lookup_line;
+    bool m_lookup_mod;
     
     std::map<Attribute, SymbolAttributes> m_sym_attr_map;
     std::mutex m_sym_attr_mutex;
@@ -110,6 +112,9 @@ class SymbolLookup
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         sym_attribs.loc_attr  =
             c->create_attribute("sourceloc#" + attr.name(),
+                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        sym_attribs.mod_attr  =
+            c->create_attribute("module#" + attr.name(),
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
             
         std::lock_guard<std::mutex>
@@ -150,9 +155,12 @@ class SymbolLookup
                                std::vector<Variant>&   data) {
         std::vector<Statement*> statements;
         SymtabAPI::Function* function = 0;
+        SymtabAPI::Module*   module   = 0;
+        std::string          modname  = "UNKNOWN";
 
         bool     ret_line = false;
         bool     ret_func = false;
+        bool     ret_mod  = false;
 
         uint64_t address  = e.value().to_uint();
 
@@ -172,7 +180,9 @@ class SymbolLookup
                 ret_line = symtab->getSourceLines(statements, offset);
             if (ret && m_lookup_functions)
                 ret_func = symtab->getContainingFunction(offset, function);
-
+            if (ret && m_lookup_mod)
+                modname = symtab->name();
+            
             ++m_num_lookups;
         }
 
@@ -241,6 +251,15 @@ class SymbolLookup
 
             attr.push_back(sym_attr.func_attr);
             data.push_back(Variant(CALI_TYPE_STRING, tmp_f, funcname.size()));
+        }
+
+        if (m_lookup_mod) {
+            char* tmp_f = static_cast<char*>(mempool.allocate(modname.size()+1));
+            std::copy(modname.begin(), modname.end(), tmp_f);
+            tmp_f[modname.size()] = '\0';
+
+            attr.push_back(sym_attr.mod_attr);
+            data.push_back(Variant(CALI_TYPE_STRING, tmp_f, modname.size()));            
         }
 
         if ((m_lookup_functions && !ret_func) ||
@@ -344,6 +363,7 @@ class SymbolLookup
             m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();
             m_lookup_file      = m_config.get("lookup_file").to_bool();
             m_lookup_line      = m_config.get("lookup_line").to_bool();
+            m_lookup_mod       = m_config.get("lookup_module").to_bool();
 
             register_callbacks(c);
 
@@ -379,6 +399,10 @@ const ConfigSet::Entry SymbolLookup::s_configdata[] = {
     { "lookup_line", CALI_TYPE_BOOL, "false",
       "Perform source line number lookup",
       "Perform source line number lookup",
+    },
+    { "lookup_module", CALI_TYPE_BOOL, "false",
+      "Perform module lookup",
+      "Perform module lookup",
     },
     ConfigSet::Terminator
 };

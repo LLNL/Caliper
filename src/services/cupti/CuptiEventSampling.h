@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,25 +30,72 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "caliper/common/ContextRecord.h"
+// CuptiEventSampling.h
+// Implementation of Cupti event sampling
 
-#include "caliper/common/StringConverter.h"
+#pragma once
 
-using namespace cali;
+#include "caliper/common/Attribute.h"
 
-namespace 
+#include <cupti.h>
+
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace cali
 {
-    const char* RecordElements[] = { "ref", "attr", "data" };
 
-    inline cali_id_t
-    id_from_string(const std::string& str) {
-        bool ok = false;
-        cali_id_t id = StringConverter(str).to_uint(&ok);
+class Caliper;
+class SnapshotRecord;
+    
+namespace Cupti
+{
 
-        return ok ? id : CALI_INV_ID;
-    }
-}
+class EventSampling
+{
+    struct SamplingInfo {
+        CUcontext        context;
+        CUpti_EventGroup event_grp;
+    };
 
-const RecordDescriptor ContextRecord::s_record         { 0x101, "ctx",     3, ::RecordElements };
+    std::vector<SamplingInfo> m_sampling_info;
+    std::mutex                m_sampling_mtx;
+    
+    CUpti_EventID m_event_id;
 
-const RecordDescriptor ContextRecord::s_globals_record { 0x102, "globals", 3, ::RecordElements };
+    Attribute     m_event_attr    = Attribute::invalid;
+
+    unsigned      m_num_snapshots = 0;
+    unsigned      m_num_reads     = 0;
+
+    bool          m_enabled       = false;
+    
+public:
+
+    bool is_enabled() const { return m_enabled; }
+
+    // note: event-by-name lookup is currently broken for some reason
+    bool setup(Caliper* c, const std::string& event_name);
+    
+    bool setup(Caliper* c, CUpti_EventID event_id);
+
+    bool enable_sampling_for_context(CUcontext context);
+    bool disable_sampling_for_context(CUcontext context);
+
+    void stop_all();
+
+    void snapshot(Caliper* c, const SnapshotRecord*, SnapshotRecord* snapshot);
+
+    std::ostream&
+    print_statistics(std::ostream& os);
+
+    EventSampling();
+
+    ~EventSampling();    
+};
+    
+} // namespace Cupti
+    
+} // namespace cali

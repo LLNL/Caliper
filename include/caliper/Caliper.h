@@ -270,6 +270,9 @@ public:
     /// \brief Get or create tree entry with given attribute/value pair
     Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
+    /// \brief Get the CALI_ATTR_GLOBAL entries
+    std::vector<Entry> get_globals();
+
     /// \}
 
     // --- Caliper API access

@@ -43,16 +43,15 @@ using namespace cali;
 namespace
 {
 
-void* (*orig_malloc)(size_t size) = nullptr;
-void* (*orig_calloc)(size_t num, size_t size) = nullptr;
-void* (*orig_realloc)(void* ptr, size_t size) = nullptr;
-void  (*orig_free)(void* ptr) = nullptr;
+gotcha_wrappee_handle_t orig_malloc_handle  = 0x0;
+gotcha_wrappee_handle_t orig_calloc_handle  = 0x0;
+gotcha_wrappee_handle_t orig_realloc_handle = 0x0;
+gotcha_wrappee_handle_t orig_free_handle    = 0x0;
 
 void* cali_malloc_wrapper(size_t size);
 void* cali_calloc_wrapper(size_t num, size_t size);
 void* cali_realloc_wrapper(void *ptr, size_t size);
 void cali_free_wrapper(void *ptr);
-
 
 const char *malloc_str = "malloc";
 const char *calloc_str = "calloc";
@@ -61,16 +60,20 @@ const char *realloc_free_str = "realloc(free)";
 const char *realloc_alloc_str = "realloc(alloc)";
 const char *free_str = "free";
 
-struct gotcha_binding_t alloc_bindings[] = {
-    { malloc_str,   (void*) cali_malloc_wrapper,    &orig_malloc  },
-    { calloc_str,   (void*) cali_calloc_wrapper,    &orig_calloc  },
-    { realloc_str,  (void*) cali_realloc_wrapper,   &orig_realloc },
-    { free_str,     (void*) cali_free_wrapper,      &orig_free    }
-};
+bool bindings_are_active = false;
 
+struct gotcha_binding_t alloc_bindings[] = {
+    { malloc_str,   (void*) cali_malloc_wrapper,    &orig_malloc_handle  },
+    { calloc_str,   (void*) cali_calloc_wrapper,    &orig_calloc_handle  },
+    { realloc_str,  (void*) cali_realloc_wrapper,   &orig_realloc_handle },
+    { free_str,     (void*) cali_free_wrapper,      &orig_free_handle    }
+};
 
 void* cali_malloc_wrapper(size_t size)
 {
+    decltype(&malloc) orig_malloc =
+        reinterpret_cast<decltype(&malloc)>(gotcha_get_wrappee(orig_malloc_handle));
+    
     void *ret = (*orig_malloc)(size);
 
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
@@ -83,6 +86,9 @@ void* cali_malloc_wrapper(size_t size)
 
 void* cali_calloc_wrapper(size_t num, size_t size)
 {
+    decltype(&calloc) orig_calloc =
+        reinterpret_cast<decltype(&calloc)>(gotcha_get_wrappee(orig_calloc_handle));
+
     void *ret = (*orig_calloc)(num, size);
 
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
@@ -95,6 +101,9 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 
 void* cali_realloc_wrapper(void *ptr, size_t size)
 {
+    decltype(&realloc) orig_realloc =
+        reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
+
     void *ret = (*orig_realloc)(ptr, size);
 
     Caliper c = Caliper::sigsafe_instance();
@@ -109,6 +118,9 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
 
 void cali_free_wrapper(void *ptr)
 {
+    decltype(&free) orig_free =
+        reinterpret_cast<decltype(&free)>(gotcha_get_wrappee(orig_free_handle));
+
     (*orig_free)(ptr);
 
     Caliper c = Caliper::sigsafe_instance();
@@ -118,18 +130,43 @@ void cali_free_wrapper(void *ptr)
 }
 
 
-void init_alloc_hooks(Caliper *c) {
+void init_alloc_hooks(Caliper*) {
     Log(1).stream() << "sysalloc: Initializing system alloc hooks" << std::endl;
 
     gotcha_wrap(alloc_bindings,
                 sizeof(alloc_bindings)/sizeof(struct gotcha_binding_t),
-                "Caliper AllocService Wrap");
+                "caliper/sysalloc");
+
+    bindings_are_active = true;
+}
+
+void clear_alloc_hooks(Caliper*)
+{
+    if (!bindings_are_active)
+        return;
+    
+    Log(1).stream() << "sysalloc: Removing system alloc hooks" << std::endl;
+
+    gotcha_wrappee_handle_t dummy = 0x0;
+
+    struct gotcha_binding_t orig_bindings[] = {
+        { malloc_str,  gotcha_get_wrappee(orig_malloc_handle),  &dummy },
+        { calloc_str,  gotcha_get_wrappee(orig_calloc_handle),  &dummy },
+        { realloc_str, gotcha_get_wrappee(orig_realloc_handle), &dummy },
+        { free_str,    gotcha_get_wrappee(orig_free_handle),    &dummy }
+    };
+
+    gotcha_wrap(orig_bindings,
+                sizeof(orig_bindings)/sizeof(struct gotcha_binding_t),
+                "caliper/sysalloc");
+
+    bindings_are_active = false;
 }
 
 void sysalloc_initialize(Caliper* c) {
     c->events().post_init_evt.connect(init_alloc_hooks);
+    c->events().finish_evt.connect(clear_alloc_hooks);
 }
-
 
 } // namespace [anonymous]
 

@@ -33,7 +33,7 @@
 // validator.cpp
 // Caliper annotation nesting validator
 
-#include "../common/AnnotationBinding.h"
+#include "caliper/AnnotationBinding.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"

@@ -36,6 +36,7 @@
 #pragma once
 
 #include "Attribute.h"
+#include "Entry.h"
 
 #include <cstddef>
 #include <vector>
@@ -81,6 +82,12 @@ public:
 
     virtual Node* 
     make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0) = 0;
+
+    // --- globals
+
+    /// \brief Return global entries (entries with the \a CALI_ATTR_GLOBAL flag set)
+    virtual std::vector<Entry>
+    get_globals() = 0;
 };
 
 }
