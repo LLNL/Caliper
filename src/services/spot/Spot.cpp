@@ -86,6 +86,7 @@ namespace
         static std::string recorded_time;
         static std::vector<std::string> title;
         static bool include_local;
+        static bool show_exclusive;
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
           for(auto& m_query : m_queries){
             auto entries = snapshot->to_entrylist();
@@ -175,20 +176,13 @@ namespace
                for(auto datum : json){
                   bool found = false;
                   std::string series_name = datum.first;
-                  //for(auto& existing_series_name : json_series_values.GetArray()){
-                     //if(!series_name.compare(existing_series_name.GetString())){
-                       found = true;
-                       auto series_data = doc[series_name.c_str()].GetArray();
-                       rapidjson::Value arrarr;
-                       arrarr.SetArray();
-                       arrarr.PushBack(0,doc.GetAllocator());
-                       arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
-                       series_data.PushBack(arrarr,doc.GetAllocator());
-                     //} 
-                  //}
-                  if(!found){
-                     std::cout << "Error in adding record, bumped into unknown series "<<series_name<<std::endl;
-                  }
+                  found = true;
+                  auto series_data = doc[series_name.c_str()].GetArray();
+                  rapidjson::Value arrarr;
+                  arrarr.SetArray();
+                  arrarr.PushBack(0,doc.GetAllocator());
+                  arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
+                  series_data.PushBack(arrarr,doc.GetAllocator());
                   TimeType value = datum.second;
                } 
             }
@@ -211,6 +205,7 @@ namespace
               doc.AddMember("commits",commit_array_create,doc.GetAllocator());
               doc.AddMember("yAxis",y_axis_value,doc.GetAllocator());
               doc.AddMember("title",title_value,doc.GetAllocator());
+              doc.AddMember("show_exclusive", show_exclusive, doc.GetAllocator());
               auto& json_commits = doc["commits"];
               auto& json_times = doc["XTics"];
               json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
@@ -231,7 +226,6 @@ namespace
                    outarr.PushBack(arrarr,doc.GetAllocator());
                    value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                    doc.AddMember(value_series_name,outarr,doc.GetAllocator());
-                   std::cout << "New series entry: "<<series_name<<std::endl;
                  }
               } 
             }
@@ -265,6 +259,7 @@ namespace
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
             const std::string&  config_string = config.get("config").to_string().c_str();
             include_local = config.get("include_local").to_string().compare("NO");
+            show_exclusive = config.get("show_exclusive").to_string().compare("NO");
             divisor = config.get("time_divisor").to_int();
             code_version = config.get("code_version").to_string();
             recorded_time = config.get("recorded_time").to_string();
@@ -273,7 +268,9 @@ namespace
               struct tm * timeinfo;
               time (&rawtime);
               timeinfo = localtime (&rawtime);
-              recorded_time = std::string(asctime(timeinfo)); 
+              static char time_string[1000];
+              strftime(time_string, sizeof(time_string),"%Y-%m-%d %H:%M:%S", timeinfo);
+              recorded_time =  std::string(time_string);
             }
             std::string title_string = config.get("title").to_string();
             bool use_default_title = (title_string.size() == 0);
@@ -291,7 +288,6 @@ namespace
               std::string annotation = annotation_and_place[0];
               std::string& place = annotation_and_place[1];
               std::string query = query_for_annotation(annotation);
-              Log(0).stream() << "Spot: establishing query \"" <<query<<'"'<<std::endl;
               m_queries.emplace_back(create_query_processor(query));
               m_annotations_and_places.push_back(std::make_pair(annotation,place));
               if(use_default_title){
@@ -343,6 +339,7 @@ namespace
     std::string Spot::recorded_time;
     std::vector<std::string> Spot::title;
     bool Spot::include_local;
+    bool Spot::show_exclusive;
     const ConfigSet::Entry  Spot::s_configdata[] = {
         { "config", CALI_TYPE_STRING, "function:default.json",
           "Attribute:Filename pairs in which to dump Spot data",
@@ -368,7 +365,12 @@ namespace
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)"},
         { "include_local", CALI_TYPE_STRING, "YES",
           "In some instrumentations, this option will prevent duplication of a record",
-          "In some instrumentations, this option will prevent duplication of a record"},
+          "In some instrumentations, this option will prevent duplication of a record"
+        },
+        { "show_exclusive", CALI_TYPE_STRING, "NO",
+          "Whether to include exclusive values in the resulting graph",
+          "Whether to include exclusive values in the resulting graph"
+        },
         { "title", CALI_TYPE_INT, "",
           "Title for this test",
           "Title for this test"
