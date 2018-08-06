@@ -62,6 +62,21 @@ const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
     cali::ConfigSet::Terminator
 };
 
+namespace
+{
+
+bool has_marker(const Attribute& attr, const Attribute& marker_attr)
+{
+    cali_id_t marker_attr_id = marker_attr.id();
+    
+    for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
+        if (node->attribute() == marker_attr_id)
+            return true;
+
+    return false;
+}
+
+}
 
 //
 // --- Implementation
@@ -73,70 +88,74 @@ AnnotationBinding::~AnnotationBinding()
 }
 
 void
-AnnotationBinding::pre_create_attr_cb(Caliper*           c,
-                                      const std::string& name,
-                                      cali_attr_type     type,
-                                      int*               prop,
-                                      Node**             node)
+AnnotationBinding::check_attribute(Caliper* c, Experiment* exp, const Attribute& attr)
 {
-    if (*prop & CALI_ATTR_SKIP_EVENTS)
-        return;
+    int prop = attr.properties();
 
     if (m_trigger_attr_names.empty()) {
         // By default, enable binding only for class.nested attributes
-        if (!(*prop & CALI_ATTR_NESTED))
+        if (!(prop & CALI_ATTR_NESTED))
             return;
     } else {
         if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(),
-                      name) == m_trigger_attr_names.end())
+                      attr.name()) == m_trigger_attr_names.end())
             return;
     }
-
+    
     // Add the binding marker for this attribute
-
+    
     Variant v_true(true);
-    *node = c->make_tree_entry(m_marker_attr, v_true, *node);
-
+    c->make_tree_entry(m_marker_attr, v_true, c->node(attr.node()->id()));
+    
     // Invoke derived functions
 
-    on_create_attribute(c, name, type, prop, node);
-
+    on_mark_attribute(c, exp, attr);
+    
     Log(2).stream() << "Adding " << this->service_tag()
-                    << " bindings for attribute \"" << name << "\"" << std::endl;
+                    << " bindings for attribute \"" << attr.name()
+                    << "\" in " << exp->name() << " experiment" << std::endl;
 }
 
 void
-AnnotationBinding::begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
+AnnotationBinding::create_attr_cb(Caliper*         c,
+                                  Experiment*      exp,
+                                  const Attribute& attr)
+{
+    check_attribute(c, exp, attr);
+}
+
+void
+AnnotationBinding::begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
-    if (attr.get(m_marker_attr) != Variant(true))
+    if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->filter(attr, value))
         return;
 
-    this->on_begin(c, attr, value);
+    this->on_begin(c, exp, attr, value);
 }
 
 void
-AnnotationBinding::end_cb(Caliper* c, const Attribute& attr, const Variant& value)
+AnnotationBinding::end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
-    if (attr.get(m_marker_attr) != Variant(true))
+    if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->filter(attr, value))
         return;
 
-    this->on_end(c, attr, value);
+    this->on_end(c, exp, attr, value);
 }
 
 void
-AnnotationBinding::pre_initialize(Caliper* c)
+AnnotationBinding::base_pre_initialize(Caliper* c, Experiment* exp)
 {
     const char* tag = service_tag();
 
-    m_config = cali::RuntimeConfig::init(tag, s_configdata);
+    m_config = exp->config().init(tag, s_configdata);
 
     if (m_config.get("regex").to_string().size() > 0)
         m_filter = new RegexFilter(tag, m_config);
@@ -146,8 +165,21 @@ AnnotationBinding::pre_initialize(Caliper* c)
 
     std::string marker_attr_name("cali.binding.");
     marker_attr_name.append(tag);
+    marker_attr_name.append("#");
+    marker_attr_name.append(std::to_string(exp->id()));
 
     m_marker_attr =
         c->create_attribute(marker_attr_name, CALI_TYPE_BOOL,
                             CALI_ATTR_HIDDEN | CALI_ATTR_SKIP_EVENTS);
+}
+
+void
+AnnotationBinding::base_post_initialize(Caliper* c, Experiment* exp)
+{
+    // check and mark existing attributes
+    
+    std::vector<Attribute> attributes = c->get_attributes();
+    
+    for (const Attribute& attr : attributes)
+        check_attribute(c, exp, attr);
 }

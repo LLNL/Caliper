@@ -72,229 +72,91 @@ namespace cali
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
 
-extern void config_sanity_check(RuntimeConfig*);
+extern void config_sanity_check(RuntimeConfig);
 
 }
 
 namespace
 {
-    bool flush_on_exit { true };
 
-    // --- helpers
+// --- Siglock
 
-    inline cali_context_scope_t
-    attr2caliscope(const Attribute& attr) {
-        switch (attr.properties() & CALI_ATTR_SCOPE_MASK) {
-        case CALI_ATTR_SCOPE_THREAD:
-            return CALI_SCOPE_THREAD;
-        case CALI_ATTR_SCOPE_PROCESS:
-            return CALI_SCOPE_PROCESS;
-        case CALI_ATTR_SCOPE_TASK:
-            return CALI_SCOPE_TASK;
-        }
+class siglock {
+    volatile sig_atomic_t m_lock;
 
-        // make thread scope the default
-        return CALI_SCOPE_THREAD;
+public:
+
+    siglock()
+        : m_lock(0)
+        { }
+
+    inline void lock()   { ++m_lock; }
+    inline void unlock() { --m_lock; }
+
+    inline bool is_locked() const {
+        return (m_lock > 0);
     }
-
-
-    // --- Exit handler
-
-    void
-    exit_handler(void) {
-        Caliper c = Caliper::instance();
-
-        if (c) {
-            if (flush_on_exit)
-                c.flush_and_write(nullptr);
-
-            c.clear();
-
-            c.events().finish_evt(&c);
-
-            c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
-            // Somehow default thread scope is not released by pthread_key_create destructor
-            c.release_scope(c.default_scope(CALI_SCOPE_THREAD));
-        }
-
-        // Don't delete global data, some thread-specific finalization may occur after this point
-        // Caliper::release();
-    }
-
-    // --- Siglock
-
-    class siglock {
-        volatile sig_atomic_t m_lock;
-
-    public:
-
-        siglock()
-            : m_lock(0)
-            { }
-
-        inline void lock()   { ++m_lock; }
-        inline void unlock() { --m_lock; }
-
-        inline bool is_locked() const {
-            return (m_lock > 0);
-        }
-    };
+};
 
 } // namespace
 
 
 //
-// Caliper Scope data
+// Caliper experiment data
 //
 
-struct Caliper::Scope
+struct Experiment::ExperimentImpl
 {
-    MetadataTree         tree;
-    ContextBuffer        blackboard;
+    static const ConfigSet::Entry   s_configdata[];
 
-    cali_context_scope_t scope;
+    struct ThreadData {
+        std::vector<ContextBuffer>  exp_blackboards;
 
-    ::siglock            lock;
-
-    Scope(cali_context_scope_t s)
-        : scope(s) { }
-};
-
-
-//
-// --- Caliper Global Data
-//
-
-struct Caliper::GlobalData
-{
-    // --- static data
-
-    static volatile sig_atomic_t  s_init_lock;
-    static std::mutex             s_init_mutex;
-
-    static const ConfigSet::Entry s_configdata[];
-
-    static GlobalData*            sG;
-
-    struct InitHookList {
-        void          (*hook)();
-        InitHookList* next;
+        ThreadData(size_t min_num_entries)
+            {
+                exp_blackboards.resize(std::max(static_cast<size_t>(16), min_num_entries));
+            }
     };
 
-    static InitHookList*          s_init_hooks;
+    static thread_local std::unique_ptr<ThreadData> sT;
+
+    std::string                     name;
+    bool                            active;
     
-    // --- static functions
+    // TODO: call events.create_scope_evt when creating new thread
 
-    static void release_thread(void* ctx) {
-        Scope* scope = static_cast<Scope*>(ctx);
+    RuntimeConfig                   config;
 
-        Caliper(sG, scope, 0).release_scope(scope);
-    }
+    Events                          events;          ///< callbacks
+    ContextBuffer                   blackboard;      ///< process-wide blackboard
 
-    static void add_init_hook(void (*hook)()) {
-        InitHookList* elem = new InitHookList { hook, s_init_hooks };
-        s_init_hooks = elem;
-    }
+    bool                            automerge;
+    bool                            flush_on_exit;
 
-    static void run_init_hooks() {
-        for (InitHookList* lp = s_init_hooks; lp; lp = lp->next)
-            (*(lp->hook))();
-    }
+    map<string, int>                attribute_prop_presets;
 
-    // --- data
+    ExperimentImpl(const char* _name, const RuntimeConfig& cfg)
+        : name(_name), active(true), config(cfg)
+        {
+            ConfigSet cali_cfg =
+                config.init("caliper", s_configdata);
 
-    ConfigSet              config;
-
-    ScopeCallbackFn        get_thread_scope_cb;
-    ScopeCallbackFn        get_task_scope_cb;
-
-    mutable std::mutex     attribute_lock;
-    map<string, Node*>     attribute_nodes;
-    map<string, int>       attribute_prop_presets;
-
-    Attribute              name_attr;
-    Attribute              type_attr;
-    Attribute              prop_attr;
-
-    // Key attribute: one attribute stands in as key for all auto-merged attributes
-    Attribute              key_attr;
-    bool                   automerge;
-
-    Events                 events;
-
-    Scope*                 process_scope;
-    Scope*                 default_thread_scope;
-    Scope*                 default_task_scope;
-
-    pthread_key_t          thread_scope_key;
-
-    // --- constructor
-
-    GlobalData()
-        : config { RuntimeConfig::init("caliper", s_configdata) },
-          get_thread_scope_cb { nullptr },
-          get_task_scope_cb   { nullptr },
-          name_attr { Attribute::invalid },
-          type_attr { Attribute::invalid },
-          prop_attr { Attribute::invalid },
-          key_attr  { Attribute::invalid },
-          automerge { true },
-          process_scope        { new Scope(CALI_SCOPE_PROCESS) },
-          default_thread_scope { new Scope(CALI_SCOPE_THREAD)  },
-          default_task_scope   { new Scope(CALI_SCOPE_TASK)    }
-    {
-        automerge = config.get("automerge").to_bool();
-
-        ::flush_on_exit = config.get("flush_on_exit").to_bool();
-
-        name_attr = Attribute::make_attribute(default_thread_scope->tree.node( 8));
-        type_attr = Attribute::make_attribute(default_thread_scope->tree.node( 9));
-        prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(10));
-
-        attribute_nodes.insert(make_pair(name_attr.name(), default_thread_scope->tree.node(name_attr.id())));
-        attribute_nodes.insert(make_pair(type_attr.name(), default_thread_scope->tree.node(type_attr.id())));
-        attribute_nodes.insert(make_pair(prop_attr.name(), default_thread_scope->tree.node(prop_attr.id())));
-
-        assert(name_attr != Attribute::invalid);
-        assert(type_attr != Attribute::invalid);
-        assert(prop_attr != Attribute::invalid);
-
-        pthread_key_create(&thread_scope_key, release_thread);
-        pthread_setspecific(thread_scope_key, default_thread_scope);
-
-        parse_attribute_property_presets();
-
-        // now it is safe to use the Caliper interface
-
-        init();
-    }
-
-    ~GlobalData() {
-        Log(1).stream() << "Finished" << endl;
-
-        // prevent re-initialization
-        s_init_lock = 2;
-
-	//freeing up context buffers
-        delete process_scope;
-        delete default_thread_scope;
-        delete default_task_scope;
-    }
-
-    Scope* acquire_thread_scope(bool create = true) {
-        Scope* scope = static_cast<Scope*>(pthread_getspecific(thread_scope_key));
-
-        if (create && !scope) {
-            scope = Caliper(this).create_scope(CALI_SCOPE_THREAD);
-            pthread_setspecific(thread_scope_key, scope);
+            automerge     = cali_cfg.get("automerge").to_bool();
+            flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
         }
 
-        return scope;
-    }
+    ~ExperimentImpl()
+        {
+            if (Log::verbosity() >= 2) {
+                blackboard.print_statistics(
+                    Log(2).stream() << "Releasing experiment " << name << ":\n  ")
+                    << std::endl;
+            }
+        }
 
     void parse_attribute_property_presets() {
         vector<string> attr_props =
-            config.get("attribute_properties").to_stringlist();
+            config.get("caliper", "attribute_properties").to_stringlist();
 
         for (const string& s : attr_props) {
             auto p = s.find_first_of('=');
@@ -308,55 +170,58 @@ struct Caliper::GlobalData
         }
     }
 
-    void init() {
-        run_init_hooks();
-        
-        Caliper c(this, default_thread_scope, default_task_scope);
-
-        // Create and set key & version attributes
-
-        key_attr =
-            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
-
-        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-              Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-
-        init_attribute_classes(&c);
-
-        Services::add_default_services();
-        Services::register_services(&c);
-
-        init_api_attributes(&c);
-
-        Log(1).stream() << "Initialized" << endl;
-
-        if (config.get("config_check").to_bool())
-            config_sanity_check(RuntimeConfig::get_default_config());
-        if (Log::verbosity() >= 3)
-            RuntimeConfig::get_default_config()->print( Log(3).stream() << "Configuration:\n" );
-
-        c.events().post_init_evt(&c);
-    }
-
     const Attribute&
-    get_key(const Attribute& attr) const {
+    get_key(const Attribute& attr, const Attribute& key_attr) const {
         if (!automerge || attr.store_as_value() || !attr.is_autocombineable())
             return attr;
 
         return key_attr;
     }
+
+    ContextBuffer*
+    get_blackboard(const Experiment* exp, const Attribute& attr) {        
+        switch (attr.properties() & CALI_ATTR_SCOPE_MASK)
+        {
+        case CALI_ATTR_SCOPE_THREAD:
+        case CALI_ATTR_SCOPE_TASK:
+        {
+            cali_id_t exp_id = exp->id();
+            
+            if (sT->exp_blackboards.size() > exp_id)
+                return &sT->exp_blackboards[exp_id];
+            else
+                return nullptr;
+        }
+        break;
+        case CALI_ATTR_SCOPE_PROCESS:
+            return &blackboard;
+        }
+        
+        return nullptr;
+    }
+    
+    ContextBuffer*
+    get_blackboard(const Experiment* exp, cali_context_scope_t scope) {
+        cali_id_t exp_id = exp->id();
+        
+        switch (scope)
+        {
+        case CALI_SCOPE_THREAD:
+        case CALI_SCOPE_TASK:
+            if (sT->exp_blackboards.size() > exp_id)
+                return &sT->exp_blackboards[exp_id];
+            else
+                return nullptr;
+        break;
+        case CALI_SCOPE_PROCESS:
+            return &blackboard;
+        }
+        
+        return nullptr;
+    }
 };
 
-// --- static member initialization
-
-volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
-mutex                  Caliper::GlobalData::s_init_mutex;
-
-Caliper::GlobalData*   Caliper::GlobalData::sG = nullptr;
-
-Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
-
-const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
+const ConfigSet::Entry Experiment::ExperimentImpl::s_configdata[] = {
     // key, type, value, short description, long description
     { "automerge", CALI_TYPE_BOOL, "true",
       "Automatically merge attributes into a common context tree",
@@ -389,149 +254,157 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     ConfigSet::Terminator
 };
 
+thread_local std::unique_ptr<Experiment::ExperimentImpl::ThreadData> Experiment::ExperimentImpl::sT;
+
+Experiment::Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg)
+    : IdType(id),
+      mP(new ExperimentImpl(name, cfg))
+{
+}
+
+Experiment::~Experiment()
+{
+}
+
+Experiment::Events&
+Experiment::events()
+{
+    return mP->events;
+}
+
+RuntimeConfig
+Experiment::config()
+{
+    return mP->config;
+}
+
+std::string
+Experiment::name() const
+{
+    return mP->name;
+}
+
+bool
+Experiment::is_active() const
+{
+    return mP->active;
+}
+
+
+//
+// --- Caliper thread data
+//
+
+/// \brief Per-thread data for the Caliper object
+struct Caliper::ThreadData
+{
+    MetadataTree                  tree;
+    ::siglock                     lock;
+};
+
+
+//
+// --- Caliper Global Data
+//
+
+struct Caliper::GlobalData
+{
+    // --- static data
+
+    static volatile sig_atomic_t          s_init_lock;
+    static std::mutex                     s_init_mutex;
+
+    struct InitHookList {
+        void          (*hook)();
+        InitHookList* next;
+    };
+
+    static InitHookList*                  s_init_hooks;
+    
+    // --- static functions
+
+    static void add_init_hook(void (*hook)()) {
+        InitHookList* elem = new InitHookList { hook, s_init_hooks };
+        s_init_hooks = elem;
+    }
+
+    static void run_init_hooks() {
+        for (InitHookList* lp = s_init_hooks; lp; lp = lp->next)
+            (*(lp->hook))();
+    }
+
+    // --- data
+
+    mutable std::mutex                    attribute_lock;
+    map<string, Node*>                    attribute_nodes;
+
+    Attribute                             key_attr;
+
+    vector< std::unique_ptr<Experiment> > experiments;
+
+    // --- constructor
+
+    GlobalData()
+        : key_attr { Attribute::invalid }
+    {        
+        experiments.reserve(16);
+
+        // put the attribute [name,type,prop] attributes in the map
+        
+        Attribute name_attr =
+            Attribute::make_attribute(sT->tree.node( 8));
+        Attribute type_attr =
+            Attribute::make_attribute(sT->tree.node( 9));
+        Attribute prop_attr =
+            Attribute::make_attribute(sT->tree.node(10));
+
+        attribute_nodes.insert(make_pair(name_attr.name(),
+                                         sT->tree.node(name_attr.id())));
+        attribute_nodes.insert(make_pair(type_attr.name(),
+                                         sT->tree.node(type_attr.id())));
+        attribute_nodes.insert(make_pair(prop_attr.name(),
+                                         sT->tree.node(prop_attr.id())));
+    }
+
+    ~GlobalData() {
+        Log(1).stream() << "Finished" << endl;
+
+        // prevent re-initialization
+        s_init_lock = 2;
+    }
+
+    void init() {
+        run_init_hooks();
+        
+        Services::add_default_services();
+        
+        Caliper c(false);
+        
+        key_attr =
+            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
+        
+        init_attribute_classes(&c);
+        init_api_attributes(&c);
+        
+        c.create_experiment("default", RuntimeConfig::get_default_config());
+
+        Log(1).stream() << "Initialized" << std::endl;
+    }
+};
+
+// --- static member initialization
+
+volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
+mutex                  Caliper::GlobalData::s_init_mutex;
+
+std::unique_ptr<Caliper::GlobalData> Caliper::sG;
+thread_local std::unique_ptr<Caliper::ThreadData> Caliper::sT;
+
+Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
 
 //
 // Caliper class definition
 //
-
-Caliper::Scope*
-Caliper::scope(cali_context_scope_t st) {
-    switch (st) {
-    case CALI_SCOPE_PROCESS:
-        return mG->process_scope;
-
-    case CALI_SCOPE_THREAD:
-#if 0
-        if (!m_thread_scope) {
-            m_thread_scope =
-                mG->get_thread_scope_cb ? mG->get_thread_scope_cb(this, true) : mG->default_thread_scope;
-        }
-#endif
-        assert(m_thread_scope != 0);
-        return m_thread_scope;
-
-    case CALI_SCOPE_TASK:
-        if (!m_task_scope)
-            m_task_scope =
-                mG->get_task_scope_cb ? mG->get_task_scope_cb(this, true) : mG->default_task_scope;
-
-        return m_task_scope;
-    }
-
-    return mG->process_scope;
-}
-
-Caliper::Scope*
-Caliper::default_scope(cali_context_scope_t st)
-{
-    switch (st) {
-    case CALI_SCOPE_THREAD:
-        return mG->default_thread_scope;
-
-    case CALI_SCOPE_TASK:
-        return mG->default_task_scope;
-
-    default:
-        ;
-    }
-
-    return mG->process_scope;
-}
-
-void
-Caliper::set_scope_callback(cali_context_scope_t scope, ScopeCallbackFn cb) {
-    if (!mG)
-        return;
-
-    switch (scope) {
-    case CALI_SCOPE_THREAD:
-        if (mG->get_thread_scope_cb)
-            Log(0).stream()
-                << "Caliper::set_context_callback(): error: thread callback already set"
-                << endl;
-        mG->get_thread_scope_cb = cb;
-        break;
-    case CALI_SCOPE_TASK:
-        if (mG->get_task_scope_cb)
-            Log(0).stream()
-                << "Caliper::set_context_callback(): error: task callback already set"
-                << endl;
-        mG->get_task_scope_cb = cb;
-        break;
-    default:
-        Log(0).stream()
-            << "Caliper::set_context_callback(): error: cannot set process callback"
-            << endl;
-    }
-}
-
-Caliper::Scope*
-Caliper::create_scope(cali_context_scope_t st)
-{
-    assert(mG != 0);
-
-    Scope* s = new Scope(st);
-
-    switch (st) {
-    case CALI_SCOPE_THREAD:
-        m_thread_scope = s;
-        break;
-    case CALI_SCOPE_TASK:
-        m_task_scope   = s;
-        break;
-    case CALI_SCOPE_PROCESS:
-        Log(0).stream()
-            << "Caliper::create_scope(): error: attempt to create a process scope"
-            << endl;
-
-        delete s;
-        return 0;
-    }
-
-    mG->events.create_scope_evt(this, st);
-
-    return s;
-}
-
-void
-Caliper::release_scope(Caliper::Scope* s)
-{
-    assert(mG != 0);
-
-    if (Log::verbosity() >= 2) {
-        const char* scopestr = "";
-
-        switch (s->scope) {
-        case CALI_SCOPE_THREAD:
-            scopestr = "thread";
-            break;
-        case CALI_SCOPE_TASK:
-            scopestr = "task";
-            break;
-        case CALI_SCOPE_PROCESS:
-            scopestr = "process";
-            break;
-        }
-
-        // This will print
-        //   "Releasing <process/thread> scope:
-        //      <Blackboard statistics>"
-        //      <Metadata tree statistics>
-
-        s->tree.print_statistics(
-            s->blackboard.print_statistics(
-                Log(2).stream() << "Releasing " << scopestr << " scope:\n      " )
-            << "\n      ") << std::endl;
-    }
-
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    mG->events.release_scope_evt(this, s->scope);
-    // do NOT delete this because we may still need the node data in the scope's memory pool
-    // delete ctx;
-}
-
 
 // --- Attribute interface
 
@@ -564,44 +437,57 @@ Attribute
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
                           int n_meta, const Attribute* meta_attr, const Variant* meta_val)
 {
-    assert(mG != 0);
+    assert(sG != 0);
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
+    
+    Attribute name_attr =
+        Attribute::make_attribute(sT->tree.node( 8));
+    Attribute type_attr =
+        Attribute::make_attribute(sT->tree.node( 9));
+    Attribute prop_attr =
+        Attribute::make_attribute(sT->tree.node(10));
+
+    assert(name_attr != Attribute::invalid);
+    assert(type_attr != Attribute::invalid);
+    assert(prop_attr != Attribute::invalid);
 
     Node* node        = nullptr;
     bool  created_now = false;
 
     // Check if an attribute with this name already exists
 
-    mG->attribute_lock.lock();
+    sG->attribute_lock.lock();
 
-    auto it = mG->attribute_nodes.find(name);
-    if (it != mG->attribute_nodes.end())
+    auto it = sG->attribute_nodes.find(name);
+    if (it != sG->attribute_nodes.end())
         node = it->second;
 
-    mG->attribute_lock.unlock();
+    sG->attribute_lock.unlock();
 
     // Create attribute nodes
 
     if (!node) {
         // Get type node
         assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = m_thread_scope->tree.type_node(type);
+        node = sT->tree.type_node(type);
         assert(node);
 
         // Add metadata nodes.
         if (n_meta > 0)
-            node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
+            node = sT->tree.get_path(n_meta, meta_attr, meta_val, node);
 
-        // Look for attribute properties in presets
-        auto propit = mG->attribute_prop_presets.find(name);
-        if (propit != mG->attribute_prop_presets.end())
-            prop = propit->second;
+        // // Look for attribute properties in presets
+        // auto propit = sG->attribute_prop_presets.find(name);
+        // if (propit != sG->attribute_prop_presets.end())
+        //     prop = propit->second;
 
         // Run pre-attribute creation callbacks.
         //   This may add additional nodes to our parent branch.
-        mG->events.pre_create_attr_evt(this, name, type, &prop, &node);
+        for (auto& exp : sG->experiments)
+            if (exp)
+                exp->mP->events.pre_create_attr_evt(this, exp.get(), name, type, &prop, &node);
 
         // Set scope to PROCESS for all global attributes
         if (prop & CALI_ATTR_GLOBAL) {
@@ -612,26 +498,26 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
             prop |= CALI_ATTR_SCOPE_THREAD;
 
-        Attribute attr[2] { mG->prop_attr, mG->name_attr };
-        Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
+        Attribute attr[2] { prop_attr, name_attr };
+        Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
-        node = m_thread_scope->tree.get_path(2, &attr[0], &data[0], node);
+        node = sT->tree.get_path(2, &attr[0], &data[0], node);
 
         if (node) {
             // Check again if attribute already exists; might have been created by
             // another thread in the meantime.
             // We've created some redundant nodes then, but that's fine
-            mG->attribute_lock.lock();
+            sG->attribute_lock.lock();
 
-            auto it = mG->attribute_nodes.lower_bound(name);
+            auto it = sG->attribute_nodes.lower_bound(name);
 
-            if (it == mG->attribute_nodes.end() || it->first != name) {
-                mG->attribute_nodes.insert(it, std::make_pair(name, node));
+            if (it == sG->attribute_nodes.end() || it->first != name) {
+                sG->attribute_nodes.insert(it, std::make_pair(name, node));
                 created_now = true;
             } else
                 node = it->second;
 
-            mG->attribute_lock.unlock();
+            sG->attribute_lock.unlock();
         }
     }
 
@@ -640,7 +526,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     Attribute attr = Attribute::make_attribute(node);
 
     if (created_now)
-        mG->events.create_attr_evt(this, attr);
+        for (auto& exp : sG->experiments)
+            if (exp)
+                exp->mP->events.create_attr_evt(this, exp.get(), attr);
 
     return attr;
 }
@@ -655,21 +543,19 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 Attribute
 Caliper::get_attribute(const std::string& name) const
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     Node* node = nullptr;
 
-    mG->attribute_lock.lock();
+    sG->attribute_lock.lock();
 
-    auto it = mG->attribute_nodes.find(name);
+    auto it = sG->attribute_nodes.find(name);
 
-    if (it != mG->attribute_nodes.end())
+    if (it != sG->attribute_nodes.end())
         node = it->second;
 
-    mG->attribute_lock.unlock();
+    sG->attribute_lock.unlock();
 
     return Attribute::make_attribute(node);
 }
@@ -684,7 +570,7 @@ Caliper::get_attribute(cali_id_t id) const
 {
     // no signal lock necessary
 
-    return Attribute::make_attribute(m_thread_scope->tree.node(id));
+    return Attribute::make_attribute(sT->tree.node(id));
 }
 
 /// \brief Get all attributes.
@@ -695,33 +581,82 @@ std::vector<Attribute>
 Caliper::get_attributes() const
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
     std::lock_guard<std::mutex>
-        g_a(mG->attribute_lock);
+        g_a(sG->attribute_lock);
 
     std::vector<Attribute> ret;
-    ret.reserve(mG->attribute_nodes.size());
+    ret.reserve(sG->attribute_nodes.size());
 
-    for (auto it : mG->attribute_nodes)
+    for (auto it : sG->attribute_nodes)
         ret.push_back(Attribute::make_attribute(it.second));
 
     return ret;
 }
 
-///   Returns all entries with CALI_ATTR_GLOBAL set from the current
+//
+// --- Annotation dispatch API
+//
+
+/// Dispatch annotation region begin across all active experiments
+void
+Caliper::begin(const Attribute& attr, const Variant& data)
+{
+    for (auto& exp : sG->experiments)
+        if (exp && exp->is_active())
+            begin(exp.get(), attr, data);
+}
+
+/// Dispatch annotation region end across all active experiments
+void
+Caliper::end(const Attribute& attr)
+{
+    for (auto& exp : sG->experiments)
+        if (exp && exp->is_active())
+            end(exp.get(), attr);
+}
+
+/// Dispatch annotation region set across all active experiments
+void
+Caliper::set(const Attribute& attr, const Variant& data)
+{
+    for (auto& exp : sG->experiments)
+        if (exp && exp->is_active())
+            set(exp.get(), attr, data);
+}
+
+/// Dispatch memory region annotation across all active experiments
+void
+Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])
+{
+    for (auto& exp : sG->experiments)
+        if (exp && exp->is_active())
+            memory_region_begin(exp.get(), ptr, label, elem_size, ndim, dims);
+}
+
+/// Dispatch memory region annotation end across all active experiments
+void
+Caliper::memory_region_end(const void* ptr)
+{
+    for (auto& exp : sG->experiments)
+        if (exp && exp->is_active())
+            memory_region_end(exp.get(), ptr);
+}
+
+///   Returns all entries with CALI_ATTR_GLOBAL set from the given experiment's
 /// blackboard.
 
 std::vector<Entry>
-Caliper::get_globals()
+Caliper::get_globals(Experiment* exp)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     SnapshotRecord::FixedSnapshotRecord<80> rec_data;
     SnapshotRecord rec(rec_data);
     
     // All global attributes are process scope, so just grab the process blackboard
-    mG->process_scope->blackboard.snapshot(&rec);
+    exp->mP->blackboard.snapshot(&rec);
 
     std::vector<const Node*> nodes;
 
@@ -750,11 +685,18 @@ Caliper::get_globals()
     return ret;
 }
 
+std::vector<Entry>
+Caliper::get_globals()
+{
+    return get_globals(sG->experiments.front().get());
+}
+
 // --- Snapshot interface
 
 /// \brief Trigger and return a snapshot.
 ///
-/// This function triggers a snapshot and returns a snapshot record to the caller.
+/// This function triggers a snapshot for a given experiment and returns a snapshot
+/// record to the caller
 /// The returned snapshot record contains the current blackboard contents, measurement
 /// values provided by service modules, and the contents of the trigger_info list
 /// provided by the caller.
@@ -776,12 +718,10 @@ Caliper::get_globals()
 /// \param sbuf         Caller-provided snapshot record buffer in which the snapshot record is
 ///                     returned. Must have sufficient space for the snapshot contents.
 void
-Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
+Caliper::pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // Save trigger info in snapshot buf
 
@@ -790,11 +730,11 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
 
     // Invoke callbacks and get contextbuffer data
 
-    mG->events.snapshot(this, scopes, trigger_info, sbuf);
+    exp->mP->events.snapshot(this, exp, scopes, trigger_info, sbuf);
 
     for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
         if (scopes & s)
-            scope(s)->blackboard.snapshot(sbuf);
+            exp->mP->get_blackboard(exp, s)->snapshot(sbuf);
 }
 
 /// \brief Trigger and process a snapshot.
@@ -820,42 +760,40 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
 ///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
 void
-Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info)
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
-    pull_snapshot(scopes, trigger_info, &sbuf);
+    pull_snapshot(exp, scopes, trigger_info, &sbuf);
 
-    mG->events.process_snapshot(this, trigger_info, &sbuf);
+    exp->mP->events.process_snapshot(this, exp, trigger_info, &sbuf);
 }
 
 
 /// \brief Flush aggregation/trace buffer contents.
 void
-Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+Caliper::flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.pre_flush_evt(this, flush_info);
+    exp->mP->events.pre_flush_evt(this, exp, flush_info);
 
-    if (mG->events.postprocess_snapshot.empty()) {
-        mG->events.flush_evt(this, flush_info, proc_fn);
+    if (exp->mP->events.postprocess_snapshot.empty()) {
+        exp->mP->events.flush_evt(this, exp, flush_info, proc_fn);
     } else {
-        mG->events.flush_evt(this, flush_info,
-                             [this,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
+        exp->mP->events.flush_evt(this, exp, flush_info,
+                             [this,exp,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
                                  SnapshotRecord::FixedSnapshotRecord<80> data;
                                  SnapshotRecord snapshot(data);
 
                                  snapshot.append(*input_snapshot);
 
-                                 mG->events.postprocess_snapshot(this, &snapshot);
+                                 exp->mP->events.postprocess_snapshot(this, exp, &snapshot);
                                  return proc_fn(&snapshot);
                              });
     }
@@ -874,10 +812,10 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 /// \param input_flush_info User-provided flush context information. Currently unused.
 
 void
-Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord flush_info(snapshot_data);
@@ -885,20 +823,20 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
     if (input_flush_info)
         flush_info.append(*input_flush_info);
 
-    m_thread_scope->blackboard.snapshot(&flush_info);
-    mG->process_scope->blackboard.snapshot(&flush_info);
+    exp->mP->get_blackboard(exp, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
+    exp->mP->get_blackboard(exp, CALI_SCOPE_THREAD )->snapshot(&flush_info);
 
     Log(1).stream() << "Flushing Caliper data" << std::endl;
 
-    mG->events.pre_write_evt(this, &flush_info);
+    exp->mP->events.pre_write_evt(this, exp, &flush_info);
 
-    flush(&flush_info,
-          [this,&flush_info](const SnapshotRecord* snapshot){
-              mG->events.write_snapshot(this, &flush_info, snapshot);
+    flush(exp, &flush_info,
+          [this,exp,&flush_info](const SnapshotRecord* snapshot){
+              exp->mP->events.write_snapshot(this, exp, &flush_info, snapshot);
               return true;
           });
 
-    mG->events.post_write_evt(this, &flush_info);
+    exp->mP->events.post_write_evt(this, exp, &flush_info);
 }
 
 
@@ -910,18 +848,18 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
 /// \note This function is not signal safe.
 
 void
-Caliper::clear()
+Caliper::clear(Experiment* exp)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.clear_evt(this);
+    exp->mP->events.clear_evt(this, exp);
 }
 
 
 // --- Annotation interface
 
-/// \brief Push attribute:value pair on blackboard.
+/// \brief Push attribute:value pair on blackboard of the given experiment.
 ///
 /// Adds the given attribute/value pair on the blackboard. Appends
 /// the value to any previous values of the same attribute,
@@ -932,37 +870,38 @@ Caliper::clear()
 ///
 /// This function is signal safe.
 ///
+/// \param exp  Experiment
 /// \param attr Attribute key
 /// \param data Value to set
 
 cali_err
-Caliper::begin(const Attribute& attr, const Variant& data)
+Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
 
-    if (!mG || attr == Attribute::invalid)
+    if (!exp || attr == Attribute::invalid)
         return CALI_EINV;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_begin_evt(this, attr, data);
+        exp->mP->events.pre_begin_evt(this, exp, attr, data);
 
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
+    Attribute key = exp->mP->get_key(attr, sG->key_attr);
+    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
     else
-        ret = sb->set_node(mG->get_key(attr),
-                           m_thread_scope->tree.get_path(1, &attr, &data,
-                                                         sb->get_node(mG->get_key(attr))));
+        ret = sb->set_node(key,
+                           sT->tree.get_path(1, &attr, &data,
+                                             sb->get_node(key)));
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_begin_evt(this, attr, data);
+        exp->mP->events.post_begin_evt(this, exp, attr, data);
 
     return ret;
 }
@@ -977,41 +916,38 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 /// \param attr Attribute key.
 
 cali_err
-Caliper::end(const Attribute& attr)
+Caliper::end(Experiment* exp, const Attribute& attr)
 {
-    if (!mG || attr == Attribute::invalid)
-        return CALI_EINV;
-
     cali_err ret = CALI_EINV;
 
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
-
-    Entry  e = get(attr);
+    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);        
+    Entry e = get(exp, attr);
 
     if (e.is_empty())
         return CALI_ESTACK;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // invoke callbacks
     if (!attr.skip_events())
         if (!e.is_empty()) // prevent executing events for
-            mG->events.pre_end_evt(this, attr, e.value());
+            exp->mP->events.pre_end_evt(this, exp, attr, e.value());
+
+    Attribute key = exp->mP->get_key(attr, sG->key_attr);
 
     if (attr.store_as_value())
         ret = sb->unset(attr);
     else {
-        Node* node = sb->get_node(mG->get_key(attr));
+        Node* node = sb->get_node(key);
 
         if (node) {
-            node = m_thread_scope->tree.remove_first_in_path(node, attr);
+            node = sT->tree.remove_first_in_path(node, attr);
 
-            if (node == m_thread_scope->tree.root())
-                ret = sb->unset(mG->get_key(attr));
+            if (node == sT->tree.root())
+                ret = sb->unset(key);
             else if (node)
-                ret = sb->set_node(mG->get_key(attr), node);
+                ret = sb->set_node(key, node);
         }
 
         if (!node)
@@ -1020,7 +956,7 @@ Caliper::end(const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_end_evt(this, attr, e.value());
+        exp->mP->events.post_end_evt(this, exp, attr, e.value());
 
     return ret;
 }
@@ -1039,34 +975,32 @@ Caliper::end(const Attribute& attr)
 /// \param data Value to set
 
 cali_err
-Caliper::set(const Attribute& attr, const Variant& data)
+Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
 
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return CALI_EINV;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
+    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
+    Attribute key = exp->mP->get_key(attr, sG->key_attr);
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr, data);
+        exp->mP->events.pre_set_evt(this, exp, attr, data);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
     else {
-        Attribute key = mG->get_key(attr);
-
-        ret = sb->set_node(key, m_thread_scope->tree.replace_first_in_path(sb->get_node(key), attr, data));
+        ret = sb->set_node(key, sT->tree.replace_first_in_path(sb->get_node(key), attr, data));
     }
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr, data);
+        exp->mP->events.post_set_evt(this, exp, attr, data);
 
     return ret;
 }
@@ -1086,44 +1020,44 @@ Caliper::set(const Attribute& attr, const Variant& data)
 /// \param data List (array) of values
 
 cali_err
-Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
+Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Variant* data) {
     cali_err ret = CALI_EINV;
 
     if (n < 1)
         return CALI_SUCCESS;
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return CALI_EINV;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
+        g(sT->lock);
+    
+    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);    
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr, data[n-1]);
+        exp->mP->events.pre_set_evt(this, exp, attr, data[n-1]);
 
     if (attr.store_as_value()) {
         Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
         ret = CALI_EINV;
     } else {
-        Attribute key = mG->get_key(attr);
+        Attribute key = exp->mP->get_key(attr, sG->key_attr);
 
         ret = sb->set_node(key,
-                           m_thread_scope->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
+                           sT->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
     }
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr, data[n-1]);
+        exp->mP->events.post_set_evt(this, exp, attr, data[n-1]);
 
     return ret;
 }
 
 // --- Query
 
-/// \brief Retrieve top-most entry for the given attribute key from the blackboard.
+/// \brief Retrieve top-most entry for the given attribute key from the blackboard
+///    of the given experiment.
 ///
 /// This function is signal safe.
 ///
@@ -1133,22 +1067,22 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
 ///         An empty Entry object if this attribute is not set.
 
 Entry
-Caliper::get(const Attribute& attr)
+Caliper::get(Experiment* exp, const Attribute& attr)
 {
     Entry e {  Entry::empty };
 
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return Entry::empty;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    ContextBuffer* sb = &(scope(attr2caliscope(attr))->blackboard);
+    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
 
     if (attr.store_as_value())
         return Entry(attr, sb->get(attr));
     else
-        return Entry(m_thread_scope->tree.find_node_with_attribute(attr, sb->get_node(mG->get_key(attr))));
+        return Entry(sT->tree.find_node_with_attribute(attr, sb->get_node(exp->mP->get_key(attr, sG->key_attr))));
 
     return e;
 }
@@ -1156,21 +1090,21 @@ Caliper::get(const Attribute& attr)
 // --- Memory region tracking
 
 void
-Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
+Caliper::memory_region_begin(Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.track_mem_evt(this, ptr, label, elem_size, ndims, dims);    
+    exp->mP->events.track_mem_evt(this, exp, ptr, label, elem_size, ndims, dims);    
 }
 
 void
-Caliper::memory_region_end(const void* ptr)
+Caliper::memory_region_end(Experiment* exp, const void* ptr)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.untrack_mem_evt(this, ptr);
+    exp->mP->events.untrack_mem_evt(this, exp, ptr);
 }
 
 // --- Generic entry API
@@ -1188,7 +1122,7 @@ void
 Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     Node* node = parent;
 
@@ -1196,7 +1130,7 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         if (attr[i].store_as_value())
             list.append(attr[i].id(), value[i]);
         else
-            node = m_thread_scope->tree.get_path(1, &attr[i], &value[i], node);
+            node = sT->tree.get_path(1, &attr[i], &value[i], node);
 
     if (node && node != parent)
         list.append(node);
@@ -1219,13 +1153,13 @@ Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, S
         return;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     if (attr.store_as_value())
         // only store one value entry
         list.append(attr.id(), value[0]);
     else
-        list.append(m_thread_scope->tree.get_path(attr, n, value, nullptr));
+        list.append(sT->tree.get_path(attr, n, value, nullptr));
 }
 
 /// \brief Return a context tree path for the key:value pairs from a given list of
@@ -1243,9 +1177,9 @@ Node*
 Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    return m_thread_scope->tree.get_path(n, nodelist, parent);
+    return sT->tree.get_path(n, nodelist, parent);
 }
 
 /// \brief Return a context tree path for the given key:value pairs.
@@ -1265,9 +1199,9 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
         return nullptr;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    return m_thread_scope->tree.get_path(1, &attr, &data, parent);
+    return sT->tree.get_path(1, &attr, &data, parent);
 }
 
 /// \brief Return the node with the given id.
@@ -1280,15 +1214,7 @@ Node*
 Caliper::node(cali_id_t id) const
 {
     // no siglock necessary
-    return m_thread_scope->tree.node(id);
-}
-
-// --- Events interface
-
-Caliper::Events&
-Caliper::events()
-{
-    return mG->events;
+    return sT->tree.node(id);
 }
 
 /// Exchange value on the blackboard. Atomically updates value for given
@@ -1302,14 +1228,71 @@ Caliper::events()
 /// \return The previous value for the given key.
 
 Variant
-Caliper::exchange(const Attribute& attr, const Variant& data)
+Caliper::exchange(Experiment* exp, const Attribute& attr, const Variant& data)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    return scope(attr2caliscope(attr))->blackboard.exchange(attr, data);
+    return exp->mP->get_blackboard(exp, attr)->exchange(attr, data);
 }
 
+//
+// --- Experiment API
+//
+
+Experiment*
+Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
+{
+    Experiment* exp = new Experiment(sG->experiments.size(), name, cfg);
+    sG->experiments.emplace_back(exp);            
+
+    Caliper c(false);
+
+    // Create and set key & version attributes
+
+    c.set(exp, c.create_attribute("cali.caliper.version", CALI_TYPE_STRING,
+                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+          Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
+    c.set(exp, c.create_attribute("cali.experiment", CALI_TYPE_STRING,
+                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+          Variant(CALI_TYPE_STRING, name, strlen(name)+1));
+        
+    Services::register_services(&c, exp);
+
+    Log(1).stream() << "Creating experiment \"" << name << "\"" << std::endl;
+
+    if (exp->config().get("caliper", "config_check").to_bool())
+        config_sanity_check(exp->config());
+    if (Log::verbosity() >= 3)
+        exp->config().print( Log(3).stream() << "Configuration:\n" );
+
+    exp->mP->events.post_init_evt(&c, exp);
+
+    return exp;
+}
+
+Experiment*
+Caliper::get_experiment(cali_id_t id)
+{
+    if (sG->experiments.size() <= id)
+        return nullptr;
+
+    return sG->experiments[id].get();
+}
+
+std::vector<Experiment*>
+Caliper::get_experiments()
+{
+    std::vector<Experiment*> ret;
+
+    ret.reserve(sG->experiments.size());
+
+    for (auto &exp : sG->experiments)
+        if (exp)
+            ret.push_back(exp.get());
+
+    return ret;
+}
 
 //
 // --- Caliper constructor & singleton API
@@ -1319,7 +1302,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 /// \see instance()
 
 Caliper::Caliper()
-    : mG(0), m_thread_scope(0), m_task_scope(0)
+    : m_is_signal(false)
 {
     *this = Caliper::instance();
 }
@@ -1347,20 +1330,34 @@ Caliper::instance()
     if (GlobalData::s_init_lock != 0) {
         if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
-            return Caliper(0);
+            return Caliper(true);
 
         lock_guard<mutex> lock(GlobalData::s_init_mutex);
 
-        if (!GlobalData::sG) {
-            if (atexit(::exit_handler) != 0)
+        if (!sG) {
+            if (atexit(&Caliper::release) != 0)
                 Log(0).stream() << "Unable to register exit handler";
+            
+            sT.reset(new Caliper::ThreadData);
+            sG.reset(new Caliper::GlobalData);
 
-            GlobalData::sG = new Caliper::GlobalData;
+            sG->init();
+            
             GlobalData::s_init_lock = 0;
         }
     }
 
-    return Caliper(GlobalData::sG, GlobalData::sG->acquire_thread_scope());
+    if (!sT)
+        sT.reset(new ThreadData);
+    
+    {
+        using expI = Experiment::ExperimentImpl;
+        
+        if (!expI::sT)
+            expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
+    }
+    
+    return Caliper(false);
 }
 
 /// \brief Construct a signal-safe Caliper instance object.
@@ -1375,23 +1372,31 @@ Caliper::instance()
 Caliper
 Caliper::sigsafe_instance()
 {
-    if (GlobalData::s_init_lock != 0)
-        return Caliper(0);
+    return Caliper(true);
+}
 
-    Scope* task_scope   = 0; // FIXME: figure out task scope
-    Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
-
-    if (!thread_scope || thread_scope->lock.is_locked())
-        return Caliper(0);
-
-    return Caliper(GlobalData::sG, thread_scope, task_scope, true /* is signal */);
+Caliper::operator bool() const
+{
+    return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
 Caliper::release()
 {
-    delete GlobalData::sG;
-    GlobalData::sG = 0;
+    Caliper c;
+
+    if (c) {
+        for (auto &exp : sG->experiments) {
+            if (exp->mP->flush_on_exit) 
+                c.flush_and_write(exp.get(), nullptr);
+
+            c.clear(exp.get());
+            exp->mP->events.finish_evt(&c, exp.get());
+        }
+    }
+
+    // Don't delete global data, some thread-specific finalization may occur after this point
+    // sG.reset(nullptr);
 }
 
 /// \brief Test if Caliper has been initialized yet.
@@ -1399,7 +1404,7 @@ Caliper::release()
 bool
 Caliper::is_initialized()
 {
-    return GlobalData::sG != nullptr;
+    return sG && sT;
 }
 
 /// \brief Add a list of available caliper services.
@@ -1438,5 +1443,5 @@ Caliper::add_init_hook(void (*hook)())
     if (is_initialized())
         Log(0).stream() << "add_init_hook(): Caliper is already initialized - cannot add init hook" << std::endl;
     else
-        GlobalData::add_init_hook(hook);
+        sG->add_init_hook(hook);
 }

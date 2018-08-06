@@ -53,7 +53,7 @@ class ContextBuffer
 {
     struct ContextBufferImpl;
 
-    std::unique_ptr<ContextBufferImpl> mP;
+    std::shared_ptr<ContextBufferImpl> mP;
 
 public:
 

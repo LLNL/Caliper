@@ -43,7 +43,7 @@ TEST(RuntimeConfigTest, DefineProfile) {
     cfg.define_profile("my profile", my_profile);
     cfg.set("CALI_CONFIG_PROFILE", "my\\ profile");
 
-    ConfigSet config = cfg.init_configset("test", ::test_configdata);
+    ConfigSet config = cfg.init("test", ::test_configdata);
 
     EXPECT_EQ(cfg.get("config", "profile").to_string(), std::string("my\\ profile"));
 
@@ -67,7 +67,7 @@ TEST(RuntimeConfigTest, ConfigFile) {
     cfg.preset("CALI_TEST_STRING_VAL", "wrong value!");
     cfg.set("CALI_TEST_INT_VAL", "42");
     
-    ConfigSet config = cfg.init_configset("test", ::test_configdata);
+    ConfigSet config = cfg.init("test", ::test_configdata);
 
     EXPECT_EQ(config.get("string_val").to_string(), std::string("profile1 string from file"));
     EXPECT_EQ(config.get("int_val").to_int(), 42);
@@ -80,7 +80,7 @@ TEST(RuntimeConfigTest, ConfigFileProfile2) {
     cfg.preset("CALI_CONFIG_FILE", "caliper-common_test.config");
     cfg.set("CALI_CONFIG_PROFILE", "file-profile2");
     
-    ConfigSet config = cfg.init_configset("test", ::test_configdata);
+    ConfigSet config = cfg.init("test", ::test_configdata);
 
     EXPECT_EQ(config.get("string_val").to_string(), std::string("string-default"));
     EXPECT_EQ(config.get("int_val").to_int(), 42);

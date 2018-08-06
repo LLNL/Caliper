@@ -328,7 +328,7 @@ cali_get(cali_id_t attr_id);
  * \param attr An attribute of type CALI_TYPE_BOOL
  */
 
-cali_err
+void
 cali_begin(cali_id_t   attr);
 
 /**
@@ -336,18 +336,18 @@ cali_begin(cali_id_t   attr);
  * The new value is nested under the current value of \a attr. 
  */
 
-cali_err  
+void  
 cali_begin_double(cali_id_t attr, double val);
-cali_err  
+void  
 cali_begin_int(cali_id_t attr, int val);
-cali_err  
+void  
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
  * Remove innermost value for attribute `attr` from the blackboard.
  */
 
-cali_err
+void
 cali_end  (cali_id_t   attr);
 
 /**
@@ -360,7 +360,7 @@ cali_end  (cali_id_t   attr);
  * \param val  Expected value
  */
 
-cali_err
+void
 cali_safe_end_string(cali_id_t attr, const char* val);
 
 /**
@@ -368,23 +368,23 @@ cali_safe_end_string(cali_id_t attr, const char* val);
  * to value taken from \a value with size \a size
  */
 
-cali_err  
+void  
 cali_set  (cali_id_t   attr, 
            const void* value,
            size_t      size);
 
-cali_err  
+void  
 cali_set_double(cali_id_t attr, double val);
-cali_err  
+void  
 cali_set_int(cali_id_t attr, int val);
-cali_err  
+void  
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
  * Put attribute with name \a attr_name on the blackboard.
  */
 
-cali_err
+void
 cali_begin_byname(const char* attr_name);
   
 /**
@@ -392,11 +392,11 @@ cali_begin_byname(const char* attr_name);
  * blackboard.
  */
 
-cali_err
+void
 cali_begin_double_byname(const char* attr_name, double val);
-cali_err
+void
 cali_begin_int_byname(const char* attr_name, int val);
-cali_err
+void
 cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
@@ -404,18 +404,18 @@ cali_begin_string_byname(const char* attr_name, const char* val);
  * on the blackboard.
  */
 
-cali_err
+void
 cali_set_double_byname(const char* attr_name, double val);
-cali_err
+void
 cali_set_int_byname(const char* attr_name, int val);
-cali_err
+void
 cali_set_string_byname(const char* attr_name, const char* val);
 
 /**
  * \brief Remove innermost value for attribute \a attr from the blackboard.
  */
 
-cali_err
+void
 cali_end_byname(const char* attr_name);
 
 /**

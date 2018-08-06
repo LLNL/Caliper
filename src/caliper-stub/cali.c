@@ -78,106 +78,106 @@ cali_push_snapshot(int scope, int n,
 // --- Annotation interface
 //
 
-cali_err
+void
 cali_begin(cali_id_t attr)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_end(cali_id_t attr)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_set(cali_id_t attr, const void* val, size_t size)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_begin_double(cali_id_t attr, double val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_begin_int(cali_id_t id, int val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_begin_string(cali_id_t id, const char* val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_set_double(cali_id_t attr, double val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_set_int(cali_id_t attr, int val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err  
+void  
 cali_set_string(cali_id_t attr, const char* val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_begin_double_byname(const char* attr_name, double val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_begin_int_byname(const char* attr_name, int val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_begin_byname(const char* attr_name)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_begin_string_byname(const char* attr_name, const char* val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_set_double_byname(const char* attr_name, double val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_set_int_byname(const char* attr_name, int val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_set_string_byname(const char* attr_name, const char* val)
 {
-    return CALI_SUCCESS;
+    
 }
 
-cali_err
+void
 cali_end_byname(const char* attr_name)
 {
-    return CALI_SUCCESS;
+    
 }
 
 //

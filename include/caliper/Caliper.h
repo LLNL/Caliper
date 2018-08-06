@@ -40,98 +40,69 @@
 #include "common/Attribute.h"
 #include "common/CaliperMetadataAccessInterface.h"
 #include "common/Entry.h"
-#include "common/Record.h"
+#include "common/IdType.h"
 #include "common/Variant.h"
 #include "common/util/callback.hpp"
 
+#include <memory>
 #include <utility>
 
 namespace cali
 {
 
-// Forward declarations
+// --- Forward declarations
 
+class Caliper;
 class CaliperService;
-class Node;    
+class Node;
+class RuntimeConfig;
 class SnapshotRecord;
-    
-/// \class Caliper
-/// \brief The main interface for the caliper runtime system
 
-class Caliper : public CaliperMetadataAccessInterface
+// --- Typedefs
+
+typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
+
+/// \brief Maintain a single data collection configuration with
+///    callbacks and associated measurement data
+
+class Experiment : public IdType
 {
-public:
+    struct ExperimentImpl;
+    std::shared_ptr<ExperimentImpl> mP;
 
-    struct Scope;
-
-    typedef Scope* (*ScopeCallbackFn)(Caliper*, bool can_create);
-
-    
-private:
-    
-    struct GlobalData;
-    
-    GlobalData* mG;
-    
-    Scope* m_thread_scope;
-    Scope* m_task_scope;
-
-    bool   m_is_signal; // are we in a signal handler?
-
-    
-    Caliper(GlobalData* g, Scope* thread = 0, Scope* task = 0, bool sig = false)
-        : mG(g), m_thread_scope(thread), m_task_scope(task), m_is_signal(sig)
-        { }
-
-    Scope* scope(cali_context_scope_t scope);
-    
+    Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg);
 
 public:
+
+    ~Experiment();    
+
+    // --- Events (callback functions)
     
-    Caliper();
-    
-    ~Caliper()
-        { }
-
-    Caliper(const Caliper&) = default;
-
-    Caliper& operator = (const Caliper&) = default;
-
-    bool is_signal() const { return m_is_signal; };
-
-    // --- Typedefs
-
-    typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
-    
-    // --- Events
-
     struct Events {
-        typedef util::callback<void(Caliper*,const Attribute&)>
+        typedef util::callback<void(Caliper*,Experiment*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,const std::string&,cali_attr_type,int*,Node**)>
+        typedef util::callback<void(Caliper*,Experiment*,const std::string&,cali_attr_type,int*,Node**)>
             pre_create_attr_cbvec;                        
-        typedef util::callback<void(Caliper*,const Attribute&,const Variant&)>
+        typedef util::callback<void(Caliper*,Experiment*,const Attribute&,const Variant&)>
             update_cbvec;
-        typedef util::callback<void(Caliper*)>
+        typedef util::callback<void(Caliper*,Experiment*)>
             caliper_cbvec;
-        typedef util::callback<void(Caliper*,cali_context_scope_t)>
-            scope_cbvec;
 
-        typedef util::callback<void(Caliper*,int,const SnapshotRecord*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Experiment*,int,const SnapshotRecord*,SnapshotRecord*)>
             snapshot_cbvec;
-        typedef util::callback<void(Caliper*,const SnapshotRecord*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Experiment*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*,const SnapshotRecord*,SnapshotFlushFn)>
+        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*,SnapshotFlushFn)>
             flush_cbvec;
-        typedef util::callback<void(Caliper*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*)>
             write_cbvec;
 
-        typedef util::callback<void(Caliper*,const void*, const char*, size_t, size_t, const size_t*)>
+        typedef util::callback<void(Caliper*,Experiment*,const void*, const char*, size_t, size_t, const size_t*)>
             track_mem_cbvec;
-        typedef util::callback<void(Caliper*,const void*)>
+        typedef util::callback<void(Caliper*,Experiment*,const void*)>
             untrack_mem_cbvec;
                                             
         pre_create_attr_cbvec  pre_create_attr_evt;
@@ -144,8 +115,8 @@ public:
         update_cbvec           pre_end_evt;
         update_cbvec           post_end_evt;
 
-        scope_cbvec            create_scope_evt;
-        scope_cbvec            release_scope_evt;
+        caliper_cbvec          create_thread_evt;
+        caliper_cbvec          release_thread_evt;
 
         caliper_cbvec          post_init_evt;
         caliper_cbvec          finish_evt;
@@ -167,25 +138,67 @@ public:
 
         caliper_cbvec          clear_evt;
     };
+    
+    Events&        events();
 
-    Events&   events();
+    RuntimeConfig  config();
 
-    // --- Context environment API
+    // --- Experiment management
+    
+    std::string    name() const;
 
-    Scope*    create_scope(cali_context_scope_t context);
-    Scope*    default_scope(cali_context_scope_t context);
+    bool           is_active() const;
 
-    void      release_scope(Scope*);
+    friend class Caliper;
+};
 
-    void      set_scope_callback(cali_context_scope_t context, ScopeCallbackFn cb);
 
-    // --- Snapshot API
+/// \class Caliper
+/// \brief The main interface for the caliper runtime system
+
+class Caliper : public CaliperMetadataAccessInterface
+{
+    struct GlobalData;
+    struct ThreadData;
+    
+    static              std::unique_ptr<GlobalData> sG;
+    static thread_local std::unique_ptr<ThreadData> sT;
+    
+    bool m_is_signal; // are we in a signal handler?
+    
+    explicit Caliper(bool sig)
+        : m_is_signal(sig)
+        { }    
+
+public:    
+
+    //
+    // --- Global Caliper API
+    //
+    
+    /// \name Annotations (across experiments)
+    /// \{
+
+    void      begin(const Attribute& attr, const Variant& data);
+    void      end(const Attribute& attr);
+    void      set(const Attribute& attr, const Variant& data);
+
+    /// \}
+    /// \name Memory region tracking (across experiments)
+    /// \{
+
+    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_end(const void* ptr);
+
+    //
+    // --- Per-experiment API
+    //    
 
     /// \name Snapshot API
     /// \{
 
-    void      push_snapshot(int scopes, const SnapshotRecord* trigger_info);
-    void      pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
+    void      push_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info);
+    void      pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
     // --- Flush and I/O API
 
@@ -193,40 +206,50 @@ public:
     /// \name Flush and I/O
     /// \{
 
-    void      flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
-    void      flush_and_write(const SnapshotRecord* flush_info);
+    void      flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
+    void      flush_and_write(Experiment* exp, const SnapshotRecord* flush_info);
 
-    void      clear();
+    void      clear(Experiment* exp);
 
     // --- Annotation API
-
+    
     /// \}
-    /// \name Annotation API
+    /// \name Annotation API (single experiment)
     /// \{
 
-    cali_err  begin(const Attribute& attr, const Variant& data);
-    cali_err  end(const Attribute& attr);
-    cali_err  set(const Attribute& attr, const Variant& data);
-    cali_err  set_path(const Attribute& attr, size_t n, const Variant data[]);
+    cali_err  begin(Experiment* exp, const Attribute& attr, const Variant& data);
+    cali_err  end(Experiment* exp, const Attribute& attr);
+    cali_err  set(Experiment* exp, const Attribute& attr, const Variant& data);
+    cali_err  set_path(Experiment* exp, const Attribute& attr, size_t n, const Variant data[]);
+
+    /// \}
+    /// \name Memory region tracking (single experiment)
+    /// \{
+
+    void      memory_region_begin(Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_end(Experiment* exp, const void* ptr);
 
     /// \}
     /// \name Blackboard access
     /// \{
 
-    Variant   exchange(const Attribute& attr, const Variant& data);
-
-    Entry     get(const Attribute& attr);
+    Variant   exchange(Experiment* exp, const Attribute& attr, const Variant& data);
+    Entry     get(Experiment* exp, const Attribute& attr);
 
     /// \}
-    /// \name Memory region tracking
+    /// \name Metadata access (single experiment)
     /// \{
 
-    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    std::vector<Entry> get_globals(Experiment* exp);
 
-    void      memory_region_end(const void* ptr);
+    /// \}
 
+    //
     // --- Direct metadata / data access API
+    //
 
+    std::vector<Entry> get_globals();
+    
     /// \}
     /// \name Explicit snapshot record manipulation
     /// \{
@@ -270,18 +293,36 @@ public:
     /// \brief Get or create tree entry with given attribute/value pair
     Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
-    /// \brief Get the CALI_ATTR_GLOBAL entries
-    std::vector<Entry> get_globals();
+    /// \}
+    /// \name Experiment API
+    /// \{
+
+    Experiment* create_experiment(const char* name, const RuntimeConfig& cfg);
+
+    std::vector<Experiment*> get_experiments();
+
+    Experiment* get_experiment(cali_id_t id);
+    // Experiment* get_experiment(const char* name);
 
     /// \}
 
     // --- Caliper API access
+    
+    Caliper();
+    
+    ~Caliper()
+        { }
 
-    operator bool () const {
-        return mG != 0;
-    }
+    Caliper(const Caliper&) = default;
+
+    Caliper& operator = (const Caliper&) = default;
+
+    bool is_signal() const { return m_is_signal; };
+
+    operator bool () const;
 
     static Caliper instance();
+    
     static void    release();
     
     static Caliper sigsafe_instance();
@@ -293,7 +334,7 @@ public:
 
     /// \brief Add a function that is called during %Caliper initialization.
     static void    add_init_hook(void(*fn)());
-
+    
     friend struct GlobalData;
 };
 

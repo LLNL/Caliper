@@ -37,6 +37,7 @@
 
 #include "Services.h"
 
+#include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
@@ -76,12 +77,9 @@ struct Services::ServicesImpl
     static std::unique_ptr<ServicesImpl> s_instance;
     static const ConfigSet::Entry        s_configdata[];
 
-    ConfigSet m_config;
-
-
     // --- interface
 
-    void register_services(Caliper* c) {
+    void register_services(Caliper* c, Experiment* exp) {
         // list services
 
         if (Log::verbosity() >= 2) {
@@ -93,8 +91,9 @@ struct Services::ServicesImpl
 
             Log(2).stream() << "Available services:" << sstr.str() << endl;
         }
-
-        vector<string> services = m_config.get("enable").to_stringlist(",:");
+        
+        vector<string> services =
+            exp->config().init("services", s_configdata).get("enable").to_stringlist(",:");
 
         // register caliper services
 
@@ -103,7 +102,7 @@ struct Services::ServicesImpl
                 auto it = find(services.begin(), services.end(), string(s->name));
 
                 if (it != services.end()) {
-                    (*s->register_fn)(c);
+                    (*s->register_fn)(c, exp);
                     services.erase(it);
                 }
             }
@@ -113,7 +112,6 @@ struct Services::ServicesImpl
     }
 
     ServicesImpl()
-        : m_config { RuntimeConfig::init("services", s_configdata) }
         { }
 
     static ServicesImpl* instance() {
@@ -153,7 +151,7 @@ void Services::add_default_services()
     add_services(caliper_services);
 }
 
-void Services::register_services(Caliper* c)
+void Services::register_services(Caliper* c, Experiment* exp)
 {
-    return ServicesImpl::instance()->register_services(c);
+    return ServicesImpl::instance()->register_services(c, exp);
 }

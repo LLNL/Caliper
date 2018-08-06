@@ -63,7 +63,7 @@ struct MetadataTree::MetadataTreeImpl
 
     struct GlobalData {
         GlobalData(MemoryPool& pool)
-            : config(RuntimeConfig::init("contexttree", s_configdata)),
+            : config(RuntimeConfig::get_default_config().init("contexttree", s_configdata)),
               root(CALI_INV_ID, CALI_INV_ID, Variant()),
               next_block(1),
               node_blocks(0)

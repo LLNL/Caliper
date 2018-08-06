@@ -89,7 +89,7 @@ public:
     StringConverter get(const char* set, const char* key);
 
     /// \brief Initialize a ConfigSet.
-    ConfigSet       init_configset(const char* name, const ConfigSet::Entry* set);
+    ConfigSet       init(const char* name, const ConfigSet::Entry* set);
 
     /// \brief Pre-set config entry \a key to \a value.
     ///
@@ -168,10 +168,7 @@ public:
     // --- Static API (temporary)
     //
 
-    /// \brief Initialize a ConfigSet from the default config.
-    static ConfigSet      init(const char* name, const ConfigSet::Entry* set);
-
-    static RuntimeConfig* get_default_config(); 
+    static RuntimeConfig  get_default_config(); 
 
 }; // class RuntimeConfig
 

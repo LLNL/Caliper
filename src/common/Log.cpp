@@ -88,7 +88,7 @@ struct LogImpl
     // --- interface
 
     LogImpl() 
-        : m_config { RuntimeConfig::init("log", s_configdata) },
+        : m_config { RuntimeConfig::get_default_config().init("log", s_configdata) },
           m_prefix { s_prefix }
     {
         m_verbosity = m_config.get("verbosity").to_uint();

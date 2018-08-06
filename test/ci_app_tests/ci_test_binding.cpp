@@ -22,25 +22,25 @@ public:
         return "testbinding"; 
     }
 
-    void initialize(Caliper* c) {
+    void initialize(Caliper* c, Experiment*) {
         m_my_attr = 
             c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         m_prop_attr =
             c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     }
 
-    void on_create_attribute(Caliper* c, const std::string& name, cali_attr_type, int*, Node** node) {
+    void on_mark_attribute(Caliper* c, Experiment* exp, const Attribute& attr) {
         if (s_verbose)
-            std::cout << "TestBinding::on_create_attribute(" << name << ")" << std::endl;
+            std::cout << "TestBinding::on_mark_attribute(" << attr.name() << ")" << std::endl;
 
-        *node = c->make_tree_entry(m_prop_attr, Variant(4242), *node);
+        c->make_tree_entry(m_prop_attr, Variant(4242), c->node(attr.id()));
     }
 
     void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
 
-        assert(attr.get(m_prop_attr) == Variant(4242));
+        // assert(attr.get(m_prop_attr) == Variant(4242));
 
         std::string s(attr.name());
         s.append("=").append(value.to_string());
@@ -76,7 +76,7 @@ int main(int argc, const char** argv)
 
     Caliper c;
 
-    AnnotationBinding::make_binding<TestBinding>(&c);
+    AnnotationBinding::make_binding<TestBinding>(&c, c.get_experiment(0));
 
     Attribute nested_attr  =
         c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);

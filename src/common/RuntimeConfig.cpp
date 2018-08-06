@@ -154,10 +154,10 @@ struct ConfigSetImpl
 struct RuntimeConfig::RuntimeConfigImpl
 {
     // --- data
-    static unique_ptr<RuntimeConfig>         s_default_config;
+    static RuntimeConfig                     s_default_config;
     static const ConfigSet::Entry            s_configdata[];
 
-    bool                                     m_allow_read_env = false;
+    bool                                     m_allow_read_env = true;
 
     // combined profile: initially receives settings made through "add" API,
     // then merges all selected profiles in here
@@ -325,7 +325,7 @@ struct RuntimeConfig::RuntimeConfigImpl
     }
 };
 
-unique_ptr<RuntimeConfig> RuntimeConfig::RuntimeConfigImpl::s_default_config { nullptr };
+RuntimeConfig RuntimeConfig::RuntimeConfigImpl::s_default_config;
 
 const ConfigSet::Entry RuntimeConfig::RuntimeConfigImpl::s_configdata[] = {
     { "profile",  CALI_TYPE_STRING, "default",
@@ -375,7 +375,7 @@ RuntimeConfig::get(const char* set, const char* key)
 }
 
 ConfigSet
-RuntimeConfig::init_configset(const char* name, const ConfigSet::Entry* list)
+RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
 {
     return ConfigSet(mP->init_configset(name, list));
 }
@@ -422,19 +422,8 @@ RuntimeConfig::allow_read_env(bool allow)
 // static interface
 //
 
-ConfigSet
-RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
-{
-    return ConfigSet(get_default_config()->init_configset(name, list));
-}
-
-RuntimeConfig*
+RuntimeConfig
 RuntimeConfig::get_default_config()
 {
-    if (!RuntimeConfigImpl::s_default_config) {
-        RuntimeConfigImpl::s_default_config.reset(new RuntimeConfig);
-        RuntimeConfigImpl::s_default_config->allow_read_env(true);
-    }
-    
-    return RuntimeConfigImpl::s_default_config.get();
+    return RuntimeConfigImpl::s_default_config;
 }

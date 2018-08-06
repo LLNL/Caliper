@@ -118,7 +118,8 @@ struct MemoryPool::MemoryPoolImpl
     }
     
     MemoryPoolImpl() 
-        : m_config { RuntimeConfig::init("memory", s_configdata) }, m_index { 0 },
+        : m_config { RuntimeConfig::get_default_config().init("memory", s_configdata) },
+          m_index  { 0 },
           m_total_reserved { 0 }, m_total_used { 0 }
     {
         m_can_expand = m_config.get("can_expand").to_bool();

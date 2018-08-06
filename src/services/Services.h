@@ -43,6 +43,7 @@ namespace cali
 
 class Caliper;
 class CaliperService;
+class Experiment;
 
 class Services
 {
@@ -55,7 +56,7 @@ public:
 
     static void add_default_services();
 
-    static void register_services(Caliper* c);
+    static void register_services(Caliper* c, Experiment* exp);
 };
 
 } // namespace cali
