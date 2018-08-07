@@ -37,6 +37,8 @@
 #define CALI_SERVICES_H
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace cali
 {
@@ -57,6 +59,8 @@ public:
     static void add_default_services();
 
     static void register_services(Caliper* c, Experiment* exp);
+
+    static std::vector<std::string> get_available_services();
 };
 
 } // namespace cali

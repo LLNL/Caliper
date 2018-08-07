@@ -98,6 +98,23 @@ public:
     }
 };
 
+// --- helper functions
+
+std::ostream&
+print_available_services(std::ostream& os)
+{
+    std::vector<std::string> services = Services::get_available_services();
+
+    int count = 0;
+    for (const std::string& s : services)
+        os << (count++ > 0 ? "," : "") << s;
+
+    if (!count)
+        os << "none";
+
+    return os;
+}
+
 } // namespace
 
 
@@ -377,6 +394,9 @@ struct Caliper::GlobalData
         run_init_hooks();
         
         Services::add_default_services();
+
+        if (Log::verbosity() >= 2)
+            print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
         
         Caliper c(false);
         
@@ -1259,7 +1279,7 @@ Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
         
     Services::register_services(&c, exp);
 
-    Log(1).stream() << "Creating experiment \"" << name << "\"" << std::endl;
+    Log(1).stream() << "Creating \"" << name << "\" experiment" << std::endl;
 
     if (exp->config().get("caliper", "config_check").to_bool())
         config_sanity_check(exp->config());

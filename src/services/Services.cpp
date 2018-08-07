@@ -81,16 +81,6 @@ struct Services::ServicesImpl
 
     void register_services(Caliper* c, Experiment* exp) {
         // list services
-
-        if (Log::verbosity() >= 2) {
-            ostringstream sstr;
-
-            for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-                for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
-                    sstr << ' ' << s->name;
-
-            Log(2).stream() << "Available services:" << sstr.str() << endl;
-        }
         
         vector<string> services =
             exp->config().init("services", s_configdata).get("enable").to_stringlist(",:");
@@ -154,4 +144,15 @@ void Services::add_default_services()
 void Services::register_services(Caliper* c, Experiment* exp)
 {
     return ServicesImpl::instance()->register_services(c, exp);
+}
+
+std::vector<std::string> Services::get_available_services()
+{
+    std::vector<std::string> ret;
+    
+    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
+            ret.emplace_back(s->name);
+
+    return ret;
 }
