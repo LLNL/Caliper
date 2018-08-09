@@ -93,9 +93,10 @@ class SosService
         Log(2).stream() << "sos: Publishing Caliper data" << std::endl;
 
         c->flush(nullptr, [this,c](const SnapshotRecord* snapshot){
-                pack_snapshot(sos_publication_handle, true, ++snapshot_id, snapshot->unpack(*c));
+                pack_snapshot(sos_publication_handle, false, ++snapshot_id, snapshot->unpack(*c));
                 return true;
             });
+        SOS_publish(sos_publication_handle);
         c->clear(); //Avoids re-publishing snapshots.
     }
 
