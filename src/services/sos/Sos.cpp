@@ -40,7 +40,7 @@ const ConfigSet::Entry   configdata[] = {
 };
 
 // Takes an unpacked Caliper snapshot and publishes it in SOS
-void pack_snapshot(SOS_pub* sos_pub, int snapshot_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
+void pack_snapshot(SOS_pub* sos_pub, bool yn_publish, int snapshot_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
     for (auto &p : unpacked_snapshot) {
         switch (p.first.type()) {
         case CALI_TYPE_STRING:
@@ -71,8 +71,11 @@ void pack_snapshot(SOS_pub* sos_pub, int snapshot_id, const std::map< Attribute,
             ;
         }
     }
-
-    SOS_publish(sos_pub);
+    if (yn_publish == true) {
+        SOS_publish(sos_pub);
+    }
+    
+    return;
 }
 
 class SosService
@@ -90,7 +93,7 @@ class SosService
         Log(2).stream() << "sos: Publishing Caliper data" << std::endl;
 
         c->flush(nullptr, [this,c](const SnapshotRecord* snapshot){
-                pack_snapshot(sos_publication_handle, ++snapshot_id, snapshot->unpack(*c));
+                pack_snapshot(sos_publication_handle, true, ++snapshot_id, snapshot->unpack(*c));
                 return true;
             });
         c->clear(); //Avoids re-publishing snapshots.
@@ -102,7 +105,7 @@ class SosService
     }
 
     void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
-        pack_snapshot(sos_publication_handle, ++snapshot_id, snapshot->unpack(*c));
+        pack_snapshot(sos_publication_handle, false, ++snapshot_id, snapshot->unpack(*c));
     }
 
     void post_end(Caliper* c, const Attribute& attr) {
