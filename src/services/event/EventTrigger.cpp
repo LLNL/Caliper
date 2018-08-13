@@ -64,9 +64,6 @@ class EventTrigger
 
     static const ConfigSet::Entry s_configdata[];    
 
-    /// per-experiment instances
-    static std::vector< std::unique_ptr<EventTrigger> > s_exp_instances;
-
     //
     // --- Per-experiment instance data
     //
@@ -299,26 +296,6 @@ class EventTrigger
     } 
 
     //
-    // --- Static callback functions (dispatch to experiment object)
-    //
-
-    static void s_create_attr_cb(Caliper* c, Experiment* exp, const Attribute& attr) {
-        s_exp_instances[exp->id()]->create_attr_cb(c, exp, attr);
-    }
-    
-    static void s_pre_begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
-        s_exp_instances[exp->id()]->pre_begin_cb(c, exp, attr, value);
-    }
-
-    static void s_pre_set_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
-        s_exp_instances[exp->id()]->pre_set_cb(c, exp, attr, value);
-    }
-
-    static void s_pre_end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
-        s_exp_instances[exp->id()]->pre_end_cb(c, exp, attr, value);
-    }
-
-    //
     // --- Constructor
     //
 
@@ -360,26 +337,35 @@ class EventTrigger
                                     CALI_ATTR_HIDDEN);
 
             check_existing_attributes(c, exp);
-
-            // register callbacks
-
-            exp->events().create_attr_evt.connect(EventTrigger::s_create_attr_cb);
-
-            exp->events().pre_begin_evt.connect(EventTrigger::s_pre_begin_cb);
-            exp->events().pre_set_evt.connect(EventTrigger::s_pre_set_cb);
-            exp->events().pre_end_evt.connect(EventTrigger::s_pre_end_cb);
-
-            Log(1).stream() << "Registered event trigger service for experiment \""
-                            << exp->name() << "\"" << std::endl;
         }
 
 public:
 
     static void event_trigger_register(Caliper* c, Experiment* exp) {
-        if (s_exp_instances.size() < exp->id())
-            s_exp_instances.resize(std::max(static_cast<cali_id_t>(16), exp->id()));
+        EventTrigger* instance = new EventTrigger(c, exp);
 
-        s_exp_instances[exp->id()].reset(new EventTrigger(c, exp));
+        exp->events().create_attr_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute& attr){
+                instance->create_attr_cb(c, exp, attr);
+            });
+        exp->events().pre_begin_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
+                instance->pre_begin_cb(c, exp, attr, value);
+            });
+        exp->events().pre_set_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
+                instance->pre_set_cb(c, exp, attr, value);
+            });
+        exp->events().pre_end_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
+                instance->pre_end_cb(c, exp, attr, value);
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper*, Experiment*){
+                delete instance;
+            });
+
+        Log(1).stream() << exp->name() << ": Registered event trigger service" << std::endl;
     }
 };
 
@@ -396,8 +382,6 @@ const ConfigSet::Entry EventTrigger::s_configdata[] = {
 
     ConfigSet::Terminator
 };
-
-std::vector< std::unique_ptr<EventTrigger> > EventTrigger::s_exp_instances;
 
 } // namespace
 

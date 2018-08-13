@@ -185,13 +185,16 @@ public:
             [binding](Caliper* c, Experiment* exp, const Attribute& attr){
                 binding->create_attr_cb(c, exp, attr);
             });
-        exp->events().pre_begin_evt.connect([binding](Caliper* c, Experiment* exp,const Attribute& attr,const Variant& value){
+        exp->events().pre_begin_evt.connect(
+            [binding](Caliper* c, Experiment* exp,const Attribute& attr,const Variant& value){
                 binding->begin_cb(c,exp,attr,value);
             });
-        exp->events().pre_end_evt.connect([binding](Caliper* c, Experiment* exp,const Attribute& attr,const Variant& value){
+        exp->events().pre_end_evt.connect(
+            [binding](Caliper* c, Experiment* exp,const Attribute& attr,const Variant& value){
                 binding->end_cb(c,exp,attr,value);
             });
-        exp->events().finish_evt.connect([binding](Caliper* c, Experiment* exp){
+        exp->events().finish_evt.connect(
+            [binding](Caliper* c, Experiment* exp){
                 binding->finalize(c,exp);
                 delete binding;
             });
