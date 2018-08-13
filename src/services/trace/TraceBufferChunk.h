@@ -68,7 +68,7 @@ namespace trace
         void   append(TraceBufferChunk* chunk);
         void   reset();
 
-        size_t flush(cali::Caliper* c, cali::Caliper::SnapshotFlushFn proc_fn);
+        size_t flush(cali::Caliper* c, cali::SnapshotFlushFn proc_fn);
 
         void   save_snapshot(const cali::SnapshotRecord* s);
         bool   fits(const cali::SnapshotRecord* s) const;
