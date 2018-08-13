@@ -817,6 +817,8 @@ Caliper::flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushF
                                  return proc_fn(&snapshot);
                              });
     }
+
+    exp->mP->events.post_flush_evt(this, exp, flush_info);
 }
 
 
@@ -846,17 +848,13 @@ Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info
     exp->mP->get_blackboard(exp, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
     exp->mP->get_blackboard(exp, CALI_SCOPE_THREAD )->snapshot(&flush_info);
 
-    Log(1).stream() << "Flushing Caliper data" << std::endl;
-
-    exp->mP->events.pre_write_evt(this, exp, &flush_info);
+    Log(1).stream() << exp->name() << ": Flushing Caliper data" << std::endl;
 
     flush(exp, &flush_info,
           [this,exp,&flush_info](const SnapshotRecord* snapshot){
               exp->mP->events.write_snapshot(this, exp, &flush_info, snapshot);
               return true;
           });
-
-    exp->mP->events.post_write_evt(this, exp, &flush_info);
 }
 
 

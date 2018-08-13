@@ -65,7 +65,6 @@ namespace
 
 class Recorder
 {    
-    static unique_ptr<Recorder>   s_instance;
     static const ConfigSet::Entry s_configdata[];
 
     ConfigSet m_config;
@@ -99,7 +98,7 @@ class Recorder
         return string(timestring) + "_" + std::to_string(pid) + "_" + random_string(12) + ".cali";
     }
 
-    void pre_flush(Caliper* c, const SnapshotRecord* flush_info) {
+    void pre_flush_cb(Caliper* c, Experiment* exp, const SnapshotRecord* flush_info) {
         // Generate m_filename from pattern in the config file and the attributes
         // in flush_info.
         // The actual output stream will be created on-demand 
@@ -116,7 +115,7 @@ class Recorder
         m_writer = CsvWriter(stream);
     }
 
-    void flush_snapshot(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {        
+    void write_snapshot(Caliper* c, const SnapshotRecord* snapshot) {        
         SnapshotRecord::Data   data = snapshot->data();
         SnapshotRecord::Sizes sizes = snapshot->size();
 
@@ -130,61 +129,45 @@ class Recorder
                                 sizes.n_immediate, data.immediate_attr, data.immediate_data);
     }
 
-    void post_flush(Caliper* c) {
+    void post_flush_cb(Caliper* c, Experiment* exp) {
         m_writer.write_globals(*c, c->get_globals());
     }
 
-    static void flush_snapshot_cb(Caliper* c, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot) {
-        if (!s_instance)
-            return;
+    void finish_cb(Caliper* c, Experiment* exp) {
+        Log(1).stream() << exp->name()
+            << ": Recorder: Wrote " << m_writer.num_written() << " records." << std::endl;
+    }    
 
-        s_instance->flush_snapshot(c, flush_info, snapshot);
-    }
-
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord* flush_info) {
-        if (!s_instance)
-            return;
-
-        s_instance->pre_flush(c, flush_info);
-    }
-
-    static void post_write_cb(Caliper* c, const SnapshotRecord*) {
-        if (!s_instance)
-            return;
-        
-        s_instance->post_flush(c);
-    }
-
-    static void finish_cb(Caliper* c) {
-        if (s_instance)
-            Log(1).stream() << "Recorder: Wrote " << s_instance->m_writer.num_written() << " records." << endl;
-    }
-    
-    void register_callbacks(Caliper* c) {
-        c->events().pre_write_evt.connect(pre_flush_cb);
-        c->events().write_snapshot.connect(flush_snapshot_cb);
-        c->events().post_write_evt.connect(post_write_cb);
-        c->events().finish_evt.connect(finish_cb);
-    }
-
-    Recorder(Caliper* c)
-        : m_config { RuntimeConfig::init("recorder", s_configdata) }
-    { 
-        register_callbacks(c);
-        Log(1).stream() << "Registered recorder service" << endl;
-    }
+    Recorder(Caliper* c, Experiment* exp)
+        : m_config(exp->config().init("recorder", s_configdata))
+    { }
 
 public:
 
     ~Recorder() 
         { }
 
-    static void create(Caliper* c) {
-        s_instance.reset(new Recorder(c));
+    static void recorder_register(Caliper* c, Experiment* exp) {
+        Recorder* instance = new Recorder(c, exp);
+
+        exp->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* flush_info){
+                instance->pre_flush_cb(c, exp, flush_info);
+            });
+        exp->events().write_snapshot.connect(
+            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot){
+                instance->write_snapshot(c, snapshot);
+            });
+        exp->events().post_flush_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* flush_info){
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper* c, Experiment* exp){
+                instance->finish_cb(c, exp);
+                delete instance;
+            });
     }
 };
-
-unique_ptr<Recorder>   Recorder::s_instance       { nullptr };
 
 const ConfigSet::Entry Recorder::s_configdata[] = {
     { "filename", CALI_TYPE_STRING, "",
@@ -201,5 +184,5 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
 
 namespace cali
 {
-    CaliperService recorder_service { "recorder", &(::Recorder::create) };
+    CaliperService recorder_service { "recorder", ::Recorder::recorder_register };
 }

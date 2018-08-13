@@ -50,7 +50,6 @@
 #include <atomic>
 #include <cstring>
 #include <mutex>
-#include <unordered_set>
 
 using namespace trace;
 using namespace cali;
@@ -247,7 +246,7 @@ class Trace
                             << aggregate_info.nchunks  << " chunks." << std::endl;
         }
         
-        Log(1).stream() << exp->name() << " Trace: Flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << exp->name() << ": Trace: Flushed " << num_written << " snapshots." << std::endl;
     }
 
     void clear_cb(Caliper* c, Experiment*) {

@@ -126,12 +126,10 @@ public:
 
         write_cbvec            pre_flush_evt;
         flush_cbvec            flush_evt;
+        write_cbvec            post_flush_evt;
 
         edit_snapshot_cbvec    postprocess_snapshot;
-
-        write_cbvec            pre_write_evt;
         process_snapshot_cbvec write_snapshot;
-        write_cbvec            post_write_evt;
 
         track_mem_cbvec        track_mem_evt;
         untrack_mem_cbvec      untrack_mem_evt;
