@@ -36,7 +36,7 @@ public:
         c->make_tree_entry(m_prop_attr, Variant(4242), c->node(attr.id()));
     }
 
-    void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_begin(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
 
@@ -45,17 +45,17 @@ public:
         std::string s(attr.name());
         s.append("=").append(value.to_string());
         
-        c->begin(m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
+        c->begin(exp, m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
 
         if (s_verbose)
             std::cout << "begin " << s << std::endl;
     }
 
-    void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
 
-        c->end(m_my_attr);
+        c->end(exp, m_my_attr);
 
         if (s_verbose)
             std::cout << "end   " << attr.name() << "=" << value.to_string() << std::endl;

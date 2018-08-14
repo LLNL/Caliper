@@ -130,7 +130,7 @@ class Recorder
     }
 
     void post_flush_cb(Caliper* c, Experiment* exp) {
-        m_writer.write_globals(*c, c->get_globals());
+        m_writer.write_globals(*c, c->get_globals(exp));
     }
 
     void finish_cb(Caliper* c, Experiment* exp) {
@@ -160,6 +160,7 @@ public:
             });
         exp->events().post_flush_evt.connect(
             [instance](Caliper* c, Experiment* exp, const SnapshotRecord* flush_info){
+                instance->post_flush_cb(c, exp);
             });
         exp->events().finish_evt.connect(
             [instance](Caliper* c, Experiment* exp){

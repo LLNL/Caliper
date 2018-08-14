@@ -150,13 +150,11 @@ struct Experiment::ExperimentImpl
     bool                            automerge;
     bool                            flush_on_exit;
 
-    map<string, int>                attribute_prop_presets;
-
     ExperimentImpl(const char* _name, const RuntimeConfig& cfg)
         : name(_name), active(true), config(cfg)
         {
             ConfigSet cali_cfg =
-                config.init("caliper", s_configdata);
+                config.init("experiment", s_configdata);
 
             automerge     = cali_cfg.get("automerge").to_bool();
             flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
@@ -170,22 +168,6 @@ struct Experiment::ExperimentImpl
                     << std::endl;
             }
         }
-
-    void parse_attribute_property_presets() {
-        vector<string> attr_props =
-            config.get("caliper", "attribute_properties").to_stringlist();
-
-        for (const string& s : attr_props) {
-            auto p = s.find_first_of('=');
-
-            if (p == string::npos)
-                continue;
-
-            int prop = cali_string2prop(s.substr(p+1).c_str());
-
-            attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
-        }
-    }
 
     const Attribute&
     get_key(const Attribute& attr, const Attribute& key_attr) const {
@@ -245,20 +227,6 @@ const ConfigSet::Entry Experiment::ExperimentImpl::s_configdata[] = {
       "Automatically merge attributes into a common context tree.\n"
       "Decreases the size of context records, but may increase\n"
       "the amount of metadata and reduce performance."
-    },
-    { "attribute_properties", CALI_TYPE_STRING, "",
-      "List of attribute property presets",
-      "List of attribute property presets, in the form\n"
-      "  attr=prop1:prop2,attr2=prop1:prop2:prop3,attr3=prop1,...\n"
-      "Attribute property flags are:\n"
-      "  asvalue:       Store values directly in snapshot, not in context tree\n"
-      "  nomerge:       Create dedicated context tree branch, don't merge with other attributes\n"
-      "  process_scope: Process-scope attribute\n"
-      "  thread_scope:  Thread-scope attribute\n"
-      "  task_scope:    Task-scope attribute (currently not supported)\n"
-      "  skip_events:   Do not invoke callback functions for updates\n"
-      "  hidden:        Do not include this attribute in snapshots\n"
-      "  nested:        Values are properly nested with the call stack and other nested attributes\n"
     },
     { "config_check", CALI_TYPE_BOOL, "true",
       "Perform configuration sanity check at initialization",
@@ -331,6 +299,8 @@ struct Caliper::GlobalData
     static volatile sig_atomic_t          s_init_lock;
     static std::mutex                     s_init_mutex;
 
+    static const ConfigSet::Entry         s_configdata[];
+
     struct InitHookList {
         void          (*hook)();
         InitHookList* next;
@@ -356,6 +326,8 @@ struct Caliper::GlobalData
     map<string, Node*>                    attribute_nodes;
 
     Attribute                             key_attr;
+
+    map<string, int>                      attribute_prop_presets;
 
     vector< std::unique_ptr<Experiment> > experiments;
 
@@ -389,9 +361,26 @@ struct Caliper::GlobalData
         // prevent re-initialization
         s_init_lock = 2;
     }
+    
+    void parse_attribute_property_presets(const ConfigSet& config) {
+        auto preset_cfg = config.get("attribute_properties").to_stringlist();
+        
+        for (const string& s : preset_cfg) {
+            auto p = s.find_first_of('=');
+
+            if (p == string::npos)
+                continue;
+
+            int prop = cali_string2prop(s.substr(p+1).c_str());
+
+            attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
+        }
+    }
 
     void init() {
         run_init_hooks();
+
+        parse_attribute_property_presets(RuntimeConfig::get_default_config().init("caliper", s_configdata));
         
         Services::add_default_services();
 
@@ -421,6 +410,25 @@ std::unique_ptr<Caliper::GlobalData> Caliper::sG;
 thread_local std::unique_ptr<Caliper::ThreadData> Caliper::sT;
 
 Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
+
+const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
+    // key, type, value, short description, long description
+    { "attribute_properties", CALI_TYPE_STRING, "",
+      "List of attribute property presets",
+      "List of attribute property presets, in the form\n"
+      "  attr=prop1:prop2,attr2=prop1:prop2:prop3,attr3=prop1,...\n"
+      "Attribute property flags are:\n"
+      "  asvalue:       Store values directly in snapshot, not in context tree\n"
+      "  nomerge:       Create dedicated context tree branch, don't merge with other attributes\n"
+      "  process_scope: Process-scope attribute\n"
+      "  thread_scope:  Thread-scope attribute\n"
+      "  task_scope:    Task-scope attribute (currently not supported)\n"
+      "  skip_events:   Do not invoke callback functions for updates\n"
+      "  hidden:        Do not include this attribute in snapshots\n"
+      "  nested:        Values are properly nested with the call stack and other nested attributes\n"
+    },
+    ConfigSet::Terminator
+};
 
 //
 // Caliper class definition
@@ -498,10 +506,10 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         if (n_meta > 0)
             node = sT->tree.get_path(n_meta, meta_attr, meta_val, node);
 
-        // // Look for attribute properties in presets
-        // auto propit = sG->attribute_prop_presets.find(name);
-        // if (propit != sG->attribute_prop_presets.end())
-        //     prop = propit->second;
+        // Look for attribute properties in presets
+        auto propit = sG->attribute_prop_presets.find(name);
+        if (propit != sG->attribute_prop_presets.end())
+            prop = propit->second;
 
         // Run pre-attribute creation callbacks.
         //   This may add additional nodes to our parent branch.
@@ -1369,10 +1377,12 @@ Caliper::instance()
         }
     }
 
-    if (!sT)
+    if (!sT) {
         sT.reset(new ThreadData);
-    if (!expI::sT)
-        expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
+        
+        if (!expI::sT)
+            expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
+    }
     
     return Caliper(false);
 }
