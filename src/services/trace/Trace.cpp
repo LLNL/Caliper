@@ -93,7 +93,6 @@ class Trace
     public:
 
         ~ThreadData() {
-            std::cerr << "Trace: Retiring thread" << std::endl;
             for (TraceBuffer* tbuf : exp_buffers)
                 if (tbuf)
                     tbuf->retired.store(true);
