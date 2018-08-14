@@ -1345,6 +1345,8 @@ Caliper::Caliper()
 Caliper
 Caliper::instance()
 {
+    using expI = Experiment::ExperimentImpl;
+    
     if (GlobalData::s_init_lock != 0) {
         if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
@@ -1355,6 +1357,8 @@ Caliper::instance()
         if (!sG) {
             if (atexit(&Caliper::release) != 0)
                 Log(0).stream() << "Unable to register exit handler";
+
+            expI::sT.reset(new expI::ThreadData(16));
             
             sT.reset(new Caliper::ThreadData);
             sG.reset(new Caliper::GlobalData);
@@ -1367,13 +1371,8 @@ Caliper::instance()
 
     if (!sT)
         sT.reset(new ThreadData);
-    
-    {
-        using expI = Experiment::ExperimentImpl;
-        
-        if (!expI::sT)
-            expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
-    }
+    if (!expI::sT)
+        expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
     
     return Caliper(false);
 }

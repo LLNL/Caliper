@@ -120,7 +120,7 @@ class Trace
                 if (trace->tbuf_list)
                     trace->tbuf_list->prev = tbuf;
 
-                tbuf->next     = trace->tbuf_list;
+                tbuf->next       = trace->tbuf_list;
                 trace->tbuf_list = tbuf;
             }
 
