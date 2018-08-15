@@ -39,19 +39,26 @@
 
 #include "caliper/common/Log.h"
 
-#include <cstdlib>
 #include <pthread.h>
 
 #include <gotcha/gotcha.h>
+
+#include <algorithm>
+#include <cstdlib>
+#include <vector>
 
 using namespace cali;
 
 namespace
 {
 
-gotcha_wrappee_handle_t orig_pthread_create_handle = 0x0;
+gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 
 Attribute id_attr = Attribute::invalid;
+
+std::vector<Experiment*> pthread_experiments;
+
+bool is_wrapped = false;
 
 struct wrapper_args {
     void* (*fn)(void*);
@@ -65,8 +72,10 @@ void*
 thread_wrapper(void *arg)
 {
     uint64_t id = static_cast<uint64_t>(pthread_self());
+    Caliper  c;
 
-    Caliper::instance().set(id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
+    for (Experiment* exp : pthread_experiments)
+        c.set(exp, id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
     void* ret = (*(wrap->fn))(wrap->arg);
@@ -88,18 +97,31 @@ cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
 
 // Initialization routine.
 void 
-pthreadservice_initialize(Caliper* c)
+pthreadservice_initialize(Caliper* c, Experiment* exp)
 {
     id_attr = c->create_attribute("pthread.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
-    struct gotcha_binding_t pthread_binding[] = { 
-        { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create_handle }
-    };
+    if (!is_wrapped) {
+        struct gotcha_binding_t pthread_binding[] = { 
+            { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create_handle }
+        };
 
-    gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t),
-                "caliper/pthread");
+        gotcha_wrap(pthread_binding, sizeof(pthread_binding)/sizeof(struct gotcha_binding_t),
+                    "caliper/pthread");
 
-    Log(1).stream() << "Registered pthread service" << std::endl;
+        is_wrapped = true;
+    }
+
+    pthread_experiments.push_back(exp);
+
+    exp->events().finish_evt.connect(
+        [](Caliper* c, Experiment* exp){
+            pthread_experiments.erase(
+                std::find(pthread_experiments.begin(), pthread_experiments.end(),
+                          exp));
+        });
+
+    Log(1).stream() << exp->name() << ": Registered pthread service" << std::endl;
 }
 
 } // namespace [anonymous]
