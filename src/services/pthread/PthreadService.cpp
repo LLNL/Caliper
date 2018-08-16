@@ -75,7 +75,8 @@ thread_wrapper(void *arg)
     Caliper  c;
 
     for (Experiment* exp : pthread_experiments)
-        c.set(exp, id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
+        if (exp->is_active())
+            c.set(exp, id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
     void* ret = (*(wrap->fn))(wrap->arg);
