@@ -34,11 +34,11 @@ endmacro()
 
 # Service subdirectories
 
-# add_subdirectory(alloc)
+add_subdirectory(alloc)
 add_subdirectory(aggregate)
-# if (CALIPER_HAVE_LIBUNWIND)
-#   add_subdirectory(callpath)
-# endif()
+if (CALIPER_HAVE_LIBUNWIND)
+  add_subdirectory(callpath)
+endif()
 # if (CALIPER_HAVE_PAPI)
 #   add_subdirectory(papi)
 # endif()

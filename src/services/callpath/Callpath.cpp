@@ -62,22 +62,167 @@ using namespace std;
 namespace 
 {
 
-Attribute callpath_name_attr { Attribute::invalid};
-Attribute callpath_addr_attr { Attribute::invalid };
+class Callpath
+{
+    static const ConfigSet::Entry s_configdata[];
+    
+    Attribute callpath_name_attr { Attribute::invalid};
+    Attribute callpath_addr_attr { Attribute::invalid };
 
-ConfigSet config;
+    bool      use_name { false };
+    bool      use_addr { false };
 
-bool      use_name { false };
-bool      use_addr { false };
-
-unsigned  skip_frames { 0 };
+    unsigned  skip_frames { 0 };
 
 #ifdef CALIPER_HAVE_LIBDW
-Dwfl* dwfl;
-Dwfl_Module* caliper_module;
+    Dwfl* dwfl;
+    Dwfl_Module* caliper_module;
 #endif
 
-static const ConfigSet::Entry s_configdata[] = {
+    void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+        Variant v_addr[MAX_PATH];
+        Variant v_name[MAX_PATH];
+
+        char    strbuf[MAX_PATH][NAMELEN];
+
+        // Init unwind context
+        unw_context_t unw_ctx;
+        unw_cursor_t  unw_cursor;
+
+        unw_getcontext(&unw_ctx);
+
+        if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+            Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
+            return;
+        }
+
+        // skip n frames
+
+        size_t n = 0;
+
+        for (n = skip_frames; n > 0 && unw_step(&unw_cursor) > 0; --n)
+            ;
+
+        if (n > 0)
+            return;
+
+        while (n < MAX_PATH && unw_step(&unw_cursor) > 0) {
+
+#ifdef CALIPER_HAVE_LIBDW
+            // skip stack frames inside caliper
+            unw_word_t ip;
+            unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+
+            Dwfl_Module* module=dwfl_addrmodule (dwfl, ip);
+
+            if (module == caliper_module)
+                continue;
+#endif
+
+            // store path from top to bottom
+            if (use_addr) {
+#ifndef CALIPER_HAVE_LIBDW
+                unw_word_t ip;
+                unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+#endif
+                uint64_t uint = ip;
+                v_addr[MAX_PATH-(n+1)] = Variant(CALI_TYPE_ADDR, &uint, sizeof(uint64_t));
+            }
+            if (use_name) {
+                unw_word_t offs;
+
+                if (unw_get_proc_name(&unw_cursor, strbuf[n], NAMELEN, &offs) < 0)
+                    strncpy(strbuf[n], "UNKNOWN", NAMELEN);
+
+                v_name[MAX_PATH-(n+1)] = Variant(CALI_TYPE_STRING, strbuf[n], strlen(strbuf[n]));
+            }
+
+            ++n;
+        }
+
+        if (n > 0) {
+            if (use_addr)
+                c->make_entrylist(callpath_addr_attr, n, v_addr+(MAX_PATH-n), *snapshot);
+            if (use_name)
+                c->make_entrylist(callpath_name_attr, n, v_name+(MAX_PATH-n), *snapshot);        
+        }
+    }
+
+    void initialize_dw() {
+#ifdef CALIPER_HAVE_LIBDW
+        // initialize dwarf
+        char *debuginfo_path=nullptr;
+        Dwfl_Callbacks callbacks;
+        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
+        callbacks.debuginfo_path = &debuginfo_path;
+
+        dwfl=dwfl_begin(&callbacks);
+
+        dwfl_linux_proc_report(dwfl, getpid());
+        dwfl_report_end(dwfl, nullptr, nullptr);
+
+        // Init unwind context
+        unw_context_t unw_ctx;
+        unw_cursor_t  unw_cursor;
+
+        unw_getcontext(&unw_ctx);
+
+        if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+            Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind cursor" << endl;
+            return;
+        }
+
+        // Get current (caliper) module
+        unw_word_t ip;
+        unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
+
+        caliper_module = dwfl_addrmodule(dwfl, ip);
+#endif
+    }
+
+    Callpath(Caliper* c, Experiment* exp) {
+        ConfigSet config =
+            exp->config().init("callpath", s_configdata);
+
+        use_name    = config.get("use_name").to_bool();
+        use_addr    = config.get("use_address").to_bool();
+        skip_frames = config.get("skip_frames").to_uint();
+
+        Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+        Variant v_true(true);
+
+        callpath_addr_attr = 
+            c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_NOMERGE,
+                                1, &symbol_class_attr, &v_true);
+        callpath_name_attr = 
+            c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
+                                CALI_ATTR_SKIP_EVENTS | 
+                                CALI_ATTR_NOMERGE);
+    }
+
+public:
+
+    static void callpath_service_register(Caliper* c, Experiment* exp) {
+        Callpath* instance = new Callpath(c, exp);
+
+        exp->events().snapshot.connect(
+            [instance](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
+                instance->snapshot_cb(c, exp, scope, info, snapshot);
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper* c, Experiment* exp){
+                delete instance;
+            });
+
+        Log(1).stream() << exp->name() << ": Registered callpath service" << std::endl;
+    }
+    
+}; // class Callpath
+
+const ConfigSet::Entry Callpath::s_configdata[] = {
     { "use_name", CALI_TYPE_BOOL, "false",
       "Record region names for call path.",
       "Record region names for call path. Incurs higher overhead."
@@ -94,142 +239,12 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-void snapshot_cb(Caliper* c, int scope, const SnapshotRecord*, SnapshotRecord* snapshot)
-{
-    Variant v_addr[MAX_PATH];
-    Variant v_name[MAX_PATH];
-
-    char    strbuf[MAX_PATH][NAMELEN];
-
-    // Init unwind context
-    unw_context_t unw_ctx;
-    unw_cursor_t  unw_cursor;
-
-    unw_getcontext(&unw_ctx);
-
-    if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
-        Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind cursor" << endl;
-        return;
-    }
-
-    // skip n frames
-
-    size_t n = 0;
-
-    for (n = skip_frames; n > 0 && unw_step(&unw_cursor) > 0; --n)
-        ;
-
-    if (n > 0)
-        return;
-
-    while (n < MAX_PATH && unw_step(&unw_cursor) > 0) {
-
-#ifdef CALIPER_HAVE_LIBDW
-        // skip stack frames inside caliper
-        unw_word_t ip;
-        unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
-
-        Dwfl_Module* module=dwfl_addrmodule (dwfl, ip);
-
-        if (module == caliper_module)
-            continue;
-#endif
-
-        // store path from top to bottom
-        if (use_addr) {
-#ifndef CALIPER_HAVE_LIBDW
-            unw_word_t ip;
-            unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
-#endif
-            uint64_t uint = ip;
-            v_addr[MAX_PATH-(n+1)] = Variant(CALI_TYPE_ADDR, &uint, sizeof(uint64_t));
-        }
-        if (use_name) {
-            unw_word_t offs;
-
-            if (unw_get_proc_name(&unw_cursor, strbuf[n], NAMELEN, &offs) < 0)
-                strncpy(strbuf[n], "UNKNOWN", NAMELEN);
-
-            v_name[MAX_PATH-(n+1)] = Variant(CALI_TYPE_STRING, strbuf[n], strlen(strbuf[n]));
-        }
-
-        ++n;
-    }
-
-    if (n > 0) {
-        if (use_addr)
-            c->make_entrylist(callpath_addr_attr, n, v_addr+(MAX_PATH-n), *snapshot);
-        if (use_name)
-            c->make_entrylist(callpath_name_attr, n, v_name+(MAX_PATH-n), *snapshot);        
-    }
-}
-
-void initialize()
-{
-#ifdef CALIPER_HAVE_LIBDW
-    // initialize dwarf
-    char *debuginfo_path=nullptr;
-    Dwfl_Callbacks callbacks;
-    callbacks.find_elf = dwfl_linux_proc_find_elf;
-    callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
-    callbacks.debuginfo_path = &debuginfo_path;
-
-    dwfl=dwfl_begin(&callbacks);
-
-    dwfl_linux_proc_report(dwfl, getpid());
-    dwfl_report_end(dwfl, nullptr, nullptr);
-
-    // Init unwind context
-    unw_context_t unw_ctx;
-    unw_cursor_t  unw_cursor;
-
-    unw_getcontext(&unw_ctx);
-
-    if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
-        Log(0).stream() << "callpath::measure_cb: error: unable to init libunwind cursor" << endl;
-        return;
-    }
-
-    // Get current (caliper) module
-    unw_word_t ip;
-    unw_get_reg(&unw_cursor, UNW_REG_IP, &ip);
-
-    caliper_module = dwfl_addrmodule(dwfl, ip);
-#endif
-}
-
-void callpath_service_register(Caliper* c)
-{
-    config = RuntimeConfig::init("callpath", s_configdata);
-
-    use_name    = config.get("use_name").to_bool();
-    use_addr    = config.get("use_address").to_bool();
-    skip_frames = config.get("skip_frames").to_uint();
-
-    Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
-    Variant v_true(true);
-
-    callpath_addr_attr = 
-        c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
-                            CALI_ATTR_SKIP_EVENTS |
-                            CALI_ATTR_NOMERGE,
-                            1, &symbol_class_attr, &v_true);
-    callpath_name_attr = 
-        c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
-                            CALI_ATTR_SKIP_EVENTS | 
-                            CALI_ATTR_NOMERGE);
-
-    initialize();
-
-    c->events().snapshot.connect(&snapshot_cb);
-
-    Log(1).stream() << "Registered callpath service" << endl;
-}
-
-} // namespace 
+} // namespace [anonymous]
 
 
 namespace cali
 {
-    CaliperService callpath_service = { "callpath", ::callpath_service_register };
+
+CaliperService callpath_service = { "callpath", ::Callpath::callpath_service_register };
+
 } // namespace cali

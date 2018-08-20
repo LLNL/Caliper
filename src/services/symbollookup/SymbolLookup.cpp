@@ -312,7 +312,7 @@ class SymbolLookup
 
     // some final log output; print warning if we didn't find an address attribute
     void finish_log(Caliper* c, Experiment* exp) {
-        Log(1).stream() << exp->name()   << "Symbollookup: Performed " 
+        Log(1).stream() << exp->name()   << ": Symbollookup: Performed " 
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
