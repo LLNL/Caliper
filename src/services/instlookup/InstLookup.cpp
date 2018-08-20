@@ -69,16 +69,13 @@ namespace
 
 class InstLookup
 {
-    static std::unique_ptr<InstLookup> s_instance;
-    static const ConfigSet::Entry        s_configdata[];
+    static const ConfigSet::Entry s_configdata[];
 
     struct InstAttributes {
         Attribute op_attr;
         Attribute read_size_attr;
         Attribute write_size_attr;
     };
-
-    ConfigSet m_config;
 
     bool m_instruction_type;
 
@@ -248,8 +245,8 @@ class InstLookup
     }
 
     // some final log output; print warning if we didn't find an address attribute
-    void finish_log(Caliper* c) {
-        Log(1).stream() << "Instlookup: Performed " 
+    void finish_log(Caliper* c, Experiment* exp) {
+        Log(1).stream() << exp->name()   <<  ": Instlookup: Performed " 
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
@@ -287,45 +284,39 @@ class InstLookup
         m_inst_length = InstructionDecoder::maxInstructionLength;
     }
 
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        s_instance->check_attributes(c);
-        s_instance->init_lookup();
-    }
-
-    static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
-        s_instance->process_snapshot(c, snapshot);
-    }
-
-    static void finish_cb(Caliper* c) {
-        s_instance->finish_log(c);
-    }
-
-    void register_callbacks(Caliper* c) {
-        c->events().pre_flush_evt.connect(pre_flush_cb);
-        c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
-        c->events().finish_evt.connect(finish_cb);
-    }
-
-    InstLookup(Caliper* c)
-        : m_config(RuntimeConfig::init("instlookup", s_configdata)),
-          m_sts(nullptr)
+    InstLookup(Caliper* c, Experiment* exp)
+        : m_sts(nullptr)
         {
-            m_addr_attr_names  = m_config.get("attributes").to_stringlist(",:");
-            m_instruction_type = m_config.get("instruction_type").to_bool();
-
-            register_callbacks(c);
-
-            Log(1).stream() << "Registered instlookup service" << std::endl;
+            ConfigSet config =
+                exp->config().init("instlookup", s_configdata);
+            
+            m_addr_attr_names  = config.get("attributes").to_stringlist(",:");
+            m_instruction_type = config.get("instruction_type").to_bool();
         }
 
 public:
 
-    static void create(Caliper* c) {
-        s_instance.reset(new InstLookup(c));
+    static void instlookup_register(Caliper* c, Experiment* exp) {
+        InstLookup* instance = new InstLookup(c, exp);
+        
+        exp->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info){
+                instance->check_attributes(c);
+                instance->init_lookup();
+            });
+        exp->events().postprocess_snapshot.connect(
+            [instance](Caliper* c, Experiment* exp, SnapshotRecord* snapshot){
+                instance->process_snapshot(c, snapshot);
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper* c, Experiment* exp){
+                instance->finish_log(c, exp);
+                delete instance;
+            });
+        
+        Log(1).stream() << exp->name() << ": Registered instlookup service" << std::endl;
     }
 };
-
-std::unique_ptr<InstLookup> InstLookup::s_instance { nullptr };
 
 const ConfigSet::Entry InstLookup::s_configdata[] = {
     { "attributes", CALI_TYPE_STRING, "",
@@ -340,5 +331,7 @@ const ConfigSet::Entry InstLookup::s_configdata[] = {
 
 namespace cali
 {
-    CaliperService instlookup_service { "instlookup", &(::InstLookup::create) };
+
+CaliperService instlookup_service { "instlookup", ::InstLookup::instlookup_register };
+
 }

@@ -2,7 +2,7 @@
 
 import unittest
 
-import calipertest as calitest
+import calipertest as cat
 
 class CaliperSamplerTest(unittest.TestCase):
     """ Caliper sampler test case """
@@ -19,12 +19,12 @@ class CaliperSamplerTest(unittest.TestCase):
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
-        query_output = calitest.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = calitest.get_snapshots_from_text(query_output)
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(len(snapshots) > 1)
 
-        self.assertTrue(calitest.has_snapshot_with_keys(
+        self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'cali.sampler.pc', 
                          'source.function#cali.sampler.pc', 
                          'source.file#cali.sampler.pc',
@@ -32,9 +32,8 @@ class CaliperSamplerTest(unittest.TestCase):
                          'sourceloc#cali.sampler.pc',
                          'function' }))
 
-        sfile = calitest.get_snapshot_with_keys(snapshots, { 'source.file#cali.sampler.pc' })
-
-        self.assertTrue('ci_dgemm_memtrack' in sfile.get('source.file#cali.sampler.pc'))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'source.function#cali.sampler.pc' : 'ci_dgemm_do_work' }))
 
 if __name__ == "__main__":
     unittest.main()

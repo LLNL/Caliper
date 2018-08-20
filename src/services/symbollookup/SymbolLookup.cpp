@@ -64,8 +64,7 @@ namespace
 
 class SymbolLookup
 {
-    static std::unique_ptr<SymbolLookup> s_instance;
-    static const ConfigSet::Entry        s_configdata[];
+    static const ConfigSet::Entry s_configdata[];
 
     struct SymbolAttributes {
         Attribute file_attr;
@@ -312,8 +311,8 @@ class SymbolLookup
     }
 
     // some final log output; print warning if we didn't find an address attribute
-    void finish_log(Caliper* c) {
-        Log(1).stream() << "Symbollookup: Performed " 
+    void finish_log(Caliper* c, Experiment* exp) {
+        Log(1).stream() << exp->name()   << "Symbollookup: Performed " 
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
@@ -334,50 +333,44 @@ class SymbolLookup
         }
     }
 
-    static void pre_flush_cb(Caliper* c, const SnapshotRecord*) {
-        s_instance->check_attributes(c);
-        s_instance->init_lookup();
-    }
-
-    static void postprocess_snapshot_cb(Caliper* c, SnapshotRecord* snapshot) {
-        s_instance->process_snapshot(c, snapshot);
-    }
-
-    static void finish_cb(Caliper* c) {
-        s_instance->finish_log(c);
-    }
-
-    void register_callbacks(Caliper* c) {
-        c->events().pre_flush_evt.connect(pre_flush_cb);
-        c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
-        c->events().finish_evt.connect(finish_cb);
-    }
-
-    SymbolLookup(Caliper* c)
-        : m_config(RuntimeConfig::init("symbollookup", s_configdata)),
-          m_lookup(0)
+    SymbolLookup(Caliper* c, Experiment* exp)
+        : m_lookup(0)
         {
-            m_addr_attr_names  = m_config.get("attributes").to_stringlist(",:");
+            ConfigSet config =
+                exp->config().init("symbollookup", s_configdata);
+            
+            m_addr_attr_names  = config.get("attributes").to_stringlist(",:");
 
-            m_lookup_functions = m_config.get("lookup_functions").to_bool();
-            m_lookup_sourceloc = m_config.get("lookup_sourceloc").to_bool();
-            m_lookup_file      = m_config.get("lookup_file").to_bool();
-            m_lookup_line      = m_config.get("lookup_line").to_bool();
-            m_lookup_mod       = m_config.get("lookup_module").to_bool();
-
-            register_callbacks(c);
-
-            Log(1).stream() << "Registered symbollookup service" << std::endl;
+            m_lookup_functions = config.get("lookup_functions").to_bool();
+            m_lookup_sourceloc = config.get("lookup_sourceloc").to_bool();
+            m_lookup_file      = config.get("lookup_file").to_bool();
+            m_lookup_line      = config.get("lookup_line").to_bool();
+            m_lookup_mod       = config.get("lookup_module").to_bool();
         }
 
 public:
 
-    static void create(Caliper* c) {
-        s_instance.reset(new SymbolLookup(c));
+    static void symbollookup_register(Caliper* c, Experiment* exp) {
+        SymbolLookup* instance = new SymbolLookup(c, exp);
+
+        exp->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info){
+                instance->check_attributes(c);
+                instance->init_lookup();
+            });
+        exp->events().postprocess_snapshot.connect(
+            [instance](Caliper* c, Experiment* exp, SnapshotRecord* snapshot){
+                instance->process_snapshot(c, snapshot);
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper* c, Experiment* exp){
+                instance->finish_log(c, exp);
+                delete instance;
+            });
+
+        Log(1).stream() << exp->name() << ": Registered symbollookup service" << std::endl;
     }
 };
-
-std::unique_ptr<SymbolLookup> SymbolLookup::s_instance { nullptr };
 
 const ConfigSet::Entry SymbolLookup::s_configdata[] = {
     { "attributes", CALI_TYPE_STRING, "",
@@ -407,10 +400,12 @@ const ConfigSet::Entry SymbolLookup::s_configdata[] = {
     ConfigSet::Terminator
 };
     
-} // namespace
+} // namespace [anonymous]
 
 
 namespace cali
 {
-    CaliperService symbollookup_service { "symbollookup", &(::SymbolLookup::create) };
+
+CaliperService symbollookup_service { "symbollookup", ::SymbolLookup::symbollookup_register };
+
 }
