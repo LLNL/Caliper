@@ -38,6 +38,9 @@
 
 #include <gotcha/gotcha.h>
 
+#include <algorithm>
+#include <vector>
+
 using namespace cali;
 
 namespace
@@ -69,6 +72,8 @@ struct gotcha_binding_t alloc_bindings[] = {
     { free_str,     (void*) cali_free_wrapper,      &orig_free_handle    }
 };
 
+std::vector<Experiment*> sysalloc_experiments;
+
 void* cali_malloc_wrapper(size_t size)
 {
     decltype(&malloc) orig_malloc =
@@ -79,7 +84,8 @@ void* cali_malloc_wrapper(size_t size)
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        c.memory_region_begin(ret, "malloc", 1, 1, &size);
+        for (Experiment* exp : sysalloc_experiments)
+            c.memory_region_begin(exp, ret, "malloc", 1, 1, &size);
 
     return ret;
 }
@@ -94,7 +100,8 @@ void* cali_calloc_wrapper(size_t num, size_t size)
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        c.memory_region_begin(ret, "calloc", size, 1, &num);
+        for (Experiment* exp : sysalloc_experiments)
+            c.memory_region_begin(exp, ret, "calloc", size, 1, &num);
 
     return ret;
 }
@@ -108,10 +115,11 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
 
     Caliper c = Caliper::sigsafe_instance();
 
-    if (c) {
-        c.memory_region_end(ptr);
-        c.memory_region_begin(ret, "realloc", 1, 1, &size);
-    }
+    if (c)
+        for (Experiment* exp : sysalloc_experiments) {
+            c.memory_region_end(exp, ptr);
+            c.memory_region_begin(exp, ret, "realloc", 1, 1, &size);
+        }
 
     return ret;
 }
@@ -126,11 +134,12 @@ void cali_free_wrapper(void *ptr)
     Caliper c = Caliper::sigsafe_instance();
 
     if (c)
-        c.memory_region_end(ptr);
+        for (Experiment* exp : sysalloc_experiments)
+            c.memory_region_end(exp, ptr);
 }
 
 
-void init_alloc_hooks(Caliper*) {
+void init_alloc_hooks() {
     Log(1).stream() << "sysalloc: Initializing system alloc hooks" << std::endl;
 
     gotcha_wrap(alloc_bindings,
@@ -140,7 +149,7 @@ void init_alloc_hooks(Caliper*) {
     bindings_are_active = true;
 }
 
-void clear_alloc_hooks(Caliper*)
+void clear_alloc_hooks()
 {
     if (!bindings_are_active)
         return;
@@ -163,9 +172,27 @@ void clear_alloc_hooks(Caliper*)
     bindings_are_active = false;
 }
 
-void sysalloc_initialize(Caliper* c) {
-    c->events().post_init_evt.connect(init_alloc_hooks);
-    c->events().finish_evt.connect(clear_alloc_hooks);
+void sysalloc_initialize(Caliper* c, Experiment* exp) {
+    exp->events().post_init_evt.connect(
+        [](Caliper* c, Experiment* exp){
+            if (!bindings_are_active)
+                init_alloc_hooks();
+            
+            sysalloc_experiments.push_back(exp);
+        });
+    
+    exp->events().finish_evt.connect(
+        [](Caliper* c, Experiment* exp){
+            sysalloc_experiments.erase(
+                std::find(sysalloc_experiments.begin(), sysalloc_experiments.end(),
+                          exp));
+
+            // FIXME: This crashes currently
+            // if (sysalloc_experiments.empty())
+            //     clear_alloc_hooks();
+        });
+
+    Log(1).stream() << exp->name() << ": Registered sysalloc service" << std::endl;
 }
 
 } // namespace [anonymous]

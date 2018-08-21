@@ -133,6 +133,10 @@ struct Experiment::ExperimentImpl
             {
                 exp_blackboards.resize(std::max(static_cast<size_t>(16), min_num_entries));
             }
+
+        ~ThreadData()
+            {
+            }
     };
 
     static thread_local std::unique_ptr<ThreadData> sT;
@@ -285,6 +289,11 @@ struct Caliper::ThreadData
 {
     MetadataTree                  tree;
     ::siglock                     lock;
+
+    ~ThreadData() {
+        if (Log::verbosity() >= 2)
+            tree.print_statistics( Log(2).stream() << "Releasing Caliper thread data: \n" ) << std::endl;
+    }
 };
 
 
@@ -1378,10 +1387,10 @@ Caliper::instance()
     }
 
     if (!sT) {
-        sT.reset(new ThreadData);
-        
         if (!expI::sT)
             expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
+
+        sT.reset(new ThreadData);
     }
     
     return Caliper(false);
@@ -1404,7 +1413,9 @@ Caliper::sigsafe_instance()
 
 Caliper::operator bool() const
 {
-    return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
+    using expI = Experiment::ExperimentImpl;
+    
+    return (sG && sT && expI::sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
