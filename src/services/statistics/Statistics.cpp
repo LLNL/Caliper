@@ -42,66 +42,100 @@
 #include <atomic>
 
 using namespace cali;
-using namespace std;
 
 namespace
 {
 
-atomic<unsigned> num_attributes;
-atomic<unsigned> num_snapshots;
-atomic<unsigned> num_updates;
-atomic<unsigned> num_scopes;
-
-void create_attr_cb(Caliper*, const Attribute&)
+class Statistics
 {
-    ++num_attributes;
-}
+    std::atomic<unsigned> num_snapshots;
 
-void update_cb(Caliper*, const Attribute&,const Variant&)
-{
-    ++num_updates;
-}
+    std::atomic<unsigned> num_begin;
+    std::atomic<unsigned> num_end;
+    std::atomic<unsigned> num_set;
 
-void create_scope_cb(Caliper*, cali_context_scope_t)
-{
-    ++num_scopes;
-}
+    unsigned num_threads;
+    unsigned max_threads;
 
-void snapshot_cb(Caliper*, int, const SnapshotRecord*, SnapshotRecord*)
-{
-    ++num_snapshots;
-}
+    void finish_cb(Caliper* c, Experiment* exp) {
+        Log(1).stream() << exp->name() << ": statistics:"
+                        << "\n  Number of begin events: " << num_begin.load()
+                        << "\n  Number of end events:   " << num_end.load()
+                        << "\n  Number of set events:   " << num_set.load()
+                        << "\n  Number of snapshots:    " << num_snapshots.load()
+                        << std::endl;
 
-void finish_cb(Caliper* c)
-{
-    Log(1).stream() << "Statistics:"
-                    << "\n     Number of additional scopes  : " << num_scopes.load() 
-                    << "\n     Number of user attributes:     " << num_attributes.load()
-                    << "\n     Number of context updates:     " << num_updates.load()
-                    << "\n     Number of context snapshots:   " << num_snapshots.load() << endl;
-}
+        if (exp->id() == 0) { 
+            // only print this for the default experiment
 
-void statistics_service_register(Caliper* c)
-{
-    num_attributes = 0;
-    num_snapshots  = 0;
-    num_updates    = 0;
-    num_scopes     = 0;
+            auto vec = c->get_attributes();
+            
+            Log(1).stream() << "Global statistics:"
+                            << "\n  Number of attributes:   " << vec.size()
+                            << "\n  Number of threads:      " << num_threads
+                            << " (max " << max_threads << ")" << std::endl;
+        }
+    }
 
-    c->events().create_attr_evt.connect(&create_attr_cb);
-    c->events().pre_begin_evt.connect(&update_cb);
-    c->events().pre_end_evt.connect(&update_cb);
-    c->events().pre_set_evt.connect(&update_cb);
-    c->events().finish_evt.connect(&finish_cb);
-    c->events().create_scope_evt.connect(&create_scope_cb);
-    c->events().snapshot.connect(&snapshot_cb);
+    Statistics()
+        : num_snapshots(0),
+          num_begin(0),
+          num_end(0),
+          num_set(0),
+          num_threads(1),
+          max_threads(1)
+        { }
 
-    Log(1).stream() << "Registered debug service" << endl;
-}
+public:
     
+    static void statistics_service_register(Caliper* c, Experiment* exp) {
+        Statistics* instance = new Statistics;
+        
+        exp->events().pre_begin_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+                ++instance->num_begin;
+            });
+        exp->events().pre_end_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+                ++instance->num_end;
+            });
+        exp->events().pre_set_evt.connect(
+            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+                ++instance->num_set;
+            });
+        exp->events().snapshot.connect(
+            [instance](Caliper*,Experiment*,int,const SnapshotRecord*,SnapshotRecord*){
+                ++instance->num_snapshots;
+            });
+
+        if (exp->id() == 0) {
+            exp->events().create_thread_evt.connect(
+                [instance](Caliper* c, Experiment* exp){
+                    ++instance->num_threads;
+                    instance->max_threads =
+                        std::max(instance->num_threads, instance->max_threads);
+                });
+            exp->events().release_thread_evt.connect(
+                [instance](Caliper* c, Experiment* exp){
+                    --instance->num_threads;
+                });
+        }
+        
+        exp->events().finish_evt.connect(
+            [instance](Caliper* c, Experiment* exp){
+                instance->finish_cb(c, exp);
+                delete instance;
+            });
+
+        Log(1).stream() << exp->name() << ": Registered statistics service" << std::endl;
+    }
+};
+
 } // namespace
 
 namespace cali
 {
-    CaliperService statistics_service = { "statistics", ::statistics_service_register };
+
+CaliperService statistics_service = { "statistics", ::Statistics::statistics_service_register };
+
 }
