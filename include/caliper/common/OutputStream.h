@@ -63,6 +63,10 @@ public:
         File
     };
 
+    /// \brief Returns \a true if the stream is initialized, otherwise
+    ///   returns \a false
+    operator bool() const; 
+
     StreamType    type() const;
 
     /// \brief Return a C++ ostream. Opens/creates the underlying file stream
