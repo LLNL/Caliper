@@ -6,15 +6,15 @@ module Caliper
   
   ! cali_attr_type
   integer(kind=C_INT), parameter ::  &
-       CALI_TYPE_INV           = -1, &
-       CALI_TYPE_USR           =  0, &
-       CALI_TYPE_INT           =  1, &
-       CALI_TYPE_UINT          =  2, &
-       CALI_TYPE_STRING        =  3, &
-       CALI_TYPE_ADDR          =  4, &
-       CALI_TYPE_DOUBLE        =  5, &
-       CALI_TYPE_BOOL          =  6, &
-       CALI_TYPE_TYPE          =  7
+       CALI_TYPE_INV           =  0, &
+       CALI_TYPE_USR           =  1, &
+       CALI_TYPE_INT           =  2, &
+       CALI_TYPE_UINT          =  3, &
+       CALI_TYPE_STRING        =  4, &
+       CALI_TYPE_ADDR          =  5, &
+       CALI_TYPE_DOUBLE        =  6, &
+       CALI_TYPE_BOOL          =  7, &
+       CALI_TYPE_TYPE          =  8
 
   ! cali_attr_properties
   integer(kind=C_INT), parameter ::  &
