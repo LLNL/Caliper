@@ -202,10 +202,7 @@ class SymbolLookup
             tmp_s[filename.size()] = '\0';
 
             attr.push_back(sym_attr.loc_attr);
-            attr.push_back(sym_attr.line_attr);
-
             data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
-            data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
         }
 
         if (m_lookup_file) {
