@@ -84,6 +84,10 @@ public:
     size_t num_dropped() const;
     size_t num_skipped_keys() const;
     size_t max_keylen() const;
+    size_t num_trie_blocks() const;
+    size_t num_kernel_blocks() const;
+    size_t bytes_reserved() const;
+
 };
 
 } // namespace aggregate

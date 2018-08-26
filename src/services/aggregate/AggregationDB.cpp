@@ -108,9 +108,9 @@ public:
     void clear() {
         for (size_t b = 0; b < MAX_BLOCKS; ++b)
             delete[] m_blocks[b];
-            
+
         std::fill_n(m_blocks, MAX_BLOCKS, nullptr);
-            
+
         m_num_blocks = 0;
     }
 
@@ -136,7 +136,7 @@ struct AggregationDB::AggregationDBImpl
     BlockAlloc<AggregateKernel> m_kernels;
 
     Node                        m_aggr_root_node;
-    
+
     // we maintain some internal statistics
     size_t                      m_num_trie_entries;
     size_t                      m_num_kernel_entries;
@@ -147,7 +147,7 @@ struct AggregationDB::AggregationDBImpl
     //
     // --- functions
     //
-    
+
     TrieNode* find_entry(size_t n, unsigned char* key, size_t num_ids, bool alloc) {
         TrieNode* entry = m_trie.get(0, alloc);
 
@@ -161,7 +161,7 @@ struct AggregationDB::AggregationDBImpl
 
             entry = m_trie.get(id, alloc);
         }
-        
+
         if (entry && entry->k_id == 0xFFFFFFFF) {
             if (num_ids > 0) {
                 uint32_t first_id = static_cast<uint32_t>(m_num_kernel_entries + 1);
@@ -189,7 +189,7 @@ struct AggregationDB::AggregationDBImpl
 
         uint64_t  toc = vldec_u64(key+p, &p); // first entry is 2*num_nodes + (1 : w/ immediate, 0 : w/o immediate)
         int       num_nodes = static_cast<int>(toc)/2;
-        
+
         for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
             snapshot.append(c->node(vldec_u64(key + p, &p)));
 
@@ -279,6 +279,9 @@ struct AggregationDB::AggregationDBImpl
         m_num_dropped        = 0;
         m_num_skipped_keys   = 0;
         m_max_keylen         = 0;
+
+        m_trie.get(0, true); // allocate the first block
+        m_kernels.get(0, true);
     }
 
     void process_snapshot(const AggregateAttributeInfo& info, Caliper* c, const SnapshotRecord* snapshot) {
@@ -292,7 +295,7 @@ struct AggregationDB::AggregationDBImpl
         //
         // --- create / get context tree nodes for key
         //
-        
+
         cali_id_t   key_node   = CALI_INV_ID;
         cali_id_t*  nodeid_vec = &key_node;
         uint64_t    n_nodes    = 0;
@@ -304,15 +307,15 @@ struct AggregationDB::AggregationDBImpl
         for (size_t i = 0; i < info.key_attribute_ids.size(); ++i)
             if (info.key_attribute_ids[i] != CALI_INV_ID)
                 key_attribute_ids[n_key_attr++] = info.key_attribute_ids[i];
-            
+
         if (n_key_attr > 0 && sizes.n_nodes > 0) {
             // --- find out number of key node entries
-            
+
             size_t       key_entries = 0;
             const Node* *start_nodes = static_cast<const Node**>(alloca(sizes.n_nodes * sizeof(const Node*)));
 
             memset(start_nodes, 0, sizes.n_nodes * sizeof(const Node*));
-            
+
             for (size_t i = 0; i < sizes.n_nodes; ++i)
                 for (const Node* node = addr.node_entries[i]; node; node = node->parent())
                     for (size_t a = 0; a < n_key_attr; ++a)
@@ -320,13 +323,13 @@ struct AggregationDB::AggregationDBImpl
                             ++key_entries;
 
                             // Save the snapshot nodes that lead to key nodes
-                            // to short-cut the subsequent loop a bit 
+                            // to short-cut the subsequent loop a bit
                             if (!start_nodes[i])
                                 start_nodes[i] = node;
                         }
 
             // FIXME: Strictly, we need to partition between nested/nonnested attribute nodes here
-            //   and order nonnested ones by attribute ID, as nodes of different attributes 
+            //   and order nonnested ones by attribute ID, as nodes of different attributes
             //   can appear in any order in the context tree.
 
             // --- construct path of key nodes in reverse order, make/find new entry
@@ -336,13 +339,13 @@ struct AggregationDB::AggregationDBImpl
                 size_t       filled   = 0;
 
                 memset(nodelist, 0, key_entries * sizeof(const Node*));
-                
+
                 for (size_t i = 0; i < sizes.n_nodes; ++i)
                     for (const Node* node = start_nodes[i]; node; node = node->parent())
                         for (size_t a = 0; a < n_key_attr; ++a)
                             if (key_attribute_ids[a] == node->attribute())
                                 nodelist[key_entries - ++filled] = node;
-                
+
                 const Node* node = c->make_tree_entry(key_entries, nodelist, &m_aggr_root_node);
 
                 if (node)
@@ -351,18 +354,18 @@ struct AggregationDB::AggregationDBImpl
                     Log(0).stream() << "aggregate: can't create node" << std::endl;
             }
         } else if (info.key_attribute_ids.size() == 0) {
-            // --- no key attributes set: take nodes in snapshot   
+            // --- no key attributes set: take nodes in snapshot
 
             nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
             n_nodes    = sizes.n_nodes;
-            
+
             for (size_t i = 0; i < sizes.n_nodes; ++i)
                 nodeid_vec[i] = addr.node_entries[i]->id();
 
             // --- sort to make unique keys
             std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
-        }        
-        
+        }
+
         //
         // --- encode key
         //
@@ -371,7 +374,7 @@ struct AggregationDB::AggregationDBImpl
         //    - 1 u64: "toc" = 2 * num_nodes + (1 if immediate entries | 0 if no immediate entries)
         //    - num_nodes u64: key node ids
         //    - 1 u64: bitfield of indices in info.key_attributes that mark immediate key entries
-        //    - for each immediate entry, 1 u64 entry for the value 
+        //    - for each immediate entry, 1 u64 entry for the value
 
         // encode node key
 
@@ -395,14 +398,14 @@ struct AggregationDB::AggregationDBImpl
         size_t          imm_key_len = 0;
         uint64_t        imm_key_bitfield = 0;
 
-        for (size_t k = 0; k < info.key_attribute_ids.size(); ++k) 
+        for (size_t k = 0; k < info.key_attribute_ids.size(); ++k)
             for (size_t i = 0; i < sizes.n_immediate; ++i)
                 if (info.key_attribute_ids[k] == addr.immediate_attr[i]) {
                     unsigned char buf[10];
                     size_t        p = 0;
 
                     p += vlenc_u64(*static_cast<const uint64_t*>(addr.immediate_data[i].data()), imm_key + imm_key_len);
-                    
+
                     // check size and discard entry if it won't fit :(
                     if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN) {
                         ++m_num_skipped_keys;
@@ -471,7 +474,7 @@ struct AggregationDB::AggregationDBImpl
           m_max_keylen(0)
         {
             Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
-            
+
             // initialize first block
             m_trie.get(0, true);
             m_kernels.get(0, true);
@@ -537,4 +540,23 @@ size_t
 AggregationDB::max_keylen() const
 {
     return mP->m_max_keylen;
+}
+
+size_t
+AggregationDB::num_trie_blocks() const
+{
+    return mP->m_trie.num_blocks();
+}
+
+size_t
+AggregationDB::num_kernel_blocks() const
+{
+    return mP->m_kernels.num_blocks();
+}
+
+size_t
+AggregationDB::bytes_reserved() const
+{
+    return num_trie_blocks() * 1024 * sizeof(TrieNode) +
+        num_kernel_blocks() * 1024 * sizeof(AggregateKernel);
 }

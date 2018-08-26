@@ -137,6 +137,8 @@ class Aggregate
                 tdb->next     = agg->tdb_list;
                 agg->tdb_list = tdb;
             }
+
+            return tdb;
         }
     };
     
@@ -151,15 +153,8 @@ class Aggregate
 
     AggregateAttributeInfo         aI;
     std::vector<std::string>       key_attribute_names;
-    
-    size_t num_trie_entries;
-    size_t num_kernel_entries;
-    size_t num_trie_blocks;
-    size_t num_kernel_blocks;
-    size_t num_dropped;
-    size_t num_skipped_keys;
-    size_t max_keylen;
-    
+
+    size_t                         num_dropped_snapshots;
 
     void init_aggregation_attributes(Caliper* c) {
         std::vector<std::string> aggr_attr_names =
@@ -240,24 +235,14 @@ class Aggregate
 
         for ( ; tdb; tdb = tdb->next) {
             tdb->stopped.store(true);
-            
-            num_written        += tdb->db.flush(aI, c, proc_fn);
-
-            num_trie_entries   += tdb->db.num_trie_entries();
-            num_kernel_entries += tdb->db.num_kernel_entries();
-//            num_trie_blocks    += db->m_trie.num_blocks();
-//            num_kernel_blocks  += db->m_kernels.num_blocks();
-            num_skipped_keys   += tdb->db.num_skipped_keys();
-            num_dropped        += tdb->db.num_dropped();
-            max_keylen          = std::max(max_keylen, tdb->db.max_keylen());
-
+            num_written += tdb->db.flush(aI, c, proc_fn);
             tdb->stopped.store(false);
         }
 
         Log(1).stream() << exp->name() << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
-    void clear_cb(Caliper* c) {
+    void clear_cb(Caliper* c, Experiment* exp) {
         ThreadDB* tdb = nullptr;
 
         {
@@ -267,9 +252,29 @@ class Aggregate
             tdb = tdb_list;
         }
 
+        size_t num_trie_entries    = 0;
+        size_t num_kernel_entries  = 0;
+        size_t num_trie_blocks     = 0;
+        size_t num_kernel_blocks   = 0;
+        size_t bytes_reserved      = 0;
+        size_t num_skipped_keys    = 0;
+        size_t num_dropped_entries = 0;
+        size_t max_keylen          = 0;
+
         while (tdb) {
             tdb->stopped.store(true);
+
+            num_trie_entries    += tdb->db.num_trie_entries();
+            num_kernel_entries  += tdb->db.num_kernel_entries();
+            num_trie_blocks     += tdb->db.num_trie_blocks();
+            num_kernel_blocks   += tdb->db.num_kernel_blocks();
+            bytes_reserved      += tdb->db.bytes_reserved();
+            num_skipped_keys    += tdb->db.num_skipped_keys();
+            num_dropped_entries += tdb->db.num_dropped();
+            max_keylen           = std::max(max_keylen, tdb->db.max_keylen());
+
             tdb->db.clear();
+
             tdb->stopped.store(false);
 
             if (tdb->retired) {
@@ -290,7 +295,29 @@ class Aggregate
             } else {
                 tdb = tdb->next;
             }
-        }        
+        }
+
+        if (Log::verbosity() >= 2) {
+            unitfmt_result bytes_reserved_fmt = 
+                unitfmt(bytes_reserved, unitfmt_bytes);
+
+            Log(2).stream() << exp->name() << ": Aggregate: Releasing aggregation DB:\n    max key len " 
+                            << max_keylen << ", "
+                            << num_kernel_entries << " entries, "
+                            << num_trie_entries << " nodes, "
+                            << num_trie_blocks + num_kernel_blocks << " blocks ("
+                            << bytes_reserved_fmt.val << " " << bytes_reserved_fmt.symbol << " reserved)"
+                            << std::endl;
+        }
+
+        if (num_skipped_keys > 0)
+            Log(1).stream() << exp->name() << "Aggregate: Dropped " << num_skipped_keys
+                            << " entries because key exceeded max length!" 
+                            << std::endl;
+        if (num_dropped_entries > 0)
+            Log(1).stream() << exp->name() << "Aggregate: Dropped " << num_dropped_entries
+                            << " entries because key could not be allocated!" 
+                            << std::endl;
     }
 
     void process_snapshot_cb(Caliper* c, Experiment* exp, const SnapshotRecord*, const SnapshotRecord* snapshot) {
@@ -299,7 +326,7 @@ class Aggregate
         if (tdb && !tdb->stopped.load())
             tdb->db.process_snapshot(aI, c, snapshot);
         else
-            ++num_dropped;
+            ++num_dropped_snapshots;
     }
 
     void post_init_cb(Caliper* c, Experiment* exp) {
@@ -355,19 +382,6 @@ class Aggregate
     }
 
     void finish_cb(Caliper* c, Experiment* exp) {
-        if (Log::verbosity() >= 2) {
-            // unitfmt_result bytes_reserved = 
-            //     unitfmt(num_trie_blocks * sizeof(TrieNode) * 1024
-            //             + num_kernel_blocks * sizeof(AggregateKernel) * 1024, unitfmt_bytes);
-
-            // Log(2).stream() << exp->name() << ": Aggregate: max key len " << max_keylen << ", "
-            //                 << num_kernel_entries << " entries, "
-            //                 << num_trie_entries << " nodes, "
-            //                 << num_trie_blocks + num_kernel_blocks << " blocks ("
-            //                 << bytes_reserved.val << " " << bytes_reserved.symbol << " reserved)"
-            //                 << std::endl;
-        }
-
         // report attribute keys we haven't found 
         for (size_t i = 0; i < aI.key_attribute_ids.size(); ++i)
             if (aI.key_attribute_ids[i] == CALI_INV_ID)
@@ -375,15 +389,9 @@ class Aggregate
                                 << key_attribute_names[i]
                                 << "\" unused" << std::endl;
 
-        if (num_dropped > 0)
-            Log(1).stream() << exp->name() << ": Aggregate: dropped " << num_dropped
+        if (num_dropped_snapshots > 0)
+            Log(1).stream() << exp->name() << ": Aggregate: dropped " << num_dropped_snapshots
                             << " snapshots." << std::endl;
-        if (num_skipped_keys > 0)
-            Log(0).stream() << exp->name() << ": Aggregate: warning: maximum key length exceeded " 
-                            << num_skipped_keys
-                            << (num_skipped_keys == 1 ? " time!" : " times!")
-                            << " Some key attributes could not be preserved."
-                            << " Reduce number of aggregation key entries." << std::endl;
     }
 
     Aggregate(Caliper* c, Experiment* exp)
@@ -440,11 +448,12 @@ public:
                 instance->flush_cb(c, exp, info, proc_fn);
             });
         exp->events().clear_evt.connect(
-            [instance](Caliper* c, Experiment*){
-                instance->clear_cb(c);
+            [instance](Caliper* c, Experiment* exp){
+                instance->clear_cb(c, exp);
             });
         exp->events().finish_evt.connect(
             [instance](Caliper* c, Experiment* exp){
+                instance->clear_cb(c, exp); // prints logs
                 instance->finish_cb(c, exp);
                 delete instance;
             });
