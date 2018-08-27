@@ -561,6 +561,22 @@ cali_config_allow_read_env(int allow)
     RuntimeConfig::get_default_config().allow_read_env(allow != 0);
 }
 
+cali_id_t
+cali_experiment_create_from_profile(const char* name, int allow_read_env, const char* keyvallist[][2])
+{
+    RuntimeConfig cfg;
+
+    cfg.define_profile(name, keyvallist);
+    cfg.set("CALI_CONFIG_PROFILE", name);
+    cfg.allow_read_env(allow_read_env != 0);
+    
+    Experiment* exp =
+        Caliper::instance().create_experiment(name, cfg);
+
+    return exp ? exp->id() : CALI_INV_ID;
+}
+
+
 void
 cali_flush(int flush_opts)
 {

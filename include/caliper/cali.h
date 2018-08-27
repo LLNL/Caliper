@@ -489,11 +489,27 @@ cali_config_define_profile(const char* name, const char* keyvallist[][2]);
   
 void
 cali_config_allow_read_env(int allow);
-
+    
 /**
  * \}
  */
 
+/*
+ * --- Experiment management
+ */
+
+/**
+ * \name Experiment management
+ * \{
+ */
+
+cali_id_t
+cali_experiment_create_from_profile(const char* name, int allow_read_env, const char* keyvallist[][2]);
+    
+/**
+ * \}
+ */
+    
 /*
  * --- Runtime system management
  */

@@ -132,8 +132,12 @@ namespace
           "Execute a query in CalQL format",
           "QUERY STRING"
         },
-        { "profile", "profile", 'p', false,
-          "Show progress and cali-query performance summary",
+        { "profile", "print-performance-profile", 0, false,
+          "Show performance summary at the end",
+          nullptr
+        },
+        { "progress", "print-progress", 'p', false,
+          "Show progress when processing multiple input files",
           nullptr
         },
         { "caliper-config", "caliper-config", 0, true,
@@ -203,34 +207,39 @@ namespace
 
 void setup_caliper_config(const Args& args)
 {
-    const char* progressmonitor_profile[][2] = {
-        { "CALI_SERVICES_ENABLE", "event:report:textlog:trace:timestamp" },
-        { "CALI_EVENT_TRIGGER",   "annotation:cali-query.stream"         },
-        { "CALI_TEXTLOG_TRIGGER", "cali-query.stream" },
-
+    const char* progressmonitor_config[][2] = {
+        { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
+        { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
+        { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
+        { "CALI_TEXTLOG_FILENAME", "stderr"            },
         { "CALI_TEXTLOG_FORMATSTRING",
           "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" },
 
+        { NULL, NULL }
+    };
+
+    const char* runtimeprofile_config[][2] = {
+        { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+        { "CALI_EVENT_TRIGGER",   "annotation" },
+        { "CALI_REPORT_FILENAME", "stderr" },
         { "CALI_REPORT_CONFIG",
-          "SELECT annotation,time.inclusive.duration WHERE event.end#annotation FORMAT table" },
+          "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" },
 
         { NULL, NULL }
     };
+
+    //   Configure the default config, which can be provided by the user through
+    // the "cali-query_caliper.config" file or the "caliper-config" command line arg
     
     cali_config_preset("CALI_LOG_VERBOSITY", "0");
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
 
     cali_config_allow_read_env(false);
-
-    cali_config_define_profile("caliquery-progressmonitor", progressmonitor_profile);
-
     cali_config_set("CALI_CONFIG_FILE", "cali-query_caliper.config");
     
     if (args.is_set("verbose"))
         cali_config_preset("CALI_LOG_VERBOSITY", "1");
-    if (args.is_set("profile"))
-        cali_config_set("CALI_CONFIG_PROFILE", "caliquery-progressmonitor");
-
+    
     std::vector<std::string> config_list = 
         StringConverter(args.get("caliper-config")).to_stringlist();
 
@@ -245,6 +254,14 @@ void setup_caliper_config(const Args& args)
 
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
+
+    //   Now create cali-query's pre-defined experiments.
+    // Do this last as this will initialize Caliper.
+
+    if (args.is_set("profile"))
+        cali_experiment_create_from_profile("profile",  0, runtimeprofile_config);
+    if (args.is_set("progress"))
+        cali_experiment_create_from_profile("progress", 0, progressmonitor_config);
 }
 
 
