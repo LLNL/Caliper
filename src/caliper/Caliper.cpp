@@ -117,6 +117,18 @@ print_available_services(std::ostream& os)
 
 } // namespace
 
+//
+//   Caliper experiment thread data. 
+// Managed by the Caliper object.
+
+struct Experiment::ThreadData {
+    std::vector<ContextBuffer> blackboards;
+
+    ThreadData(size_t min_num_entries)
+        {
+            blackboards.resize(std::max<size_t>(16, min_num_entries));
+        }
+};
 
 //
 // Caliper experiment data
@@ -125,21 +137,6 @@ print_available_services(std::ostream& os)
 struct Experiment::ExperimentImpl
 {
     static const ConfigSet::Entry   s_configdata[];
-
-    struct ThreadData {
-        std::vector<ContextBuffer>  exp_blackboards;
-
-        ThreadData(size_t min_num_entries)
-            {
-                exp_blackboards.resize(std::max(static_cast<size_t>(16), min_num_entries));
-            }
-
-        ~ThreadData()
-            {
-            }
-    };
-
-    static thread_local std::unique_ptr<ThreadData> sT;
 
     std::string                     name;
     bool                            active;
@@ -168,7 +165,7 @@ struct Experiment::ExperimentImpl
         {
             if (Log::verbosity() >= 2) {
                 blackboard.print_statistics(
-                    Log(2).stream() << "Releasing experiment " << name << ":\n  ")
+                    Log(2).stream() << "Releasing experiment " << name << ":\n    ")
                     << std::endl;
             }
         }
@@ -181,43 +178,43 @@ struct Experiment::ExperimentImpl
         return key_attr;
     }
 
-    ContextBuffer*
-    get_blackboard(const Experiment* exp, const Attribute& attr) {        
+    static ContextBuffer*
+    get_blackboard(Experiment& exp, ThreadData& expT, const Attribute& attr) {        
         switch (attr.properties() & CALI_ATTR_SCOPE_MASK)
         {
         case CALI_ATTR_SCOPE_THREAD:
         case CALI_ATTR_SCOPE_TASK:
         {
-            cali_id_t exp_id = exp->id();
+            cali_id_t exp_id = exp.id();
             
-            if (sT->exp_blackboards.size() > exp_id)
-                return &sT->exp_blackboards[exp_id];
+            if (expT.blackboards.size() > exp_id)
+                return &expT.blackboards[exp_id];
             else
                 return nullptr;
         }
         break;
         case CALI_ATTR_SCOPE_PROCESS:
-            return &blackboard;
+            return &exp.mP->blackboard;
         }
         
         return nullptr;
     }
     
-    ContextBuffer*
-    get_blackboard(const Experiment* exp, cali_context_scope_t scope) {
-        cali_id_t exp_id = exp->id();
+    static ContextBuffer*
+    get_blackboard(Experiment& exp, ThreadData& expT, cali_context_scope_t scope) {
+        cali_id_t exp_id = exp.id();
         
         switch (scope)
         {
         case CALI_SCOPE_THREAD:
         case CALI_SCOPE_TASK:
-            if (sT->exp_blackboards.size() > exp_id)
-                return &sT->exp_blackboards[exp_id];
+            if (expT.blackboards.size() > exp_id)
+                return &expT.blackboards[exp_id];
             else
                 return nullptr;
         break;
         case CALI_SCOPE_PROCESS:
-            return &blackboard;
+            return &exp.mP->blackboard;
         }
         
         return nullptr;
@@ -242,8 +239,6 @@ const ConfigSet::Entry Experiment::ExperimentImpl::s_configdata[] = {
     },
     ConfigSet::Terminator
 };
-
-thread_local std::unique_ptr<Experiment::ExperimentImpl::ThreadData> Experiment::ExperimentImpl::sT;
 
 Experiment::Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg)
     : IdType(id),
@@ -290,7 +285,18 @@ struct Caliper::ThreadData
     MetadataTree                  tree;
     ::siglock                     lock;
 
+    Experiment::ThreadData        expT;
+
+    bool                          is_initial_thread;
+
+    ThreadData(size_t min_num_exp, bool initial_thread = false)
+        : expT(min_num_exp), is_initial_thread(initial_thread)
+        { }
+
     ~ThreadData() {
+        if (is_initial_thread)
+            Caliper::release();
+            
         if (Log::verbosity() >= 2)
             tree.print_statistics( Log(2).stream() << "Releasing Caliper thread data: \n" ) << std::endl;
     }
@@ -365,7 +371,7 @@ struct Caliper::GlobalData
     }
 
     ~GlobalData() {
-        Log(1).stream() << "Finished" << endl;
+        Log(1).stream() << "Finished" << std::endl;
 
         // prevent re-initialization
         s_init_lock = 2;
@@ -771,7 +777,7 @@ Caliper::pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigge
 
     for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
         if (scopes & s)
-            exp->mP->get_blackboard(exp, s)->snapshot(sbuf);
+            Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, s)->snapshot(sbuf);
 }
 
 /// \brief Trigger and process a snapshot.
@@ -862,8 +868,10 @@ Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info
     if (input_flush_info)
         flush_info.append(*input_flush_info);
 
-    exp->mP->get_blackboard(exp, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
-    exp->mP->get_blackboard(exp, CALI_SCOPE_THREAD )->snapshot(&flush_info);
+    using expI = Experiment::ExperimentImpl;
+
+    expI::get_blackboard(*exp, sT->expT, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
+    expI::get_blackboard(*exp, sT->expT, CALI_SCOPE_THREAD )->snapshot(&flush_info);
 
     Log(1).stream() << exp->name() << ": Flushing Caliper data" << std::endl;
 
@@ -925,7 +933,8 @@ Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
         exp->mP->events.pre_begin_evt(this, exp, attr, data);
 
     Attribute key = exp->mP->get_key(attr, sG->key_attr);
-    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
+    ContextBuffer* sb =
+        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
@@ -955,7 +964,9 @@ Caliper::end(Experiment* exp, const Attribute& attr)
 {
     cali_err ret = CALI_EINV;
 
-    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);        
+    ContextBuffer* sb =
+        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+
     Entry e = get(exp, attr);
 
     if (e.is_empty())
@@ -1020,8 +1031,9 @@ Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
     Attribute key = exp->mP->get_key(attr, sG->key_attr);
+    ContextBuffer* sb =
+        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -1066,7 +1078,8 @@ Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Varian
     std::lock_guard<::siglock>
         g(sT->lock);
     
-    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);    
+    ContextBuffer* sb =
+        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -1112,7 +1125,8 @@ Caliper::get(Experiment* exp, const Attribute& attr)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    ContextBuffer* sb = exp->mP->get_blackboard(exp, attr);
+    ContextBuffer* sb = 
+        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
 
     if (attr.store_as_value())
         return Entry(attr, sb->get(attr));
@@ -1268,7 +1282,9 @@ Caliper::exchange(Experiment* exp, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return exp->mP->get_blackboard(exp, attr)->exchange(attr, data);
+    using expI = Experiment::ExperimentImpl;
+
+    return expI::get_blackboard(*exp, sT->expT, attr)->exchange(attr, data);
 }
 
 //
@@ -1361,9 +1377,7 @@ Caliper::Caliper()
 
 Caliper
 Caliper::instance()
-{
-    using expI = Experiment::ExperimentImpl;
-    
+{    
     if (GlobalData::s_init_lock != 0) {
         if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
@@ -1371,27 +1385,22 @@ Caliper::instance()
 
         lock_guard<mutex> lock(GlobalData::s_init_mutex);
 
-        if (!sG) {
-            if (atexit(&Caliper::release) != 0)
-                Log(0).stream() << "Unable to register exit handler";
-
-            expI::sT.reset(new expI::ThreadData(16));
-            
-            sT.reset(new Caliper::ThreadData);
-            sG.reset(new Caliper::GlobalData);
+        if (!sG) {            
+            sT.reset(new ThreadData(16, true /* is_initial_thread */));
+            sG.reset(new GlobalData);
 
             sG->init();
-            
+
+            // NOTE: We handle Caliper exit in ThreadData destructor now
+            // if (atexit(&Caliper::release) != 0)
+            //     Log(0).stream() << "Unable to register exit handler";
+
             GlobalData::s_init_lock = 0;
         }
     }
 
-    if (!sT) {
-        if (!expI::sT)
-            expI::sT.reset(new expI::ThreadData(sG->experiments.size()));
-
-        sT.reset(new ThreadData);
-    }
+    if (!sT)
+        sT.reset(new ThreadData(sG->experiments.size()));
     
     return Caliper(false);
 }
@@ -1412,10 +1421,8 @@ Caliper::sigsafe_instance()
 }
 
 Caliper::operator bool() const
-{
-    using expI = Experiment::ExperimentImpl;
-    
-    return (sG && sT && expI::sT && !(m_is_signal && sT->lock.is_locked()));
+{    
+    return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
@@ -1424,6 +1431,8 @@ Caliper::release()
     Caliper c;
 
     if (c) {
+        Log(1).stream() << "Finishing ..." << std::endl;
+            
         for (auto &exp : sG->experiments) {
             if (exp->mP->flush_on_exit) 
                 c.flush_and_write(exp.get(), nullptr);
@@ -1431,10 +1440,9 @@ Caliper::release()
             c.clear(exp.get());
             exp->mP->events.finish_evt(&c, exp.get());
         }
+        
+        sG.reset();
     }
-
-    // Don't delete global data, some thread-specific finalization may occur after this point
-    // sG.reset(nullptr);
 }
 
 /// \brief Test if Caliper has been initialized yet.

@@ -95,22 +95,43 @@ class Aggregate
 
         ThreadDB()
             : stopped(false), retired(false)
-            { }
-        
+            { }        
     };
 
     //   ThreadData manages the static thread-local object. It contains
-    // an array with each experiment's ThreadDBs for a thread.
+    // an array with each experiment's ThreadDBs for the local thread.
     
     class ThreadData {
-        std::vector<ThreadDB*> exp_thread_dbs;
+        std::vector<ThreadDB*>   exp_thread_dbs;
 
+        //   The ThreadDB objects are managed through the tdb_list in the 
+        // Aggregate object for the experiment they belong to. Here, we store
+        // pointers to the currently active DBs for all experiments on the
+        // local thread.
+        //   Experiments and their ThreadDB objects can be deleted behind
+        // the back of the thread-local data objects. Therefore, we keep track
+        // of active experiments in s_active_exps so we don't touch stale
+        // ThreadDB pointers whose experiments have been deleted.
+
+        static std::vector<bool> s_active_exps;
+        static std::mutex        s_active_exps_lock;
+        
     public:
 
         ~ThreadData() {
-            for (ThreadDB* tdb : exp_thread_dbs)
-                if (tdb)
-                    tdb->retired.store(true);
+            std::lock_guard<std::mutex>
+                g(s_active_exps_lock);
+
+            for (size_t i = 0; i < std::min<size_t>(exp_thread_dbs.size(), s_active_exps.size()); ++i)
+                if (s_active_exps[i] && exp_thread_dbs[i])
+                    exp_thread_dbs[i]->retired.store(true);
+        }
+
+        static void deactivate_exp(Experiment* exp) {
+            std::lock_guard<std::mutex>
+                g(s_active_exps_lock);
+            
+            s_active_exps[exp->id()] = false;
         }
 
         ThreadDB* acquire_tdb(Aggregate* agg, Experiment* exp, bool alloc) {
@@ -124,9 +145,19 @@ class Aggregate
                 tdb = new ThreadDB;
 
                 if (exp_thread_dbs.size() <= expI)
-                    exp_thread_dbs.resize(std::max<size_t>(16, expI));
+                    exp_thread_dbs.resize(std::max<size_t>(16, expI+1));
 
                 exp_thread_dbs[expI] = tdb;
+
+                {
+                    std::lock_guard<std::mutex>
+                        g(s_active_exps_lock);
+
+                    if (s_active_exps.size() <= expI)
+                        s_active_exps.resize(std::max<size_t>(16, expI+1));
+
+                    s_active_exps[expI] = true;
+                }
 
                 std::lock_guard<util::spinlock>
                     g(agg->tdb_lock);
@@ -419,8 +450,7 @@ public:
                 tdb_list = tmp;
 
             delete tdb;
-            tdb = tmp;
-            
+            tdb = tmp;            
         }
     }
     
@@ -453,6 +483,7 @@ public:
             });
         exp->events().finish_evt.connect(
             [instance](Caliper* c, Experiment* exp){
+                sT.deactivate_exp(exp);
                 instance->clear_cb(c, exp); // prints logs
                 instance->finish_cb(c, exp);
                 delete instance;
@@ -477,6 +508,9 @@ const ConfigSet::Entry Aggregate::s_configdata[] = {
 };
 
 thread_local Aggregate::ThreadData Aggregate::sT;
+
+std::vector<bool>       Aggregate::ThreadData::s_active_exps;
+std::mutex              Aggregate::ThreadData::s_active_exps_lock;
 
 } // namespace [anonymous]
 

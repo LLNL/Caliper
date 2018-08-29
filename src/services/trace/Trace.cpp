@@ -90,12 +90,34 @@ class Trace
     class ThreadData {
         std::vector<TraceBuffer*> exp_buffers;
 
+        //   The TraceBuffer objects are managed through the tbuf_list in the 
+        // Trace object for the experiment they belong to. Here, we store
+        // pointers to the currently active trace buffers for all experiments
+        // on the local thread.
+        //   Experiments and their TraceBuffer objects can be deleted behind
+        // the back of the thread-local data objects. Therefore, we keep track
+        // of active experiments in s_active_exps so we don't touch stale
+        // TraceBuffer pointers whose experiments have been deleted.
+        
+        static std::vector<bool>  s_active_exps;
+        static std::mutex         s_active_exps_lock;
+
     public:
 
         ~ThreadData() {
-            for (TraceBuffer* tbuf : exp_buffers)
-                if (tbuf)
-                    tbuf->retired.store(true);
+            std::lock_guard<std::mutex>
+                g(s_active_exps_lock);
+
+            for (size_t i = 0; i < std::min<size_t>(exp_buffers.size(), s_active_exps.size()); ++i)
+                if (s_active_exps[i] && exp_buffers[i])
+                    exp_buffers[i]->retired.store(true);
+        }
+
+        static void deactivate_exp(Experiment* exp) {
+            std::lock_guard<std::mutex>
+                g(s_active_exps_lock);
+            
+            s_active_exps[exp->id()] = false;
         }
 
         TraceBuffer* acquire_tbuf(Trace* trace, Experiment* exp, bool alloc) {
@@ -109,9 +131,19 @@ class Trace
                 tbuf = new TraceBuffer(trace->buffersize);
 
                 if (exp_buffers.size() <= expI)
-                    exp_buffers.resize(std::max<size_t>(16, expI));
+                    exp_buffers.resize(std::max<size_t>(16, expI+1));
 
                 exp_buffers[expI] = tbuf;
+
+                {
+                    std::lock_guard<std::mutex>
+                        g(s_active_exps_lock);
+
+                    if (s_active_exps.size() <= expI)
+                        s_active_exps.resize(std::max<size_t>(16, expI+1));
+
+                    s_active_exps[expI] = true;
+                }
 
                 std::lock_guard<util::spinlock>
                     g(trace->tbuf_lock);
@@ -357,6 +389,7 @@ public:
             });
         exp->events().finish_evt.connect(
             [instance](Caliper* c, Experiment* exp){
+                sT.deactivate_exp(exp);
                 instance->finish_cb(c, exp);
                 delete instance;
             });
@@ -384,6 +417,9 @@ const ConfigSet::Entry Trace::s_configdata[] = {
 };
 
 thread_local Trace::ThreadData Trace::sT;
+
+std::vector<bool> Trace::ThreadData::s_active_exps;
+std::mutex        Trace::ThreadData::s_active_exps_lock;
 
 } // namespace
 

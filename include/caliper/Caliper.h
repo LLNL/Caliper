@@ -67,7 +67,9 @@ typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
 
 class Experiment : public IdType
 {
+    struct ThreadData;
     struct ExperimentImpl;
+    
     std::shared_ptr<ExperimentImpl> mP;
 
     Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg);
