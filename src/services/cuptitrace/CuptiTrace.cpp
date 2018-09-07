@@ -54,7 +54,10 @@
 #endif
 #include <generated_nvtx_meta.h>
 
+#include <iomanip>
+#include <iterator>
 #include <mutex>
+#include <sstream>
 #include <unordered_map>
 
 using namespace cali;
@@ -63,18 +66,24 @@ namespace
 {
 
 const ConfigSet::Entry configdata[] = {
-    { "activities", CALI_TYPE_STRING, "correlation,runtime,kernel",
+    { "activities", CALI_TYPE_STRING, "correlation,device,runtime,kernel,memcpy",
       "The CUpti activity kinds to record",
       "The CUpti activity kinds to record. Possible values: "
+      "  device:       Device info"
       "  correlation:  Correlation records. Required for Caliper context correlation."
       "  driver:       Driver API."
       "  runtime:      Runtime API."
       "    Runtime records are also required for Caliper context correlation."
       "  kernel:       CUDA Kernels being executed."
+      "  memcpy:       CUDA memory copies."
     },
-    { "correlate_context", CALI_TYPE_BOOL, "true",
+    { "correlate_context",   CALI_TYPE_BOOL, "true",
       "Correlate CUpti records with Caliper context",
       "Correlate CUpti records with Caliper context" },
+    { "snapshot_timestamps", CALI_TYPE_BOOL, "false",
+      "Record CUpti timestamps for all Caliper snapshots",
+      "Record CUpti timestamps for all Caliper snapshots"
+    },
 
     ConfigSet::Terminator
 };
@@ -107,11 +116,19 @@ struct ActivityBuffer {
     }
 };
 
-size_t          buffer_size = 1 * 1024 * 1024;
+struct DeviceInfo {
+    uint32_t    id;
+    const char* name;
+    CUuuid      uuid;
+    std::string uuid_string;
+};
 
-size_t          buffer_size_used = 0;
+std::map<uint32_t, DeviceInfo> device_info_map;
 
-ActivityBuffer* retired_buffers_list = nullptr;
+size_t          buffer_size             = 1 * 1024 * 1024;
+size_t          buffer_size_used        = 0;
+
+ActivityBuffer* retired_buffers_list    = nullptr;
 std::mutex      retired_buffers_list_lock;
 
 unsigned        num_buffers_empty       = 0;
@@ -120,8 +137,10 @@ unsigned        num_buffers_completed   = 0;
 unsigned        num_dropped_records     = 0;
 
 unsigned        num_correlation_recs    = 0;
+unsigned        num_device_recs         = 0;
 unsigned        num_kernel_recs         = 0;
 unsigned        num_driver_recs         = 0;
+unsigned        num_memcpy_recs         = 0;
 unsigned        num_runtime_recs        = 0;
 unsigned        num_unknown_recs        = 0;
 
@@ -133,7 +152,11 @@ Attribute       activity_end_attr;
 Attribute       activity_duration_attr;
 Attribute       activity_kind_attr;
 Attribute       kernel_name_attr;
+Attribute       memcpy_kind_attr;
+Attribute       memcpy_bytes_attr;
 Attribute       starttime_attr;
+Attribute       timestamp_attr;
+Attribute       device_uuid_attr;
 
 typedef std::unordered_map<uint32_t, uint64_t> correlation_id_map_t;
 
@@ -171,7 +194,7 @@ void CUPTIAPI buffer_completed(CUcontext ctx, uint32_t stream, uint8_t* buffer, 
     ActivityBuffer* acb =
         new ActivityBuffer(ctx, stream, buffer, size, valid_size);
 
-    size_t dropped;
+    size_t dropped = 0;
     cuptiActivityGetNumDroppedRecords(ctx, stream, &dropped);
 
     num_dropped_records += dropped;
@@ -191,17 +214,74 @@ void CUPTIAPI buffer_completed(CUcontext ctx, uint32_t stream, uint8_t* buffer, 
 // --- Caliper flush
 //
 
+const char*
+get_memcpy_kind_string(CUpti_ActivityMemcpyKind kind)
+{
+    switch (kind) {
+    case CUPTI_ACTIVITY_MEMCPY_KIND_HTOD:
+        return "HtoD";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_DTOH:
+        return "DtoH";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_HTOA:
+        return "HtoA";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_ATOH:
+        return "AtoH";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_ATOA:
+        return "AtoA";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_ATOD:
+        return "AtoD";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_DTOA:
+        return "DtoA";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:
+        return "DtoD";
+    case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:
+        return "HtoH";
+    default:
+        break;
+    }
+
+    return "<unknown>";
+}
+
 size_t
 flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper* c, const SnapshotRecord* flush_info, Caliper::SnapshotFlushFn proc_fn)
 {    
     switch (rec->kind) {
+    case CUPTI_ACTIVITY_KIND_DEVICE:
+    {
+        CUpti_ActivityDevice2* device =
+            reinterpret_cast<CUpti_ActivityDevice2*>(rec);
+
+        DeviceInfo info;
+
+        info.id   = device->id;
+        info.name = device->name;
+        info.uuid = device->uuid;
+
+        {
+            // make a string with the uuid bytes in hex representation
+            
+            std::ostringstream os;
+
+            std::copy(device->uuid.bytes, device->uuid.bytes+sizeof(device->uuid.bytes),
+                      std::ostream_iterator<unsigned>(os << std::hex << std::setw(2) << std::setfill('0')));
+
+            info.uuid_string = os.str();
+        }
+                    
+        device_info_map[device->id] = info;
+
+        ++num_device_recs;
+        
+        return 0;
+    }
     case CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION:
     {
-        CUpti_ActivityExternalCorrelation* correlation =
+        CUpti_ActivityExternalCorrelation* exco =
             reinterpret_cast<CUpti_ActivityExternalCorrelation*>(rec);
 
-        if (correlation->externalKind == CUPTI_EXTERNAL_CORRELATION_KIND_CUSTOM0)
-            correlation_map[correlation->correlationId] = correlation->externalId;
+        if (exco->externalKind == CUPTI_EXTERNAL_CORRELATION_KIND_CUSTOM0)
+            correlation_map[exco->correlationId] = exco->externalId;
 
         ++num_correlation_recs;
 
@@ -225,19 +305,120 @@ flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper
 
         return 0;
     }
+    case CUPTI_ACTIVITY_KIND_MEMCPY:
+    {
+        CUpti_ActivityMemcpy* memcpy =
+            reinterpret_cast<CUpti_ActivityMemcpy*>(rec);
+        
+        Node* parent = nullptr;
+
+        // find a Caliper context correlation, if any
+        
+        auto it = correlation_map.find(memcpy->correlationId);
+
+        if (it != correlation_map.end()) {
+            parent = c->node(it->second);
+            
+            ++num_correlations_found;
+            correlation_map.erase(it);
+        } else {
+            ++num_correlations_missed;
+        }
+        
+        // find a device info record
+
+        {
+            auto it = device_info_map.find(memcpy->deviceId);
+
+            if (it != device_info_map.end())
+                parent =
+                    c->make_tree_entry(device_uuid_attr,
+                                       Variant(CALI_TYPE_STRING,
+                                               it->second.uuid_string.c_str(),
+                                               it->second.uuid_string.size() + 1),
+                                       parent);
+        }
+
+        // append the memcpy info
+
+        Attribute attr[6] = {
+            activity_kind_attr,
+            memcpy_kind_attr,
+            memcpy_bytes_attr,
+            activity_start_attr,
+            activity_end_attr,
+            activity_duration_attr
+        };
+        Variant   data[6] = {
+            Variant(CALI_TYPE_STRING, "memcpy", 7),
+            Variant(CALI_TYPE_STRING,
+                    get_memcpy_kind_string(static_cast<CUpti_ActivityMemcpyKind>(memcpy->copyKind)),
+                    5),
+            Variant(cali_make_variant_from_uint(memcpy->bytes)),
+            Variant(cali_make_variant_from_uint(memcpy->start)),
+            Variant(cali_make_variant_from_uint(memcpy->end)),
+            Variant(cali_make_variant_from_uint(memcpy->end - memcpy->start))
+        };
+
+        SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
+        SnapshotRecord snapshot(snapshot_data);
+        
+        c->make_entrylist(6, attr, data, snapshot, parent);
+            
+        proc_fn(&snapshot);
+
+        ++num_memcpy_recs;
+
+        return 1;
+    }
     case CUPTI_ACTIVITY_KIND_KERNEL:
     case CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL:
     {
         CUpti_ActivityKernel4* kernel =
             reinterpret_cast<CUpti_ActivityKernel4*>(rec);
 
-        Attribute attr[4] = {
+        Node* parent = nullptr;
+
+        // find a Caliper context correlation, if any
+
+        {
+            auto it = correlation_map.find(kernel->correlationId);
+
+            if (it != correlation_map.end()) {
+                parent = c->node(it->second);
+            
+                ++num_correlations_found;
+                correlation_map.erase(it);
+            } else {
+                ++num_correlations_missed;
+            }
+        }
+        
+        // find a device info record
+
+        {
+            auto it = device_info_map.find(kernel->deviceId);
+
+            if (it != device_info_map.end())
+                parent =
+                    c->make_tree_entry(device_uuid_attr,
+                                       Variant(CALI_TYPE_STRING,
+                                               it->second.uuid_string.c_str(),
+                                               it->second.uuid_string.size() + 1),
+                                       parent);
+        }
+
+        // append the kernel info
+
+        Attribute attr[5] = {
+            activity_kind_attr,
             kernel_name_attr,
             activity_start_attr,
             activity_end_attr,
             activity_duration_attr
         };
-        Variant   data[4] = {
+        Variant   data[5] = {
+            Variant(CALI_TYPE_STRING, "kernel", 7),
             Variant(CALI_TYPE_STRING, kernel->name, strlen(kernel->name)+1),
             Variant(cali_make_variant_from_uint(kernel->start)),
             Variant(cali_make_variant_from_uint(kernel->end)),
@@ -247,22 +428,7 @@ flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper
         SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
         
-        c->make_entrylist(4, attr, data, snapshot);
-
-        // find a Caliper context correlation, if any 
-        auto it = correlation_map.find(kernel->correlationId);
-
-        if (it != correlation_map.end()) {
-            Node* node = c->node(it->second);
-
-            if (node)
-                snapshot.append(node);
-            
-            ++num_correlations_found;
-            correlation_map.erase(it);
-        } else {
-            ++num_correlations_missed;
-        }
+        c->make_entrylist(5, attr, data, snapshot, parent);
             
         proc_fn(&snapshot);
 
@@ -308,7 +474,8 @@ flush_buffer(ActivityBuffer* acb, Caliper* c, const SnapshotRecord* flush_info, 
 
 void flush_cb(Caliper* c, const SnapshotRecord* flush_info, Caliper::SnapshotFlushFn proc_fn)
 {
-    // flush currently active CUpti buffers
+    //   Flush CUpti. Apppends all currently active CUpti trace buffers 
+    // to the retired_buffers_list.
 
     CUptiResult res = cuptiActivityFlushAll(CUPTI_ACTIVITY_FLAG_NONE);
 
@@ -413,20 +580,23 @@ void finish_cb(Caliper* c)
                     << num_buffers_completed << " buffers completed, "
                     << num_buffers_empty << " empty." << std::endl;
 
-    if (Log::verbosity() >= 2) {
-        Log(2).stream() << "cuptitrace: Processed CUpti activity records:"
-                        << "\n  correlation records: " << num_correlation_recs
-                        << "\n  driver records:      " << num_driver_recs
-                        << "\n  runtime records:     " << num_runtime_recs            
-                        << "\n  kernel records:      " << num_kernel_recs
-                        << "\n  unknown records:     " << num_unknown_recs
-                        << std::endl;
+    if (Log::verbosity() < 2)
+        return;
 
-        Log(2).stream() << "cuptitrace: "
-                        << num_correlations_found  << " context correlations found, "
-                        << num_correlations_missed << " missed."
-                        << std::endl;
-    }
+    Log(2).stream() << "cuptitrace: Processed CUpti activity records:"
+                    << "\n  correlation records: " << num_correlation_recs
+                    << "\n  device records:      " << num_device_recs
+                    << "\n  driver records:      " << num_driver_recs
+                    << "\n  runtime records:     " << num_runtime_recs            
+                    << "\n  kernel records:      " << num_kernel_recs
+                    << "\n  memcpy records:      " << num_memcpy_recs
+                    << "\n  unknown records:     " << num_unknown_recs
+                    << std::endl;
+
+    Log(2).stream() << "cuptitrace: "
+                    << num_correlations_found  << " context correlations found, "
+                    << num_correlations_missed << " missed."
+                    << std::endl;
 }
 
 void enable_cupti_activities(const ConfigSet& config)
@@ -436,11 +606,13 @@ void enable_cupti_activities(const ConfigSet& config)
         CUpti_ActivityKind kind;
     } activity_map[] = {
         { "correlation", CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION },
+        { "device",      CUPTI_ACTIVITY_KIND_DEVICE  },
         { "driver",      CUPTI_ACTIVITY_KIND_DRIVER  },
         { "runtime",     CUPTI_ACTIVITY_KIND_RUNTIME },
         { "kernel",      CUPTI_ACTIVITY_KIND_KERNEL  },
+        { "memcpy",      CUPTI_ACTIVITY_KIND_MEMCPY  },
 
-        { nullptr, CUPTI_ACTIVITY_KIND_INVALID }
+        { nullptr,       CUPTI_ACTIVITY_KIND_INVALID }
     };
 
     std::vector<std::string> selection =
@@ -472,6 +644,14 @@ void enable_cupti_activities(const ConfigSet& config)
         
 }
 
+void snapshot_cb(Caliper* c, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
+{
+    uint64_t timestamp = 0;
+    cuptiGetTimestamp(&timestamp);
+
+    snapshot->append(timestamp_attr.id(), Variant(cali_make_variant_from_uint(timestamp)));
+}
+
 void post_init_cb(Caliper* c)
 {   
     ConfigSet config = RuntimeConfig::init("cuptitrace", configdata);
@@ -494,6 +674,10 @@ void post_init_cb(Caliper* c)
     if (config.get("correlate_context").to_bool()) {
         c->events().post_begin_evt.connect(&post_begin_cb);
         c->events().pre_end_evt.connect(&pre_end_cb);
+    }
+
+    if (config.get("snapshot_timestamps").to_bool()) {
+        c->events().snapshot.connect(&snapshot_cb);
     }
     
     c->events().flush_evt.connect(&flush_cb);
@@ -524,9 +708,23 @@ void cuptitrace_initialize(Caliper* c)
     kernel_name_attr =
         c->create_attribute("cupti.kernel.name",       CALI_TYPE_STRING,
                             CALI_ATTR_DEFAULT);
+    memcpy_kind_attr =
+        c->create_attribute("cupti.memcpy.kind",       CALI_TYPE_STRING,
+                            CALI_ATTR_DEFAULT);
+    memcpy_bytes_attr =
+        c->create_attribute("cupti.memcpy.bytes",      CALI_TYPE_UINT,
+                            CALI_ATTR_ASVALUE,
+                            1, &aggr_attr, &v_true);
     starttime_attr =
         c->create_attribute("cupti.starttime",         CALI_TYPE_UINT,
                             CALI_ATTR_SKIP_EVENTS);
+    timestamp_attr =
+        c->create_attribute("cupti.timestamp",         CALI_TYPE_UINT,
+                            CALI_ATTR_ASVALUE |
+                            CALI_ATTR_SKIP_EVENTS);
+    device_uuid_attr =
+        c->create_attribute("cupti.device.uuid",       CALI_TYPE_STRING,
+                            CALI_ATTR_DEFAULT);        
     
     c->events().post_init_evt.connect(&post_init_cb);
 }
