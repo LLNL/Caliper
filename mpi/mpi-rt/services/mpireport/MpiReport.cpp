@@ -54,16 +54,22 @@ namespace
 
 class MpiReport
 {
-    static std::unique_ptr<MpiReport> s_instance;
-
-    static const ConfigSet::Entry     s_configdata[];
+    static const ConfigSet::Entry s_configdata[];
 
     QuerySpec         m_spec;
     CaliperMetadataDB m_db;
 
-    Aggregator        m_a;
-    RecordSelector    m_filter;
+    struct ReportProcessor {
+        Aggregator        agg;
+        RecordSelector    filter;
 
+        explicit ReportProcessor(const QuerySpec& spec)
+            : agg(spec), filter(spec)
+            { }
+    };
+
+    std::unique_ptr<ReportProcessor> m_p;
+    
     std::string       m_filename;
 
     void add(Caliper* c, const SnapshotRecord* snapshot) {
@@ -78,8 +84,8 @@ class MpiReport
                                 s.n_immediate, d.immediate_attr, d.immediate_data,
                                 *c);
 
-        if (m_filter.pass(m_db, rec))
-            m_a.add(m_db, rec);
+        if (m_p->filter.pass(m_db, rec))
+            m_p->agg.add(m_db, rec);
     }
 
     void flush_finish(Caliper* c, const SnapshotRecord* flush_info) {
@@ -90,7 +96,7 @@ class MpiReport
 
         // do the global cross-process aggregation:
         //   aggregate_over_mpi() does all the magic
-        aggregate_over_mpi(m_db, m_a, comm);
+        aggregate_over_mpi(m_db, m_p->agg, comm);
 
         MPI_Comm_free(&comm);
 
@@ -109,80 +115,76 @@ class MpiReport
 
             FormatProcessor formatter(m_spec, stream);
 
-            m_a.flush(m_db, formatter);
+            m_p->agg.flush(m_db, formatter);
             formatter.flush(m_db);
         }
     }
 
-    static void pre_write_cb(Caliper* c, const SnapshotRecord*) {
-        s_instance.reset();
+    void pre_flush() {
+        m_p.reset();
 
         // check if we can use MPI
 
         int initialized = 0;
         int finalized   = 0;
 
-        MPI_Initialized(&initialized);
-        MPI_Finalized(&finalized);
+        PMPI_Initialized(&initialized);
+        PMPI_Finalized(&finalized);
 
         if (!initialized || finalized)
             return;
 
-        // set up the reporter
+        m_p.reset(new ReportProcessor(m_spec));
+    }    
 
-        ConfigSet   config(RuntimeConfig::init("mpireport", s_configdata));
-        CalQLParser parser(config.get("config").to_string().c_str());
+    MpiReport(const QuerySpec& spec, const std::string& filename)
+        : m_spec(spec), m_filename(filename)
+        { }
+
+public:
+
+    static void init(Caliper* c, Experiment* exp) {
+        ConfigSet   config = exp->config().init("mpireport", s_configdata);
+        CalQLParser parser(config.get("config").to_string().c_str());        
 
         if (parser.error()) {
-            int rank;
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-            if (rank == 0)
-                Log(0).stream() << "mpireport: config parse error: " << parser.error_msg() << std::endl;
+            Log(0).stream() << exp->name() << ": mpireport: config parse error: "
+                            << parser.error_msg() << std::endl;
 
             return;
         }
 
-        s_instance.reset(new MpiReport(parser.spec(), config.get("filename").to_string()));
-    }
+        MpiReport* instance =
+            new MpiReport(parser.spec(), config.get("filename").to_string());
 
-    static void write_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        if (!s_instance)
-            return;
-
-        s_instance->add(c, snapshot);
-    }
-
-    static void post_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
-        if (!s_instance)
-            return;
-
-        s_instance->flush_finish(c, flush_info);
-    }
-
-    static void mpi_finalize_cb(Caliper* c) {
-        c->flush_and_write(nullptr);
-    }
-
-public:
-
-    MpiReport(const QuerySpec& spec, const std::string& filename)
-        : m_spec(spec), m_a(spec), m_filter(spec), m_filename(filename)
-        { }
-
-    static void init(Caliper* c) {
-        ConfigSet config = RuntimeConfig::init("mpireport", s_configdata);
-
+        exp->events().pre_flush_evt.connect(
+            [instance](Caliper*, Experiment*, const SnapshotRecord*){
+                instance->pre_flush();
+            });
+        exp->events().write_snapshot.connect(
+            [instance](Caliper* c, Experiment*, const SnapshotRecord*, const SnapshotRecord* rec){
+                if (instance->m_p)
+                    instance->add(c, rec);
+            });
+        exp->events().post_flush_evt.connect(
+            [instance](Caliper* c, Experiment*, const SnapshotRecord* info){
+                if (instance->m_p)
+                    instance->flush_finish(c, info);
+            });
+        exp->events().finish_evt.connect(
+            [instance](Caliper*, Experiment*){
+                delete instance;
+            });
+        
         if (config.get("write_on_finalize").to_bool() == true)
-            MpiEvents::events.mpi_finalize_evt.connect(::MpiReport::mpi_finalize_cb);
+            mpiwrap_get_events(exp).mpi_finalize_evt.connect(
+                [](Caliper* c, Experiment* exp){
+                    c->flush_and_write(exp, nullptr);
+                });
 
-        c->events().pre_write_evt.connect(pre_write_cb);
-        c->events().write_snapshot.connect(write_snapshot_cb);
-        c->events().post_write_evt.connect(post_write_cb);
+        Log(1).stream() << exp->name() << ": Registered mpireport service" << std::endl;
     }
 };
-
-std::unique_ptr<MpiReport> MpiReport::s_instance;
 
 const ConfigSet::Entry     MpiReport::s_configdata[] = {
     { "filename", CALI_TYPE_STRING, "stdout",
@@ -207,5 +209,7 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
 
 namespace cali
 {
-    CaliperService mpireport_service = { "mpireport", ::MpiReport::init };
+
+CaliperService mpireport_service = { "mpireport", ::MpiReport::init };
+
 }

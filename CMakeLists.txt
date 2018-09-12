@@ -317,9 +317,9 @@ install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
 add_subdirectory(ext)
 add_subdirectory(src)
 
-# if (CALIPER_HAVE_MPI)
-#   add_subdirectory(mpi)
-# endif()
+if (CALIPER_HAVE_MPI)
+  add_subdirectory(mpi)
+endif()
 
 add_subdirectory(examples/apps EXCLUDE_FROM_ALL)
 
