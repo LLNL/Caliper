@@ -80,6 +80,8 @@ class EventTrigger
 
     bool                     enable_snapshot_info;
 
+    Node                     event_root_node;
+
     //
     // --- Helpers / misc
     //
@@ -198,7 +200,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info);
+            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -240,7 +242,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info);
+            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -288,7 +290,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info);
+            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -307,6 +309,7 @@ class EventTrigger
     }
 
     EventTrigger(Caliper* c, Experiment* exp)
+        : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
             ConfigSet cfg =
                 exp->config().init("event", s_configdata);
