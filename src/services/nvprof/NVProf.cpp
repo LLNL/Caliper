@@ -35,6 +35,7 @@
 #include "caliper/AnnotationBinding.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
 
 #include <nvToolsExt.h>
 
@@ -59,8 +60,9 @@ class NVProfBinding : public AnnotationBinding
 
     uint32_t get_color(const Attribute& attr) {
         cali_id_t color_attr_id = m_color_attr.id();
+        const Node* node = nullptr;
         
-        for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
+        for (node = attr.node()->first_child(); node; node = node->next_sibling())
             if (node->attribute() == color_attr_id)
                 break;
 
