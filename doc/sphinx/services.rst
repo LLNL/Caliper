@@ -385,7 +385,7 @@ Results::
 CUptiTrace
 --------------------------------
 
-The `cuptitrace` service records an asyncronous stream of CUDA
+The `cuptitrace` service records an asynchronous stream of CUDA
 activities, such as memory copies or kernel executions. CUDA activity
 records contain the kind of activity, its start and end time, and
 additional attributes listed below.
