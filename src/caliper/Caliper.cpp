@@ -1399,8 +1399,15 @@ Caliper::instance()
         }
     }
 
-    if (!sT)
+    if (!sT) {
         sT.reset(new ThreadData(sG->experiments.size()));
+
+        Caliper c(false);
+
+        for (auto& exp : sG->experiments)
+            if (exp)
+                exp->mP->events.create_thread_evt(&c, exp.get());
+    }
     
     return Caliper(false);
 }
