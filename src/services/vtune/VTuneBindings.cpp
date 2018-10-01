@@ -96,12 +96,12 @@ public:
 
     const char* service_tag() const { return "vtune"; };
 
-    void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_begin(Caliper* c, Experiment*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING)
             __itt_task_begin(get_itt_domain(attr), __itt_null, __itt_null, get_itt_string(value));
     }
 
-    void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper* c, Experiment*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING)
             __itt_task_end(get_itt_domain(attr));
     }
@@ -115,5 +115,7 @@ thread_local std::map<const char*, __itt_string_handle*> ITTBinding::s_itt_strin
 
 namespace cali
 {
-    CaliperService vtune_service { "vtune", &AnnotationBinding::make_binding<::ITTBinding> };
+
+CaliperService vtune_service { "vtune", &AnnotationBinding::make_binding<::ITTBinding> };
+
 }
