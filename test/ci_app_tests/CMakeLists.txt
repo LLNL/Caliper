@@ -8,6 +8,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_binding
   ci_test_esc
   ci_test_macros
+  ci_test_multiexperiment
   ci_test_nesting
   ci_test_postprocess_snapshot
   ci_test_report
@@ -44,6 +45,7 @@ set(PYTHON_SCRIPTS
   test_c_api.py
   test_json.py
   test_log.py
+  test_multiexperiment.py
   test_report.py
   test_thread.py
   calipertest.py)

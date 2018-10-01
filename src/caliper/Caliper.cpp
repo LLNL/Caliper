@@ -1295,20 +1295,21 @@ Experiment*
 Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
 {
     Experiment* exp = new Experiment(sG->experiments.size(), name, cfg);
-    sG->experiments.emplace_back(exp);            
+    sG->experiments.emplace_back(exp);
 
-    Caliper c(false);
+    if (sT->expT.blackboards.size() < sG->experiments.size())
+        sT->expT.blackboards.resize(sG->experiments.size() + 1);    
 
     // Create and set key & version attributes
 
-    c.set(exp, c.create_attribute("cali.caliper.version", CALI_TYPE_STRING,
-                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-          Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-    c.set(exp, c.create_attribute("cali.experiment", CALI_TYPE_STRING,
-                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-          Variant(CALI_TYPE_STRING, name, strlen(name)+1));
+    set(exp, create_attribute("cali.caliper.version", CALI_TYPE_STRING,
+                              CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+        Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
+    set(exp, create_attribute("cali.experiment", CALI_TYPE_STRING,
+                              CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+        Variant(CALI_TYPE_STRING, name, strlen(name)+1));
         
-    Services::register_services(&c, exp);
+    Services::register_services(this, exp);
 
     Log(1).stream() << "Creating \"" << name << "\" experiment" << std::endl;
 
@@ -1317,7 +1318,7 @@ Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
     if (Log::verbosity() >= 3)
         exp->config().print( Log(3).stream() << "Configuration:\n" );
 
-    exp->mP->events.post_init_evt(&c, exp);
+    exp->mP->events.post_init_evt(this, exp);
 
     return exp;
 }
