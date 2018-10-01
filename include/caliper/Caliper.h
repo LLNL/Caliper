@@ -304,6 +304,8 @@ public:
     Experiment* get_experiment(cali_id_t id);
     // Experiment* get_experiment(const char* name);
 
+    void        delete_experiment(Experiment* exp);
+
     /// \}
 
     // --- Caliper API access

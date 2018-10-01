@@ -1345,6 +1345,15 @@ Caliper::get_experiments()
     return ret;
 }
 
+void
+Caliper::delete_experiment(Experiment* exp)
+{
+    Log(1).stream() << "Deleting experiment " << exp->name() << std::endl;
+    
+    exp->mP->events.finish_evt(this, exp);
+    sG->experiments[exp->id()].reset();
+}
+
 //
 // --- Caliper constructor & singleton API
 //
@@ -1408,6 +1417,10 @@ Caliper::instance()
             if (exp)
                 exp->mP->events.create_thread_evt(&c, exp.get());
     }
+
+    if (sT->expT.blackboards.size() < sG->experiments.size()) {
+        sT->expT.blackboards.resize(sG->experiments.size() + 1);
+    }
     
     return Caliper(false);
 }
@@ -1429,7 +1442,7 @@ Caliper::sigsafe_instance()
 
 Caliper::operator bool() const
 {    
-    return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
+    return (sG && sT && sT->expT.blackboards.size() >= sG->experiments.size() && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
@@ -1440,13 +1453,14 @@ Caliper::release()
     if (c) {
         Log(1).stream() << "Finishing ..." << std::endl;
             
-        for (auto &exp : sG->experiments) {
-            if (exp->mP->flush_on_exit) 
-                c.flush_and_write(exp.get(), nullptr);
+        for (auto &exp : sG->experiments) 
+            if (exp) {
+                if (exp->mP->flush_on_exit) 
+                    c.flush_and_write(exp.get(), nullptr);
 
-            c.clear(exp.get());
-            exp->mP->events.finish_evt(&c, exp.get());
-        }
+                c.clear(exp.get());
+                exp->mP->events.finish_evt(&c, exp.get());
+            }
         
         sG.reset();
     }
