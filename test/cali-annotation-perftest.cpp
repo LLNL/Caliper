@@ -111,7 +111,7 @@ int run(const Config& cfg)
     return n_updates;
 }
 
-int make_strings(const Config& cfg)
+void make_strings(const Config& cfg)
 {
     int depth = cfg.tree_depth + 1;
     int width = std::max(1, cfg.tree_width);
