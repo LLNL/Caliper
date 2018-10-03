@@ -51,40 +51,40 @@ namespace
 
 mutex dbg_mutex;
 
-void pre_create_attr_cb(Caliper* c, const std::string& name, cali_attr_type type, int* prop, Node** node)
+void pre_create_attr_cb(Caliper* c, Experiment* exp, const std::string& name, cali_attr_type type, int* prop, Node** node)
 {
     char buf[256];
 
     cali_prop2string(*prop, buf, 256);
     
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_create_attr (name=" << name
+    Log(1).stream() << exp->name() << ": Event: pre_create_attr (name=" << name
                     << ", type=" << cali_type2string(type)
                     << ", prop=" << buf << ")" << endl;
 }
     
-void create_attr_cb(Caliper* c, const Attribute& attr)
+void create_attr_cb(Caliper* c, Experiment* exp, const Attribute& attr)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: create_attribute (attr=" << attr << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: create_attribute (attr=" << attr << ")" << endl;
 }
 
-void begin_cb(Caliper* c, const Attribute& attr, const Variant& value)
+void begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: pre_begin (" << attr.name() << "=" << value << ")" << endl;
 }
 
-void end_cb(Caliper* c, const Attribute& attr, const Variant& value)
+void end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: pre_end ("   << attr.name() << "=" << value << ")" << endl;
 }
 
-void set_cb(Caliper* c, const Attribute& attr, const Variant& value)
+void set_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: pre_set ("   << attr.name() << "=" << value << ")" << endl;
 }
 
 const char* scopestrings[] = { "", "process", "thread", "", "task" };
@@ -119,22 +119,22 @@ string format_triggerinfo(const Entry* entry)
     return out;
 }
 
-void create_scope_cb(Caliper* c, cali_context_scope_t scope)
+void create_thread_cb(Caliper* c, Experiment* exp)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: create_scope (scope=" << scope2string(scope) << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: create_thread" << endl;
 }
 
-void release_scope_cb(Caliper* c, cali_context_scope_t scope)
+void release_thread_cb(Caliper* c, Experiment* exp)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: release_scope (scope=" << scope2string(scope) << ")" << endl;
+    Log(1).stream() << exp->name() << ": Event: release_thread" << endl;
 }
 
-void snapshot_cb(Caliper* c, int scope, const SnapshotRecord* trigger_info, SnapshotRecord*)
+void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord* trigger_info, SnapshotRecord*)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: snapshot (scope=" << scope2string(scope) << ", "
+    Log(1).stream() << exp->name() << ": Event: snapshot (scope=" << scope2string(scope) << ", "
                     << ")" << endl;
 }
 
@@ -157,38 +157,40 @@ std::ostream& print_snapshot_record(std::ostream& os, const SnapshotRecord* s)
     return (os << " }");
 }
     
-void process_snapshot_cb(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* sbuf)
+void process_snapshot_cb(Caliper* c, Experiment* exp, const SnapshotRecord* trigger_info, const SnapshotRecord* sbuf)
 {
     lock_guard<mutex> lock(dbg_mutex);    
 
-    print_snapshot_record( Log(1).stream() << "Event: process_snapshot: ", sbuf ) << std::endl;
+    print_snapshot_record( Log(1).stream() << exp->name() << ": Event: process_snapshot: ", sbuf ) << std::endl;
 }
 
-void finish_cb(Caliper* c)
+void finish_cb(Caliper* c, Experiment* exp)
 {
     lock_guard<mutex> lock(dbg_mutex);
-    Log(1).stream() << "Event: finish" << endl;
+    Log(1).stream() << exp->name() << ": Event: finish" << endl;
 }
 
-void debug_service_register(Caliper* c)
+void debug_service_register(Caliper* c, Experiment* exp)
 {
-    c->events().pre_create_attr_evt.connect(&pre_create_attr_cb);
-    c->events().create_attr_evt.connect(&create_attr_cb);
-    c->events().pre_begin_evt.connect(&begin_cb);
-    c->events().pre_end_evt.connect(&end_cb);
-    c->events().pre_set_evt.connect(&set_cb);
-    c->events().finish_evt.connect(&finish_cb);
-    c->events().create_scope_evt.connect(&create_scope_cb);
-    c->events().release_scope_evt.connect(&release_scope_cb);
-    c->events().snapshot.connect(&snapshot_cb);
-    c->events().process_snapshot.connect(&process_snapshot_cb);
+    exp->events().pre_create_attr_evt.connect(&pre_create_attr_cb);
+    exp->events().create_attr_evt.connect(&create_attr_cb);
+    exp->events().pre_begin_evt.connect(&begin_cb);
+    exp->events().pre_end_evt.connect(&end_cb);
+    exp->events().pre_set_evt.connect(&set_cb);
+    exp->events().finish_evt.connect(&finish_cb);
+    exp->events().create_thread_evt.connect(&create_thread_cb);
+    exp->events().release_thread_evt.connect(&release_thread_cb);
+    exp->events().snapshot.connect(&snapshot_cb);
+    exp->events().process_snapshot.connect(&process_snapshot_cb);
 
-    Log(1).stream() << "Registered debug service" << endl;
+    Log(1).stream() << exp->name() << ": Registered debug service" << endl;
 }
 
 } // namespace
 
 namespace cali
 {
-    CaliperService debug_service = { "debug", ::debug_service_register };
+
+CaliperService debug_service = { "debug", ::debug_service_register };
+
 }
