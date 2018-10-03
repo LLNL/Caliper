@@ -86,9 +86,11 @@ public:
     };
 
     Loop(const char* name);
+    Loop(const Loop& loop);
+    
     ~Loop();
 
-    Iteration iteration(int i);
+    Iteration iteration(int i) const;
     
     void end();
 };
