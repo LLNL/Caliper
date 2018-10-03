@@ -29,7 +29,6 @@ option(WITH_TOOLS     "Build Caliper tools" TRUE)
 
 option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
-option(WITH_NETOUT    "Enable netout service (requires curl)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" FALSE)
 option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" FALSE)
 option(WITH_LIBDW     "Enable libdw support (for module detection in callpath service)" FALSE)
@@ -107,14 +106,6 @@ endif()
 if(CALIPER_HAVE_TAU)
     find_library(tau_lib libTAU.so)
     list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
-endif()
-
-if (WITH_NETOUT)
-  include(FindLibcurl)
-  if (LIBCURL_FOUND)
-    set(CALIPER_HAVE_LIBCURL TRUE)
-    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBCURL_LIBRARY})
-  endif()
 endif()
 
 # Find PAPI
