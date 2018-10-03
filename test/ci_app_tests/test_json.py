@@ -42,8 +42,10 @@ class CaliperJSONTest(unittest.TestCase):
 
         nodes = obj['nodes']
 
-        self.assertEqual(nodes[0]['label'],  'mainloop')
-        self.assertEqual(nodes[1]['label'],  'fooloop')
+        self.assertEqual(nodes[0]['label' ], 'mainloop')
+        self.assertEqual(nodes[0]['column'], 'path')
+        self.assertEqual(nodes[1]['label' ], 'fooloop')
+        self.assertEqual(nodes[1]['column'], 'path')
         self.assertEqual(nodes[1]['parent'], 0)
 
         iterindex = columns.index('iteration#mainloop')

@@ -62,11 +62,15 @@ using namespace std;
 namespace
 {
 
+class AggregateKernelConfig;
+
 class AggregateKernel {
 public:
 
     virtual ~AggregateKernel()
         { }
+
+    virtual const AggregateKernelConfig* config() = 0;
     
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) = 0;
@@ -78,6 +82,8 @@ public:
 
     virtual ~AggregateKernelConfig()
         { }
+
+    virtual bool is_inclusive() const { return false; }
 
     virtual AggregateKernel* make_kernel() = 0;
 };
@@ -118,8 +124,10 @@ public:
     CountKernel(Config* config)
         : m_count(0), m_config(config)
         { }
+
+    const AggregateKernelConfig* config() { return m_config; }
     
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         cali_id_t count_attr_id = m_config->attribute(db).id();
 
         for (const Entry& e : list)
@@ -131,7 +139,7 @@ public:
         ++m_count;
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+    void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         uint64_t count = m_count.load();
         
         if (count > 0)
@@ -185,6 +193,8 @@ public:
     SumKernel(Config* config)
         : m_count(0), m_config(config)
         { }
+
+    const AggregateKernelConfig* config() { return m_config; }
     
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
@@ -307,6 +317,8 @@ public:
     StatisticsKernel(Config* config)
         : m_count(0), m_sum(0), m_config(config)
         { }
+
+    const AggregateKernelConfig* config() { return m_config; }
 
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
@@ -523,7 +535,7 @@ public:
         : m_sum1(0), m_sum2(0), m_config(config)
         { }
 
-
+    const AggregateKernelConfig* config() { return m_config; }
 
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
@@ -657,6 +669,8 @@ public:
         : m_sum(0), m_config(config)
         { }
 
+    const AggregateKernelConfig* config() { return m_config; }
+
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         Attribute target_attr = m_config->get_target_attr(db);
         Attribute percentage_attr, sum_attr;
@@ -700,15 +714,123 @@ private:
     Config*    m_config;
 };
 
+//
+// --- SumKernel
+//
+
+class InclusiveSumKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_target_attr_name;
+        Attribute   m_target_attr;
+        Attribute   m_sum_attr;
+        
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+            return m_target_attr;
+        }
+
+        Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                return Attribute::invalid;
+            
+            if (m_sum_attr == Attribute::invalid)
+                m_sum_attr = db.create_attribute("inclusive#" + m_target_attr_name, 
+                                                 CALI_TYPE_DOUBLE,
+                                                 CALI_ATTR_SKIP_EVENTS |
+                                                 CALI_ATTR_ASVALUE     |
+                                                 CALI_ATTR_HIDDEN);
+
+            return m_sum_attr;
+        }
+        
+        AggregateKernel* make_kernel() {
+            return new InclusiveSumKernel(this);
+        }
+
+        bool is_inclusive() const { return true; }
+
+        Config(const std::string& name)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid)
+            {
+                Log(2).stream() << "creating inclusive sum kernel for " << m_target_attr_name << std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
+        }        
+    };
+
+    InclusiveSumKernel(Config* config)
+        : m_count(0), m_config(config)
+        {
+        }
+
+    const AggregateKernelConfig* config() { return m_config; }
+    
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+        
+        Attribute aggr_attr = m_config->get_target_attr(db);
+
+        if (aggr_attr == Attribute::invalid)
+            return;
+            
+        for (const Entry& e : list) {
+            if (e.attribute() == aggr_attr.id()) {
+                switch (aggr_attr.type()) {
+                case CALI_TYPE_DOUBLE:
+                    m_sum = Variant(m_sum.to_double() + e.value().to_double());
+                    break;
+                case CALI_TYPE_INT:
+                    m_sum = Variant(m_sum.to_int()    + e.value().to_int()   );
+                    break;
+                case CALI_TYPE_UINT:
+                    m_sum = Variant(m_sum.to_uint()   + e.value().to_uint()  );
+                    break;
+                default:
+                    ;
+                    // Some error?!
+                }
+
+                ++m_count;
+                
+                break;
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (m_count > 0)
+            list.push_back(Entry(m_config->get_sum_attr(db), m_sum));
+    }
+
+private:
+
+    unsigned   m_count;
+    Variant    m_sum;
+    std::mutex m_lock;
+    Config*    m_config;
+};
+
+
 enum KernelID {
     Count        = 0,
     Sum          = 1,
     Statistics   = 2,
     Percentage   = 3,
-    PercentTotal = 4
+    PercentTotal = 4,
+    InclusiveSum = 5
 };
 
-#define MAX_KERNEL_ID 4
+#define MAX_KERNEL_ID 5
 
 const char* kernel_args[] = { "attribute" };
 const char* kernel_2args[] = { "numerator", "denominator" };
@@ -719,6 +841,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Statistics,   "statistics",    1, 1, kernel_args  },
     { KernelID::Percentage,   "percentage",    2, 2, kernel_2args },
     { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
+    { KernelID::InclusiveSum, "inclusive_sum", 1, 1, kernel_args  },
     
     QuerySpec::FunctionSignatureTerminator
 };
@@ -732,6 +855,7 @@ const struct KernelInfo {
     { "statistics",    StatisticsKernel::Config::create   },
     { "percentage",    PercentageKernel::Config::create   },
     { "percent_total", PercentTotalKernel::Config::create },
+    { "inclusive_sum", InclusiveSumKernel::Config::create },
     { 0, 0 }
 };
 
@@ -928,16 +1052,9 @@ struct Aggregator::AggregatorImpl
         for (const Entry& e : immediates) {
             unsigned char buf[32]; // max space for one immediate entry
             size_t        p = 0;
-
-            // need to convert the Variant to its actual type before saving
-            bool    ok = true;
-            Variant v  = e.value();
-
-            if (!ok)
-                continue;
             
             p += vlenc_u64(e.attribute(), buf+p);
-            p += v.pack(buf+p);
+            p += e.value().pack(buf+p);
 
             // discard entry if it won't fit in the key buf :-(
             if (p + imm_key_len + node_key_len + 1 >= MAX_KEYLEN)
@@ -957,6 +1074,24 @@ struct Aggregator::AggregatorImpl
 
         return pos;
     }
+
+    TrieNode* get_aggregation_entry(std::vector<const Node*>::const_iterator nodes_begin,
+                                    std::vector<const Node*>::const_iterator nodes_end,
+                                    const std::vector<Entry>& immediates, CaliperMetadataAccessInterface& db) {
+        std::vector<const Node*> rv_nodes(nodes_end - nodes_begin);
+
+        std::reverse_copy(nodes_begin, nodes_end,
+                          rv_nodes.begin());
+
+        const Node*   key_node = db.make_tree_entry(rv_nodes.size(), rv_nodes.data());
+
+        // --- Pack key
+
+        unsigned char key[MAX_KEYLEN];
+        size_t        pos  = pack_key(key_node, immediates, db, key);
+
+        return find_trienode(pos, key);        
+    }
     
     void process(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::vector<cali_id_t>   key_ids = update_key_attribute_ids(db);
@@ -964,6 +1099,7 @@ struct Aggregator::AggregatorImpl
         // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
+        std::vector<const Node*> rv_nodes;
         std::vector<Entry>       immediates;
         
         nodes.reserve(80);
@@ -992,24 +1128,31 @@ struct Aggregator::AggregatorImpl
         std::stable_sort(nonnested_begin, nodes.end(), [](const Node* a, const Node* b) {
                              return a->attribute() < b->attribute(); } );
 
-        std::reverse(nodes.begin(), nodes.end());
-
-        const Node*   key_node = db.make_tree_entry(nodes.size(), nodes.data());
-
-        // --- Pack key
-
-        unsigned char key[MAX_KEYLEN];
-        size_t        pos  = pack_key(key_node, immediates, db, key);
-
-        TrieNode*     trie = find_trienode(pos, key);
+        TrieNode* trie = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
         if (!trie)
             return;
 
         // --- Aggregate
         
-        for (AggregateKernel* k : trie->kernels)
-            k->aggregate(db, list);
+        for (size_t k = 0; k < trie->kernels.size(); ++k) {
+            trie->kernels[k]->aggregate(db, list);
+
+            // for inclusive kernels, aggregate for all parent nodes as well
+
+            if (trie->kernels[k]->config()->is_inclusive() && nodes.begin() != nonnested_begin) {
+                auto it = nodes.begin();
+                
+                for (++it; it != nonnested_begin; ++it) {
+                    TrieNode* p_trie = get_aggregation_entry(it, nodes.end(), immediates, db);
+
+                    if (!p_trie)
+                        break;
+
+                    p_trie->kernels[k]->aggregate(db, list);
+                }
+            }
+        }
     }
 
     //
@@ -1171,6 +1314,9 @@ Aggregator::aggregation_attribute_names(const QuerySpec& spec)
                 break;
             case KernelID::PercentTotal:
                 ret.push_back(std::string("percent_total#") + op.args[0]);
+                break;
+            case KernelID::InclusiveSum:
+                ret.push_back(std::string("inclusive#") + op.args[0]);
                 break;
             }
         }

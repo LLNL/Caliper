@@ -67,11 +67,12 @@ Function::~Function()
 // --- Pre-defined loop annotation class
 
 struct Loop::Impl {
-    Attribute iter_attr;
-    int       level;
+    Attribute        iter_attr;
+    std::atomic<int> level;
+    std::atomic<int> refcount;
     
     Impl(const char* name)
-        : level(0) {
+        : level(0), refcount(1) {
         iter_attr =
             Caliper().create_attribute(std::string("iteration#") + name, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
     }
@@ -95,14 +96,22 @@ Loop::Loop(const char* name)
     ++pI->level;
 }
 
+Loop::Loop(const Loop& loop)
+    : pI(loop.pI)
+{
+    ++pI->refcount;
+}
+
 Loop::~Loop()
 {
-    end();
-    delete pI;
+    if (--pI->refcount == 0) {
+        end();
+        delete pI;
+    }
 }
 
 Loop::Iteration
-Loop::iteration(int i)
+Loop::iteration(int i) const
 {
     return Iteration(pI, i);
 }
