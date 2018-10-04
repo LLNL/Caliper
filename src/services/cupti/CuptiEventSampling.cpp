@@ -42,7 +42,7 @@ using namespace cali::Cupti;
 
 namespace
 {
-    
+
 void
 print_cupti_error(std::ostream& os, CUptiResult err, const char* func)
 {
@@ -354,4 +354,6 @@ EventSampling::print_statistics(std::ostream& os)
        << m_num_snapshots << " total snapshots, "
        << m_num_reads << " cupti events read."
        << std::endl;
+
+    return os;
 }
