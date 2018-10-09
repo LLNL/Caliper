@@ -179,7 +179,7 @@ class Aggregate
 
     ConfigSet                      config;
 
-    ThreadDB*                      tdb_list;
+    ThreadDB*                      tdb_list = nullptr;
     util::spinlock                 tdb_lock;
 
     AggregateAttributeInfo         aI;
