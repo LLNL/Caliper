@@ -111,15 +111,17 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     decltype(&realloc) orig_realloc =
         reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
 
+    Caliper c = Caliper::sigsafe_instance();
+    
+    if (c)
+        for (Experiment* exp : sysalloc_experiments)
+            c.memory_region_end(exp, ptr);
+
     void *ret = (*orig_realloc)(ptr, size);
 
-    Caliper c = Caliper::sigsafe_instance();
-
     if (c)
-        for (Experiment* exp : sysalloc_experiments) {
-            c.memory_region_end(exp, ptr);
+        for (Experiment* exp : sysalloc_experiments)
             c.memory_region_begin(exp, ret, "realloc", 1, 1, &size);
-        }
 
     return ret;
 }
@@ -129,13 +131,13 @@ void cali_free_wrapper(void *ptr)
     decltype(&free) orig_free =
         reinterpret_cast<decltype(&free)>(gotcha_get_wrappee(orig_free_handle));
 
-    (*orig_free)(ptr);
-
     Caliper c = Caliper::sigsafe_instance();
 
     if (c)
         for (Experiment* exp : sysalloc_experiments)
             c.memory_region_end(exp, ptr);
+
+    (*orig_free)(ptr);
 }
 
 
@@ -187,9 +189,8 @@ void sysalloc_initialize(Caliper* c, Experiment* exp) {
                 std::find(sysalloc_experiments.begin(), sysalloc_experiments.end(),
                           exp));
 
-            // FIXME: This crashes currently
-            // if (sysalloc_experiments.empty())
-            //     clear_alloc_hooks();
+            if (sysalloc_experiments.empty())
+                clear_alloc_hooks();
         });
 
     Log(1).stream() << exp->name() << ": Registered sysalloc service" << std::endl;
