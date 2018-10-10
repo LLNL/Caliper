@@ -28,8 +28,9 @@ foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   target_link_libraries(${app} caliper)
 endforeach()
 
-target_link_libraries(ci_test_thread  Threads::Threads)
-target_link_libraries(ci_test_nesting Threads::Threads)
+target_link_libraries(ci_test_thread          Threads::Threads)
+target_link_libraries(ci_test_nesting         Threads::Threads)
+target_link_libraries(ci_test_multiexperiment Threads::Threads)
 
 foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
