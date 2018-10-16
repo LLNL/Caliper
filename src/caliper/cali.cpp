@@ -178,6 +178,30 @@ cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
     return rec.needed_len();
 }
 
+size_t
+cali_experiment_pull_snapshot(cali_id_t exp_id, int scopes, size_t len, unsigned char* buf)
+{
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return 0;
+
+    SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
+    SnapshotRecord snapshot(snapshot_buffer);
+
+    Experiment* exp = c.get_experiment(exp_id);
+
+    if (exp)
+        c.pull_snapshot(exp, scopes, nullptr, &snapshot);
+    else
+        Log(0).stream() << "cali_experiment_pull_snapshot(): invalid experiment id " << exp_id << std::endl;
+            
+    CompressedSnapshotRecord rec(len, buf);
+    rec.append(&snapshot);
+
+    return rec.needed_len();
+}
+
 //
 // --- Snapshot parsing
 //
@@ -421,7 +445,7 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
     
     // manually go over all experiments
     
-    std::vector<Experiment*> experiments = c.get_experiments();
+    std::vector<Experiment*> experiments = c.get_all_experiments();
 
     for (Experiment* exp : experiments) {
         Variant v = c.get(exp, attr).value();
@@ -562,20 +586,73 @@ cali_config_allow_read_env(int allow)
 }
 
 cali_id_t
-cali_experiment_create_from_profile(const char* name, int allow_read_env, const char* keyvallist[][2])
+cali_experiment_create_from_profile(const char* name, int flags, const char* keyvallist[][2])
 {
     RuntimeConfig cfg;
 
     cfg.define_profile(name, keyvallist);
     cfg.set("CALI_CONFIG_PROFILE", name);
-    cfg.allow_read_env(allow_read_env != 0);
-    
-    Experiment* exp =
-        Caliper::instance().create_experiment(name, cfg);
+    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
 
-    return exp ? exp->id() : CALI_INV_ID;
+    Caliper c;
+    Experiment* exp = c.create_experiment(name, cfg);
+
+    if (!exp)
+        return CALI_INV_ID;
+    if (flags & CALI_EXPERIMENT_LEAVE_INACTIVE)
+        c.deactivate_experiment(exp);
+
+    return exp->id();
 }
 
+void
+cali_experiment_delete(cali_id_t exp_id)
+{
+    Caliper c;    
+    Experiment* exp = c.get_experiment(exp_id);
+
+    if (exp) 
+        c.delete_experiment(exp);
+    else
+        Log(0).stream() << "cali_experiment_delete(): invalid experiment id " << exp_id << std::endl;
+}
+
+void
+cali_experiment_activate(cali_id_t exp_id)
+{
+    Caliper c;    
+    Experiment* exp = c.get_experiment(exp_id);
+
+    if (exp)
+        c.activate_experiment(exp);
+    else
+        Log(0).stream() << "cali_experiment_enable(): invalid experiment id " << exp_id << std::endl;
+}
+
+void
+cali_experiment_deactivate(cali_id_t exp_id)
+{
+    Caliper c;
+    Experiment* exp = c.get_experiment(exp_id);
+
+    if (exp)
+        c.deactivate_experiment(exp);
+    else
+        Log(0).stream() << "cali_experiment_disable(): invalid experiment id " << exp_id << std::endl;
+}
+
+int
+cali_experiment_is_active(cali_id_t exp_id)
+{
+    Experiment* exp = Caliper::instance().get_experiment(exp_id);
+
+    if (!exp) {
+        Log(0).stream() << "cali_experiment_is_active(): invalid experiment id " << exp_id << std::endl;
+        return 0;
+    }
+
+    return (exp->is_active() ? 1 : 0);
+}
 
 void
 cali_flush(int flush_opts)

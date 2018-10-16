@@ -36,6 +36,15 @@
 #ifndef CALI_FUNCTIONAL_H
 #define CALI_FUNCTIONAL_H
 
+
+#define GCC_VERSION (__GNUC__ * 10000 \
+                     + __GNUC_MINOR__ * 100 \
+                     + __GNUC_PATCHLEVEL__)
+/* Test for GCC > 3.2.0 */
+
+
+#define VARIADIC_RETURN_SAFE
+
 #include "Annotation.h"
 #include "cali_definitions.h"
 

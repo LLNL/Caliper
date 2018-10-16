@@ -178,7 +178,8 @@ cali_push_snapshot(int scope, int n,
                    const size_t    trigger_info_size_list[]);
 
 /**
- * \brief Take a snapshot and write it into the user-provided buffer.
+ * \brief Take a snapshot on the default experiment 
+ *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
  * it is not guaranteed to succeed. Specifically, the function will
@@ -201,6 +202,33 @@ cali_push_snapshot(int scope, int n,
  */
 size_t
 cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
+
+/**
+ * \brief Take a snapshot on the given experiment 
+ *   and write it into the user-provided buffer.
+ *
+ * This function can be safely called from a signal handler. However,
+ * it is not guaranteed to succeed. Specifically, the function will
+ * fail if the signal handler interrupts already running Caliper
+ * code.
+ * 
+ * The snapshot representation returned in \a buf is valid only on the
+ * local process, while Caliper is active (which is up until Caliper's 
+ * `finish_evt` callback is invoked).
+ * It can be parsed with cali_unpack_snapshot().
+ *
+ * \param exp_id Experiment to take the snapshot on
+ * \param scope  Indicates which scopes (process, thread, or task) the
+ *   snapshot should span
+ * \param len    Length of the provided snapshot buffer.
+ * \param buf    User-provided snapshot storage buffer.
+ * \return Actual size of the snapshot representation. 
+ *   If this is larger than `len`, the provided buffer was too small and 
+ *   not all of the snapshot was returned.
+ *   If this is zero, no snapshot was taken.
+ */
+size_t
+cali_experiment_pull_snapshot(cali_id_t exp_id, int scope, size_t len, unsigned char* buf);
 
 /**
  * \}
@@ -462,7 +490,7 @@ cali_config_set(const char* key, const char* value);
  *
  * \code
  *   const char* my_profile[][2] =
- *     { { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp,trace" },
+ *     { { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
  *       { "CALI_EVENT_TRIGGER",   "annotation" },
  *       { NULL, NULL }
  *     };
@@ -502,10 +530,99 @@ cali_config_allow_read_env(int allow);
  * \name Experiment management
  * \{
  */
-
-cali_id_t
-cali_experiment_create_from_profile(const char* name, int allow_read_env, const char* keyvallist[][2]);
     
+/**
+ * \brief Create a new %Caliper experiment with the given key-value 
+ *   configuration profile.
+ *
+ * An experiment controls %Caliper's annotation tracking and measurement 
+ * activities. Multiple experiments can be active at the same time, independent
+ * of each other. Each experiment has its own runtime configuration, 
+ * blackboard, and active services.
+ *
+ * This function creates a new experiment with the given name, flags, and 
+ * runtime configuration. The runtime configuration is provided as a list of 
+ * key-value pairs and works similar to the configuration through environment
+ * variables or configuration files.
+ *
+ * Creating experiments is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread 
+ * during experiment creation.
+ * 
+ * Example:
+ *
+ * \code
+ *   const char* trace_config[][2] =
+ *     { { "CALI_SERVICES_ENABLE", "event,timestamp,trace" },
+ *       { "CALI_EVENT_TRIGGER",   "annotation" },
+ *       { NULL, NULL }
+ *     };
+ *
+ *   //   Create a new experiment "trace" but leave it inactive initially.
+ *   // (By default, experiments are active immediately.)
+ *   cali_id_t trace_exp_id = 
+ *     cali_experiment_create_from_profile("trace", 
+ *                                         CALI_EXPERIMENT_LEAVE_INACTIVE,
+ *                                         trace_config);
+ * 
+ *   // Activate the experiment now.
+ *   cali_experiment_activate(trace_exp_id);
+ * \endcode
+ *
+ * \param name Name of the experiment. This is used to identify the experiment
+ *   in %Caliper log output.
+ * \param flags Flags that control experiment creation as bitwise-OR of 
+ *   cali_experiment_opt flags.
+ * \param keyvallist The experiment's runtime configuraiton as a key-value 
+ *   list (array of two strings). The first string in each entry is the 
+ *    configuration key, the second string is its value. Keys must be all 
+ *    uppercase. Terminate the list with two NULL entries: 
+ *    <tt> { NULL, NULL } </tt>.
+ *
+ * \return ID of the created experiment.
+ */    
+    
+cali_id_t
+cali_experiment_create_from_profile(const char* name, int flags, const char* keyvallist[][2]);
+
+/**
+ * \brief Delete an experiment. Frees associated resources, e.g. blackboards,
+ *   trace buffers, etc.
+ * 
+ * Experiment deletion is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread.
+ *
+ * \param exp_id ID of the experiment 
+ */    
+void
+cali_experiment_delete(cali_id_t exp_id);
+
+/**
+ * \brief Activate the (inactive) experiment with the given ID.
+ * 
+ * Only active experiments will process annotations and other events.
+ */    
+void
+cali_experiment_activate(cali_id_t exp_id);
+
+/**
+ * \brief Deactivate the experiment with the given ID.
+ * 
+ * Inactive experiments will not track or process annotations and many 
+ * other events. 
+ *
+ * \sa cali_experiment_activate
+ */     
+void
+cali_experiment_deactivate(cali_id_t exp_id);
+
+/**
+ * \brief Returns a non-zero value if the experiment with the given ID 
+ *   is active, otherwise 0.
+ */    
+int
+cali_experiment_is_active(cali_id_t exp_id);
+
 /**
  * \}
  */
@@ -520,15 +637,8 @@ cali_experiment_create_from_profile(const char* name, int allow_read_env, const 
  */
 
 /**
- * Flush options
- */
-typedef enum {
-  /** Clear trace and aggregation buffers after flush. */
-  CALI_FLUSH_CLEAR_BUFFERS = 1
-} cali_flush_opt;
-
-/**
- * \brief Forward aggregation or trace buffer contents to output services.
+ * \brief For all experiments, forward aggregation or trace buffer 
+ *   contents to output services.
  *
  * Flushes trace buffers and/or aggreation database in the trace and 
  * aggregation services, respectively. This will forward all buffered snapshot
@@ -544,6 +654,26 @@ typedef enum {
 
 void
 cali_flush(int flush_opts);
+
+/**
+ * \brief Forward aggregation or trace buffer contents to output services 
+ *   for the given experiment.
+ *
+ * Flushes trace buffers and/or aggreation database in the trace and 
+ * aggregation services, respectively. This will forward all buffered snapshot
+ * records to output services, e.g., recorder, report, or mpireport.
+ *
+ * By default, the trace/aggregation buffers will not be cleared after the 
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to 
+ * the \a flush_opts flags.
+ *
+ * \param exp_id     ID of the experiment to flush
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags. 
+ *    Use 0 for default behavior.
+ */
+    
+void
+cali_experiment_flush(cali_id_t exp_id, int flush_opts);
 
 /**
  * \}

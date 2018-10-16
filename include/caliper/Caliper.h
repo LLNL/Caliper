@@ -299,12 +299,15 @@ public:
 
     Experiment* create_experiment(const char* name, const RuntimeConfig& cfg);
 
-    std::vector<Experiment*> get_experiments();
+    std::vector<Experiment*> get_all_experiments();
 
     Experiment* get_experiment(cali_id_t id);
     // Experiment* get_experiment(const char* name);
 
     void        delete_experiment(Experiment* exp);
+
+    void        activate_experiment(Experiment* exp);
+    void        deactivate_experiment(Experiment* exp);
 
     /// \}
 

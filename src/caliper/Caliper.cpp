@@ -274,7 +274,6 @@ Experiment::is_active() const
     return mP->active;
 }
 
-
 //
 // --- Caliper thread data
 //
@@ -1291,6 +1290,27 @@ Caliper::exchange(Experiment* exp, const Attribute& attr, const Variant& data)
 // --- Experiment API
 //
 
+/// \brief Create a %Caliper experiment with the given runtime configuration.
+///
+/// An experiment controls %Caliper's annotation tracking and measurement 
+/// activities. Multiple experiments can be active at the same time, independent
+/// of each other. Each experiment has its own runtime configuration, 
+/// blackboard, and active services.
+///
+/// Creating experiments is \b not thread-safe. Users must make sure that no
+/// %Caliper activities (e.g. annotations) are active on any program thread 
+/// during experiment creation.
+///
+/// The call returns a pointer to the created experiment object. %Caliper
+/// retains ownership of the experiment object. This pointer becomes invalid
+/// when the experiment is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an experiment is about to be deleted.
+///
+/// \param name Name of the experiment. This is used to identify the experiment
+///   in %Caliper log output.
+/// \param cfg The experiment's runtime configuration.
+/// \return Pointer to the experiment. Null pointer if the experiment could
+///   not be created.
 Experiment*
 Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
 {
@@ -1311,7 +1331,7 @@ Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
         
     Services::register_services(this, exp);
 
-    Log(1).stream() << "Creating \"" << name << "\" experiment" << std::endl;
+    Log(1).stream() << "Creating experiment " << name << std::endl;
 
     if (exp->config().get("caliper", "config_check").to_bool())
         config_sanity_check(exp->config());
@@ -1323,6 +1343,12 @@ Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
     return exp;
 }
 
+/// \brief Return pointer to experiment object with the given ID.
+///
+/// The call returns a pointer to the created experiment object. %Caliper
+/// retains ownership of the experiment object. This pointer becomes invalid
+/// when the experiment is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an experiment is about to be deleted.
 Experiment*
 Caliper::get_experiment(cali_id_t id)
 {
@@ -1332,8 +1358,9 @@ Caliper::get_experiment(cali_id_t id)
     return sG->experiments[id].get();
 }
 
+/// \brief Return all existing experiments (active and inactive).
 std::vector<Experiment*>
-Caliper::get_experiments()
+Caliper::get_all_experiments()
 {
     std::vector<Experiment*> ret;
 
@@ -1346,6 +1373,11 @@ Caliper::get_experiments()
     return ret;
 }
 
+/// \brief Delete the given experiment.
+///
+/// Deleting experiments is \b not thread-safe. Users must make sure that no
+/// %Caliper activities (e.g. annotations) are active on any program thread 
+/// during experiment creation.
 void
 Caliper::delete_experiment(Experiment* exp)
 {
@@ -1353,6 +1385,24 @@ Caliper::delete_experiment(Experiment* exp)
     
     exp->mP->events.finish_evt(this, exp);
     sG->experiments[exp->id()].reset();
+}
+
+/// \brief Activate the given experiment.
+///
+/// Inactive experiments will not track or process annotations and many 
+/// other events. 
+void
+Caliper::activate_experiment(Experiment* exp)
+{
+    exp->mP->active = true;
+}
+
+/// \brief Deactivate the given experiment.
+/// \copydetails Caliper::activate_experiment
+void
+Caliper::deactivate_experiment(Experiment* exp)
+{
+    exp->mP->active = false;
 }
 
 //

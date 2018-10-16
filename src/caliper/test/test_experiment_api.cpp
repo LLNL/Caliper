@@ -1,3 +1,4 @@
+#include "caliper/cali.h"
 #include "caliper/Caliper.h"
 
 #include "caliper/common/RuntimeConfig.h"
@@ -15,9 +16,9 @@ TEST(ExperimentAPITest, MultiExperiment) {
     Caliper     c;
 
     Experiment* exp_a =
-        c.create_experiment("exp_a", cfg);
+        c.create_experiment("exp.m.a", cfg);
     Experiment* exp_b =
-        c.create_experiment("exp_b", cfg);
+        c.create_experiment("exp.m.b", cfg);
 
     Attribute   attr_global =
         c.create_attribute("multiexp.global", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
@@ -46,7 +47,7 @@ TEST(ExperimentAPITest, MultiExperiment) {
 
     int exp_a_count = 0, exp_b_count = 0;
 
-    for (const Experiment* exp : c.get_experiments()) {
+    for (const Experiment* exp : c.get_all_experiments()) {
         if (exp->id() == exp_a_id)
             ++exp_a_count;
         if (exp->id() == exp_b_id)
@@ -55,4 +56,131 @@ TEST(ExperimentAPITest, MultiExperiment) {
 
     EXPECT_EQ(exp_a_count, 0);
     EXPECT_EQ(exp_b_count, 1);
+
+    c.delete_experiment(exp_b);
+}
+
+TEST(ExperimentAPITest, C_API) {
+    const char* cfg[][2] = {
+        { "CALI_CALIPER_CONFIG_CHECK",  "false" },
+        { nullptr, nullptr }
+    };
+
+    cali_id_t exp_a_id =
+        cali_experiment_create_from_profile("exp.c_api.a", 0, cfg);
+    cali_id_t exp_b_id =
+        cali_experiment_create_from_profile("exp.c_api.b", 0, cfg);
+    cali_id_t exp_c_id =
+        cali_experiment_create_from_profile("exp.c_api.c", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
+
+    ASSERT_NE(exp_a_id, CALI_INV_ID);
+    ASSERT_NE(exp_b_id, CALI_INV_ID);
+    ASSERT_NE(exp_c_id, CALI_INV_ID);
+
+    cali_begin_int_byname("exp.c_api.all", 7744);
+
+    cali_experiment_deactivate(exp_b_id);
+
+    EXPECT_NE(cali_experiment_is_active(exp_a_id), 0);
+    EXPECT_EQ(cali_experiment_is_active(exp_b_id), 0);
+    EXPECT_EQ(cali_experiment_is_active(exp_c_id), 0);
+
+    cali_begin_int_byname("exp.c_api.not_b", 4477);
+
+    cali_id_t attr_a = cali_find_attribute("exp.c_api.all");
+    cali_id_t attr_b = cali_find_attribute("exp.c_api.not_b");
+
+    ASSERT_NE(attr_a, CALI_INV_ID);
+    ASSERT_NE(attr_b, CALI_INV_ID);
+
+    /* exp_a should have both values */
+
+    {
+        unsigned char rec[60];
+        size_t len =
+            cali_experiment_pull_snapshot(exp_a_id, CALI_SCOPE_THREAD, 60, rec);
+
+        ASSERT_NE(len, 0);
+        ASSERT_LT(len, 60);
+
+        cali_variant_t val_a =
+            cali_find_first_in_snapshot(rec, attr_a, nullptr);
+        cali_variant_t val_b =
+            cali_find_first_in_snapshot(rec, attr_b, nullptr);
+
+        EXPECT_EQ(cali_variant_to_int(val_a, nullptr), 7744);
+        EXPECT_EQ(cali_variant_to_int(val_b, nullptr), 4477);
+    }
+    
+    /* exp_b should only have "all" */
+    
+    {
+        unsigned char rec[60];
+        size_t len =
+            cali_experiment_pull_snapshot(exp_b_id, CALI_SCOPE_THREAD, 60, rec);
+
+        ASSERT_NE(len, 0);
+        ASSERT_LT(len, 60);
+
+        cali_variant_t val_a =
+            cali_find_first_in_snapshot(rec, attr_a, nullptr);
+        cali_variant_t val_b =
+            cali_find_first_in_snapshot(rec, attr_b, nullptr);
+
+        EXPECT_EQ(cali_variant_to_int(val_a, nullptr), 7744);
+        EXPECT_TRUE(cali_variant_is_empty(val_b));
+    }
+
+    /* exp_c should have nothing */
+    
+    {
+        unsigned char rec[60];
+        size_t len =
+            cali_experiment_pull_snapshot(exp_c_id, CALI_SCOPE_THREAD, 60, rec);
+
+        ASSERT_NE(len, 0);
+        ASSERT_LT(len, 60);
+
+        cali_variant_t val_a =
+            cali_find_first_in_snapshot(rec, attr_a, nullptr);
+        cali_variant_t val_b =
+            cali_find_first_in_snapshot(rec, attr_b, nullptr);
+
+        EXPECT_TRUE(cali_variant_is_empty(val_a));
+        EXPECT_TRUE(cali_variant_is_empty(val_b));
+    }
+
+    cali_end(attr_b);
+
+    cali_experiment_activate(exp_b_id);
+
+    EXPECT_NE(cali_experiment_is_active(exp_b_id), 0);
+
+    cali_end(attr_a);
+
+    /* check if "all" is closed on experiment b now */
+    
+    {
+        unsigned char rec[60];
+        size_t len =
+            cali_experiment_pull_snapshot(exp_b_id, CALI_SCOPE_THREAD, 60, rec);
+
+        ASSERT_NE(len, 0);
+        ASSERT_LT(len, 60);
+
+        cali_variant_t val_a =
+            cali_find_first_in_snapshot(rec, attr_a, nullptr);
+
+        EXPECT_TRUE(cali_variant_is_empty(val_a));
+    }
+
+    cali_experiment_delete(exp_a_id);
+    cali_experiment_delete(exp_b_id);
+    cali_experiment_delete(exp_c_id);
+
+    Caliper c;
+
+    EXPECT_EQ(c.get_experiment(exp_a_id), nullptr);
+    EXPECT_EQ(c.get_experiment(exp_b_id), nullptr);
+    EXPECT_EQ(c.get_experiment(exp_c_id), nullptr);
 }
