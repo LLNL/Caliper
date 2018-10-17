@@ -110,14 +110,12 @@ namespace
           return my_name;
         } 
         void flush(Caliper* c, const SnapshotRecord*) {
-#if 0
           for(int i =0 ;i<m_queries.size();i++) {
             auto& m_query = m_queries[i];
             auto& m_json = m_jsons[i];
             std::string grouping = m_annotations_and_places[i].first;
-            std::string end_grouping = "event.end#"+grouping;
-            std::vector<std::string> metrics_of_interest { "sum#time.inclusive.duration", 
-              grouping, end_grouping};
+            std::vector<std::string> metrics_of_interest { "inclusive#sum#time.duration", 
+              grouping};
             m_query.first->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
                 std::string name;
                 TimeType value = 0;
@@ -127,7 +125,7 @@ namespace
                   for(std::string& attribute_key : metrics_of_interest) {
                     Attribute attr = db.get_attribute(attribute_key);
                     Variant value_iter = entry.value(attr);
-                    if (((attribute_key == "time.inclusive.duration") && !(value_iter.empty()) && !(entry.is_reference()))) {
+                    if (((attribute_key == "inclusive#sum#time.duration") && !(value_iter.empty()) && !(entry.is_reference()))) {
                       value = value_iter.to_uint();
                     }
                     if((attribute_key==grouping)){
@@ -235,7 +233,6 @@ namespace
             rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
             doc.Accept(writer);
           }
-#endif
         }
         // TODO: reimplement
         Spot()
@@ -253,9 +250,8 @@ namespace
            QuerySpec    spec(parser.spec());
            return std::make_pair(new Aggregator(spec),new RecordSelector(spec));
         }
-        static std::string query_for_annotation(std::string grouping, std::string metric = "time.inclusive.duration"){
-          std::string end_grouping = "event.end#"+grouping;
-          return "SELECT " + grouping+","+end_grouping+",sum#"+metric+" " + "WHERE " +grouping+","+end_grouping+","+metric + " GROUP BY " + end_grouping+","+grouping;
+        static std::string query_for_annotation(std::string grouping, std::string metric = "sum#time.duration"){
+          return "SELECT " + grouping+",inclusive_sum("+metric+") " + "WHERE " +grouping+","+metric + " GROUP BY " + grouping;
         }
         static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
@@ -290,6 +286,7 @@ namespace
               std::string annotation = annotation_and_place[0];
               std::string& place = annotation_and_place[1];
               std::string query = query_for_annotation(annotation);
+              Log(0).stream() << "Query: "<<query<<"\n";
               m_queries.emplace_back(create_query_processor(query));
               m_annotations_and_places.push_back(std::make_pair(annotation,place));
               if(use_default_title){
@@ -364,7 +361,8 @@ namespace
         },
         { "y_axes", CALI_TYPE_INT, "microseconds",
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)",
-          "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)"},
+          "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)"
+        },
         { "include_local", CALI_TYPE_STRING, "YES",
           "In some instrumentations, this option will prevent duplication of a record",
           "In some instrumentations, this option will prevent duplication of a record"
