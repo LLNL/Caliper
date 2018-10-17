@@ -117,6 +117,24 @@ namespace
             std::vector<std::string> metrics_of_interest { "inclusive#sum#time.duration", 
               grouping};
             m_query.first->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
+                    std::string name;
+                    TimeType value = 0;
+
+                    for (const Entry& e : list) {
+                        if (e.is_reference()) {
+                            for (const Node* node = e.node(); node; node = node->parent()) {
+                                if (db.get_attribute(node->attribute()).is_nested()) {
+                                    name = node->data().to_string() + (name.empty() ? "": "/") + name;
+                                }
+                            }
+                        } else if (db.get_attribute(e.attribute()).name() == "inclusive#sum#time.duration") {
+                            value = e.value().to_uint();
+                        }
+                    }
+                    
+                    if (!name.empty())
+                        m_json.push_back(std::make_pair(name, value));
+#if 0                    
                 std::string name;
                 TimeType value = 0;
                 std::string local_name;
@@ -152,6 +170,7 @@ namespace
                 else{
                   m_json.push_back(std::make_pair(local_name,value));
                 }
+#endif
             });
           }
           for(int i =0 ;i<m_jsons.size();i++) {

@@ -34,6 +34,11 @@
 
 #include <caliper/cali.h>
 
+void foo()
+{
+    CALI_CXX_MARK_FUNCTION;
+}
+
 int main(int argc, char* argv[])
 {
     // Mark begin/end of the current function.
@@ -62,6 +67,8 @@ int main(int argc, char* argv[])
         // { "function"="main", "loop"="main loop", "iteration#main loop"=<i> }
 
         t += delta_t;
+
+        foo();
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);
