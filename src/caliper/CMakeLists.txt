@@ -23,6 +23,10 @@ set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
 
 target_link_libraries(caliper PUBLIC caliper-common)
+target_link_libraries(caliper PUBLIC numa)
+target_link_libraries(caliper PUBLIC ibverbs)
+target_link_libraries(caliper PUBLIC psm2)
+target_link_libraries(caliper PUBLIC pmi2)
 target_link_libraries(caliper PRIVATE Threads::Threads)
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})

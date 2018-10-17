@@ -110,12 +110,13 @@ namespace
           return my_name;
         } 
         void flush(Caliper* c, const SnapshotRecord*) {
+#if 0
           for(int i =0 ;i<m_queries.size();i++) {
             auto& m_query = m_queries[i];
             auto& m_json = m_jsons[i];
             std::string grouping = m_annotations_and_places[i].first;
             std::string end_grouping = "event.end#"+grouping;
-            std::vector<std::string> metrics_of_interest { "time.inclusive.duration", 
+            std::vector<std::string> metrics_of_interest { "sum#time.inclusive.duration", 
               grouping, end_grouping};
             m_query.first->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
                 std::string name;
@@ -234,6 +235,7 @@ namespace
             rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
             doc.Accept(writer);
           }
+#endif
         }
         // TODO: reimplement
         Spot()
@@ -253,7 +255,7 @@ namespace
         }
         static std::string query_for_annotation(std::string grouping, std::string metric = "time.inclusive.duration"){
           std::string end_grouping = "event.end#"+grouping;
-          return "SELECT " + grouping+","+end_grouping+",sum("+metric+") " + "WHERE " +grouping+","+end_grouping+","+metric + " GROUP BY " + end_grouping+","+grouping;
+          return "SELECT " + grouping+","+end_grouping+",sum#"+metric+" " + "WHERE " +grouping+","+end_grouping+","+metric + " GROUP BY " + end_grouping+","+grouping;
         }
         static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
