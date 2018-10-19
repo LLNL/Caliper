@@ -105,10 +105,13 @@ class Recorder
         // The actual output stream will be created on-demand 
         // with the first flush_snapshot call.
 
-        std::string filename = m_config.get("filename").to_string();
+        std::string filename  = m_config.get("filename").to_string();
+        std::string directory = m_config.get("directory").to_string();
 
         if (filename.empty())
             filename = create_filename();
+        if (!directory.empty())
+            filename = directory + "/" + filename;
 
         OutputStream stream;
         stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
@@ -193,6 +196,11 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
       "   stdout: Standard output stream,\n"
       "   stderr: Standard error stream.\n"
       " or a file name pattern. By default, a filename is auto-generated.\n"
+    },
+    { "directory", CALI_TYPE_STRING, "",
+      "A directory to write .cali files to."
+      "A directory to write .cali files to. The directory must exist,\n"
+      "Caliper does not create it\n"
     },
     ConfigSet::Terminator
 };
