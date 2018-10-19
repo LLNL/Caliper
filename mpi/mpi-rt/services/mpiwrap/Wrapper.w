@@ -197,7 +197,7 @@ mpi_init_cb(Caliper* c, Experiment* exp)
 
     if (mwc->enable_msg_tracing) {
         Log(2).stream() << exp->name() << ": Enabling MPI message tracing" << std::endl;
-        mwc->tracing.init(c, exp);
+        mwc->tracing.init_mpi(c, exp);
     }
 }
 
@@ -1585,6 +1585,9 @@ void mpiwrap_init(Caliper* c, Experiment* exp)
     MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(exp);
 
     mwc->mpi_events.mpi_init_evt.connect(::mpi_init_cb);
+
+    if (mwc->enable_msg_tracing)
+        mwc->tracing.init(c, exp);
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;
