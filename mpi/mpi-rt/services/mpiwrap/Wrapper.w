@@ -1573,7 +1573,7 @@ void mpiwrap_init(Caliper* c, Experiment* exp)
 
     exp->events().finish_evt.connect(
         [](Caliper* c, Experiment* exp){
-            Log(2).stream() << exp->name() << "Finishing mpi service" << std::endl;
+            Log(2).stream() << exp->name() << ": Finishing mpi service" << std::endl;
                 
             delete MpiWrapperConfig::get_wrapper_config(exp);
         });
@@ -1583,6 +1583,8 @@ void mpiwrap_init(Caliper* c, Experiment* exp)
     ::enable_wrapper = true;
 
     MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(exp);
+
+    mwc->mpi_events.mpi_init_evt.connect(::mpi_init_cb);
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;
