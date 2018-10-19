@@ -19,14 +19,18 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function,mpi.rank format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Barrier', 'count' : '2' }))
+            snapshots, { 'function'       : 'main',
+                         'mpi.function'   : 'MPI_Barrier',
+                         'count'          : '2',
+                         'mpi.rank'       : '0'
+            }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
@@ -42,14 +46,18 @@ class CaliperMPITest(unittest.TestCase):
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
-            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function format cali'
+            'CALI_MPIREPORT_CONFIG'   : 'select count() group by function,mpi.function,mpi.rank format cali'
         }
 
         query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Barrier', 'count' : '2' }))
+            snapshots, { 'function'       : 'main',
+                         'mpi.function'   : 'MPI_Barrier',
+                         'count'          : '2',
+                         'mpi.rank'       : '0'
+            }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast',   'count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
@@ -124,6 +132,39 @@ class CaliperMPITest(unittest.TestCase):
             snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Bcast', 'count' : '1' }))
         self.assertFalse(cat.has_snapshot_with_attributes(
             snapshots, { 'function' : 'main', 'mpi.function' : 'MPI_Reduce'  }))
+
+    def test_mpi_msg_trace(self):
+        target_cmd = [ './ci_test_mpi_before_cali' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_SERVICES_ENABLE'    : 'event,mpi,recorder,trace',
+            'CALI_MPI_MSG_TRACING'    : 'true',
+            'CALI_MPI_WHITELIST'      : 'all',
+            'CALI_RECORDER_FILENAME'  : 'stdout'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'mpi.function'      : 'MPI_Barrier',
+                         'mpi.coll.type'     : '1',
+                         'mpi.comm.is_world' : 'true'
+            }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'mpi.function'      : 'MPI_Bcast',
+                         'mpi.coll.type'     : '3',
+                         'mpi.coll.root'     : '0',
+                         'mpi.comm.is_world' : 'true'
+            }))
+        self.assertTrue(cat.has_snapshot_with_keys(
+            snapshots, { 'function', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
+            }))
 
 if __name__ == "__main__":
     unittest.main()
