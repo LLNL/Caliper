@@ -293,7 +293,7 @@ install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
 # Create pkg-confic .pc file
 set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
 set(PKG_CONFIG_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
-set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
+set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper -lcaliper-tools-util")
 set(PKG_CONFIG_CFLAGS "-I\${includedir}")
 
 configure_file(
