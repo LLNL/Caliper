@@ -47,9 +47,9 @@ void RealFreeField(ArrayType target){
 
 void realMigrateToGPU(void* dst, void* src){
 }
-auto AllocateField = cali::bluthund::wrap("AllocateField",RealAllocateField ,std::vector<std::string>({"Field_Allocation_Size"}),"Returned_Field");
-auto FreeField = cali::bluthund::wrap(    "FreeField",    RealFreeField    , {"Field_To_Free"},"Returned_Field");
-auto MigrateToGPU = cali::bluthund::wrap ( "MigrateToGPU", realMigrateToGPU, {"Destination", "Source"}, "Pass");
+auto AllocateField = cali::functional::wrap("AllocateField",RealAllocateField ,std::vector<std::string>({"Field_Allocation_Size"}),"Returned_Field");
+auto FreeField = cali::functional::wrap(    "FreeField",    RealFreeField    , {"Field_To_Free"},"Returned_Field");
+auto MigrateToGPU = cali::functional::wrap ( "MigrateToGPU", realMigrateToGPU, {"Destination", "Source"}, "Pass");
 
 void stupid_compute(ArrayType input){
     CALI_CXX_MARK_FUNCTION;
