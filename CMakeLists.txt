@@ -156,6 +156,7 @@ if (WITH_DYNINST)
     list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
     list(APPEND CALIPER_EXTERNAL_LIBS instructionAPI)
     list(APPEND CALIPER_EXTERNAL_LIBS parseAPI)
+    list(APPEND CALIPER_EXTERNAL_LIBS common)
   endif()
   # CMake already provides useful error message if DyninstConfig.cmake isn't found
 endif()
