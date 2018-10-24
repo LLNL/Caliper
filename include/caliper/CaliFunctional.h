@@ -431,24 +431,37 @@ struct TrackedExecutor {
     {
       return body(args...);
     }
+    void close(){
+      for(auto annot: argument_annotations){
+        annot.end();
+      }
+      returned_annotation.end();
+      rip_annot.end();
+    }
     template <typename... Args>
     auto operator()(Args... args) -> typename std::enable_if<
         !std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
         typename std::result_of<LB(Args...)>::type>::type {
-      cali::Annotation::Guard func_annot_guard(func_annot.begin());
+      func_annot.begin();
       Nase<Args...>::record(0,argument_annotations,args...);
       recorder_helper(rip_annot,rip_the_rip());
       auto return_value = body(args...);
       recorder_helper(returned_annotation, return_value);
+      func_annot.end();
+      close();
+      
       return return_value;
     }
     template <typename... Args>
     auto operator()(Args... args) -> typename std::enable_if<
         std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
         typename std::result_of<LB(Args...)>::type>::type {
-      cali::Annotation::Guard func_annot_guard(func_annot.begin());
+      func_annot.begin();
       Nase<Args...>::record(0,argument_annotations,args...);
       recorder_helper(rip_annot,rip_the_rip());
+      func_annot.end();
+      close();
+
       return body(args...);
     }
     LB body;
