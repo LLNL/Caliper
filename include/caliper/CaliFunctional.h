@@ -421,9 +421,9 @@ void* rip_the_rip(){
 
 template<class LB>
 struct TrackedExecutor {
-    TrackedExecutor(std::string func_name, LB func, std::vector<std::string> arg_names_in, std::string returned_name_in) : func_annot(func_name.c_str()), body(func), returned_annotation(returned_name_in.c_str(), CALI_ATTR_SKIP_EVENTS), rip_annot("rip", CALI_ATTR_SKIP_EVENTS){
+    TrackedExecutor(std::string func_name, LB func, std::vector<std::string> arg_names_in, std::string returned_name_in) : func_annot(func_name.c_str()), body(func), returned_annotation((func_name + "#"+returned_name_in).c_str(), CALI_ATTR_SKIP_EVENTS), rip_annot("rip", CALI_ATTR_SKIP_EVENTS){
         for(auto name : arg_names_in){
-          argument_annotations.push_back(AnnotationType(name.c_str(), CALI_ATTR_SKIP_EVENTS));
+          argument_annotations.push_back(AnnotationType((func_name + "#"+ name).c_str(), CALI_ATTR_SKIP_EVENTS));
         }
     }
     template <typename... Args>
