@@ -446,7 +446,7 @@ struct TrackedExecutor {
     auto operator()(Args... args) -> typename std::enable_if<
         std::is_same<typename std::result_of<LB(Args...)>::type, void>::value,
         typename std::result_of<LB(Args...)>::type>::type {
-      cali::Annotation::Guard func_annot_guard(func_annot);
+      cali::Annotation::Guard func_annot_guard(func_annot.begin());
       Nase<Args...>::record(0,argument_annotations,args...);
       recorder_helper(rip_annot,rip_the_rip());
       return body(args...);
