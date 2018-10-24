@@ -17,7 +17,8 @@ set(CALIPER_CXX_EXAMPLE_APPS
   cali-memtracking
   cali-memtracking-macros
   cali-perfproblem-branch-mispred
-  cali-functional)
+  cali-functional
+  cali-functional-memory)
 set(CALIPER_C_EXAMPLE_APPS
   cali-basic-annotations-c
   cali-print-snapshot)
@@ -33,7 +34,7 @@ foreach(app ${CALIPER_C_EXAMPLE_APPS})
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
 endforeach()
 
-target_link_libraries(cali-memtracking
-  caliper-tools-util)
-target_link_libraries(cali-memtracking-macros
-  caliper-tools-util)
+#target_link_libraries(cali-memtracking
+#  caliper-tools-util)
+#target_link_libraries(cali-memtracking-macros
+#  caliper-tools-util)
