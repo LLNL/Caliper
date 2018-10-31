@@ -867,10 +867,11 @@ struct Aggregator::AggregatorImpl
     // --- data
 
     vector<string>         m_key_strings;
-    vector<cali_id_t>      m_key_ids;
+    vector<Attribute>      m_key_attrs;
     std::mutex             m_key_lock;
 
     bool                   m_select_all;
+    bool                   m_select_nested;
     
     vector<AggregateKernelConfig*> m_kernel_configs;
     
@@ -933,7 +934,9 @@ struct Aggregator::AggregatorImpl
         
         m_kernel_configs.clear();
         m_key_strings.clear();
-        m_select_all = false;
+        
+        m_select_all    = false;
+        m_select_nested = false;
         
         switch (spec.aggregation_key.selection) {
         case QuerySpec::AttributeSelection::Default:
@@ -947,6 +950,16 @@ struct Aggregator::AggregatorImpl
             ; 
         }
 
+        {
+            auto it = std::find(m_key_strings.begin(), m_key_strings.end(),
+                                "prop:nested");
+
+            if (it != m_key_strings.end()) {
+                m_select_nested = true;
+                m_key_strings.erase(it);
+            }
+        }
+        
         //
         // --- kernel config
         //
@@ -1019,7 +1032,7 @@ struct Aggregator::AggregatorImpl
     // --- snapshot processing
     //
 
-    std::vector<cali_id_t> update_key_attribute_ids(CaliperMetadataAccessInterface& db) {
+    std::vector<Attribute> update_key_attributes(CaliperMetadataAccessInterface& db) {
         std::lock_guard<std::mutex>
             g(m_key_lock);
         
@@ -1029,13 +1042,29 @@ struct Aggregator::AggregatorImpl
             Attribute attr = db.get_attribute(*it);
 
             if (attr != Attribute::invalid) {
-                m_key_ids.push_back(attr.id());
+                m_key_attrs.push_back(attr);
                 it = m_key_strings.erase(it);
             } else
                 ++it;
         }
 
-        return m_key_ids;
+        return m_key_attrs;
+    }
+
+    bool is_key(const CaliperMetadataAccessInterface& db, const std::vector<Attribute>& key_attrs, cali_id_t attr_id) {
+        Attribute attr = db.get_attribute(attr_id);
+        
+        if (m_select_nested && attr.is_nested())
+            return true;
+
+        for (const Attribute& key_attr : key_attrs) {
+            if (key_attr == attr)
+                return true;
+            if (!attr.get(key_attr).empty())
+                return true;
+        }
+
+        return false;
     }
 
     size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataAccessInterface& db, unsigned char* key) {
@@ -1094,7 +1123,7 @@ struct Aggregator::AggregatorImpl
     }
     
     void process(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::vector<cali_id_t>   key_ids = update_key_attribute_ids(db);
+        std::vector<Attribute>   key_attrs = update_key_attributes(db);
                 
         // --- Unravel nodes, filter for key attributes
 
@@ -1103,21 +1132,19 @@ struct Aggregator::AggregatorImpl
         std::vector<Entry>       immediates;
         
         nodes.reserve(80);
-        immediates.reserve(key_ids.size());        
+        immediates.reserve(key_attrs.size());        
 
         bool select_all = m_select_all;
         
         for (const Entry& e : list)
             for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                if (select_all || std::find(key_ids.begin(), key_ids.end(), node->attribute()) != key_ids.end())
+                if (select_all || is_key(db, key_attrs, node->attribute()))
                     nodes.push_back(node);    
 
         // Only include explicitly selected immediate entries in the key.
-        // Add them in key_ids order to make sure they're normalized
-        for (cali_id_t id : key_ids)
-            for (const Entry& e : list)
-                if (e.is_immediate() && e.attribute() == id)
-                    immediates.push_back(e);
+        for (const Entry& e : list)
+            if (e.is_immediate() && is_key(db, key_attrs, e.attribute()))
+                immediates.push_back(e);
         
         // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
         //       Keeps nested attributes separate.
@@ -1126,8 +1153,10 @@ struct Aggregator::AggregatorImpl
                 return db.get_attribute(node->attribute()).is_nested(); } );
 
         std::stable_sort(nonnested_begin, nodes.end(), [](const Node* a, const Node* b) {
-                             return a->attribute() < b->attribute(); } );
-
+                return a->attribute() < b->attribute(); } );
+        std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b){
+                return a.attribute() < b.attribute(); } );
+        
         TrieNode* trie = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
         if (!trie)
