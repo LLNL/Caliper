@@ -41,6 +41,8 @@
 cali_id_t cali_class_aggregatable_attr_id  = CALI_INV_ID;
 cali_id_t cali_class_symboladdress_attr_id = CALI_INV_ID;
 cali_id_t cali_class_memoryaddress_attr_id = CALI_INV_ID;
+cali_id_t cali_class_iteration_attr_id     = CALI_INV_ID;
+
 cali_id_t cali_function_attr_id     = CALI_INV_ID;
 cali_id_t cali_loop_attr_id         = CALI_INV_ID;
 cali_id_t cali_statement_attr_id    = CALI_INV_ID;
@@ -60,6 +62,7 @@ namespace cali
     Attribute class_aggregatable_attr;
     Attribute class_symboladdress_attr;
     Attribute class_memoryaddress_attr;
+    Attribute class_iteration_attr;
     
     Attribute function_attr;
     Attribute loop_attr;
@@ -82,6 +85,9 @@ namespace cali
             },
             { "class.memoryaddress", CALI_TYPE_BOOL, CALI_ATTR_SKIP_EVENTS,
               &class_memoryaddress_attr, &cali_class_memoryaddress_attr_id
+            },
+            { "class.iteration",     CALI_TYPE_BOOL, CALI_ATTR_SKIP_EVENTS,
+              &class_iteration_attr, &cali_class_iteration_attr_id
             },
             { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, 0 }
         };

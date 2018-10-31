@@ -26,7 +26,7 @@ class CaliperReportTest(unittest.TestCase):
         self.assertTrue(len(snapshots) == 5)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'iteration#fooloop': '3', 'count': '1' }))
+            snapshots, { 'iteration#fooloop': '3', 'count': '4' }))
 
     def test_report_aggregate(self):
         """ Test reader lib's CSV export via report service """
@@ -43,10 +43,56 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function': 'main', 'count': '12', 'inclusive#count': '27' }))
+            snapshots, { 'function': 'main', 'count': '15', 'inclusive#count': '75' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function': 'main/foo', 'count': '15', 'inclusive#count': '15' }))
+            snapshots, { 'function': 'main/foo', 'count': '60', 'inclusive#count': '60' }))
+
+    def test_report_nested_key(self):
+        target_cmd = [ './ci_test_macros' ]
+
+        caliper_config = {
+            'CALI_SERVICES_ENABLE'   : 'event,trace,report',
+            'CALI_REPORT_CONFIG'     : 'select *,count() group by prop:nested,iteration#mainloop format expand',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        query_output = cat.run_test(target_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'   : 'main/foo',
+                         'loop'       : 'mainloop',
+                         'annotation' : 'pre-loop',
+                         'statement'  : 'foo.init',
+                         'iteration#mainloop' : '2',
+                         'count'      : '1'
+            }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'   : 'main/foo',
+                         'loop'       : 'mainloop/fooloop',
+                         'iteration#mainloop' : '3',
+                         'count'      : '9'
+            }))
         
+    def test_report_class_iteration(self):
+        target_cmd = [ './ci_test_macros' ]
+
+        caliper_config = {
+            'CALI_SERVICES_ENABLE'   : 'event,trace,report',
+            'CALI_REPORT_CONFIG'     : 'select *,count() group by prop:nested,class.iteration format expand',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        query_output = cat.run_test(target_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'   : 'main/foo',
+                         'loop'       : 'mainloop/fooloop',
+                         'iteration#mainloop' : '3',
+                         'iteration#fooloop'  : '1',
+                         'count'      : '1'
+            }))
 
     def test_report(self):
         target_cmd = [ './ci_test_report' ]

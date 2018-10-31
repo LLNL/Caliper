@@ -33,9 +33,9 @@ int main()
 
     for (int i = 0; i < count; ++i) {
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
-    }
 
-    foo();
+        foo();
+    }
     
     CALI_CXX_MARK_LOOP_END(mainloop);
 }

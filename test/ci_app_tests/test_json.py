@@ -31,7 +31,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         data = obj['data']
 
-        self.assertEqual(len(data), 7)
+        self.assertEqual(len(data), 10)
         self.assertEqual(len(data[0]), 4)
 
         meta = obj['column_metadata']
@@ -50,7 +50,8 @@ class CaliperJSONTest(unittest.TestCase):
 
         iterindex = columns.index('iteration#mainloop')
 
-        self.assertEqual(data[6][iterindex], 3)
+        # Note: this is a pretty fragile test
+        self.assertEqual(data[9][iterindex], 3)
 
         
     def test_esc(self):
