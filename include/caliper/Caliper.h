@@ -44,6 +44,7 @@
 #include "common/Variant.h"
 #include "common/util/callback.hpp"
 
+#include <map>
 #include <utility>
 
 namespace cali
@@ -253,6 +254,7 @@ public:
     Attribute get_attribute(const std::string& name) const;
 
     std::vector<Attribute> get_attributes() const;
+    std::map<std::string, Attribute> get_attribute_map() const;
 
     Attribute create_attribute(const std::string& name,
                                cali_attr_type     type,

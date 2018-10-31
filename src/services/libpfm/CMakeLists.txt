@@ -2,6 +2,7 @@ include_directories(${LIBPFM_INCLUDE_DIR})
 
 set(CALIPER_LIBPFM_SOURCES
     Libpfm.cpp
+    topdown.cpp
     perf_postprocessing.cpp
     perf_util.c)
 

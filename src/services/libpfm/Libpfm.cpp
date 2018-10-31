@@ -44,6 +44,8 @@
 #include "caliper/common/ContextRecord.h"
 
 #include <mutex>
+#include <sstream>
+#include <iterator>
 
 #include <sys/time.h>
 #include <sys/types.h>
@@ -60,9 +62,9 @@
 #include <getopt.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-//#include <linux/perf_event.h>
 
 #include "perf_postprocessing.h"
+#include "topdown.h"
 
 extern "C"
 {
@@ -125,7 +127,7 @@ namespace {
              "Record counter values (true|false)",   
              "Whether to record event counter values at each snapshot (true|false)"
             },
-            {"enable_sampling", CALI_TYPE_BOOL, "true",
+            {"enable_sampling", CALI_TYPE_BOOL, "false",
              "Enable sampling",   
              "Whether to trigger and record samples"
             },
@@ -145,6 +147,10 @@ namespace {
              "Extra event configurations",
              "Comma-separated list of extra event configuration values for supported events"
             },
+            {"topdown_arch", CALI_TYPE_STRING, "none",
+             "Topdown Analysis Architecture",
+             "Architecture for which to configure counters and derive metrics for topdown analysis"
+            },
             ConfigSet::Terminator
     };
 
@@ -155,6 +161,8 @@ namespace {
     static bool record_counters;
     static bool enable_sampling;
     static std::string events_string;
+    static std::string topdown_arch;
+    static bool topdown_enabled = false;
     static std::vector<std::string> event_list;
     static std::vector<uint64_t> sampling_period_list;
     static std::vector<uint64_t> precise_ip_list;
@@ -162,6 +170,8 @@ namespace {
 
     static std::vector <std::string> sample_attributes_strvec;
     static uint64_t sample_attributes = 0;
+
+    static TopdownObject *topdown_obj = NULL;
 
     /*
      * libpfm sampling variables
@@ -445,6 +455,18 @@ namespace {
 
         events_string = config.get("events").to_string();
         event_list    = StringConverter(events_string).to_stringlist();
+
+
+        topdown_arch = config.get("topdown_arch").to_string();
+        if (topdown_arch.compare("none") != 0) {
+            topdown_obj = new TopdownObject(topdown_arch);
+            event_list.insert(event_list.end(), topdown_obj->event_list.begin(), topdown_obj->event_list.end());
+        }
+
+        std::ostringstream events_string_oss;
+        std::copy(event_list.begin(), event_list.end()-1, std::ostream_iterator<string>(events_string_oss, ",")); 
+        events_string_oss << *event_list.rbegin();
+        events_string = events_string_oss.str();
 
         size_t events_listed = event_list.size();
 
@@ -746,6 +768,16 @@ namespace {
 
         if (attr.size() > 0)
             c->make_entrylist(attr.size(), attr.data(), data.data(), *snapshot);
+
+        if (topdown_obj != NULL)
+            topdown_obj->addDerivedMetricsToSnapshot(c, snapshot);
+    }
+
+    static void pre_flush_cb(Caliper* c, const SnapshotRecord* snapshot) {
+        if (topdown_obj != NULL) {
+            topdown_obj->createTopdownEventAttrMap(c->get_attribute_map());
+            topdown_obj->createTopdownMetricAttrMap(c);
+        }
     }
 
     // Initialization handler
@@ -789,8 +821,11 @@ namespace {
         c->events().post_init_evt.connect(post_init_cb);
         c->events().finish_evt.connect(finish_cb);
 
-        if (enable_sampling)
+        if (topdown_obj != NULL || enable_sampling)
             c->events().postprocess_snapshot.connect(postprocess_snapshot_cb);
+
+        if (topdown_obj != NULL)
+            c->events().pre_flush_evt.connect(pre_flush_cb);
 
         if (record_counters)
             c->events().snapshot.connect(snapshot_cb);

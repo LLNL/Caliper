@@ -708,6 +708,22 @@ Caliper::get_attributes() const
     return ret;
 }
 
+/// \brief Get attributes map keyed by name.
+/// \note This function is _not_ signal safe.
+/// \return   A map containing all attribute name, value pairs
+
+std::map<std::string, Attribute>
+Caliper::get_attribute_map() const
+{
+    std::map<std::string, Attribute> ret;
+
+    for (auto it : get_attributes())
+        ret[it.name()] = it;
+
+    return ret;
+}
+
+
 ///   Returns all entries with CALI_ATTR_GLOBAL set from the current
 /// blackboard.
 
