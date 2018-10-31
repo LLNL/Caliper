@@ -74,6 +74,25 @@ class CaliperReportTest(unittest.TestCase):
                          'count'      : '9'
             }))
         
+    def test_report_class_iteration(self):
+        target_cmd = [ './ci_test_macros' ]
+
+        caliper_config = {
+            'CALI_SERVICES_ENABLE'   : 'event,trace,report',
+            'CALI_REPORT_CONFIG'     : 'select *,count() group by prop:nested,class.iteration format expand',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        query_output = cat.run_test(target_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'   : 'main/foo',
+                         'loop'       : 'mainloop/fooloop',
+                         'iteration#mainloop' : '3',
+                         'iteration#fooloop'  : '1',
+                         'count'      : '1'
+            }))
 
     def test_report(self):
         target_cmd = [ './ci_test_report' ]
