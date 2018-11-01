@@ -55,7 +55,7 @@ namespace
 
 std::ostream& print_snapshot(Caliper* c, std::ostream& os) 
 {
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_data;
     SnapshotRecord snapshot(snapshot_data);
 
     c->pull_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);

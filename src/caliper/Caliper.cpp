@@ -733,7 +733,7 @@ Caliper::get_globals()
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> rec_data;
+    SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> rec_data;
     SnapshotRecord rec(rec_data);
     
     // All global attributes are process scope, so just grab the process blackboard
@@ -843,7 +843,7 @@ Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
     pull_snapshot(scopes, trigger_info, &sbuf);
@@ -866,7 +866,7 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
     } else {
         mG->events.flush_evt(this, flush_info,
                              [this,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
-                                 SnapshotRecord::FixedSnapshotRecord<80> data;
+                                 SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> data;
                                  SnapshotRecord snapshot(data);
 
                                  snapshot.append(*input_snapshot);
@@ -895,7 +895,7 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
     std::lock_guard<::siglock>
         g(m_thread_scope->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_data;
     SnapshotRecord flush_info(snapshot_data);
 
     if (input_flush_info)

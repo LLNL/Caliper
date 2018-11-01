@@ -61,7 +61,6 @@ using namespace cali;
 using namespace std;
 
 #define MAX_KEYLEN          32
-#define SNAP_MAX            80 // max snapshot size
 
 //
 // --- Class for the per-thread aggregation database
@@ -252,7 +251,7 @@ class AggregateDB {
 
     void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, Caliper* c,
                                    Caliper::SnapshotFlushFn proc_fn) {
-        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
+        SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
         // --- decode key
@@ -262,7 +261,7 @@ class AggregateDB {
         uint64_t  toc = vldec_u64(key+p, &p); // first entry is 2*num_nodes + (1 : w/ immediate, 0 : w/o immediate)
         int       num_nodes = static_cast<int>(toc)/2;
         
-        for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
+        for (int i = 0; i < std::min(num_nodes, CALI_SNAPSHOT_MAXLEN); ++i)
             snapshot.append(c->node(vldec_u64(key + p, &p)));
 
         if (toc % 2 == 1) {
@@ -283,10 +282,10 @@ class AggregateDB {
 
         int       num_aggr_attr = s_aggr_attributes.size();
 
-        Variant   attr_vec[SNAP_MAX];
-        Variant   data_vec[SNAP_MAX];
+        Variant   attr_vec[CALI_SNAPSHOT_MAXLEN];
+        Variant   data_vec[CALI_SNAPSHOT_MAXLEN];
 
-        for (int a = 0; a < std::min(num_aggr_attr, SNAP_MAX/3); ++a) {
+        for (int a = 0; a < std::min(num_aggr_attr, CALI_SNAPSHOT_MAXLEN/3); ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
 
             if (!k)

@@ -160,7 +160,7 @@ cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
     if (!c)
         return 0;
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
+    SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_buffer;
     SnapshotRecord snapshot(snapshot_buffer);
 
     c.pull_snapshot(scopes, nullptr, &snapshot);

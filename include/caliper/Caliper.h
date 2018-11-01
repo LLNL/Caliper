@@ -47,6 +47,8 @@
 #include <map>
 #include <utility>
 
+#define CALI_SNAPSHOT_MAXLEN 256
+
 namespace cali
 {
 

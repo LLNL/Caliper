@@ -42,8 +42,6 @@
 
 #include "caliper/common/c-util/vlenc.h"
 
-#define SNAP_MAX 80
-
 using namespace trace;
 using namespace cali;
 
@@ -91,14 +89,14 @@ size_t TraceBufferChunk::flush(Caliper* c, Caliper::SnapshotFlushFn proc_fn)
     for (size_t r = 0; r < m_nrec; ++r) {
         // decode snapshot record
                 
-        int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
-        int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
+        int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), CALI_SNAPSHOT_MAXLEN));
+        int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), CALI_SNAPSHOT_MAXLEN));
 
-        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
+        SnapshotRecord::FixedSnapshotRecord<CALI_SNAPSHOT_MAXLEN> snapshot_data;
         SnapshotRecord snapshot(snapshot_data);
 
-        cali_id_t attr[SNAP_MAX];
-        Variant   data[SNAP_MAX];
+        cali_id_t attr[CALI_SNAPSHOT_MAXLEN];
+        Variant   data[CALI_SNAPSHOT_MAXLEN];
 
         for (int i = 0; i < n_nodes; ++i)
             snapshot.append(c->node(vldec_u64(m_data + p, &p)));
@@ -134,8 +132,8 @@ void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
     if ((sizes.n_nodes + sizes.n_immediate) == 0)
         return;
 
-    sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     SNAP_MAX);
-    sizes.n_immediate = std::min<size_t>(sizes.n_immediate, SNAP_MAX);
+    sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     CALI_SNAPSHOT_MAXLEN);
+    sizes.n_immediate = std::min<size_t>(sizes.n_immediate, CALI_SNAPSHOT_MAXLEN);
                 
     m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
     m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);

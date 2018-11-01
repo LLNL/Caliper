@@ -343,26 +343,36 @@ namespace {
             }
 
             fds[i].fd = fd = perf_event_open(&fds[i].hw, ts->tid, -1, -1, 0);
-            if (fd == -1)
+            if (fd == -1) {
                 Log(0).stream() << "libpfm: cannot attach event " << fds[i].name << std::endl;
+                perror("perf_event_open error");
+            }
 
             // Set up perf_event file descriptor to signal this thread
             flags = fcntl(fd, F_GETFL, 0);
-            if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0)
+            if (fcntl(fd, F_SETFL, flags | O_ASYNC) < 0) {
                 Log(0).stream() << "libpfm: fcntl SETFL failed" << std::endl;
+                perror("fcntl error");
+            }
 
             fown_ex.type = F_OWNER_TID;
             fown_ex.pid = ts->tid;
             ret = fcntl(fd, F_SETOWN_EX, (unsigned long) &fown_ex);
-            if (ret)
+            if (ret) {
                 Log(0).stream() << "libpfm: fcntl SETOWN failed" << std::endl;
+                perror("fcntl error");
+            }
 
-            if (fcntl(fd, F_SETSIG, signum) < 0)
+            if (fcntl(fd, F_SETSIG, signum) < 0) {
                 Log(0).stream() << "libpfm: fcntl SETSIG failed" << std::endl;
+                perror("fcntl error");
+            }
 
             fds[i].buf = mmap(NULL, (buffer_pages + 1) * pgsz, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (fds[i].buf == MAP_FAILED)
+            if (fds[i].buf == MAP_FAILED) {
                 Log(0).stream() << "libpfm: cannot mmap buffer for event " << fds[i].name << std::endl;
+                perror("mmap error");
+            }
 
             fds[i].pgmsk = (buffer_pages * pgsz) - 1;
         }
