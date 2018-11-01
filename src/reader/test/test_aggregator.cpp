@@ -578,8 +578,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     EXPECT_EQ(val,   35);
 }
 
-#if 0
-TEST(AggregatorTest, StatisticsKernel) {
+TEST(AggregatorTest, StatisticsKernels) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
@@ -616,7 +615,9 @@ TEST(AggregatorTest, StatisticsKernel) {
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
     
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("statistics", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("min", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("max", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("avg", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -662,7 +663,6 @@ TEST(AggregatorTest, StatisticsKernel) {
     EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 66);
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
 }
-#endif
 
 TEST(AggregatorTest, PercentTotalKernel) {
     CaliperMetadataDB db;

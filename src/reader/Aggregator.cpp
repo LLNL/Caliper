@@ -242,20 +242,11 @@ private:
     Config*    m_config;
 };
 
-//
-// --- StatisticsKernel
-//
-
-#if 0
-class StatisticsKernel : public AggregateKernel {
+class MinKernel : public AggregateKernel {
 public:
 
     struct StatisticsAttributes {
         Attribute min;
-        Attribute max;
-        Attribute avg;
-        Attribute sum;
-        Attribute count;
     };
 
     class Config : public AggregateKernelConfig {
@@ -286,28 +277,20 @@ public:
 
             m_stat_attrs.min = 
                 db.create_attribute("min#" + m_target_attr_name, type, prop);
-            m_stat_attrs.max = 
-                db.create_attribute("max#" + m_target_attr_name, type, prop);
-            m_stat_attrs.sum = 
-                db.create_attribute("sum#" + m_target_attr_name, type, prop);
-            m_stat_attrs.avg = 
-                db.create_attribute("avg#" + m_target_attr_name,   CALI_TYPE_DOUBLE, prop);
-            m_stat_attrs.count = 
-                db.create_attribute("count#" + m_target_attr_name, CALI_TYPE_UINT,   prop);
 
             a = m_stat_attrs;
             return true;
         }
                 
         AggregateKernel* make_kernel() {
-            return new StatisticsKernel(this);
+            return new MinKernel(this);
         }
 
         Config(const std::string& name)
             : m_target_attr_name(name),
               m_target_attr(Attribute::invalid)
             {
-                Log(2).stream() << "aggregate: creating statistics kernel for attribute " << m_target_attr_name << std::endl;
+                Log(2).stream() << "aggregate: creating min kernel for attribute " << m_target_attr_name << std::endl;
             }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -315,8 +298,8 @@ public:
         }        
     };
 
-    StatisticsKernel(Config* config)
-        : m_count(0), m_sum(0), m_config(config)
+    MinKernel(Config* config)
+        : m_config(config)
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
@@ -336,6 +319,153 @@ public:
         {
             if (m_min.empty())
                 m_min = Variant(std::numeric_limits<double>::max());
+
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    double val = e.value().to_double();                        
+                    
+                    m_min = Variant(std::min(m_min.to_double(), val));
+                    ++m_count;
+                } else if (e.attribute() == stat_attr.min.id()) {
+                    m_min = Variant(std::min(e.value().to_double(), m_min.to_double()));
+                }
+            }
+        }
+        break;
+        case CALI_TYPE_INT:
+        {
+            if (m_min.empty())
+                m_min = Variant(std::numeric_limits<int>::max());
+
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    int val = e.value().to_int();                        
+                    
+                    m_min = Variant(std::min(m_min.to_int(), val));
+                } else if (e.attribute() == stat_attr.min.id()) {
+                    m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
+                }
+            }
+        }
+        break;
+        case CALI_TYPE_UINT:
+        {
+            if (m_min.empty())
+                m_min = Variant(std::numeric_limits<uint64_t>::max());
+
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    uint64_t val = e.value().to_uint();                        
+                    
+                    m_min = Variant(std::min(m_min.to_uint(), val));
+                } else if (e.attribute() == stat_attr.min.id()) {
+                    m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
+                }
+            }
+        }
+        break;
+        default:
+            // some error?
+            ;
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (!m_min.empty()) {
+            StatisticsAttributes stat_attr;
+
+            if (!m_config->get_statistics_attributes(db, stat_attr))
+                return;
+
+            list.push_back(Entry(stat_attr.min, m_min));
+        }
+    }
+
+private:
+
+    unsigned   m_count;
+    Variant    m_min;
+
+    std::mutex m_lock;
+    
+    Config*    m_config;
+};
+
+class MaxKernel : public AggregateKernel {
+public:
+
+    struct StatisticsAttributes {
+        Attribute max;
+    };
+
+    class Config : public AggregateKernelConfig {
+        std::string          m_target_attr_name;
+        Attribute            m_target_attr;
+
+        StatisticsAttributes m_stat_attrs;
+        
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+            return m_target_attr;
+        }
+
+        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
+            if (m_target_attr == Attribute::invalid)
+                return false;
+            if (a.max != Attribute::invalid) {
+                a = m_stat_attrs;
+                return true;
+            }
+
+            cali_attr_type type = m_target_attr.type();
+            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+            m_stat_attrs.max = 
+                db.create_attribute("max#" + m_target_attr_name, type, prop);
+
+            a = m_stat_attrs;
+            return true;
+        }
+                
+        AggregateKernel* make_kernel() {
+            return new MaxKernel(this);
+        }
+
+        Config(const std::string& name)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid)
+            {
+                Log(2).stream() << "aggregate: creating max kernel for attribute " << m_target_attr_name << std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
+        }        
+    };
+
+    MaxKernel(Config* config)
+        : m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        Attribute target_attr = m_config->get_target_attr(db);
+        StatisticsAttributes stat_attr;
+
+        if (!m_config->get_statistics_attributes(db, stat_attr))
+            return;
+            
+        switch (target_attr.type()) {
+        case CALI_TYPE_DOUBLE:
+        {
             if (m_max.empty())
                 m_max = Variant(std::numeric_limits<double>::min());
 
@@ -343,15 +473,157 @@ public:
                 if (e.attribute() == target_attr.id()) {                        
                     double val = e.value().to_double();                        
                     
-                    m_sum = Variant(m_sum.to_double() + val);
-                    m_min = Variant(std::min(m_min.to_double(), val));
                     m_max = Variant(std::max(m_max.to_double(), val));
-
-                    ++m_count;
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_double(), m_min.to_double()));
                 } else if (e.attribute() == stat_attr.max.id()) {
                     m_max = Variant(std::max(e.value().to_double(), m_max.to_double()));
+                }
+            }
+        }
+        break;
+        case CALI_TYPE_INT:
+        {
+            if (m_max.empty())
+                m_max = Variant(std::numeric_limits<int>::min());
+
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    int val = e.value().to_int();                        
+                    
+                    m_max = Variant(std::max(m_max.to_int(), val));
+                } else if (e.attribute() == stat_attr.max.id()) {
+                    m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
+                }
+            }
+        }
+        break;
+        case CALI_TYPE_UINT:
+        {
+            if (m_max.empty())
+                m_max = Variant(std::numeric_limits<uint64_t>::min());
+
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    uint64_t val = e.value().to_uint();                        
+                    
+                    m_max = Variant(std::max(m_max.to_uint(), val));
+                } else if (e.attribute() == stat_attr.max.id()) {
+                    m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
+                }
+            }
+        }
+        break;
+        default:
+            // some error?
+            ;
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (!m_max.empty()) {
+            StatisticsAttributes stat_attr;
+
+            if (!m_config->get_statistics_attributes(db, stat_attr))
+                return;
+
+            list.push_back(Entry(stat_attr.max, m_max));
+        }
+    }
+
+private:
+
+    Variant    m_max;
+    std::mutex m_lock;    
+    Config*    m_config;
+};
+
+class AvgKernel : public AggregateKernel {
+public:
+
+    struct StatisticsAttributes {
+        Attribute avg;
+        Attribute sum;
+        Attribute count;
+    };
+
+    class Config : public AggregateKernelConfig {
+        std::string          m_target_attr_name;
+        Attribute            m_target_attr;
+
+        StatisticsAttributes m_stat_attrs;
+        
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+            return m_target_attr;
+        }
+
+        bool get_statistics_attributes(CaliperMetadataAccessInterface& db, StatisticsAttributes& a) {
+            if (m_target_attr == Attribute::invalid)
+                return false;
+            if (a.sum != Attribute::invalid) {
+                a = m_stat_attrs;
+                return true;
+            }
+
+            cali_attr_type type = m_target_attr.type();
+            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+
+            m_stat_attrs.sum = 
+                db.create_attribute("sum#" + m_target_attr_name, type, prop);
+            m_stat_attrs.avg = 
+                db.create_attribute("avg#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop);
+            m_stat_attrs.count = 
+                db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT, prop | CALI_ATTR_HIDDEN);
+
+            a = m_stat_attrs;
+            return true;
+        }
+                
+        AggregateKernel* make_kernel() {
+            return new AvgKernel(this);
+        }
+
+        Config(const std::string& name)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid)
+            {
+                Log(2).stream() << "aggregate: creating avg kernel for attribute " << m_target_attr_name << std::endl;
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front());
+        }        
+    };
+
+    AvgKernel(Config* config)
+        : m_count(0), m_sum(0), m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        Attribute target_attr = m_config->get_target_attr(db);
+        StatisticsAttributes stat_attr;
+
+        if (!m_config->get_statistics_attributes(db, stat_attr))
+            return;
+            
+        switch (target_attr.type()) {
+        case CALI_TYPE_DOUBLE:
+        {
+            for (const Entry& e : list) {
+                if (e.attribute() == target_attr.id()) {                        
+                    double val = e.value().to_double();                        
+                    
+                    m_sum = Variant(m_sum.to_double() + val);
+
+                    ++m_count;
                 } else if (e.attribute() == stat_attr.sum.id()) {
                     m_sum = Variant(e.value().to_double() + m_sum.to_double());
                 } else if (e.attribute() == stat_attr.count.id()) {
@@ -362,24 +634,12 @@ public:
         break;
         case CALI_TYPE_INT:
         {
-            if (m_min.empty())
-                m_min = Variant(std::numeric_limits<int>::max());
-            if (m_max.empty())
-                m_max = Variant(std::numeric_limits<int>::min());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {                        
                     int val = e.value().to_int();                        
                     
                     m_sum = Variant(m_sum.to_int() + val);
-                    m_min = Variant(std::min(m_min.to_int(), val));
-                    m_max = Variant(std::max(m_max.to_int(), val));
-
                     ++m_count;
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
-                } else if (e.attribute() == stat_attr.max.id()) {
-                    m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
                 } else if (e.attribute() == stat_attr.sum.id()) {
                     m_sum = Variant(e.value().to_int() + m_sum.to_int());
                 } else if (e.attribute() == stat_attr.count.id()) {
@@ -390,24 +650,13 @@ public:
         break;
         case CALI_TYPE_UINT:
         {
-            if (m_min.empty())
-                m_min = Variant(std::numeric_limits<uint64_t>::max());
-            if (m_max.empty())
-                m_max = Variant(std::numeric_limits<uint64_t>::min());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {                        
                     uint64_t val = e.value().to_uint();                        
                     
                     m_sum = Variant(m_sum.to_uint() + val);
-                    m_min = Variant(std::min(m_min.to_uint(), val));
-                    m_max = Variant(std::max(m_max.to_uint(), val));
 
                     ++m_count;
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
-                } else if (e.attribute() == stat_attr.max.id()) {
-                    m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
                 } else if (e.attribute() == stat_attr.sum.id()) {
                     m_sum = Variant(e.value().to_uint() + m_sum.to_uint());
                 } else if (e.attribute() == stat_attr.count.id()) {
@@ -431,8 +680,6 @@ public:
 
             list.push_back(Entry(stat_attr.avg, Variant(m_sum.to_double() / m_count)));
             list.push_back(Entry(stat_attr.sum, m_sum));
-            list.push_back(Entry(stat_attr.min, m_min));
-            list.push_back(Entry(stat_attr.max, m_max));
             list.push_back(Entry(stat_attr.count, Variant(cali_make_variant_from_uint(m_count))));
         }
     }
@@ -442,14 +689,10 @@ private:
     unsigned   m_count;
     Variant    m_sum;
 
-    Variant    m_min;
-    Variant    m_max;
-
     std::mutex m_lock;
     
     Config*    m_config;
 };
-#endif
 
 //
 // --- PercentageKernel
@@ -828,10 +1071,13 @@ enum KernelID {
     Sum          = 1,
     Percentage   = 2,
     PercentTotal = 3,
-    InclusiveSum = 4
+    InclusiveSum = 4,
+    Min          = 5,
+    Max          = 6,
+    Avg          = 7
 };
 
-#define MAX_KERNEL_ID 4
+#define MAX_KERNEL_ID 7
 
 const char* kernel_args[] = { "attribute" };
 const char* kernel_2args[] = { "numerator", "denominator" };
@@ -842,6 +1088,9 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Percentage,   "percentage",    2, 2, kernel_2args },
     { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
     { KernelID::InclusiveSum, "inclusive_sum", 1, 1, kernel_args  },
+    { KernelID::Min,          "min",           1, 1, kernel_args  },
+    { KernelID::Max,          "max",           1, 1, kernel_args  },
+    { KernelID::Avg,          "avg",           1, 1, kernel_args  },
     
     QuerySpec::FunctionSignatureTerminator
 };
@@ -855,6 +1104,9 @@ const struct KernelInfo {
     { "percentage",    PercentageKernel::Config::create   },
     { "percent_total", PercentTotalKernel::Config::create },
     { "inclusive_sum", InclusiveSumKernel::Config::create },
+    { "min",           MinKernel::Config::create          },
+    { "max",           MaxKernel::Config::create          },
+    { "avg",           AvgKernel::Config::create          },
     { 0, 0 }
 };
 
@@ -1323,19 +1575,18 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return "count";
     case KernelID::Sum:
         return op.args[0];
-#if 0
-    case KernelID::Statistics:
-        ret.push_back(std::string("min#") + op.args[0]);
-        ret.push_back(std::string("max#") + op.args[0]);
-        ret.push_back(std::string("avg#") + op.args[0]);
-        break;
-#endif
     case KernelID::Percentage:
         return op.args[0] + std::string("/") + op.args[1];
     case KernelID::PercentTotal:
         return std::string("percent_total#") + op.args[0];
     case KernelID::InclusiveSum:
         return std::string("inclusive#") + op.args[0];
+    case KernelID::Min:
+        return std::string("min#") + op.args[0];
+    case KernelID::Max:
+        return std::string("max#") + op.args[0];
+    case KernelID::Avg:
+        return std::string("avg#") + op.args[0];
     }
    
     return std::string();

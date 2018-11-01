@@ -197,6 +197,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 { 
     bool                     m_select_all;
     std::vector<std::string> m_attr_names;
+
+    std::map<std::string, std::string> m_aliases;
     
     std::mutex               m_init_lock;
     bool                     m_initialized;
@@ -247,6 +249,8 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             m_attr_names = spec.attribute_selection.list;
             break;
         }
+
+        m_aliases = spec.aliases;
     }
 
     void init_columns(const CaliperMetadataAccessInterface& db) {
@@ -275,8 +279,15 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         for (const Attribute& a : attrs) {
             if (a.is_nested())
                 path.attributes.push_back(a);
-            else
-                m_columns.push_back(Column::make_column(a.name(), a));
+            else {
+                std::string name = a.name();
+
+                auto aliasit = m_aliases.find(name);
+                if (aliasit != m_aliases.end())
+                    name = aliasit->second;
+                
+                m_columns.push_back(Column::make_column(name, a));
+            }
         }
 
         if (!path.attributes.empty())
