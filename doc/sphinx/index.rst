@@ -6,37 +6,40 @@
 Caliper: A Performance Analysis Toolbox in a Library
 ================================================================
 
-Caliper is a program instrumentation and performance measurement
-framework. It is designed as a performance analysis toolbox in a
+Caliper is a program-instrumentation and performance-measurement
+framework. It is designed as a performance-analysis toolbox in a
 library, allowing one to bake performance analysis capabilities
 directly into applications and activate them at runtime.
 Caliper is primarily aimed at HPC applications, but works for
-any C/C++/Fortran program on Unix/Linux.
+any C/C++/Fortran program on Unix or Linux.
 
-Caliper's data collection mechanisms and source-code annotation API
-support a variety of performance engineering use cases, e.g.,
+Caliper's data-collection mechanisms and source-code annotation API
+support a variety of performance-engineering use cases, e.g.,
 performance profiling, tracing, monitoring, and auto-tuning.
 
 Features include:
 
 * Low-overhead source-code annotation API
-* Flexible key:value data model: capture application-specific
+* Flexible key:value data model -- capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
   models like MPI
-* Synchronous (event-based) and asynchronous (sampling) performance
+* Synchronous (event based) and asynchronous (sampling) performance
   data collection
-* Trace and profile recording with flexible on-line and off-line
+* Trace and profile recording with flexible online and offline
   data aggregation
-* Connection to third-party tools, e.g. NVidia NVProf or
+* Connection to third-party tools, e.g., NVidia NVProf and
   Intel(R) VTune(tm)
-* Measurement and profiling functionality such as timers, PAPI
+* Measurement and profiling functionality, such as timers, PAPI
   hardware counters, and Linux perf_events
-* Memory allocation annotations: associate performance measurements
+* Memory-allocation annotations: associate performance measurements
   with named memory regions
 
-Caliper is available for download on
-`GitHub <https://github.com/LLNL/Caliper>`_.
+Caliper is available for download on `GitHub
+<https://github.com/LLNL/Caliper>`_.  Example applications, runtime
+configurations, analysis scripts, and a tutorial are available in the
+`Caliper examples <https://github.com/LLNL/caliper-examples>`_
+repository.
 
 Contents
 --------------------------------
@@ -48,6 +51,7 @@ Contents
    AnnotationAPI
    configuration
    services
+   ThirdPartyTools
    OutputFormats
    tools
    calql
@@ -56,9 +60,7 @@ Contents
 Getting started
 --------------------------------
 
-Unlike traditional performance analysis tools, Caliper is designed to
-be integrated directly within applications. This makes performance
-analysis functionality accessible at any time and configurable at
+Unlike traditional performance-analysis tools, Caliper integrates directly within applications. This makes performance-analysis functionality accessible at any time and configurable at
 runtime.
 
 Typically, we integrate Caliper into a program by marking source-code
@@ -74,7 +76,7 @@ Building and installing
 Download Caliper from `GitHub <https://github.com/LLNL/Caliper>`_.
 
 Building and installing Caliper requires cmake 3.1+ and a current
-C++11-compatible Compiler. Clone Caliper from github and proceed
+C++11-compatible compiler. Clone Caliper from github and proceed
 as follows:
 
 .. code-block:: sh
@@ -94,23 +96,23 @@ See :doc:`build` for more details.
 Source-code annotations
 ................................
 
-Caliper's source-code annotation API fulfills two purposes: First, it
+Caliper's source-code annotation API fulfills two purposes. First, it
 lets us associate performance measurements with user-defined,
 high-level context information. Second, we can trigger user-defined
-actions at the instrumentation points, e.g. to measure the time spent
+actions at the instrumentation points, e.g., to measure time spent
 in individual regions. Measurement actions can be defined at runtime
 and are disabled by default; generally, the source-code annotations
 are lightweight enough to be left in production code.
 
 The annotation APIs are available for C, C++, and Fortran. There are
 high-level annotation macros for common scenarios such as marking
-functions, loops, or sections of source-code. In addition, users can
+functions, loops, or sections of source code. In addition, users can
 export arbitrary key:value pairs to express application-specific
 concepts.
 
 The following example marks "initialization" and "main loop" phases in
 a C++ code, and exports the main loop's current iteration counter
-using the high-level annotation macros:
+using the high-level annotation macros.
 
 .. code-block:: c++
 
@@ -143,7 +145,7 @@ using the high-level annotation macros:
         CALI_CXX_MARK_LOOP_END(mainloop);
     }
 
-See the :doc:`AnnotationAPI` chapter for a complete reference of the C,
+See the :doc:`AnnotationAPI` chapter for a complete reference to the C,
 C++, and Fortran annotation APIs.
 
 Linking the Caliper library
@@ -155,10 +157,15 @@ runtime (libcaliper.so), as shown in the example link command: ::
 
     g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
 
+For MPI programs, it is recommended that the Caliper MPI
+runtime library (libcaliper-mpi.so) be also linked: ::
+
+    mpicxx -o mpiapp mpiapp.o -L<path to caliper installation>/lib64 -lcaliper-mpi -lcaliper
+
 Runtime configuration
 ................................
 
-Caliper's performance measurement and data collection functionality
+Caliper's performance-measurement and data-collection functionality
 must be enabled and configured at runtime through Caliper's
 configuration API, configuration files, or environment variables. By
 default, Caliper will keep track of the current Caliper context
@@ -169,11 +176,11 @@ measurement or data recording on its own.
 Generally, collecting performance data with Caliper requires selecting
 a combination of Caliper *services* that implement specific
 functionality and configuring them for the task at hand. However, for
-some common scenarios, Caliper provides a set of pre-defined
+some common scenarios, Caliper provides a set of predefined
 configuration profiles. These profiles can be activated with the
 ``CALI_CONFIG_PROFILE`` environment variable. For example, the
 ``runtime-report`` configuration profile prints the total time (in
-microseconds) spent in each code path based on the nesting of
+microseconds) spent in each code path, based on the nesting of
 annotated code regions: ::
 
     $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
@@ -186,7 +193,7 @@ The example shows Caliper output for the ``runtime-report``
 configuration profile for the source-code annotation example above.
 
 As another example, the ``serial-trace`` configuration profile
-configures Caliper to record an event trace of each annotation event: ::
+configures Caliper to record an event trace for each annotation event: ::
 
     $ CALI_CONFIG_PROFILE=serial-trace ./examples/apps/cali-basic-annotations
     == CALIPER: Registered event trigger service
@@ -198,9 +205,9 @@ configures Caliper to record an event trace of each annotation event: ::
     == CALIPER: Trace: Flushed 14 snapshots.
     == CALIPER: Recorder: Wrote 71 records.
 
-The trace data is stored in a ``.cali`` file in a text-based
+The trace data is stored in a ``.cali`` file in a text-based,
 Caliper-specific file format. Use the ``cali-query`` tool to filter,
-aggregate, or print the recorded data. Here, we use ``cali-query`` to
+aggregate, or print the recorded data. Here we use ``cali-query`` to
 print the recorded trace data in a human-readable json format:
 
 .. code-block:: sh
@@ -233,16 +240,16 @@ print the recorded trace data in a human-readable json format:
     },
     ...
 
-The :doc:`configuration` section demonstrates the set up of Caliper runtime
+The :doc:`configuration` section demonstrates the setup of Caliper runtime
 configurations through environment variables or configuration files.
 
 Where to go from here
 ................................
 
-Caliper's performance measurement and data collection functionality is
+Caliper's performance-measurement and data-collection functionality is
 provided by independent building blocks called *services*, each
-implementing specific functionality (e.g., tracing, I/O, timing,
-report formatting, sampling, etc.). The services can be enabled at
+implementing a specific functionality (e.g., tracing, I/O, timing,
+report formatting, or sampling). The services can be enabled at
 runtime in any combination. This makes Caliper highly flexible, but
 the runtime configuration can be complex. The :doc:`workflow` section
 explains more about Caliper's internal dataflow and how services

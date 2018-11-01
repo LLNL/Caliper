@@ -137,6 +137,48 @@ struct CsvWriter::CsvWriterImpl
             ++m_num_written;
         }
     }
+
+    void write_entrylist(const CaliperMetadataAccessInterface& db,
+                         const RecordDescriptor& record,
+                         const std::vector<Entry>& list)
+    {
+        Variant v_node[128];
+        Variant v_attr[128];
+        Variant v_data[128];
+
+        int nn = 0;
+        int ni = 0;
+
+        for (const Entry& e : list)
+            if (e.node()) {
+                if (nn > 127)
+                    continue;
+            
+                recursive_write_node(db, e.node()->id());
+                v_node[nn] = Variant(e.node()->id());
+
+                ++nn;
+            } else if (e.is_immediate()) {
+                if (ni > 127)
+                    continue;
+            
+                recursive_write_node(db, e.attribute());
+                v_attr[ni] = Variant(e.attribute());
+                v_data[ni] = e.value();
+
+                ++ni;
+            }
+
+        int               n[3] = { nn,     ni,     ni     };
+        const Variant* data[3] = { v_node, v_attr, v_data };
+
+        {
+            std::lock_guard<std::mutex>
+                g(m_os_lock);
+            
+            CsvSpec::write_record(m_os.stream(), record, n, data);
+        }        
+    }
 };
 
 
@@ -161,6 +203,16 @@ void CsvWriter::write_snapshot(const CaliperMetadataAccessInterface& db,
     mP->write_snapshot(db, n_nodes, nodes, n_imm, attr, vals);
 }
 
+void CsvWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+{
+    mP->write_entrylist(db, ContextRecord::record_descriptor(), list);
+}
+
+void CsvWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+{
+    mP->write_entrylist(db, ContextRecord::globals_record_descriptor(), list);
+}
+
 void CsvWriter::operator()(const CaliperMetadataAccessInterface& db, const Node* node)
 {
     mP->recursive_write_node(db, node->id());
@@ -168,40 +220,5 @@ void CsvWriter::operator()(const CaliperMetadataAccessInterface& db, const Node*
 
 void CsvWriter::operator()(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
-    Variant v_node[128];
-    Variant v_attr[128];
-    Variant v_data[128];
-
-    int nn = 0;
-    int ni = 0;
-
-    for (const Entry& e : list)
-        if (e.node()) {
-            if (nn > 127)
-                continue;
-            
-            mP->recursive_write_node(db, e.node()->id());
-            v_node[nn] = Variant(e.node()->id());
-
-            ++nn;
-        } else if (e.is_immediate()) {
-            if (ni > 127)
-                continue;
-            
-            mP->recursive_write_node(db, e.attribute());
-            v_attr[ni] = Variant(e.attribute());
-            v_data[ni] = e.value();
-
-            ++ni;
-        }
-
-    int               n[3] = { nn,     ni,     ni     };
-    const Variant* data[3] = { v_node, v_attr, v_data };
-
-    {
-        std::lock_guard<std::mutex>
-            g(mP->m_os_lock);
-            
-        CsvSpec::write_record(mP->m_os.stream(), ContextRecord::record_descriptor(), n, data);
-    }
+    mP->write_entrylist(db, ContextRecord::record_descriptor(), list);
 }

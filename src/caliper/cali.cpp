@@ -565,7 +565,7 @@ cali_config_preset(const char* key, const char* value)
                         << "cali_config_preset(\"" << key << "\", \"" << value
                         << "\") has no effect." << std::endl;
 
-    RuntimeConfig::preset(key, value);
+    RuntimeConfig::get_default_config()->preset(key, value);
 }
 
 void
@@ -576,19 +576,19 @@ cali_config_set(const char* key, const char* value)
                         << "cali_config_set(\"" << key << "\", \"" << value
                         << "\") has no effect." << std::endl;
 
-    RuntimeConfig::set(key, value);
+    RuntimeConfig::get_default_config()->set(key, value);
 }
 
 void
 cali_config_define_profile(const char* name, const char* keyvallist[][2])
 {
-    RuntimeConfig::define_profile(name, keyvallist);
+    RuntimeConfig::get_default_config()->define_profile(name, keyvallist);
 }
 
 void
 cali_config_allow_read_env(int allow)
 {
-    RuntimeConfig::allow_read_env(allow != 0);
+    RuntimeConfig::get_default_config()->allow_read_env(allow != 0);
 }
 
 void
@@ -615,14 +615,26 @@ cali_is_initialized()
 
 //
 // --- Helper functions for high-level macro interface
-// 
+//
+
+namespace cali
+{
+
+extern Attribute class_iteration_attr;
+
+}
 
 cali_id_t
 cali_make_loop_iteration_attribute(const char* name)
 {
-    char tmp[80] = "iteration#";
-    strncpy(tmp+10, name, 69);
-    tmp[79] = '\0';
+    Variant v_true(true);
 
-    return cali_create_attribute(tmp, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Caliper   c;
+    Attribute attr = 
+        c.create_attribute(std::string("iteration#").append(name),
+                           CALI_TYPE_INT,
+                           CALI_ATTR_ASVALUE,
+                           1, &class_iteration_attr, &v_true);
+
+    return attr.id();                           
 }

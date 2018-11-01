@@ -51,8 +51,27 @@ namespace cali
 class CaliperMetadataAccessInterface;
 
 /// \brief Create QuerySpec from command-line arguments
-QuerySpec
-spec_from_args(const util::Args& args);
+class QueryArgsParser {
+    bool        m_error;
+    std::string m_error_msg;
+    QuerySpec   m_spec;
+
+public:
+
+    QueryArgsParser()
+        : m_error(true),
+          m_error_msg("query not read")
+    { }
+
+    /// \brief Get query spec from cali-query command-line arguments.
+    /// \return Returns \a true if successful, `false` in case of error.
+    bool parse_args(const util::Args& args);
+
+    bool        error() const     { return m_error;     }
+    std::string error_msg() const { return m_error_msg; }
+
+    QuerySpec   spec() const      { return m_spec;      }
+};
 
 /// \class SnapshotFilterStep
 /// \brief Basically the chain link in the processing chain.

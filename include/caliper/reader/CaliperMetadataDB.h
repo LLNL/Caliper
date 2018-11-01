@@ -107,7 +107,7 @@ public:
     Attribute   get_attribute(const std::string& name) const;
 
     std::vector<Attribute> get_attributes() const;
-
+    
     //
     // --- Manipulation
     //
@@ -120,6 +120,19 @@ public:
                                  int                meta = 0,
                                  const Attribute*   meta_attr = nullptr,
                                  const Variant*     meta_data = nullptr);
+    //
+    // --- Globals
+    //
+
+    /// \brief Get global entries (entries with the CALI_ATTR_GLOBAL flag) 
+    std::vector<Entry> get_globals();
+
+    /// \brief Set a global entry
+    void               set_global(const Attribute& attr, const Variant& value);
+
+    /// \brief Import global entries from metadata DB \a db into this
+    ///   metadata DB
+    std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db);
 };
 
 }

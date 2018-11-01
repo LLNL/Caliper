@@ -43,6 +43,10 @@ the `examples/apps` directory.
 
 See the "Getting started" section below for a brief tutorial.
 
+Example applications, configuration files, and a more extensive 
+tutorial can be found here:
+https://github.com/LLNL/caliper-examples
+
 Building and installing
 ------------------------------------------
 

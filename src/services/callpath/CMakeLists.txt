@@ -1,4 +1,4 @@
-include_directories(${LIBUNWIND_INCLUDE_DIR})
+include_directories(${LIBUNWIND_INCLUDE_DIRS})
 if (CALIPER_HAVE_LIBDW)
   include_directories(${LIBDW_INCLUDE_DIR})
 endif()

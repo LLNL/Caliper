@@ -1,6 +1,8 @@
 /// \file  CompressedSnapshotRecord.h
 /// \brief CompressedSnapshotRecord class
 
+#pragma once
+
 #include "caliper/common/Entry.h"
 #include "caliper/common/Record.h"
 #include "caliper/common/Variant.h"

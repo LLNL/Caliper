@@ -1,4 +1,4 @@
-include_directories(${GOTCHA_INCLUDE_DIR})
+include_directories(${gotcha_INCLUDE_DIRS})
 
 set(WRAP_FLAGS "-w")
 
@@ -12,6 +12,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/WrapConfig.cmake)
 add_wrapped_file(Wrapper.cpp Wrapper.w)
 
 set(CALIPER_MPIWRAP_SOURCES
+  MpiTracing.cpp
   MpiWrap.cpp
   Wrapper.cpp)
 

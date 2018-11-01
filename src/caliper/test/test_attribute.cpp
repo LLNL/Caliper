@@ -73,3 +73,31 @@ TEST(AttributeAPITest, InvalidAttribute) {
     EXPECT_EQ(cali_attribute_name(CALI_INV_ID), nullptr);
     EXPECT_EQ(cali_find_attribute("test.attribute.api.nope"), CALI_INV_ID);
 }
+
+TEST(AttributeAPITest, GlobalAttributes) {
+    Caliper c;
+
+    Attribute global_attr =
+        c.create_attribute("test.attribute.global", CALI_TYPE_INT, CALI_ATTR_GLOBAL);
+
+    ASSERT_NE(global_attr, Attribute::invalid);
+
+    // global attributes should always have process scope
+    EXPECT_EQ(global_attr.properties() & CALI_ATTR_SCOPE_MASK, CALI_ATTR_SCOPE_PROCESS);
+
+    // cali.caliper.version should be a global attribute
+    EXPECT_NE(c.get_attribute("cali.caliper.version").properties() & CALI_ATTR_GLOBAL, 0);
+
+    c.set(global_attr, Variant(42));
+
+    std::vector<Entry> globals = c.get_globals();
+
+    auto it = std::find_if(globals.begin(), globals.end(),
+                           [global_attr](const Entry& e) {
+                               return e.count(global_attr) > 0;
+                           } );
+
+    ASSERT_NE(it, globals.end());
+
+    EXPECT_EQ(it->value(global_attr).to_int(), 42);
+}

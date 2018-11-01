@@ -32,7 +32,7 @@
 
 // Caliper annotation bindings for Intel VTune Task API
 
-#include "../common/AnnotationBinding.h"
+#include "caliper/AnnotationBinding.h"
 
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Variant.h"

@@ -87,7 +87,11 @@ public:
     { }
 
     void process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        m_writer(db, list);
+        m_writer.write_snapshot(db, list);
+    }
+
+    void flush(CaliperMetadataAccessInterface& db, std::ostream&) {
+        m_writer.write_globals(db, db.get_globals());
     }
 };
 

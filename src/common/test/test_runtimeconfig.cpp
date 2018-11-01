@@ -4,13 +4,6 @@
 
 using namespace cali;
 
-namespace cali
-{
-
-extern void clear_caliper_runtime_config();
-
-}
-
 namespace
 {
 
@@ -39,7 +32,7 @@ const ConfigSet::Entry test_configdata[] = {
 
 
 TEST(RuntimeConfigTest, DefineProfile) {
-    clear_caliper_runtime_config();
+    RuntimeConfig cfg;
     
     const char* my_profile[][2] =
         { { "CALI_TEST_INT_VAL",    "42"                 },
@@ -47,12 +40,12 @@ TEST(RuntimeConfigTest, DefineProfile) {
           { NULL, NULL }
         };
 
-    cali::RuntimeConfig::define_profile("my profile", my_profile);
-    cali::RuntimeConfig::set("CALI_CONFIG_PROFILE", "my\\ profile");
+    cfg.define_profile("my profile", my_profile);
+    cfg.set("CALI_CONFIG_PROFILE", "my\\ profile");
 
-    ConfigSet config = cali::RuntimeConfig::init("test", ::test_configdata);
+    ConfigSet config = cfg.init_configset("test", ::test_configdata);
 
-    EXPECT_EQ(cali::RuntimeConfig::get("config", "profile").to_string(), std::string("my\\ profile"));
+    EXPECT_EQ(cfg.get("config", "profile").to_string(), std::string("my\\ profile"));
 
     EXPECT_EQ(config.get("string_val").to_string(), std::string("\"my test string\""));
     EXPECT_EQ(config.get("int_val").to_int(),     42);
@@ -67,14 +60,14 @@ TEST(RuntimeConfigTest, DefineProfile) {
 }
 
 TEST(RuntimeConfigTest, ConfigFile) {
-    clear_caliper_runtime_config();
+    RuntimeConfig cfg;
     
-    cali::RuntimeConfig::set("CALI_CONFIG_FILE", "caliper-common_test.config");
+    cfg.set("CALI_CONFIG_FILE", "caliper-common_test.config");
     
-    cali::RuntimeConfig::preset("CALI_TEST_STRING_VAL", "wrong value!");
-    cali::RuntimeConfig::set("CALI_TEST_INT_VAL", "42");
+    cfg.preset("CALI_TEST_STRING_VAL", "wrong value!");
+    cfg.set("CALI_TEST_INT_VAL", "42");
     
-    ConfigSet config = cali::RuntimeConfig::init("test", ::test_configdata);
+    ConfigSet config = cfg.init_configset("test", ::test_configdata);
 
     EXPECT_EQ(config.get("string_val").to_string(), std::string("profile1 string from file"));
     EXPECT_EQ(config.get("int_val").to_int(), 42);
@@ -82,12 +75,12 @@ TEST(RuntimeConfigTest, ConfigFile) {
 }
 
 TEST(RuntimeConfigTest, ConfigFileProfile2) {
-    clear_caliper_runtime_config();
+    RuntimeConfig cfg;
     
-    cali::RuntimeConfig::preset("CALI_CONFIG_FILE", "caliper-common_test.config");
-    cali::RuntimeConfig::set("CALI_CONFIG_PROFILE", "file-profile2");
+    cfg.preset("CALI_CONFIG_FILE", "caliper-common_test.config");
+    cfg.set("CALI_CONFIG_PROFILE", "file-profile2");
     
-    ConfigSet config = cali::RuntimeConfig::init("test", ::test_configdata);
+    ConfigSet config = cfg.init_configset("test", ::test_configdata);
 
     EXPECT_EQ(config.get("string_val").to_string(), std::string("string-default"));
     EXPECT_EQ(config.get("int_val").to_int(), 42);

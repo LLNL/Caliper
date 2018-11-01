@@ -1,6 +1,6 @@
 // Test for annotation binding interface 
 
-#include "../src/services/common/AnnotationBinding.h"
+#include "caliper/AnnotationBinding.h"
 
 #include "caliper/cali.h"
 

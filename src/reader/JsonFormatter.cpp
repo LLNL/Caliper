@@ -57,9 +57,10 @@
 using namespace cali;
 using namespace std;
 
-const std::string opt_split = std::string("split");
-const std::string opt_pretty = std::string("pretty");
+const std::string opt_split     = std::string("split");
+const std::string opt_pretty    = std::string("pretty");
 const std::string opt_quote_all = std::string("quote-all");
+const std::string opt_globals   = std::string("globals");
 
 struct JsonFormatter::JsonFormatterImpl
 {
@@ -72,10 +73,11 @@ struct JsonFormatter::JsonFormatterImpl
 
     bool         m_first_row = true;
 
-    bool         m_opt_split = false;
-    bool         m_opt_pretty = false;
+    bool         m_opt_split     = false;
+    bool         m_opt_pretty    = false;
     bool         m_opt_quote_all = false;
-
+    bool         m_opt_globals   = false;
+    
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
         { }
@@ -105,6 +107,8 @@ struct JsonFormatter::JsonFormatterImpl
                 m_opt_pretty = true;
             if (arg == opt_quote_all)
                 m_opt_quote_all = true;
+            if (arg == opt_globals)
+                m_opt_globals = true;
         }
 
         switch (spec.attribute_selection.selection) {
@@ -142,7 +146,9 @@ struct JsonFormatter::JsonFormatterImpl
                     Attribute attr = db.get_attribute(node->attribute());
                     string name = attr.name();
 
-                    if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                    bool selected = m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
+
+                    if (!selected && (!m_selected.empty() || attr.is_hidden() || attr.is_global()))
                         continue;
 
                     nodes.push_back(node);
@@ -255,6 +261,28 @@ struct JsonFormatter::JsonFormatterImpl
             m_first_row = false;
         }
     }
+
+    void write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
+        std::vector<Entry>               globals = db.get_globals();
+        std::map<cali_id_t, std::string> global_vals;
+
+        for (const Entry& e : globals)
+            if (e.is_reference())
+                for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent()) {
+                    std::string s = node->data().to_string();
+                    
+                    if (global_vals[node->attribute()].size() > 0)
+                        s.append("/").append(global_vals[node->attribute()]);
+
+                    global_vals[node->attribute()] = s;                        
+                }
+            else
+                global_vals[e.attribute()] = e.value().to_string();
+        
+        for (auto &p : global_vals)
+            os << ",\n\"" << db.get_attribute(p.first).name() << "\": "
+               << '\"' << p.second << '\"';
+    }
 };
 
 JsonFormatter::JsonFormatter(OutputStream &os, const QuerySpec& spec)
@@ -274,10 +302,14 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
     mP->print(db, list);
 }
 
-void JsonFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
+void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
 {
     if (!mP->m_opt_split)
         os << "\n]";
+
+    if (mP->m_opt_globals)
+        mP->write_globals(db, os);
+    
     os << std::endl;
 }
 

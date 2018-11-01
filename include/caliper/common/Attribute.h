@@ -105,6 +105,9 @@ public:
     bool is_nested() const {
         return properties() & CALI_ATTR_NESTED;
     }
+    bool is_global() const {
+        return properties() & CALI_ATTR_GLOBAL;
+    }
 
     Variant        get(const Attribute& attr) const;
     
