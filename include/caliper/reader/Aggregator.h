@@ -74,8 +74,8 @@ public:
     static const QuerySpec::FunctionSignature*
     aggregation_defs();
 
-    static std::vector<std::string>
-    aggregation_attribute_names(const QuerySpec&);
+    static std::string
+    get_aggregation_attribute_name(const QuerySpec::AggregationOp& op);
 };
 
 } // namespace cali

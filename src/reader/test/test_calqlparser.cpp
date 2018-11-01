@@ -81,9 +81,9 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
 
     EXPECT_EQ(q2.attribute_selection.selection, QuerySpec::AttributeSelection::List);
     ASSERT_EQ(q2.attribute_selection.list.size(), 3);
-    EXPECT_EQ(q2.attribute_selection.list[0], "b");
-    EXPECT_EQ(q2.attribute_selection.list[1], "ccc");
-    EXPECT_EQ(q2.attribute_selection.list[2], "count");
+    EXPECT_EQ(q2.attribute_selection.list[0], "count");
+    EXPECT_EQ(q2.attribute_selection.list[1], "b");
+    EXPECT_EQ(q2.attribute_selection.list[2], "ccc");
     
     EXPECT_EQ(q2.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregation_ops.list.size(), 1);
@@ -259,7 +259,7 @@ TEST(CalQLParserTest, AggregateClause) {
     EXPECT_STREQ(q1.aggregation_ops.list[1].op.name, "count");
 
     // currently listing the same function twice isn't an error
-    CalQLParser p2(" Aggregate STATISTICS ( a.b:c ), Count(  ), count() ");
+    CalQLParser p2(" Aggregate Percent_Total ( a.b:c ), Count(  ), count() ");
 
     EXPECT_FALSE(p2.error()) << "Unexpected parse error: " << p2.error_msg();
 
@@ -268,7 +268,7 @@ TEST(CalQLParserTest, AggregateClause) {
     EXPECT_EQ(q2.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q2.aggregation_ops.list.size(), 3);
     
-    EXPECT_STREQ(q2.aggregation_ops.list[0].op.name, "statistics");
+    EXPECT_STREQ(q2.aggregation_ops.list[0].op.name, "percent_total");
     ASSERT_EQ(q2.aggregation_ops.list[0].args.size(), 1);
     EXPECT_EQ(q2.aggregation_ops.list[0].args[0], "a.b:c");
     EXPECT_STREQ(q2.aggregation_ops.list[1].op.name, "count");    
@@ -279,6 +279,47 @@ TEST(CalQLParserTest, AggregateClause) {
 
     CalQLParser p4("aggregate sum(aa),");
     EXPECT_TRUE(p4.error());
+}
+
+TEST(CalQLParserTest, AliasAttribute) {
+    CalQLParser p1("select a  as \"my alias (for a)\", b");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 2);
+
+    EXPECT_STREQ(q1.attribute_selection.list[0].c_str(), "a");
+    EXPECT_STREQ(q1.attribute_selection.list[1].c_str(), "b");
+
+    ASSERT_EQ(q1.aliases.size(), 1);
+    EXPECT_STREQ(q1.aliases["a"].c_str(), "my alias (for a)");
+}
+
+TEST(CalQLParserTest, AliasAggregate) {
+    CalQLParser p1("select x,percent_total(a) as \"my alias (for percent_total#a)\" format table");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 2);
+
+    EXPECT_EQ(q1.attribute_selection.list[0], "x");
+    EXPECT_EQ(q1.attribute_selection.list[1], "percent_total#a");
+
+    EXPECT_EQ(q1.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
+    ASSERT_EQ(q1.aggregation_ops.list.size(), 1);
+    EXPECT_STREQ(q1.aggregation_ops.list[0].op.name, "percent_total");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[0], "a");
+
+    EXPECT_STREQ(q1.format.formatter.name, "table");
+
+    ASSERT_EQ(q1.aliases.size(), 1);
+    EXPECT_STREQ(q1.aliases["percent_total#a"].c_str(), "my alias (for percent_total#a)");
 }
 
 TEST(CalQLParserTest, FullStatement) {

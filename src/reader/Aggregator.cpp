@@ -246,6 +246,7 @@ private:
 // --- StatisticsKernel
 //
 
+#if 0
 class StatisticsKernel : public AggregateKernel {
 public:
 
@@ -448,6 +449,7 @@ private:
     
     Config*    m_config;
 };
+#endif
 
 //
 // --- PercentageKernel
@@ -824,13 +826,12 @@ private:
 enum KernelID {
     Count        = 0,
     Sum          = 1,
-    Statistics   = 2,
-    Percentage   = 3,
-    PercentTotal = 4,
-    InclusiveSum = 5
+    Percentage   = 2,
+    PercentTotal = 3,
+    InclusiveSum = 4
 };
 
-#define MAX_KERNEL_ID 5
+#define MAX_KERNEL_ID 4
 
 const char* kernel_args[] = { "attribute" };
 const char* kernel_2args[] = { "numerator", "denominator" };
@@ -838,7 +839,6 @@ const char* kernel_2args[] = { "numerator", "denominator" };
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,        "count",         0, 0, nullptr      },
     { KernelID::Sum,          "sum",           1, 1, kernel_args  },
-    { KernelID::Statistics,   "statistics",    1, 1, kernel_args  },
     { KernelID::Percentage,   "percentage",    2, 2, kernel_2args },
     { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
     { KernelID::InclusiveSum, "inclusive_sum", 1, 1, kernel_args  },
@@ -852,7 +852,6 @@ const struct KernelInfo {
 } kernel_list[] = {
     { "count",         CountKernel::Config::create        },
     { "sum",           SumKernel::Config::create          },
-    { "statistics",    StatisticsKernel::Config::create   },
     { "percentage",    PercentageKernel::Config::create   },
     { "percent_total", PercentTotalKernel::Config::create },
     { "inclusive_sum", InclusiveSumKernel::Config::create },
@@ -1316,40 +1315,28 @@ Aggregator::aggregation_defs()
     return ::kernel_signatures;
 }
 
-std::vector<std::string>
-Aggregator::aggregation_attribute_names(const QuerySpec& spec)
+std::string
+Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
 {
-    std::vector<std::string> ret;
-
-    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::Default)
-        ret.push_back("count");
-
-    if (spec.aggregation_ops.selection == QuerySpec::AggregationSelection::List) {
-        for (const QuerySpec::AggregationOp& op : spec.aggregation_ops.list) {
-            switch (op.op.id) {
-            case KernelID::Count:
-                ret.push_back("count");
-                break;
-            case KernelID::Sum:
-                ret.push_back(op.args[0]);
-                break;
-            case KernelID::Statistics:
-                ret.push_back(std::string("min#") + op.args[0]);
-                ret.push_back(std::string("max#") + op.args[0]);
-                ret.push_back(std::string("avg#") + op.args[0]);
-                break;        
-            case KernelID::Percentage:
-                ret.push_back(op.args[0] + std::string("/") + op.args[1]);
-                break;
-            case KernelID::PercentTotal:
-                ret.push_back(std::string("percent_total#") + op.args[0]);
-                break;
-            case KernelID::InclusiveSum:
-                ret.push_back(std::string("inclusive#") + op.args[0]);
-                break;
-            }
-        }
+    switch (op.op.id) {
+    case KernelID::Count:
+        return "count";
+    case KernelID::Sum:
+        return op.args[0];
+#if 0
+    case KernelID::Statistics:
+        ret.push_back(std::string("min#") + op.args[0]);
+        ret.push_back(std::string("max#") + op.args[0]);
+        ret.push_back(std::string("avg#") + op.args[0]);
+        break;
+#endif
+    case KernelID::Percentage:
+        return op.args[0] + std::string("/") + op.args[1];
+    case KernelID::PercentTotal:
+        return std::string("percent_total#") + op.args[0];
+    case KernelID::InclusiveSum:
+        return std::string("inclusive#") + op.args[0];
     }
-    
-    return ret;
+   
+    return std::string();
 }
