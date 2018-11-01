@@ -232,7 +232,7 @@ QueryArgsParser::parse_args(const Args& args)
                 auto fpair = parse_functioncall(is, defs);
 
                 if (fpair.first >= 0)
-                    m_spec.aggregation_ops.list.emplace_back(defs[fpair.first], fpair.second, "");
+                    m_spec.aggregation_ops.list.emplace_back(defs[fpair.first], fpair.second);
 
                 c = parse_char(is);
             } while (is.good() && c == ',');
