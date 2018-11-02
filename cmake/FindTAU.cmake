@@ -12,7 +12,7 @@
 #    TAU_LIBRARIES
 
 # First, look in only one variable, TAU_DIR.  This script will accept any of:
-# TAU_DIR, TAU_ROOT, TAU_DIR, TAU_ROOT, or environment variables
+# TAU_DIR, TAU_ROOT, TAU_DIR, TAU_ROOT, TAU_PREFIX, or environment variables
 # using the same set of names.
 
 if ("${TAU_DIR} " STREQUAL " ")
@@ -21,12 +21,18 @@ if ("${TAU_DIR} " STREQUAL " ")
     ENDIF (NOT TAU_FIND_QUIETLY)
 
     # All upper case options
+    if (DEFINED TAU_PREFIX)
+        set(TAU_DIR ${TAU_PREFIX})
+    endif (DEFINED TAU_PREFIX)
     if (DEFINED TAU_DIR)
         set(TAU_DIR ${TAU_DIR})
     endif (DEFINED TAU_DIR)
     if (DEFINED TAU_ROOT)
         set(TAU_DIR ${TAU_ROOT})
     endif (DEFINED TAU_ROOT)
+    if (DEFINED ENV{TAU_PREFIX})
+        set(TAU_DIR $ENV{TAU_PREFIX})
+    endif (DEFINED ENV{TAU_PREFIX})
     if (DEFINED ENV{TAU_DIR})
         set(TAU_DIR $ENV{TAU_DIR})
     endif (DEFINED ENV{TAU_DIR})
@@ -35,11 +41,54 @@ if ("${TAU_DIR} " STREQUAL " ")
     endif (DEFINED ENV{TAU_ROOT})
 endif ("${TAU_DIR} " STREQUAL " ")
 
+# Check to make sure the TAU_MAKEFILE is set, so we know 
+# which TAU configuration to use
+
+if (NOT DEFINED TAU_MAKEFILE)
+    if (DEFINED ENV{TAU_MAKEFILE})
+        set(TAU_MAKEFILE $ENV{TAU_MAKEFILE})
+    else (DEFINED ENV{TAU_MAKEFILE})
+        IF (NOT TAU_FIND_QUIETLY)
+            MESSAGE(STATUS "TAU_MAKEFILE not set! Please set TAU_MAKEFILE to a valid TAU makefile.")
+        ENDIF (NOT TAU_FIND_QUIETLY)
+    endif (DEFINED ENV{TAU_MAKEFILE})
+endif (NOT DEFINED TAU_MAKEFILE)
+
 IF (NOT TAU_FIND_QUIETLY)
     MESSAGE(STATUS "TAU_DIR set to: '${TAU_DIR}'")
+    MESSAGE(STATUS "TAU_MAKEFILE set to: '${TAU_MAKEFILE}'")
 ENDIF (NOT TAU_FIND_QUIETLY)
 
-# First, see if the tau_cxx.sh program is in our path.  
+# First, see if the archfind program is in the tau directory
+# If so, use it.
+
+if (NOT DEFINED TAU_ARCH)
+    IF (NOT TAU_FIND_QUIETLY)
+        message("FindTAU: looking for ${TAU_DIR}/utils/archfind")
+    ENDIF (NOT TAU_FIND_QUIETLY)
+
+    find_program (TAU_ARCHFIND NAMES utils/archfind
+                PATHS 
+                "${TAU_DIR}"
+                NO_DEFAULT_PATH)
+
+    if(TAU_ARCHFIND)
+        IF (NOT TAU_FIND_QUIETLY)
+            message("FindTAU: run ${TAU_ARCHFIND}")
+        ENDIF (NOT TAU_FIND_QUIETLY)
+        execute_process(COMMAND ${TAU_ARCHFIND}
+            OUTPUT_VARIABLE TAU_ARCH
+            RESULT_VARIABLE TAU_arch_ret
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        IF (NOT TAU_FIND_QUIETLY)
+            message("FindTAU: return value = ${TAU_arch_ret}")
+            message("FindTAU: output = ${TAU_ARCH}")
+        ENDIF (NOT TAU_FIND_QUIETLY)
+    endif(TAU_ARCHFIND)
+endif (NOT DEFINED TAU_ARCH)
+
+# Second, see if the tau_cxx.sh program is in our path.  
 # If so, use it.
 
 IF (NOT TAU_FIND_QUIETLY)
@@ -48,15 +97,17 @@ ENDIF (NOT TAU_FIND_QUIETLY)
 
 find_program (TAU_CONFIG NAMES tau_cxx.sh 
               PATHS 
+              "${TAU_DIR}/${TAU_ARCH}/bin"
               ENV PATH
-              "${TAU_DIR}/*/bin"
               NO_DEFAULT_PATH)
 
 if(TAU_CONFIG)
     IF (NOT TAU_FIND_QUIETLY)
         message("FindTAU: run ${TAU_CONFIG}")
     ENDIF (NOT TAU_FIND_QUIETLY)
-    execute_process(COMMAND ${TAU_CONFIG} "-tau:showlibs"
+    execute_process(COMMAND ${TAU_CONFIG}
+        "-tau_makefile=${TAU_MAKEFILE}"
+        "-tau:showlibs"
         OUTPUT_VARIABLE TAU_config_out
         RESULT_VARIABLE TAU_config_ret
         OUTPUT_STRIP_TRAILING_WHITESPACE

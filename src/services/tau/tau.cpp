@@ -1,4 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2018, University of Oregon
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -33,7 +34,9 @@
 /// @file  tau.cpp
 /// @brief Caliper TAU service
 
-#include "../common/AnnotationBinding.h"
+// Caliper annotation bindings for TAU service
+
+#include "caliper/AnnotationBinding.h"
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Variant.h"
 #include <map>
@@ -41,9 +44,11 @@
 
 using namespace cali;
 
-namespace {
+namespace
+{
 
-class TAUBinding : public cali::AnnotationBinding {
+class TAUBinding : public cali::AnnotationBinding
+{
 
 public:
 
