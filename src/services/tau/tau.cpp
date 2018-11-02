@@ -40,7 +40,10 @@
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Variant.h"
 #include <map>
-#include <TAU.h>
+#define TAU_ENABLED
+#define TAU_DOT_H_LESS_HEADERS
+#include "TAU.h"
+
 
 using namespace cali;
 
@@ -52,27 +55,25 @@ class TAUBinding : public cali::AnnotationBinding
 
 public:
 
+    void initialize(Caliper* c) {
+        // initialize TAU
+        int argc = 1;
+        const char *dummy = "Caliper Application";
+        char* argv[1];
+        argv[0] = const_cast<char*>(dummy);
+        Tau_init(argc,argv);
+        // actually, want to get the *real* MPI rank.  How do I get it?
+        Tau_set_node(0);
+    }
+
     const char* service_tag() const { return "tau"; };
 
-/*
-    void initialize(){
-        TAU_PROFILE_SET_NODE(0);
-    }
-
-	void finalize(Caliper* c) {
-    }
-*/
-
     void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
-        if (value.type() == CALI_TYPE_STRING) {
-          TAU_PROFILE_START((const char*)(value.data()));
-        }
+        Tau_start((const char*)(value.to_string().data()));
     }
 
     void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
-        if (value.type() == CALI_TYPE_STRING) {
-          TAU_PROFILE_STOP((const char*)(value.data()));
-        }
+        Tau_stop((const char*)(value.to_string().data()));
     }
 };
 
