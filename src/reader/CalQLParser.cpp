@@ -167,7 +167,7 @@ struct CalQLParser::CalQLParserImpl
                     set_error(std::string("Invalid number of arguments for ") + defs[i].name, is);
                 } else {
                     spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
-                    spec.aggregation_ops.list.emplace_back(defs[i], args, "");
+                    spec.aggregation_ops.list.emplace_back(defs[i], args);
                 }
             } else {
                 set_error(std::string("Unknown aggregation function ") + w, is);
@@ -236,8 +236,12 @@ struct CalQLParser::CalQLParserImpl
         
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();
         char c = '\0';
+
+        std::string next_keyword;
         
         do {
+            std::string selection_attr_name;
+            
             c = util::read_char(is);
 
             if (c == '*') {
@@ -262,7 +266,17 @@ struct CalQLParser::CalQLParserImpl
                             set_error(std::string("Invalid number of arguments for ") + defs[i].name, is);
                         } else {
                             spec.aggregation_ops.selection = QuerySpec::AggregationSelection::List;
-                            spec.aggregation_ops.list.emplace_back(defs[i], args, "");
+
+                            QuerySpec::AggregationOp op(defs[i], args);
+                            
+                            spec.aggregation_ops.list.push_back(op);
+                            selection_attr_name = Aggregator::get_aggregation_attribute_name(op);
+
+                            // explicitly add aggregation attribute name to the list
+                            if (spec.attribute_selection.selection != QuerySpec::AttributeSelection::All) {
+                                spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
+                                spec.attribute_selection.list.push_back(selection_attr_name);
+                            }
                         }
                     } else {
                         set_error(std::string("Unknown aggregation function ")+w, is);
@@ -275,27 +289,42 @@ struct CalQLParser::CalQLParserImpl
                     else {
                         spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
                         spec.attribute_selection.list.push_back(w);
+
+                        selection_attr_name = w;
                     }
                 }
             }
 
+            next_keyword.clear();
+
+            // parse alias (... AS ...)
+            if (!error) {
+                std::string tmp = util::read_word(is, ",;=<>()\n");
+                std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
+
+                if (next_keyword == "as") {
+                    std::string w = util::read_word(is, ",;=<>()\n");
+
+                    if (w.empty())
+                        set_error("Expected alias at SELECT ... AS ", is);
+                    else {
+                        spec.aliases[selection_attr_name] = w;
+                    }
+
+                    next_keyword.clear();
+                } else if (!next_keyword.empty()) {
+                    c = 0;
+                    break;
+                }
+            }
+            
             c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
         if (c)
             is.unget();
-
-        // explicitly add aggregation attribute names to the attribute list
-        
-        if (!error &&
-            spec.aggregation_ops.selection     == QuerySpec::AggregationSelection::List &&
-            spec.attribute_selection.selection != QuerySpec::AttributeSelection::All) {
-            spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-
-            auto names = Aggregator::aggregation_attribute_names(spec);
-            spec.attribute_selection.list.insert(spec.attribute_selection.list.end(),
-                                                 std::begin(names), std::end(names));
-        }
+        if (!next_keyword.empty())
+            parse_clause_from_word(next_keyword, is);
     }
 
     void

@@ -80,9 +80,17 @@ struct TreeFormatter::TreeFormatterImpl
     SnapshotTree             m_tree;
 
     QuerySpec::AttributeSelection m_attribute_columns;
-    std::map<Attribute, int> m_attribute_column_widths;
+
+    struct ColumnInfo {
+        std::string display_name;
+        int width;
+    };
+    
+    std::map<Attribute, ColumnInfo> m_column_info;
 
     int                      m_path_column_width;
+
+    std::map<std::string, std::string> m_aliases;
 
     std::vector<std::string> m_path_key_names;
     std::vector<Attribute>   m_path_keys;
@@ -98,6 +106,7 @@ struct TreeFormatter::TreeFormatterImpl
 
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
         m_attribute_columns = spec.attribute_selection;
+        m_aliases = spec.aliases;
     }
     
     std::vector<Attribute> get_path_keys(const CaliperMetadataAccessInterface& db) {
@@ -157,12 +166,20 @@ struct TreeFormatter::TreeFormatterImpl
 
         for (auto &p : node->attributes()) {
             int len = p.second.to_string().size();
-            auto it = m_attribute_column_widths.find(p.first);
+            auto it = m_column_info.find(p.first);
 
-            if (it == m_attribute_column_widths.end())
-                m_attribute_column_widths.insert(std::make_pair(p.first, std::max<int>(len, p.first.name().size())));
-            else
-                it->second = std::max(it->second, len);
+            if (it == m_column_info.end()) {
+                std::string name = p.first.name();
+                                
+                auto ait = m_aliases.find(name);
+                if (ait != m_aliases.end())
+                    name = ait->second;
+
+                ColumnInfo ci { name, std::max<int>(len, name.size()) };
+
+                m_column_info.insert(std::make_pair(p.first, ci));
+            } else
+                it->second.width = std::max(it->second.width, len);
         }
     }
 
@@ -197,9 +214,9 @@ struct TreeFormatter::TreeFormatterImpl
                                 t == CALI_TYPE_ADDR);
 
             if (align_right)
-                ::pad_left (os, str, m_attribute_column_widths[a]);
+                ::pad_left (os, str, m_column_info[a].width);
             else
-                ::pad_right(os, str, m_attribute_column_widths[a]);
+                ::pad_right(os, str, m_column_info[a].width);
         }
 
         os << std::endl;
@@ -224,7 +241,7 @@ struct TreeFormatter::TreeFormatterImpl
         switch (m_attribute_columns.selection) {
         case QuerySpec::AttributeSelection::Default:
             // auto-attributes: skip hidden and "cali." attributes
-            for (auto &p : m_attribute_column_widths) {
+            for (auto &p : m_column_info) {
                 if (p.first.is_hidden())
                     continue;
                 if (p.first.name().compare(0, 5, "cali.") == 0)
@@ -234,7 +251,7 @@ struct TreeFormatter::TreeFormatterImpl
             }
             break;
         case QuerySpec::AttributeSelection::All:
-            for (auto &p : m_attribute_column_widths)
+            for (auto &p : m_column_info)
                 attributes.push_back(p.first);
             break;
         case QuerySpec::AttributeSelection::List:
@@ -260,7 +277,7 @@ struct TreeFormatter::TreeFormatterImpl
         ::pad_right(os, "Path", m_path_column_width);
 
         for (const Attribute& a : attributes)
-            ::pad_right(os, a.name(), m_attribute_column_widths[a]);
+            ::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
 
         os << std::endl;
 

@@ -54,6 +54,7 @@ struct TableFormatter::TableImpl
 {
     struct Column {
         std::string name;
+        std::string display_name;
         std::size_t max_width;
 
         Attribute   attr;
@@ -62,9 +63,9 @@ struct TableFormatter::TableImpl
 
         QuerySpec::SortSpec::Order sort_order;
 
-        Column(const std::string& n, std::size_t w, const Attribute& a, bool p,
+        Column(const std::string& n, const std::string alias, std::size_t w, const Attribute& a, bool p,
                QuerySpec::SortSpec::Order o = QuerySpec::SortSpec::Order::None)
-            : name(n), max_width(w), attr(a), print(p), sort_order(o)
+            : name(n), display_name(alias), max_width(w), attr(a), print(p), sort_order(o)
             { }
     };
 
@@ -73,6 +74,8 @@ struct TableFormatter::TableImpl
 
     std::mutex                              m_col_lock;
     std::mutex                              m_row_lock;
+
+    std::map<std::string, std::string>      m_aliases;
 
     bool                                    m_auto_column;
 
@@ -85,7 +88,7 @@ struct TableFormatter::TableImpl
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s.size(), Attribute::invalid, false);
+                m_cols.emplace_back(s, s, s.size(), Attribute::invalid, false);
 
         fields.clear();
 
@@ -101,7 +104,7 @@ struct TableFormatter::TableImpl
 
         for (const std::string& s : fields)
             if (s.size() > 0)
-                m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
+                m_cols.emplace_back(s, s, s.size(), Attribute::invalid, true);
     }
 
     void configure(const QuerySpec& spec) {
@@ -109,6 +112,8 @@ struct TableFormatter::TableImpl
         m_rows.clear();
         
         m_auto_column = false;
+
+        m_aliases = spec.aliases;
 
         // Fill sort columns
 
@@ -119,7 +124,7 @@ struct TableFormatter::TableImpl
             break;
         case QuerySpec::SortSelection::List:
             for (const QuerySpec::SortSpec& s : spec.sort.list)
-                m_cols.emplace_back(s.attribute, s.attribute.size(), Attribute::invalid, false, s.order);
+                m_cols.emplace_back(s.attribute, s.attribute, s.attribute.size(), Attribute::invalid, false, s.order);
             break;
         }
 
@@ -131,8 +136,15 @@ struct TableFormatter::TableImpl
             m_auto_column = true;
             break;
         case QuerySpec::AttributeSelection::List:
-            for (const std::string& s : spec.attribute_selection.list)
-                m_cols.emplace_back(s, s.size(), Attribute::invalid, true);
+            for (const std::string& s : spec.attribute_selection.list) {
+                std::string alias = s;
+                
+                auto it = m_aliases.find(s);
+                if (it != m_aliases.end())
+                    alias = it->second;
+                    
+                m_cols.emplace_back(s, alias, alias.size(), Attribute::invalid, true);
+            }
             break;
         case QuerySpec::AttributeSelection::None:
             // Keep auto_column = false and empty column list
@@ -149,7 +161,7 @@ struct TableFormatter::TableImpl
         if (it != m_cols.end())
             return;
 
-        Attribute attr   = db.get_attribute(attr_id);
+        Attribute attr = db.get_attribute(attr_id);
 
         if (attr == Attribute::invalid)
             return;
@@ -161,7 +173,15 @@ struct TableFormatter::TableImpl
             name.compare(0, 6, "event.") == 0)
             return;
 
-        m_cols.emplace_back(name, name.size(), attr, true);
+        std::string alias = name;
+        
+        {
+            auto ait = m_aliases.find(name);
+            if (ait != m_aliases.end())
+                alias = ait->second;
+        }
+        
+        m_cols.emplace_back(name, alias, alias.size(), attr, true);
     }
 
     std::vector<Column> update_columns(CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -284,7 +304,7 @@ struct TableFormatter::TableImpl
 
         for (const Column& col : m_cols)
             if (col.print)
-                os << col.name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.name.size()));
+                os << col.display_name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.display_name.size()));
 
         os << std::endl;
 

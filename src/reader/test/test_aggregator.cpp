@@ -578,7 +578,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     EXPECT_EQ(val,   35);
 }
 
-TEST(AggregatorTest, StatisticsKernel) {
+TEST(AggregatorTest, StatisticsKernels) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
@@ -615,7 +615,9 @@ TEST(AggregatorTest, StatisticsKernel) {
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
     
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("statistics", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("min", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("max", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("avg", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -700,7 +702,6 @@ TEST(AggregatorTest, PercentTotalKernel) {
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
     
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
-    spec.aggregation_ops.list.push_back(::make_op("statistics",    "val"));
     spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
 
     // perform recursive aggregation from two aggregators
@@ -720,17 +721,9 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     // merge b into a
     b.flush(db, a);
-
-    Attribute attr_min = db.get_attribute("min#val");
-    Attribute attr_max = db.get_attribute("max#val");
-    Attribute attr_sum = db.get_attribute("sum#val");
-    Attribute attr_avg = db.get_attribute("avg#val");
+    
     Attribute attr_pct = db.get_attribute("percent_total#val");
 
-    ASSERT_NE(attr_min, Attribute::invalid);
-    ASSERT_NE(attr_max, Attribute::invalid);
-    ASSERT_NE(attr_sum, Attribute::invalid);
-    ASSERT_NE(attr_avg, Attribute::invalid);
     ASSERT_NE(attr_pct, Attribute::invalid);
 
     std::vector<EntryList> resdb;
@@ -754,10 +747,6 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     auto dict  = make_dict_from_entrylist(*it);
 
-    EXPECT_EQ(dict[attr_min.id()].value().to_int(),  4);
-    EXPECT_EQ(dict[attr_max.id()].value().to_int(), 16);
-    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 20);
-    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 10.0);
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 25.0);
 
     it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
@@ -771,9 +760,5 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     dict  = make_dict_from_entrylist(*it);
 
-    EXPECT_EQ(dict[attr_min.id()].value().to_int(), 24);
-    EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
-    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 60);
-    EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 30.0);
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 75.0);
 }

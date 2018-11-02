@@ -77,6 +77,8 @@ struct JsonFormatter::JsonFormatterImpl
     bool         m_opt_pretty    = false;
     bool         m_opt_quote_all = false;
     bool         m_opt_globals   = false;
+
+    std::map<std::string,std::string> m_aliases;
     
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
@@ -125,6 +127,8 @@ struct JsonFormatter::JsonFormatterImpl
                                       spec.attribute_selection.list.end());
             break;
         }
+
+        m_aliases = spec.aliases;
     }
     
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -158,7 +162,9 @@ struct JsonFormatter::JsonFormatterImpl
                     continue;
 
                 // Sort all nodes consistently baseed on attribute id
-                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) { return a->attribute() < b->attribute(); } );
+                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) {
+                        return a->attribute() < b->attribute();
+                    } );
 	  
                 cali_id_t prev_attr_id = CALI_INV_ID;
 
@@ -183,9 +189,17 @@ struct JsonFormatter::JsonFormatterImpl
                             ss_key_value.str(std::string());
                         }
 
+                        std::string name = attr.name();
+
+                        {
+                            auto aliasit = m_aliases.find(name);
+                            if (aliasit != m_aliases.end())
+                                name = aliasit->second;
+                        }
+
                         // Start new attribute
                         quotes = m_opt_quote_all | false;
-                        util::write_esc_string(ss_key_value << '"', attr.name()) << '"' << ':';
+                        util::write_esc_string(ss_key_value << '"', name) << '"' << ':';
 
                         // If STRING or USR, or if nested attribute values x/y/z, start quotes
                         if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR 
@@ -223,6 +237,12 @@ struct JsonFormatter::JsonFormatterImpl
                 // Check if this attribute is selected for printing
                 if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
+
+                {
+                    auto aliasit = m_aliases.find(name);
+                    if (aliasit != m_aliases.end())
+                        name = aliasit->second;
+                }
 
                 bool quotes = m_opt_quote_all | false;
 
