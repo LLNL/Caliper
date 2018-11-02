@@ -110,8 +110,13 @@ class AnnotationBinding
 
 protected:
 
+    /// These three callbacks are internal Caliper mechanisms
+    /// not meant to be touched by the code of services
+    /// implementing an AnnotationBinding.
+    /// 
+    /// User code should instead use on_create_attribute,
+    /// on_begin, and on_end.
     void pre_create_attr_cb(Caliper*, const std::string&, cali_attr_type, int*, Node**);
-
     void begin_cb(Caliper*, const Attribute&, const Variant&);
     void end_cb(Caliper*, const Attribute&, const Variant&);
 
