@@ -52,8 +52,19 @@ namespace
 
 class TAUBinding : public cali::AnnotationBinding
 {
+    // when an attribute is created, store the value in TAU as metadata.
+    // this seems reasonable, but might be misguided.
+    static void create_attr_cb(Caliper* c, const Attribute& attr) {
+        std::string tmp("Caliper: " + attr.name());
+        Tau_metadata(tmp.c_str(), c->get(attr).value().to_string().c_str());
+    }
 
 public:
+
+    void pre_initialize(Caliper* c) {
+        // register for events of interest
+        c->events().create_attr_evt.connect(&TAUBinding::create_attr_cb);
+    }
 
     void initialize(Caliper* c) {
         // initialize TAU
@@ -62,16 +73,29 @@ public:
         char* argv[1];
         argv[0] = const_cast<char*>(dummy);
         Tau_init(argc,argv);
-        // actually, want to get the *real* MPI rank.  How do I get it?
-        Tau_set_node(0);
+        // want to get the *real* MPI rank.  How do I get it? like this.
+        Attribute mpi_rank_attr = c->get_attribute("mpi.rank");
+        if (mpi_rank_attr != Attribute::invalid) {
+            // no MPI
+            Tau_set_node(0);
+        } else {
+            // have MPI, get the rank
+            Tau_set_node(c->get(mpi_rank_attr).value().to_int());
+        }
+    }
+
+    void finalize(Caliper* c) {
+        // do something?
     }
 
     const char* service_tag() const { return "tau"; };
 
+    // handle a begin event by starting a TAU timer
     void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
         Tau_start((const char*)(value.to_string().data()));
     }
 
+    // handle an end event by stopping a TAU timer
     void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
         Tau_stop((const char*)(value.to_string().data()));
     }
