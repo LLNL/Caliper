@@ -3,7 +3,7 @@
 #
 
 cmake_minimum_required(VERSION 3.1)
-project (caliper)
+project (caliper C CXX)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 2)
@@ -59,7 +59,7 @@ if (BUILD_SHARED_LIBS)
   # the RPATH to be used when installing, but only if it's not a system directory
   list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
   if("${isSystemDir}" STREQUAL "-1")
-    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+    list(APPEND CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
   endif("${isSystemDir}" STREQUAL "-1")
 else()
   # Try to find static libs first for static builds
