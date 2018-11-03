@@ -28,4 +28,4 @@ pthread, papi and pgi compiler support, you might specify:
 -DTAU_ARCH=craycnl \
 ```
 
-
+For any/all questions please contact tau-bugs@cs.uoregon.edu.
