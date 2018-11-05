@@ -364,7 +364,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
 
-            m_os.stream() << (m_row_count++ > 0 ? ",\n    " : "{\n   \"data\": [\n    ") << os.str();
+            m_os.stream() << (m_row_count++ > 0 ? ",\n    " : "{\n  \"data\": [\n    ") << os.str();
         }
     }
 
