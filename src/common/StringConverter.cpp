@@ -64,10 +64,14 @@ cali::StringConverter::to_bool(bool* okptr) const
         std::transform(m_str.begin(), m_str.end(), std::back_inserter(lower),
                        ::tolower);
 
-        if (lower == "true" || lower == "t") {
+        if (lower == "true" ||
+            lower == "t"    ||
+            lower == "yes") {
             ok  = true;
             res = true;
-        } else if (lower == "false" || lower == "f") {
+        } else if (lower == "false" ||
+                   lower == "f"     ||
+                   lower == "no") {
             ok  = true;
             res = false;
         }

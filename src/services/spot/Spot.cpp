@@ -85,8 +85,8 @@ namespace
         static std::string code_version;
         static std::string recorded_time;
         static std::vector<std::string> title;
-        static bool include_local;
         static bool show_exclusive;
+
         void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
           for(auto& m_query : m_queries){
             auto entries = snapshot->to_entrylist();
@@ -95,6 +95,7 @@ namespace
             }
           }
         }
+
         std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration",bool initcall=false){
           if((!node) ||(!node->attribute()) ){
             return "";
@@ -109,6 +110,7 @@ namespace
           }
           return my_name;
         } 
+
         void flush(Caliper* c, const SnapshotRecord*) {
           for(int i =0 ;i<m_queries.size();i++) {
             auto& m_query = m_queries[i];
@@ -134,45 +136,9 @@ namespace
                     
                     if (!name.empty())
                         m_json.push_back(std::make_pair(name, value));
-#if 0                    
-                std::string name;
-                TimeType value = 0;
-                std::string local_name;
-                std::string parent_name;
-                for(const auto& entry: list) {
-                  for(std::string& attribute_key : metrics_of_interest) {
-                    Attribute attr = db.get_attribute(attribute_key);
-                    Variant value_iter = entry.value(attr);
-                    if (((attribute_key == "inclusive#sum#time.duration") && !(value_iter.empty()) && !(entry.is_reference()))) {
-                      value = value_iter.to_uint();
-                    }
-                    if((attribute_key==grouping)){
-                      if(entry.is_reference()){
-                        if(entry.node()->parent()){
-                          parent_name = extract_parent_name(db,entry.node()->parent(),grouping,true);
-                        }
-                      }
-                      if(!value_iter.empty()){
-                        local_name = value_iter.to_string();
-                      }
-                    }
-                  }
-                }
-                
-                if(parent_name.size() > 0){
-                  if(include_local){
-                    m_json.push_back(std::make_pair(parent_name+"/"+local_name,value));
-                  }
-                  else{
-                    m_json.push_back(std::make_pair(parent_name,value));
-                  }
-                }
-                else{
-                  m_json.push_back(std::make_pair(local_name,value));
-                }
-#endif
             });
           }
+          
           for(int i =0 ;i<m_jsons.size();i++) {
              auto place = m_annotations_and_places[i].second;
              auto json = m_jsons[i];
@@ -253,6 +219,7 @@ namespace
             doc.Accept(writer);
           }
         }
+        
         // TODO: reimplement
         Spot()
             { }
@@ -269,17 +236,19 @@ namespace
            QuerySpec    spec(parser.spec());
            return std::make_pair(new Aggregator(spec),new RecordSelector(spec));
         }
+        
         static std::string query_for_annotation(std::string grouping, std::string metric = "sum#time.duration"){
           return "SELECT " + grouping+",inclusive_sum("+metric+") " + "WHERE " +grouping+","+metric + " GROUP BY " + grouping;
         }
+        
         static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
             ConfigSet    config(RuntimeConfig::init("spot", s_configdata));
-            const std::string&  config_string = config.get("config").to_string().c_str();
-            include_local = config.get("include_local").to_string().compare("NO");
+            
             show_exclusive = config.get("show_exclusive").to_string().compare("NO");
-            divisor = config.get("time_divisor").to_int();
-            code_version = config.get("code_version").to_string();
-            recorded_time = config.get("recorded_time").to_string();
+            divisor        = config.get("time_divisor").to_int();
+            code_version   = config.get("code_version").to_string();
+            recorded_time  = config.get("recorded_time").to_string();
+            
             if(recorded_time.size()==0){
               time_t rawtime;
               struct tm * timeinfo;
@@ -289,15 +258,16 @@ namespace
               strftime(time_string, sizeof(time_string),"%Y-%m-%d %H:%M:%S", timeinfo);
               recorded_time =  std::string(time_string);
             }
+            
             std::string title_string = config.get("title").to_string();
             bool use_default_title = (title_string.size() == 0);
             if(use_default_title){
-              Log(0).stream() << "Spot: using default titles for graphs\n";
+              Log(1).stream() << "Spot: using default titles for graphs\n";
             }
-            std::string y_axes_string = config.get("y_axes").to_string();
-            util::split(y_axes_string,':',std::back_inserter(y_axes));
-            std::vector<std::string> logging_configurations;
-            util::split(config_string,',',std::back_inserter(logging_configurations));
+
+            y_axes = config.get("y_axes").to_stringlist(":");
+            auto logging_configurations = config.get("config").to_stringlist(",");
+            
             for(const auto log_config : logging_configurations){
               m_jsons.emplace_back(std::vector<std::pair<std::string,TimeType>>());
               std::vector<std::string> annotation_and_place;
@@ -305,13 +275,14 @@ namespace
               std::string annotation = annotation_and_place[0];
               std::string& place = annotation_and_place[1];
               std::string query = query_for_annotation(annotation);
-              Log(0).stream() << "Query: "<<query<<"\n";
+              Log(2).stream() << "Query: "<<query<<"\n";
               m_queries.emplace_back(create_query_processor(query));
               m_annotations_and_places.push_back(std::make_pair(annotation,place));
               if(use_default_title){
                 title.push_back(place);
               }
             }
+            
             if(!use_default_title){
               util::split(title_string,',',std::back_inserter(title));
             }
@@ -356,7 +327,6 @@ namespace
     std::string Spot::code_version;
     std::string Spot::recorded_time;
     std::vector<std::string> Spot::title;
-    bool Spot::include_local;
     bool Spot::show_exclusive;
     const ConfigSet::Entry  Spot::s_configdata[] = {
         { "config", CALI_TYPE_STRING, "function:default.json",
@@ -382,15 +352,11 @@ namespace
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)",
           "If this is the first time Spot has seen a test, tell it what Y Axis to display on the resulting graphs. If multiple graphs, separate entries with a colon (:)"
         },
-        { "include_local", CALI_TYPE_STRING, "YES",
-          "In some instrumentations, this option will prevent duplication of a record",
-          "In some instrumentations, this option will prevent duplication of a record"
-        },
-        { "show_exclusive", CALI_TYPE_STRING, "NO",
+        { "show_exclusive", CALI_TYPE_BOOL, "NO",
           "Whether to include exclusive values in the resulting graph",
           "Whether to include exclusive values in the resulting graph"
         },
-        { "title", CALI_TYPE_INT, "",
+        { "title", CALI_TYPE_STRING, "",
           "Title for this test",
           "Title for this test"
         },
