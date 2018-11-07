@@ -1,4 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2018, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2018, University of Oregon
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -33,46 +34,74 @@
 /// @file  tau.cpp
 /// @brief Caliper TAU service
 
-#include "../common/ToolWrapper.h"
-#include "caliper/common/filters/RegexFilter.h"
+// Caliper annotation bindings for TAU service
 
-
+#include "caliper/AnnotationBinding.h"
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Variant.h"
 #include <map>
-#include <TAU.h>
+#define TAU_ENABLED
+#define TAU_DOT_H_LESS_HEADERS
+#include "TAU.h"
 
-namespace cali {
 
+using namespace cali;
 
-class TAUWrapper : public ToolWrapper {
-  public:
-    virtual void initialize(){
-        TAU_PROFILE_SET_NODE(0);
+namespace
+{
+
+class TAUBinding : public cali::AnnotationBinding
+{
+
+public:
+
+    void initialize(Caliper* c) {
+        // initialize TAU
+        int argc = 1;
+        const char *dummy = "Caliper Application";
+        char* argv[1];
+        argv[0] = const_cast<char*>(dummy);
+        Tau_init(argc,argv);
+        // want to get the *real* MPI rank.  How do I get it? like this.
+        Attribute mpi_rank_attr = c->get_attribute("mpi.rank");
+        if (mpi_rank_attr == Attribute::invalid) {
+            // no MPI
+            Tau_set_node(0);
+        } else {
+            // have MPI, get the rank
+            Tau_set_node(c->get(mpi_rank_attr).value().to_int());
+        }
+        // register for events of interest?
     }
 
-    virtual std::string service_name() { 
-      return "TAU service";
-    }
-    virtual std::string service_tag(){
-      return "tau";
-    }
-    virtual void beginAction(Caliper* c, const Attribute &attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-
-      TAU_START(name.c_str());
+    void finalize(Caliper* c) {
+        // do something?
     }
 
-    virtual void endAction(Caliper* c, const Attribute& attr, const Variant& value){
-      std::stringstream ss;
-      ss << attr.name() << "=" << value.to_string();
-      std::string name = ss.str();
-      TAU_STOP(name.c_str());
+    const char* service_tag() const { return "tau"; };
+
+    // handle a begin event by starting a TAU timer
+    void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
+        if (attr.type() == CALI_TYPE_STRING) {
+            Tau_start((const char*)value.data());
+        } else {
+            Tau_start((const char*)(value.to_string().data()));
+        }
+    }
+
+    // handle an end event by stopping a TAU timer
+    void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
+        if (attr.type() == CALI_TYPE_STRING) {
+            Tau_stop((const char*)(value.data());
+        } else {
+            Tau_stop((const char*)(value.to_string().data()));
+        }
     }
 };
 
-CaliperService tau_service { "tau", &setCallbacks<TAUWrapper>};
+} // namespace
 
-
+namespace cali {
+    CaliperService tau_service { "tau", &AnnotationBinding::make_binding<::TAUBinding> };
 }
 

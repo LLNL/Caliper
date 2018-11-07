@@ -45,7 +45,6 @@ set(PYTHON_SCRIPTS
   test_c_api.py
   test_json.py
   test_log.py
-  test_report.py
   test_thread.py
   calipertest.py)
 
@@ -65,6 +64,12 @@ if (CALIPER_HAVE_LIBPFM)
 endif()
 if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_DYNINST)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
+endif()
+
+if (CALIPER_HAVE_TAU)
+  add_executable(ci_test_tau_service ci_test_tau_service.cpp)
+  target_link_libraries(ci_test_tau_service caliper ${TAU_LIBRARIES})
+  list(APPEND PYTHON_SCRIPTS test_tau_service.py)
 endif()
 
 if (CALIPER_HAVE_MPI)
