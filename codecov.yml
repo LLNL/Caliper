@@ -2,3 +2,4 @@ coverage:
   ignore: 
     - test/**
     - **/test/**
+    - src/services/spot/rapidjson/**
