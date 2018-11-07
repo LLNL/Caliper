@@ -354,4 +354,6 @@ EventSampling::print_statistics(std::ostream& os)
        << m_num_snapshots << " total snapshots, "
        << m_num_reads << " cupti events read."
        << std::endl;
+
+    return os;
 }
