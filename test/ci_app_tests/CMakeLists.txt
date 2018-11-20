@@ -74,6 +74,7 @@ endif()
 
 if (CALIPER_HAVE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
   
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)

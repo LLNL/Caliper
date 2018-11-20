@@ -23,15 +23,12 @@ env:
       WITH_GOTCHA=On
       COVERAGE=On
     # Test with mpi using GOTCHA.
-    # Currently disabled because for whatever reason the libcaliper-mpi.so constructor isn't run
-    # as it is supposed to. Works in every other environment so far :-(
-    # - CALI_TRAVIS_TESTNAME=mpi-gotcha
-    #   CALI_CC=gcc
-    #   CALI_CXX=g++
-    #   WITH_MPI=On
-    #   WITH_GOTCHA=On
+    - CALI_TRAVIS_TESTNAME=mpi-gotcha
+      CALI_CC=gcc
+      CALI_CXX=g++
+      WITH_MPI=On
+      WITH_GOTCHA=On
     # Test with mpi without GOTCHA (using PMPI)
-    # (Here the libcaliper-mpi.so constructor runs. Go figure.)
     - CALI_TRAVIS_TESTNAME=mpi-pmpi
       CALI_CC=gcc
       CALI_CXX=g++
