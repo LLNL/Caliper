@@ -11,7 +11,7 @@ int main()
 {
     {   // "A" loop
         cali::Annotation::Guard
-            g( cali::Annotation("loop.id").begin("A") );
+            g( cali::Annotation("loop.id", CALI_ATTR_NESTED).begin("A") );
         
         for (int i = 0; i < 3; ++i) {
             cali::Annotation("iteration", CALI_ATTR_ASVALUE).set(i);            
@@ -23,7 +23,7 @@ int main()
 
     {   // "B" loop
         cali::Annotation::Guard
-            g( cali::Annotation("loop.id").begin("B") );
+            g( cali::Annotation("loop.id", CALI_ATTR_NESTED).begin("B") );
         
         for (int i = 0; i < 4; ++i) {
             cali::Annotation("iteration", CALI_ATTR_ASVALUE).set(i);

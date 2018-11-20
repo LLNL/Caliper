@@ -35,6 +35,7 @@
 
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -78,7 +79,6 @@ struct QuerySpec
     struct AggregationOp {
         FunctionSignature        op;    ///< The aggregation operator
         std::vector<std::string> args;  ///< Arguments for the aggregation operator (typically, the attribute name)
-        std::string              alias; ///< Output name
 
         AggregationOp()
             : op(FunctionSignatureTerminator)
@@ -88,8 +88,8 @@ struct QuerySpec
             : op(s)
         { }
 
-        AggregationOp(const FunctionSignature& s, const std::vector<std::string>& a, const std::string& as = "")
-            : op(s), args(a), alias(as)
+        AggregationOp(const FunctionSignature& s, const std::vector<std::string>& a)
+            : op(s), args(a)
         { } 
     };
 
@@ -154,6 +154,9 @@ struct QuerySpec
 
     /// \brief Output formatter specification
     FormatSpec                   format;
+
+    /// \brief Output aliases for attributes (i.e., "select x AS y" )
+    std::map<std::string, std::string> aliases;
 };
 
 } // namespace cali

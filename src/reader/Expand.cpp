@@ -59,6 +59,8 @@ struct Expand::ExpandImpl
     set<string>  m_selected;
     set<string>  m_deselected;
 
+    std::map<string, string> m_aliases;
+
     OutputStream m_os;
 
     std::mutex   m_os_lock;
@@ -98,6 +100,8 @@ struct Expand::ExpandImpl
                                       spec.attribute_selection.list.end());
             break;
         }
+
+        m_aliases = spec.aliases;
     }
     
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -127,7 +131,15 @@ struct Expand::ExpandImpl
 
                 for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
                     if ((*it)->attribute() != prev_attr_id) {
-                        os << (nentry++ ? "," : "") << db.get_attribute((*it)->attribute()).name() << '=';
+                        std::string name = db.get_attribute((*it)->attribute()).name();
+
+                        {
+                            auto it = m_aliases.find(name);
+                            if (it != m_aliases.end())
+                                name = it->second;
+                        }
+                        
+                        os << (nentry++ ? "," : "") << name << '=';
                         prev_attr_id = (*it)->attribute();
                     } else {
                         os << '/';
@@ -139,6 +151,12 @@ struct Expand::ExpandImpl
 
                 if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
                     continue;
+
+                {
+                    auto it = m_aliases.find(name);
+                    if (it != m_aliases.end())
+                        name = it->second;
+                }
 
                 os << (nentry++ ? "," : "") << name << '=' << e.value();
             }

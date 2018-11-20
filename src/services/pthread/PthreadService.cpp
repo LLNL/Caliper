@@ -55,6 +55,7 @@ namespace
 gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 
 Attribute id_attr = Attribute::invalid;
+Attribute master_attr = Attribute::invalid;
 
 std::vector<Experiment*> pthread_experiments;
 
@@ -75,8 +76,10 @@ thread_wrapper(void *arg)
     Caliper  c;
 
     for (Experiment* exp : pthread_experiments)
-        if (exp->is_active())
-            c.set(exp, id_attr, Variant(CALI_TYPE_UINT, &id, sizeof(id)));
+        if (exp->is_active()) {
+            c.set(master_attr, Variant(false));
+            c.set(exp, id_attr, Variant(cali_make_variant_from_uint(id)));
+        }
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
     void* ret = (*(wrap->fn))(wrap->arg);
@@ -96,11 +99,26 @@ cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
     return (*orig_pthread_create)(thread, attr, thread_wrapper, new wrapper_args({ fn, arg }));
 }
 
+void
+post_init_cb(Caliper* c, Experiment* exp)
+{
+    uint64_t id = static_cast<uint64_t>(pthread_self());
+    
+    c->set(exp, master_attr, Variant(true));
+    c->set(exp, id_attr, Variant(cali_make_variant_from_uint(id)));
+}
+
 // Initialization routine.
 void 
 pthreadservice_initialize(Caliper* c, Experiment* exp)
 {
-    id_attr = c->create_attribute("pthread.id", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+    id_attr =
+        c->create_attribute("pthread.id", CALI_TYPE_UINT,
+                            CALI_ATTR_SCOPE_THREAD);
+    master_attr =
+        c->create_attribute("pthread.is_master", CALI_TYPE_BOOL,
+                            CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_SKIP_EVENTS);
 
     if (!is_wrapped) {
         struct gotcha_binding_t pthread_binding[] = { 
@@ -115,6 +133,10 @@ pthreadservice_initialize(Caliper* c, Experiment* exp)
 
     pthread_experiments.push_back(exp);
 
+    exp->events().post_init_evt.connect(
+        [](Caliper* c, Experiment* exp){
+            post_init_cb(c, exp);
+        });
     exp->events().finish_evt.connect(
         [](Caliper* c, Experiment* exp){
             pthread_experiments.erase(

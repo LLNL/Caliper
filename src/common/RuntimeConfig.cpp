@@ -66,14 +66,26 @@ namespace
         "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
         "CALI_TIMER_SNAPSHOT_DURATION=true\n"
         "CALI_TIMER_INCLUSIVE_DURATION=false\n"
-        "CALI_REPORT_CONFIG=\"select sum(sum#time.duration) format tree\"\n"
+        "CALI_REPORT_CONFIG=\"select inclusive_sum(sum#time.duration) as \\\"Inclusive time (usec)\\\",sum(sum#time.duration) as \\\"Exclusive time (usec)\\\",percent_total(sum#time.duration) as \\\"Time %\\\" group by prop:nested format tree\"\n"
+        "CALI_REPORT_FILENAME=stderr\n"
+        "# [mpi-runtime-report]\n"
+        "CALI_SERVICES_ENABLE=aggregate,event,mpi,mpireport,timestamp\n"
+        "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
+        "CALI_EVENT_ENABLE_SNAPSHOT_INFO=false\n"
+        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
+        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
+        "CALI_MPIREPORT_CONFIG=\"select min(sum#time.duration) as \\\"Min time/rank\\\",max(sum#time.duration) as \\\"Max time/rank\\\", avg(sum#time.duration) as \\\"Avg time/rank\\\", percent_total(sum#time.duration) as \\\"Time % (total)\\\" group by prop:nested format tree\"\n"
+        "CALI_MPIREPORT_FILENAME=stderr\n"
         "# [thread-trace]\n"
         "CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace\n"
-        "# [mpi-trace]\n"
-        "CALI_SERVICES_ENABLE=event:mpi:recorder:timestamp:trace\n"
-        "# [load-sampling]\n"
-        "CALI_SERVICES_ENABLE=event:recorder:timestamp:libpfm\n"
-        "CALI_LOG_VERBOSITY=2\n";
+        "# [mpi-msg-trace]\n"
+        "CALI_SERVICES_ENABLE=event,mpi,recorder,timestamp,trace\n"
+        "CALI_MPI_BLACKLIST=MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\n"
+        "CALI_MPI_MSG_TRACING=true\n"
+        "CALI_TIMER_SNAPSHOT_DURATION=true\n"
+        "CALI_TIMER_INCLUSIVE_DURATION=false\n"
+        "CALI_TIMER_OFFSET=true\n"
+        "CALI_RECORDER_FILENAME=%mpi.rank%.cali\n";
 
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string

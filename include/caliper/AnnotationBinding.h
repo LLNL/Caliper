@@ -113,6 +113,12 @@ class AnnotationBinding
     void base_pre_initialize(Caliper*, Experiment*);
     void base_post_initialize(Caliper*, Experiment*);
 
+    /// These three callbacks are internal Caliper mechanisms
+    /// not meant to be touched by the code of services
+    /// implementing an AnnotationBinding.
+    /// 
+    /// User code should instead use on_create_attribute,
+    /// on_begin, and on_end.
     void create_attr_cb(Caliper*, Experiment*, const Attribute&);
 
     void begin_cb(Caliper*, Experiment*, const Attribute&, const Variant&);

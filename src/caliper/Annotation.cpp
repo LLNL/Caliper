@@ -48,8 +48,11 @@ using namespace cali;
 
 namespace cali
 {
-    extern Attribute function_attr;
-    extern Attribute loop_attr;
+
+extern Attribute class_iteration_attr;
+extern Attribute function_attr;
+extern Attribute loop_attr;
+
 }
 
 // --- Pre-defined Function annotation class
@@ -73,8 +76,13 @@ struct Loop::Impl {
     
     Impl(const char* name)
         : level(0), refcount(1) {
+        Variant v_true(true);
+        
         iter_attr =
-            Caliper().create_attribute(std::string("iteration#") + name, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+            Caliper().create_attribute(std::string("iteration#") + name,
+                                       CALI_TYPE_INT,
+                                       CALI_ATTR_ASVALUE,
+                                       1, &class_iteration_attr, &v_true);
     }
 };
 

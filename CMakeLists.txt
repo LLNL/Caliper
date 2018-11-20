@@ -3,7 +3,7 @@
 #
 
 cmake_minimum_required(VERSION 3.1)
-project (caliper)
+project (caliper C CXX)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 2)
@@ -40,6 +40,7 @@ option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
+option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
@@ -58,7 +59,7 @@ if (BUILD_SHARED_LIBS)
   # the RPATH to be used when installing, but only if it's not a system directory
   list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES ${CMAKE_INSTALL_FULL_LIBDIR} isSystemDir)
   if("${isSystemDir}" STREQUAL "-1")
-    set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
+    list(APPEND CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR})
   endif("${isSystemDir}" STREQUAL "-1")
 else()
   # Try to find static libs first for static builds
@@ -103,9 +104,16 @@ if(WITH_CUPTI)
   endif()
 endif()
 
-if(CALIPER_HAVE_TAU)
-    find_library(tau_lib libTAU.so)
-    list(APPEND CALIPER_EXTERNAL_LIBS ${tau_lib})
+if(WITH_TAU)
+  find_package(TAU QUIET)
+  if (TAU_FOUND)
+    set(CALIPER_HAVE_TAU TRUE)
+    set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${TAU_LIBRARIES})
+  else()
+    message(WARNING "TAU bindings requested but TAU API was not found!\n"
+  "Set TAU_PREFIX to installation path and re-run cmake.")
+  endif()
 endif()
 
 # Find PAPI
@@ -156,8 +164,8 @@ if (WITH_CALLPATH)
   include(FindLibunwind)
   if (LIBUNWIND_FOUND)
     set(CALIPER_HAVE_LIBUNWIND TRUE)
-    set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNWIND_LIBRARY}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARY})
+    set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNWIND_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARIES})
   else()
     message(WARNING "Callpath support was requested but libunwind was not found!")
   endif()
@@ -349,6 +357,7 @@ set(CALIPER_MODULES
   OMPT
   NVProf
   CUpti
+  TAU
   VTune)
 
 foreach(_caliper_module ${CALIPER_MODULES})

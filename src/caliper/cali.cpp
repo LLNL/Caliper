@@ -680,14 +680,26 @@ cali_is_initialized()
 
 //
 // --- Helper functions for high-level macro interface
-// 
+//
+
+namespace cali
+{
+
+extern Attribute class_iteration_attr;
+
+}
 
 cali_id_t
 cali_make_loop_iteration_attribute(const char* name)
 {
-    char tmp[80] = "iteration#";
-    strncpy(tmp+10, name, 69);
-    tmp[79] = '\0';
+    Variant v_true(true);
 
-    return cali_create_attribute(tmp, CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Caliper   c;
+    Attribute attr = 
+        c.create_attribute(std::string("iteration#").append(name),
+                           CALI_TYPE_INT,
+                           CALI_ATTR_ASVALUE,
+                           1, &class_iteration_attr, &v_true);
+
+    return attr.id();                           
 }

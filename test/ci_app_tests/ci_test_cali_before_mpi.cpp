@@ -1,10 +1,14 @@
 // Test Caliper MPI runtime: Caliper init before mpi init
 
 #include <caliper/cali.h>
+#include <caliper/cali-mpi.h>
+
 #include <mpi.h>
 
 int main(int argc, char* argv[])
 {
+    cali_mpi_init();
+    
     CALI_CXX_MARK_FUNCTION;
     
     MPI_Init(&argc, &argv);

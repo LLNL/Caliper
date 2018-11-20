@@ -7,6 +7,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_basic
   ci_test_binding
   ci_test_esc
+  ci_test_loop
   ci_test_macros
   ci_test_multiexperiment
   ci_test_nesting
@@ -69,8 +70,15 @@ if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_DYNINST)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
 endif()
 
+if (CALIPER_HAVE_TAU)
+  add_executable(ci_test_tau_service ci_test_tau_service.cpp)
+  target_link_libraries(ci_test_tau_service caliper ${TAU_LIBRARIES})
+  list(APPEND PYTHON_SCRIPTS test_tau_service.py)
+endif()
+
 if (CALIPER_HAVE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
   
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)

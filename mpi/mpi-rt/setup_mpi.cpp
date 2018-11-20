@@ -63,6 +63,7 @@ CaliperService cali_mpi_services[] = {
     { nullptr, nullptr }
 };
 
+bool is_initialized = false;
 
 //   Pre-init setup routine that allows us to do some MPI-specific 
 // initialization, e.g. disabling most logging on non-rank 0 ranks.
@@ -100,6 +101,20 @@ mpirt_constructor()
 {
     Caliper::add_services(cali_mpi_services);
     Caliper::add_init_hook(setup_mpi);
+
+    is_initialized = true;
+}
+
+}
+
+extern "C"
+{
+
+void    
+cali_mpi_init()
+{
+    if (!::is_initialized)
+        ::mpirt_constructor();
 }
 
 }
