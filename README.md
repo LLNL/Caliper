@@ -157,10 +157,10 @@ microseconds) spent in each code path based on the nesting of
 annotated code regions:
 
     $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
-    Path          sum#time.duration
-    main                  20.000000
-      main loop            8.000000
-      init                10.000000
+    Path         Inclusive time (usec) Exclusive time (usec) Time %
+    main                     38.000000             20.000000   52.6
+      main loop               8.000000              8.000000   21.1    
+      init                   10.000000             10.000000   26.3
 
 The example shows Caliper output for the `runtime-report`
 configuration profile for the source-code annotation example above.
@@ -211,14 +211,13 @@ print the recorded trace data in a human-readable json format:
     },
     ...
 
-As mentioned earlier, Caliper's performance measurement and data
-collection functionality is provided by independent building blocks
-called *services*, each implementing specific functionality (e.g.,
-tracing, I/O, timing, report formatting, sampling, etc.). The services
-can be enabled at runtime in any combination. This makes Caliper
-highly flexible, but the runtime configuration can be complex. Refer
-to the [Caliper documentation](https://llnl.github.io/Caliper/)
-to learn more.
+Caliper's performance measurement and data collection functionality is
+provided by independent building blocks called *services*, each
+implementing specific functionality (e.g., tracing, I/O, timing,
+report formatting, sampling, etc.). Services can be enabled at
+runtime in any combination. This makes Caliper highly flexible, but
+the runtime configuration can be complex. Refer to the [Caliper
+documentation](https://llnl.github.io/Caliper/) to learn more.
 
 Authors
 ------------------------------------------
