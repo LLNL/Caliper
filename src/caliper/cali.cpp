@@ -557,6 +557,60 @@ cali_end_byname(const char* attr_name)
     return c.end(attr);
 }
 
+// --- Set globals
+//
+
+void
+cali_set_global_double_byname(const char* name, double val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(name, CALI_TYPE_DOUBLE, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    // TODO: check for existing incompatible attribute key
+
+    c.set(attr, cali_make_variant_from_double(val));
+}
+
+void
+cali_set_global_int_byname(const char* name, int val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(name, CALI_TYPE_INT, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    // TODO: check for existing incompatible attribute key
+
+    c.set(attr, cali_make_variant_from_int(val));
+}
+
+void
+cali_set_global_string_byname(const char* name, const char* val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    // TODO: check for existing incompatible attribute key
+
+    c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)+1));
+}
+
+void
+cali_set_global_uint_byname(const char* name, uint64_t val)
+{
+    Caliper   c;
+    Attribute attr =
+        c.create_attribute(name, CALI_TYPE_UINT, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+
+    // TODO: check for existing incompatible attribute key
+
+    c.set(attr, cali_make_variant_from_uint(val));
+}
+
+// --- Config API
+//
+
 void
 cali_config_preset(const char* key, const char* value)
 {
