@@ -6,6 +6,11 @@ int main()
 {
   cali_config_preset("CALI_CALIPER_FLUSH_ON_EXIT", "false");
 
+  cali_set_global_double_byname("global.double", 42.42);
+  cali_set_global_int_byname("global.int", 1337);
+  cali_set_global_string_byname("global.string", "my global string");
+  cali_set_global_uint_byname("global.uint", 42);
+                                
   cali_id_t iter_attr = 
     cali_create_attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 

@@ -1,5 +1,5 @@
 /* *********************************************************************************************
- * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.
  * Produced at the Lawrence Livermore National Laboratory.
  *
  * This file is part of Caliper.
@@ -32,8 +32,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * *********************************************************************************************/
 
-/** 
- * \file cali.h 
+/**
+ * \file cali.h
  * \brief C API for Caliper.
  */
 
@@ -58,15 +58,15 @@ extern "C" {
 /**
  * \brief Callback function to process a snapshot entry.
  *
- * Callback function definition for processing a single snapshot entry with 
- * cali_unpack_snapshot() or cali_find_all_in_snapshot(). 
+ * Callback function definition for processing a single snapshot entry with
+ * cali_unpack_snapshot() or cali_find_all_in_snapshot().
  *
  * \param user_arg User-defined argument, passed through by the parent function.
  * \param attr_id The entry's attribute ID
  * \param val The entry's value
  * \return A zero return value tells the parent function to stop processing;
  *   otherwise it will continue.
- */ 
+ */
 typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
 
 /*
@@ -86,13 +86,13 @@ typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_varian
  * \return Attribute id
  */
 
-cali_id_t 
+cali_id_t
 cali_create_attribute(const char*     name,
                       cali_attr_type  type,
                       int             properties);
 
 /**
- * \brief Create an attribute with additional metadata. 
+ * \brief Create an attribute with additional metadata.
  *
  * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
  * the \a meta_attr_list, \a meta_val_list, and \a meta_size_list.
@@ -115,9 +115,9 @@ cali_create_attribute_with_metadata(const char*     name,
                                     const cali_id_t meta_attr_list[],
                                     const void*     meta_val_list[],
                                     const size_t    meta_size_list[]);
-  
+
 /**
- * \brief Find attribute by name 
+ * \brief Find attribute by name
  * \param name Name of attribute
  * \return Attribute ID, or CALI_INV_ID if attribute was not found
  */
@@ -138,19 +138,19 @@ cali_attribute_name(cali_id_t attr_id);
  * \param attr_id Attribute id
  * \return Attribute type, or CALI_TYPE_INV if `attr_id` is not a valid attribute ID
  */
-cali_attr_type    
+cali_attr_type
 cali_attribute_type(cali_id_t attr_id);
 
 /**
  * \brief Return attribute property flags of the attribute with given ID
  * \param attr_id Attribute id
- * \return Attribute properties, OR'ed 
+ * \return Attribute properties, OR'ed
  */
 int
 cali_attribute_properties(cali_id_t attr_id);
 
 /**
- * \} 
+ * \}
  */
 
 /*
@@ -164,7 +164,7 @@ cali_attribute_properties(cali_id_t attr_id);
 
 /**
  * \brief Take a snapshot and push it into the processing queue.
- * \param scope Indicates which scopes (process, thread, or task) the 
+ * \param scope Indicates which scopes (process, thread, or task) the
  *   snapshot should span
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
@@ -184,9 +184,9 @@ cali_push_snapshot(int scope, int n,
  * it is not guaranteed to succeed. Specifically, the function will
  * fail if the signal handler interrupts already running Caliper
  * code.
- * 
+ *
  * The snapshot representation returned in \a buf is valid only on the
- * local process, while Caliper is active (which is up until Caliper's 
+ * local process, while Caliper is active (which is up until Caliper's
  * `finish_evt` callback is invoked).
  * It can be parsed with cali_unpack_snapshot().
  *
@@ -194,8 +194,8 @@ cali_push_snapshot(int scope, int n,
  *   snapshot should span
  * \param len   Length of the provided snapshot buffer.
  * \param buf   User-provided snapshot storage buffer.
- * \return Actual size of the snapshot representation. 
- *   If this is larger than `len`, the provided buffer was too small and 
+ * \return Actual size of the snapshot representation.
+ *   If this is larger than `len`, the provided buffer was too small and
  *   not all of the snapshot was returned.
  *   If this is zero, no snapshot was taken.
  */
@@ -212,7 +212,7 @@ cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
  * \brief Unpack a snapshot buffer.
  *
  * Unpack a snapshot that was previously obtained on the same process
- * and examine its attribute:value entries with the given \a proc_fn 
+ * and examine its attribute:value entries with the given \a proc_fn
  * callback function.
  *
  * The function will invoke \a proc_fn repeatedly, once for each
@@ -234,7 +234,7 @@ cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
  * \param user_arg User-defined parameter passed through to \a proc_fn
  *
  * \sa cali_pull_snapshot, cali_entry_proc_fn
- */    
+ */
 void
 cali_unpack_snapshot(const unsigned char* buf,
                      size_t*              bytes_read,
@@ -254,15 +254,15 @@ cali_unpack_snapshot(const unsigned char* buf,
  *   (i.e., length of the snapshot)
  * \return The top-most stacked value for the given attribute ID, or an empty
  *   variant if none was found
- */    
+ */
 
-cali_variant_t 
+cali_variant_t
 cali_find_first_in_snapshot(const unsigned char* buf,
                             cali_id_t            attr_id,
                             size_t*              bytes_read);
 
 /**
- * Run all entries with attribute `attr_id` in a snapshot that was previously 
+ * Run all entries with attribute `attr_id` in a snapshot that was previously
  * obtained on the same process through the given `proc_fn` callback function.
  *
  * \note This function is async-signal safe if `proc_fn` is async-signal safe.
@@ -272,8 +272,8 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param bytes_read Number of bytes read from the buffer
  *   (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
- * \param userdata User-defined parameter passed to `proc_fn`  
- */    
+ * \param userdata User-defined parameter passed to `proc_fn`
+ */
 
 void
 cali_find_all_in_snapshot(const unsigned char* buf,
@@ -310,7 +310,7 @@ cali_get(cali_id_t attr_id);
 /**
  * \}
  */
-    
+
 /*
  * --- Instrumentation API -----------------------------------
  */
@@ -323,7 +323,7 @@ cali_get(cali_id_t attr_id);
  */
 
 /**
- * \brief Put attribute attr on the blackboard. 
+ * \brief Put attribute attr on the blackboard.
  * Parameters:
  * \param attr An attribute of type CALI_TYPE_BOOL
  */
@@ -333,14 +333,14 @@ cali_begin(cali_id_t   attr);
 
 /**
  * Add \a val for attribute \a attr to the blackboard.
- * The new value is nested under the current value of \a attr. 
+ * The new value is nested under the current value of \a attr.
  */
 
-cali_err  
+cali_err
 cali_begin_double(cali_id_t attr, double val);
-cali_err  
+cali_err
 cali_begin_int(cali_id_t attr, int val);
-cali_err  
+cali_err
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
@@ -364,20 +364,20 @@ cali_err
 cali_safe_end_string(cali_id_t attr, const char* val);
 
 /**
- * \brief Change current innermost value on the blackboard for attribute \a attr 
+ * \brief Change current innermost value on the blackboard for attribute \a attr
  * to value taken from \a value with size \a size
  */
 
-cali_err  
-cali_set  (cali_id_t   attr, 
+cali_err
+cali_set  (cali_id_t   attr,
            const void* value,
            size_t      size);
 
-cali_err  
+cali_err
 cali_set_double(cali_id_t attr, double val);
-cali_err  
+cali_err
 cali_set_int(cali_id_t attr, int val);
-cali_err  
+cali_err
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
@@ -386,9 +386,9 @@ cali_set_string(cali_id_t attr, const char* val);
 
 cali_err
 cali_begin_byname(const char* attr_name);
-  
+
 /**
- * \brief Add \a value for the attribute with the name \a attr_name to the 
+ * \brief Add \a value for the attribute with the name \a attr_name to the
  * blackboard.
  */
 
@@ -400,16 +400,39 @@ cali_err
 cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
- * \brief Change the value of attribute with the name \a attr_name to \a value 
+ * \brief Change the value of attribute with the name \a attr_name to \a value
  * on the blackboard.
  */
-
 cali_err
 cali_set_double_byname(const char* attr_name, double val);
 cali_err
 cali_set_int_byname(const char* attr_name, int val);
 cali_err
 cali_set_string_byname(const char* attr_name, const char* val);
+
+/**
+ * \brief Set a global attribute with name \a attr_name to \a val.
+ */
+void
+cali_set_global_double_byname(const char* attr_name, double val);
+
+/**
+ * \copydoc cali_set_global_double_byname()
+ */
+void
+cali_set_global_int_byname(const char* attr_name, int val);
+
+/**
+ * \copydoc cali_set_global_double_byname()
+ */
+void
+cali_set_global_string_byname(const char* attr_name, const char* val);
+
+/**
+ * \copydoc cali_set_global_double_byname()
+ */
+void
+cali_set_global_uint_byname(const char* attr_name, uint64_t val);
 
 /**
  * \brief Remove innermost value for attribute \a attr from the blackboard.
@@ -426,23 +449,23 @@ cali_end_byname(const char* attr_name);
 /*
  * --- Runtime system configuration
  */
-    
+
 /**
  * \name Runtime configuration
  * \{
  */
-    
+
 /**
  * \copydoc cali::RuntimeConfig::preset
  */
-  
+
 void
 cali_config_preset(const char* key, const char* value);
 
 /**
  * \copydoc cali::RuntimeConfig::set
  */
-  
+
 void
 cali_config_set(const char* key, const char* value);
 
@@ -479,14 +502,14 @@ cali_config_set(const char* key, const char* value);
  *    value. Keys must be all uppercase. Terminate the list with two
  *    NULL entries: <tt> { NULL, NULL } </tt>.
  */
-  
+
 void
 cali_config_define_profile(const char* name, const char* keyvallist[][2]);
 
 /**
  * \copydoc cali::RuntimeConfig::allow_read_env(bool)
  */
-  
+
 void
 cali_config_allow_read_env(int allow);
 
@@ -514,15 +537,15 @@ typedef enum {
 /**
  * \brief Forward aggregation or trace buffer contents to output services.
  *
- * Flushes trace buffers and/or aggreation database in the trace and 
+ * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered snapshot
  * records to output services, e.g., recorder, report, or mpireport.
  *
- * By default, the trace/aggregation buffers will not be cleared after the 
- * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to 
+ * By default, the trace/aggregation buffers will not be cleared after the
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
  * the \a flush_opts flags.
  *
- * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags. 
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
 
@@ -532,7 +555,7 @@ cali_flush(int flush_opts);
 /**
  * \}
  */
-    
+
 /*
  * --- Runtime system management
  */
@@ -543,7 +566,7 @@ cali_flush(int flush_opts);
  * Typically, it is not necessary to initialize Caliper explicitly.
  * Caliper will lazily initialize itself on the first Caliper API call.
  * This function is used primarily by the Caliper annotation macros,
- * to ensure that Caliper's pre-defined annotation attributes are 
+ * to ensure that Caliper's pre-defined annotation attributes are
  * initialized.
  * It can also be used to avoid high initialization costs in the first
  * Caliper API call.
@@ -559,24 +582,24 @@ cali_init();
 
 int
 cali_is_initialized();
-    
+
 /*
  * --- Macro annotation helper functions
- */  
+ */
 
 /**
  * \brief Create a loop iteration attribute for CALI_MARK_LOOP_BEGIN.
  * \param name User-defined name of the loop
  */
-cali_id_t 
+cali_id_t
 cali_make_loop_iteration_attribute(const char* name);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-/* Include high-level annotation macros. 
- * In C++, also includes Annotation.h header. 
+/* Include high-level annotation macros.
+ * In C++, also includes Annotation.h header.
  */
 #include "cali_macros.h"
 
