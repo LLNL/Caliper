@@ -301,6 +301,11 @@ struct RuntimeConfig::RuntimeConfigImpl
         m_top_profile[key] = value;
     }
 
+    void import(const std::map<std::string, std::string>& values) {
+        for (auto& p : values)
+            m_top_profile[p.first] = p.second;
+    }
+
     shared_ptr<ConfigSetImpl> init_configset(const char* name, const ConfigSet::Entry* list) {
         if (m_database.empty())
             init_config_database();
@@ -402,6 +407,12 @@ void
 RuntimeConfig::set(const char* key, const std::string& value)
 {
     mP->set(key, value);
+}
+
+void
+RuntimeConfig::import(const std::map<std::string,std::string>& values)
+{
+    mP->import(values);
 }
 
 void

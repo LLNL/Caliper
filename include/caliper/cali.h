@@ -461,19 +461,23 @@ cali_end_byname(const char* attr_name);
  */
     
 /**
- * \copydoc cali::RuntimeConfig::preset
+ * \brief Pre-set a config entry in the default config.
+ *
+ * The entry can still be overwritten by environment variables.
  */
   
 void
 cali_config_preset(const char* key, const char* value);
 
 /**
- * \copydoc cali::RuntimeConfig::set
+ * \brief Set a config entry in the default configset.
+ *
+ * This entry will not be overwritten by environment variables.
  */
   
 void
 cali_config_set(const char* key, const char* value);
-
+  
 /**
  * \copybrief cali::RuntimeConfig::define_profile
  *
@@ -512,12 +516,25 @@ void
 cali_config_define_profile(const char* name, const char* keyvallist[][2]);
 
 /**
- * \copydoc cali::RuntimeConfig::allow_read_env(bool)
+ * \brief Enable or disable reading environment variables for the default 
+ *   configset.
  */
   
 void
 cali_config_allow_read_env(int allow);
-    
+
+struct _cali_configset_t;
+typedef struct _cali_configset_t* cali_configset_t;
+
+cali_configset_t
+cali_create_configset(const char* name, int flags, const char* keyvallist[][2]);
+
+void
+cali_delete_configset(cali_configset_t cfg);
+
+void
+cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
+  
 /**
  * \}
  */
@@ -558,15 +575,18 @@ cali_config_allow_read_env(int allow);
  *       { NULL, NULL }
  *     };
  *
+ *   cali_config_t cfg = 
+ *     cali_create_config("trace_config", false, trace_config);
+ *
  *   //   Create a new experiment "trace" but leave it inactive initially.
  *   // (By default, experiments are active immediately.)
  *   cali_id_t trace_exp_id = 
- *     cali_experiment_create_from_profile("trace", 
- *                                         CALI_EXPERIMENT_LEAVE_INACTIVE,
- *                                         trace_config);
+ *     cali_create_experiment("trace", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
+ *
+ *   cali_delete_config(cfg);
  * 
  *   // Activate the experiment now.
- *   cali_experiment_activate(trace_exp_id);
+ *   cali_activate_experiment(trace_exp_id);
  * \endcode
  *
  * \param name Name of the experiment. This is used to identify the experiment
@@ -583,7 +603,7 @@ cali_config_allow_read_env(int allow);
  */    
     
 cali_id_t
-cali_experiment_create_from_profile(const char* name, int flags, const char* keyvallist[][2]);
+cali_create_experiment(const char* name, int flags, const cali_configset_t cfg);
 
 /**
  * \brief Delete an experiment. Frees associated resources, e.g. blackboards,
@@ -595,7 +615,7 @@ cali_experiment_create_from_profile(const char* name, int flags, const char* key
  * \param exp_id ID of the experiment 
  */    
 void
-cali_experiment_delete(cali_id_t exp_id);
+cali_delete_experiment(cali_id_t exp_id);
 
 /**
  * \brief Activate the (inactive) experiment with the given ID.
@@ -603,7 +623,7 @@ cali_experiment_delete(cali_id_t exp_id);
  * Only active experiments will process annotations and other events.
  */    
 void
-cali_experiment_activate(cali_id_t exp_id);
+cali_activate_experiment(cali_id_t exp_id);
 
 /**
  * \brief Deactivate the experiment with the given ID.
@@ -614,7 +634,7 @@ cali_experiment_activate(cali_id_t exp_id);
  * \sa cali_experiment_activate
  */     
 void
-cali_experiment_deactivate(cali_id_t exp_id);
+cali_deactivate_experiment(cali_id_t exp_id);
 
 /**
  * \brief Returns a non-zero value if the experiment with the given ID 

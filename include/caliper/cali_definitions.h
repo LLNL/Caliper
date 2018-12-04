@@ -59,14 +59,18 @@ typedef enum {
 } cali_flush_opt;
 
 /**
+ * Configset creation options
+ */
+typedef enum {
+  CALI_CONFIG_ALLOW_READ_ENV = 1
+} cali_config_opt;
+  
+/**
  * Experiment creation options
  */    
 typedef enum {
-    /** Allow overwriting the experiment configuration at runtime 
-        from environment variables. */
-    CALI_EXPERIMENT_ALLOW_READ_ENV = 1,
     /** Leave the experiment inactive after it is created. */
-    CALI_EXPERIMENT_LEAVE_INACTIVE = 2
+    CALI_EXPERIMENT_LEAVE_INACTIVE = 1
 } cali_experiment_opt;
 
 #ifdef __cplusplus

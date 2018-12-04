@@ -585,14 +585,46 @@ cali_config_allow_read_env(int allow)
     RuntimeConfig::get_default_config().allow_read_env(allow != 0);
 }
 
+struct _cali_configset_t {
+    std::map<std::string, std::string> cfgset;
+    std::string name;
+    int flags;
+};
+
+cali_configset_t
+cali_create_configset(const char* name, int flags, const char* keyvallist[][2])
+{
+    cali_configset_t cfg = new _cali_configset_t;
+
+    cfg->name  = name;
+    cfg->flags = flags;
+
+    for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
+        cfg->cfgset.emplace( std::make_pair(std::string((*keyvallist)[0]),
+                                            std::string((*keyvallist)[1])) );
+
+    return cfg;
+}
+
+void
+cali_delete_configset(cali_configset_t cfg)
+{
+    delete cfg;
+}
+
+void
+cali_configset_set(cali_configset_t cfg, const char* key, const char* value)
+{
+    cfg->cfgset[key] = value;
+}
+
 cali_id_t
-cali_experiment_create_from_profile(const char* name, int flags, const char* keyvallist[][2])
+cali_create_experiment(const char* name, int flags, cali_configset_t cfgset)
 {
     RuntimeConfig cfg;
 
-    cfg.define_profile(name, keyvallist);
-    cfg.set("CALI_CONFIG_PROFILE", name);
-    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
+    cfg.allow_read_env(cfgset->flags & CALI_CONFIG_ALLOW_READ_ENV);
+    cfg.import(cfgset->cfgset);
 
     Caliper c;
     Experiment* exp = c.create_experiment(name, cfg);
@@ -606,7 +638,7 @@ cali_experiment_create_from_profile(const char* name, int flags, const char* key
 }
 
 void
-cali_experiment_delete(cali_id_t exp_id)
+cali_delete_experiment(cali_id_t exp_id)
 {
     Caliper c;    
     Experiment* exp = c.get_experiment(exp_id);
@@ -618,7 +650,7 @@ cali_experiment_delete(cali_id_t exp_id)
 }
 
 void
-cali_experiment_activate(cali_id_t exp_id)
+cali_activate_experiment(cali_id_t exp_id)
 {
     Caliper c;    
     Experiment* exp = c.get_experiment(exp_id);
@@ -630,7 +662,7 @@ cali_experiment_activate(cali_id_t exp_id)
 }
 
 void
-cali_experiment_deactivate(cali_id_t exp_id)
+cali_deactivate_experiment(cali_id_t exp_id)
 {
     Caliper c;
     Experiment* exp = c.get_experiment(exp_id);
