@@ -587,17 +587,12 @@ cali_config_allow_read_env(int allow)
 
 struct _cali_configset_t {
     std::map<std::string, std::string> cfgset;
-    std::string name;
-    int flags;
 };
 
 cali_configset_t
-cali_create_configset(const char* name, int flags, const char* keyvallist[][2])
+cali_create_configset(const char* keyvallist[][2])
 {
     cali_configset_t cfg = new _cali_configset_t;
-
-    cfg->name  = name;
-    cfg->flags = flags;
 
     for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
         cfg->cfgset.emplace( std::make_pair(std::string((*keyvallist)[0]),
@@ -623,7 +618,7 @@ cali_create_experiment(const char* name, int flags, cali_configset_t cfgset)
 {
     RuntimeConfig cfg;
 
-    cfg.allow_read_env(cfgset->flags & CALI_CONFIG_ALLOW_READ_ENV);
+    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
     cfg.import(cfgset->cfgset);
 
     Caliper c;
@@ -734,4 +729,32 @@ cali_make_loop_iteration_attribute(const char* name)
                            1, &class_iteration_attr, &v_true);
 
     return attr.id();                           
+}
+
+//
+// --- C++ convenience API
+//
+
+namespace cali
+{
+
+cali_id_t
+create_experiment(const char* name, int flags, const config_map_t& cfgmap)
+{
+    RuntimeConfig cfg;
+
+    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
+    cfg.import(cfgmap);
+
+    Caliper     c;
+    Experiment* exp = c.create_experiment(name, cfg);
+ 
+    if (!exp)
+        return CALI_INV_ID;
+    if (flags & CALI_EXPERIMENT_LEAVE_INACTIVE)
+        c.deactivate_experiment(exp);
+
+    return exp->id();
+}
+
 }

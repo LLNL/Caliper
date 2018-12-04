@@ -237,40 +237,24 @@ void setup_caliper_config(const Args& args)
     //   Now create cali-query's pre-defined experiments.
     // Do this last as this will initialize Caliper.
 
-    if (args.is_set("profile")) {
-        const char* runtimeprofile_config[][2] = {
-            { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
-            { "CALI_EVENT_TRIGGER",   "annotation" },
-            { "CALI_REPORT_FILENAME", "stderr" },
-            { "CALI_REPORT_CONFIG",
-              "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" },
-
-            { NULL, NULL }
-        };
+    if (args.is_set("profile"))
+        cali::create_experiment("profile", 0, {
+                { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+                { "CALI_EVENT_TRIGGER",   "annotation" },
+                { "CALI_REPORT_FILENAME", "stderr" },
+                { "CALI_REPORT_CONFIG",
+                        "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" }
+            } );
     
-        cali_configset_t cfg =
-            cali_create_configset("profile", 0, runtimeprofile_config);
-                
-        cali_create_experiment("profile", 0, cfg);
-        cali_delete_configset(cfg);
-    } if (args.is_set("progress")) {
-        const char* progressmonitor_config[][2] = {
-            { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
-            { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
-            { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
-            { "CALI_TEXTLOG_FILENAME", "stderr"            },
-            { "CALI_TEXTLOG_FORMATSTRING",
-              "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" },
-
-            { NULL, NULL }
-        };
-        
-        cali_configset_t cfg =
-            cali_create_configset("profile", 0, progressmonitor_config);
-
-        cali_create_experiment("progress", 0, cfg);
-        cali_delete_configset(cfg);
-    }
+    if (args.is_set("progress"))
+        cali::create_experiment("progress", 0, {
+                { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
+                { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
+                { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
+                { "CALI_TEXTLOG_FILENAME", "stderr"            },
+                { "CALI_TEXTLOG_FORMATSTRING",
+                        "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" }
+            } );
 }
 
 

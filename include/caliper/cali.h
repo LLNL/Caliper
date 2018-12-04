@@ -1,5 +1,5 @@
 /* *********************************************************************************************
- * Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+ * Copyright (c) 2015, Lawrence Livermore National Security, LLC.
  * Produced at the Lawrence Livermore National Laboratory.
  *
  * This file is part of Caliper.
@@ -32,8 +32,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * *********************************************************************************************/
 
-/** 
- * \file cali.h 
+/**
+ * \file cali.h
  * \brief C API for Caliper.
  */
 
@@ -58,15 +58,15 @@ extern "C" {
 /**
  * \brief Callback function to process a snapshot entry.
  *
- * Callback function definition for processing a single snapshot entry with 
- * cali_unpack_snapshot() or cali_find_all_in_snapshot(). 
+ * Callback function definition for processing a single snapshot entry with
+ * cali_unpack_snapshot() or cali_find_all_in_snapshot().
  *
  * \param user_arg User-defined argument, passed through by the parent function.
  * \param attr_id The entry's attribute ID
  * \param val The entry's value
  * \return A zero return value tells the parent function to stop processing;
  *   otherwise it will continue.
- */ 
+ */
 typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
 
 /*
@@ -86,13 +86,13 @@ typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_varian
  * \return Attribute id
  */
 
-cali_id_t 
+cali_id_t
 cali_create_attribute(const char*     name,
                       cali_attr_type  type,
                       int             properties);
 
 /**
- * \brief Create an attribute with additional metadata. 
+ * \brief Create an attribute with additional metadata.
  *
  * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
  * the \a meta_attr_list, \a meta_val_list, and \a meta_size_list.
@@ -115,9 +115,9 @@ cali_create_attribute_with_metadata(const char*     name,
                                     const cali_id_t meta_attr_list[],
                                     const void*     meta_val_list[],
                                     const size_t    meta_size_list[]);
-  
+
 /**
- * \brief Find attribute by name 
+ * \brief Find attribute by name
  * \param name Name of attribute
  * \return Attribute ID, or CALI_INV_ID if attribute was not found
  */
@@ -138,19 +138,19 @@ cali_attribute_name(cali_id_t attr_id);
  * \param attr_id Attribute id
  * \return Attribute type, or CALI_TYPE_INV if `attr_id` is not a valid attribute ID
  */
-cali_attr_type    
+cali_attr_type
 cali_attribute_type(cali_id_t attr_id);
 
 /**
  * \brief Return attribute property flags of the attribute with given ID
  * \param attr_id Attribute id
- * \return Attribute properties, OR'ed 
+ * \return Attribute properties, OR'ed
  */
 int
 cali_attribute_properties(cali_id_t attr_id);
 
 /**
- * \} 
+ * \}
  */
 
 /*
@@ -164,7 +164,7 @@ cali_attribute_properties(cali_id_t attr_id);
 
 /**
  * \brief Take a snapshot and push it into the processing queue.
- * \param scope Indicates which scopes (process, thread, or task) the 
+ * \param scope Indicates which scopes (process, thread, or task) the
  *   snapshot should span
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
@@ -178,16 +178,16 @@ cali_push_snapshot(int scope, int n,
                    const size_t    trigger_info_size_list[]);
 
 /**
- * \brief Take a snapshot on the default experiment 
+ * \brief Take a snapshot on the default experiment
  *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
  * it is not guaranteed to succeed. Specifically, the function will
  * fail if the signal handler interrupts already running Caliper
  * code.
- * 
+ *
  * The snapshot representation returned in \a buf is valid only on the
- * local process, while Caliper is active (which is up until Caliper's 
+ * local process, while Caliper is active (which is up until Caliper's
  * `finish_evt` callback is invoked).
  * It can be parsed with cali_unpack_snapshot().
  *
@@ -195,8 +195,8 @@ cali_push_snapshot(int scope, int n,
  *   snapshot should span
  * \param len   Length of the provided snapshot buffer.
  * \param buf   User-provided snapshot storage buffer.
- * \return Actual size of the snapshot representation. 
- *   If this is larger than `len`, the provided buffer was too small and 
+ * \return Actual size of the snapshot representation.
+ *   If this is larger than `len`, the provided buffer was too small and
  *   not all of the snapshot was returned.
  *   If this is zero, no snapshot was taken.
  */
@@ -204,16 +204,16 @@ size_t
 cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
- * \brief Take a snapshot on the given experiment 
+ * \brief Take a snapshot on the given experiment
  *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
  * it is not guaranteed to succeed. Specifically, the function will
  * fail if the signal handler interrupts already running Caliper
  * code.
- * 
+ *
  * The snapshot representation returned in \a buf is valid only on the
- * local process, while Caliper is active (which is up until Caliper's 
+ * local process, while Caliper is active (which is up until Caliper's
  * `finish_evt` callback is invoked).
  * It can be parsed with cali_unpack_snapshot().
  *
@@ -222,8 +222,8 @@ cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
  *   snapshot should span
  * \param len    Length of the provided snapshot buffer.
  * \param buf    User-provided snapshot storage buffer.
- * \return Actual size of the snapshot representation. 
- *   If this is larger than `len`, the provided buffer was too small and 
+ * \return Actual size of the snapshot representation.
+ *   If this is larger than `len`, the provided buffer was too small and
  *   not all of the snapshot was returned.
  *   If this is zero, no snapshot was taken.
  */
@@ -240,7 +240,7 @@ cali_experiment_pull_snapshot(cali_id_t exp_id, int scope, size_t len, unsigned 
  * \brief Unpack a snapshot buffer.
  *
  * Unpack a snapshot that was previously obtained on the same process
- * and examine its attribute:value entries with the given \a proc_fn 
+ * and examine its attribute:value entries with the given \a proc_fn
  * callback function.
  *
  * The function will invoke \a proc_fn repeatedly, once for each
@@ -262,7 +262,7 @@ cali_experiment_pull_snapshot(cali_id_t exp_id, int scope, size_t len, unsigned 
  * \param user_arg User-defined parameter passed through to \a proc_fn
  *
  * \sa cali_pull_snapshot, cali_entry_proc_fn
- */    
+ */
 void
 cali_unpack_snapshot(const unsigned char* buf,
                      size_t*              bytes_read,
@@ -282,15 +282,15 @@ cali_unpack_snapshot(const unsigned char* buf,
  *   (i.e., length of the snapshot)
  * \return The top-most stacked value for the given attribute ID, or an empty
  *   variant if none was found
- */    
+ */
 
-cali_variant_t 
+cali_variant_t
 cali_find_first_in_snapshot(const unsigned char* buf,
                             cali_id_t            attr_id,
                             size_t*              bytes_read);
 
 /**
- * Run all entries with attribute `attr_id` in a snapshot that was previously 
+ * Run all entries with attribute `attr_id` in a snapshot that was previously
  * obtained on the same process through the given `proc_fn` callback function.
  *
  * \note This function is async-signal safe if `proc_fn` is async-signal safe.
@@ -300,8 +300,8 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param bytes_read Number of bytes read from the buffer
  *   (i.e., length of the snapshot)
  * \param proc_fn Callback function to process individidual entries
- * \param userdata User-defined parameter passed to `proc_fn`  
- */    
+ * \param userdata User-defined parameter passed to `proc_fn`
+ */
 
 void
 cali_find_all_in_snapshot(const unsigned char* buf,
@@ -338,7 +338,7 @@ cali_get(cali_id_t attr_id);
 /**
  * \}
  */
-    
+
 /*
  * --- Instrumentation API -----------------------------------
  */
@@ -351,7 +351,7 @@ cali_get(cali_id_t attr_id);
  */
 
 /**
- * \brief Put attribute attr on the blackboard. 
+ * \brief Put attribute attr on the blackboard.
  * Parameters:
  * \param attr An attribute of type CALI_TYPE_BOOL
  */
@@ -361,14 +361,14 @@ cali_begin(cali_id_t   attr);
 
 /**
  * Add \a val for attribute \a attr to the blackboard.
- * The new value is nested under the current value of \a attr. 
+ * The new value is nested under the current value of \a attr.
  */
 
-void  
+void
 cali_begin_double(cali_id_t attr, double val);
-void  
+void
 cali_begin_int(cali_id_t attr, int val);
-void  
+void
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
@@ -392,20 +392,20 @@ void
 cali_safe_end_string(cali_id_t attr, const char* val);
 
 /**
- * \brief Change current innermost value on the blackboard for attribute \a attr 
+ * \brief Change current innermost value on the blackboard for attribute \a attr
  * to value taken from \a value with size \a size
  */
 
-void  
-cali_set  (cali_id_t   attr, 
+void
+cali_set  (cali_id_t   attr,
            const void* value,
            size_t      size);
 
-void  
+void
 cali_set_double(cali_id_t attr, double val);
-void  
+void
 cali_set_int(cali_id_t attr, int val);
-void  
+void
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
@@ -414,9 +414,9 @@ cali_set_string(cali_id_t attr, const char* val);
 
 void
 cali_begin_byname(const char* attr_name);
-  
+
 /**
- * \brief Add \a value for the attribute with the name \a attr_name to the 
+ * \brief Add \a value for the attribute with the name \a attr_name to the
  * blackboard.
  */
 
@@ -428,7 +428,7 @@ void
 cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
- * \brief Change the value of attribute with the name \a attr_name to \a value 
+ * \brief Change the value of attribute with the name \a attr_name to \a value
  * on the blackboard.
  */
 
@@ -454,18 +454,18 @@ cali_end_byname(const char* attr_name);
 /*
  * --- Runtime system configuration
  */
-    
+
 /**
  * \name Runtime configuration
  * \{
  */
-    
+
 /**
  * \brief Pre-set a config entry in the default config.
  *
  * The entry can still be overwritten by environment variables.
  */
-  
+
 void
 cali_config_preset(const char* key, const char* value);
 
@@ -474,10 +474,10 @@ cali_config_preset(const char* key, const char* value);
  *
  * This entry will not be overwritten by environment variables.
  */
-  
+
 void
 cali_config_set(const char* key, const char* value);
-  
+
 /**
  * \copybrief cali::RuntimeConfig::define_profile
  *
@@ -511,15 +511,15 @@ cali_config_set(const char* key, const char* value);
  *    value. Keys must be all uppercase. Terminate the list with two
  *    NULL entries: <tt> { NULL, NULL } </tt>.
  */
-  
+
 void
 cali_config_define_profile(const char* name, const char* keyvallist[][2]);
 
 /**
- * \brief Enable or disable reading environment variables for the default 
+ * \brief Enable or disable reading environment variables for the default
  *   configset.
  */
-  
+
 void
 cali_config_allow_read_env(int allow);
 
@@ -527,14 +527,14 @@ struct _cali_configset_t;
 typedef struct _cali_configset_t* cali_configset_t;
 
 cali_configset_t
-cali_create_configset(const char* name, int flags, const char* keyvallist[][2]);
+cali_create_configset(const char* keyvallist[][2]);
 
 void
 cali_delete_configset(cali_configset_t cfg);
 
 void
 cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
-  
+
 /**
  * \}
  */
@@ -547,25 +547,25 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  * \name Experiment management
  * \{
  */
-    
+
 /**
- * \brief Create a new %Caliper experiment with the given key-value 
+ * \brief Create a new %Caliper experiment with the given key-value
  *   configuration profile.
  *
- * An experiment controls %Caliper's annotation tracking and measurement 
+ * An experiment controls %Caliper's annotation tracking and measurement
  * activities. Multiple experiments can be active at the same time, independent
- * of each other. Each experiment has its own runtime configuration, 
+ * of each other. Each experiment has its own runtime configuration,
  * blackboard, and active services.
  *
- * This function creates a new experiment with the given name, flags, and 
- * runtime configuration. The runtime configuration is provided as a list of 
+ * This function creates a new experiment with the given name, flags, and
+ * runtime configuration. The runtime configuration is provided as a list of
  * key-value pairs and works similar to the configuration through environment
  * variables or configuration files.
  *
  * Creating experiments is \b not thread-safe. Users must make sure that no
- * %Caliper activities (e.g. annotations) are active on any program thread 
+ * %Caliper activities (e.g. annotations) are active on any program thread
  * during experiment creation.
- * 
+ *
  * Example:
  *
  * \code
@@ -575,78 +575,78 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *       { NULL, NULL }
  *     };
  *
- *   cali_config_t cfg = 
- *     cali_create_config("trace_config", false, trace_config);
+ *   cali_configset_t cfg =
+ *     cali_create_configset("trace_config", false, trace_config);
  *
  *   //   Create a new experiment "trace" but leave it inactive initially.
  *   // (By default, experiments are active immediately.)
- *   cali_id_t trace_exp_id = 
+ *   cali_id_t trace_exp_id =
  *     cali_create_experiment("trace", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
  *
- *   cali_delete_config(cfg);
- * 
+ *   cali_delete_configset(cfg);
+ *
  *   // Activate the experiment now.
  *   cali_activate_experiment(trace_exp_id);
  * \endcode
  *
  * \param name Name of the experiment. This is used to identify the experiment
  *   in %Caliper log output.
- * \param flags Flags that control experiment creation as bitwise-OR of 
+ * \param flags Flags that control experiment creation as bitwise-OR of
  *   cali_experiment_opt flags.
- * \param keyvallist The experiment's runtime configuraiton as a key-value 
- *   list (array of two strings). The first string in each entry is the 
- *    configuration key, the second string is its value. Keys must be all 
- *    uppercase. Terminate the list with two NULL entries: 
+ * \param keyvallist The experiment's runtime configuraiton as a key-value
+ *   list (array of two strings). The first string in each entry is the
+ *    configuration key, the second string is its value. Keys must be all
+ *    uppercase. Terminate the list with two NULL entries:
  *    <tt> { NULL, NULL } </tt>.
  *
  * \return ID of the created experiment.
- */    
-    
+ */
+
 cali_id_t
 cali_create_experiment(const char* name, int flags, const cali_configset_t cfg);
 
 /**
  * \brief Delete an experiment. Frees associated resources, e.g. blackboards,
  *   trace buffers, etc.
- * 
+ *
  * Experiment deletion is \b not thread-safe. Users must make sure that no
  * %Caliper activities (e.g. annotations) are active on any program thread.
  *
- * \param exp_id ID of the experiment 
- */    
+ * \param exp_id ID of the experiment
+ */
 void
 cali_delete_experiment(cali_id_t exp_id);
 
 /**
  * \brief Activate the (inactive) experiment with the given ID.
- * 
+ *
  * Only active experiments will process annotations and other events.
- */    
+ */
 void
 cali_activate_experiment(cali_id_t exp_id);
 
 /**
  * \brief Deactivate the experiment with the given ID.
- * 
- * Inactive experiments will not track or process annotations and many 
- * other events. 
+ *
+ * Inactive experiments will not track or process annotations and many
+ * other events.
  *
  * \sa cali_experiment_activate
- */     
+ */
 void
 cali_deactivate_experiment(cali_id_t exp_id);
 
 /**
- * \brief Returns a non-zero value if the experiment with the given ID 
+ * \brief Returns a non-zero value if the experiment with the given ID
  *   is active, otherwise 0.
- */    
+ */
 int
 cali_experiment_is_active(cali_id_t exp_id);
 
 /**
  * \}
  */
-    
+
 /*
  * --- Runtime system management
  */
@@ -657,18 +657,18 @@ cali_experiment_is_active(cali_id_t exp_id);
  */
 
 /**
- * \brief For all experiments, forward aggregation or trace buffer 
+ * \brief For all experiments, forward aggregation or trace buffer
  *   contents to output services.
  *
- * Flushes trace buffers and/or aggreation database in the trace and 
+ * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered snapshot
  * records to output services, e.g., recorder, report, or mpireport.
  *
- * By default, the trace/aggregation buffers will not be cleared after the 
- * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to 
+ * By default, the trace/aggregation buffers will not be cleared after the
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
  * the \a flush_opts flags.
  *
- * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags. 
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
 
@@ -676,29 +676,29 @@ void
 cali_flush(int flush_opts);
 
 /**
- * \brief Forward aggregation or trace buffer contents to output services 
+ * \brief Forward aggregation or trace buffer contents to output services
  *   for the given experiment.
  *
- * Flushes trace buffers and/or aggreation database in the trace and 
+ * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered snapshot
  * records to output services, e.g., recorder, report, or mpireport.
  *
- * By default, the trace/aggregation buffers will not be cleared after the 
- * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to 
+ * By default, the trace/aggregation buffers will not be cleared after the
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
  * the \a flush_opts flags.
  *
  * \param exp_id     ID of the experiment to flush
- * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags. 
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
-    
+
 void
 cali_experiment_flush(cali_id_t exp_id, int flush_opts);
 
 /**
  * \}
  */
-    
+
 /*
  * --- Runtime system management
  */
@@ -709,7 +709,7 @@ cali_experiment_flush(cali_id_t exp_id, int flush_opts);
  * Typically, it is not necessary to initialize Caliper explicitly.
  * Caliper will lazily initialize itself on the first Caliper API call.
  * This function is used primarily by the Caliper annotation macros,
- * to ensure that Caliper's pre-defined annotation attributes are 
+ * to ensure that Caliper's pre-defined annotation attributes are
  * initialized.
  * It can also be used to avoid high initialization costs in the first
  * Caliper API call.
@@ -725,24 +725,44 @@ cali_init();
 
 int
 cali_is_initialized();
-    
+
 /*
  * --- Macro annotation helper functions
- */  
+ */
 
 /**
  * \brief Create a loop iteration attribute for CALI_MARK_LOOP_BEGIN.
  * \param name User-defined name of the loop
  */
-cali_id_t 
+cali_id_t
 cali_make_loop_iteration_attribute(const char* name);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-/* Include high-level annotation macros. 
- * In C++, also includes Annotation.h header. 
+//
+// --- Convenience C++ API
+//
+
+#ifdef __cplusplus
+
+#include <map>
+
+namespace cali
+{
+
+typedef std::map<std::string, std::string> config_map_t;
+
+cali_id_t
+create_experiment(const char* name, int flags, const config_map_t& cfg);
+
+}
+
+#endif
+
+/* Include high-level annotation macros.
+ * In C++, also includes Annotation.h header.
  */
 #include "cali_macros.h"
 

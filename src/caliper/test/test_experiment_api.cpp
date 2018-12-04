@@ -67,7 +67,7 @@ TEST(ExperimentAPITest, C_API) {
     };
 
     cali_configset_t cfgset =
-        cali_create_configset("cfg", 0, cfg);
+        cali_create_configset(cfg);
 
     cali_id_t exp_a_id =
         cali_create_experiment("exp.c_api.a", 0, cfgset);
