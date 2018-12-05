@@ -39,9 +39,9 @@ namespace cali
 {
 
 class Caliper;
-class Experiment;
+class Channel;
 
-typedef void (*ServiceRegisterFn)(Caliper* c, Experiment* exp);
+typedef void (*ServiceRegisterFn)(Caliper* c, Channel* chn);
 
 /// \brief Name and entry point for services.
 ///

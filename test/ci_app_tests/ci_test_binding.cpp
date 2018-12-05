@@ -22,21 +22,21 @@ public:
         return "testbinding"; 
     }
 
-    void initialize(Caliper* c, Experiment*) {
+    void initialize(Caliper* c, Channel*) {
         m_my_attr = 
             c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         m_prop_attr =
             c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     }
 
-    void on_mark_attribute(Caliper* c, Experiment* exp, const Attribute& attr) {
+    void on_mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
         if (s_verbose)
             std::cout << "TestBinding::on_mark_attribute(" << attr.name() << ")" << std::endl;
 
         c->make_tree_entry(m_prop_attr, Variant(4242), c->node(attr.id()));
     }
 
-    void on_begin(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void on_begin(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
 
@@ -45,17 +45,17 @@ public:
         std::string s(attr.name());
         s.append("=").append(value.to_string());
         
-        c->begin(exp, m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
+        c->begin(chn, m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
 
         if (s_verbose)
             std::cout << "begin " << s << std::endl;
     }
 
-    void on_end(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if (attr == m_my_attr)
             return;
 
-        c->end(exp, m_my_attr);
+        c->end(chn, m_my_attr);
 
         if (s_verbose)
             std::cout << "end   " << attr.name() << "=" << value.to_string() << std::endl;
@@ -76,7 +76,7 @@ int main(int argc, const char** argv)
 
     Caliper c;
 
-    AnnotationBinding::make_binding<TestBinding>(&c, c.get_experiment(0));
+    AnnotationBinding::make_binding<TestBinding>(&c, c.get_channel(0));
 
     Attribute nested_attr  =
         c.create_attribute("binding.nested",  CALI_TYPE_STRING, CALI_ATTR_NESTED);

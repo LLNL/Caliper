@@ -81,7 +81,7 @@ bool init_thread_counters(bool is_signal)
     return s_thread_active;    
 }
 
-void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
     auto num_counters = global_info.counter_events.size();
     
     if (num_counters < 1)
@@ -107,9 +107,9 @@ void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord*, 
     snapshot->append(num_counters, global_info.counter_delta_attrs.data(), data);
 }
 
-void papi_finish(Caliper* c, Experiment* exp) {
+void papi_finish(Caliper* c, Channel* chn) {
     if (num_failed > 0)
-        Log(1).stream() << exp->name() << ": PAPI: Failed to read counters " << num_failed
+        Log(1).stream() << chn->name() << ": PAPI: Failed to read counters " << num_failed
                         << " times." << std::endl;
 }
 
@@ -148,20 +148,20 @@ void setup_events(Caliper* c, const std::vector<std::string>& events)
 }
 
 // Initialization handler
-void papi_register(Caliper* c, Experiment* exp) {
+void papi_register(Caliper* c, Channel* chn) {
     static bool papi_is_enabled = false;
-    static std::string papi_experiment_name;
+    static std::string papi_channel_name;
         
     if (papi_is_enabled) {
-        Log(0).stream() << exp->name() << ": PAPI: Cannot enable papi service twice!"
-                        << " PAPI was already enabled in experiment "
-                        << papi_experiment_name << std::endl;
+        Log(0).stream() << chn->name() << ": PAPI: Cannot enable papi service twice!"
+                        << " PAPI was already enabled in channel "
+                        << papi_channel_name << std::endl;
 
         return;
     }
 
     papi_is_enabled      = true;
-    papi_experiment_name = exp->name();
+    papi_channel_name = chn->name();
     
     int ret = PAPI_library_init(PAPI_VER_CURRENT);
     
@@ -178,29 +178,29 @@ void papi_register(Caliper* c, Experiment* exp) {
         return;
     }
 
-    ConfigSet config = exp->config().init("papi", s_configdata);
+    ConfigSet config = chn->config().init("papi", s_configdata);
 
     setup_events(c, config.get("counters").to_stringlist());
 
     if (global_info.counter_events.size() < 1) {
-        Log(1).stream() << exp->name() << ": PAPI: No counters registered, dropping PAPI service" << std::endl;
+        Log(1).stream() << chn->name() << ": PAPI: No counters registered, dropping PAPI service" << std::endl;
         return;
     }
 
-    exp->events().post_init_evt.connect(
-        [](Caliper* c, Experiment* exp){
+    chn->events().post_init_evt.connect(
+        [](Caliper* c, Channel* chn){
             init_thread_counters(c->is_signal());
         });
-    exp->events().finish_evt.connect(
-        [](Caliper* c, Experiment* exp){
-            papi_finish(c, exp);
+    chn->events().finish_evt.connect(
+        [](Caliper* c, Channel* chn){
+            papi_finish(c, chn);
         });
-    exp->events().snapshot.connect(
-        [](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
-            snapshot_cb(c, exp, scope, info, snapshot);
+    chn->events().snapshot.connect(
+        [](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
+            snapshot_cb(c, chn, scope, info, snapshot);
         });
 
-    Log(1).stream() << exp->name() << ": Registered PAPI service" << std::endl;
+    Log(1).stream() << chn->name() << ": Registered PAPI service" << std::endl;
 }
 
 } // namespace

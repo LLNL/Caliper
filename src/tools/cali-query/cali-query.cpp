@@ -234,11 +234,11 @@ void setup_caliper_config(const Args& args)
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
 
-    //   Now create cali-query's pre-defined experiments.
+    //   Now create cali-query's pre-defined channels.
     // Do this last as this will initialize Caliper.
 
     if (args.is_set("profile"))
-        cali::create_experiment("profile", 0, {
+        cali::create_channel("profile", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
                 { "CALI_EVENT_TRIGGER",   "annotation" },
                 { "CALI_REPORT_FILENAME", "stderr" },
@@ -247,7 +247,7 @@ void setup_caliper_config(const Args& args)
             } );
     
     if (args.is_set("progress"))
-        cali::create_experiment("progress", 0, {
+        cali::create_channel("progress", 0, {
                 { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
                 { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
                 { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },

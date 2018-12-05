@@ -1,14 +1,14 @@
-# Multi-experiment tests
+# Multi-channel tests
 
 import unittest
 
 import calipertest as cat
 
-class CaliperMultiExperimentTest(unittest.TestCase):
-    """ Caliper multi-experiment case """
+class CaliperMultiChannelTest(unittest.TestCase):
+    """ Caliper multi-channel case """
 
-    def test_multiexperiment_trace(self):
-        target_cmd = [ './ci_test_multiexperiment' ]
+    def test_multichannel_trace(self):
+        target_cmd = [ './ci_test_multichannel' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
@@ -23,17 +23,17 @@ class CaliperMultiExperimentTest(unittest.TestCase):
         self.assertTrue(len(snapshots) >= 205)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '1', 
+            snapshots, {'chn.id'       : '1', 
                         'thread'       : 'true' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '1', 
+            snapshots, {'chn.id'       : '1', 
                         'main'         : 'true' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '42', 
+            snapshots, {'chn.id'       : '42', 
                         'thread'       : 'true' }))
 
-    def test_multiexperiment_aggr(self):
-        target_cmd = [ './ci_test_multiexperiment' ]
+    def test_multichannel_aggr(self):
+        target_cmd = [ './ci_test_multichannel' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
@@ -48,13 +48,13 @@ class CaliperMultiExperimentTest(unittest.TestCase):
         self.assertTrue(len(snapshots) >= 210)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '1', 
+            snapshots, {'chn.id'       : '1', 
                         'thread'       : 'true' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '1', 
+            snapshots, {'chn.id'       : '1', 
                         'main'         : 'true' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, {'exp.id'       : '42', 
+            snapshots, {'chn.id'       : '42', 
                         'thread'       : 'true' }))
 
 if __name__ == "__main__":

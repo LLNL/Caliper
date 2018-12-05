@@ -143,12 +143,12 @@ class MpiReport
 
 public:
 
-    static void init(Caliper* c, Experiment* exp) {
-        ConfigSet   config = exp->config().init("mpireport", s_configdata);
+    static void init(Caliper* c, Channel* chn) {
+        ConfigSet   config = chn->config().init("mpireport", s_configdata);
         CalQLParser parser(config.get("config").to_string().c_str());        
 
         if (parser.error()) {
-            Log(0).stream() << exp->name() << ": mpireport: config parse error: "
+            Log(0).stream() << chn->name() << ": mpireport: config parse error: "
                             << parser.error_msg() << std::endl;
 
             return;
@@ -157,32 +157,32 @@ public:
         MpiReport* instance =
             new MpiReport(parser.spec(), config.get("filename").to_string());
 
-        exp->events().pre_flush_evt.connect(
-            [instance](Caliper*, Experiment*, const SnapshotRecord*){
+        chn->events().pre_flush_evt.connect(
+            [instance](Caliper*, Channel*, const SnapshotRecord*){
                 instance->pre_flush();
             });
-        exp->events().write_snapshot.connect(
-            [instance](Caliper* c, Experiment*, const SnapshotRecord*, const SnapshotRecord* rec){
+        chn->events().write_snapshot.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord*, const SnapshotRecord* rec){
                 if (instance->m_p)
                     instance->add(c, rec);
             });
-        exp->events().post_flush_evt.connect(
-            [instance](Caliper* c, Experiment*, const SnapshotRecord* info){
+        chn->events().post_flush_evt.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord* info){
                 if (instance->m_p)
                     instance->flush_finish(c, info);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper*, Experiment*){
+        chn->events().finish_evt.connect(
+            [instance](Caliper*, Channel*){
                 delete instance;
             });
         
         if (config.get("write_on_finalize").to_bool() == true)
-            mpiwrap_get_events(exp).mpi_finalize_evt.connect(
-                [](Caliper* c, Experiment* exp){
-                    c->flush_and_write(exp, nullptr);
+            mpiwrap_get_events(chn).mpi_finalize_evt.connect(
+                [](Caliper* c, Channel* chn){
+                    c->flush_and_write(chn, nullptr);
                 });
 
-        Log(1).stream() << exp->name() << ": Registered mpireport service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered mpireport service" << std::endl;
     }
 };
 

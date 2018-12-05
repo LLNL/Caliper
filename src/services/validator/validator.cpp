@@ -53,12 +53,12 @@ using namespace cali;
 namespace
 {
 
-std::ostream& print_snapshot(Caliper* c, Experiment* exp, std::ostream& os) 
+std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os) 
 {
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord snapshot(snapshot_data);
 
-    c->pull_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);
+    c->pull_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);
 
     std::map< Attribute, std::vector<Variant> > rec = snapshot.unpack(*c);
 
@@ -106,7 +106,7 @@ class ValidatorService
             return false;
         }
 
-        bool check_end(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+        bool check_end(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
             if (m_error_found)
                 return true;
 
@@ -119,7 +119,7 @@ class ValidatorService
 
                 m_error_found = true;
 
-                print_snapshot(c, exp,
+                print_snapshot(c, chn,
                                Log(0).stream() << "validator: end(\"" 
                                << attr.name() << "\"=\"" << value.to_string() << "\") "
                                << " has no matching begin().\n    context: " ) 
@@ -142,7 +142,7 @@ class ValidatorService
                 if (attr.is_nested() && attr.id() != v_stack_attr.to_id()) {
                     m_error_found = true;
 
-                    print_snapshot(c, exp,
+                    print_snapshot(c, chn,
                                    Log(0).stream() << "validator: incorrect nesting: trying to end \""
                                    << attr.name() << "\"=\"" << value.to_string() 
                                    << "\" but current attribute is \"" 
@@ -152,7 +152,7 @@ class ValidatorService
                 } else if (!(value == v_stack_val)) {
                     m_error_found = true;
 
-                    print_snapshot(c, exp,
+                    print_snapshot(c, chn,
                                    Log(0).stream() << "validator: incorrect nesting: trying to end \""
                                    << attr.name() << "\"=\"" << value.to_string() 
                                    << "\" but current value is \"" 
@@ -207,8 +207,8 @@ class ValidatorService
                 }
         }
 
-        StackValidator* get_validator(Experiment* exp) {
-            size_t          expI = exp->id();
+        StackValidator* get_validator(Channel* chn) {
+            size_t          expI = chn->id();
             StackValidator* v    = nullptr;
 
             if (expI < exp_validators.size())
@@ -230,7 +230,7 @@ class ValidatorService
     static thread_local ThreadData sT;
 
 
-    void finalize_cb(Caliper*, Experiment* exp) {
+    void finalize_cb(Caliper*, Channel* chn) {
         {
             std::lock_guard<std::mutex>
                 g(proc_stack_mutex);
@@ -242,7 +242,7 @@ class ValidatorService
             proc_stack = nullptr;
         }
 
-        // StackValidator* v = sT.get_validator(exp);
+        // StackValidator* v = sT.get_validator(chn);
 
         // if (v && v->check_final())
         //     ++global_errors;
@@ -255,7 +255,7 @@ class ValidatorService
                             << std::endl;
     }
 
-    void begin_cb(Caliper* c, Experiment* exp, const Attribute &attr, const Variant& value) {
+    void begin_cb(Caliper* c, Channel* chn, const Attribute &attr, const Variant& value) {
         if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
             std::lock_guard<std::mutex>
                 g(proc_stack_mutex);
@@ -263,56 +263,56 @@ class ValidatorService
             if (proc_stack->check_begin(attr, value))
                 ++global_errors;
         } else {
-            StackValidator* v = sT.get_validator(exp);
+            StackValidator* v = sT.get_validator(chn);
 
             if (v && v->check_begin(attr, value))
                 ++global_errors;
         }
     }
 
-    void end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if ((attr.properties() & CALI_ATTR_SCOPE_MASK) == CALI_ATTR_SCOPE_PROCESS) {
             std::lock_guard<std::mutex>
                 g(proc_stack_mutex);
 
-            if (proc_stack->check_end(c, exp, attr, value))
+            if (proc_stack->check_end(c, chn, attr, value))
                 ++global_errors;
         } else {
-            StackValidator* v = sT.get_validator(exp);
+            StackValidator* v = sT.get_validator(chn);
 
-            if (v && v->check_end(c, exp, attr, value))
+            if (v && v->check_end(c, chn, attr, value))
                 ++global_errors;
         }
     }
     
-    ValidatorService(Caliper* c, Experiment*)
+    ValidatorService(Caliper* c, Channel*)
             : proc_stack(new StackValidator), global_errors(0)
         { }
 
 public:
 
-    static void validator_register(Caliper* c, Experiment* exp) {
+    static void validator_register(Caliper* c, Channel* chn) {
         if (s_class_nested_attr == Attribute::invalid)
             s_class_nested_attr = 
                 c->create_attribute("validator.nested", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);            
 
-        ValidatorService* instance = new ValidatorService(c, exp);
+        ValidatorService* instance = new ValidatorService(c, chn);
 
-        exp->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                instance->begin_cb(c, exp, attr, value);
+        chn->events().pre_begin_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                instance->begin_cb(c, chn, attr, value);
             });
-        exp->events().pre_end_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                instance->end_cb(c, exp, attr, value);
+        chn->events().pre_end_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                instance->end_cb(c, chn, attr, value);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->finalize_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->finalize_cb(c, chn);
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered validator service." << std::endl;
+        Log(1).stream() << chn->name() << ": Registered validator service." << std::endl;
     }
 
 };

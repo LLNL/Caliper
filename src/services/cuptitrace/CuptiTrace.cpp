@@ -453,7 +453,7 @@ class CuptiTraceService
     // --- Caliper callbacks
     //
 
-    void flush_cb(Caliper* c, Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
         //   Flush CUpti. Apppends all currently active CUpti trace buffers 
         // to the retired_buffers_list.
 
@@ -483,7 +483,7 @@ class CuptiTraceService
         Log(1).stream() << "cuptitrace: Wrote " << num_written << " records." << std::endl;
     }
 
-    void clear_cb(Caliper* c, Experiment* exp) {
+    void clear_cb(Caliper* c, Channel* chn) {
         ActivityBuffer* acb = nullptr;
 
         {
@@ -508,9 +508,9 @@ class CuptiTraceService
         }
     }
 
-    void post_begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void post_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if (attr.is_nested()) {
-            Entry e = c->get(exp, attr);
+            Entry e = c->get(chn, attr);
 
             if (e.is_reference()) {                
                 CUptiResult res = 
@@ -522,7 +522,7 @@ class CuptiTraceService
         }   
     }
 
-    void pre_end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if (attr.is_nested()) {
             CUptiResult res =
                 cuptiActivityPopExternalCorrelationId(CUPTI_EXTERNAL_CORRELATION_KIND_CUSTOM0, nullptr);
@@ -532,14 +532,14 @@ class CuptiTraceService
         }
     }
 
-    void finish_cb(Caliper* c, Experiment* exp) {
+    void finish_cb(Caliper* c, Channel* chn) {
         cuptiFinalize();
 
         if (Log::verbosity() < 1)
             return;
     
         if (num_dropped_records > 0)
-            Log(1).stream() << exp->name() << ": cuptitrace: Dropped " << num_dropped_records
+            Log(1).stream() << chn->name() << ": cuptitrace: Dropped " << num_dropped_records
                             << " records." << std::endl;
 
         unitfmt_result bytes_reserved =
@@ -547,7 +547,7 @@ class CuptiTraceService
         unitfmt_result bytes_used =
             unitfmt(buffer_size_used, unitfmt_bytes);
             
-        Log(1).stream() << exp->name() << ": cuptitrace: Allocated " << num_buffers_allocated
+        Log(1).stream() << chn->name() << ": cuptitrace: Allocated " << num_buffers_allocated
                         << " buffers ("
                         << bytes_reserved.val << bytes_reserved.symbol
                         << " reserved, "
@@ -559,7 +559,7 @@ class CuptiTraceService
         if (Log::verbosity() < 2)
             return;
 
-        Log(2).stream() << exp->name() << ": cuptitrace: Processed CUpti activity records:"
+        Log(2).stream() << chn->name() << ": cuptitrace: Processed CUpti activity records:"
                         << "\n  correlation records: " << num_correlation_recs
                         << "\n  device records:      " << num_device_recs
                         << "\n  driver records:      " << num_driver_recs
@@ -569,7 +569,7 @@ class CuptiTraceService
                         << "\n  unknown records:     " << num_unknown_recs
                         << std::endl;
 
-        Log(2).stream() << exp->name() << ": cuptitrace: "
+        Log(2).stream() << chn->name() << ": cuptitrace: "
                         << num_correlations_found  << " context correlations found, "
                         << num_correlations_missed << " missed."
                         << std::endl;
@@ -619,15 +619,15 @@ class CuptiTraceService
         
     }
 
-    void snapshot_cb(Caliper* c, Experiment*, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
+    void snapshot_cb(Caliper* c, Channel*, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
         uint64_t timestamp = 0;
         cuptiGetTimestamp(&timestamp);
 
         snapshot->append(timestamp_attr.id(), Variant(cali_make_variant_from_uint(timestamp)));
     }
 
-    void post_init_cb(Caliper* c, Experiment* exp) {   
-        ConfigSet config = exp->config().init("cuptitrace", s_configdata);
+    void post_init_cb(Caliper* c, Channel* chn) {   
+        ConfigSet config = chn->config().init("cuptitrace", s_configdata);
 
         enable_cupti_activities(config);
     
@@ -642,46 +642,46 @@ class CuptiTraceService
         uint64_t starttime = 0;
         cuptiGetTimestamp(&starttime);
 
-        c->set(exp, starttime_attr, cali_make_variant_from_uint(starttime));
+        c->set(chn, starttime_attr, cali_make_variant_from_uint(starttime));
 
         if (config.get("correlate_context").to_bool()) {
-            exp->events().post_begin_evt.connect(
-                [](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                    s_instance->post_begin_cb(c, exp, attr, value);
+            chn->events().post_begin_evt.connect(
+                [](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                    s_instance->post_begin_cb(c, chn, attr, value);
                 });
-            exp->events().pre_end_evt.connect(
-                [](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                    s_instance->pre_end_cb(c, exp, attr, value);
+            chn->events().pre_end_evt.connect(
+                [](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                    s_instance->pre_end_cb(c, chn, attr, value);
                 });
 
         }
 
         if (config.get("snapshot_timestamps").to_bool()) {
-            exp->events().snapshot.connect(
-                [](Caliper* c, Experiment* exp, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
-                    s_instance->snapshot_cb(c, exp, scopes, info, rec);
+            chn->events().snapshot.connect(
+                [](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
+                    s_instance->snapshot_cb(c, chn, scopes, info, rec);
                 });
         }
     
-        exp->events().flush_evt.connect(
-            [](Caliper* c, Experiment* exp, const SnapshotRecord* info, SnapshotFlushFn flush_fn){
-                s_instance->flush_cb(c, exp, info, flush_fn);
+        chn->events().flush_evt.connect(
+            [](Caliper* c, Channel* chn, const SnapshotRecord* info, SnapshotFlushFn flush_fn){
+                s_instance->flush_cb(c, chn, info, flush_fn);
             });
-        exp->events().clear_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                s_instance->clear_cb(c, exp);
+        chn->events().clear_evt.connect(
+            [](Caliper* c, Channel* chn){
+                s_instance->clear_cb(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                s_instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [](Caliper* c, Channel* chn){
+                s_instance->finish_cb(c, chn);
                 delete s_instance;
                 s_instance = nullptr;
             });
 
-        Log(1).stream() << exp->name() << ": Registered cuptitrace service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered cuptitrace service" << std::endl;
     }
 
-    CuptiTraceService(Caliper* c, Experiment* exp)
+    CuptiTraceService(Caliper* c, Channel* chn)
         {
             Attribute aggr_attr = c->get_attribute("class.aggregatable");
             Variant   v_true(true);
@@ -723,18 +723,18 @@ class CuptiTraceService
 
 public:
 
-    static void cuptitrace_initialize(Caliper* c, Experiment* exp) {        
+    static void cuptitrace_initialize(Caliper* c, Channel* chn) {        
         if (s_instance) {
-            Log(0).stream() << exp->name() << ": cuptitrace service is already initialized!"
+            Log(0).stream() << chn->name() << ": cuptitrace service is already initialized!"
                             << std::endl;
             return;
         }
 
-        s_instance = new CuptiTraceService(c, exp);
+        s_instance = new CuptiTraceService(c, chn);
         
-        exp->events().post_init_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                s_instance->post_init_cb(c, exp);
+        chn->events().post_init_evt.connect(
+            [](Caliper* c, Channel* chn){
+                s_instance->post_init_cb(c, chn);
             });
     }
 

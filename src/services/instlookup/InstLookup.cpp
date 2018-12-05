@@ -245,8 +245,8 @@ class InstLookup
     }
 
     // some final log output; print warning if we didn't find an address attribute
-    void finish_log(Caliper* c, Experiment* exp) {
-        Log(1).stream() << exp->name()   <<  ": Instlookup: Performed " 
+    void finish_log(Caliper* c, Channel* chn) {
+        Log(1).stream() << chn->name()   <<  ": Instlookup: Performed " 
                         << m_num_lookups << " address lookups, "
                         << m_num_failed  << " failed." 
                         << std::endl;
@@ -284,11 +284,11 @@ class InstLookup
         m_inst_length = InstructionDecoder::maxInstructionLength;
     }
 
-    InstLookup(Caliper* c, Experiment* exp)
+    InstLookup(Caliper* c, Channel* chn)
         : m_sts(nullptr)
         {
             ConfigSet config =
-                exp->config().init("instlookup", s_configdata);
+                chn->config().init("instlookup", s_configdata);
             
             m_addr_attr_names  = config.get("attributes").to_stringlist(",:");
             m_instruction_type = config.get("instruction_type").to_bool();
@@ -296,25 +296,25 @@ class InstLookup
 
 public:
 
-    static void instlookup_register(Caliper* c, Experiment* exp) {
-        InstLookup* instance = new InstLookup(c, exp);
+    static void instlookup_register(Caliper* c, Channel* chn) {
+        InstLookup* instance = new InstLookup(c, chn);
         
-        exp->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info){
+        chn->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
                 instance->check_attributes(c);
                 instance->init_lookup();
             });
-        exp->events().postprocess_snapshot.connect(
-            [instance](Caliper* c, Experiment* exp, SnapshotRecord* snapshot){
+        chn->events().postprocess_snapshot.connect(
+            [instance](Caliper* c, Channel* chn, SnapshotRecord* snapshot){
                 instance->process_snapshot(c, snapshot);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->finish_log(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->finish_log(c, chn);
                 delete instance;
             });
         
-        Log(1).stream() << exp->name() << ": Registered instlookup service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered instlookup service" << std::endl;
     }
 };
 

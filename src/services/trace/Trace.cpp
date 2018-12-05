@@ -91,13 +91,13 @@ class Trace
         std::vector<TraceBuffer*> exp_buffers;
 
         //   The TraceBuffer objects are managed through the tbuf_list in the 
-        // Trace object for the experiment they belong to. Here, we store
-        // pointers to the currently active trace buffers for all experiments
+        // Trace object for the channel they belong to. Here, we store
+        // pointers to the currently active trace buffers for all channels
         // on the local thread.
-        //   Experiments and their TraceBuffer objects can be deleted behind
+        //   Channels and their TraceBuffer objects can be deleted behind
         // the back of the thread-local data objects. Therefore, we keep track
-        // of active experiments in s_active_exps so we don't touch stale
-        // TraceBuffer pointers whose experiments have been deleted.
+        // of active channels in s_active_exps so we don't touch stale
+        // TraceBuffer pointers whose channels have been deleted.
         
         static std::vector<bool>  s_active_exps;
         static std::mutex         s_active_exps_lock;
@@ -113,15 +113,15 @@ class Trace
                     exp_buffers[i]->retired.store(true);
         }
 
-        static void deactivate_exp(Experiment* exp) {
+        static void deactivate_exp(Channel* chn) {
             std::lock_guard<std::mutex>
                 g(s_active_exps_lock);
             
-            s_active_exps[exp->id()] = false;
+            s_active_exps[chn->id()] = false;
         }
 
-        TraceBuffer* acquire_tbuf(Trace* trace, Experiment* exp, bool alloc) {
-            size_t       expI = exp->id(); 
+        TraceBuffer* acquire_tbuf(Trace* trace, Channel* chn, bool alloc) {
+            size_t       expI = chn->id(); 
             TraceBuffer* tbuf = nullptr;
             
             if (expI < exp_buffers.size())
@@ -174,11 +174,11 @@ class Trace
     std::mutex     flush_lock;
 
     
-    TraceBuffer* handle_overflow(Caliper* c, Experiment* exp, TraceBuffer* tbuf) {
+    TraceBuffer* handle_overflow(Caliper* c, Channel* chn, TraceBuffer* tbuf) {
         switch (policy) {
         case BufferPolicy::Stop:
             tbuf->stopped.store(true);
-            Log(1).stream() << exp->name() << ": Trace buffer full: recording stopped." << std::endl;
+            Log(1).stream() << chn->name() << ": Trace buffer full: recording stopped." << std::endl;
             return 0;
                 
         case BufferPolicy::Grow:
@@ -199,9 +199,9 @@ class Trace
             
         case BufferPolicy::Flush:
         {
-            Log(1).stream() << exp->name() << ": Trace buffer full: flushing." << std::endl;
+            Log(1).stream() << chn->name() << ": Trace buffer full: flushing." << std::endl;
 
-            c->flush_and_write(exp, nullptr);
+            c->flush_and_write(chn, nullptr);
             
             return tbuf;
         }
@@ -211,8 +211,8 @@ class Trace
         return 0;
     }
     
-    void process_snapshot_cb(Caliper* c, Experiment* exp, const SnapshotRecord*, const SnapshotRecord* sbuf) {
-        TraceBuffer* tbuf = sT.acquire_tbuf(this, exp, !c->is_signal());
+    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* sbuf) {
+        TraceBuffer* tbuf = sT.acquire_tbuf(this, chn, !c->is_signal());
 
         if (!tbuf || tbuf->stopped.load()) { // error messaging is done in acquire_tbuf()
             ++dropped_snapshots;
@@ -220,14 +220,14 @@ class Trace
         }
         
         if (!tbuf->chunks->fits(sbuf))
-            tbuf = handle_overflow(c, exp, tbuf);
+            tbuf = handle_overflow(c, chn, tbuf);
         if (!tbuf)
             return;
 
         tbuf->chunks->save_snapshot(sbuf);
     }        
 
-    void flush_cb(Caliper* c, Experiment* exp, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
         std::lock_guard<std::mutex>
             g(flush_lock);
 
@@ -269,7 +269,7 @@ class Trace
             unitfmt_result bytes_used     
                 = unitfmt(aggregate_info.used,     unitfmt_bytes);
 
-            Log(2).stream() << exp->name()             << ": Trace: "
+            Log(2).stream() << chn->name()             << ": Trace: "
                             << bytes_reserved.val      << " " 
                             << bytes_reserved.symbol   << " reserved, "
                             << bytes_used.val          << " " 
@@ -277,10 +277,10 @@ class Trace
                             << aggregate_info.nchunks  << " chunks." << std::endl;
         }
         
-        Log(1).stream() << exp->name() << ": Trace: Flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << chn->name() << ": Trace: Flushed " << num_written << " snapshots." << std::endl;
     }
 
-    void clear_cb(Caliper* c, Experiment*) {
+    void clear_cb(Caliper* c, Channel*) {
         std::lock_guard<std::mutex>
             g(flush_lock);
 
@@ -334,24 +334,24 @@ class Trace
             Log(0).stream() << "Trace: error: unknown buffer policy \"" << polname << "\"" << std::endl;
     }
 
-    void create_thread_cb(Caliper* c, Experiment* exp) {
+    void create_thread_cb(Caliper* c, Channel* chn) {
         // init trace buffer on new threads
-        sT.acquire_tbuf(this, exp, true);
+        sT.acquire_tbuf(this, chn, true);
     }
 
-    void finish_cb(Caliper* c, Experiment* exp) {
+    void finish_cb(Caliper* c, Channel* chn) {
         if (dropped_snapshots > 0)
-            Log(1).stream() << exp->name() << ": Trace: dropped "
+            Log(1).stream() << chn->name() << ": Trace: dropped "
                             << dropped_snapshots << " snapshots." << std::endl;
     }
 
-    Trace(Experiment* exp)
+    Trace(Channel* chn)
         : dropped_snapshots(0)
         {
             tbuf_lock.unlock();
             flush_lock.unlock();
             
-            ConfigSet cfg = exp->config().init("trace", s_configdata);
+            ConfigSet cfg = chn->config().init("trace", s_configdata);
                     
             init_overflow_policy(cfg.get("buffer_policy").to_string());
             buffersize = cfg.get("buffer_size").to_uint() * 1024 * 1024;
@@ -368,36 +368,36 @@ public:
             tbuf_list = nullptr;
         }
     
-    static void trace_register(Caliper* c, Experiment* exp) {
-        Trace* instance = new Trace(exp);
+    static void trace_register(Caliper* c, Channel* chn) {
+        Trace* instance = new Trace(chn);
         
-        exp->events().create_thread_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->create_thread_cb(c, exp);
+        chn->events().create_thread_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->create_thread_cb(c, chn);
             });
-        exp->events().process_snapshot.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* trigger, const SnapshotRecord* snapshot){
-                instance->process_snapshot_cb(c, exp, trigger, snapshot);
+        chn->events().process_snapshot.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* trigger, const SnapshotRecord* snapshot){
+                instance->process_snapshot_cb(c, chn, trigger, snapshot);
             });
-        exp->events().flush_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* trigger, SnapshotFlushFn fn){
-                instance->flush_cb(c, exp, trigger, fn);
+        chn->events().flush_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* trigger, SnapshotFlushFn fn){
+                instance->flush_cb(c, chn, trigger, fn);
             });
-        exp->events().clear_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->clear_cb(c, exp);
+        chn->events().clear_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->clear_cb(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                sT.deactivate_exp(exp);
-                instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                sT.deactivate_exp(chn);
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 
         // Initialize trace buffer on master thread
-        sT.acquire_tbuf(instance, exp, true);
+        sT.acquire_tbuf(instance, chn, true);
         
-        Log(1).stream() << exp->name() << ": Registered trace service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered trace service" << std::endl;
     }
 }; // class Trace
 

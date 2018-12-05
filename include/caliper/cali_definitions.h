@@ -59,14 +59,14 @@ typedef enum {
 } cali_flush_opt;
   
 /**
- * Experiment creation options
+ * Channel creation options
  */    
 typedef enum {
-    /** Leave the experiment inactive after it is created. */
-    CALI_EXPERIMENT_LEAVE_INACTIVE = 1,
+    /** Leave the channel inactive after it is created. */
+    CALI_CHANNEL_LEAVE_INACTIVE = 1,
     /** Allow reading configuration entries from environment variables. */
-    CALI_EXPERIMENT_ALLOW_READ_ENV = 2
-} cali_experiment_opt;
+    CALI_CHANNEL_ALLOW_READ_ENV = 2
+} cali_channel_opt;
 
 #ifdef __cplusplus
 } // extern "C"

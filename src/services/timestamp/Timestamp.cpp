@@ -142,13 +142,13 @@ class Timestamp
         return Attribute::invalid;
     }
 
-    void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* sbuf) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* sbuf) {
         auto now = chrono::high_resolution_clock::now();
 
         if ((record_duration || record_phases || record_offset) && scope & CALI_SCOPE_THREAD) {
             uint64_t  usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
             Variant v_usec = Variant(usec);
-            Variant v_offs = c->exchange(exp, timeoffs_attr, v_usec);
+            Variant v_offs = c->exchange(chn, timeoffs_attr, v_usec);
 
             if (record_duration && !v_offs.empty()) {
                 uint64_t duration = usec - v_offs.to_uint();
@@ -178,12 +178,12 @@ class Timestamp
                 if (event.attribute() == begin_evt_attr.id()) {
                     // begin/set event: save time for current entry
 
-                    c->set(exp, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
+                    c->set(chn, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
                 } else if (event.attribute() == set_evt_attr.id())   {
                     // set event: get saved time for current entry and calculate duration
 
                     Variant v_p_usec    = 
-                        c->exchange(exp, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
+                        c->exchange(chn, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
 
                     if (!v_p_usec.empty())
                         sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
@@ -197,7 +197,7 @@ class Timestamp
                         goto record_phases_exit;
 
                     Variant v_p_usec    = 
-                        c->exchange(exp, offs_attr, Variant());
+                        c->exchange(chn, offs_attr, Variant());
 
                     if (!v_p_usec.empty())
                         sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
@@ -212,7 +212,7 @@ class Timestamp
                          Variant(cali_make_variant_from_uint(chrono::system_clock::to_time_t(chrono::system_clock::now()))));
     }
 
-    void post_init_cb(Caliper* c, Experiment* exp) {
+    void post_init_cb(Caliper* c, Channel* chn) {
         // Find begin/end event snapshot event info attributes
 
         begin_evt_attr = c->get_attribute("cali.event.begin");
@@ -225,17 +225,17 @@ class Timestamp
             end_evt_attr   == Attribute::invalid ||
             lvl_attr       == Attribute::invalid) {
             if (record_phases)
-                Log(1).stream() << exp->name() << ": Timestamp: Note: event trigger attributes not registered,\n"
+                Log(1).stream() << chn->name() << ": Timestamp: Note: event trigger attributes not registered,\n"
                     "    disabling phase timers." << std::endl;
 
             record_phases = false;
         }
     }
 
-    Timestamp(Caliper* c, Experiment* exp)
+    Timestamp(Caliper* c, Channel* chn)
         : tstart(chrono::high_resolution_clock::now())
         {
-            ConfigSet config = exp->config().init("timer", s_configdata);
+            ConfigSet config = chn->config().init("timer", s_configdata);
 
             record_duration  = config.get("snapshot_duration").to_bool();
             record_offset    = config.get("offset").to_bool();
@@ -282,28 +282,28 @@ class Timestamp
                                     CALI_ATTR_SKIP_EVENTS,
                                     2, meta_attr, meta_vals);
 
-            c->set(exp, timeoffs_attr, Variant(static_cast<uint64_t>(0)));
+            c->set(chn, timeoffs_attr, Variant(static_cast<uint64_t>(0)));
         }
 
 public:
 
-    static void timestamp_register(Caliper* c, Experiment* exp) {
-        Timestamp* instance = new Timestamp(c, exp);
+    static void timestamp_register(Caliper* c, Channel* chn) {
+        Timestamp* instance = new Timestamp(c, chn);
         
-        exp->events().post_init_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->post_init_cb(c, exp);
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->post_init_cb(c, chn);
             });
-        exp->events().snapshot.connect(
-            [instance](Caliper* c, Experiment* exp, int scopes, const SnapshotRecord* info, SnapshotRecord* snapshot){
-                instance->snapshot_cb(c, exp, scopes, info, snapshot);
+        chn->events().snapshot.connect(
+            [instance](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* snapshot){
+                instance->snapshot_cb(c, chn, scopes, info, snapshot);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered timestamp service" << endl;
+        Log(1).stream() << chn->name() << ": Registered timestamp service" << endl;
     }
 
 }; // class Timestamp

@@ -45,7 +45,7 @@ namespace cali
 
 class Caliper;
 class CaliperService;
-class Experiment;
+class Channel;
 
 class Services
 {
@@ -58,7 +58,7 @@ public:
 
     static void add_default_services();
 
-    static void register_services(Caliper* c, Experiment* exp);
+    static void register_services(Caliper* c, Channel* chn);
 
     static std::vector<std::string> get_available_services();
 };

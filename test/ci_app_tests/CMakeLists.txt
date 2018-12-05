@@ -9,7 +9,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_esc
   ci_test_loop
   ci_test_macros
-  ci_test_multiexperiment
+  ci_test_multichannel
   ci_test_nesting
   ci_test_postprocess_snapshot
   ci_test_report
@@ -29,9 +29,9 @@ foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   target_link_libraries(${app} caliper)
 endforeach()
 
-target_link_libraries(ci_test_thread          Threads::Threads)
-target_link_libraries(ci_test_nesting         Threads::Threads)
-target_link_libraries(ci_test_multiexperiment Threads::Threads)
+target_link_libraries(ci_test_thread       Threads::Threads)
+target_link_libraries(ci_test_nesting      Threads::Threads)
+target_link_libraries(ci_test_multichannel Threads::Threads)
 
 foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
@@ -47,7 +47,7 @@ set(PYTHON_SCRIPTS
   test_c_api.py
   test_json.py
   test_log.py
-  test_multiexperiment.py
+  test_multichannel.py
   test_report.py
   test_thread.py
   calipertest.py)

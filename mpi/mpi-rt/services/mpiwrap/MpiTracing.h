@@ -43,7 +43,7 @@ namespace cali
 {
 
 class Caliper;
-class Experiment;
+class Channel;
 
 class MpiTracing
 {
@@ -60,34 +60,34 @@ public:
 
     ~MpiTracing();
 
-    void init(Caliper* c, Experiment* exp);
-    void init_mpi(Caliper* c, Experiment* exp);
+    void init(Caliper* c, Channel* chn);
+    void init_mpi(Caliper* c, Channel* chn);
 
-    void push_call_id(Caliper* c, Experiment* exp);
-    void pop_call_id(Caliper* c, Experiment* exp);
+    void push_call_id(Caliper* c, Channel* chn);
+    void pop_call_id(Caliper* c, Channel* chn);
 
     // --- point-to-point
 
-    void handle_send(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
-    void handle_send_init(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
+    void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req);
 
-    void handle_recv(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
-    void handle_irecv(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
-    void handle_recv_init(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_recv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Status* status);
+    void handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
+    void handle_recv_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req);
 
-    void handle_start(Caliper* c, Experiment* exp, int nreq, MPI_Request* reqs);
-    void handle_completion(Caliper* c, Experiment* exp, int nreq, MPI_Request* reqs, MPI_Status* statuses);
+    void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs);
+    void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses);
 
-    void request_free(Caliper* c, Experiment* exp, MPI_Request* req);
+    void request_free(Caliper* c, Channel* chn, MPI_Request* req);
 
     // --- collectives
 
-    void handle_12n(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int root, MPI_Comm comm);
-    void handle_n21(Caliper* c, Experiment* exp, int count, MPI_Datatype type, int root, MPI_Comm comm);
-    void handle_n2n(Caliper* c, Experiment* exp, int count, MPI_Datatype type, MPI_Comm comm);    
-    void handle_barrier(Caliper* c, Experiment* exp, MPI_Comm comm);
-    void handle_init(Caliper* c, Experiment* exp);
-    void handle_finalize(Caliper* c, Experiment* exp);
+    void handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
+    void handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm);    
+    void handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm);
+    void handle_init(Caliper* c, Channel* chn);
+    void handle_finalize(Caliper* c, Channel* chn);
 };
 
 }

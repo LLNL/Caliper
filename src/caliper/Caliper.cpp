@@ -118,10 +118,10 @@ print_available_services(std::ostream& os)
 } // namespace
 
 //
-//   Caliper experiment thread data. 
+//   Caliper channel thread data. 
 // Managed by the Caliper object.
 
-struct Experiment::ThreadData {
+struct Channel::ThreadData {
     std::vector<ContextBuffer> blackboards;
 
     ThreadData(size_t min_num_entries)
@@ -131,10 +131,10 @@ struct Experiment::ThreadData {
 };
 
 //
-// Caliper experiment data
+// Caliper channel data
 //
 
-struct Experiment::ExperimentImpl
+struct Channel::ChannelImpl
 {
     static const ConfigSet::Entry   s_configdata[];
 
@@ -151,21 +151,21 @@ struct Experiment::ExperimentImpl
     bool                            automerge;
     bool                            flush_on_exit;
 
-    ExperimentImpl(const char* _name, const RuntimeConfig& cfg)
+    ChannelImpl(const char* _name, const RuntimeConfig& cfg)
         : name(_name), active(true), config(cfg)
         {
             ConfigSet cali_cfg =
-                config.init("experiment", s_configdata);
+                config.init("channel", s_configdata);
 
             automerge     = cali_cfg.get("automerge").to_bool();
             flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
         }
 
-    ~ExperimentImpl()
+    ~ChannelImpl()
         {
             if (Log::verbosity() >= 2) {
                 blackboard.print_statistics(
-                    Log(2).stream() << "Releasing experiment " << name << ":\n    ")
+                    Log(2).stream() << "Releasing channel " << name << ":\n    ")
                     << std::endl;
             }
         }
@@ -179,49 +179,49 @@ struct Experiment::ExperimentImpl
     }
 
     static ContextBuffer*
-    get_blackboard(Experiment& exp, ThreadData& expT, const Attribute& attr) {        
+    get_blackboard(Channel& chn, ThreadData& chnT, const Attribute& attr) {        
         switch (attr.properties() & CALI_ATTR_SCOPE_MASK)
         {
         case CALI_ATTR_SCOPE_THREAD:
         case CALI_ATTR_SCOPE_TASK:
         {
-            cali_id_t exp_id = exp.id();
+            cali_id_t chn_id = chn.id();
             
-            if (expT.blackboards.size() > exp_id)
-                return &expT.blackboards[exp_id];
+            if (chnT.blackboards.size() > chn_id)
+                return &chnT.blackboards[chn_id];
             else
                 return nullptr;
         }
         break;
         case CALI_ATTR_SCOPE_PROCESS:
-            return &exp.mP->blackboard;
+            return &chn.mP->blackboard;
         }
         
         return nullptr;
     }
     
     static ContextBuffer*
-    get_blackboard(Experiment& exp, ThreadData& expT, cali_context_scope_t scope) {
-        cali_id_t exp_id = exp.id();
+    get_blackboard(Channel& chn, ThreadData& chnT, cali_context_scope_t scope) {
+        cali_id_t chn_id = chn.id();
         
         switch (scope)
         {
         case CALI_SCOPE_THREAD:
         case CALI_SCOPE_TASK:
-            if (expT.blackboards.size() > exp_id)
-                return &expT.blackboards[exp_id];
+            if (chnT.blackboards.size() > chn_id)
+                return &chnT.blackboards[chn_id];
             else
                 return nullptr;
         break;
         case CALI_SCOPE_PROCESS:
-            return &exp.mP->blackboard;
+            return &chn.mP->blackboard;
         }
         
         return nullptr;
     }
 };
 
-const ConfigSet::Entry Experiment::ExperimentImpl::s_configdata[] = {
+const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
     // key, type, value, short description, long description
     { "automerge", CALI_TYPE_BOOL, "true",
       "Automatically merge attributes into a common context tree",
@@ -240,36 +240,36 @@ const ConfigSet::Entry Experiment::ExperimentImpl::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-Experiment::Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg)
+Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg)
     : IdType(id),
-      mP(new ExperimentImpl(name, cfg))
+      mP(new ChannelImpl(name, cfg))
 {
 }
 
-Experiment::~Experiment()
+Channel::~Channel()
 {
 }
 
-Experiment::Events&
-Experiment::events()
+Channel::Events&
+Channel::events()
 {
     return mP->events;
 }
 
 RuntimeConfig
-Experiment::config()
+Channel::config()
 {
     return mP->config;
 }
 
 std::string
-Experiment::name() const
+Channel::name() const
 {
     return mP->name;
 }
 
 bool
-Experiment::is_active() const
+Channel::is_active() const
 {
     return mP->active;
 }
@@ -284,12 +284,12 @@ struct Caliper::ThreadData
     MetadataTree                  tree;
     ::siglock                     lock;
 
-    Experiment::ThreadData        expT;
+    Channel::ThreadData        chnT;
 
     bool                          is_initial_thread;
 
-    ThreadData(size_t min_num_exp, bool initial_thread = false)
-        : expT(min_num_exp), is_initial_thread(initial_thread)
+    ThreadData(size_t min_num_chn, bool initial_thread = false)
+        : chnT(min_num_chn), is_initial_thread(initial_thread)
         { }
 
     ~ThreadData() {
@@ -310,17 +310,17 @@ struct Caliper::GlobalData
 {
     // --- static data
 
-    static volatile sig_atomic_t          s_init_lock;
-    static std::mutex                     s_init_mutex;
+    static volatile sig_atomic_t       s_init_lock;
+    static std::mutex                  s_init_mutex;
 
-    static const ConfigSet::Entry         s_configdata[];
+    static const ConfigSet::Entry      s_configdata[];
 
     struct InitHookList {
         void          (*hook)();
         InitHookList* next;
     };
 
-    static InitHookList*                  s_init_hooks;
+    static InitHookList*               s_init_hooks;
     
     // --- static functions
 
@@ -336,21 +336,21 @@ struct Caliper::GlobalData
 
     // --- data
 
-    mutable std::mutex                    attribute_lock;
-    map<string, Node*>                    attribute_nodes;
+    mutable std::mutex                 attribute_lock;
+    map<string, Node*>                 attribute_nodes;
 
-    Attribute                             key_attr;
+    Attribute                          key_attr;
 
-    map<string, int>                      attribute_prop_presets;
+    map<string, int>                   attribute_prop_presets;
 
-    vector< std::unique_ptr<Experiment> > experiments;
+    vector< std::unique_ptr<Channel> > channels;
 
     // --- constructor
 
     GlobalData()
         : key_attr { Attribute::invalid }
     {        
-        experiments.reserve(16);
+        channels.reserve(16);
 
         // put the attribute [name,type,prop] attributes in the map
         
@@ -409,7 +409,7 @@ struct Caliper::GlobalData
         init_attribute_classes(&c);
         init_api_attributes(&c);
         
-        c.create_experiment("default", RuntimeConfig::get_default_config());
+        c.create_channel("default", RuntimeConfig::get_default_config());
 
         Log(1).stream() << "Initialized" << std::endl;
     }
@@ -527,9 +527,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 
         // Run pre-attribute creation callbacks.
         //   This may add additional nodes to our parent branch.
-        for (auto& exp : sG->experiments)
-            if (exp)
-                exp->mP->events.pre_create_attr_evt(this, exp.get(), name, type, &prop, &node);
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.pre_create_attr_evt(this, chn.get(), name, type, &prop, &node);
 
         // Set scope to PROCESS for all global attributes
         if (prop & CALI_ATTR_GLOBAL) {
@@ -568,9 +568,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     Attribute attr = Attribute::make_attribute(node);
 
     if (created_now)
-        for (auto& exp : sG->experiments)
-            if (exp)
-                exp->mP->events.create_attr_evt(this, exp.get(), attr);
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.create_attr_evt(this, chn.get(), attr);
 
     return attr;
 }
@@ -640,56 +640,56 @@ Caliper::get_attributes() const
 // --- Annotation dispatch API
 //
 
-/// Dispatch annotation region begin across all active experiments
+/// Dispatch annotation region begin across all active channels
 void
 Caliper::begin(const Attribute& attr, const Variant& data)
 {
-    for (auto& exp : sG->experiments)
-        if (exp && exp->is_active())
-            begin(exp.get(), attr, data);
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            begin(chn.get(), attr, data);
 }
 
-/// Dispatch annotation region end across all active experiments
+/// Dispatch annotation region end across all active channels
 void
 Caliper::end(const Attribute& attr)
 {
-    for (auto& exp : sG->experiments)
-        if (exp && exp->is_active())
-            end(exp.get(), attr);
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            end(chn.get(), attr);
 }
 
-/// Dispatch annotation region set across all active experiments
+/// Dispatch annotation region set across all active channels
 void
 Caliper::set(const Attribute& attr, const Variant& data)
 {
-    for (auto& exp : sG->experiments)
-        if (exp && exp->is_active())
-            set(exp.get(), attr, data);
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            set(chn.get(), attr, data);
 }
 
-/// Dispatch memory region annotation across all active experiments
+/// Dispatch memory region annotation across all active channels
 void
 Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])
 {
-    for (auto& exp : sG->experiments)
-        if (exp && exp->is_active())
-            memory_region_begin(exp.get(), ptr, label, elem_size, ndim, dims);
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            memory_region_begin(chn.get(), ptr, label, elem_size, ndim, dims);
 }
 
-/// Dispatch memory region annotation end across all active experiments
+/// Dispatch memory region annotation end across all active channels
 void
 Caliper::memory_region_end(const void* ptr)
 {
-    for (auto& exp : sG->experiments)
-        if (exp && exp->is_active())
-            memory_region_end(exp.get(), ptr);
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            memory_region_end(chn.get(), ptr);
 }
 
-///   Returns all entries with CALI_ATTR_GLOBAL set from the given experiment's
+///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// blackboard.
 
 std::vector<Entry>
-Caliper::get_globals(Experiment* exp)
+Caliper::get_globals(Channel* chn)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -698,7 +698,7 @@ Caliper::get_globals(Experiment* exp)
     SnapshotRecord rec(rec_data);
     
     // All global attributes are process scope, so just grab the process blackboard
-    exp->mP->blackboard.snapshot(&rec);
+    chn->mP->blackboard.snapshot(&rec);
 
     std::vector<const Node*> nodes;
 
@@ -730,14 +730,14 @@ Caliper::get_globals(Experiment* exp)
 std::vector<Entry>
 Caliper::get_globals()
 {
-    return get_globals(sG->experiments.front().get());
+    return get_globals(sG->channels.front().get());
 }
 
 // --- Snapshot interface
 
 /// \brief Trigger and return a snapshot.
 ///
-/// This function triggers a snapshot for a given experiment and returns a snapshot
+/// This function triggers a snapshot for a given channel and returns a snapshot
 /// record to the caller
 /// The returned snapshot record contains the current blackboard contents, measurement
 /// values provided by service modules, and the contents of the trigger_info list
@@ -760,7 +760,7 @@ Caliper::get_globals()
 /// \param sbuf         Caller-provided snapshot record buffer in which the snapshot record is
 ///                     returned. Must have sufficient space for the snapshot contents.
 void
-Caliper::pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
+Caliper::pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -772,11 +772,11 @@ Caliper::pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigge
 
     // Invoke callbacks and get contextbuffer data
 
-    exp->mP->events.snapshot(this, exp, scopes, trigger_info, sbuf);
+    chn->mP->events.snapshot(this, chn, scopes, trigger_info, sbuf);
 
     for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
         if (scopes & s)
-            Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, s)->snapshot(sbuf);
+            Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, s)->snapshot(sbuf);
 }
 
 /// \brief Trigger and process a snapshot.
@@ -802,7 +802,7 @@ Caliper::pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigge
 ///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
 void
-Caliper::push_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -810,37 +810,37 @@ Caliper::push_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigge
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
-    pull_snapshot(exp, scopes, trigger_info, &sbuf);
+    pull_snapshot(chn, scopes, trigger_info, &sbuf);
 
-    exp->mP->events.process_snapshot(this, exp, trigger_info, &sbuf);
+    chn->mP->events.process_snapshot(this, chn, trigger_info, &sbuf);
 }
 
 
 /// \brief Flush aggregation/trace buffer contents.
 void
-Caliper::flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    exp->mP->events.pre_flush_evt(this, exp, flush_info);
+    chn->mP->events.pre_flush_evt(this, chn, flush_info);
 
-    if (exp->mP->events.postprocess_snapshot.empty()) {
-        exp->mP->events.flush_evt(this, exp, flush_info, proc_fn);
+    if (chn->mP->events.postprocess_snapshot.empty()) {
+        chn->mP->events.flush_evt(this, chn, flush_info, proc_fn);
     } else {
-        exp->mP->events.flush_evt(this, exp, flush_info,
-                             [this,exp,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
+        chn->mP->events.flush_evt(this, chn, flush_info,
+                             [this,chn,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
                                  SnapshotRecord::FixedSnapshotRecord<80> data;
                                  SnapshotRecord snapshot(data);
 
                                  snapshot.append(*input_snapshot);
 
-                                 exp->mP->events.postprocess_snapshot(this, exp, &snapshot);
+                                 chn->mP->events.postprocess_snapshot(this, chn, &snapshot);
                                  return proc_fn(&snapshot);
                              });
     }
 
-    exp->mP->events.post_flush_evt(this, exp, flush_info);
+    chn->mP->events.post_flush_evt(this, chn, flush_info);
 }
 
 
@@ -856,7 +856,7 @@ Caliper::flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushF
 /// \param input_flush_info User-provided flush context information. Currently unused.
 
 void
-Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -867,16 +867,16 @@ Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info
     if (input_flush_info)
         flush_info.append(*input_flush_info);
 
-    using expI = Experiment::ExperimentImpl;
+    using chnI = Channel::ChannelImpl;
 
-    expI::get_blackboard(*exp, sT->expT, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
-    expI::get_blackboard(*exp, sT->expT, CALI_SCOPE_THREAD )->snapshot(&flush_info);
+    chnI::get_blackboard(*chn, sT->chnT, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
+    chnI::get_blackboard(*chn, sT->chnT, CALI_SCOPE_THREAD )->snapshot(&flush_info);
 
-    Log(1).stream() << exp->name() << ": Flushing Caliper data" << std::endl;
+    Log(1).stream() << chn->name() << ": Flushing Caliper data" << std::endl;
 
-    flush(exp, &flush_info,
-          [this,exp,&flush_info](const SnapshotRecord* snapshot){
-              exp->mP->events.write_snapshot(this, exp, &flush_info, snapshot);
+    flush(chn, &flush_info,
+          [this,chn,&flush_info](const SnapshotRecord* snapshot){
+              chn->mP->events.write_snapshot(this, chn, &flush_info, snapshot);
               return true;
           });
 }
@@ -890,18 +890,18 @@ Caliper::flush_and_write(Experiment* exp, const SnapshotRecord* input_flush_info
 /// \note This function is not signal safe.
 
 void
-Caliper::clear(Experiment* exp)
+Caliper::clear(Channel* chn)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    exp->mP->events.clear_evt(this, exp);
+    chn->mP->events.clear_evt(this, chn);
 }
 
 
 // --- Annotation interface
 
-/// \brief Push attribute:value pair on blackboard of the given experiment.
+/// \brief Push attribute:value pair on blackboard of the given channel.
 ///
 /// Adds the given attribute/value pair on the blackboard. Appends
 /// the value to any previous values of the same attribute,
@@ -912,16 +912,16 @@ Caliper::clear(Experiment* exp)
 ///
 /// This function is signal safe.
 ///
-/// \param exp  Experiment
+/// \param chn  Channel
 /// \param attr Attribute key
 /// \param data Value to set
 
 cali_err
-Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
+Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
 
-    if (!exp || attr == Attribute::invalid)
+    if (!chn || attr == Attribute::invalid)
         return CALI_EINV;
 
     std::lock_guard<::siglock>
@@ -929,11 +929,11 @@ Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.pre_begin_evt(this, exp, attr, data);
+        chn->mP->events.pre_begin_evt(this, chn, attr, data);
 
-    Attribute key = exp->mP->get_key(attr, sG->key_attr);
+    Attribute key = chn->mP->get_key(attr, sG->key_attr);
     ContextBuffer* sb =
-        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
@@ -944,7 +944,7 @@ Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.post_begin_evt(this, exp, attr, data);
+        chn->mP->events.post_begin_evt(this, chn, attr, data);
 
     return ret;
 }
@@ -959,14 +959,14 @@ Caliper::begin(Experiment* exp, const Attribute& attr, const Variant& data)
 /// \param attr Attribute key.
 
 cali_err
-Caliper::end(Experiment* exp, const Attribute& attr)
+Caliper::end(Channel* chn, const Attribute& attr)
 {
     cali_err ret = CALI_EINV;
 
     ContextBuffer* sb =
-        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
-    Entry e = get(exp, attr);
+    Entry e = get(chn, attr);
 
     if (e.is_empty())
         return CALI_ESTACK;
@@ -977,9 +977,9 @@ Caliper::end(Experiment* exp, const Attribute& attr)
     // invoke callbacks
     if (!attr.skip_events())
         if (!e.is_empty()) // prevent executing events for
-            exp->mP->events.pre_end_evt(this, exp, attr, e.value());
+            chn->mP->events.pre_end_evt(this, chn, attr, e.value());
 
-    Attribute key = exp->mP->get_key(attr, sG->key_attr);
+    Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
     if (attr.store_as_value())
         ret = sb->unset(attr);
@@ -1001,7 +1001,7 @@ Caliper::end(Experiment* exp, const Attribute& attr)
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.post_end_evt(this, exp, attr, e.value());
+        chn->mP->events.post_end_evt(this, chn, attr, e.value());
 
     return ret;
 }
@@ -1020,7 +1020,7 @@ Caliper::end(Experiment* exp, const Attribute& attr)
 /// \param data Value to set
 
 cali_err
-Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
+Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
 {
     cali_err ret = CALI_EINV;
 
@@ -1030,13 +1030,13 @@ Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Attribute key = exp->mP->get_key(attr, sG->key_attr);
+    Attribute key = chn->mP->get_key(attr, sG->key_attr);
     ContextBuffer* sb =
-        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.pre_set_evt(this, exp, attr, data);
+        chn->mP->events.pre_set_evt(this, chn, attr, data);
 
     if (attr.store_as_value())
         ret = sb->set(attr, data);
@@ -1046,7 +1046,7 @@ Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.post_set_evt(this, exp, attr, data);
+        chn->mP->events.post_set_evt(this, chn, attr, data);
 
     return ret;
 }
@@ -1066,7 +1066,7 @@ Caliper::set(Experiment* exp, const Attribute& attr, const Variant& data)
 /// \param data List (array) of values
 
 cali_err
-Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Variant* data) {
+Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* data) {
     cali_err ret = CALI_EINV;
 
     if (n < 1)
@@ -1078,17 +1078,17 @@ Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Varian
         g(sT->lock);
     
     ContextBuffer* sb =
-        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.pre_set_evt(this, exp, attr, data[n-1]);
+        chn->mP->events.pre_set_evt(this, chn, attr, data[n-1]);
 
     if (attr.store_as_value()) {
         Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
         ret = CALI_EINV;
     } else {
-        Attribute key = exp->mP->get_key(attr, sG->key_attr);
+        Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
         ret = sb->set_node(key,
                            sT->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
@@ -1096,7 +1096,7 @@ Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Varian
 
     // invoke callbacks
     if (!attr.skip_events())
-        exp->mP->events.post_set_evt(this, exp, attr, data[n-1]);
+        chn->mP->events.post_set_evt(this, chn, attr, data[n-1]);
 
     return ret;
 }
@@ -1104,7 +1104,7 @@ Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Varian
 // --- Query
 
 /// \brief Retrieve top-most entry for the given attribute key from the blackboard
-///    of the given experiment.
+///    of the given channel.
 ///
 /// This function is signal safe.
 ///
@@ -1114,7 +1114,7 @@ Caliper::set_path(Experiment* exp, const Attribute& attr, size_t n, const Varian
 ///         An empty Entry object if this attribute is not set.
 
 Entry
-Caliper::get(Experiment* exp, const Attribute& attr)
+Caliper::get(Channel* chn, const Attribute& attr)
 {
     Entry e {  Entry::empty };
 
@@ -1125,12 +1125,12 @@ Caliper::get(Experiment* exp, const Attribute& attr)
         g(sT->lock);
 
     ContextBuffer* sb = 
-        Experiment::ExperimentImpl::get_blackboard(*exp, sT->expT, attr);
+        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     if (attr.store_as_value())
         return Entry(attr, sb->get(attr));
     else
-        return Entry(sT->tree.find_node_with_attribute(attr, sb->get_node(exp->mP->get_key(attr, sG->key_attr))));
+        return Entry(sT->tree.find_node_with_attribute(attr, sb->get_node(chn->mP->get_key(attr, sG->key_attr))));
 
     return e;
 }
@@ -1138,21 +1138,21 @@ Caliper::get(Experiment* exp, const Attribute& attr)
 // --- Memory region tracking
 
 void
-Caliper::memory_region_begin(Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
+Caliper::memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    exp->mP->events.track_mem_evt(this, exp, ptr, label, elem_size, ndims, dims);    
+    chn->mP->events.track_mem_evt(this, chn, ptr, label, elem_size, ndims, dims);    
 }
 
 void
-Caliper::memory_region_end(Experiment* exp, const void* ptr)
+Caliper::memory_region_end(Channel* chn, const void* ptr)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    exp->mP->events.untrack_mem_evt(this, exp, ptr);
+    chn->mP->events.untrack_mem_evt(this, chn, ptr);
 }
 
 // --- Generic entry API
@@ -1276,133 +1276,133 @@ Caliper::node(cali_id_t id) const
 /// \return The previous value for the given key.
 
 Variant
-Caliper::exchange(Experiment* exp, const Attribute& attr, const Variant& data)
+Caliper::exchange(Channel* chn, const Attribute& attr, const Variant& data)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    using expI = Experiment::ExperimentImpl;
+    using chnI = Channel::ChannelImpl;
 
-    return expI::get_blackboard(*exp, sT->expT, attr)->exchange(attr, data);
+    return chnI::get_blackboard(*chn, sT->chnT, attr)->exchange(attr, data);
 }
 
 //
-// --- Experiment API
+// --- Channel API
 //
 
-/// \brief Create a %Caliper experiment with the given runtime configuration.
+/// \brief Create a %Caliper channel with the given runtime configuration.
 ///
-/// An experiment controls %Caliper's annotation tracking and measurement 
-/// activities. Multiple experiments can be active at the same time, independent
-/// of each other. Each experiment has its own runtime configuration, 
+/// An channel controls %Caliper's annotation tracking and measurement 
+/// activities. Multiple channels can be active at the same time, independent
+/// of each other. Each channel has its own runtime configuration, 
 /// blackboard, and active services.
 ///
-/// Creating experiments is \b not thread-safe. Users must make sure that no
+/// Creating channels is \b not thread-safe. Users must make sure that no
 /// %Caliper activities (e.g. annotations) are active on any program thread 
-/// during experiment creation.
+/// during channel creation.
 ///
-/// The call returns a pointer to the created experiment object. %Caliper
-/// retains ownership of the experiment object. This pointer becomes invalid
-/// when the experiment is deleted. %Caliper notifies users with the 
-/// finish_evt callback when an experiment is about to be deleted.
+/// The call returns a pointer to the created channel object. %Caliper
+/// retains ownership of the channel object. This pointer becomes invalid
+/// when the channel is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an channel is about to be deleted.
 ///
-/// \param name Name of the experiment. This is used to identify the experiment
+/// \param name Name of the channel. This is used to identify the channel
 ///   in %Caliper log output.
-/// \param cfg The experiment's runtime configuration.
-/// \return Pointer to the experiment. Null pointer if the experiment could
+/// \param cfg The channel's runtime configuration.
+/// \return Pointer to the channel. Null pointer if the channel could
 ///   not be created.
-Experiment*
-Caliper::create_experiment(const char* name, const RuntimeConfig& cfg)
+Channel*
+Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 {
-    Experiment* exp = new Experiment(sG->experiments.size(), name, cfg);
-    sG->experiments.emplace_back(exp);
+    Channel* chn = new Channel(sG->channels.size(), name, cfg);
+    sG->channels.emplace_back(chn);
 
-    if (sT->expT.blackboards.size() < sG->experiments.size())
-        sT->expT.blackboards.resize(sG->experiments.size() + 1);    
+    if (sT->chnT.blackboards.size() < sG->channels.size())
+        sT->chnT.blackboards.resize(sG->channels.size() + 1);    
 
     // Create and set key & version attributes
 
-    set(exp, create_attribute("cali.caliper.version", CALI_TYPE_STRING,
+    set(chn, create_attribute("cali.caliper.version", CALI_TYPE_STRING,
                               CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
         Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-    set(exp, create_attribute("cali.experiment", CALI_TYPE_STRING,
+    set(chn, create_attribute("cali.channel", CALI_TYPE_STRING,
                               CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
         Variant(CALI_TYPE_STRING, name, strlen(name)+1));
         
-    Services::register_services(this, exp);
+    Services::register_services(this, chn);
 
-    Log(1).stream() << "Creating experiment " << name << std::endl;
+    Log(1).stream() << "Creating channel " << name << std::endl;
 
-    if (exp->config().get("caliper", "config_check").to_bool())
-        config_sanity_check(exp->config());
+    if (chn->config().get("caliper", "config_check").to_bool())
+        config_sanity_check(chn->config());
     if (Log::verbosity() >= 3)
-        exp->config().print( Log(3).stream() << "Configuration:\n" );
+        chn->config().print( Log(3).stream() << "Configuration:\n" );
 
-    exp->mP->events.post_init_evt(this, exp);
+    chn->mP->events.post_init_evt(this, chn);
 
-    return exp;
+    return chn;
 }
 
-/// \brief Return pointer to experiment object with the given ID.
+/// \brief Return pointer to channel object with the given ID.
 ///
-/// The call returns a pointer to the created experiment object. %Caliper
-/// retains ownership of the experiment object. This pointer becomes invalid
-/// when the experiment is deleted. %Caliper notifies users with the 
-/// finish_evt callback when an experiment is about to be deleted.
-Experiment*
-Caliper::get_experiment(cali_id_t id)
+/// The call returns a pointer to the created channel object. %Caliper
+/// retains ownership of the channel object. This pointer becomes invalid
+/// when the channel is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an channel is about to be deleted.
+Channel*
+Caliper::get_channel(cali_id_t id)
 {
-    if (sG->experiments.size() <= id)
+    if (sG->channels.size() <= id)
         return nullptr;
 
-    return sG->experiments[id].get();
+    return sG->channels[id].get();
 }
 
-/// \brief Return all existing experiments (active and inactive).
-std::vector<Experiment*>
-Caliper::get_all_experiments()
+/// \brief Return all existing channels (active and inactive).
+std::vector<Channel*>
+Caliper::get_all_channels()
 {
-    std::vector<Experiment*> ret;
+    std::vector<Channel*> ret;
 
-    ret.reserve(sG->experiments.size());
+    ret.reserve(sG->channels.size());
 
-    for (auto &exp : sG->experiments)
-        if (exp)
-            ret.push_back(exp.get());
+    for (auto &chn : sG->channels)
+        if (chn)
+            ret.push_back(chn.get());
 
     return ret;
 }
 
-/// \brief Delete the given experiment.
+/// \brief Delete the given channel.
 ///
-/// Deleting experiments is \b not thread-safe. Users must make sure that no
+/// Deleting channels is \b not thread-safe. Users must make sure that no
 /// %Caliper activities (e.g. annotations) are active on any program thread 
-/// during experiment creation.
+/// during channel creation.
 void
-Caliper::delete_experiment(Experiment* exp)
+Caliper::delete_channel(Channel* chn)
 {
-    Log(1).stream() << "Deleting experiment " << exp->name() << std::endl;
+    Log(1).stream() << "Deleting channel " << chn->name() << std::endl;
     
-    exp->mP->events.finish_evt(this, exp);
-    sG->experiments[exp->id()].reset();
+    chn->mP->events.finish_evt(this, chn);
+    sG->channels[chn->id()].reset();
 }
 
-/// \brief Activate the given experiment.
+/// \brief Activate the given channel.
 ///
-/// Inactive experiments will not track or process annotations and many 
+/// Inactive channels will not track or process annotations and many 
 /// other events. 
 void
-Caliper::activate_experiment(Experiment* exp)
+Caliper::activate_channel(Channel* chn)
 {
-    exp->mP->active = true;
+    chn->mP->active = true;
 }
 
-/// \brief Deactivate the given experiment.
-/// \copydetails Caliper::activate_experiment
+/// \brief Deactivate the given channel.
+/// \copydetails Caliper::activate_channel
 void
-Caliper::deactivate_experiment(Experiment* exp)
+Caliper::deactivate_channel(Channel* chn)
 {
-    exp->mP->active = false;
+    chn->mP->active = false;
 }
 
 //
@@ -1460,17 +1460,17 @@ Caliper::instance()
     }
 
     if (!sT) {
-        sT.reset(new ThreadData(sG->experiments.size()));
+        sT.reset(new ThreadData(sG->channels.size()));
 
         Caliper c(false);
 
-        for (auto& exp : sG->experiments)
-            if (exp)
-                exp->mP->events.create_thread_evt(&c, exp.get());
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.create_thread_evt(&c, chn.get());
     }
 
-    if (sT->expT.blackboards.size() < sG->experiments.size()) {
-        sT->expT.blackboards.resize(sG->experiments.size() + 1);
+    if (sT->chnT.blackboards.size() < sG->channels.size()) {
+        sT->chnT.blackboards.resize(sG->channels.size() + 1);
     }
     
     return Caliper(false);
@@ -1493,7 +1493,7 @@ Caliper::sigsafe_instance()
 
 Caliper::operator bool() const
 {    
-    return (sG && sT && sT->expT.blackboards.size() >= sG->experiments.size() && !(m_is_signal && sT->lock.is_locked()));
+    return (sG && sT && sT->chnT.blackboards.size() >= sG->channels.size() && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
@@ -1504,13 +1504,13 @@ Caliper::release()
     if (c) {
         Log(1).stream() << "Finishing ..." << std::endl;
             
-        for (auto &exp : sG->experiments) 
-            if (exp) {
-                if (exp->mP->flush_on_exit) 
-                    c.flush_and_write(exp.get(), nullptr);
+        for (auto &chn : sG->channels) 
+            if (chn) {
+                if (chn->mP->flush_on_exit) 
+                    c.flush_and_write(chn.get(), nullptr);
 
-                c.clear(exp.get());
-                exp->mP->events.finish_evt(&c, exp.get());
+                c.clear(chn.get());
+                chn->mP->events.finish_evt(&c, chn.get());
             }
         
         sG.reset();

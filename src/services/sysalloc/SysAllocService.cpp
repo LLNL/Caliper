@@ -72,7 +72,7 @@ struct gotcha_binding_t alloc_bindings[] = {
     { free_str,     (void*) cali_free_wrapper,      &orig_free_handle    }
 };
 
-std::vector<Experiment*> sysalloc_experiments;
+std::vector<Channel*> sysalloc_channels;
 
 void* cali_malloc_wrapper(size_t size)
 {
@@ -84,8 +84,8 @@ void* cali_malloc_wrapper(size_t size)
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        for (Experiment* exp : sysalloc_experiments)
-            c.memory_region_begin(exp, ret, "malloc", 1, 1, &size);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "malloc", 1, 1, &size);
 
     return ret;
 }
@@ -100,8 +100,8 @@ void* cali_calloc_wrapper(size_t num, size_t size)
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        for (Experiment* exp : sysalloc_experiments)
-            c.memory_region_begin(exp, ret, "calloc", size, 1, &num);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "calloc", size, 1, &num);
 
     return ret;
 }
@@ -114,14 +114,14 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     Caliper c = Caliper::sigsafe_instance();
     
     if (c)
-        for (Experiment* exp : sysalloc_experiments)
-            c.memory_region_end(exp, ptr);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_end(chn, ptr);
 
     void *ret = (*orig_realloc)(ptr, size);
 
     if (c)
-        for (Experiment* exp : sysalloc_experiments)
-            c.memory_region_begin(exp, ret, "realloc", 1, 1, &size);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "realloc", 1, 1, &size);
 
     return ret;
 }
@@ -134,8 +134,8 @@ void cali_free_wrapper(void *ptr)
     Caliper c = Caliper::sigsafe_instance();
 
     if (c)
-        for (Experiment* exp : sysalloc_experiments)
-            c.memory_region_end(exp, ptr);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_end(chn, ptr);
 
     (*orig_free)(ptr);
 }
@@ -174,26 +174,26 @@ void clear_alloc_hooks()
     bindings_are_active = false;
 }
 
-void sysalloc_initialize(Caliper* c, Experiment* exp) {
-    exp->events().post_init_evt.connect(
-        [](Caliper* c, Experiment* exp){
+void sysalloc_initialize(Caliper* c, Channel* chn) {
+    chn->events().post_init_evt.connect(
+        [](Caliper* c, Channel* chn){
             if (!bindings_are_active)
                 init_alloc_hooks();
             
-            sysalloc_experiments.push_back(exp);
+            sysalloc_channels.push_back(chn);
         });
     
-    exp->events().finish_evt.connect(
-        [](Caliper* c, Experiment* exp){
-            sysalloc_experiments.erase(
-                std::find(sysalloc_experiments.begin(), sysalloc_experiments.end(),
-                          exp));
+    chn->events().finish_evt.connect(
+        [](Caliper* c, Channel* chn){
+            sysalloc_channels.erase(
+                std::find(sysalloc_channels.begin(), sysalloc_channels.end(),
+                          chn));
 
-            if (sysalloc_experiments.empty())
+            if (sysalloc_channels.empty())
                 clear_alloc_hooks();
         });
 
-    Log(1).stream() << exp->name() << ": Registered sysalloc service" << std::endl;
+    Log(1).stream() << chn->name() << ": Registered sysalloc service" << std::endl;
 }
 
 } // namespace [anonymous]

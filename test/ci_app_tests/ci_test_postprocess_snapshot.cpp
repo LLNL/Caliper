@@ -11,7 +11,7 @@ using namespace cali;
 namespace 
 {
 
-void postprocess_snapshot_cb(Caliper* c, Experiment*, SnapshotRecord* snapshot)
+void postprocess_snapshot_cb(Caliper* c, Channel*, SnapshotRecord* snapshot)
 {
     Attribute val_attr  = 
         c->create_attribute("postprocess.val",  CALI_TYPE_INT, CALI_ATTR_ASVALUE);
@@ -26,15 +26,15 @@ void postprocess_snapshot_cb(Caliper* c, Experiment*, SnapshotRecord* snapshot)
 
 int main() 
 {
-    Caliper c;
-    Experiment* exp = c.get_experiment(0);
+    Caliper  c;
+    Channel* chn = c.get_channel(0);
 
-    exp->events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
+    chn->events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
         
     cali_id_t snapshot_attr_id = 
         c.create_attribute("snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE).id();
     Variant   snapshot_val(49);
 
     SnapshotRecord trigger_info(1, &snapshot_attr_id, &snapshot_val);
-    c.push_snapshot(exp, 0, &trigger_info);
+    c.push_snapshot(chn, 0, &trigger_info);
 }

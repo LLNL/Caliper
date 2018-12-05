@@ -84,7 +84,7 @@ struct Config
 
     int iter;
 
-    int experiments;
+    int channels;
 };
 
 
@@ -147,8 +147,8 @@ int main(int argc, char* argv[])
         { "csv",         "print-csv",   'c', false,
           "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime."
         },
-        { "experiments", "experiments", 'x', true,
-          "Number of replicated experiment instances",
+        { "channels", "channels", 'x', true,
+          "Number of replicated channel instances",
           "EXPERIMENTS"
         },
 
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
     cfg.tree_width  = std::stoi(args.get("width", "20"));
     cfg.tree_depth  = std::stoi(args.get("depth", "10"));
     cfg.iter        = std::stoi(args.get("iterations", "100000"));
-    cfg.experiments = std::max(std::stoi(args.get("experiments", "1")), 1);
+    cfg.channels = std::max(std::stoi(args.get("channels", "1")), 1);
     
     // set global attributes before other Caliper initialization
 
@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
 #ifdef _OPENMP
     cali::Annotation("perftest.threads",     CALI_ATTR_GLOBAL).set(threads);
 #endif
-    cali::Annotation("perftest.experiments", CALI_ATTR_GLOBAL).set(cfg.experiments);
+    cali::Annotation("perftest.channels", CALI_ATTR_GLOBAL).set(cfg.channels);
 
     make_strings(cfg);
 
@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 
     if (!print_csv)
         std::cout << "cali-annotation-perftest:"
-                  << "\n    Experiments: " << cfg.experiments
+                  << "\n    Channels: " << cfg.channels
                   << "\n    Tree width:  " << cfg.tree_width
                   << "\n    Tree depth:  " << cfg.tree_depth
                   << "\n    Iterations:  " << cfg.iter
@@ -216,15 +216,15 @@ int main(int argc, char* argv[])
 #endif
                   << std::endl;
 
-    // --- create experiments (replicate given user config)
+    // --- create channels (replicate given user config)
 
     cali::Caliper c;
 
-    for (int x = 1; x < cfg.experiments; ++x) {
-        std::string s("exp.");
+    for (int x = 1; x < cfg.channels; ++x) {
+        std::string s("chn.");
         s.append(std::to_string(x));
         
-        c.create_experiment(s.c_str(), cali::RuntimeConfig::get_default_config());
+        c.create_channel(s.c_str(), cali::RuntimeConfig::get_default_config());
     }
     
     // --- pre-timing loop. initializes OpenMP subsystem
@@ -256,7 +256,7 @@ int main(int argc, char* argv[])
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
     if (print_csv)
-        std::cout << cfg.experiments
+        std::cout << cfg.channels
                   << "," << cfg.tree_depth
                   << "," << cfg.tree_width
                   << "," << updates

@@ -79,11 +79,11 @@ struct Services::ServicesImpl
 
     // --- interface
 
-    void register_services(Caliper* c, Experiment* exp) {
+    void register_services(Caliper* c, Channel* chn) {
         // list services
         
         vector<string> services =
-            exp->config().init("services", s_configdata).get("enable").to_stringlist(",:");
+            chn->config().init("services", s_configdata).get("enable").to_stringlist(",:");
 
         // register caliper services
 
@@ -92,7 +92,7 @@ struct Services::ServicesImpl
                 auto it = find(services.begin(), services.end(), string(s->name));
 
                 if (it != services.end()) {
-                    (*s->register_fn)(c, exp);
+                    (*s->register_fn)(c, chn);
                     services.erase(it);
                 }
             }
@@ -141,9 +141,9 @@ void Services::add_default_services()
     add_services(caliper_services);
 }
 
-void Services::register_services(Caliper* c, Experiment* exp)
+void Services::register_services(Caliper* c, Channel* chn)
 {
-    return ServicesImpl::instance()->register_services(c, exp);
+    return ServicesImpl::instance()->register_services(c, chn);
 }
 
 std::vector<std::string> Services::get_available_services()

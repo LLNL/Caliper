@@ -167,7 +167,7 @@ class LibpfmService
 
     static thread_local ThreadState sT;
     
-    static Experiment*    sExp;
+    static Channel*    sC;
     static LibpfmService* sI;
     
     const int signum       = SIGIO;
@@ -195,7 +195,7 @@ class LibpfmService
 
         SnapshotRecord trigger_info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
 
-        c.push_snapshot(sExp, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(sC, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
 
         sI->samples_produced++;
     }
@@ -407,8 +407,8 @@ class LibpfmService
         return ret;
     }
 
-    bool parse_configset(Caliper *c, Experiment* exp) {
-        ConfigSet config = exp->config().init("libpfm", s_configdata);
+    bool parse_configset(Caliper *c, Channel* chn) {
+        ConfigSet config = chn->config().init("libpfm", s_configdata);
 
         enable_sampling = config.get("enable_sampling").to_bool();
         record_counters = config.get("record_counters").to_bool();
@@ -591,7 +591,7 @@ class LibpfmService
         //uint64_t id;        /* if PERF_FORMAT_ID */
     };
 
-    void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
         int i, ret;
         Variant data[MAX_EVENTS];
 
@@ -624,7 +624,7 @@ class LibpfmService
         snapshot->append(sT.num_events, libpfm_event_counter_attr_ids.data(), data);
     }
 
-    void post_init_cb(Caliper* c, Experiment*) {
+    void post_init_cb(Caliper* c, Channel*) {
         // Run on master thread initialization
         setup_process_events(c);
         setup_thread_events(c);
@@ -632,18 +632,18 @@ class LibpfmService
         begin_thread_sampling();
     }
 
-    void create_thread_cb(Caliper* c, Experiment*) {
+    void create_thread_cb(Caliper* c, Channel*) {
         setup_thread_events(c);
         setup_thread_pointers();
         begin_thread_sampling();
     }
 
-    void finish_cb(Caliper* c, Experiment* exp) {
+    void finish_cb(Caliper* c, Channel* chn) {
         end_thread_sampling();
         pfm_terminate();
 
         if (enable_sampling)
-            Log(1).stream() << exp->name() << ": libpfm: thread sampling stats: "
+            Log(1).stream() << chn->name() << ": libpfm: thread sampling stats: "
                             << "\tsignals received: " << sI->signals_received
                             << "\tsamples produced: " << sI->samples_produced
                             << "\tbad samples: " << sI->bad_samples
@@ -661,7 +661,7 @@ class LibpfmService
 
     struct DataSrcAttrs data_src_attrs;
 
-    void postprocess_snapshot_cb(Caliper* c, Experiment* exp, SnapshotRecord* snapshot) {
+    void postprocess_snapshot_cb(Caliper* c, Channel* chn, SnapshotRecord* snapshot) {
 
         std::vector<Attribute> attr;
         std::vector<Variant>   data;
@@ -704,7 +704,7 @@ class LibpfmService
             c->make_entrylist(attr.size(), attr.data(), data.data(), *snapshot);
     }
 
-    LibpfmService(Caliper* c, Experiment* exp)
+    LibpfmService(Caliper* c, Channel* chn)
         {
             libpfm_event_name_attr = 
                 c->create_attribute("libpfm.event_sample_name",
@@ -735,51 +735,51 @@ class LibpfmService
 public:
     
     // Initialization handler
-    static void libpfm_service_register(Caliper* c, Experiment* exp) {
-        if (sExp) {
-            Log(0).stream() << exp->name() << ": libpfm: Cannot enable libpfm service twice!"
-                            << " It is already enabled in experiment "
-                            << sExp->name() << std::endl;
+    static void libpfm_service_register(Caliper* c, Channel* chn) {
+        if (sC) {
+            Log(0).stream() << chn->name() << ": libpfm: Cannot enable libpfm service twice!"
+                            << " It is already enabled in channel "
+                            << sC->name() << std::endl;
             
             return;
         }
 
-        sI = new LibpfmService(c, exp);
+        sI = new LibpfmService(c, chn);
 
-        if (!sI->parse_configset(c, exp)) {
-            Log(0).stream() << exp->name() << ": Failed to register libpfm service!" << std::endl;
+        if (!sI->parse_configset(c, chn)) {
+            Log(0).stream() << chn->name() << ": Failed to register libpfm service!" << std::endl;
             return;
         }
 
-        sExp = exp;
+        sC = chn;
 
         sI->setup_process_signals();
         
-        exp->events().create_thread_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                sI->create_thread_cb(c, exp);
+        chn->events().create_thread_evt.connect(
+            [](Caliper* c, Channel* chn){
+                sI->create_thread_cb(c, chn);
             });
-        exp->events().post_init_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                sI->post_init_cb(c, exp);
+        chn->events().post_init_evt.connect(
+            [](Caliper* c, Channel* chn){
+                sI->post_init_cb(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [](Caliper* c, Experiment* exp){
-                sI->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [](Caliper* c, Channel* chn){
+                sI->finish_cb(c, chn);
                 delete sI;
                 sI   = nullptr;
-                sExp = nullptr;
+                sC = nullptr;
             }); 
 
         if (sI->enable_sampling)
-            exp->events().postprocess_snapshot.connect(
-                [](Caliper* c, Experiment* exp, SnapshotRecord* rec){
-                    sI->postprocess_snapshot_cb(c, exp, rec);
+            chn->events().postprocess_snapshot.connect(
+                [](Caliper* c, Channel* chn, SnapshotRecord* rec){
+                    sI->postprocess_snapshot_cb(c, chn, rec);
                 });        
         if (sI->record_counters)
-            exp->events().snapshot.connect(
-                [](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
-                    sI->snapshot_cb(c, exp, scope, info, rec);
+            chn->events().snapshot.connect(
+                [](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
+                    sI->snapshot_cb(c, chn, scope, info, rec);
                 });
 
         Log(1).stream() << "Registered libpfm service" << endl;
@@ -788,8 +788,8 @@ public:
 
 thread_local LibpfmService::ThreadState LibpfmService::sT;
 
-Experiment*    LibpfmService::sExp = nullptr;
-LibpfmService* LibpfmService::sI   = nullptr;
+Channel*       LibpfmService::sC = nullptr;
+LibpfmService* LibpfmService::sI = nullptr;
 
 const ConfigSet::Entry LibpfmService::s_configdata[] = {
     {"events", CALI_TYPE_STRING, "cycles",

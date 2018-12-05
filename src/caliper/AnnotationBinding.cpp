@@ -88,7 +88,7 @@ AnnotationBinding::~AnnotationBinding()
 }
 
 void
-AnnotationBinding::check_attribute(Caliper* c, Experiment* exp, const Attribute& attr)
+AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
 {
     int prop = attr.properties();
 
@@ -109,23 +109,23 @@ AnnotationBinding::check_attribute(Caliper* c, Experiment* exp, const Attribute&
     
     // Invoke derived functions
 
-    on_mark_attribute(c, exp, attr);
+    on_mark_attribute(c, chn, attr);
     
     Log(2).stream() << "Adding " << this->service_tag()
                     << " bindings for attribute \"" << attr.name()
-                    << "\" in " << exp->name() << " experiment" << std::endl;
+                    << "\" in " << chn->name() << " channel" << std::endl;
 }
 
 void
 AnnotationBinding::create_attr_cb(Caliper*         c,
-                                  Experiment*      exp,
+                                  Channel*      chn,
                                   const Attribute& attr)
 {
-    check_attribute(c, exp, attr);
+    check_attribute(c, chn, attr);
 }
 
 void
-AnnotationBinding::begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
+AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
@@ -134,11 +134,11 @@ AnnotationBinding::begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, 
     if (m_filter && !m_filter->filter(attr, value))
         return;
 
-    this->on_begin(c, exp, attr, value);
+    this->on_begin(c, chn, attr, value);
 }
 
 void
-AnnotationBinding::end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value)
+AnnotationBinding::end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
     if (attr.skip_events())
         return;
@@ -147,15 +147,15 @@ AnnotationBinding::end_cb(Caliper* c, Experiment* exp, const Attribute& attr, co
     if (m_filter && !m_filter->filter(attr, value))
         return;
 
-    this->on_end(c, exp, attr, value);
+    this->on_end(c, chn, attr, value);
 }
 
 void
-AnnotationBinding::base_pre_initialize(Caliper* c, Experiment* exp)
+AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
 {
     const char* tag = service_tag();
 
-    m_config = exp->config().init(tag, s_configdata);
+    m_config = chn->config().init(tag, s_configdata);
 
     if (m_config.get("regex").to_string().size() > 0)
         m_filter = new RegexFilter(tag, m_config);
@@ -166,7 +166,7 @@ AnnotationBinding::base_pre_initialize(Caliper* c, Experiment* exp)
     std::string marker_attr_name("cali.binding.");
     marker_attr_name.append(tag);
     marker_attr_name.append("#");
-    marker_attr_name.append(std::to_string(exp->id()));
+    marker_attr_name.append(std::to_string(chn->id()));
 
     m_marker_attr =
         c->create_attribute(marker_attr_name, CALI_TYPE_BOOL,
@@ -174,12 +174,12 @@ AnnotationBinding::base_pre_initialize(Caliper* c, Experiment* exp)
 }
 
 void
-AnnotationBinding::base_post_initialize(Caliper* c, Experiment* exp)
+AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
 {
     // check and mark existing attributes
     
     std::vector<Attribute> attributes = c->get_attributes();
     
     for (const Attribute& attr : attributes)
-        check_attribute(c, exp, attr);
+        check_attribute(c, chn, attr);
 }

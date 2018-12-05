@@ -48,14 +48,14 @@ Attribute mpirank_attr { Attribute::invalid };
 Attribute mpisize_attr { Attribute::invalid };
 Attribute mpicall_attr { Attribute::invalid };
 
-extern void mpiwrap_init(Caliper* c, Experiment* exp);
+extern void mpiwrap_init(Caliper* c, Channel* chn);
 
 }
 
 namespace
 {
 
-void mpi_register(Caliper* c, Experiment* exp)
+void mpi_register(Caliper* c, Channel* chn)
 {
     if (mpifn_attr == Attribute::invalid)
         mpifn_attr   = 
@@ -73,9 +73,9 @@ void mpi_register(Caliper* c, Experiment* exp)
                                 CALI_ATTR_GLOBAL        |
                                 CALI_ATTR_SKIP_EVENTS);
 
-    mpiwrap_init(c, exp);
+    mpiwrap_init(c, chn);
 
-    Log(1).stream() << exp->name() << ": Registered MPI service" << std::endl;
+    Log(1).stream() << chn->name() << ": Registered MPI service" << std::endl;
 }
 
 } // anonymous namespace 

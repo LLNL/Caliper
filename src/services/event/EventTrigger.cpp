@@ -65,7 +65,7 @@ class EventTrigger
     static const ConfigSet::Entry s_configdata[];    
 
     //
-    // --- Per-experiment instance data
+    // --- Per-channel instance data
     //
     
     Attribute                trigger_begin_attr { Attribute::invalid };
@@ -86,7 +86,7 @@ class EventTrigger
     // --- Helpers / misc
     //
 
-    void mark_attribute(Caliper* c, Experiment* exp, const Attribute& attr) {
+    void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
         cali_id_t evt_attr_ids[4] = { CALI_INV_ID };
 
         struct evt_attr_setup_t {
@@ -124,7 +124,7 @@ class EventTrigger
                            c->node(attr.node()->id()));
     }
 
-    void check_attribute(Caliper* c, Experiment* exp, const Attribute& attr) {
+    void check_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
         if (attr.skip_events())
             return;
 
@@ -133,7 +133,7 @@ class EventTrigger
         if (trigger_attr_names.size() > 0 && it == trigger_attr_names.end())
             return;
 
-        mark_attribute(c, exp, attr);
+        mark_attribute(c, chn, attr);
     }
 
     const Node* find_exp_marker(const Attribute& attr) {
@@ -150,11 +150,11 @@ class EventTrigger
     // --- Callbacks
     //
 
-    void create_attr_cb(Caliper* c, Experiment* exp, const Attribute& attr) {
-        check_attribute(c, exp, attr);
+    void create_attr_cb(Caliper* c, Channel* chn, const Attribute& attr) {
+        check_attribute(c, chn, attr);
     }
     
-    void pre_begin_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
@@ -184,12 +184,12 @@ class EventTrigger
             // when two threads update a process-scope attribute.
             // Can fix that with a more general c->update(update_fn) function
 
-            v_p_lvl = c->exchange(exp, lvl_attr, v_lvl);
+            v_p_lvl = c->exchange(chn, lvl_attr, v_lvl);
             lvl     = v_p_lvl.to_uint();
 
             if (lvl > 0) {
                 v_lvl = Variant(++lvl);
-                c->set(exp, lvl_attr, v_lvl);
+                c->set(chn, lvl_attr, v_lvl);
             }
 
             // Construct the trigger info entry
@@ -201,13 +201,13 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
         }
     }
 
-    void pre_set_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void pre_set_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
@@ -232,7 +232,7 @@ class EventTrigger
 
             // The level for set() is always 1
             // FIXME: ... except for set_path()??
-            c->set(exp, lvl_attr, v_lvl);
+            c->set(chn, lvl_attr, v_lvl);
 
             // Construct the trigger info entry
 
@@ -243,13 +243,13 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
         }
     }
 
-    void pre_end_cb(Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value) {
+    void pre_end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
@@ -272,7 +272,7 @@ class EventTrigger
             // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
             // If previous level was > 1, we need to update it again
 
-            v_p_lvl = c->exchange(exp, lvl_attr, v_lvl);
+            v_p_lvl = c->exchange(chn, lvl_attr, v_lvl);
 
             if (v_p_lvl.empty())
                 return;
@@ -280,7 +280,7 @@ class EventTrigger
             lvl     = v_p_lvl.to_uint();
 
             if (lvl > 1)
-                c->set(exp, lvl_attr, Variant(--lvl));
+                c->set(chn, lvl_attr, Variant(--lvl));
 
             // Construct the trigger info entry with previous level
 
@@ -291,9 +291,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
-            c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
         }
     } 
 
@@ -301,18 +301,18 @@ class EventTrigger
     // --- Constructor
     //
 
-    void check_existing_attributes(Caliper* c, Experiment* exp) {
+    void check_existing_attributes(Caliper* c, Channel* chn) {
         auto attributes = c->get_attributes();
 
         for (const Attribute& attr : attributes)
-            check_attribute(c, exp, attr);
+            check_attribute(c, chn, attr);
     }
 
-    EventTrigger(Caliper* c, Experiment* exp)
+    EventTrigger(Caliper* c, Channel* chn)
         : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
             ConfigSet cfg =
-                exp->config().init("event", s_configdata);
+                chn->config().init("event", s_configdata);
 
             trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
             enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
@@ -334,41 +334,41 @@ class EventTrigger
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
             exp_marker_attr =
-                c->create_attribute(std::string("event.exp#")+std::to_string(exp->id()),
+                c->create_attribute(std::string("event.exp#")+std::to_string(chn->id()),
                                     CALI_TYPE_USR,
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
 
-            check_existing_attributes(c, exp);
+            check_existing_attributes(c, chn);
         }
 
 public:
 
-    static void event_trigger_register(Caliper* c, Experiment* exp) {
-        EventTrigger* instance = new EventTrigger(c, exp);
+    static void event_trigger_register(Caliper* c, Channel* chn) {
+        EventTrigger* instance = new EventTrigger(c, chn);
 
-        exp->events().create_attr_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr){
-                instance->create_attr_cb(c, exp, attr);
+        chn->events().create_attr_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr){
+                instance->create_attr_cb(c, chn, attr);
             });
-        exp->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                instance->pre_begin_cb(c, exp, attr, value);
+        chn->events().pre_begin_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                instance->pre_begin_cb(c, chn, attr, value);
             });
-        exp->events().pre_set_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                instance->pre_set_cb(c, exp, attr, value);
+        chn->events().pre_set_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                instance->pre_set_cb(c, chn, attr, value);
             });
-        exp->events().pre_end_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr, const Variant& value){
-                instance->pre_end_cb(c, exp, attr, value);
+        chn->events().pre_end_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){
+                instance->pre_end_cb(c, chn, attr, value);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper*, Experiment*){
+        chn->events().finish_evt.connect(
+            [instance](Caliper*, Channel*){
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered event trigger service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered event trigger service" << std::endl;
     }
 };
 

@@ -29,16 +29,16 @@ int main()
     exp_nopthread_cfg.set("CALI_SERVICES_ENABLE",   "event,trace,recorder");
     exp_nopthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
-    cali::Experiment* exp_nopthread =
-        c.create_experiment("exp_nopthread", exp_nopthread_cfg);
+    cali::Channel* exp_nopthread =
+        c.create_channel("exp_nopthread", exp_nopthread_cfg);
 
     cali::RuntimeConfig exp_pthread_cfg;
     
     exp_pthread_cfg.set("CALI_SERVICES_ENABLE",   "event,trace,pthread,recorder");
     exp_pthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
-    cali::Experiment* exp_pthread =
-        c.create_experiment("exp_pthread", exp_pthread_cfg);
+    cali::Channel* exp_pthread =
+        c.create_channel("exp_pthread", exp_pthread_cfg);
 
     cali::Attribute nopthread_attr =
         c.create_attribute("nopthread_exp", CALI_TYPE_BOOL, CALI_ATTR_SCOPE_PROCESS);

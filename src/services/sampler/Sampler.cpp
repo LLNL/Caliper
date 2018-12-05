@@ -72,7 +72,7 @@ int         sample_contexts     = 0;
 int         n_samples           = 0;
 int         n_processed_samples = 0;
 
-Experiment* experiment          = nullptr;
+Channel* channel          = nullptr;
 
 static const ConfigSet::Entry s_configdata[] = {
     { "frequency", CALI_TYPE_INT, "50",
@@ -104,7 +104,7 @@ void on_prof(int sig, siginfo_t *info, void *context)
     SnapshotRecord trigger_info;
 #endif
 
-    c.push_snapshot(experiment, sample_contexts, &trigger_info);
+    c.push_snapshot(channel, sample_contexts, &trigger_info);
 
     ++n_processed_samples;
 }
@@ -169,11 +169,11 @@ void setup_settimer(Caliper* c)
     Log(2).stream() << "Sampler: Registered timer " << v_timer << endl;
 }
 
-void clear_timer(Caliper* c, Experiment* exp) {
-    Entry e = c->get(exp, timer_attr);
+void clear_timer(Caliper* c, Channel* chn) {
+    Entry e = c->get(chn, timer_attr);
 
     if (e.is_empty()) {
-        Log(0).stream() << exp->name() << ": Sampler: Timer attribute not found " << endl;
+        Log(0).stream() << chn->name() << ": Sampler: Timer attribute not found " << endl;
         return;
     }
         
@@ -185,24 +185,24 @@ void clear_timer(Caliper* c, Experiment* exp) {
     timer_t timer;
     memcpy(&timer, v_timer.data(), sizeof(void*));
 
-    Log(2).stream() << exp->name() << ": Sampler: Deleting timer " << v_timer << endl;
+    Log(2).stream() << chn->name() << ": Sampler: Deleting timer " << v_timer << endl;
 
     timer_delete(timer);
 }
     
-void create_thread_cb(Caliper* c, Experiment* exp) {
+void create_thread_cb(Caliper* c, Channel* chn) {
     setup_settimer(c);
 }
 
-void release_thread_cb(Caliper* c, Experiment* exp) {
-    clear_timer(c, exp);
+void release_thread_cb(Caliper* c, Channel* chn) {
+    clear_timer(c, chn);
 }
 
-void finish_cb(Caliper* c, Experiment* exp) {
-    clear_timer(c, exp);
+void finish_cb(Caliper* c, Channel* chn) {
+    clear_timer(c, chn);
     clear_signal();
 
-    Log(1).stream() << exp->name()
+    Log(1).stream() << chn->name()
                     << ": Sampler: processed " << n_processed_samples << " samples ("
                     << n_samples << " total, "
                     << n_samples - n_processed_samples << " dropped)." << endl;
@@ -210,20 +210,20 @@ void finish_cb(Caliper* c, Experiment* exp) {
     n_samples = 0;
     n_processed_samples = 0;
 
-    experiment = nullptr;
+    channel = nullptr;
 }
     
-void sampler_register(Caliper* c, Experiment* exp)
+void sampler_register(Caliper* c, Channel* chn)
 {
-    if (experiment) {
-        Log(0).stream() << exp->name() << ": Sampler: Cannot enable sampler service twice!"
-                        << " It is already enabled in experiment "
-                        << experiment->name() << std::endl;
+    if (channel) {
+        Log(0).stream() << chn->name() << ": Sampler: Cannot enable sampler service twice!"
+                        << " It is already enabled in channel "
+                        << channel->name() << std::endl;
 
         return;
     }
     
-    ConfigSet config = exp->config().init("sampler", s_configdata);
+    ConfigSet config = chn->config().init("sampler", s_configdata);
 
     Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
     Variant v_true(true);
@@ -254,16 +254,16 @@ void sampler_register(Caliper* c, Experiment* exp)
     if (config.get("add_shared_context").to_bool() == true)
         sample_contexts |= CALI_SCOPE_PROCESS;
         
-    exp->events().create_thread_evt.connect(create_thread_cb);
-    exp->events().release_thread_evt.connect(release_thread_cb);
-    exp->events().finish_evt.connect(finish_cb);
+    chn->events().create_thread_evt.connect(create_thread_cb);
+    chn->events().release_thread_evt.connect(release_thread_cb);
+    chn->events().finish_evt.connect(finish_cb);
 
-    experiment = exp;
+    channel = chn;
 
     setup_signal();
     setup_settimer(c);
         
-    Log(1).stream() << exp->name() << ": Registered sampler service. Using "
+    Log(1).stream() << chn->name() << ": Registered sampler service. Using "
                     << frequency << "Hz sampling frequency." << endl;
 }
 

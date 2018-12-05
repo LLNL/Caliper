@@ -57,16 +57,16 @@ class Statistics
     unsigned num_threads;
     unsigned max_threads;
 
-    void finish_cb(Caliper* c, Experiment* exp) {
-        Log(1).stream() << exp->name() << ": statistics:"
+    void finish_cb(Caliper* c, Channel* chn) {
+        Log(1).stream() << chn->name() << ": statistics:"
                         << "\n  Number of begin events: " << num_begin.load()
                         << "\n  Number of end events:   " << num_end.load()
                         << "\n  Number of set events:   " << num_set.load()
                         << "\n  Number of snapshots:    " << num_snapshots.load()
                         << std::endl;
 
-        if (exp->id() == 0) { 
-            // only print this for the default experiment
+        if (chn->id() == 0) { 
+            // only print this for the default channel
 
             auto vec = c->get_attributes();
             
@@ -88,46 +88,46 @@ class Statistics
 
 public:
     
-    static void statistics_service_register(Caliper* c, Experiment* exp) {
+    static void statistics_service_register(Caliper* c, Channel* chn) {
         Statistics* instance = new Statistics;
         
-        exp->events().pre_begin_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+        chn->events().pre_begin_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute&, const Variant&){
                 ++instance->num_begin;
             });
-        exp->events().pre_end_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+        chn->events().pre_end_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute&, const Variant&){
                 ++instance->num_end;
             });
-        exp->events().pre_set_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute&, const Variant&){
+        chn->events().pre_set_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute&, const Variant&){
                 ++instance->num_set;
             });
-        exp->events().snapshot.connect(
-            [instance](Caliper*,Experiment*,int,const SnapshotRecord*,SnapshotRecord*){
+        chn->events().snapshot.connect(
+            [instance](Caliper*,Channel*,int,const SnapshotRecord*,SnapshotRecord*){
                 ++instance->num_snapshots;
             });
 
-        if (exp->id() == 0) {
-            exp->events().create_thread_evt.connect(
-                [instance](Caliper* c, Experiment* exp){
+        if (chn->id() == 0) {
+            chn->events().create_thread_evt.connect(
+                [instance](Caliper* c, Channel* chn){
                     ++instance->num_threads;
                     instance->max_threads =
                         std::max(instance->num_threads, instance->max_threads);
                 });
-            exp->events().release_thread_evt.connect(
-                [instance](Caliper* c, Experiment* exp){
+            chn->events().release_thread_evt.connect(
+                [instance](Caliper* c, Channel* chn){
                     --instance->num_threads;
                 });
         }
         
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered statistics service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered statistics service" << std::endl;
     }
 };
 

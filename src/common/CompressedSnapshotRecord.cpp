@@ -1,5 +1,5 @@
 /// \file CompressedSnapshotRecord.cc
-/// Experimental compressed snapshot record representation
+/// Channelal compressed snapshot record representation
 
 #include "caliper/common/CompressedSnapshotRecord.h"
 

@@ -57,7 +57,7 @@ gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 Attribute id_attr = Attribute::invalid;
 Attribute master_attr = Attribute::invalid;
 
-std::vector<Experiment*> pthread_experiments;
+std::vector<Channel*> pthread_channels;
 
 bool is_wrapped = false;
 
@@ -75,10 +75,10 @@ thread_wrapper(void *arg)
     uint64_t id = static_cast<uint64_t>(pthread_self());
     Caliper  c;
 
-    for (Experiment* exp : pthread_experiments)
-        if (exp->is_active()) {
+    for (Channel* chn : pthread_channels)
+        if (chn->is_active()) {
             c.set(master_attr, Variant(false));
-            c.set(exp, id_attr, Variant(cali_make_variant_from_uint(id)));
+            c.set(chn, id_attr, Variant(cali_make_variant_from_uint(id)));
         }
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
@@ -100,17 +100,17 @@ cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
 }
 
 void
-post_init_cb(Caliper* c, Experiment* exp)
+post_init_cb(Caliper* c, Channel* chn)
 {
     uint64_t id = static_cast<uint64_t>(pthread_self());
     
-    c->set(exp, master_attr, Variant(true));
-    c->set(exp, id_attr, Variant(cali_make_variant_from_uint(id)));
+    c->set(chn, master_attr, Variant(true));
+    c->set(chn, id_attr, Variant(cali_make_variant_from_uint(id)));
 }
 
 // Initialization routine.
 void 
-pthreadservice_initialize(Caliper* c, Experiment* exp)
+pthreadservice_initialize(Caliper* c, Channel* chn)
 {
     id_attr =
         c->create_attribute("pthread.id", CALI_TYPE_UINT,
@@ -131,20 +131,20 @@ pthreadservice_initialize(Caliper* c, Experiment* exp)
         is_wrapped = true;
     }
 
-    pthread_experiments.push_back(exp);
+    pthread_channels.push_back(chn);
 
-    exp->events().post_init_evt.connect(
-        [](Caliper* c, Experiment* exp){
-            post_init_cb(c, exp);
+    chn->events().post_init_evt.connect(
+        [](Caliper* c, Channel* chn){
+            post_init_cb(c, chn);
         });
-    exp->events().finish_evt.connect(
-        [](Caliper* c, Experiment* exp){
-            pthread_experiments.erase(
-                std::find(pthread_experiments.begin(), pthread_experiments.end(),
-                          exp));
+    chn->events().finish_evt.connect(
+        [](Caliper* c, Channel* chn){
+            pthread_channels.erase(
+                std::find(pthread_channels.begin(), pthread_channels.end(),
+                          chn));
         });
 
-    Log(1).stream() << exp->name() << ": Registered pthread service" << std::endl;
+    Log(1).stream() << chn->name() << ": Registered pthread service" << std::endl;
 }
 
 } // namespace [anonymous]

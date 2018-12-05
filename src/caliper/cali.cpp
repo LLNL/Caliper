@@ -150,10 +150,10 @@ cali_push_snapshot(int scope, int n,
 
     c.make_entrylist(n, attr, data, trigger_info);
 
-    Experiment* exp = c.get_experiment(0);
+    Channel* chn = c.get_channel(0);
     
-    if (exp && exp->is_active())
-        c.push_snapshot(exp, scope, &trigger_info);
+    if (chn && chn->is_active())
+        c.push_snapshot(chn, scope, &trigger_info);
 }
 
 size_t
@@ -167,10 +167,10 @@ cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
     SnapshotRecord snapshot(snapshot_buffer);
 
-    Experiment* exp = c.get_experiment(0);
+    Channel* chn = c.get_channel(0);
 
-    if (exp)
-        c.pull_snapshot(exp, scopes, nullptr, &snapshot);
+    if (chn)
+        c.pull_snapshot(chn, scopes, nullptr, &snapshot);
 
     CompressedSnapshotRecord rec(len, buf);
     rec.append(&snapshot);
@@ -179,7 +179,7 @@ cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
 }
 
 size_t
-cali_experiment_pull_snapshot(cali_id_t exp_id, int scopes, size_t len, unsigned char* buf)
+cali_channel_pull_snapshot(cali_id_t chn_id, int scopes, size_t len, unsigned char* buf)
 {
     Caliper c = Caliper::sigsafe_instance();
 
@@ -189,12 +189,12 @@ cali_experiment_pull_snapshot(cali_id_t exp_id, int scopes, size_t len, unsigned
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
     SnapshotRecord snapshot(snapshot_buffer);
 
-    Experiment* exp = c.get_experiment(exp_id);
+    Channel* chn = c.get_channel(chn_id);
 
-    if (exp)
-        c.pull_snapshot(exp, scopes, nullptr, &snapshot);
+    if (chn)
+        c.pull_snapshot(chn, scopes, nullptr, &snapshot);
     else
-        Log(0).stream() << "cali_experiment_pull_snapshot(): invalid experiment id " << exp_id << std::endl;
+        Log(0).stream() << "cali_channel_pull_snapshot(): invalid channel id " << chn_id << std::endl;
             
     CompressedSnapshotRecord rec(len, buf);
     rec.append(&snapshot);
@@ -342,12 +342,12 @@ cali_variant_t
 cali_get(cali_id_t attr_id)
 {
     Caliper       c = Caliper::sigsafe_instance();
-    Experiment* exp = c.get_experiment(0);
+    Channel* chn = c.get_channel(0);
     
     if (!c)
         return cali_make_empty_variant();
 
-    return c.get(exp, c.get_attribute(attr_id)).value().c_variant();
+    return c.get(chn, c.get_attribute(attr_id)).value().c_variant();
 }
 
 //
@@ -443,28 +443,28 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
     Caliper   c;    
     Attribute attr = c.get_attribute(attr_id);    
     
-    // manually go over all experiments
+    // manually go over all channels
     
-    std::vector<Experiment*> experiments = c.get_all_experiments();
+    std::vector<Channel*> channels = c.get_all_channels();
 
-    for (Experiment* exp : experiments) {
-        Variant v = c.get(exp, attr).value();
+    for (Channel* chn : channels) {
+        Variant v = c.get(chn, attr).value();
 
         if (v.type() != CALI_TYPE_STRING) {
-            Log(1).stream() << exp->name() << ": Trying to end "
+            Log(1).stream() << chn->name() << ": Trying to end "
                             << attr.name() << " which is not a string" << std::endl;
         }
             
         if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size())) {
             // FIXME: Replace log output with smart error tracker
-            Log(1).stream() << exp->name() << ": begin/end marker mismatch: Trying to end " 
+            Log(1).stream() << chn->name() << ": begin/end marker mismatch: Trying to end " 
                             << attr.name() << "=" << val
                             << " but current value for " 
                             << attr.name() << " is \"" << v.to_string() << "\""
                             << std::endl;
         }
 
-        c.end(exp, attr);
+        c.end(chn, attr);
     }
 }
 
@@ -614,83 +614,83 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value)
 }
 
 cali_id_t
-cali_create_experiment(const char* name, int flags, cali_configset_t cfgset)
+cali_create_channel(const char* name, int flags, cali_configset_t cfgset)
 {
     RuntimeConfig cfg;
 
-    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
+    cfg.allow_read_env(flags & CALI_CHANNEL_ALLOW_READ_ENV);
     cfg.import(cfgset->cfgset);
 
     Caliper c;
-    Experiment* exp = c.create_experiment(name, cfg);
+    Channel* chn = c.create_channel(name, cfg);
 
-    if (!exp)
+    if (!chn)
         return CALI_INV_ID;
-    if (flags & CALI_EXPERIMENT_LEAVE_INACTIVE)
-        c.deactivate_experiment(exp);
+    if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
+        c.deactivate_channel(chn);
 
-    return exp->id();
+    return chn->id();
 }
 
 void
-cali_delete_experiment(cali_id_t exp_id)
+cali_delete_channel(cali_id_t chn_id)
 {
     Caliper c;    
-    Experiment* exp = c.get_experiment(exp_id);
+    Channel* chn = c.get_channel(chn_id);
 
-    if (exp) 
-        c.delete_experiment(exp);
+    if (chn) 
+        c.delete_channel(chn);
     else
-        Log(0).stream() << "cali_experiment_delete(): invalid experiment id " << exp_id << std::endl;
+        Log(0).stream() << "cali_channel_delete(): invalid channel id " << chn_id << std::endl;
 }
 
 void
-cali_activate_experiment(cali_id_t exp_id)
+cali_activate_channel(cali_id_t chn_id)
 {
     Caliper c;    
-    Experiment* exp = c.get_experiment(exp_id);
+    Channel* chn = c.get_channel(chn_id);
 
-    if (exp)
-        c.activate_experiment(exp);
+    if (chn)
+        c.activate_channel(chn);
     else
-        Log(0).stream() << "cali_experiment_enable(): invalid experiment id " << exp_id << std::endl;
+        Log(0).stream() << "cali_activate_channel(): invalid channel id " << chn_id << std::endl;
 }
 
 void
-cali_deactivate_experiment(cali_id_t exp_id)
+cali_deactivate_channel(cali_id_t chn_id)
 {
     Caliper c;
-    Experiment* exp = c.get_experiment(exp_id);
+    Channel* chn = c.get_channel(chn_id);
 
-    if (exp)
-        c.deactivate_experiment(exp);
+    if (chn)
+        c.deactivate_channel(chn);
     else
-        Log(0).stream() << "cali_experiment_disable(): invalid experiment id " << exp_id << std::endl;
+        Log(0).stream() << "cali_deactivate_channel(): invalid channel id " << chn_id << std::endl;
 }
 
 int
-cali_experiment_is_active(cali_id_t exp_id)
+cali_channel_is_active(cali_id_t chn_id)
 {
-    Experiment* exp = Caliper::instance().get_experiment(exp_id);
+    Channel* chn = Caliper::instance().get_channel(chn_id);
 
-    if (!exp) {
-        Log(0).stream() << "cali_experiment_is_active(): invalid experiment id " << exp_id << std::endl;
+    if (!chn) {
+        Log(0).stream() << "cali_channel_is_active(): invalid channel id " << chn_id << std::endl;
         return 0;
     }
 
-    return (exp->is_active() ? 1 : 0);
+    return (chn->is_active() ? 1 : 0);
 }
 
 void
 cali_flush(int flush_opts)
 {
-    Caliper     c;
-    Experiment* exp = c.get_experiment(0);
+    Caliper    c;
+    Channel* chn = c.get_channel(0);
     
-    c.flush_and_write(exp, nullptr);
+    c.flush_and_write(chn, nullptr);
 
     if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
-        c.clear(exp);
+        c.clear(chn);
 }
 
 void
@@ -739,22 +739,22 @@ namespace cali
 {
 
 cali_id_t
-create_experiment(const char* name, int flags, const config_map_t& cfgmap)
+create_channel(const char* name, int flags, const config_map_t& cfgmap)
 {
     RuntimeConfig cfg;
 
-    cfg.allow_read_env(flags & CALI_EXPERIMENT_ALLOW_READ_ENV);
+    cfg.allow_read_env(flags & CALI_CHANNEL_ALLOW_READ_ENV);
     cfg.import(cfgmap);
 
     Caliper     c;
-    Experiment* exp = c.create_experiment(name, cfg);
+    Channel* chn = c.create_channel(name, cfg);
  
-    if (!exp)
+    if (!chn)
         return CALI_INV_ID;
-    if (flags & CALI_EXPERIMENT_LEAVE_INACTIVE)
-        c.deactivate_experiment(exp);
+    if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
+        c.deactivate_channel(chn);
 
-    return exp->id();
+    return chn->id();
 }
 
 }

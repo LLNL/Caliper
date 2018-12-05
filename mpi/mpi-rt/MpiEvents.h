@@ -39,11 +39,11 @@ namespace cali
 {
 
 class Caliper;
-class Experiment;
+class Channel;
 
 /// \brief The MPI callbacks
 struct MpiEvents {
-    typedef util::callback<void(Caliper*, Experiment* exp)> 
+    typedef util::callback<void(Caliper*, Channel* chn)> 
         mpi_env_cbvec;
 
     /// \brief MPI has been initialized. 
@@ -56,7 +56,7 @@ struct MpiEvents {
     mpi_env_cbvec mpi_finalize_evt;
 };
 
-/// \brief Return the MpiEvents instance for the given experiment.
-MpiEvents& mpiwrap_get_events(Experiment* exp); // defined in mpiwrap/Wrapper.w
+/// \brief Return the MpiEvents instance for the given channel.
+MpiEvents& mpiwrap_get_events(Channel* chn); // defined in mpiwrap/Wrapper.w
 
 }

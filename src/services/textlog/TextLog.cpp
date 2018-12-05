@@ -122,7 +122,7 @@ class TextLogService
         formatter.print(stream.stream(), *c, rec) << std::endl;
     }
 
-    void post_init(Caliper* c, Experiment* exp) {
+    void post_init(Caliper* c, Channel* chn) {
         if (formatstr.size() == 0)
             formatstr = create_default_formatstring(trigger_attr_names);
 
@@ -141,17 +141,17 @@ class TextLogService
         for (const Attribute& a : c->get_attributes())
             check_attribute(a);
 
-        exp->events().process_snapshot.connect(
-            [this](Caliper* c, Experiment* exp, const SnapshotRecord* info, const SnapshotRecord* rec){
+        chn->events().process_snapshot.connect(
+            [this](Caliper* c, Channel* chn, const SnapshotRecord* info, const SnapshotRecord* rec){
                 process_snapshot(c, info, rec);
             });
     }
 
-    TextLogService(Caliper* c, Experiment* exp)
+    TextLogService(Caliper* c, Channel* chn)
         : set_event_attr(Attribute::invalid),
           end_event_attr(Attribute::invalid)
         {
-            ConfigSet config = exp->config().init("textlog", s_configdata);
+            ConfigSet config = chn->config().init("textlog", s_configdata);
             
             trigger_attr_names =
                 config.get("trigger").to_stringlist(",:");
@@ -163,23 +163,23 @@ class TextLogService
 
 public:
 
-    static void textlog_register(Caliper* c, Experiment* exp) {
-        TextLogService* instance = new TextLogService(c, exp);
+    static void textlog_register(Caliper* c, Channel* chn) {
+        TextLogService* instance = new TextLogService(c, chn);
 
-        exp->events().create_attr_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const Attribute& attr){
+        chn->events().create_attr_evt.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr){
                 instance->check_attribute(attr);
             });
-        exp->events().post_init_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->post_init(c, exp);
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->post_init(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
                 delete instance;
             });
         
-        Log(1).stream() << exp->name() << ": Registered text log service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered text log service" << std::endl;
     }
 
 }; // TextLogService

@@ -178,7 +178,7 @@ cali_push_snapshot(int scope, int n,
                    const size_t    trigger_info_size_list[]);
 
 /**
- * \brief Take a snapshot on the default experiment
+ * \brief Take a snapshot on the default channel
  *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
@@ -204,7 +204,7 @@ size_t
 cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
- * \brief Take a snapshot on the given experiment
+ * \brief Take a snapshot on the given channel
  *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
@@ -217,7 +217,7 @@ cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
  * `finish_evt` callback is invoked).
  * It can be parsed with cali_unpack_snapshot().
  *
- * \param exp_id Experiment to take the snapshot on
+ * \param chn_id Channel to take the snapshot on
  * \param scope  Indicates which scopes (process, thread, or task) the
  *   snapshot should span
  * \param len    Length of the provided snapshot buffer.
@@ -228,7 +228,7 @@ cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
  *   If this is zero, no snapshot was taken.
  */
 size_t
-cali_experiment_pull_snapshot(cali_id_t exp_id, int scope, size_t len, unsigned char* buf);
+cali_channel_pull_snapshot(cali_id_t chn_id, int scope, size_t len, unsigned char* buf);
 
 /**
  * \}
@@ -540,31 +540,31 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  */
 
 /*
- * --- Experiment management
+ * --- Channel management
  */
 
 /**
- * \name Experiment management
+ * \name Channel management
  * \{
  */
 
 /**
- * \brief Create a new %Caliper experiment with the given key-value
+ * \brief Create a new %Caliper channel with the given key-value
  *   configuration profile.
  *
- * An experiment controls %Caliper's annotation tracking and measurement
- * activities. Multiple experiments can be active at the same time, independent
- * of each other. Each experiment has its own runtime configuration,
+ * An channel controls %Caliper's annotation tracking and measurement
+ * activities. Multiple channels can be active at the same time, independent
+ * of each other. Each channel has its own runtime configuration,
  * blackboard, and active services.
  *
- * This function creates a new experiment with the given name, flags, and
+ * This function creates a new channel with the given name, flags, and
  * runtime configuration. The runtime configuration is provided as a list of
  * key-value pairs and works similar to the configuration through environment
  * variables or configuration files.
  *
- * Creating experiments is \b not thread-safe. Users must make sure that no
+ * Creating channels is \b not thread-safe. Users must make sure that no
  * %Caliper activities (e.g. annotations) are active on any program thread
- * during experiment creation.
+ * during channel creation.
  *
  * Example:
  *
@@ -578,70 +578,70 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *   cali_configset_t cfg =
  *     cali_create_configset("trace_config", false, trace_config);
  *
- *   //   Create a new experiment "trace" but leave it inactive initially.
- *   // (By default, experiments are active immediately.)
- *   cali_id_t trace_exp_id =
- *     cali_create_experiment("trace", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
+ *   //   Create a new channel "trace" but leave it inactive initially.
+ *   // (By default, channels are active immediately.)
+ *   cali_id_t trace_chn_id =
+ *     cali_create_channel("trace", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
  *
  *   cali_delete_configset(cfg);
  *
- *   // Activate the experiment now.
- *   cali_activate_experiment(trace_exp_id);
+ *   // Activate the channel now.
+ *   cali_activate_channel(trace_chn_id);
  * \endcode
  *
- * \param name Name of the experiment. This is used to identify the experiment
+ * \param name Name of the channel. This is used to identify the channel
  *   in %Caliper log output.
- * \param flags Flags that control experiment creation as bitwise-OR of
- *   cali_experiment_opt flags.
- * \param keyvallist The experiment's runtime configuraiton as a key-value
+ * \param flags Flags that control channel creation as bitwise-OR of
+ *   cali_channel_opt flags.
+ * \param keyvallist The channel's runtime configuraiton as a key-value
  *   list (array of two strings). The first string in each entry is the
  *    configuration key, the second string is its value. Keys must be all
  *    uppercase. Terminate the list with two NULL entries:
  *    <tt> { NULL, NULL } </tt>.
  *
- * \return ID of the created experiment.
+ * \return ID of the created channel.
  */
 
 cali_id_t
-cali_create_experiment(const char* name, int flags, const cali_configset_t cfg);
+cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
 
 /**
- * \brief Delete an experiment. Frees associated resources, e.g. blackboards,
+ * \brief Delete an channel. Frees associated resources, e.g. blackboards,
  *   trace buffers, etc.
  *
- * Experiment deletion is \b not thread-safe. Users must make sure that no
+ * Channel deletion is \b not thread-safe. Users must make sure that no
  * %Caliper activities (e.g. annotations) are active on any program thread.
  *
- * \param exp_id ID of the experiment
+ * \param chn_id ID of the channel
  */
 void
-cali_delete_experiment(cali_id_t exp_id);
+cali_delete_channel(cali_id_t chn_id);
 
 /**
- * \brief Activate the (inactive) experiment with the given ID.
+ * \brief Activate the (inactive) channel with the given ID.
  *
- * Only active experiments will process annotations and other events.
+ * Only active channels will process annotations and other events.
  */
 void
-cali_activate_experiment(cali_id_t exp_id);
+cali_activate_channel(cali_id_t chn_id);
 
 /**
- * \brief Deactivate the experiment with the given ID.
+ * \brief Deactivate the channel with the given ID.
  *
- * Inactive experiments will not track or process annotations and many
+ * Inactive channels will not track or process annotations and many
  * other events.
  *
- * \sa cali_experiment_activate
+ * \sa cali_channel_activate
  */
 void
-cali_deactivate_experiment(cali_id_t exp_id);
+cali_deactivate_channel(cali_id_t chn_id);
 
 /**
- * \brief Returns a non-zero value if the experiment with the given ID
+ * \brief Returns a non-zero value if the channel with the given ID
  *   is active, otherwise 0.
  */
 int
-cali_experiment_is_active(cali_id_t exp_id);
+cali_channel_is_active(cali_id_t chn_id);
 
 /**
  * \}
@@ -657,7 +657,7 @@ cali_experiment_is_active(cali_id_t exp_id);
  */
 
 /**
- * \brief For all experiments, forward aggregation or trace buffer
+ * \brief For all channels, forward aggregation or trace buffer
  *   contents to output services.
  *
  * Flushes trace buffers and/or aggreation database in the trace and
@@ -677,7 +677,7 @@ cali_flush(int flush_opts);
 
 /**
  * \brief Forward aggregation or trace buffer contents to output services
- *   for the given experiment.
+ *   for the given channel.
  *
  * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered snapshot
@@ -687,13 +687,13 @@ cali_flush(int flush_opts);
  * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
  * the \a flush_opts flags.
  *
- * \param exp_id     ID of the experiment to flush
+ * \param chn_id     ID of the channel to flush
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
 
 void
-cali_experiment_flush(cali_id_t exp_id, int flush_opts);
+cali_channel_flush(cali_id_t chn_id, int flush_opts);
 
 /**
  * \}
@@ -755,7 +755,7 @@ namespace cali
 typedef std::map<std::string, std::string> config_map_t;
 
 cali_id_t
-create_experiment(const char* name, int flags, const config_map_t& cfg);
+create_channel(const char* name, int flags, const config_map_t& cfg);
 
 }
 

@@ -170,7 +170,7 @@ class AllocService
     unsigned                   g_failed_untrack  { 0 };
 
     void track_mem_snapshot(Caliper*    c,
-                            Experiment* exp,
+                            Channel* chn,
                             const Attribute& alloc_or_free_attr, 
                             const Variant&   v_label, 
                             const Variant&   v_size, 
@@ -190,10 +190,10 @@ class AllocService
         SnapshotRecord trigger_info(snapshot_data);
 
         c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
-        c->push_snapshot(exp, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
     }
 
-    void track_mem_cb(Caliper* c, Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims) {
+    void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims) {
         size_t total_size =
             std::accumulate(dims, dims+ndims, elem_size, std::multiplies<size_t>());
 
@@ -230,10 +230,10 @@ class AllocService
         }
 
         if (g_track_allocations)
-            track_mem_snapshot(c, exp, mem_alloc_attr, v_label, info.v_size, info.v_uid);
+            track_mem_snapshot(c, chn, mem_alloc_attr, v_label, info.v_size, info.v_uid);
     }
 
-    void untrack_mem_cb(Caliper* c, Experiment* exp, const void* ptr) {    
+    void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr) {    
         std::lock_guard<std::mutex>
             g(g_tree_lock);
     
@@ -243,7 +243,7 @@ class AllocService
             size_t size = (*tree_node).total_size;
 
             if (g_track_allocations)
-                track_mem_snapshot(c, exp, mem_free_attr,
+                track_mem_snapshot(c, chn, mem_free_attr,
                                    Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),
                                    (*tree_node).v_size,
                                    (*tree_node).v_uid);
@@ -296,7 +296,7 @@ class AllocService
         }
     }
 
-    void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
         // Record currently active amount of allocated memory
         if (g_record_active_mem)
             snapshot->append(active_mem_attr.id(), Variant(cali_make_variant_from_uint(g_active_mem)));
@@ -325,7 +325,7 @@ class AllocService
             make_address_attributes(c, attr);
     }
 
-    void post_init_cb(Caliper *c, Experiment* exp) {
+    void post_init_cb(Caliper *c, Channel* chn) {
         if (!g_resolve_addresses)
             return;
 
@@ -335,21 +335,21 @@ class AllocService
         for (auto attr : address_attrs)
             make_address_attributes(c, attr);
 
-        exp->events().create_attr_evt.connect(
-            [this](Caliper* c, Experiment* exp, const Attribute& attr){
+        chn->events().create_attr_evt.connect(
+            [this](Caliper* c, Channel* chn, const Attribute& attr){
                 this->create_attr_cb(c, attr);
             });
     }
 
-    void finish_cb(Caliper* c, Experiment* exp) {
-        Log(1).stream() << exp->name() << ": alloc: "
+    void finish_cb(Caliper* c, Channel* chn) {
+        Log(1).stream() << chn->name() << ": alloc: "
                         << g_total_tracked  << " memory allocations tracked (max "
                         << g_max_tracked    << " simultaneous), "
                         << g_failed_untrack << " untrack lookups failed."
                         << std::endl;
     }
 
-    AllocService(Caliper* c, Experiment* exp)
+    AllocService(Caliper* c, Channel* chn)
         {
             struct attr_info_t {
                 const char*    name;
@@ -387,7 +387,7 @@ class AllocService
             for (attr_info_t *p = attr_info; p->name; ++p)
                 *(p->attr) = c->create_attribute(p->name, p->type, p->prop);
     
-            ConfigSet config = exp->config().init("alloc", s_configdata);
+            ConfigSet config = chn->config().init("alloc", s_configdata);
     
             g_resolve_addresses = config.get("resolve_addresses").to_bool();
             g_track_allocations = config.get("track_allocations").to_bool();
@@ -396,35 +396,35 @@ class AllocService
 
 public:
     
-    static void allocservice_initialize(Caliper* c, Experiment* exp) {
-        AllocService* instance = new AllocService(c, exp);
+    static void allocservice_initialize(Caliper* c, Channel* chn) {
+        AllocService* instance = new AllocService(c, chn);
 
-        exp->events().track_mem_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims){
-                instance->track_mem_cb(c, exp, ptr, label, elem_size, ndims, dims);
+        chn->events().track_mem_evt.connect(
+            [instance](Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims){
+                instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims);
             });
-        exp->events().untrack_mem_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const void* ptr){
-                instance->untrack_mem_cb(c, exp, ptr);
+        chn->events().untrack_mem_evt.connect(
+            [instance](Caliper* c, Channel* chn, const void* ptr){
+                instance->untrack_mem_cb(c, chn, ptr);
             });
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem)
-            exp->events().snapshot.connect(
-                [instance](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
-                    instance->snapshot_cb(c, exp, scope, info, snapshot);
+            chn->events().snapshot.connect(
+                [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
+                    instance->snapshot_cb(c, chn, scope, info, snapshot);
                 });
        
-        exp->events().post_init_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->post_init_cb(c, exp);
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->post_init_cb(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered alloc service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered alloc service" << std::endl;
     }
 };
 

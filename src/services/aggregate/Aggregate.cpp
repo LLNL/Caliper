@@ -60,7 +60,7 @@ namespace
 {
 
 //
-// --- Per-experiment aggregator configuration
+// --- Per-channel aggregator configuration
 //
 
 class Aggregate
@@ -70,7 +70,7 @@ class Aggregate
     //
 
     //   ThreadDB manages an aggregation DB for one thread.
-    // All ThreadDBs belonging to an experiment are linked so they
+    // All ThreadDBs belonging to an channel are linked so they
     // can be flushed, cleared, and deleted from a single thread.
     
     struct ThreadDB {
@@ -99,19 +99,19 @@ class Aggregate
     };
 
     //   ThreadData manages the static thread-local object. It contains
-    // an array with each experiment's ThreadDBs for the local thread.
+    // an array with each channel's ThreadDBs for the local thread.
     
     class ThreadData {
         std::vector<ThreadDB*>   exp_thread_dbs;
 
         //   The ThreadDB objects are managed through the tdb_list in the 
-        // Aggregate object for the experiment they belong to. Here, we store
-        // pointers to the currently active DBs for all experiments on the
+        // Aggregate object for the channel they belong to. Here, we store
+        // pointers to the currently active DBs for all channels on the
         // local thread.
-        //   Experiments and their ThreadDB objects can be deleted behind
+        //   Channels and their ThreadDB objects can be deleted behind
         // the back of the thread-local data objects. Therefore, we keep track
-        // of active experiments in s_active_exps so we don't touch stale
-        // ThreadDB pointers whose experiments have been deleted.
+        // of active channels in s_active_exps so we don't touch stale
+        // ThreadDB pointers whose channels have been deleted.
 
         static std::vector<bool> s_active_exps;
         static std::mutex        s_active_exps_lock;
@@ -127,15 +127,15 @@ class Aggregate
                     exp_thread_dbs[i]->retired.store(true);
         }
 
-        static void deactivate_exp(Experiment* exp) {
+        static void deactivate_exp(Channel* chn) {
             std::lock_guard<std::mutex>
                 g(s_active_exps_lock);
             
-            s_active_exps[exp->id()] = false;
+            s_active_exps[chn->id()] = false;
         }
 
-        ThreadDB* acquire_tdb(Aggregate* agg, Experiment* exp, bool alloc) {
-            size_t    expI = exp->id();
+        ThreadDB* acquire_tdb(Aggregate* agg, Channel* chn, bool alloc) {
+            size_t    expI = chn->id();
             ThreadDB* tdb  = nullptr;
 
             if (expI < exp_thread_dbs.size())
@@ -252,7 +252,7 @@ class Aggregate
                                 CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
     }
 
-    void flush_cb(Caliper* c, Experiment* exp, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
         ThreadDB* tdb = nullptr;
 
         {
@@ -270,10 +270,10 @@ class Aggregate
             tdb->stopped.store(false);
         }
 
-        Log(1).stream() << exp->name() << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
+        Log(1).stream() << chn->name() << ": Aggregate: flushed " << num_written << " snapshots." << std::endl;
     }
 
-    void clear_cb(Caliper* c, Experiment* exp) {
+    void clear_cb(Caliper* c, Channel* chn) {
         ThreadDB* tdb = nullptr;
 
         {
@@ -332,7 +332,7 @@ class Aggregate
             unitfmt_result bytes_reserved_fmt = 
                 unitfmt(bytes_reserved, unitfmt_bytes);
 
-            Log(2).stream() << exp->name() << ": Aggregate: Releasing aggregation DB:\n    max key len " 
+            Log(2).stream() << chn->name() << ": Aggregate: Releasing aggregation DB:\n    max key len " 
                             << max_keylen << ", "
                             << num_kernel_entries << " entries, "
                             << num_trie_entries << " nodes, "
@@ -342,17 +342,17 @@ class Aggregate
         }
 
         if (num_skipped_keys > 0)
-            Log(1).stream() << exp->name() << "Aggregate: Dropped " << num_skipped_keys
+            Log(1).stream() << chn->name() << "Aggregate: Dropped " << num_skipped_keys
                             << " entries because key exceeded max length!" 
                             << std::endl;
         if (num_dropped_entries > 0)
-            Log(1).stream() << exp->name() << "Aggregate: Dropped " << num_dropped_entries
+            Log(1).stream() << chn->name() << "Aggregate: Dropped " << num_dropped_entries
                             << " entries because key could not be allocated!" 
                             << std::endl;
     }
 
-    void process_snapshot_cb(Caliper* c, Experiment* exp, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        ThreadDB* tdb = sT.acquire_tdb(this, exp, !c->is_signal());
+    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* snapshot) {
+        ThreadDB* tdb = sT.acquire_tdb(this, chn, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
             tdb->db.process_snapshot(aI, c, snapshot);
@@ -360,7 +360,7 @@ class Aggregate
             ++num_dropped_snapshots;
     }
 
-    void post_init_cb(Caliper* c, Experiment* exp) {
+    void post_init_cb(Caliper* c, Channel* chn) {
         // Update key attributes
         for (unsigned i = 0; i < key_attribute_names.size(); ++i) {
             Attribute attr = c->get_attribute(key_attribute_names[i]);
@@ -374,7 +374,7 @@ class Aggregate
         init_aggregation_attributes(c);
 
         // Initialize master-thread aggregation DB
-        sT.acquire_tdb(this, exp, true);
+        sT.acquire_tdb(this, chn, true);
     }
 
     void create_attribute_cb(Caliper* c, const Attribute& attr) {
@@ -408,25 +408,25 @@ class Aggregate
         }
     }
 
-    void create_thread_cb(Caliper* c, Experiment* exp) {
-        sT.acquire_tdb(this, exp, true);
+    void create_thread_cb(Caliper* c, Channel* chn) {
+        sT.acquire_tdb(this, chn, true);
     }
 
-    void finish_cb(Caliper* c, Experiment* exp) {
+    void finish_cb(Caliper* c, Channel* chn) {
         // report attribute keys we haven't found 
         for (size_t i = 0; i < aI.key_attribute_ids.size(); ++i)
             if (aI.key_attribute_ids[i] == CALI_INV_ID)
-                Log(1).stream() << exp->name() << ": Aggregate: warning: key attribute \""
+                Log(1).stream() << chn->name() << ": Aggregate: warning: key attribute \""
                                 << key_attribute_names[i]
                                 << "\" unused" << std::endl;
 
         if (num_dropped_snapshots > 0)
-            Log(1).stream() << exp->name() << ": Aggregate: dropped " << num_dropped_snapshots
+            Log(1).stream() << chn->name() << ": Aggregate: dropped " << num_dropped_snapshots
                             << " snapshots." << std::endl;
     }
 
-    Aggregate(Caliper* c, Experiment* exp)
-        : config(exp->config().init("aggregate", s_configdata))
+    Aggregate(Caliper* c, Channel* chn)
+        : config(chn->config().init("aggregate", s_configdata))
         {
             tdb_lock.unlock();
 
@@ -454,42 +454,42 @@ public:
         }
     }
     
-    static void aggregate_register(Caliper* c, Experiment* exp) {
-        Aggregate* instance = new Aggregate(c, exp);
+    static void aggregate_register(Caliper* c, Channel* chn) {
+        Aggregate* instance = new Aggregate(c, chn);
 
-        exp->events().create_attr_evt.connect(
-            [instance](Caliper* c, Experiment*, const Attribute& attr){
+        chn->events().create_attr_evt.connect(
+            [instance](Caliper* c, Channel*, const Attribute& attr){
                 instance->create_attribute_cb(c, attr);
             });
-        exp->events().post_init_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->post_init_cb(c, exp);
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->post_init_cb(c, chn);
             });
-        exp->events().create_thread_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->create_thread_cb(c, exp);
+        chn->events().create_thread_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->create_thread_cb(c, chn);
             });
-        exp->events().process_snapshot.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info, const SnapshotRecord* snapshot){
-                instance->process_snapshot_cb(c, exp, info, snapshot);
+        chn->events().process_snapshot.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info, const SnapshotRecord* snapshot){
+                instance->process_snapshot_cb(c, chn, info, snapshot);
             });
-        exp->events().flush_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info, SnapshotFlushFn proc_fn){
-                instance->flush_cb(c, exp, info, proc_fn);
+        chn->events().flush_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info, SnapshotFlushFn proc_fn){
+                instance->flush_cb(c, chn, info, proc_fn);
             });
-        exp->events().clear_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->clear_cb(c, exp);
+        chn->events().clear_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->clear_cb(c, chn);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                sT.deactivate_exp(exp);
-                instance->clear_cb(c, exp); // prints logs
-                instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                sT.deactivate_exp(chn);
+                instance->clear_cb(c, chn); // prints logs
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered aggregation service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered aggregation service" << std::endl;
     }
     
 }; // class Aggregate

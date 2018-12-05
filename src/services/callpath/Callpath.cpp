@@ -79,7 +79,7 @@ class Callpath
     Dwfl_Module* caliper_module;
 #endif
 
-    void snapshot_cb(Caliper* c, Experiment* exp, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
         Variant v_addr[MAX_PATH];
         Variant v_name[MAX_PATH];
 
@@ -181,9 +181,9 @@ class Callpath
 #endif
     }
 
-    Callpath(Caliper* c, Experiment* exp) {
+    Callpath(Caliper* c, Channel* chn) {
         ConfigSet config =
-            exp->config().init("callpath", s_configdata);
+            chn->config().init("callpath", s_configdata);
 
         use_name    = config.get("use_name").to_bool();
         use_addr    = config.get("use_address").to_bool();
@@ -205,19 +205,19 @@ class Callpath
 
 public:
 
-    static void callpath_service_register(Caliper* c, Experiment* exp) {
-        Callpath* instance = new Callpath(c, exp);
+    static void callpath_service_register(Caliper* c, Channel* chn) {
+        Callpath* instance = new Callpath(c, chn);
 
-        exp->events().snapshot.connect(
-            [instance](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
-                instance->snapshot_cb(c, exp, scope, info, snapshot);
+        chn->events().snapshot.connect(
+            [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
+                instance->snapshot_cb(c, chn, scope, info, snapshot);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered callpath service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered callpath service" << std::endl;
     }
     
 }; // class Callpath

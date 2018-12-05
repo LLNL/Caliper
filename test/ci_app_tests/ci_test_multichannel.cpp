@@ -27,29 +27,29 @@ int main()
 {
     Caliper c;
 
-    Attribute exp_id_attr =
-        c.create_attribute("exp.id", CALI_TYPE_INT, CALI_ATTR_SCOPE_PROCESS);
+    Attribute chn_id_attr =
+        c.create_attribute("chn.id", CALI_TYPE_INT, CALI_ATTR_SCOPE_PROCESS);
 
     for (int i = 1; i < 21; ++i) {
-        std::string s("exp.");
+        std::string s("chn.");
         s.append(std::to_string(i));
 
-        Experiment* exp = c.create_experiment(s.c_str(), RuntimeConfig::get_default_config());
+        Channel* chn = c.create_channel(s.c_str(), RuntimeConfig::get_default_config());
 
-        c.set(exp, exp_id_attr, Variant(i));
+        c.set(chn, chn_id_attr, Variant(i));
     }
 
     std::thread t(thread_fn);
 
-    // create second half of experiments after the new thread is active
+    // create second half of channels after the new thread is active
     
     for (int i = 21; i <= 42; ++i) {
-        std::string s("exp.");
+        std::string s("chn.");
         s.append(std::to_string(i));
 
-        Experiment* exp = c.create_experiment(s.c_str(), RuntimeConfig::get_default_config());
+        Channel* chn = c.create_channel(s.c_str(), RuntimeConfig::get_default_config());
 
-        c.set(exp, exp_id_attr, Variant(i));
+        c.set(chn, chn_id_attr, Variant(i));
     }
 
     cali_begin_byname("main");

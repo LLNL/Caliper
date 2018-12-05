@@ -102,7 +102,7 @@ class CuptiService
 
     Cupti::EventSampling   event_sampling;
 
-    Experiment*            experiment;
+    Channel*            channel;
     
     //
     // --- Helper functions
@@ -152,7 +152,7 @@ class CuptiService
         Caliper c;
 
         c.make_entrylist(4, attr, vals, trigger_info);
-        c.push_snapshot(experiment, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
     }
 
     void
@@ -179,7 +179,7 @@ class CuptiService
         Caliper c;
 
         c.make_entrylist(3, attr, vals, trigger_info);
-        c.push_snapshot(experiment, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
     }
 
     void
@@ -261,16 +261,16 @@ class CuptiService
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
             if (cupti_info.record_symbol && cbInfo->symbolName) {
                 Variant v_sname(CALI_TYPE_STRING, cbInfo->symbolName, strlen(cbInfo->symbolName));
-                c.set(experiment, cupti_info.symbol_attr, v_sname);
+                c.set(channel, cupti_info.symbol_attr, v_sname);
             }
 
             Variant v_fname(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName));
-            c.begin(experiment, attr, v_fname);
+            c.begin(channel, attr, v_fname);
         } else if (cbInfo->callbackSite == CUPTI_API_EXIT) {
-            c.end(experiment, attr);
+            c.end(channel, attr);
 
             if (cupti_info.record_symbol && cbInfo->symbolName)
-                c.end(experiment, cupti_info.symbol_attr);
+                c.end(channel, cupti_info.symbol_attr);
         }
     }
 
@@ -287,7 +287,7 @@ class CuptiService
             const char* msg =
                 static_cast<const nvtxRangePushA_params*>(p)->message;
 
-            Caliper().begin(experiment,
+            Caliper().begin(channel,
                             cupti_info.nvtx_range_attr,
                             Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
         }
@@ -297,13 +297,13 @@ class CuptiService
             const char* msg =
                 static_cast<const nvtxRangePushEx_params*>(p)->eventAttrib->message.ascii;
 
-            Caliper().begin(experiment,
+            Caliper().begin(channel,
                             cupti_info.nvtx_range_attr,
                             Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
         }
         break;
         case CUPTI_CBID_NVTX_nvtxRangePop:
-            Caliper().end(experiment, cupti_info.nvtx_range_attr);
+            Caliper().end(channel, cupti_info.nvtx_range_attr);
             break;
         case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
         {
@@ -312,14 +312,14 @@ class CuptiService
             const char* msg =
                 static_cast<const nvtxDomainRangePushEx_params*>(p)->core.eventAttrib->message.ascii;
 
-            Caliper().begin(experiment,
+            Caliper().begin(channel,
                             cupti_info.nvtx_range_attr,
                             Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
         }
         break;
         case CUPTI_CBID_NVTX_nvtxDomainRangePop:
             // TODO: Use domain-specific attribute
-            Caliper().end(experiment, cupti_info.nvtx_range_attr);
+            Caliper().end(channel, cupti_info.nvtx_range_attr);
             break;
         default:
             ;
@@ -364,16 +364,16 @@ class CuptiService
     }
 
     void
-    snapshot_cb(Caliper* c, Experiment*, int /* scope */, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
+    snapshot_cb(Caliper* c, Channel*, int /* scope */, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
     {
         event_sampling.snapshot(c, trigger_info, snapshot);
     }
     
     void
-    finish_cb(Caliper* c, Experiment* exp)
+    finish_cb(Caliper* c, Channel* chn)
     {
         if (Log::verbosity() >= 2) {
-            Log(2).stream() << exp->name() << ": Cupti: processed "
+            Log(2).stream() << chn->name() << ": Cupti: processed "
                             << num_api_cb      << " API callbacks, "
                             << num_resource_cb << " resource callbacks, "
                             << num_sync_cb     << " sync callbacks, "
@@ -471,14 +471,14 @@ class CuptiService
         return true;
     }
 
-    CuptiService(Caliper* c, Experiment* exp)
-        : config(exp->config().init("cupti", s_configdata)),
+    CuptiService(Caliper* c, Channel* chn)
+        : config(chn->config().init("cupti", s_configdata)),
           num_cb(0),
           num_api_cb(0),
           num_resource_cb(0),
           num_sync_cb(0),
           num_nvtx_cb(0),
-          experiment(exp)
+          channel(chn)
         {
             cupti_info.record_context = config.get("record_context").to_bool();
             cupti_info.record_symbol  = config.get("record_symbol").to_bool();
@@ -494,26 +494,26 @@ class CuptiService
 public:
     
     static void
-    cuptiservice_initialize(Caliper* c, Experiment* exp)
+    cuptiservice_initialize(Caliper* c, Channel* chn)
     {
-        CuptiService* instance = new CuptiService(c, exp);
+        CuptiService* instance = new CuptiService(c, chn);
         
         if (!instance->register_callback_domains())
             return;        
 
         if (instance->event_sampling.is_enabled())
-            exp->events().snapshot.connect(
-                [instance](Caliper* c, Experiment* exp, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
-                    instance->snapshot_cb(c, exp, scope, info, rec);
+            chn->events().snapshot.connect(
+                [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
+                    instance->snapshot_cb(c, chn, scope, info, rec);
                 });
 
-        exp->events().finish_evt.connect(
-            [instance](Caliper* c, Experiment* exp){
-                instance->finish_cb(c, exp);
+        chn->events().finish_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered cupti service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered cupti service" << std::endl;
     }
     
 }; // CuptiService

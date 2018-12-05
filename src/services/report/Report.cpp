@@ -63,14 +63,14 @@ class Report {
     // --- callback functions
     //
 
-    void pre_flush(Caliper* c, Experiment* exp, const SnapshotRecord* flush_info) {
+    void pre_flush(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
         queryP.reset(nullptr);
         
-        ConfigSet   config(exp->config().init("report", s_configdata));
+        ConfigSet   config(chn->config().init("report", s_configdata));
         CalQLParser parser(config.get("config").to_string().c_str());
 
         if (parser.error()) {
-            Log(0).stream() << exp->name() << ": Report: config parse error: "
+            Log(0).stream() << chn->name() << ": Report: config parse error: "
                             << parser.error_msg() << std::endl;
             return;
         }
@@ -108,27 +108,27 @@ public:
     ~Report()
         { }
 
-    static void create(Caliper* c, Experiment* exp) {
+    static void create(Caliper* c, Channel* chn) {
         Report* instance = new Report;
         
-        exp->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Experiment* exp, const SnapshotRecord* info){
-                instance->pre_flush(c, exp, info);
+        chn->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+                instance->pre_flush(c, chn, info);
             });
-        exp->events().write_snapshot.connect(
-            [instance](Caliper* c, Experiment*, const SnapshotRecord*, const SnapshotRecord* snapshot){
+        chn->events().write_snapshot.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord*, const SnapshotRecord* snapshot){
                 instance->write_snapshot(c, snapshot);
             });
-        exp->events().post_flush_evt.connect(
-            [instance](Caliper* c, Experiment*, const SnapshotRecord*){
+        chn->events().post_flush_evt.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord*){
                 instance->post_flush(c);
             });
-        exp->events().finish_evt.connect(
-            [instance](Caliper*, Experiment*){
+        chn->events().finish_evt.connect(
+            [instance](Caliper*, Channel*){
                 delete instance;
             });
 
-        Log(1).stream() << exp->name() << ": Registered report service" << std::endl;
+        Log(1).stream() << chn->name() << ": Registered report service" << std::endl;
     }
 };
     

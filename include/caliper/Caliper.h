@@ -65,46 +65,46 @@ typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data
 
-class Experiment : public IdType
+class Channel : public IdType
 {
     struct ThreadData;
-    struct ExperimentImpl;
+    struct ChannelImpl;
     
-    std::shared_ptr<ExperimentImpl> mP;
+    std::shared_ptr<ChannelImpl> mP;
 
-    Experiment(cali_id_t id, const char* name, const RuntimeConfig& cfg);
+    Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg);
 
 public:
 
-    ~Experiment();    
+    ~Channel();    
 
     // --- Events (callback functions)
     
     struct Events {
-        typedef util::callback<void(Caliper*,Experiment*,const Attribute&)>
+        typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*,const std::string&,cali_attr_type,int*,Node**)>
+        typedef util::callback<void(Caliper*,Channel*,const std::string&,cali_attr_type,int*,Node**)>
             pre_create_attr_cbvec;                        
-        typedef util::callback<void(Caliper*,Experiment*,const Attribute&,const Variant&)>
+        typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*)>
+        typedef util::callback<void(Caliper*,Channel*)>
             caliper_cbvec;
 
-        typedef util::callback<void(Caliper*,Experiment*,int,const SnapshotRecord*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,int,const SnapshotRecord*,SnapshotRecord*)>
             snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,SnapshotRecord*)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*,SnapshotFlushFn)>
+        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,SnapshotFlushFn)>
             flush_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*)>
             write_cbvec;
 
-        typedef util::callback<void(Caliper*,Experiment*,const void*, const char*, size_t, size_t, const size_t*)>
+        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*)>
             track_mem_cbvec;
-        typedef util::callback<void(Caliper*,Experiment*,const void*)>
+        typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
                                             
         pre_create_attr_cbvec  pre_create_attr_evt;
@@ -143,7 +143,7 @@ public:
 
     RuntimeConfig  config();
 
-    // --- Experiment management
+    // --- Channel management
     
     std::string    name() const;
 
@@ -176,7 +176,7 @@ public:
     // --- Global Caliper API
     //
     
-    /// \name Annotations (across experiments)
+    /// \name Annotations (across channels)
     /// \{
 
     void      begin(const Attribute& attr, const Variant& data);
@@ -184,21 +184,21 @@ public:
     void      set(const Attribute& attr, const Variant& data);
 
     /// \}
-    /// \name Memory region tracking (across experiments)
+    /// \name Memory region tracking (across channels)
     /// \{
 
     void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
     void      memory_region_end(const void* ptr);
 
     //
-    // --- Per-experiment API
+    // --- Per-channel API
     //    
 
     /// \name Snapshot API
     /// \{
 
-    void      push_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info);
-    void      pull_snapshot(Experiment* exp, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
+    void      push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info);
+    void      pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
     // --- Flush and I/O API
 
@@ -206,41 +206,41 @@ public:
     /// \name Flush and I/O
     /// \{
 
-    void      flush(Experiment* exp, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
-    void      flush_and_write(Experiment* exp, const SnapshotRecord* flush_info);
+    void      flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
+    void      flush_and_write(Channel* chn, const SnapshotRecord* flush_info);
 
-    void      clear(Experiment* exp);
+    void      clear(Channel* chn);
 
     // --- Annotation API
     
     /// \}
-    /// \name Annotation API (single experiment)
+    /// \name Annotation API (single channel)
     /// \{
 
-    cali_err  begin(Experiment* exp, const Attribute& attr, const Variant& data);
-    cali_err  end(Experiment* exp, const Attribute& attr);
-    cali_err  set(Experiment* exp, const Attribute& attr, const Variant& data);
-    cali_err  set_path(Experiment* exp, const Attribute& attr, size_t n, const Variant data[]);
+    cali_err  begin(Channel* chn, const Attribute& attr, const Variant& data);
+    cali_err  end(Channel* chn, const Attribute& attr);
+    cali_err  set(Channel* chn, const Attribute& attr, const Variant& data);
+    cali_err  set_path(Channel* chn, const Attribute& attr, size_t n, const Variant data[]);
 
     /// \}
-    /// \name Memory region tracking (single experiment)
+    /// \name Memory region tracking (single channel)
     /// \{
 
-    void      memory_region_begin(Experiment* exp, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
-    void      memory_region_end(Experiment* exp, const void* ptr);
+    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_end(Channel* chn, const void* ptr);
 
     /// \}
     /// \name Blackboard access
     /// \{
 
-    Variant   exchange(Experiment* exp, const Attribute& attr, const Variant& data);
-    Entry     get(Experiment* exp, const Attribute& attr);
+    Variant   exchange(Channel* chn, const Attribute& attr, const Variant& data);
+    Entry     get(Channel* chn, const Attribute& attr);
 
     /// \}
-    /// \name Metadata access (single experiment)
+    /// \name Metadata access (single channel)
     /// \{
 
-    std::vector<Entry> get_globals(Experiment* exp);
+    std::vector<Entry> get_globals(Channel* chn);
 
     /// \}
 
@@ -294,20 +294,20 @@ public:
     Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
     /// \}
-    /// \name Experiment API
+    /// \name Channel API
     /// \{
 
-    Experiment* create_experiment(const char* name, const RuntimeConfig& cfg);
+    Channel* create_channel(const char* name, const RuntimeConfig& cfg);
 
-    std::vector<Experiment*> get_all_experiments();
+    std::vector<Channel*> get_all_channels();
 
-    Experiment* get_experiment(cali_id_t id);
-    // Experiment* get_experiment(const char* name);
+    Channel* get_channel(cali_id_t id);
+    // Channel* get_channel(const char* name);
 
-    void        delete_experiment(Experiment* exp);
+    void        delete_channel(Channel* chn);
 
-    void        activate_experiment(Experiment* exp);
-    void        deactivate_experiment(Experiment* exp);
+    void        activate_channel(Channel* chn);
+    void        deactivate_channel(Channel* chn);
 
     /// \}
 

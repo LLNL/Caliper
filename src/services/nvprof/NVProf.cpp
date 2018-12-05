@@ -71,9 +71,9 @@ class NVProfBinding : public AnnotationBinding
 
 public:
 
-    void initialize(Caliper* c, Experiment* exp) {
+    void initialize(Caliper* c, Channel* chn) {
         std::string name = "nvtx.color#";
-        name.append(std::to_string(exp->id()));
+        name.append(std::to_string(chn->id()));
         
         m_color_attr =
             c->create_attribute("nvtx.color", CALI_TYPE_UINT,
@@ -82,7 +82,7 @@ public:
 
     const char* service_tag() const { return "nvprof"; }
 
-    void on_mark_attribute(Caliper* c, Experiment*, const Attribute& attr) {
+    void on_mark_attribute(Caliper* c, Channel*, const Attribute& attr) {
         // Set the color flag
         Variant v_color(static_cast<uint64_t>(s_colors[m_color_id++ % s_num_colors]));
 
@@ -91,7 +91,7 @@ public:
         c->make_tree_entry(m_color_attr, v_color, c->node(attr.node()->id()));
     }
 
-    void on_begin(Caliper*, Experiment*, const Attribute &attr, const Variant& value) {
+    void on_begin(Caliper*, Channel*, const Attribute &attr, const Variant& value) {
         nvtxEventAttributes_t eventAttrib = { 0 };
 
         eventAttrib.version       = NVTX_VERSION;
@@ -128,7 +128,7 @@ public:
         }
     }
 
-    void on_end(Caliper*, Experiment*, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.is_nested()) {
             nvtxRangePop();
         } else {

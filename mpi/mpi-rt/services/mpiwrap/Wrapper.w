@@ -49,16 +49,16 @@ struct MpiWrapperConfig
     
     static std::vector<MpiWrapperConfig*> s_wrapper_configs;        
 
-    static MpiWrapperConfig* get_wrapper_config(Experiment* exp) {
+    static MpiWrapperConfig* get_wrapper_config(Channel* chn) {
         auto it = std::find_if(s_wrapper_configs.begin(), s_wrapper_configs.end(),
-                               [exp](MpiWrapperConfig* mwc){
-                                   return mwc->experiment->id() == exp->id();
+                               [chn](MpiWrapperConfig* mwc){
+                                   return mwc->channel->id() == chn->id();
                                });
 
         if (it != s_wrapper_configs.end())
             return *it;
 
-        MpiWrapperConfig* mwc = new MpiWrapperConfig(exp);
+        MpiWrapperConfig* mwc = new MpiWrapperConfig(chn);
         s_wrapper_configs.push_back(mwc);
 
         return mwc;        
@@ -67,10 +67,10 @@ struct MpiWrapperConfig
     // Constructor / destructor
     //
     
-    MpiWrapperConfig(Experiment* exp)
-        : experiment(exp)
+    MpiWrapperConfig(Channel* chn)
+        : channel(chn)
         {
-            ConfigSet cfg = exp->config().init("mpi", s_configdata);
+            ConfigSet cfg = chn->config().init("mpi", s_configdata);
 
             setup_filter(cfg.get("whitelist").to_string(), cfg.get("blacklist").to_string());
             enable_msg_tracing = cfg.get("msg_tracing").to_bool();
@@ -83,12 +83,12 @@ struct MpiWrapperConfig
                           this));
         }
 
-    // Per-experiment variables
+    // Per-channel variables
     //
 
     MpiEvents   mpi_events;
     
-    Experiment* experiment = nullptr;
+    Channel* channel = nullptr;
 
     bool        enable_msg_tracing;
     MpiTracing  tracing;
@@ -183,26 +183,26 @@ ConfigSet::Entry MpiWrapperConfig::s_configdata[] = {
 
 
 void
-mpi_init_cb(Caliper* c, Experiment* exp)
+mpi_init_cb(Caliper* c, Channel* chn)
 {
     int rank = -1, size = -1;
 
     PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
     PMPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    c->set(exp, mpirank_attr, Variant(rank));
-    c->set(exp, mpisize_attr, Variant(size));
+    c->set(chn, mpirank_attr, Variant(rank));
+    c->set(chn, mpisize_attr, Variant(size));
 
-    MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(exp);
+    MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(chn);
 
     if (mwc->enable_msg_tracing) {
-        Log(2).stream() << exp->name() << ": Enabling MPI message tracing" << std::endl;
-        mwc->tracing.init_mpi(c, exp);
+        Log(2).stream() << chn->name() << ": Enabling MPI message tracing" << std::endl;
+        mwc->tracing.init_mpi(c, chn);
     }
 }
 
 void
-post_init_cb(Caliper* c, Experiment* exp)
+post_init_cb(Caliper* c, Channel* chn)
 {
     int initialized = 0;
     int finalized   = 0;
@@ -211,7 +211,7 @@ post_init_cb(Caliper* c, Experiment* exp)
     PMPI_Finalized(&finalized);
 
     if (initialized && !finalized)
-        MpiWrapperConfig::get_wrapper_config(exp)->mpi_events.mpi_init_evt(c, exp);
+        MpiWrapperConfig::get_wrapper_config(chn)->mpi_events.mpi_init_evt(c, chn);
 }
 
 } // namespace [anonymous]
@@ -228,24 +228,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_send(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
+                    mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -261,24 +261,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_send_init(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                    mwc->tracing.handle_send_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -294,11 +294,11 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         MPI_Status tmp_status;
@@ -309,14 +309,14 @@ post_init_cb(Caliper* c, Experiment* exp)
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_recv(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -332,11 +332,11 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         MPI_Status tmp_status;
@@ -347,16 +347,16 @@ post_init_cb(Caliper* c, Experiment* exp)
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
-                    mwc->tracing.handle_send(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
-                    mwc->tracing.handle_recv(&c, mwc->experiment, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
+                    mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -372,11 +372,11 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
 
                 MPI_Status tmp_status;
         
@@ -387,16 +387,16 @@ post_init_cb(Caliper* c, Experiment* exp)
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
-                    mwc->tracing.handle_send(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
-                    mwc->tracing.handle_recv(&c, mwc->experiment, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
+                    mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
+                    mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{5}}, {{6}}, {{7}}, {{8}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -412,24 +412,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_irecv(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                    mwc->tracing.handle_irecv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -445,24 +445,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
         
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_recv_init(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
+                    mwc->tracing.handle_recv_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -478,24 +478,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_start(&c, mwc->experiment, 1, {{0}});
+                    mwc->tracing.handle_start(&c, mwc->channel, 1, {{0}});
 
                 c.end(mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -511,24 +511,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_start(&c, mwc->experiment, {{0}}, {{1}});
+                    mwc->tracing.handle_start(&c, mwc->channel, {{0}}, {{1}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -550,24 +550,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);        
+                    mwc->tracing.push_call_id(&c, mwc->channel);        
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_completion(&c, mwc->experiment, 1, &tmp_req, {{1}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{1}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -590,7 +590,7 @@ post_init_cb(Caliper* c, Experiment* exp)
         bool any_msg_tracing = false;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active() && mwc->enable_msg_tracing) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
             }
@@ -606,24 +606,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         }
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_completion(&c, mwc->experiment, nreq, tmp_req, {{2}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{2}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 
         if (any_msg_tracing) {
@@ -651,7 +651,7 @@ post_init_cb(Caliper* c, Experiment* exp)
         bool any_msg_tracing = false;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active() && mwc->enable_msg_tracing) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
             }
@@ -665,24 +665,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         }
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && nreq > 0)
-                    mwc->tracing.handle_completion(&c, mwc->experiment, 1, tmp_req+(*{{2}}), {{3}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{3}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 
         if (any_msg_tracing)
@@ -708,7 +708,7 @@ post_init_cb(Caliper* c, Experiment* exp)
         bool any_msg_tracing = false;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active() && mwc->enable_msg_tracing) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
             }
@@ -724,25 +724,25 @@ post_init_cb(Caliper* c, Experiment* exp)
         }
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing > 0)
                     for (int i = 0; i < *{{2}}; ++i)
-                        mwc->tracing.handle_completion(&c, mwc->experiment, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
+                        mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+{{3}}[i], {{4}}+{{3}}[i]);
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
         
         if (any_msg_tracing) {
@@ -769,24 +769,24 @@ post_init_cb(Caliper* c, Experiment* exp)
             {{2}} = &tmp_status;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{1}})
-                    mwc->tracing.handle_completion(&c, mwc->experiment, 1, &tmp_req, {{2}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{2}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -809,7 +809,7 @@ post_init_cb(Caliper* c, Experiment* exp)
         bool any_msg_tracing = false;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active() && mwc->enable_msg_tracing) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
             }
@@ -825,24 +825,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         }
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) 
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
                 
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{2}})
-                    mwc->tracing.handle_completion(&c, mwc->experiment, nreq, tmp_req, {{3}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{3}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 
         if (any_msg_tracing) {
@@ -870,7 +870,7 @@ post_init_cb(Caliper* c, Experiment* exp)
         bool any_msg_tracing = false;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active() && mwc->enable_msg_tracing) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
             }
@@ -884,24 +884,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         }
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{3}})
-                    mwc->tracing.handle_completion(&c, mwc->experiment, 1, tmp_req+(*{{2}}), {{4}});
+                    mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{4}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 
         if (any_msg_tracing)
@@ -920,24 +920,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
                 
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.request_free(&c, mwc->experiment, {{0}});
+                    mwc->tracing.request_free(&c, mwc->channel, {{0}});
             }
 
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
-                c.end(mwc->experiment, mpifn_attr);
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -957,24 +957,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_barrier(&c, mwc->experiment, {{0}});
+                    mwc->tracing.handle_barrier(&c, mwc->channel, {{0}});
 
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -990,24 +990,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_12n(&c, mwc->experiment, {{1}}, {{2}}, {{3}}, {{4}});
+                    mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1023,24 +1023,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_12n(&c, mwc->experiment, {{1}}, {{2}}, {{6}}, {{7}});
+                    mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1056,29 +1056,29 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
                     PMPI_Comm_size({{8}}, &tmp_commsize);
                     int total_count  = std::accumulate({{2}}, {{2}}+tmp_commsize, 0);
             
-                    mwc->tracing.handle_12n(&c, mwc->experiment, total_count, {{3}}, {{7}}, {{8}});
+                    mwc->tracing.handle_12n(&c, mwc->channel, total_count, {{3}}, {{7}}, {{8}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1094,24 +1094,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n21(&c, mwc->experiment, {{1}}, {{2}}, {{6}}, {{7}});
+                    mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1127,24 +1127,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n21(&c, mwc->experiment, {{1}}, {{2}}, {{7}}, {{8}});
+                    mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{7}}, {{8}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1160,24 +1160,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n21(&c, mwc->experiment, {{2}}, {{3}}, {{5}}, {{6}});
+                    mwc->tracing.handle_n21(&c, mwc->channel, {{2}}, {{3}}, {{5}}, {{6}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1193,24 +1193,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, {{2}}, {{3}}, {{5}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1226,28 +1226,28 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_rank = 0;
                     PMPI_Comm_rank({{5}}, &tmp_rank);
 
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, {{2}}[tmp_rank], {{3}}, {{5}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}[tmp_rank], {{3}}, {{5}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1263,24 +1263,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, {{2}}, {{3}}, {{5}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1296,24 +1296,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, {{1}}, {{2}}, {{6}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{6}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1329,24 +1329,24 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, {{1}}, {{2}}, {{7}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{7}});
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1362,28 +1362,28 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
                     PMPI_Comm_size({{6}}, &tmp_commsize);
 
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, tmp_commsize * {{1}}, {{2}}, {{6}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, tmp_commsize * {{1}}, {{2}}, {{6}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1399,29 +1399,29 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
 
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.push_call_id(&c, mwc->experiment);
+                    mwc->tracing.push_call_id(&c, mwc->channel);
 
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
             }
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+            if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
                     PMPI_Comm_size({{8}}, &tmp_commsize);
                     int total_count  = std::accumulate({{1}}, {{1}}+tmp_commsize, 0);
 
-                    mwc->tracing.handle_n2n(&c, mwc->experiment, total_count, {{3}}, {{8}});
+                    mwc->tracing.handle_n2n(&c, mwc->channel, total_count, {{3}}, {{8}});
                 }
         
-                c.end(mwc->experiment, mpifn_attr);
+                c.end(mwc->channel, mpifn_attr);
         
                 if (mwc->enable_msg_tracing)
-                    mwc->tracing.pop_call_id(&c, mwc->experiment);
+                    mwc->tracing.pop_call_id(&c, mwc->channel);
             }
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
@@ -1446,27 +1446,27 @@ post_init_cb(Caliper* c, Experiment* exp)
         //   Run mpi init events here if Caliper was initialized before MPI_Init
         // Otherwise they will run via the Caliper initialization above.
         if (run_init_evts)
-            mwc->mpi_events.mpi_init_evt(&c, mwc->experiment);
+            mwc->mpi_events.mpi_init_evt(&c, mwc->channel);
         
-        if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+        if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
-                mwc->tracing.push_call_id(&c, mwc->experiment);
+                mwc->tracing.push_call_id(&c, mwc->channel);
         
-            c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+            c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
         }
     }
     
     PMPI_Barrier(MPI_COMM_WORLD);
 
     for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-        if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+        if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
-                mwc->tracing.handle_init(&c, mwc->experiment);
+                mwc->tracing.handle_init(&c, mwc->channel);
 
-            c.end(mwc->experiment, mpifn_attr);
+            c.end(mwc->channel, mpifn_attr);
         
             if (mwc->enable_msg_tracing)
-                mwc->tracing.pop_call_id(&c, mwc->experiment);
+                mwc->tracing.pop_call_id(&c, mwc->channel);
         }
 }{{endfn}}
 
@@ -1476,27 +1476,27 @@ post_init_cb(Caliper* c, Experiment* exp)
     // cheat a bit: put begin/ends around a barrier here
     
     for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-        if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+        if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
-                mwc->tracing.push_call_id(&c, mwc->experiment);
+                mwc->tracing.push_call_id(&c, mwc->channel);
         
-            c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+            c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
         }
         
     PMPI_Barrier(MPI_COMM_WORLD);
 
     for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs) {
-        if (mwc->enable_{{func}} && mwc->experiment->is_active()) {
+        if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
-                mwc->tracing.handle_finalize(&c, mwc->experiment);
+                mwc->tracing.handle_finalize(&c, mwc->channel);
 
-            c.end(mwc->experiment, mpifn_attr);
+            c.end(mwc->channel, mpifn_attr);
         
             if (mwc->enable_msg_tracing)
-                mwc->tracing.pop_call_id(&c, mwc->experiment);
+                mwc->tracing.pop_call_id(&c, mwc->channel);
         }
 
-        mwc->mpi_events.mpi_finalize_evt(&c, mwc->experiment);
+        mwc->mpi_events.mpi_finalize_evt(&c, mwc->channel);
     }    
 
     {{callfn}}
@@ -1530,14 +1530,14 @@ post_init_cb(Caliper* c, Experiment* exp)
         Caliper c;
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active())
-                c.begin(mwc->experiment, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
+            if (mwc->enable_{{func}} && mwc->channel->is_active())
+                c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
         
         {{callfn}}
         
         for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
-            if (mwc->enable_{{func}} && mwc->experiment->is_active())
-                c.end(mwc->experiment, mpifn_attr);
+            if (mwc->enable_{{func}} && mwc->channel->is_active())
+                c.end(mwc->channel, mpifn_attr);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
     } else {
         {{callfn}}
@@ -1556,38 +1556,38 @@ namespace cali
 // --- MpiEvents access
 //
 
-MpiEvents& mpiwrap_get_events(Experiment* exp)
+MpiEvents& mpiwrap_get_events(Channel* chn)
 {
-    return MpiWrapperConfig::get_wrapper_config(exp)->mpi_events;
+    return MpiWrapperConfig::get_wrapper_config(chn)->mpi_events;
 }
 
 //
 // --- Init function
 //
 
-void mpiwrap_init(Caliper* c, Experiment* exp)
+void mpiwrap_init(Caliper* c, Channel* chn)
 {
     // --- register callbacks
 
-    exp->events().post_init_evt.connect(::post_init_cb);
+    chn->events().post_init_evt.connect(::post_init_cb);
 
-    exp->events().finish_evt.connect(
-        [](Caliper* c, Experiment* exp){
-            Log(2).stream() << exp->name() << ": Finishing mpi service" << std::endl;
+    chn->events().finish_evt.connect(
+        [](Caliper* c, Channel* chn){
+            Log(2).stream() << chn->name() << ": Finishing mpi service" << std::endl;
                 
-            delete MpiWrapperConfig::get_wrapper_config(exp);
+            delete MpiWrapperConfig::get_wrapper_config(chn);
         });
 
     // --- setup wrappers
 
     ::enable_wrapper = true;
 
-    MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(exp);
+    MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(chn);
 
     mwc->mpi_events.mpi_init_evt.connect(::mpi_init_cb);
 
     if (mwc->enable_msg_tracing)
-        mwc->tracing.init(c, exp);
+        mwc->tracing.init(c, chn);
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;
