@@ -79,20 +79,19 @@ typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_varian
  */
 
 /**
- * \brief Create an attribute
+ * \brief Create an attribute key.
  * \param name Name of the attribute
  * \param type Type of the attribute
  * \param properties Attribute properties
  * \return Attribute id
  */
-
 cali_id_t
 cali_create_attribute(const char*     name,
                       cali_attr_type  type,
                       int             properties);
 
 /**
- * \brief Create an attribute with additional metadata.
+ * \brief Create an attribute key with additional metadata.
  *
  * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
  * the \a meta_attr_list, \a meta_val_list, and \a meta_size_list.
@@ -283,7 +282,6 @@ cali_unpack_snapshot(const unsigned char* buf,
  * \return The top-most stacked value for the given attribute ID, or an empty
  *   variant if none was found
  */
-
 cali_variant_t
 cali_find_first_in_snapshot(const unsigned char* buf,
                             cali_id_t            attr_id,
@@ -302,7 +300,6 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param proc_fn Callback function to process individidual entries
  * \param userdata User-defined parameter passed to `proc_fn`
  */
-
 void
 cali_find_all_in_snapshot(const unsigned char* buf,
                           cali_id_t            attr_id,
@@ -351,30 +348,28 @@ cali_get(cali_id_t attr_id);
  */
 
 /**
- * \brief Put attribute attr on the blackboard.
- * Parameters:
- * \param attr An attribute of type CALI_TYPE_BOOL
+ * \brief Begin region where the value for \a attr is `true` on the blackboard.
  */
-
 void
 cali_begin(cali_id_t   attr);
 
 /**
- * Add \a val for attribute \a attr to the blackboard.
- * The new value is nested under the current value of \a attr.
+ * \brief Begin region \a val for attribute \a attr on the blackboard.
+ *
+ * The region may be nested.
  */
-
 void
 cali_begin_double(cali_id_t attr, double val);
+/** \copydoc cali_begin_double() */
 void
 cali_begin_int(cali_id_t attr, int val);
+/** \copydoc cali_begin_double() */
 void
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
- * Remove innermost value for attribute `attr` from the blackboard.
+ * End innermost open region for \a attr on the blackboard.
  */
-
 void
 cali_end  (cali_id_t   attr);
 
@@ -392,57 +387,59 @@ void
 cali_safe_end_string(cali_id_t attr, const char* val);
 
 /**
- * \brief Change current innermost value on the blackboard for attribute \a attr
- * to value taken from \a value with size \a size
+ * \brief Set value for attribute \a attr to \a val on the blackboard.
  */
-
 void
 cali_set  (cali_id_t   attr,
            const void* value,
            size_t      size);
-
+/** \copybrief cali_set() */
 void
 cali_set_double(cali_id_t attr, double val);
+/** \copybrief cali_set() */
 void
 cali_set_int(cali_id_t attr, int val);
+/** \copybrief cali_set() */
 void
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
- * Put attribute with name \a attr_name on the blackboard.
+ * \brief  Begin region where the value for the attribute named \a attr_name
+ *   is set to `true` on the blackboard.
  */
-
 void
 cali_begin_byname(const char* attr_name);
 
 /**
- * \brief Add \a value for the attribute with the name \a attr_name to the
- * blackboard.
+ * \brief Begin region \a val for attribute named \a attr_name on the blackboard.
+ *
+ * The region may be nested.
  */
-
 void
 cali_begin_double_byname(const char* attr_name, double val);
+/** \copydoc cali_begin_double_byname() */
 void
 cali_begin_int_byname(const char* attr_name, int val);
+/** \copydoc cali_begin_double_byname() */
 void
 cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
- * \brief Change the value of attribute with the name \a attr_name to \a value
- * on the blackboard.
+ * \brief Set value for attribute named \a attr_name to \a val on the blackboard.
  */
-
 void
 cali_set_double_byname(const char* attr_name, double val);
+/** \copydoc cali_set_double_byname() */
 void
 cali_set_int_byname(const char* attr_name, int val);
+/** \copydoc cali_set_double_byname() */
 void
 cali_set_string_byname(const char* attr_name, const char* val);
 
 /**
- * \brief Remove innermost value for attribute \a attr from the blackboard.
+ * \brief End innermost open region for attribute named \a attr_name on the
+ *   blackboard.
  */
-
 void
 cali_end_byname(const char* attr_name);
 
@@ -465,7 +462,6 @@ cali_end_byname(const char* attr_name);
  *
  * The entry can still be overwritten by environment variables.
  */
-
 void
 cali_config_preset(const char* key, const char* value);
 
@@ -474,7 +470,6 @@ cali_config_preset(const char* key, const char* value);
  *
  * This entry will not be overwritten by environment variables.
  */
-
 void
 cali_config_set(const char* key, const char* value);
 
@@ -511,7 +506,6 @@ cali_config_set(const char* key, const char* value);
  *    value. Keys must be all uppercase. Terminate the list with two
  *    NULL entries: <tt> { NULL, NULL } </tt>.
  */
-
 void
 cali_config_define_profile(const char* name, const char* keyvallist[][2]);
 
@@ -519,19 +513,38 @@ cali_config_define_profile(const char* name, const char* keyvallist[][2]);
  * \brief Enable or disable reading environment variables for the default
  *   configset.
  */
-
 void
 cali_config_allow_read_env(int allow);
 
 struct _cali_configset_t;
 typedef struct _cali_configset_t* cali_configset_t;
 
+/**
+ * \brief Create a config set with the given key-value entries.
+ *
+ * The config set can be used in cali_create_channel() to create a new
+ * channel. The config set must be deleted with cali_delete_configset().
+ *
+ * \sa cali_create_channel(), cali_delete_configset()
+ *
+ * \param keyvallist A list of key-value pairs as array of two strings
+ *    that contains the profile's configuration entries. The first string
+ *    in each entry is the configuration key, the second string is its
+ *    value. Keys must be all uppercase. Terminate the list with two
+ *    NULL entries: <tt> { NULL, NULL } </tt>.
+ * \return The config set.
+ */
 cali_configset_t
 cali_create_configset(const char* keyvallist[][2]);
 
+/** \brief Delete a config set created with cali_create_configset(). */
 void
 cali_delete_configset(cali_configset_t cfg);
 
+/** \brief Modify a config set created with cali_create_configset().
+ *
+ * Sets or overwrites the value for \a key with \a value.
+ */
 void
 cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
 
@@ -581,7 +594,7 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *   //   Create a new channel "trace" but leave it inactive initially.
  *   // (By default, channels are active immediately.)
  *   cali_id_t trace_chn_id =
- *     cali_create_channel("trace", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
+ *     cali_create_channel("trace", CALI_CHANNEL_LEAVE_INACTIVE, cfg);
  *
  *   cali_delete_configset(cfg);
  *
@@ -593,20 +606,15 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *   in %Caliper log output.
  * \param flags Flags that control channel creation as bitwise-OR of
  *   cali_channel_opt flags.
- * \param keyvallist The channel's runtime configuraiton as a key-value
- *   list (array of two strings). The first string in each entry is the
- *    configuration key, the second string is its value. Keys must be all
- *    uppercase. Terminate the list with two NULL entries:
- *    <tt> { NULL, NULL } </tt>.
+ * \param keyvallist The channel's runtime configuration.
  *
  * \return ID of the created channel.
  */
-
 cali_id_t
 cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
 
 /**
- * \brief Delete an channel. Frees associated resources, e.g. blackboards,
+ * \brief Delete a channel. Frees associated resources, e.g. blackboards,
  *   trace buffers, etc.
  *
  * Channel deletion is \b not thread-safe. Users must make sure that no
@@ -671,7 +679,6 @@ cali_channel_is_active(cali_id_t chn_id);
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
-
 void
 cali_flush(int flush_opts);
 
@@ -691,7 +698,6 @@ cali_flush(int flush_opts);
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
-
 void
 cali_channel_flush(cali_id_t chn_id, int flush_opts);
 
@@ -714,7 +720,6 @@ cali_channel_flush(cali_id_t chn_id, int flush_opts);
  * It can also be used to avoid high initialization costs in the first
  * Caliper API call.
  */
-
 void
 cali_init();
 
@@ -722,7 +727,6 @@ cali_init();
  * \brief  Check if Caliper is initialized on this process.
  * \return A non-zero value if Caliper is initialized, 0 if it is not initialized.
  */
-
 int
 cali_is_initialized();
 
@@ -754,6 +758,43 @@ namespace cali
 
 typedef std::map<std::string, std::string> config_map_t;
 
+/**
+ * \brief Create a new %Caliper channel with a given key-value
+ *   configuration profile.
+ *
+ * An channel controls %Caliper's annotation tracking and measurement
+ * activities. Multiple channels can be active at the same time, independent
+ * of each other. Each channel has its own runtime configuration,
+ * blackboard, and active services.
+ *
+ * This function creates a new channel with the given name, flags, and
+ * runtime configuration. The runtime configuration is provided as a list of
+ * key-value pairs and works similar to the configuration through environment
+ * variables or configuration files.
+ *
+ * Creating channels is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread
+ * during channel creation.
+ *
+ * Example:
+ *
+ * \code
+ *   // Create a new channel for profiling.
+ *   cali_id_t channel_id =
+ *     cali::create_channel("profile", 0, {
+ *          { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+ *          { "CALI_REPORT_FILENAME", "performance-report.txt" }
+ *        });
+ * \endcode
+ *
+ * \param name Name of the channel. This is used to identify the channel
+ *   in %Caliper log output.
+ * \param flags Flags that control channel creation as bitwise-OR of
+ *   cali_channel_opt flags.
+ * \param cfg The channel's runtime configuration as a key-value map.
+ *
+ * \return ID of the created channel.
+ */
 cali_id_t
 create_channel(const char* name, int flags, const config_map_t& cfg);
 

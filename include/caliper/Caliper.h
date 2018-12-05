@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,7 +30,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file Caliper.h 
+/// \file Caliper.h
 /// Initialization function and global data declaration
 
 #pragma once
@@ -63,28 +63,28 @@ class SnapshotRecord;
 typedef std::function<bool(const SnapshotRecord*)> SnapshotFlushFn;
 
 /// \brief Maintain a single data collection configuration with
-///    callbacks and associated measurement data
+///    callbacks and associated measurement data.
 
 class Channel : public IdType
 {
     struct ThreadData;
     struct ChannelImpl;
-    
+
     std::shared_ptr<ChannelImpl> mP;
 
     Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg);
 
 public:
 
-    ~Channel();    
+    ~Channel();
 
     // --- Events (callback functions)
-    
+
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
             create_attr_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const std::string&,cali_attr_type,int*,Node**)>
-            pre_create_attr_cbvec;                        
+            pre_create_attr_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*,Channel*)>
@@ -106,7 +106,7 @@ public:
             track_mem_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
-                                            
+
         pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
 
@@ -138,13 +138,13 @@ public:
 
         caliper_cbvec          clear_evt;
     };
-    
+
     Events&        events();
 
     RuntimeConfig  config();
 
     // --- Channel management
-    
+
     std::string    name() const;
 
     bool           is_active() const;
@@ -160,22 +160,22 @@ class Caliper : public CaliperMetadataAccessInterface
 {
     struct GlobalData;
     struct ThreadData;
-    
+
     static              std::unique_ptr<GlobalData> sG;
     static thread_local std::unique_ptr<ThreadData> sT;
-    
+
     bool m_is_signal; // are we in a signal handler?
-    
+
     explicit Caliper(bool sig)
         : m_is_signal(sig)
-        { }    
+        { }
 
-public:    
+public:
 
     //
     // --- Global Caliper API
     //
-    
+
     /// \name Annotations (across channels)
     /// \{
 
@@ -192,7 +192,7 @@ public:
 
     //
     // --- Per-channel API
-    //    
+    //
 
     /// \name Snapshot API
     /// \{
@@ -212,7 +212,7 @@ public:
     void      clear(Channel* chn);
 
     // --- Annotation API
-    
+
     /// \}
     /// \name Annotation API (single channel)
     /// \{
@@ -249,19 +249,19 @@ public:
     //
 
     std::vector<Entry> get_globals();
-    
+
     /// \}
     /// \name Explicit snapshot record manipulation
     /// \{
 
-    void      make_entrylist(size_t n, 
-                             const Attribute  attr[], 
-                             const Variant    data[], 
+    void      make_entrylist(size_t n,
+                             const Attribute  attr[],
+                             const Variant    data[],
                              SnapshotRecord&  list,
                              cali::Node*      parent = nullptr);
-    void      make_entrylist(const Attribute& attr, 
+    void      make_entrylist(const Attribute& attr,
                              size_t           n,
-                             const Variant    data[], 
+                             const Variant    data[],
                              SnapshotRecord&  list);
 
     // --- Metadata Access Interface
@@ -283,11 +283,11 @@ public:
                                int                meta = 0,
                                const Attribute*   meta_attr = nullptr,
                                const Variant*     meta_data = nullptr);
-    
+
     /// \brief Return node by id
     Node*     node(cali_id_t id) const;
 
-    /// \brief Get or create tree path with data from given nodes in given order 
+    /// \brief Get or create tree path with data from given nodes in given order
     Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
 
     /// \brief Get or create tree entry with given attribute/value pair
@@ -304,17 +304,17 @@ public:
     Channel* get_channel(cali_id_t id);
     // Channel* get_channel(const char* name);
 
-    void        delete_channel(Channel* chn);
+    void     delete_channel(Channel* chn);
 
-    void        activate_channel(Channel* chn);
-    void        deactivate_channel(Channel* chn);
+    void     activate_channel(Channel* chn);
+    void     deactivate_channel(Channel* chn);
 
     /// \}
 
     // --- Caliper API access
-    
+
     Caliper();
-    
+
     ~Caliper()
         { }
 
@@ -327,19 +327,18 @@ public:
     operator bool () const;
 
     static Caliper instance();
-    
-    static void    release();
-    
     static Caliper sigsafe_instance();
 
     static bool    is_initialized();
+
+    static void    release();
 
     /// \brief Add a list of available caliper services.
     static void    add_services(const CaliperService*);
 
     /// \brief Add a function that is called during %Caliper initialization.
     static void    add_init_hook(void(*fn)());
-    
+
     friend struct GlobalData;
 };
 
