@@ -207,27 +207,6 @@ namespace
 
 void setup_caliper_config(const Args& args)
 {
-    const char* progressmonitor_config[][2] = {
-        { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
-        { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
-        { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
-        { "CALI_TEXTLOG_FILENAME", "stderr"            },
-        { "CALI_TEXTLOG_FORMATSTRING",
-          "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" },
-
-        { NULL, NULL }
-    };
-
-    const char* runtimeprofile_config[][2] = {
-        { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
-        { "CALI_EVENT_TRIGGER",   "annotation" },
-        { "CALI_REPORT_FILENAME", "stderr" },
-        { "CALI_REPORT_CONFIG",
-          "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" },
-
-        { NULL, NULL }
-    };
-
     //   Configure the default config, which can be provided by the user through
     // the "cali-query_caliper.config" file or the "caliper-config" command line arg
     
@@ -259,9 +238,23 @@ void setup_caliper_config(const Args& args)
     // Do this last as this will initialize Caliper.
 
     if (args.is_set("profile"))
-        cali_experiment_create_from_profile("profile",  0, runtimeprofile_config);
+        cali::create_experiment("profile", 0, {
+                { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+                { "CALI_EVENT_TRIGGER",   "annotation" },
+                { "CALI_REPORT_FILENAME", "stderr" },
+                { "CALI_REPORT_CONFIG",
+                        "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" }
+            } );
+    
     if (args.is_set("progress"))
-        cali_experiment_create_from_profile("progress", 0, progressmonitor_config);
+        cali::create_experiment("progress", 0, {
+                { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
+                { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
+                { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
+                { "CALI_TEXTLOG_FILENAME", "stderr"            },
+                { "CALI_TEXTLOG_FORMATSTRING",
+                        "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" }
+            } );
 }
 
 

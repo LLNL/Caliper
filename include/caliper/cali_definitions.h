@@ -57,16 +57,15 @@ typedef enum {
     /** Clear trace and aggregation buffers after flush. */
     CALI_FLUSH_CLEAR_BUFFERS = 1
 } cali_flush_opt;
-
+  
 /**
  * Experiment creation options
  */    
 typedef enum {
-    /** Allow overwriting the experiment configuration at runtime 
-        from environment variables. */
-    CALI_EXPERIMENT_ALLOW_READ_ENV = 1,
     /** Leave the experiment inactive after it is created. */
-    CALI_EXPERIMENT_LEAVE_INACTIVE = 2
+    CALI_EXPERIMENT_LEAVE_INACTIVE = 1,
+    /** Allow reading configuration entries from environment variables. */
+    CALI_EXPERIMENT_ALLOW_READ_ENV = 2
 } cali_experiment_opt;
 
 #ifdef __cplusplus

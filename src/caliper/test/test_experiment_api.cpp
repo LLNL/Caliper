@@ -66,12 +66,17 @@ TEST(ExperimentAPITest, C_API) {
         { nullptr, nullptr }
     };
 
+    cali_configset_t cfgset =
+        cali_create_configset(cfg);
+
     cali_id_t exp_a_id =
-        cali_experiment_create_from_profile("exp.c_api.a", 0, cfg);
+        cali_create_experiment("exp.c_api.a", 0, cfgset);
     cali_id_t exp_b_id =
-        cali_experiment_create_from_profile("exp.c_api.b", 0, cfg);
+        cali_create_experiment("exp.c_api.b", 0, cfgset);
     cali_id_t exp_c_id =
-        cali_experiment_create_from_profile("exp.c_api.c", CALI_EXPERIMENT_LEAVE_INACTIVE, cfg);
+        cali_create_experiment("exp.c_api.c", CALI_EXPERIMENT_LEAVE_INACTIVE, cfgset);
+
+    cali_delete_configset(cfgset);
 
     ASSERT_NE(exp_a_id, CALI_INV_ID);
     ASSERT_NE(exp_b_id, CALI_INV_ID);
@@ -79,7 +84,7 @@ TEST(ExperimentAPITest, C_API) {
 
     cali_begin_int_byname("exp.c_api.all", 7744);
 
-    cali_experiment_deactivate(exp_b_id);
+    cali_deactivate_experiment(exp_b_id);
 
     EXPECT_NE(cali_experiment_is_active(exp_a_id), 0);
     EXPECT_EQ(cali_experiment_is_active(exp_b_id), 0);
@@ -152,7 +157,7 @@ TEST(ExperimentAPITest, C_API) {
 
     cali_end(attr_b);
 
-    cali_experiment_activate(exp_b_id);
+    cali_activate_experiment(exp_b_id);
 
     EXPECT_NE(cali_experiment_is_active(exp_b_id), 0);
 
@@ -174,9 +179,9 @@ TEST(ExperimentAPITest, C_API) {
         EXPECT_TRUE(cali_variant_is_empty(val_a));
     }
 
-    cali_experiment_delete(exp_a_id);
-    cali_experiment_delete(exp_b_id);
-    cali_experiment_delete(exp_c_id);
+    cali_delete_experiment(exp_a_id);
+    cali_delete_experiment(exp_b_id);
+    cali_delete_experiment(exp_c_id);
 
     Caliper c;
 
