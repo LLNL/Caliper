@@ -594,6 +594,9 @@ cali_create_configset(const char* keyvallist[][2])
 {
     cali_configset_t cfg = new _cali_configset_t;
 
+    if (!keyvallist)
+        return cfg;
+
     for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
         cfg->cfgset.emplace( std::make_pair(std::string((*keyvallist)[0]),
                                             std::string((*keyvallist)[1])) );
