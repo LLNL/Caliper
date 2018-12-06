@@ -752,6 +752,7 @@ cali_make_loop_iteration_attribute(const char* name);
 #ifdef __cplusplus
 
 #include <map>
+#include <string>
 
 namespace cali
 {
