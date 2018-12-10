@@ -443,6 +443,21 @@ cali_set_string_byname(const char* attr_name, const char* val);
 void
 cali_end_byname(const char* attr_name);
 
+/*
+ * \brief Set a global attribute with name \a attr_name to \a val.
+ */
+void
+cali_set_global_double_byname(const char* attr_name, double val);
+/** \copydoc cali_set_global_double_byname() */
+void
+cali_set_global_int_byname(const char* attr_name, int val);
+/** \copydoc cali_set_global_double_byname() */
+void
+cali_set_global_string_byname(const char* attr_name, const char* val);
+/** \copydoc cali_set_global_double_byname() */
+void
+cali_set_global_uint_byname(const char* attr_name, uint64_t val);
+
 /**
  * \}
  * \}
