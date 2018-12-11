@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -71,7 +71,7 @@ public:
         { }
 
     virtual const AggregateKernelConfig* config() = 0;
-    
+
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) = 0;
 };
@@ -93,7 +93,7 @@ public:
 // --- CountKernel
 //
 
-class CountKernel : public AggregateKernel {    
+class CountKernel : public AggregateKernel {
 public:
 
     class Config : public AggregateKernelConfig {
@@ -106,8 +106,8 @@ public:
                 m_attr = db.create_attribute("count", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
             return m_attr;
-        }        
-        
+        }
+
         AggregateKernel* make_kernel() {
             return new CountKernel(this);
         }
@@ -126,7 +126,7 @@ public:
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
-    
+
     void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         cali_id_t count_attr_id = m_config->attribute(db).id();
 
@@ -141,7 +141,7 @@ public:
 
     void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         uint64_t count = m_count.load();
-        
+
         if (count > 0)
             list.push_back(Entry(m_config->attribute(db),
                                  Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t))));
@@ -164,7 +164,7 @@ public:
     class Config : public AggregateKernelConfig {
         std::string m_aggr_attr_name;
         Attribute   m_aggr_attr;
-        
+
     public:
 
         Attribute get_aggr_attr(CaliperMetadataAccessInterface& db) {
@@ -173,7 +173,7 @@ public:
 
             return m_aggr_attr;
         }
-        
+
         AggregateKernel* make_kernel() {
             return new SumKernel(this);
         }
@@ -181,13 +181,22 @@ public:
         Config(const std::string& name)
             : m_aggr_attr_name(name),
               m_aggr_attr(Attribute::invalid)
-            {
-                Log(2).stream() << "aggregate: creating sum kernel for attribute " << m_aggr_attr_name << std::endl;
-            }
+            { }
+
+        ~Config() {
+            if (m_aggr_attr == Attribute::invalid)
+                Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
+                                << m_aggr_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_aggr_attr.store_as_value())
+                Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
+                                << m_aggr_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
-        }        
+        }
     };
 
     SumKernel(Config* config)
@@ -195,16 +204,16 @@ public:
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
-    
+
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_lock);
-        
+
         Attribute aggr_attr = m_config->get_aggr_attr(db);
 
         if (aggr_attr == Attribute::invalid)
             return;
-            
+
         for (const Entry& e : list) {
             if (e.attribute() == aggr_attr.id()) {
                 switch (aggr_attr.type()) {
@@ -223,7 +232,7 @@ public:
                 }
 
                 ++m_count;
-                
+
                 break;
             }
         }
@@ -254,7 +263,7 @@ public:
         Attribute            m_target_attr;
 
         StatisticsAttributes m_stat_attrs;
-        
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -275,13 +284,13 @@ public:
             cali_attr_type type = m_target_attr.type();
             int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
-            m_stat_attrs.min = 
+            m_stat_attrs.min =
                 db.create_attribute("min#" + m_target_attr_name, type, prop);
 
             a = m_stat_attrs;
             return true;
         }
-                
+
         AggregateKernel* make_kernel() {
             return new MinKernel(this);
         }
@@ -293,9 +302,20 @@ public:
                 Log(2).stream() << "aggregate: creating min kernel for attribute " << m_target_attr_name << std::endl;
             }
 
+        ~Config() {
+            if (m_target_attr == Attribute::invalid)
+                Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr.store_as_value())
+                Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
+
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
-        }        
+        }
     };
 
     MinKernel(Config* config)
@@ -313,7 +333,7 @@ public:
 
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
-            
+
         switch (target_attr.type()) {
         case CALI_TYPE_DOUBLE:
         {
@@ -321,9 +341,9 @@ public:
                 m_min = Variant(std::numeric_limits<double>::max());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    double val = e.value().to_double();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    double val = e.value().to_double();
+
                     m_min = Variant(std::min(m_min.to_double(), val));
                     ++m_count;
                 } else if (e.attribute() == stat_attr.min.id()) {
@@ -338,9 +358,9 @@ public:
                 m_min = Variant(std::numeric_limits<int>::max());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    int val = e.value().to_int();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    int val = e.value().to_int();
+
                     m_min = Variant(std::min(m_min.to_int(), val));
                 } else if (e.attribute() == stat_attr.min.id()) {
                     m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
@@ -354,9 +374,9 @@ public:
                 m_min = Variant(std::numeric_limits<uint64_t>::max());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    uint64_t val = e.value().to_uint();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    uint64_t val = e.value().to_uint();
+
                     m_min = Variant(std::min(m_min.to_uint(), val));
                 } else if (e.attribute() == stat_attr.min.id()) {
                     m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
@@ -387,7 +407,7 @@ private:
     Variant    m_min;
 
     std::mutex m_lock;
-    
+
     Config*    m_config;
 };
 
@@ -403,7 +423,7 @@ public:
         Attribute            m_target_attr;
 
         StatisticsAttributes m_stat_attrs;
-        
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -424,13 +444,13 @@ public:
             cali_attr_type type = m_target_attr.type();
             int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
-            m_stat_attrs.max = 
+            m_stat_attrs.max =
                 db.create_attribute("max#" + m_target_attr_name, type, prop);
 
             a = m_stat_attrs;
             return true;
         }
-                
+
         AggregateKernel* make_kernel() {
             return new MaxKernel(this);
         }
@@ -442,9 +462,20 @@ public:
                 Log(2).stream() << "aggregate: creating max kernel for attribute " << m_target_attr_name << std::endl;
             }
 
+        ~Config() {
+            if (m_target_attr == Attribute::invalid)
+                Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr.store_as_value())
+                Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
+
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
-        }        
+        }
     };
 
     MaxKernel(Config* config)
@@ -462,7 +493,7 @@ public:
 
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
-            
+
         switch (target_attr.type()) {
         case CALI_TYPE_DOUBLE:
         {
@@ -470,9 +501,9 @@ public:
                 m_max = Variant(std::numeric_limits<double>::min());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    double val = e.value().to_double();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    double val = e.value().to_double();
+
                     m_max = Variant(std::max(m_max.to_double(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
                     m_max = Variant(std::max(e.value().to_double(), m_max.to_double()));
@@ -486,9 +517,9 @@ public:
                 m_max = Variant(std::numeric_limits<int>::min());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    int val = e.value().to_int();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    int val = e.value().to_int();
+
                     m_max = Variant(std::max(m_max.to_int(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
                     m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
@@ -502,9 +533,9 @@ public:
                 m_max = Variant(std::numeric_limits<uint64_t>::min());
 
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    uint64_t val = e.value().to_uint();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    uint64_t val = e.value().to_uint();
+
                     m_max = Variant(std::max(m_max.to_uint(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
                     m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
@@ -532,7 +563,7 @@ public:
 private:
 
     Variant    m_max;
-    std::mutex m_lock;    
+    std::mutex m_lock;
     Config*    m_config;
 };
 
@@ -550,7 +581,7 @@ public:
         Attribute            m_target_attr;
 
         StatisticsAttributes m_stat_attrs;
-        
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -571,17 +602,17 @@ public:
             cali_attr_type type = m_target_attr.type();
             int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
-            m_stat_attrs.sum = 
+            m_stat_attrs.sum =
                 db.create_attribute("sum#" + m_target_attr_name, type, prop);
-            m_stat_attrs.avg = 
+            m_stat_attrs.avg =
                 db.create_attribute("avg#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop);
-            m_stat_attrs.count = 
+            m_stat_attrs.count =
                 db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT, prop | CALI_ATTR_HIDDEN);
 
             a = m_stat_attrs;
             return true;
         }
-                
+
         AggregateKernel* make_kernel() {
             return new AvgKernel(this);
         }
@@ -593,9 +624,20 @@ public:
                 Log(2).stream() << "aggregate: creating avg kernel for attribute " << m_target_attr_name << std::endl;
             }
 
+        ~Config() {
+            if (m_target_attr == Attribute::invalid)
+                Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr.store_as_value())
+                Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
+
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
-        }        
+        }
     };
 
     AvgKernel(Config* config)
@@ -613,14 +655,14 @@ public:
 
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
-            
+
         switch (target_attr.type()) {
         case CALI_TYPE_DOUBLE:
         {
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    double val = e.value().to_double();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    double val = e.value().to_double();
+
                     m_sum = Variant(m_sum.to_double() + val);
 
                     ++m_count;
@@ -635,9 +677,9 @@ public:
         case CALI_TYPE_INT:
         {
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    int val = e.value().to_int();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    int val = e.value().to_int();
+
                     m_sum = Variant(m_sum.to_int() + val);
                     ++m_count;
                 } else if (e.attribute() == stat_attr.sum.id()) {
@@ -651,9 +693,9 @@ public:
         case CALI_TYPE_UINT:
         {
             for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {                        
-                    uint64_t val = e.value().to_uint();                        
-                    
+                if (e.attribute() == target_attr.id()) {
+                    uint64_t val = e.value().to_uint();
+
                     m_sum = Variant(m_sum.to_uint() + val);
 
                     ++m_count;
@@ -690,7 +732,7 @@ private:
     Variant    m_sum;
 
     std::mutex m_lock;
-    
+
     Config*    m_config;
 };
 
@@ -723,7 +765,7 @@ public:
             return std::pair<Attribute,Attribute>(m_target_attr1, m_target_attr2);
         }
 
-        bool get_percentage_attributes(CaliperMetadataAccessInterface& db, 
+        bool get_percentage_attributes(CaliperMetadataAccessInterface& db,
                                        Attribute& percentage_attr,
                                        Attribute& sum1_attr,
                                        Attribute& sum2_attr) {
@@ -738,16 +780,16 @@ public:
                 return true;
             }
 
-            m_percentage_attr = 
-                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name, 
+            m_percentage_attr =
+                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name,
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
-            m_sum1_attr = 
-                db.create_attribute("pc.sum#" + m_target_attr1_name, 
+            m_sum1_attr =
+                db.create_attribute("pc.sum#" + m_target_attr1_name,
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
-            m_sum2_attr = 
-                db.create_attribute("pc.sum#" + m_target_attr2_name, 
+            m_sum2_attr =
+                db.create_attribute("pc.sum#" + m_target_attr2_name,
                         CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
             percentage_attr = m_percentage_attr;
@@ -756,7 +798,7 @@ public:
 
             return true;
         }
-                
+
         AggregateKernel* make_kernel() {
             return new PercentageKernel(this);
         }
@@ -767,13 +809,32 @@ public:
               m_target_attr1(Attribute::invalid),
               m_target_attr2(Attribute::invalid)
             {
-                Log(2).stream() << "aggregate: creating percentage kernel for attributes " 
+                Log(2).stream() << "aggregate: creating percentage kernel for attributes "
                                 << m_target_attr1_name << " / " << m_target_attr2_name <<std::endl;
             }
 
+        ~Config() {
+            if (m_target_attr1 == Attribute::invalid)
+                Log(0).stream() << "percentage(): Attribute "
+                                << m_target_attr1_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr1.store_as_value())
+                Log(0).stream() << "percentage(): Attribute "
+                                << m_target_attr1_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+            if (m_target_attr2 == Attribute::invalid)
+                Log(0).stream() << "percentage(): Attribute "
+                                << m_target_attr2_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr2.store_as_value())
+                Log(0).stream() << "percentage(): Attribute "
+                                << m_target_attr2_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
+
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg);
-        }        
+        }
     };
 
     PercentageKernel(Config* config)
@@ -793,7 +854,7 @@ public:
             return;
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attrs.first.id()) {                        
+            if (e.attribute() == target_attrs.first.id()) {
                 m_sum1 += e.value().to_double();
             } else if (e.attribute() == target_attrs.second.id()) {
                 m_sum2 += e.value().to_double();
@@ -801,7 +862,7 @@ public:
                 m_sum1 += e.value().to_double();
             } else if (e.attribute() == sum2_attr.id()) {
                 m_sum2 += e.value().to_double();
-            }  
+            }
         }
     }
 
@@ -824,7 +885,7 @@ private:
     double    m_sum2;
 
     std::mutex m_lock;
-    
+
     Config*    m_config;
 };
 
@@ -854,7 +915,7 @@ public:
             return m_target_attr;
         }
 
-        bool get_percentage_attribute(CaliperMetadataAccessInterface& db, 
+        bool get_percentage_attribute(CaliperMetadataAccessInterface& db,
                                       Attribute& percentage_attr,
                                       Attribute& sum_attr) {
             if (m_target_attr == Attribute::invalid)
@@ -865,13 +926,13 @@ public:
                 return true;
             }
 
-            m_percentage_attr = 
-                db.create_attribute("percent_total#" + m_target_attr_name, 
+            m_percentage_attr =
+                db.create_attribute("percent_total#" + m_target_attr_name,
                                     CALI_TYPE_DOUBLE,
                                     CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
-            m_sum_attr = 
-                db.create_attribute("pct.sum#" + m_target_attr_name, 
+            m_sum_attr =
+                db.create_attribute("pct.sum#" + m_target_attr_name,
                                     CALI_TYPE_DOUBLE,
                                     CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
@@ -880,7 +941,7 @@ public:
 
             return true;
         }
-                
+
         AggregateKernel* make_kernel() {
             return new PercentTotalKernel(this);
         }
@@ -901,13 +962,24 @@ public:
               m_target_attr(Attribute::invalid),
               m_total(0)
         {
-            Log(2).stream() << "aggregate: creating percent_total kernel for attribute " 
+            Log(2).stream() << "aggregate: creating percent_total kernel for attribute "
                             << m_target_attr_name << std::endl;
+        }
+
+        ~Config() {
+            if (m_target_attr == Attribute::invalid)
+                Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr.store_as_value())
+                Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
         }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg);
-        }        
+        }
     };
 
     PercentTotalKernel(Config* config)
@@ -928,18 +1000,18 @@ public:
 
         for (const Entry& e : list) {
             cali_id_t id = e.attribute();
-            
+
             if (id == target_id || id == sum_id) {
                 double val = e.value().to_double();
                 m_sum += val;
                 m_config->add(val);
-            } 
+            }
         }
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         double total = m_config->get_total();
-        
+
         if (total > 0) {
             Attribute percentage_attr, sum_attr;
 
@@ -954,8 +1026,8 @@ public:
 private:
 
     double     m_sum;
-    
-    std::mutex m_lock;    
+
+    std::mutex m_lock;
     Config*    m_config;
 };
 
@@ -970,7 +1042,7 @@ public:
         std::string m_target_attr_name;
         Attribute   m_target_attr;
         Attribute   m_sum_attr;
-        
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -983,9 +1055,9 @@ public:
         Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
             if (m_target_attr == Attribute::invalid)
                 return Attribute::invalid;
-            
+
             if (m_sum_attr == Attribute::invalid)
-                m_sum_attr = db.create_attribute("inclusive#" + m_target_attr_name, 
+                m_sum_attr = db.create_attribute("inclusive#" + m_target_attr_name,
                                                  CALI_TYPE_DOUBLE,
                                                  CALI_ATTR_SKIP_EVENTS |
                                                  CALI_ATTR_ASVALUE     |
@@ -993,7 +1065,7 @@ public:
 
             return m_sum_attr;
         }
-        
+
         AggregateKernel* make_kernel() {
             return new InclusiveSumKernel(this);
         }
@@ -1007,9 +1079,20 @@ public:
                 Log(2).stream() << "creating inclusive sum kernel for " << m_target_attr_name << std::endl;
             }
 
+        ~Config() {
+            if (m_target_attr == Attribute::invalid)
+                Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " not found!"
+                                << std::endl;
+            else if (!m_target_attr.store_as_value())
+                Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
+                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
+                                << std::endl;
+        }
+
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
-        }        
+        }
     };
 
     InclusiveSumKernel(Config* config)
@@ -1018,16 +1101,16 @@ public:
         }
 
     const AggregateKernelConfig* config() { return m_config; }
-    
+
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::lock_guard<std::mutex>
             g(m_lock);
-        
+
         Attribute aggr_attr = m_config->get_target_attr(db);
 
         if (aggr_attr == Attribute::invalid)
             return;
-            
+
         for (const Entry& e : list) {
             if (e.attribute() == aggr_attr.id()) {
                 switch (aggr_attr.type()) {
@@ -1046,7 +1129,7 @@ public:
                 }
 
                 ++m_count;
-                
+
                 break;
             }
         }
@@ -1091,7 +1174,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Min,          "min",           1, 1, kernel_args  },
     { KernelID::Max,          "max",           1, 1, kernel_args  },
     { KernelID::Avg,          "avg",           1, 1, kernel_args  },
-    
+
     QuerySpec::FunctionSignatureTerminator
 };
 
@@ -1123,9 +1206,9 @@ struct Aggregator::AggregatorImpl
 
     bool                   m_select_all;
     bool                   m_select_nested;
-    
+
     vector<AggregateKernelConfig*> m_kernel_configs;
-    
+
     struct TrieNode {
         uint32_t next[256] = { 0 };
         vector<AggregateKernel*> kernels;
@@ -1137,9 +1220,9 @@ struct Aggregator::AggregatorImpl
         }
     };
 
-    std::vector<TrieNode*> m_trie;    
+    std::vector<TrieNode*> m_trie;
     std::mutex             m_trie_lock;
-    
+
     //
     // --- parse config
     //
@@ -1151,7 +1234,7 @@ struct Aggregator::AggregatorImpl
 
     void parse_aggr_config(const string& configstr) {
         vector<string> aggregators;
-        
+
         util::split(configstr, ':', back_inserter(aggregators));
 
         for (const string& s : aggregators) {
@@ -1182,13 +1265,13 @@ struct Aggregator::AggregatorImpl
         //
         // --- key config
         //
-        
+
         m_kernel_configs.clear();
         m_key_strings.clear();
-        
+
         m_select_all    = false;
         m_select_nested = false;
-        
+
         switch (spec.aggregation_key.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
@@ -1198,7 +1281,7 @@ struct Aggregator::AggregatorImpl
             m_key_strings = spec.aggregation_key.list;
             break;
         default:
-            ; 
+            ;
         }
 
         {
@@ -1210,7 +1293,7 @@ struct Aggregator::AggregatorImpl
                 m_key_strings.erase(it);
             }
         }
-        
+
         //
         // --- kernel config
         //
@@ -1238,14 +1321,14 @@ struct Aggregator::AggregatorImpl
             break;
         }
     }
-    
+
     //
     // --- aggregation db ops
     //
-    
+
     TrieNode* get_trienode(uint32_t id) {
         // Assume trie is locked!!
-        
+
         if (id >= m_trie.size())
             m_trie.resize(id+1);
 
@@ -1275,7 +1358,7 @@ struct Aggregator::AggregatorImpl
         if (trie->kernels.empty())
             for (AggregateKernelConfig* c : m_kernel_configs)
                 trie->kernels.push_back(c->make_kernel());
-        
+
         return trie;
     }
 
@@ -1286,9 +1369,9 @@ struct Aggregator::AggregatorImpl
     std::vector<Attribute> update_key_attributes(CaliperMetadataAccessInterface& db) {
         std::lock_guard<std::mutex>
             g(m_key_lock);
-        
+
         auto it = m_key_strings.begin();
-        
+
         while (it != m_key_strings.end()) {
             Attribute attr = db.get_attribute(*it);
 
@@ -1304,7 +1387,7 @@ struct Aggregator::AggregatorImpl
 
     bool is_key(const CaliperMetadataAccessInterface& db, const std::vector<Attribute>& key_attrs, cali_id_t attr_id) {
         Attribute attr = db.get_attribute(attr_id);
-        
+
         if (m_select_nested && attr.is_nested())
             return true;
 
@@ -1328,11 +1411,11 @@ struct Aggregator::AggregatorImpl
         uint64_t      num_immediate = 0;
         unsigned char imm_key[MAX_KEYLEN];
         size_t        imm_key_len = 0;
-        
+
         for (const Entry& e : immediates) {
             unsigned char buf[32]; // max space for one immediate entry
             size_t        p = 0;
-            
+
             p += vlenc_u64(e.attribute(), buf+p);
             p += e.value().pack(buf+p);
 
@@ -1344,9 +1427,9 @@ struct Aggregator::AggregatorImpl
             memcpy(imm_key+imm_key_len, buf, p);
             imm_key_len += p;
         }
-        
+
         size_t pos = vlenc_u64(2*num_immediate + (key_node ? 1 : 0), key);
-        
+
         memcpy(key+pos, node_key, node_key_len);
         pos += node_key_len;
         memcpy(key+pos, imm_key,  imm_key_len);
@@ -1370,33 +1453,33 @@ struct Aggregator::AggregatorImpl
         unsigned char key[MAX_KEYLEN];
         size_t        pos  = pack_key(key_node, immediates, db, key);
 
-        return find_trienode(pos, key);        
+        return find_trienode(pos, key);
     }
-    
+
     void process(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::vector<Attribute>   key_attrs = update_key_attributes(db);
-                
+
         // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
         std::vector<const Node*> rv_nodes;
         std::vector<Entry>       immediates;
-        
+
         nodes.reserve(80);
-        immediates.reserve(key_attrs.size());        
+        immediates.reserve(key_attrs.size());
 
         bool select_all = m_select_all;
-        
+
         for (const Entry& e : list)
             for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
                 if (select_all || is_key(db, key_attrs, node->attribute()))
-                    nodes.push_back(node);    
+                    nodes.push_back(node);
 
         // Only include explicitly selected immediate entries in the key.
         for (const Entry& e : list)
             if (e.is_immediate() && is_key(db, key_attrs, e.attribute()))
                 immediates.push_back(e);
-        
+
         // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
         //       Keeps nested attributes separate.
 
@@ -1407,14 +1490,14 @@ struct Aggregator::AggregatorImpl
                 return a->attribute() < b->attribute(); } );
         std::sort(immediates.begin(), immediates.end(), [](const Entry& a, const Entry& b){
                 return a.attribute() < b.attribute(); } );
-        
+
         TrieNode* trie = get_aggregation_entry(nodes.begin(), nodes.end(), immediates, db);
 
         if (!trie)
             return;
 
         // --- Aggregate
-        
+
         for (size_t k = 0; k < trie->kernels.size(); ++k) {
             trie->kernels[k]->aggregate(db, list);
 
@@ -1422,7 +1505,7 @@ struct Aggregator::AggregatorImpl
 
             if (trie->kernels[k]->config()->is_inclusive() && nodes.begin() != nonnested_begin) {
                 auto it = nodes.begin();
-                
+
                 for (++it; it != nonnested_begin; ++it) {
                     TrieNode* p_trie = get_aggregation_entry(it, nodes.end(), immediates, db);
 
@@ -1450,7 +1533,7 @@ struct Aggregator::AggregatorImpl
 
         for (unsigned i = 0; i < n/2; ++i) {
             bool      ok   = true;
-            
+
             cali_id_t id   = static_cast<cali_id_t>(vldec_u64(key+p, &p));
             Variant   data = Variant::unpack(key+p, &p, &ok);
 
@@ -1458,14 +1541,14 @@ struct Aggregator::AggregatorImpl
                 list.push_back(Entry(db.get_attribute(id), data));
         }
     }
-    
+
     void recursive_flush(size_t n, unsigned char* key, TrieNode* trie,
                          CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
         if (!trie)
             return;
 
         // --- Write current entry (if it represents a snapshot)
-        
+
         if (!trie->kernels.empty()) {
             EntryList list;
 
@@ -1485,7 +1568,7 @@ struct Aggregator::AggregatorImpl
 
         memset(next_key, 0, n+2);
         memcpy(next_key, key, n);
-        
+
         for (size_t i = 0; i < 256; ++i) {
             if (trie->next[i] == 0)
                 continue;
@@ -1496,23 +1579,23 @@ struct Aggregator::AggregatorImpl
             recursive_flush(n+1, next_key, next, db, push);
         }
     }
-    
+
     void flush(CaliperMetadataAccessInterface& db, const SnapshotProcessFn push) {
         // NOTE: No locking: we assume flush() runs serially!
-        
+
         TrieNode*     trie = get_trienode(0);
         unsigned char key  = 0;
 
         recursive_flush(0, &key, trie, db, push);
     }
 
-    AggregatorImpl() 
+    AggregatorImpl()
         : m_select_all(false)
     {
         m_trie.reserve(4096);
     }
 
-    AggregatorImpl(const QuerySpec& spec) 
+    AggregatorImpl(const QuerySpec& spec)
         : m_select_all(false)
     {
         configure(spec);
@@ -1524,7 +1607,7 @@ struct Aggregator::AggregatorImpl
             delete e;
 
         m_trie.clear();
-        
+
         for (AggregateKernelConfig* c : m_kernel_configs)
             delete c;
 
@@ -1549,7 +1632,7 @@ Aggregator::~Aggregator()
     mP.reset();
 }
 
-void 
+void
 Aggregator::flush(CaliperMetadataAccessInterface& db, SnapshotProcessFn push)
 {
     mP->flush(db, push);
@@ -1588,6 +1671,6 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
     case KernelID::Avg:
         return std::string("avg#") + op.args[0];
     }
-   
+
     return std::string();
 }
