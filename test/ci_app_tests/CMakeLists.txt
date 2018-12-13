@@ -19,7 +19,8 @@ set(CALIPER_CI_C_TEST_APPS
   ci_test_alloc
   ci_test_alloc_hooks
   ci_test_c_ann
-  ci_test_c_snapshot)
+  ci_test_c_snapshot
+  ci_test_channel_api)
 set(CALIPER_CI_MPI_TEST_APPS
   ci_test_cali_before_mpi
   ci_test_mpi_before_cali)
