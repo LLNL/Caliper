@@ -751,6 +751,18 @@ cali_flush(int flush_opts)
 }
 
 void
+cali_channel_flush(cali_id_t chn_id, int flush_opts)
+{
+    Caliper  c;
+    Channel* chn = c.get_channel(chn_id);
+
+    c.flush_and_write(chn, nullptr);
+
+    if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
+        c.clear(chn);
+}
+
+void
 cali_init()
 {
     Caliper::instance();
