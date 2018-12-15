@@ -298,9 +298,9 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
-# Create pkg-confic .pc file
-set(PKG_CONFIG_INCLUDEDIR "\${prefix}/include")
-set(PKG_CONFIG_LIBDIR "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
+# Create pkg-config .pc file
+set(PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+set(PKG_CONFIG_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
 set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
 set(PKG_CONFIG_CFLAGS "-I\${includedir}")
 
