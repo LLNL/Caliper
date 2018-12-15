@@ -168,9 +168,17 @@ public:
     public:
 
         Attribute get_aggr_attr(CaliperMetadataAccessInterface& db) {
-            if (m_aggr_attr == Attribute::invalid)
+            if (m_aggr_attr == Attribute::invalid) {
                 m_aggr_attr = db.get_attribute(m_aggr_attr_name);
 
+                if (m_aggr_attr != Attribute::invalid)
+                    if (!m_aggr_attr.store_as_value())
+                        Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
+                                        << m_aggr_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
+            
             return m_aggr_attr;
         }
 
@@ -182,17 +190,6 @@ public:
             : m_aggr_attr_name(name),
               m_aggr_attr(Attribute::invalid)
             { }
-
-        ~Config() {
-            if (m_aggr_attr == Attribute::invalid)
-                Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
-                                << m_aggr_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_aggr_attr.store_as_value())
-                Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
-                                << m_aggr_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -267,9 +264,17 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
-
+                
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
+            
             return m_target_attr;
         }
 
@@ -301,17 +306,6 @@ public:
             {
                 Log(2).stream() << "aggregate: creating min kernel for attribute " << m_target_attr_name << std::endl;
             }
-
-        ~Config() {
-            if (m_target_attr == Attribute::invalid)
-                Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr.store_as_value())
-                Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -427,8 +421,16 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
+
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
 
             return m_target_attr;
         }
@@ -461,17 +463,6 @@ public:
             {
                 Log(2).stream() << "aggregate: creating max kernel for attribute " << m_target_attr_name << std::endl;
             }
-
-        ~Config() {
-            if (m_target_attr == Attribute::invalid)
-                Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr.store_as_value())
-                Log(0).stream() << "max(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -585,8 +576,17 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
+
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
+
 
             return m_target_attr;
         }
@@ -623,17 +623,6 @@ public:
             {
                 Log(2).stream() << "aggregate: creating avg kernel for attribute " << m_target_attr_name << std::endl;
             }
-
-        ~Config() {
-            if (m_target_attr == Attribute::invalid)
-                Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr.store_as_value())
-                Log(0).stream() << "avg(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -756,11 +745,28 @@ public:
     public:
 
         std::pair<Attribute,Attribute> get_target_attrs(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr1 == Attribute::invalid)
+            if (m_target_attr1 == Attribute::invalid) {
                 m_target_attr1 = db.get_attribute(m_target_attr1_name);
+                
+                if (m_target_attr1 != Attribute::invalid)
+                    if (!m_target_attr1.store_as_value())
+                        Log(0).stream() << "percentage(): Attribute "
+                                        << m_target_attr1_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
 
-            if (m_target_attr2 == Attribute::invalid)
+            if (m_target_attr2 == Attribute::invalid) {
                 m_target_attr2 = db.get_attribute(m_target_attr2_name);
+
+                if (m_target_attr2 != Attribute::invalid)
+                    if (!m_target_attr2.store_as_value())
+                        Log(0).stream() << "percentage(): Attribute "
+                                        << m_target_attr2_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
+
 
             return std::pair<Attribute,Attribute>(m_target_attr1, m_target_attr2);
         }
@@ -812,25 +818,6 @@ public:
                 Log(2).stream() << "aggregate: creating percentage kernel for attributes "
                                 << m_target_attr1_name << " / " << m_target_attr2_name <<std::endl;
             }
-
-        ~Config() {
-            if (m_target_attr1 == Attribute::invalid)
-                Log(0).stream() << "percentage(): Attribute "
-                                << m_target_attr1_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr1.store_as_value())
-                Log(0).stream() << "percentage(): Attribute "
-                                << m_target_attr1_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-            if (m_target_attr2 == Attribute::invalid)
-                Log(0).stream() << "percentage(): Attribute "
-                                << m_target_attr2_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr2.store_as_value())
-                Log(0).stream() << "percentage(): Attribute "
-                                << m_target_attr2_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg);
@@ -909,8 +896,16 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
+
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
 
             return m_target_attr;
         }
@@ -964,17 +959,6 @@ public:
         {
             Log(2).stream() << "aggregate: creating percent_total kernel for attribute "
                             << m_target_attr_name << std::endl;
-        }
-
-        ~Config() {
-            if (m_target_attr == Attribute::invalid)
-                Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr.store_as_value())
-                Log(0).stream() << "percent_total(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
         }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -1032,7 +1016,7 @@ private:
 };
 
 //
-// --- SumKernel
+// --- InclusiveSumKernel
 //
 
 class InclusiveSumKernel : public AggregateKernel {
@@ -1046,8 +1030,16 @@ public:
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
+            if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
+                
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
 
             return m_target_attr;
         }
@@ -1078,17 +1070,6 @@ public:
             {
                 Log(2).stream() << "creating inclusive sum kernel for " << m_target_attr_name << std::endl;
             }
-
-        ~Config() {
-            if (m_target_attr == Attribute::invalid)
-                Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " not found!"
-                                << std::endl;
-            else if (!m_target_attr.store_as_value())
-                Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
-                                << m_target_attr_name << " does not have CALI_ATTR_ASVALUE property!"
-                                << std::endl;
-        }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
