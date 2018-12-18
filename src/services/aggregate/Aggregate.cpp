@@ -102,7 +102,7 @@ class Aggregate
     // an array with each channel's ThreadDBs for the local thread.
     
     class ThreadData {
-        std::vector<ThreadDB*>   exp_thread_dbs;
+        std::vector<ThreadDB*>   chn_thread_dbs;
 
         //   The ThreadDB objects are managed through the tdb_list in the 
         // Aggregate object for the channel they belong to. Here, we store
@@ -110,53 +110,53 @@ class Aggregate
         // local thread.
         //   Channels and their ThreadDB objects can be deleted behind
         // the back of the thread-local data objects. Therefore, we keep track
-        // of active channels in s_active_exps so we don't touch stale
+        // of active channels in s_active_chns so we don't touch stale
         // ThreadDB pointers whose channels have been deleted.
 
-        static std::vector<bool> s_active_exps;
-        static std::mutex        s_active_exps_lock;
+        static std::vector<bool> s_active_chns;
+        static std::mutex        s_active_chns_lock;
         
     public:
 
         ~ThreadData() {
             std::lock_guard<std::mutex>
-                g(s_active_exps_lock);
+                g(s_active_chns_lock);
 
-            for (size_t i = 0; i < std::min<size_t>(exp_thread_dbs.size(), s_active_exps.size()); ++i)
-                if (s_active_exps[i] && exp_thread_dbs[i])
-                    exp_thread_dbs[i]->retired.store(true);
+            for (size_t i = 0; i < std::min<size_t>(chn_thread_dbs.size(), s_active_chns.size()); ++i)
+                if (s_active_chns[i] && chn_thread_dbs[i])
+                    chn_thread_dbs[i]->retired.store(true);
         }
 
-        static void deactivate_exp(Channel* chn) {
+        static void deactivate_chn(Channel* chn) {
             std::lock_guard<std::mutex>
-                g(s_active_exps_lock);
+                g(s_active_chns_lock);
             
-            s_active_exps[chn->id()] = false;
+            s_active_chns[chn->id()] = false;
         }
 
         ThreadDB* acquire_tdb(Aggregate* agg, Channel* chn, bool alloc) {
-            size_t    expI = chn->id();
+            size_t    chnI = chn->id();
             ThreadDB* tdb  = nullptr;
 
-            if (expI < exp_thread_dbs.size())
-                tdb = exp_thread_dbs[expI];
+            if (chnI < chn_thread_dbs.size())
+                tdb = chn_thread_dbs[chnI];
 
             if (!tdb && alloc) {
                 tdb = new ThreadDB;
 
-                if (exp_thread_dbs.size() <= expI)
-                    exp_thread_dbs.resize(std::max<size_t>(16, expI+1));
+                if (chn_thread_dbs.size() <= chnI)
+                    chn_thread_dbs.resize(std::max<size_t>(16, chnI+1));
 
-                exp_thread_dbs[expI] = tdb;
+                chn_thread_dbs[chnI] = tdb;
 
                 {
                     std::lock_guard<std::mutex>
-                        g(s_active_exps_lock);
+                        g(s_active_chns_lock);
 
-                    if (s_active_exps.size() <= expI)
-                        s_active_exps.resize(std::max<size_t>(16, expI+1));
+                    if (s_active_chns.size() <= chnI)
+                        s_active_chns.resize(std::max<size_t>(16, chnI+1));
 
-                    s_active_exps[expI] = true;
+                    s_active_chns[chnI] = true;
                 }
 
                 std::lock_guard<util::spinlock>
@@ -483,7 +483,7 @@ public:
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
-                sT.deactivate_exp(chn);
+                sT.deactivate_chn(chn);
                 instance->clear_cb(c, chn); // prints logs
                 instance->finish_cb(c, chn);
                 delete instance;
@@ -509,8 +509,8 @@ const ConfigSet::Entry Aggregate::s_configdata[] = {
 
 thread_local Aggregate::ThreadData Aggregate::sT;
 
-std::vector<bool>       Aggregate::ThreadData::s_active_exps;
-std::mutex              Aggregate::ThreadData::s_active_exps_lock;
+std::vector<bool>       Aggregate::ThreadData::s_active_chns;
+std::mutex              Aggregate::ThreadData::s_active_chns_lock;
 
 } // namespace [anonymous]
 

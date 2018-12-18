@@ -132,7 +132,7 @@ protected:
     /// annotation binding is found.
     ///
     /// \param c    The %Caliper instance
-    /// \param exp  The channel instance
+    /// \param chn  The channel instance
     /// \param attr The attribute being marked
     virtual void on_mark_attribute(Caliper*           c,
                                    Channel*        chn,

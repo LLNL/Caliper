@@ -88,7 +88,7 @@ class Trace
     };
 
     class ThreadData {
-        std::vector<TraceBuffer*> exp_buffers;
+        std::vector<TraceBuffer*> chn_buffers;
 
         //   The TraceBuffer objects are managed through the tbuf_list in the 
         // Trace object for the channel they belong to. Here, we store
@@ -96,53 +96,53 @@ class Trace
         // on the local thread.
         //   Channels and their TraceBuffer objects can be deleted behind
         // the back of the thread-local data objects. Therefore, we keep track
-        // of active channels in s_active_exps so we don't touch stale
+        // of active channels in s_active_chns so we don't touch stale
         // TraceBuffer pointers whose channels have been deleted.
         
-        static std::vector<bool>  s_active_exps;
-        static std::mutex         s_active_exps_lock;
+        static std::vector<bool>  s_active_chns;
+        static std::mutex         s_active_chns_lock;
 
     public:
 
         ~ThreadData() {
             std::lock_guard<std::mutex>
-                g(s_active_exps_lock);
+                g(s_active_chns_lock);
 
-            for (size_t i = 0; i < std::min<size_t>(exp_buffers.size(), s_active_exps.size()); ++i)
-                if (s_active_exps[i] && exp_buffers[i])
-                    exp_buffers[i]->retired.store(true);
+            for (size_t i = 0; i < std::min<size_t>(chn_buffers.size(), s_active_chns.size()); ++i)
+                if (s_active_chns[i] && chn_buffers[i])
+                    chn_buffers[i]->retired.store(true);
         }
 
-        static void deactivate_exp(Channel* chn) {
+        static void deactivate_chn(Channel* chn) {
             std::lock_guard<std::mutex>
-                g(s_active_exps_lock);
+                g(s_active_chns_lock);
             
-            s_active_exps[chn->id()] = false;
+            s_active_chns[chn->id()] = false;
         }
 
         TraceBuffer* acquire_tbuf(Trace* trace, Channel* chn, bool alloc) {
-            size_t       expI = chn->id(); 
+            size_t       chnI = chn->id(); 
             TraceBuffer* tbuf = nullptr;
             
-            if (expI < exp_buffers.size())
-                tbuf = exp_buffers[expI];
+            if (chnI < chn_buffers.size())
+                tbuf = chn_buffers[chnI];
 
             if (!tbuf && alloc) {
                 tbuf = new TraceBuffer(trace->buffersize);
 
-                if (exp_buffers.size() <= expI)
-                    exp_buffers.resize(std::max<size_t>(16, expI+1));
+                if (chn_buffers.size() <= chnI)
+                    chn_buffers.resize(std::max<size_t>(16, chnI+1));
 
-                exp_buffers[expI] = tbuf;
+                chn_buffers[chnI] = tbuf;
 
                 {
                     std::lock_guard<std::mutex>
-                        g(s_active_exps_lock);
+                        g(s_active_chns_lock);
 
-                    if (s_active_exps.size() <= expI)
-                        s_active_exps.resize(std::max<size_t>(16, expI+1));
+                    if (s_active_chns.size() <= chnI)
+                        s_active_chns.resize(std::max<size_t>(16, chnI+1));
 
-                    s_active_exps[expI] = true;
+                    s_active_chns[chnI] = true;
                 }
 
                 std::lock_guard<util::spinlock>
@@ -214,7 +214,7 @@ class Trace
     void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* sbuf) {
         TraceBuffer* tbuf = sT.acquire_tbuf(this, chn, !c->is_signal());
 
-        if (!tbuf || tbuf->stopped.load()) { // error messaging is done in acquire_tbuf()
+        if (!tbuf || tbuf->stopped.load()) {
             ++dropped_snapshots;
             return;
         }
@@ -389,7 +389,7 @@ public:
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
-                sT.deactivate_exp(chn);
+                sT.deactivate_chn(chn);
                 instance->finish_cb(c, chn);
                 delete instance;
             });
@@ -418,8 +418,8 @@ const ConfigSet::Entry Trace::s_configdata[] = {
 
 thread_local Trace::ThreadData Trace::sT;
 
-std::vector<bool> Trace::ThreadData::s_active_exps;
-std::mutex        Trace::ThreadData::s_active_exps_lock;
+std::vector<bool> Trace::ThreadData::s_active_chns;
+std::mutex        Trace::ThreadData::s_active_chns_lock;
 
 } // namespace
 

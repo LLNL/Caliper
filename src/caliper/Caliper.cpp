@@ -1389,8 +1389,8 @@ Caliper::delete_channel(Channel* chn)
 
 /// \brief Activate the given channel.
 ///
-/// Inactive channels will not track or process annotations and many 
-/// other events. 
+/// Inactive channels will not track or process annotations and other  
+/// blackboard updates. 
 void
 Caliper::activate_channel(Channel* chn)
 {
