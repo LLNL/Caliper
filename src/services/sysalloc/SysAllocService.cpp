@@ -41,6 +41,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <errno.h>
+
 using namespace cali;
 
 namespace
@@ -81,11 +83,15 @@ void* cali_malloc_wrapper(size_t size)
     
     void *ret = (*orig_malloc)(size);
 
+    int saved_errno = errno;
+
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
         for (Channel* chn : sysalloc_channels)
             c.memory_region_begin(chn, ret, "malloc", 1, 1, &size);
+
+    errno = saved_errno;
 
     return ret;
 }
@@ -97,12 +103,16 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 
     void *ret = (*orig_calloc)(num, size);
 
+    int saved_errno = errno;
+
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
         for (Channel* chn : sysalloc_channels)
             c.memory_region_begin(chn, ret, "calloc", size, 1, &num);
 
+    errno = saved_errno;
+    
     return ret;
 }
 
@@ -119,10 +129,14 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
 
     void *ret = (*orig_realloc)(ptr, size);
 
+    int saved_errno = errno;
+
     if (c)
         for (Channel* chn : sysalloc_channels)
             c.memory_region_begin(chn, ret, "realloc", 1, 1, &size);
 
+    errno = saved_errno;
+    
     return ret;
 }
 
