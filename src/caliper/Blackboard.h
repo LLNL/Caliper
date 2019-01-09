@@ -1,0 +1,124 @@
+#include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/Variant.h"
+
+#include "caliper/common/util/spinlock.hpp"
+
+#include <cstdint>
+#include <iostream>
+#include <mutex>
+
+namespace cali
+{
+
+class CompressedSnapshotRecord;
+class SnapshotRecord;
+
+class Blackboard {
+    constexpr static size_t Nmax = 1021;
+    constexpr static size_t jump = 7;
+    
+    struct blackboard_entry_t {
+        cali_id_t id;
+        
+        enum {
+            Empty = 0, ReferenceEntry, ImmediateEntry
+        }         state;
+        
+        union {
+            cali::Variant immediate;
+            cali::Node*   reference;
+        }         data;
+    };
+
+    blackboard_entry_t hashtable[Nmax];
+    
+    int      ref_toc[(Nmax+31)/32];
+    int      ref_toctoc;
+
+    int      imm_toc[(Nmax+31)/32];
+    int      imm_toctoc;
+
+    size_t   num_entries;
+    size_t   max_num_entries;
+
+    size_t   num_skipped;
+
+    mutable util::spinlock lock;
+    
+    inline size_t find_existing_entry(cali_id_t id) const {
+        size_t I = id % Nmax;
+
+        while (hashtable[I].state != blackboard_entry_t::Empty && hashtable[I].id != id)
+            I = (I + jump) % Nmax;            
+
+        return I;
+    }
+
+    inline size_t find_free_slot(cali_id_t id) const {
+        size_t I = id % Nmax;
+
+        while (hashtable[I].state != blackboard_entry_t::Empty)
+            I = (I + jump) % Nmax;            
+
+        return I;
+    }
+
+    void add_entry(const cali::Attribute& attr, const cali::Variant& val);
+    void add_entry(const cali::Attribute& attr, cali::Node* node);
+    
+public:
+
+    constexpr Blackboard()
+        : hashtable { { 0, blackboard_entry_t::Empty, { cali::Variant() } } },
+          ref_toc         { 0 },
+          ref_toctoc      { 0 },
+          imm_toc         { 0 },
+          imm_toctoc      { 0 },
+          num_entries     { 0 },
+          max_num_entries { 0 },
+          num_skipped     { 0 }
+        { }
+
+    inline cali::Variant
+    get(const cali::Attribute& attr) const {
+        std::lock_guard<util::spinlock>
+            g(lock);
+        
+        size_t I = find_existing_entry(attr.id());
+
+        if (hashtable[I].id != attr.id())
+            return Variant();
+
+        if (attr.store_as_value())
+            return hashtable[I].data.immediate;
+        else
+            return hashtable[I].data.reference->data();
+    }
+
+    inline cali::Node*
+    get_node(const cali::Attribute& attr) const {
+        std::lock_guard<util::spinlock>
+            g(lock);
+
+        size_t I = find_existing_entry(attr.id());
+        
+        return hashtable[I].id == attr.id() ? hashtable[I].data.reference : nullptr;
+    }
+
+    void    set(const cali::Attribute& attr, const cali::Variant& val);
+    void    set(const cali::Attribute& attr, cali::Node* node);
+
+    void    unset(const Attribute& attr);
+
+    Variant exchange(const Attribute& attr, const cali::Variant& value);
+
+    void    snapshot(CompressedSnapshotRecord* rec) const;
+    void    snapshot(SnapshotRecord* rec) const;
+
+    size_t  num_skipped_entries() const { return num_skipped; }
+
+    std::ostream& print_statistics(std::ostream& os) const;
+};
+
+} // namespace cali

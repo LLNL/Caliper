@@ -1,5 +1,6 @@
 set(CALIPER_TEST_SOURCES
   test_attribute.cpp
+  test_blackboard.cpp
   test_channel_api.cpp
   test_metadatatree.cpp
   test_c_snapshot.cpp)

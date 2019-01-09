@@ -22,7 +22,7 @@ class CaliperLogTest(unittest.TestCase):
             'CALI_LOG_VERBOSITY=3',
             '== CALIPER: Releasing channel default',
             '== CALIPER: Releasing Caliper thread data',
-            'Blackboard buffer',
+            'Blackboard',
             'Metadata tree',
             'Metadata memory pool'
         ]
