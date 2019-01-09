@@ -39,7 +39,7 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "ContextBuffer.h"
+#include "Blackboard.h"
 #include "MetadataTree.h"
 
 #include "caliper/common/ContextRecord.h"
@@ -122,12 +122,21 @@ print_available_services(std::ostream& os)
 // Managed by the Caliper object.
 
 struct Channel::ThreadData {
-    std::vector<ContextBuffer> blackboards;
+    std::vector< std::unique_ptr<Blackboard> > blackboards;
 
     ThreadData(size_t min_num_entries)
         {
-            blackboards.resize(std::max<size_t>(16, min_num_entries));
+            while (min_num_entries--)
+                blackboards.emplace_back(new Blackboard);
         }
+
+    bool check_and_alloc(size_t min_num_entries, bool can_alloc) {
+        if (can_alloc)
+            for (size_t s = blackboards.size(); s < min_num_entries; ++s)
+                blackboards.emplace_back(new Blackboard);
+
+        return (blackboards.size() >= min_num_entries);
+    }
 };
 
 //
@@ -146,7 +155,7 @@ struct Channel::ChannelImpl
     RuntimeConfig                   config;
 
     Events                          events;          ///< callbacks
-    ContextBuffer                   blackboard;      ///< process-wide blackboard
+    Blackboard                      blackboard;      ///< process-wide blackboard
 
     bool                            automerge;
     bool                            flush_on_exit;
@@ -170,15 +179,17 @@ struct Channel::ChannelImpl
             }
         }
 
-    const Attribute&
+    inline const Attribute&
     get_key(const Attribute& attr, const Attribute& key_attr) const {
-        if (!automerge || attr.store_as_value() || !attr.is_autocombineable())
+        int prop = attr.properties();
+        
+        if (!automerge || (prop & CALI_ATTR_ASVALUE)  || !(prop & CALI_ATTR_NOMERGE))
             return attr;
 
         return key_attr;
     }
 
-    static ContextBuffer*
+    inline static Blackboard*
     get_blackboard(Channel& chn, ThreadData& chnT, const Attribute& attr) {        
         switch (attr.properties() & CALI_ATTR_SCOPE_MASK)
         {
@@ -188,7 +199,7 @@ struct Channel::ChannelImpl
             cali_id_t chn_id = chn.id();
             
             if (chnT.blackboards.size() > chn_id)
-                return &chnT.blackboards[chn_id];
+                return chnT.blackboards[chn_id].get();
             else
                 return nullptr;
         }
@@ -200,7 +211,7 @@ struct Channel::ChannelImpl
         return nullptr;
     }
     
-    static ContextBuffer*
+    inline static Blackboard*
     get_blackboard(Channel& chn, ThreadData& chnT, cali_context_scope_t scope) {
         cali_id_t chn_id = chn.id();
         
@@ -209,7 +220,7 @@ struct Channel::ChannelImpl
         case CALI_SCOPE_THREAD:
         case CALI_SCOPE_TASK:
             if (chnT.blackboards.size() > chn_id)
-                return &chnT.blackboards[chn_id];
+                return chnT.blackboards[chn_id].get();
             else
                 return nullptr;
         break;
@@ -284,7 +295,7 @@ struct Caliper::ThreadData
     MetadataTree                  tree;
     ::siglock                     lock;
 
-    Channel::ThreadData        chnT;
+    Channel::ThreadData           chnT;
 
     bool                          is_initial_thread;
 
@@ -919,7 +930,7 @@ Caliper::clear(Channel* chn)
 cali_err
 Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
 {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
     if (!chn || attr == Attribute::invalid)
         return CALI_EINV;
@@ -931,16 +942,14 @@ Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
     if (!attr.skip_events())
         chn->mP->events.pre_begin_evt(this, chn, attr, data);
 
-    Attribute key = chn->mP->get_key(attr, sG->key_attr);
-    ContextBuffer* sb =
+    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
+    Blackboard* bb =
         Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     if (attr.store_as_value())
-        ret = sb->set(attr, data);
+        bb->set(attr, data);
     else
-        ret = sb->set_node(key,
-                           sT->tree.get_path(1, &attr, &data,
-                                             sb->get_node(key)));
+        bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(key)));
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -961,9 +970,9 @@ Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
 cali_err
 Caliper::end(Channel* chn, const Attribute& attr)
 {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
-    ContextBuffer* sb =
+    Blackboard* bb =
         Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     Entry e = get(chn, attr);
@@ -982,17 +991,17 @@ Caliper::end(Channel* chn, const Attribute& attr)
     Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
     if (attr.store_as_value())
-        ret = sb->unset(attr);
+        bb->unset(attr);
     else {
-        Node* node = sb->get_node(key);
+        Node* node = bb->get_node(key);
 
         if (node) {
             node = sT->tree.remove_first_in_path(node, attr);
 
             if (node == sT->tree.root())
-                ret = sb->unset(key);
+                bb->unset(key);
             else if (node)
-                ret = sb->set_node(key, node);
+                bb->set(key, node);
         }
 
         if (!node)
@@ -1022,7 +1031,7 @@ Caliper::end(Channel* chn, const Attribute& attr)
 cali_err
 Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
 {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
     if (attr == Attribute::invalid)
         return CALI_EINV;
@@ -1030,8 +1039,8 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Attribute key = chn->mP->get_key(attr, sG->key_attr);
-    ContextBuffer* sb =
+    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
+    Blackboard* bb =
         Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     // invoke callbacks
@@ -1039,9 +1048,9 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
         chn->mP->events.pre_set_evt(this, chn, attr, data);
 
     if (attr.store_as_value())
-        ret = sb->set(attr, data);
+        bb->set(attr, data);
     else {
-        ret = sb->set_node(key, sT->tree.replace_first_in_path(sb->get_node(key), attr, data));
+        bb->set(key, sT->tree.replace_first_in_path(bb->get_node(key), attr, data));
     }
 
     // invoke callbacks
@@ -1067,7 +1076,7 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
 
 cali_err
 Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* data) {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
     if (n < 1)
         return CALI_SUCCESS;
@@ -1077,7 +1086,7 @@ Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* 
     std::lock_guard<::siglock>
         g(sT->lock);
     
-    ContextBuffer* sb =
+    Blackboard* bb =
         Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     // invoke callbacks
@@ -1090,8 +1099,7 @@ Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* 
     } else {
         Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
-        ret = sb->set_node(key,
-                           sT->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
+        bb->set(key, sT->tree.replace_all_in_path(bb->get_node(key), attr, n, data));
     }
 
     // invoke callbacks
@@ -1124,13 +1132,13 @@ Caliper::get(Channel* chn, const Attribute& attr)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    ContextBuffer* sb = 
+    Blackboard* bb = 
         Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     if (attr.store_as_value())
-        return Entry(attr, sb->get(attr));
+        return Entry(attr, bb->get(attr));
     else
-        return Entry(sT->tree.find_node_with_attribute(attr, sb->get_node(chn->mP->get_key(attr, sG->key_attr))));
+        return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(chn->mP->get_key(attr, sG->key_attr))));
 
     return e;
 }
@@ -1317,8 +1325,7 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     Channel* chn = new Channel(sG->channels.size(), name, cfg);
     sG->channels.emplace_back(chn);
 
-    if (sT->chnT.blackboards.size() < sG->channels.size())
-        sT->chnT.blackboards.resize(sG->channels.size() + 1);    
+    sT->chnT.check_and_alloc(sG->channels.size(), true);
 
     // Create and set key & version attributes
 
@@ -1469,9 +1476,7 @@ Caliper::instance()
                 chn->mP->events.create_thread_evt(&c, chn.get());
     }
 
-    if (sT->chnT.blackboards.size() < sG->channels.size()) {
-        sT->chnT.blackboards.resize(sG->channels.size() + 1);
-    }
+    sT->chnT.check_and_alloc(sG->channels.size(), true /* can alloc */);
     
     return Caliper(false);
 }
@@ -1493,7 +1498,7 @@ Caliper::sigsafe_instance()
 
 Caliper::operator bool() const
 {    
-    return (sG && sT && sT->chnT.blackboards.size() >= sG->channels.size() && !(m_is_signal && sT->lock.is_locked()));
+    return (sG && sT && sT->chnT.check_and_alloc(sG->channels.size(), !m_is_signal) && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void

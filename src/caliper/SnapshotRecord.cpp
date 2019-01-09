@@ -59,15 +59,6 @@ SnapshotRecord::append(const SnapshotRecord& list)
 }
 
 void
-SnapshotRecord::append(Node* node)
-{
-    if (m_sizes.n_nodes >= m_capacity.n_nodes)
-        return;
-
-    m_node_array[m_sizes.n_nodes++] = node;
-}
-
-void
 SnapshotRecord::append(size_t n, const cali_id_t* attr_vec, const Variant* data_vec)
 {
     size_t max_immediate = std::min(n, m_capacity.n_immediate-m_sizes.n_immediate);
