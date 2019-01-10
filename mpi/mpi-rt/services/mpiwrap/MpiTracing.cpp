@@ -140,7 +140,7 @@ struct MpiTracing::MpiTracingImpl
             *(p->ptr) = c->create_attribute(p->name, p->type, p->prop);
     }
 
-    void init_mpi(Caliper* c) {
+    void init_mpi(Caliper* c, Channel* chn) {
         req_map.reserve(100);
         comm_map.reserve(100);
         
@@ -206,7 +206,7 @@ struct MpiTracing::MpiTracingImpl
     // --- point-to-point
     //
 
-    void push_send_event(Caliper* c, int size, int dest, int tag, cali::Node* comm_node) {
+    void push_send_event(Caliper* c, Channel* chn, int size, int dest, int tag, cali::Node* comm_node) {
         cali_id_t attr[3] = {
             msg_dst_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
         };
@@ -215,10 +215,10 @@ struct MpiTracing::MpiTracingImpl
         };
         
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
     }
     
-    void handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
+    void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
         info.op            = RequestInfo::Send;
@@ -238,7 +238,7 @@ struct MpiTracing::MpiTracingImpl
         req_map[*req] = info;            
     }
 
-    void push_recv_event(Caliper* c, int src, int size, int tag, Node* comm_node) {
+    void push_recv_event(Caliper* c, Channel* chn, int src, int size, int tag, Node* comm_node) {
         cali_id_t attr[3] = {
             msg_src_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
         };
@@ -247,19 +247,19 @@ struct MpiTracing::MpiTracingImpl
         };
         
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);        
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);        
     }
 
-    void handle_recv(Caliper* c, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
+    void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
         int size  = 0;
         PMPI_Type_size(type, &size);
         int count = 0;
         PMPI_Get_count(status, type, &count);
         
-        push_recv_event(c, status->MPI_SOURCE, size*count, status->MPI_TAG, lookup_comm(c, comm));
+        push_recv_event(c, chn, status->MPI_SOURCE, size*count, status->MPI_TAG, lookup_comm(c, comm));
     }
 
-    void handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
+    void handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
         info.op            = RequestInfo::Recv;
@@ -276,7 +276,7 @@ struct MpiTracing::MpiTracingImpl
         req_map[*req] = info;
     }
 
-    void handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
+    void handle_recv_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
         info.op            = RequestInfo::Recv;
@@ -294,7 +294,7 @@ struct MpiTracing::MpiTracingImpl
         req_map[*req] = info;
     }
 
-    void handle_start(Caliper* c, int nreq, MPI_Request* reqs) {
+    void handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs) {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex>
                 g(req_map_lock);
@@ -307,11 +307,11 @@ struct MpiTracing::MpiTracingImpl
             RequestInfo info = it->second;
 
             if (info.op == RequestInfo::Send)
-                push_send_event(c, info.size, info.target, info.tag, info.comm_node);
+                push_send_event(c, chn, info.size, info.target, info.tag, info.comm_node);
         }
     }
     
-    void handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
+    void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex>
                 g(req_map_lock);
@@ -329,7 +329,7 @@ struct MpiTracing::MpiTracingImpl
                 int count = 0;
                 PMPI_Get_count(statuses+i, info.type, &count);
 
-                push_recv_event(c, statuses[i].MPI_SOURCE, size*count, statuses[i].MPI_TAG, info.comm_node);
+                push_recv_event(c, chn, statuses[i].MPI_SOURCE, size*count, statuses[i].MPI_TAG, info.comm_node);
             }
             
             if (!info.is_persistent)
@@ -347,7 +347,7 @@ struct MpiTracing::MpiTracingImpl
     // --- collectives
     //
 
-    void push_coll_event(Caliper* c, CollectiveType coll_type, int size, int root, Node* comm_node) {
+    void push_coll_event(Caliper* c, Channel* chn, CollectiveType coll_type, int size, int root, Node* comm_node) {
         cali_id_t attr[2] = { msg_size_attr.id(), coll_root_attr.id() };
         Variant   data[2] = { Variant(size),      Variant(root)       };
 
@@ -361,7 +361,7 @@ struct MpiTracing::MpiTracingImpl
             ne = 1;
 
         SnapshotRecord rec(1, &node, ne, attr, data);
-        c->push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
     }
     
     // --- constructor
@@ -384,126 +384,126 @@ MpiTracing::~MpiTracing()
 }
 
 void
-MpiTracing::init(Caliper* c)
+MpiTracing::init(Caliper* c, Channel* chn)
 {
     mP->init_attributes(c);
 }
 
 void
-MpiTracing::init_mpi(Caliper* c)
+MpiTracing::init_mpi(Caliper* c, Channel* chn)
 {
-    mP->init_mpi(c);
+    mP->init_mpi(c, chn);
 }
 
 void
-MpiTracing::handle_send(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
+MpiTracing::handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     size *= count;
 
-    mP->push_send_event(c, size, dest, tag, mP->lookup_comm(c, comm));
+    mP->push_send_event(c, chn, size, dest, tag, mP->lookup_comm(c, comm));
 }
 
 void
-MpiTracing::handle_send_init(Caliper* c, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req)
+MpiTracing::handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req)
 {
-    mP->handle_send_init(c, count, type, dest, tag, comm, req);
+    mP->handle_send_init(c, chn, count, type, dest, tag, comm, req);
 }
 
 void
-MpiTracing::handle_recv(Caliper* c, int, MPI_Datatype type, int, int, MPI_Comm comm, MPI_Status* status)
+MpiTracing::handle_recv(Caliper* c, Channel* chn, int, MPI_Datatype type, int, int, MPI_Comm comm, MPI_Status* status)
 {
-    mP->handle_recv(c, type, comm, status);
+    mP->handle_recv(c, chn, type, comm, status);
 }
 
 void
-MpiTracing::handle_irecv(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req)
+MpiTracing::handle_irecv(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req)
 {
-    mP->handle_irecv(c, count, type, src, tag, comm, req);
+    mP->handle_irecv(c, chn, count, type, src, tag, comm, req);
 }
 
 void
-MpiTracing::handle_recv_init(Caliper* c, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req)
+MpiTracing::handle_recv_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int src, int tag, MPI_Comm comm, MPI_Request* req)
 {
-    mP->handle_recv_init(c, count, type, src, tag, comm, req);
+    mP->handle_recv_init(c, chn, count, type, src, tag, comm, req);
 }
 
 void
-MpiTracing::handle_start(Caliper* c, int nreq, MPI_Request* reqs)
+MpiTracing::handle_start(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs)
 {
-    mP->handle_start(c, nreq, reqs);
+    mP->handle_start(c, chn, nreq, reqs);
 }
 
 void
-MpiTracing::handle_completion(Caliper* c, int nreq, MPI_Request* reqs, MPI_Status* statuses)
+MpiTracing::handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses)
 {
-    mP->handle_completion(c, nreq, reqs, statuses);
+    mP->handle_completion(c, chn, nreq, reqs, statuses);
 }
 
 void
-MpiTracing::request_free(Caliper*, MPI_Request* req)
+MpiTracing::request_free(Caliper*, Channel*, MPI_Request* req)
 {
     mP->request_free(req);
 }
 
 void
-MpiTracing::handle_12n(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm)
+MpiTracing::handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, Coll_12N, (rank == root ? count : 0) * size, root, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_12N, (rank == root ? count : 0) * size, root, mP->lookup_comm(c, comm));
 }
 
 void
-MpiTracing::handle_n21(Caliper* c, int count, MPI_Datatype type, int root, MPI_Comm comm)
+MpiTracing::handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
     int rank = 0;
     PMPI_Comm_rank(comm, &rank);
 
-    mP->push_coll_event(c, Coll_N21, (rank != root ? count : 0) * size, root, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_N21, (rank != root ? count : 0) * size, root, mP->lookup_comm(c, comm));
 }
 
 void
-MpiTracing::handle_n2n(Caliper* c, int count, MPI_Datatype type, MPI_Comm comm)
+MpiTracing::handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm)
 {
     int size = 0;
     PMPI_Type_size(type, &size);
 
-    mP->push_coll_event(c, Coll_NxN, count*size, 0, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_NxN, count*size, 0, mP->lookup_comm(c, comm));
 }
 
 void
-MpiTracing::handle_barrier(Caliper* c, MPI_Comm comm)
+MpiTracing::handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm)
 {
-    mP->push_coll_event(c, Coll_Barrier, 0, 0, mP->lookup_comm(c, comm));
+    mP->push_coll_event(c, chn, Coll_Barrier, 0, 0, mP->lookup_comm(c, comm));
 }
 
 void
-MpiTracing::handle_init(Caliper* c)
+MpiTracing::handle_init(Caliper* c, Channel* chn)
 {
-    mP->push_coll_event(c, Coll_Init, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+    mP->push_coll_event(c, chn, Coll_Init, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
 }
 
 void
-MpiTracing::handle_finalize(Caliper* c)
+MpiTracing::handle_finalize(Caliper* c, Channel* chn)
 {
-    mP->push_coll_event(c, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
+    mP->push_coll_event(c, chn, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
 }
 
 void
-MpiTracing::push_call_id(Caliper* c)
+MpiTracing::push_call_id(Caliper* c, Channel* chn)
 {
-    c->begin(mP->call_id_attr, ++(mP->call_id));
+    c->begin(chn, mP->call_id_attr, ++(mP->call_id));
 }
 
 void
-MpiTracing::pop_call_id(Caliper* c)
+MpiTracing::pop_call_id(Caliper* c, Channel* chn)
 {
-    c->end(mP->call_id_attr);
+    c->end(chn, mP->call_id_attr);
 }

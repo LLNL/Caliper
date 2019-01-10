@@ -54,100 +54,98 @@ using namespace cali;
 namespace
 {
 
-    class Report {
-        static std::unique_ptr<Report> s_instance;
-        static const ConfigSet::Entry  s_configdata[];
+class Report {
+    static const ConfigSet::Entry   s_configdata[];
 
-        QueryProcessor m_query;
+    std::unique_ptr<QueryProcessor> queryP;
 
-        void process_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-            m_query.process_record(*c, snapshot->to_entrylist());
+    //
+    // --- callback functions
+    //
+
+    void pre_flush(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+        queryP.reset(nullptr);
+        
+        ConfigSet   config(chn->config().init("report", s_configdata));
+        CalQLParser parser(config.get("config").to_string().c_str());
+
+        if (parser.error()) {
+            Log(0).stream() << chn->name() << ": Report: config parse error: "
+                            << parser.error_msg() << std::endl;
+            return;
         }
 
-        void flush(Caliper* c, const SnapshotRecord*) {
-            m_query.flush(*c);
-        }
+        QuerySpec   spec(parser.spec());
 
-        Report(const QueryProcessor& query) 
-            : m_query(query)
-            { }
-
-        //
-        // --- callback functions
-        //
-
-        static void pre_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
-            ConfigSet    config(RuntimeConfig::init("report", s_configdata));
-
-            CalQLParser  parser(config.get("config").to_string().c_str());
-
-            if (parser.error()) {
-                Log(0).stream() << "report: config parse error: " << parser.error_msg() << std::endl;
-                return;
-            }
-
-            QuerySpec    spec(parser.spec());
-
-            // set format default to table if it hasn't been set in the query config
-            if (spec.format.opt == QuerySpec::FormatSpec::Default)
-                spec.format = CalQLParser("format table").spec().format;
+        // set format default to table if it hasn't been set in the query config
+        if (spec.format.opt == QuerySpec::FormatSpec::Default)
+            spec.format = CalQLParser("format table").spec().format;
                 
-            OutputStream stream;
+        OutputStream stream;
 
-            stream.set_stream(OutputStream::StdOut);
+        stream.set_stream(OutputStream::StdOut);
 
-            std::string filename = config.get("filename").to_string();
+        std::string filename = config.get("filename").to_string();
 
-            if (!filename.empty())
-                stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+        if (!filename.empty())
+            stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
             
-            s_instance.reset(new Report(QueryProcessor(spec, stream)));
-        }
+        queryP.reset(new QueryProcessor(spec, stream));
+    }
 
-        static void write_snapshot_cb(Caliper* c, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-            if (!s_instance)
-                return;
+    void write_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
+        if (queryP)
+            queryP->process_record(*c, snapshot->to_entrylist());
+    }
 
-            s_instance->process_snapshot(c, snapshot);
-        }
+    void post_flush(Caliper* c) {
+        if (queryP)
+            queryP->flush(*c);
+    }
 
-        static void post_write_cb(Caliper* c, const SnapshotRecord* flush_info) {
-            if (!s_instance)
-                return;
+public:
 
-            s_instance->flush(c, flush_info);
-        }
+    ~Report()
+        { }
 
-    public:
+    static void create(Caliper* c, Channel* chn) {
+        Report* instance = new Report;
+        
+        chn->events().pre_flush_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+                instance->pre_flush(c, chn, info);
+            });
+        chn->events().write_snapshot.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord*, const SnapshotRecord* snapshot){
+                instance->write_snapshot(c, snapshot);
+            });
+        chn->events().post_flush_evt.connect(
+            [instance](Caliper* c, Channel*, const SnapshotRecord*){
+                instance->post_flush(c);
+            });
+        chn->events().finish_evt.connect(
+            [instance](Caliper*, Channel*){
+                delete instance;
+            });
 
-        ~Report()
-            { }
-
-        static void create(Caliper* c) {
-            c->events().pre_write_evt.connect(pre_write_cb);
-            c->events().write_snapshot.connect(write_snapshot_cb);
-            c->events().post_write_evt.connect(post_write_cb);
-
-            Log(1).stream() << "Registered report service" << std::endl;
-        }
-    };
-
-    std::unique_ptr<Report> Report::s_instance { nullptr };
+        Log(1).stream() << chn->name() << ": Registered report service" << std::endl;
+    }
+};
     
-    const ConfigSet::Entry  Report::s_configdata[] = {
-        { "filename", CALI_TYPE_STRING, "stdout",
-          "File name for report stream. Default: stdout.",
-          "File name for report stream. Either one of\n"
-          "   stdout: Standard output stream,\n"
-          "   stderr: Standard error stream,\n"
-          " or a file name.\n"
-        },
-        { "config", CALI_TYPE_STRING, "",
-          "Report configuration/query specification in CalQL",
-          "Report configuration/query specification in CalQL"
-        },
-        ConfigSet::Terminator
-    };
+const ConfigSet::Entry  Report::s_configdata[] = {
+    { "filename", CALI_TYPE_STRING, "stdout",
+      "File name for report stream. Default: stdout.",
+      "File name for report stream. Either one of\n"
+      "   stdout: Standard output stream,\n"
+      "   stderr: Standard error stream,\n"
+      " or a file name.\n"
+    },
+    { "config", CALI_TYPE_STRING, "",
+      "Report configuration/query specification in CalQL",
+      "Report configuration/query specification in CalQL"
+    },
+    ConfigSet::Terminator
+};
 
 } // namespace 
 
@@ -155,4 +153,3 @@ namespace cali
 {
     CaliperService report_service { "report", ::Report::create };
 }
-

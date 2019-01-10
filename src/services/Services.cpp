@@ -37,6 +37,7 @@
 
 #include "Services.h"
 
+#include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
@@ -76,25 +77,13 @@ struct Services::ServicesImpl
     static std::unique_ptr<ServicesImpl> s_instance;
     static const ConfigSet::Entry        s_configdata[];
 
-    ConfigSet m_config;
-
-
     // --- interface
 
-    void register_services(Caliper* c) {
+    void register_services(Caliper* c, Channel* chn) {
         // list services
-
-        if (Log::verbosity() >= 2) {
-            ostringstream sstr;
-
-            for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-                for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
-                    sstr << ' ' << s->name;
-
-            Log(2).stream() << "Available services:" << sstr.str() << endl;
-        }
-
-        vector<string> services = m_config.get("enable").to_stringlist(",:");
+        
+        vector<string> services =
+            chn->config().init("services", s_configdata).get("enable").to_stringlist(",:");
 
         // register caliper services
 
@@ -103,7 +92,7 @@ struct Services::ServicesImpl
                 auto it = find(services.begin(), services.end(), string(s->name));
 
                 if (it != services.end()) {
-                    (*s->register_fn)(c);
+                    (*s->register_fn)(c, chn);
                     services.erase(it);
                 }
             }
@@ -113,7 +102,6 @@ struct Services::ServicesImpl
     }
 
     ServicesImpl()
-        : m_config { RuntimeConfig::init("services", s_configdata) }
         { }
 
     static ServicesImpl* instance() {
@@ -153,7 +141,18 @@ void Services::add_default_services()
     add_services(caliper_services);
 }
 
-void Services::register_services(Caliper* c)
+void Services::register_services(Caliper* c, Channel* chn)
 {
-    return ServicesImpl::instance()->register_services(c);
+    return ServicesImpl::instance()->register_services(c, chn);
+}
+
+std::vector<std::string> Services::get_available_services()
+{
+    std::vector<std::string> ret;
+    
+    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
+            ret.emplace_back(s->name);
+
+    return ret;
 }

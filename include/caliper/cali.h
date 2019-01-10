@@ -79,20 +79,19 @@ typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_varian
  */
 
 /**
- * \brief Create an attribute
+ * \brief Create an attribute key.
  * \param name Name of the attribute
  * \param type Type of the attribute
  * \param properties Attribute properties
  * \return Attribute id
  */
-
 cali_id_t
 cali_create_attribute(const char*     name,
                       cali_attr_type  type,
                       int             properties);
 
 /**
- * \brief Create an attribute with additional metadata.
+ * \brief Create an attribute key with additional metadata.
  *
  * Metadata is provided via (meta-attribute id, pointer-to-data, size) in
  * the \a meta_attr_list, \a meta_val_list, and \a meta_size_list.
@@ -178,7 +177,8 @@ cali_push_snapshot(int scope, int n,
                    const size_t    trigger_info_size_list[]);
 
 /**
- * \brief Take a snapshot and write it into the user-provided buffer.
+ * \brief Take a snapshot on the default channel
+ *   and write it into the user-provided buffer.
  *
  * This function can be safely called from a signal handler. However,
  * it is not guaranteed to succeed. Specifically, the function will
@@ -201,6 +201,33 @@ cali_push_snapshot(int scope, int n,
  */
 size_t
 cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
+
+/**
+ * \brief Take a snapshot on the given channel
+ *   and write it into the user-provided buffer.
+ *
+ * This function can be safely called from a signal handler. However,
+ * it is not guaranteed to succeed. Specifically, the function will
+ * fail if the signal handler interrupts already running Caliper
+ * code.
+ *
+ * The snapshot representation returned in \a buf is valid only on the
+ * local process, while Caliper is active (which is up until Caliper's
+ * `finish_evt` callback is invoked).
+ * It can be parsed with cali_unpack_snapshot().
+ *
+ * \param chn_id Channel to take the snapshot on
+ * \param scope  Indicates which scopes (process, thread, or task) the
+ *   snapshot should span
+ * \param len    Length of the provided snapshot buffer.
+ * \param buf    User-provided snapshot storage buffer.
+ * \return Actual size of the snapshot representation.
+ *   If this is larger than `len`, the provided buffer was too small and
+ *   not all of the snapshot was returned.
+ *   If this is zero, no snapshot was taken.
+ */
+size_t
+cali_channel_pull_snapshot(cali_id_t chn_id, int scope, size_t len, unsigned char* buf);
 
 /**
  * \}
@@ -255,7 +282,6 @@ cali_unpack_snapshot(const unsigned char* buf,
  * \return The top-most stacked value for the given attribute ID, or an empty
  *   variant if none was found
  */
-
 cali_variant_t
 cali_find_first_in_snapshot(const unsigned char* buf,
                             cali_id_t            attr_id,
@@ -274,7 +300,6 @@ cali_find_first_in_snapshot(const unsigned char* buf,
  * \param proc_fn Callback function to process individidual entries
  * \param userdata User-defined parameter passed to `proc_fn`
  */
-
 void
 cali_find_all_in_snapshot(const unsigned char* buf,
                           cali_id_t            attr_id,
@@ -323,31 +348,29 @@ cali_get(cali_id_t attr_id);
  */
 
 /**
- * \brief Put attribute attr on the blackboard.
- * Parameters:
- * \param attr An attribute of type CALI_TYPE_BOOL
+ * \brief Begin region where the value for \a attr is `true` on the blackboard.
  */
-
-cali_err
+void
 cali_begin(cali_id_t   attr);
 
 /**
- * Add \a val for attribute \a attr to the blackboard.
- * The new value is nested under the current value of \a attr.
+ * \brief Begin region \a val for attribute \a attr on the blackboard.
+ *
+ * The region may be nested.
  */
-
-cali_err
+void
 cali_begin_double(cali_id_t attr, double val);
-cali_err
+/** \copydoc cali_begin_double() */
+void
 cali_begin_int(cali_id_t attr, int val);
-cali_err
+/** \copydoc cali_begin_double() */
+void
 cali_begin_string(cali_id_t attr, const char* val);
 
 /**
- * Remove innermost value for attribute `attr` from the blackboard.
+ * End innermost open region for \a attr on the blackboard.
  */
-
-cali_err
+void
 cali_end  (cali_id_t   attr);
 
 /**
@@ -360,86 +383,80 @@ cali_end  (cali_id_t   attr);
  * \param val  Expected value
  */
 
-cali_err
+void
 cali_safe_end_string(cali_id_t attr, const char* val);
 
 /**
- * \brief Change current innermost value on the blackboard for attribute \a attr
- * to value taken from \a value with size \a size
+ * \brief Set value for attribute \a attr to \a val on the blackboard.
  */
-
-cali_err
+void
 cali_set  (cali_id_t   attr,
            const void* value,
            size_t      size);
-
-cali_err
+/** \copybrief cali_set() */
+void
 cali_set_double(cali_id_t attr, double val);
-cali_err
+/** \copybrief cali_set() */
+void
 cali_set_int(cali_id_t attr, int val);
-cali_err
+/** \copybrief cali_set() */
+void
 cali_set_string(cali_id_t attr, const char* val);
 
 /**
- * Put attribute with name \a attr_name on the blackboard.
+ * \brief  Begin region where the value for the attribute named \a attr_name
+ *   is set to `true` on the blackboard.
  */
-
-cali_err
+void
 cali_begin_byname(const char* attr_name);
 
 /**
- * \brief Add \a value for the attribute with the name \a attr_name to the
- * blackboard.
+ * \brief Begin region \a val for attribute named \a attr_name on the blackboard.
+ *
+ * The region may be nested.
  */
-
-cali_err
+void
 cali_begin_double_byname(const char* attr_name, double val);
-cali_err
+/** \copydoc cali_begin_double_byname() */
+void
 cali_begin_int_byname(const char* attr_name, int val);
-cali_err
+/** \copydoc cali_begin_double_byname() */
+void
 cali_begin_string_byname(const char* attr_name, const char* val);
 
 /**
- * \brief Change the value of attribute with the name \a attr_name to \a value
- * on the blackboard.
+ * \brief Set value for attribute named \a attr_name to \a val on the blackboard.
  */
-cali_err
+void
 cali_set_double_byname(const char* attr_name, double val);
-cali_err
+/** \copydoc cali_set_double_byname() */
+void
 cali_set_int_byname(const char* attr_name, int val);
-cali_err
+/** \copydoc cali_set_double_byname() */
+void
 cali_set_string_byname(const char* attr_name, const char* val);
 
 /**
+ * \brief End innermost open region for attribute named \a attr_name on the
+ *   blackboard.
+ */
+void
+cali_end_byname(const char* attr_name);
+
+/*
  * \brief Set a global attribute with name \a attr_name to \a val.
  */
 void
 cali_set_global_double_byname(const char* attr_name, double val);
-
-/**
- * \copydoc cali_set_global_double_byname()
- */
+/** \copydoc cali_set_global_double_byname() */
 void
 cali_set_global_int_byname(const char* attr_name, int val);
-
-/**
- * \copydoc cali_set_global_double_byname()
- */
+/** \copydoc cali_set_global_double_byname() */
 void
 cali_set_global_string_byname(const char* attr_name, const char* val);
-
-/**
- * \copydoc cali_set_global_double_byname()
- */
+/** \copydoc cali_set_global_double_byname() */
 void
 cali_set_global_uint_byname(const char* attr_name, uint64_t val);
-
-/**
- * \brief Remove innermost value for attribute \a attr from the blackboard.
- */
-
-cali_err
-cali_end_byname(const char* attr_name);
 
 /**
  * \}
@@ -456,16 +473,18 @@ cali_end_byname(const char* attr_name);
  */
 
 /**
- * \copydoc cali::RuntimeConfig::preset
+ * \brief Pre-set a config entry in the default config.
+ *
+ * The entry can still be overwritten by environment variables.
  */
-
 void
 cali_config_preset(const char* key, const char* value);
 
 /**
- * \copydoc cali::RuntimeConfig::set
+ * \brief Set a config entry in the default configset.
+ *
+ * This entry will not be overwritten by environment variables.
  */
-
 void
 cali_config_set(const char* key, const char* value);
 
@@ -485,7 +504,7 @@ cali_config_set(const char* key, const char* value);
  *
  * \code
  *   const char* my_profile[][2] =
- *     { { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp,trace" },
+ *     { { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
  *       { "CALI_EVENT_TRIGGER",   "annotation" },
  *       { NULL, NULL }
  *     };
@@ -502,16 +521,150 @@ cali_config_set(const char* key, const char* value);
  *    value. Keys must be all uppercase. Terminate the list with two
  *    NULL entries: <tt> { NULL, NULL } </tt>.
  */
-
 void
 cali_config_define_profile(const char* name, const char* keyvallist[][2]);
 
 /**
- * \copydoc cali::RuntimeConfig::allow_read_env(bool)
+ * \brief Enable or disable reading environment variables for the default
+ *   configset.
  */
-
 void
 cali_config_allow_read_env(int allow);
+
+struct _cali_configset_t;
+typedef struct _cali_configset_t* cali_configset_t;
+
+/**
+ * \brief Create a config set with the given key-value entries.
+ *
+ * The config set can be used in cali_create_channel() to create a new
+ * channel. The config set must be deleted with cali_delete_configset().
+ *
+ * \sa cali_create_channel(), cali_delete_configset()
+ *
+ * \param keyvallist A list of key-value pairs as array of two strings
+ *    that contains the profile's configuration entries. The first string
+ *    in each entry is the configuration key, the second string is its
+ *    value. Keys must be all uppercase. Terminate the list with two
+ *    NULL entries: <tt> { NULL, NULL } </tt>.
+ * \return The config set.
+ */
+cali_configset_t
+cali_create_configset(const char* keyvallist[][2]);
+
+/** \brief Delete a config set created with cali_create_configset(). */
+void
+cali_delete_configset(cali_configset_t cfg);
+
+/** \brief Modify a config set created with cali_create_configset().
+ *
+ * Sets or overwrites the value for \a key with \a value.
+ */
+void
+cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
+
+/**
+ * \}
+ */
+
+/*
+ * --- Channel management
+ */
+
+/**
+ * \name Channel management
+ * \{
+ */
+
+/**
+ * \brief Create a new %Caliper channel with the given key-value
+ *   configuration profile.
+ *
+ * An channel controls %Caliper's annotation tracking and measurement
+ * activities. Multiple channels can be active at the same time, independent
+ * of each other. Each channel has its own runtime configuration,
+ * blackboard, and active services.
+ *
+ * This function creates a new channel with the given name, flags, and
+ * runtime configuration. The runtime configuration is provided as a list of
+ * key-value pairs and works similar to the configuration through environment
+ * variables or configuration files.
+ *
+ * Creating channels is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread
+ * during channel creation.
+ *
+ * Example:
+ *
+ * \code
+ *   const char* trace_config[][2] =
+ *     { { "CALI_SERVICES_ENABLE", "event,timestamp,trace" },
+ *       { "CALI_EVENT_TRIGGER",   "annotation" },
+ *       { NULL, NULL }
+ *     };
+ *
+ *   cali_configset_t cfg =
+ *     cali_create_configset("trace_config", false, trace_config);
+ *
+ *   //   Create a new channel "trace" but leave it inactive initially.
+ *   // (By default, channels are active immediately.)
+ *   cali_id_t trace_chn_id =
+ *     cali_create_channel("trace", CALI_CHANNEL_LEAVE_INACTIVE, cfg);
+ *
+ *   cali_delete_configset(cfg);
+ *
+ *   // Activate the channel now.
+ *   cali_activate_channel(trace_chn_id);
+ * \endcode
+ *
+ * \param name Name of the channel. This is used to identify the channel
+ *   in %Caliper log output.
+ * \param flags Flags that control channel creation as bitwise-OR of
+ *   cali_channel_opt flags.
+ * \param keyvallist The channel's runtime configuration.
+ *
+ * \return ID of the created channel.
+ */
+cali_id_t
+cali_create_channel(const char* name, int flags, const cali_configset_t cfg);
+
+/**
+ * \brief Delete a channel. Frees associated resources, e.g. blackboards,
+ *   trace buffers, etc.
+ *
+ * Channel deletion is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread.
+ *
+ * \param chn_id ID of the channel
+ */
+void
+cali_delete_channel(cali_id_t chn_id);
+
+/**
+ * \brief Activate the (inactive) channel with the given ID.
+ *
+ * Only active channels will process annotations and other events.
+ */
+void
+cali_activate_channel(cali_id_t chn_id);
+
+/**
+ * \brief Deactivate the channel with the given ID.
+ *
+ * Inactive channels will not track or process annotations and many
+ * other events.
+ *
+ * \sa cali_channel_activate
+ */
+void
+cali_deactivate_channel(cali_id_t chn_id);
+
+/**
+ * \brief Returns a non-zero value if the channel with the given ID
+ *   is active, otherwise 0.
+ */
+int
+cali_channel_is_active(cali_id_t chn_id);
 
 /**
  * \}
@@ -527,15 +680,8 @@ cali_config_allow_read_env(int allow);
  */
 
 /**
- * Flush options
- */
-typedef enum {
-  /** Clear trace and aggregation buffers after flush. */
-  CALI_FLUSH_CLEAR_BUFFERS = 1
-} cali_flush_opt;
-
-/**
- * \brief Forward aggregation or trace buffer contents to output services.
+ * \brief For all channels, forward aggregation or trace buffer
+ *   contents to output services.
  *
  * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered snapshot
@@ -548,9 +694,27 @@ typedef enum {
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
  */
-
 void
 cali_flush(int flush_opts);
+
+/**
+ * \brief Forward aggregation or trace buffer contents to output services
+ *   for the given channel.
+ *
+ * Flushes trace buffers and/or aggreation database in the trace and
+ * aggregation services, respectively. This will forward all buffered snapshot
+ * records to output services, e.g., recorder, report, or mpireport.
+ *
+ * By default, the trace/aggregation buffers will not be cleared after the
+ * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
+ * the \a flush_opts flags.
+ *
+ * \param chn_id     ID of the channel to flush
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
+ *    Use 0 for default behavior.
+ */
+void
+cali_channel_flush(cali_id_t chn_id, int flush_opts);
 
 /**
  * \}
@@ -571,7 +735,6 @@ cali_flush(int flush_opts);
  * It can also be used to avoid high initialization costs in the first
  * Caliper API call.
  */
-
 void
 cali_init();
 
@@ -579,7 +742,6 @@ cali_init();
  * \brief  Check if Caliper is initialized on this process.
  * \return A non-zero value if Caliper is initialized, 0 if it is not initialized.
  */
-
 int
 cali_is_initialized();
 
@@ -596,6 +758,64 @@ cali_make_loop_iteration_attribute(const char* name);
 
 #ifdef __cplusplus
 } // extern "C"
+#endif
+
+//
+// --- Convenience C++ API
+//
+
+#ifdef __cplusplus
+
+#include <map>
+#include <string>
+
+namespace cali
+{
+
+typedef std::map<std::string, std::string> config_map_t;
+
+/**
+ * \brief Create a new %Caliper channel with a given key-value
+ *   configuration profile.
+ *
+ * An channel controls %Caliper's annotation tracking and measurement
+ * activities. Multiple channels can be active at the same time, independent
+ * of each other. Each channel has its own runtime configuration,
+ * blackboard, and active services.
+ *
+ * This function creates a new channel with the given name, flags, and
+ * runtime configuration. The runtime configuration is provided as a list of
+ * key-value pairs and works similar to the configuration through environment
+ * variables or configuration files.
+ *
+ * Creating channels is \b not thread-safe. Users must make sure that no
+ * %Caliper activities (e.g. annotations) are active on any program thread
+ * during channel creation.
+ *
+ * Example:
+ *
+ * \code
+ *   // Create a new channel for profiling.
+ *   cali_id_t channel_id =
+ *     cali::create_channel("profile", 0, {
+ *          { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+ *          { "CALI_REPORT_FILENAME", "performance-report.txt" }
+ *        });
+ * \endcode
+ *
+ * \param name Name of the channel. This is used to identify the channel
+ *   in %Caliper log output.
+ * \param flags Flags that control channel creation as bitwise-OR of
+ *   cali_channel_opt flags.
+ * \param cfg The channel's runtime configuration as a key-value map.
+ *
+ * \return ID of the created channel.
+ */
+cali_id_t
+create_channel(const char* name, int flags, const config_map_t& cfg);
+
+}
+
 #endif
 
 /* Include high-level annotation macros.

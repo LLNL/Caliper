@@ -100,8 +100,8 @@ Loop::Iteration::~Iteration()
 Loop::Loop(const char* name)
     : pI(new Impl(name))
 {
-    if (Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name))) == CALI_SUCCESS)
-        ++pI->level;
+    Caliper().begin(loop_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
+    ++pI->level;
 }
 
 Loop::Loop(const Loop& loop)

@@ -35,6 +35,7 @@
 #include "caliper/AnnotationBinding.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
 
 #include <nvToolsExt.h>
 
@@ -57,9 +58,23 @@ class NVProfBinding : public AnnotationBinding
     std::map<cali_id_t, nvtxDomainHandle_t> m_domain_map;
     std::mutex            m_domain_mutex;
 
+    uint32_t get_color(const Attribute& attr) {
+        cali_id_t color_attr_id = m_color_attr.id();
+        const Node* node = nullptr;
+        
+        for (node = attr.node()->first_child(); node; node = node->next_sibling())
+            if (node->attribute() == color_attr_id)
+                break;
+
+        return node ? static_cast<uint32_t>(node->data().to_uint()) : s_colors[0];
+    }
+
 public:
 
-    void initialize(Caliper* c) {
+    void initialize(Caliper* c, Channel* chn) {
+        std::string name = "nvtx.color#";
+        name.append(std::to_string(chn->id()));
+        
         m_color_attr =
             c->create_attribute("nvtx.color", CALI_TYPE_UINT,
                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
@@ -67,26 +82,22 @@ public:
 
     const char* service_tag() const { return "nvprof"; }
 
-    void on_create_attribute(Caliper* c, const std::string& name, cali_attr_type, int*, Node** node) {
+    void on_mark_attribute(Caliper* c, Channel*, const Attribute& attr) {
         // Set the color flag
         Variant v_color(static_cast<uint64_t>(s_colors[m_color_id++ % s_num_colors]));
 
         assert(m_color_attr != Attribute::invalid);
 
-         *node = c->make_tree_entry(m_color_attr, v_color, *node);
+        c->make_tree_entry(m_color_attr, v_color, c->node(attr.node()->id()));
     }
 
-    void on_begin(Caliper*, const Attribute &attr, const Variant& value) {
-        Variant  v_color = attr.get(m_color_attr);
-        uint32_t color   =
-            v_color.empty() ? s_colors[0] : static_cast<uint32_t>(v_color.to_uint());
-
+    void on_begin(Caliper*, Channel*, const Attribute &attr, const Variant& value) {
         nvtxEventAttributes_t eventAttrib = { 0 };
 
         eventAttrib.version       = NVTX_VERSION;
         eventAttrib.size          = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
         eventAttrib.colorType     = NVTX_COLOR_ARGB;
-        eventAttrib.color         = color;
+        eventAttrib.color         = get_color(attr);
         eventAttrib.messageType   = NVTX_MESSAGE_TYPE_ASCII;
         eventAttrib.message.ascii =
             (value.type() == CALI_TYPE_STRING ? static_cast<const char*>(value.data()) : value.to_string().c_str());
@@ -117,7 +128,7 @@ public:
         }
     }
 
-    void on_end(Caliper*, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper*, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.is_nested()) {
             nvtxRangePop();
         } else {

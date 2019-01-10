@@ -110,6 +110,11 @@ OutputStream::~OutputStream()
     mP.reset();
 }
 
+OutputStream::operator bool() const
+{
+    return mP->is_initialized;
+}
+
 OutputStream::StreamType
 OutputStream::type() const
 {

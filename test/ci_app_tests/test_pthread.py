@@ -36,5 +36,12 @@ class CaliperThreadTest(unittest.TestCase):
                          'pthread.is_master' : 'true',
                          'local'       : '99' }))
 
+        self.assertTrue(calitest.has_snapshot_with_keys(
+            snapshots, {'pthread.id', 'my_thread_id', 'global', 'pthread_exp'}))
+        self.assertTrue(calitest.has_snapshot_with_keys(
+            snapshots, {'global', 'my_thread_id', 'nopthread_exp'}))
+        self.assertFalse(calitest.has_snapshot_with_keys(
+            snapshots, {'pthread.id', 'nopthread_exp'}))
+
 if __name__ == "__main__":
     unittest.main()

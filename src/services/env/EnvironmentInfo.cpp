@@ -65,10 +65,7 @@ static const ConfigSet::Entry s_configdata[] = {
     ConfigSet::Terminator
 };
 
-ConfigSet config;
-
-
-void read_cmdline(Caliper* c)
+void read_cmdline(Caliper* c, Channel* chn, ConfigSet& config)
 {
     Attribute cmdline_attr = 
         c->create_attribute("env.cmdline", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
@@ -80,10 +77,10 @@ void read_cmdline(Caliper* c)
     std::vector<Variant> args;
 
     for (std::string arg; std::getline(fs, arg, static_cast<char>(0)); )
-        c->begin(cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
+        c->begin(chn, cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
 }
     
-void read_uname(Caliper* c)
+void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
 {
     struct utsname u;
 
@@ -102,12 +99,12 @@ void read_uname(Caliper* c)
             Attribute attr = 
                 c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
-            c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
+            c->set(chn, attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
         }
     }
 }
 
-void read_time(Caliper* c)
+void read_time(Caliper* c, Channel* chn, ConfigSet& config)
 {
     Attribute starttime_attr = 
         c->create_attribute("env.starttime", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
@@ -121,10 +118,10 @@ void read_time(Caliper* c)
     char   buf[64];
     size_t len = strftime(buf, sizeof(buf)-1, "%a %d %b %Y %H:%M:%S %z", tmp);
 
-    c->set(starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
+    c->set(chn, starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
 }
 
-void read_hostname(Caliper* c)
+void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
 {
     Attribute hostname_attr =
         c->create_attribute("env.hostname", CALI_TYPE_STRING, CALI_ATTR_SCOPE_PROCESS);
@@ -132,10 +129,10 @@ void read_hostname(Caliper* c)
     char buf[256];
 
     if (gethostname(buf, sizeof(buf)-1) == 0)
-        c->set(hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
+        c->set(chn, hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
 }
 
-void read_extra(Caliper* c)
+void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
 {
     vector<string> extra_list = config.get("extra").to_stringlist(",:");
 
@@ -149,28 +146,28 @@ void read_extra(Caliper* c)
         char* val = getenv(env.c_str());
 
         if (val)
-            c->set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+            c->set(chn, attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
     }
 }
   
-void environment_service_register(Caliper* c)
+void environment_service_register(Caliper* c, Channel* chn)
 {
-    Log(1).stream() << "Registered env service" << endl;
-    Log(1).stream() << "Collecting environment information" << endl;
+    Log(1).stream() << chn->name() << ": Registered env service." << std::endl;
 
-    config = RuntimeConfig::init("env", s_configdata);
+    ConfigSet config = chn->config().init("env", s_configdata);
 
-    read_cmdline(c);
-    read_uname(c);
-    read_time(c);
-    read_hostname(c);
-    read_extra(c);
+    read_cmdline(c, chn, config);
+    read_uname(c, chn, config);
+    read_time(c, chn, config);
+    read_hostname(c, chn, config);
+    read_extra(c, chn, config);
 }
   
 }
 
 namespace cali
 {
-    CaliperService env_service = { "env", ::environment_service_register };
+
+CaliperService env_service = { "env", ::environment_service_register };
+
 } // namespace cali
- 

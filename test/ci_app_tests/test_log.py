@@ -20,9 +20,9 @@ class CaliperLogTest(unittest.TestCase):
 
         log_targets = [
             'CALI_LOG_VERBOSITY=3',
-            '== CALIPER: Releasing process scope',
-            '== CALIPER: Releasing thread scope',
-            'Blackboard buffer',
+            '== CALIPER: Releasing channel default',
+            '== CALIPER: Releasing Caliper thread data',
+            'Blackboard',
             'Metadata tree',
             'Metadata memory pool'
         ]

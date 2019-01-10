@@ -37,12 +37,15 @@
 #define CALI_SERVICES_H
 
 #include <memory>
+#include <string>
+#include <vector>
 
 namespace cali
 {
 
 class Caliper;
 class CaliperService;
+class Channel;
 
 class Services
 {
@@ -55,7 +58,9 @@ public:
 
     static void add_default_services();
 
-    static void register_services(Caliper* c);
+    static void register_services(Caliper* c, Channel* chn);
+
+    static std::vector<std::string> get_available_services();
 };
 
 } // namespace cali

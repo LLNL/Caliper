@@ -55,7 +55,7 @@ class TAUBinding : public cali::AnnotationBinding
 
 public:
 
-    void initialize(Caliper* c) {
+    void initialize(Caliper* c, Channel* chn) {
         // initialize TAU
         int argc = 1;
         const char *dummy = "Caliper Application";
@@ -69,7 +69,7 @@ public:
             Tau_set_node(0);
         } else {
             // have MPI, get the rank
-            Tau_set_node(c->get(mpi_rank_attr).value().to_int());
+            Tau_set_node(c->get(chn, mpi_rank_attr).value().to_int());
         }
         // register for events of interest?
     }
@@ -81,7 +81,7 @@ public:
     const char* service_tag() const { return "tau"; };
 
     // handle a begin event by starting a TAU timer
-    void on_begin(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_begin(Caliper* c, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING) {
             Tau_start((const char*)value.data());
         } else {
@@ -90,7 +90,7 @@ public:
     }
 
     // handle an end event by stopping a TAU timer
-    void on_end(Caliper* c, const Attribute& attr, const Variant& value) {
+    void on_end(Caliper* c, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING) {
             Tau_stop((const char*)(value.data());
         } else {

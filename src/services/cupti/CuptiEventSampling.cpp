@@ -42,7 +42,7 @@ using namespace cali::Cupti;
 
 namespace
 {
-    
+
 void
 print_cupti_error(std::ostream& os, CUptiResult err, const char* func)
 {

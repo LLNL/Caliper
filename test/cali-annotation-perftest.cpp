@@ -59,6 +59,10 @@
 // The benchmark is multi-threaded: the loop is statically divided
 // between threads using OpenMP.
 
+#include <caliper/Caliper.h>
+
+#include <caliper/common/RuntimeConfig.h>
+
 #include <caliper/cali.h>
 #include <caliper/tools-util/Args.h>
 
@@ -79,6 +83,8 @@ struct Config
     int tree_depth;
 
     int iter;
+
+    int channels;
 };
 
 
@@ -129,17 +135,21 @@ int main(int argc, char* argv[])
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=nested:process_scope");
     
     const util::Args::Table option_table[] = {
-        { "width",      "tree-width", 'w', true,
+        { "width",       "tree-width",  'w', true,
           "Context tree width", "WIDTH"
         },
-        { "depth",      "tree-width", 'd', true,
+        { "depth",       "tree-width",  'd', true,
           "Context tree depth", "DEPTH"
         },
-        { "iterations", "iterations", 'i', true,
+        { "iterations",  "iterations",  'i', true,
           "Iterations",         "ITERATIONS"
         },
-        { "csv",        "print-csv",  'c', false,
+        { "csv",         "print-csv",   'c', false,
           "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime."
+        },
+        { "channels", "channels", 'x', true,
+          "Number of replicated channel instances",
+          "EXPERIMENTS"
         },
 
         { "help", "help", 'h', false, "Print help", nullptr },
@@ -174,18 +184,20 @@ int main(int argc, char* argv[])
         
     Config cfg;
 
-    cfg.tree_width = std::stoi(args.get("width", "20"));
-    cfg.tree_depth = std::stoi(args.get("depth", "10"));
-    cfg.iter       = std::stoi(args.get("iterations", "100000"));
+    cfg.tree_width  = std::stoi(args.get("width", "20"));
+    cfg.tree_depth  = std::stoi(args.get("depth", "10"));
+    cfg.iter        = std::stoi(args.get("iterations", "100000"));
+    cfg.channels = std::max(std::stoi(args.get("channels", "1")), 1);
     
     // set global attributes before other Caliper initialization
 
-    cali::Annotation("perftest.tree_width", CALI_ATTR_GLOBAL).set(cfg.tree_width);
-    cali::Annotation("perftest.tree_depth", CALI_ATTR_GLOBAL).set(cfg.tree_depth);
-    cali::Annotation("perftest.iterations", CALI_ATTR_GLOBAL).set(cfg.iter);
+    cali::Annotation("perftest.tree_width",  CALI_ATTR_GLOBAL).set(cfg.tree_width);
+    cali::Annotation("perftest.tree_depth",  CALI_ATTR_GLOBAL).set(cfg.tree_depth);
+    cali::Annotation("perftest.iterations",  CALI_ATTR_GLOBAL).set(cfg.iter);
 #ifdef _OPENMP
-    cali::Annotation("perftest.threads",    CALI_ATTR_GLOBAL).set(threads);
+    cali::Annotation("perftest.threads",     CALI_ATTR_GLOBAL).set(threads);
 #endif
+    cali::Annotation("perftest.channels", CALI_ATTR_GLOBAL).set(cfg.channels);
 
     make_strings(cfg);
 
@@ -195,14 +207,26 @@ int main(int argc, char* argv[])
 
     if (!print_csv)
         std::cout << "cali-annotation-perftest:"
-                  << "\n    Tree width: " << cfg.tree_width
-                  << "\n    Tree depth: " << cfg.tree_depth
-                  << "\n    Iterations: " << cfg.iter
+                  << "\n    Channels: " << cfg.channels
+                  << "\n    Tree width:  " << cfg.tree_width
+                  << "\n    Tree depth:  " << cfg.tree_depth
+                  << "\n    Iterations:  " << cfg.iter
 #ifdef _OPENMP
-                  << "\n    Threads:    " << omp_get_max_threads()
+                  << "\n    Threads:     " << omp_get_max_threads()
 #endif
                   << std::endl;
 
+    // --- create channels (replicate given user config)
+
+    cali::Caliper c;
+
+    for (int x = 1; x < cfg.channels; ++x) {
+        std::string s("chn.");
+        s.append(std::to_string(x));
+        
+        c.create_channel(s.c_str(), cali::RuntimeConfig::get_default_config());
+    }
+    
     // --- pre-timing loop. initializes OpenMP subsystem
 
     CALI_MARK_BEGIN("perftest.pre-timing");
@@ -232,7 +256,8 @@ int main(int argc, char* argv[])
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
     if (print_csv)
-        std::cout << cfg.tree_depth
+        std::cout << cfg.channels
+                  << "," << cfg.tree_depth
                   << "," << cfg.tree_width
                   << "," << updates
                   << "," << threads

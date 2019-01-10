@@ -100,6 +100,8 @@ int main(int argc, char* argv[])
         { 0, 0 }
     };
 
+    Caliper c;
+
     // --- check if argument is valid test case
 
     if (argc > 1) {

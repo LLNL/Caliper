@@ -115,12 +115,20 @@ public:
         { } 
 
     void append(const SnapshotRecord& list);
-    void append(cali::Node*);
     void append(size_t n, const cali_id_t*, const cali::Variant*);
     void append(size_t n, cali::Node* const*, size_t m, const cali_id_t*, const cali::Variant*);
     
+    void append(cali::Node* node) {
+        if (m_sizes.n_nodes < m_capacity.n_nodes)
+            m_node_array[m_sizes.n_nodes++] = node;
+    }
+    
     void append(cali_id_t attr, const cali::Variant& data) {
-        append(1, &attr, &data);
+        if (m_sizes.n_immediate < m_capacity.n_immediate) {
+            m_attr_array[m_sizes.n_immediate] = attr;
+            m_data_array[m_sizes.n_immediate] = data;
+            ++m_sizes.n_immediate;
+        }
     }
 
     Sizes capacity() const { 

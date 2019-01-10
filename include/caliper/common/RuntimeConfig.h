@@ -40,6 +40,7 @@
 
 #include "cali_types.h"
 
+#include <map>
 #include <memory>
 #include <string>
 
@@ -89,25 +90,22 @@ public:
     StringConverter get(const char* set, const char* key);
 
     /// \brief Initialize a ConfigSet.
-    ConfigSet       init_configset(const char* name, const ConfigSet::Entry* set);
+    ConfigSet       init(const char* name, const ConfigSet::Entry* set);
 
     /// \brief Pre-set config entry \a key to \a value.
     ///
     /// The value may be overwritten by configuration files or environment
     /// variables.
-    ///
-    /// \note: Only effective *before* initialization of the %Caliper
-    ///   runtime system.
     void            preset(const char* key, const std::string& value);
 
     /// \brief Set config entry \a key to \a value.
     ///
     /// The value will *not* be overwritten by configuration files,
     /// profile settings, or environment variables.
-    ///
-    /// \note: Only effective *before* initialization of the %Caliper
-    ///   runtime system.
     void            set(const char* key, const std::string& value);
+
+    /// \brief Import config values from the given the \a values map
+    void            import(const std::map<std::string, std::string>& values);
 
     /// \brief Define a %Caliper configuration profile.
     ///
@@ -168,10 +166,7 @@ public:
     // --- Static API (temporary)
     //
 
-    /// \brief Initialize a ConfigSet from the default config.
-    static ConfigSet      init(const char* name, const ConfigSet::Entry* set);
-
-    static RuntimeConfig* get_default_config(); 
+    static RuntimeConfig  get_default_config(); 
 
 }; // class RuntimeConfig
 

@@ -59,7 +59,7 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
-void make_hierarchy_1()
+void make_hierarchy_1(cali::Channel* chn)
 {
     cali::Caliper   c;    
     cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
@@ -70,10 +70,10 @@ void make_hierarchy_1()
         { CALI_TYPE_STRING, "h1_l2", 5 }
     };
 
-    c.set_path(attr, 3, data);
+    c.set_path(chn, attr, 3, data);
 }
 
-void make_hierarchy_2()
+void make_hierarchy_2(cali::Channel* chn)
 {
     cali::Caliper   c;
     cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
@@ -84,7 +84,7 @@ void make_hierarchy_2()
         { CALI_TYPE_STRING, "h2_l2", 5 }
     };
 
-    c.set_path(attr, 3, data);
+    c.set_path(chn, attr, 3, data);
 }
 
 void test_blob()
@@ -179,12 +179,18 @@ void test_escaping()
 
 void test_hierarchy()
 {
+    cali::RuntimeConfig cfg;
+    
+    cali::Caliper      c;
+    cali::Channel*   chn =
+        c.create_channel("hierarchy.channel", cfg);
+    
     cali::Annotation h("hierarchy");
 
     h.set(1);
-    make_hierarchy_1();
+    make_hierarchy_1(chn);
     h.set(2);
-    make_hierarchy_2();
+    make_hierarchy_2(chn);
     h.end();
 }
 
@@ -203,7 +209,23 @@ void test_attr_prop_preset()
 void test_aggr_warnings()
 {
     cali::Caliper c;
+    
+    // make a separate channel for this
+    const char* cfg_profile[][2] = {
+        { "CALI_SERVICES_ENABLE",      "aggregate" },
+        { "CALI_CALIPER_CONFIG_CHECK", "false"     },
+        { nullptr, nullptr }
+    };
+    
+    cali::RuntimeConfig cfg;
 
+    cfg.allow_read_env(false);
+    cfg.define_profile("test_aggregate_warnings", cfg_profile);
+    cfg.set("CALI_CONFIG_PROFILE", "test_aggregate_warnings");
+    
+    cali::Channel* chn =
+        c.create_channel("test_aggregate_warnings", cfg);
+    
     // create an immediate attribute with double type: should create warning if used in aggregation key
     cali::Attribute d  = c.create_attribute("aw.dbl",   CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
 
@@ -231,7 +253,7 @@ void test_aggr_warnings()
     cali::SnapshotRecord info(info_data);
 
     c.make_entrylist(6, attr, data, info);
-    c.push_snapshot(CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &info);
+    c.push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &info);
 }
 
 std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)

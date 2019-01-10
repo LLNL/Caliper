@@ -39,7 +39,7 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "ContextBuffer.h"
+#include "Blackboard.h"
 #include "MetadataTree.h"
 
 #include "caliper/common/ContextRecord.h"
@@ -63,6 +63,8 @@
 #include <vector>
 #include <utility>
 
+#define SNAP_MAX 80
+
 using namespace cali;
 using namespace std;
 
@@ -72,92 +74,218 @@ namespace cali
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
 
-extern void config_sanity_check(RuntimeConfig*);
+extern void config_sanity_check(RuntimeConfig);
 
 }
 
 namespace
 {
-    bool flush_on_exit { true };
 
-    // --- helpers
+// --- Siglock
 
-    inline cali_context_scope_t
-    attr2caliscope(const Attribute& attr) {
-        switch (attr.properties() & CALI_ATTR_SCOPE_MASK) {
-        case CALI_ATTR_SCOPE_THREAD:
-            return CALI_SCOPE_THREAD;
-        case CALI_ATTR_SCOPE_PROCESS:
-            return CALI_SCOPE_PROCESS;
-        case CALI_ATTR_SCOPE_TASK:
-            return CALI_SCOPE_TASK;
-        }
+class siglock {
+    volatile sig_atomic_t m_lock;
 
-        // make thread scope the default
-        return CALI_SCOPE_THREAD;
+public:
+
+    siglock()
+        : m_lock(0)
+        { }
+
+    inline void lock()   { ++m_lock; }
+    inline void unlock() { --m_lock; }
+
+    inline bool is_locked() const {
+        return (m_lock > 0);
     }
+};
 
+// --- helper functions
 
-    // --- Exit handler
+std::ostream&
+print_available_services(std::ostream& os)
+{
+    std::vector<std::string> services = Services::get_available_services();
 
-    void
-    exit_handler(void) {
-        Caliper c = Caliper::instance();
+    int count = 0;
+    for (const std::string& s : services)
+        os << (count++ > 0 ? "," : "") << s;
 
-        if (c) {
-            if (flush_on_exit)
-                c.flush_and_write(nullptr);
+    if (!count)
+        os << "none";
 
-            c.clear();
-
-            c.events().finish_evt(&c);
-
-            c.release_scope(c.default_scope(CALI_SCOPE_PROCESS));
-            // Somehow default thread scope is not released by pthread_key_create destructor
-            c.release_scope(c.default_scope(CALI_SCOPE_THREAD));
-        }
-
-        // Don't delete global data, some thread-specific finalization may occur after this point
-        // Caliper::release();
-    }
-
-    // --- Siglock
-
-    class siglock {
-        volatile sig_atomic_t m_lock;
-
-    public:
-
-        siglock()
-            : m_lock(0)
-            { }
-
-        inline void lock()   { ++m_lock; }
-        inline void unlock() { --m_lock; }
-
-        inline bool is_locked() const {
-            return (m_lock > 0);
-        }
-    };
+    return os;
+}
 
 } // namespace
 
+//
+//   Caliper channel thread data. 
+// Managed by the Caliper object.
+
+struct Channel::ThreadData {
+    // this channel's thread blackboard
+    Blackboard     blackboard;
+
+    // copy of this channel's last process blackboard snapshot
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> proc_snap_data;
+    SnapshotRecord proc_snap;
+
+    // version of the last process blackboard snapshot
+    int            proc_bb_count;
+
+    ThreadData()
+        : proc_snap(proc_snap_data),
+          proc_bb_count(0)
+        { }
+};
 
 //
-// Caliper Scope data
+// Caliper channel data
 //
 
-struct Caliper::Scope
+struct Channel::ChannelImpl
 {
-    MetadataTree         tree;
-    ContextBuffer        blackboard;
+    static const ConfigSet::Entry   s_configdata[];
 
-    cali_context_scope_t scope;
+    std::string                     name;
+    bool                            active;
+    
+    // TODO: call events.create_scope_evt when creating new thread
 
-    ::siglock            lock;
+    RuntimeConfig                   config;
 
-    Scope(cali_context_scope_t s)
-        : scope(s) { }
+    Events                          events;          ///< callbacks
+    Blackboard                      blackboard;      ///< process-wide blackboard
+
+    bool                            automerge;
+    bool                            flush_on_exit;
+
+    ChannelImpl(const char* _name, const RuntimeConfig& cfg)
+        : name(_name), active(true), config(cfg)
+        {
+            ConfigSet cali_cfg =
+                config.init("channel", s_configdata);
+
+            automerge     = cali_cfg.get("automerge").to_bool();
+            flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
+        }
+
+    ~ChannelImpl()
+        {
+            if (Log::verbosity() >= 2) {
+                blackboard.print_statistics(
+                    Log(2).stream() << "Releasing channel " << name << ":\n    ")
+                    << std::endl;
+            }
+        }
+
+    inline const Attribute&
+    get_key(const Attribute& attr, const Attribute& key_attr) const {
+        int prop = attr.properties();
+        
+        if (!automerge || (prop & CALI_ATTR_ASVALUE)  || !(prop & CALI_ATTR_NOMERGE))
+            return attr;
+
+        return key_attr;
+    }
+};
+
+const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
+    // key, type, value, short description, long description
+    { "automerge", CALI_TYPE_BOOL, "true",
+      "Automatically merge attributes into a common context tree",
+      "Automatically merge attributes into a common context tree.\n"
+      "Decreases the size of context records, but may increase\n"
+      "the amount of metadata and reduce performance."
+    },
+    { "config_check", CALI_TYPE_BOOL, "true",
+      "Perform configuration sanity check at initialization",
+      "Perform configuration sanity check at initialization"
+    },
+    { "flush_on_exit", CALI_TYPE_BOOL, "true",
+      "Flush Caliper buffers at program exit",
+      "Flush Caliper buffers at program exit"
+    },
+    ConfigSet::Terminator
+};
+
+Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg)
+    : IdType(id),
+      mP(new ChannelImpl(name, cfg))
+{
+}
+
+Channel::~Channel()
+{
+}
+
+Channel::Events&
+Channel::events()
+{
+    return mP->events;
+}
+
+RuntimeConfig
+Channel::config()
+{
+    return mP->config;
+}
+
+std::string
+Channel::name() const
+{
+    return mP->name;
+}
+
+bool
+Channel::is_active() const
+{
+    return mP->active;
+}
+
+//
+// --- Caliper thread data
+//
+
+/// \brief Per-thread data for the Caliper object
+struct Caliper::ThreadData
+{
+    MetadataTree                  tree;
+    ::siglock                     lock;
+
+    std::vector< std::unique_ptr<Channel::ThreadData> >
+                                  chnT;
+
+    bool                          is_initial_thread;
+
+    ThreadData(size_t min_num_chn, bool initial_thread = false)
+        : is_initial_thread(initial_thread)
+        {
+            while (min_num_chn--)
+                chnT.emplace_back(new Channel::ThreadData);
+        }
+
+    ~ThreadData() {
+        if (is_initial_thread)
+            Caliper::release();
+            
+        if (Log::verbosity() >= 2)
+            tree.print_statistics( Log(2).stream() << "Releasing Caliper thread data: \n" ) << std::endl;
+    }
+
+    bool check_and_alloc(size_t min_num_chn, bool alloc) {
+        if (alloc)
+            for (size_t s = chnT.size(); s < min_num_chn; ++s)
+                chnT.emplace_back(new Channel::ThreadData);
+
+        return (chnT.size() >= min_num_chn);
+    }
+
+    inline Channel::ThreadData*
+    channel_thread_data(Channel* chn) {
+        return chnT[chn->id()].get();
+    }
 };
 
 
@@ -169,27 +297,19 @@ struct Caliper::GlobalData
 {
     // --- static data
 
-    static volatile sig_atomic_t  s_init_lock;
-    static std::mutex             s_init_mutex;
+    static volatile sig_atomic_t       s_init_lock;
+    static std::mutex                  s_init_mutex;
 
-    static const ConfigSet::Entry s_configdata[];
-
-    static GlobalData*            sG;
+    static const ConfigSet::Entry      s_configdata[];
 
     struct InitHookList {
         void          (*hook)();
         InitHookList* next;
     };
 
-    static InitHookList*          s_init_hooks;
+    static InitHookList*               s_init_hooks;
     
     // --- static functions
-
-    static void release_thread(void* ctx) {
-        Scope* scope = static_cast<Scope*>(ctx);
-
-        Caliper(sG, scope, 0).release_scope(scope);
-    }
 
     static void add_init_hook(void (*hook)()) {
         InitHookList* elem = new InitHookList { hook, s_init_hooks };
@@ -203,100 +323,50 @@ struct Caliper::GlobalData
 
     // --- data
 
-    ConfigSet              config;
+    mutable std::mutex                 attribute_lock;
+    map<string, Node*>                 attribute_nodes;
 
-    ScopeCallbackFn        get_thread_scope_cb;
-    ScopeCallbackFn        get_task_scope_cb;
+    Attribute                          key_attr;
 
-    mutable std::mutex     attribute_lock;
-    map<string, Node*>     attribute_nodes;
-    map<string, int>       attribute_prop_presets;
+    map<string, int>                   attribute_prop_presets;
 
-    Attribute              name_attr;
-    Attribute              type_attr;
-    Attribute              prop_attr;
-
-    // Key attribute: one attribute stands in as key for all auto-merged attributes
-    Attribute              key_attr;
-    bool                   automerge;
-
-    Events                 events;
-
-    Scope*                 process_scope;
-    Scope*                 default_thread_scope;
-    Scope*                 default_task_scope;
-
-    pthread_key_t          thread_scope_key;
+    vector< std::unique_ptr<Channel> > channels;
 
     // --- constructor
 
     GlobalData()
-        : config { RuntimeConfig::init("caliper", s_configdata) },
-          get_thread_scope_cb { nullptr },
-          get_task_scope_cb   { nullptr },
-          name_attr { Attribute::invalid },
-          type_attr { Attribute::invalid },
-          prop_attr { Attribute::invalid },
-          key_attr  { Attribute::invalid },
-          automerge { true },
-          process_scope        { new Scope(CALI_SCOPE_PROCESS) },
-          default_thread_scope { new Scope(CALI_SCOPE_THREAD)  },
-          default_task_scope   { new Scope(CALI_SCOPE_TASK)    }
-    {
-        automerge = config.get("automerge").to_bool();
+        : key_attr { Attribute::invalid }
+    {        
+        channels.reserve(16);
 
-        ::flush_on_exit = config.get("flush_on_exit").to_bool();
+        // put the attribute [name,type,prop] attributes in the map
+        
+        Attribute name_attr =
+            Attribute::make_attribute(sT->tree.node( 8));
+        Attribute type_attr =
+            Attribute::make_attribute(sT->tree.node( 9));
+        Attribute prop_attr =
+            Attribute::make_attribute(sT->tree.node(10));
 
-        name_attr = Attribute::make_attribute(default_thread_scope->tree.node( 8));
-        type_attr = Attribute::make_attribute(default_thread_scope->tree.node( 9));
-        prop_attr = Attribute::make_attribute(default_thread_scope->tree.node(10));
-
-        attribute_nodes.insert(make_pair(name_attr.name(), default_thread_scope->tree.node(name_attr.id())));
-        attribute_nodes.insert(make_pair(type_attr.name(), default_thread_scope->tree.node(type_attr.id())));
-        attribute_nodes.insert(make_pair(prop_attr.name(), default_thread_scope->tree.node(prop_attr.id())));
-
-        assert(name_attr != Attribute::invalid);
-        assert(type_attr != Attribute::invalid);
-        assert(prop_attr != Attribute::invalid);
-
-        pthread_key_create(&thread_scope_key, release_thread);
-        pthread_setspecific(thread_scope_key, default_thread_scope);
-
-        parse_attribute_property_presets();
-
-        // now it is safe to use the Caliper interface
-
-        init();
+        attribute_nodes.insert(make_pair(name_attr.name(),
+                                         sT->tree.node(name_attr.id())));
+        attribute_nodes.insert(make_pair(type_attr.name(),
+                                         sT->tree.node(type_attr.id())));
+        attribute_nodes.insert(make_pair(prop_attr.name(),
+                                         sT->tree.node(prop_attr.id())));
     }
 
     ~GlobalData() {
-        Log(1).stream() << "Finished" << endl;
+        Log(1).stream() << "Finished" << std::endl;
 
         // prevent re-initialization
         s_init_lock = 2;
-
-	//freeing up context buffers
-        delete process_scope;
-        delete default_thread_scope;
-        delete default_task_scope;
     }
-
-    Scope* acquire_thread_scope(bool create = true) {
-        Scope* scope = static_cast<Scope*>(pthread_getspecific(thread_scope_key));
-
-        if (create && !scope) {
-            scope = Caliper(this).create_scope(CALI_SCOPE_THREAD);
-            pthread_setspecific(thread_scope_key, scope);
-        }
-
-        return scope;
-    }
-
-    void parse_attribute_property_presets() {
-        vector<string> attr_props =
-            config.get("attribute_properties").to_stringlist();
-
-        for (const string& s : attr_props) {
+    
+    void parse_attribute_property_presets(const ConfigSet& config) {
+        auto preset_cfg = config.get("attribute_properties").to_stringlist();
+        
+        for (const string& s : preset_cfg) {
             auto p = s.find_first_of('=');
 
             if (p == string::npos)
@@ -310,40 +380,25 @@ struct Caliper::GlobalData
 
     void init() {
         run_init_hooks();
+
+        parse_attribute_property_presets(RuntimeConfig::get_default_config().init("caliper", s_configdata));
         
-        Caliper c(this, default_thread_scope, default_task_scope);
+        Services::add_default_services();
 
-        // Create and set key & version attributes
-
+        if (Log::verbosity() >= 2)
+            print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
+        
+        Caliper c(false);
+        
         key_attr =
             c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
-
-        c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
-              Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
-
+        
         init_attribute_classes(&c);
-
-        Services::add_default_services();
-        Services::register_services(&c);
-
         init_api_attributes(&c);
+        
+        c.create_channel("default", RuntimeConfig::get_default_config());
 
-        Log(1).stream() << "Initialized" << endl;
-
-        if (config.get("config_check").to_bool())
-            config_sanity_check(RuntimeConfig::get_default_config());
-        if (Log::verbosity() >= 3)
-            RuntimeConfig::get_default_config()->print( Log(3).stream() << "Configuration:\n" );
-
-        c.events().post_init_evt(&c);
-    }
-
-    const Attribute&
-    get_key(const Attribute& attr) const {
-        if (!automerge || attr.store_as_value() || !attr.is_autocombineable())
-            return attr;
-
-        return key_attr;
+        Log(1).stream() << "Initialized" << std::endl;
     }
 };
 
@@ -352,18 +407,13 @@ struct Caliper::GlobalData
 volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
 mutex                  Caliper::GlobalData::s_init_mutex;
 
-Caliper::GlobalData*   Caliper::GlobalData::sG = nullptr;
+std::unique_ptr<Caliper::GlobalData> Caliper::sG;
+thread_local std::unique_ptr<Caliper::ThreadData> Caliper::sT;
 
 Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
 
 const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
-    { "automerge", CALI_TYPE_BOOL, "true",
-      "Automatically merge attributes into a common context tree",
-      "Automatically merge attributes into a common context tree.\n"
-      "Decreases the size of context records, but may increase\n"
-      "the amount of metadata and reduce performance."
-    },
     { "attribute_properties", CALI_TYPE_STRING, "",
       "List of attribute property presets",
       "List of attribute property presets, in the form\n"
@@ -378,160 +428,12 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  hidden:        Do not include this attribute in snapshots\n"
       "  nested:        Values are properly nested with the call stack and other nested attributes\n"
     },
-    { "config_check", CALI_TYPE_BOOL, "true",
-      "Perform configuration sanity check at initialization",
-      "Perform configuration sanity check at initialization"
-    },
-    { "flush_on_exit", CALI_TYPE_BOOL, "true",
-      "Flush Caliper buffers at program exit",
-      "Flush Caliper buffers at program exit"
-    },
     ConfigSet::Terminator
 };
-
 
 //
 // Caliper class definition
 //
-
-Caliper::Scope*
-Caliper::scope(cali_context_scope_t st) {
-    switch (st) {
-    case CALI_SCOPE_PROCESS:
-        return mG->process_scope;
-
-    case CALI_SCOPE_THREAD:
-#if 0
-        if (!m_thread_scope) {
-            m_thread_scope =
-                mG->get_thread_scope_cb ? mG->get_thread_scope_cb(this, true) : mG->default_thread_scope;
-        }
-#endif
-        assert(m_thread_scope != 0);
-        return m_thread_scope;
-
-    case CALI_SCOPE_TASK:
-        if (!m_task_scope)
-            m_task_scope =
-                mG->get_task_scope_cb ? mG->get_task_scope_cb(this, true) : mG->default_task_scope;
-
-        return m_task_scope;
-    }
-
-    return mG->process_scope;
-}
-
-Caliper::Scope*
-Caliper::default_scope(cali_context_scope_t st)
-{
-    switch (st) {
-    case CALI_SCOPE_THREAD:
-        return mG->default_thread_scope;
-
-    case CALI_SCOPE_TASK:
-        return mG->default_task_scope;
-
-    default:
-        ;
-    }
-
-    return mG->process_scope;
-}
-
-void
-Caliper::set_scope_callback(cali_context_scope_t scope, ScopeCallbackFn cb) {
-    if (!mG)
-        return;
-
-    switch (scope) {
-    case CALI_SCOPE_THREAD:
-        if (mG->get_thread_scope_cb)
-            Log(0).stream()
-                << "Caliper::set_context_callback(): error: thread callback already set"
-                << endl;
-        mG->get_thread_scope_cb = cb;
-        break;
-    case CALI_SCOPE_TASK:
-        if (mG->get_task_scope_cb)
-            Log(0).stream()
-                << "Caliper::set_context_callback(): error: task callback already set"
-                << endl;
-        mG->get_task_scope_cb = cb;
-        break;
-    default:
-        Log(0).stream()
-            << "Caliper::set_context_callback(): error: cannot set process callback"
-            << endl;
-    }
-}
-
-Caliper::Scope*
-Caliper::create_scope(cali_context_scope_t st)
-{
-    assert(mG != 0);
-
-    Scope* s = new Scope(st);
-
-    switch (st) {
-    case CALI_SCOPE_THREAD:
-        m_thread_scope = s;
-        break;
-    case CALI_SCOPE_TASK:
-        m_task_scope   = s;
-        break;
-    case CALI_SCOPE_PROCESS:
-        Log(0).stream()
-            << "Caliper::create_scope(): error: attempt to create a process scope"
-            << endl;
-
-        delete s;
-        return 0;
-    }
-
-    mG->events.create_scope_evt(this, st);
-
-    return s;
-}
-
-void
-Caliper::release_scope(Caliper::Scope* s)
-{
-    assert(mG != 0);
-
-    if (Log::verbosity() >= 2) {
-        const char* scopestr = "";
-
-        switch (s->scope) {
-        case CALI_SCOPE_THREAD:
-            scopestr = "thread";
-            break;
-        case CALI_SCOPE_TASK:
-            scopestr = "task";
-            break;
-        case CALI_SCOPE_PROCESS:
-            scopestr = "process";
-            break;
-        }
-
-        // This will print
-        //   "Releasing <process/thread> scope:
-        //      <Blackboard statistics>"
-        //      <Metadata tree statistics>
-
-        s->tree.print_statistics(
-            s->blackboard.print_statistics(
-                Log(2).stream() << "Releasing " << scopestr << " scope:\n      " )
-            << "\n      ") << std::endl;
-    }
-
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    mG->events.release_scope_evt(this, s->scope);
-    // do NOT delete this because we may still need the node data in the scope's memory pool
-    // delete ctx;
-}
-
 
 // --- Attribute interface
 
@@ -564,44 +466,57 @@ Attribute
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
                           int n_meta, const Attribute* meta_attr, const Variant* meta_val)
 {
-    assert(mG != 0);
+    assert(sG != 0);
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
+    
+    Attribute name_attr =
+        Attribute::make_attribute(sT->tree.node( 8));
+    Attribute type_attr =
+        Attribute::make_attribute(sT->tree.node( 9));
+    Attribute prop_attr =
+        Attribute::make_attribute(sT->tree.node(10));
+
+    assert(name_attr != Attribute::invalid);
+    assert(type_attr != Attribute::invalid);
+    assert(prop_attr != Attribute::invalid);
 
     Node* node        = nullptr;
     bool  created_now = false;
 
     // Check if an attribute with this name already exists
 
-    mG->attribute_lock.lock();
+    sG->attribute_lock.lock();
 
-    auto it = mG->attribute_nodes.find(name);
-    if (it != mG->attribute_nodes.end())
+    auto it = sG->attribute_nodes.find(name);
+    if (it != sG->attribute_nodes.end())
         node = it->second;
 
-    mG->attribute_lock.unlock();
+    sG->attribute_lock.unlock();
 
     // Create attribute nodes
 
     if (!node) {
         // Get type node
         assert(type >= 0 && type <= CALI_MAXTYPE);
-        node = m_thread_scope->tree.type_node(type);
+        node = sT->tree.type_node(type);
         assert(node);
 
         // Add metadata nodes.
         if (n_meta > 0)
-            node = m_thread_scope->tree.get_path(n_meta, meta_attr, meta_val, node);
+            node = sT->tree.get_path(n_meta, meta_attr, meta_val, node);
 
         // Look for attribute properties in presets
-        auto propit = mG->attribute_prop_presets.find(name);
-        if (propit != mG->attribute_prop_presets.end())
+        auto propit = sG->attribute_prop_presets.find(name);
+        if (propit != sG->attribute_prop_presets.end())
             prop = propit->second;
 
         // Run pre-attribute creation callbacks.
         //   This may add additional nodes to our parent branch.
-        mG->events.pre_create_attr_evt(this, name, type, &prop, &node);
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.pre_create_attr_evt(this, chn.get(), name, type, &prop, &node);
 
         // Set scope to PROCESS for all global attributes
         if (prop & CALI_ATTR_GLOBAL) {
@@ -612,26 +527,26 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
             prop |= CALI_ATTR_SCOPE_THREAD;
 
-        Attribute attr[2] { mG->prop_attr, mG->name_attr };
-        Variant   data[2] { { prop },      { CALI_TYPE_STRING, name.c_str(), name.size() } };
+        Attribute attr[2] { prop_attr, name_attr };
+        Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };
 
-        node = m_thread_scope->tree.get_path(2, &attr[0], &data[0], node);
+        node = sT->tree.get_path(2, &attr[0], &data[0], node);
 
         if (node) {
             // Check again if attribute already exists; might have been created by
             // another thread in the meantime.
             // We've created some redundant nodes then, but that's fine
-            mG->attribute_lock.lock();
+            sG->attribute_lock.lock();
 
-            auto it = mG->attribute_nodes.lower_bound(name);
+            auto it = sG->attribute_nodes.lower_bound(name);
 
-            if (it == mG->attribute_nodes.end() || it->first != name) {
-                mG->attribute_nodes.insert(it, std::make_pair(name, node));
+            if (it == sG->attribute_nodes.end() || it->first != name) {
+                sG->attribute_nodes.insert(it, std::make_pair(name, node));
                 created_now = true;
             } else
                 node = it->second;
 
-            mG->attribute_lock.unlock();
+            sG->attribute_lock.unlock();
         }
     }
 
@@ -640,7 +555,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     Attribute attr = Attribute::make_attribute(node);
 
     if (created_now)
-        mG->events.create_attr_evt(this, attr);
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.create_attr_evt(this, chn.get(), attr);
 
     return attr;
 }
@@ -655,21 +572,19 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 Attribute
 Caliper::get_attribute(const std::string& name) const
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     Node* node = nullptr;
 
-    mG->attribute_lock.lock();
+    sG->attribute_lock.lock();
 
-    auto it = mG->attribute_nodes.find(name);
+    auto it = sG->attribute_nodes.find(name);
 
-    if (it != mG->attribute_nodes.end())
+    if (it != sG->attribute_nodes.end())
         node = it->second;
 
-    mG->attribute_lock.unlock();
+    sG->attribute_lock.unlock();
 
     return Attribute::make_attribute(node);
 }
@@ -684,7 +599,7 @@ Caliper::get_attribute(cali_id_t id) const
 {
     // no signal lock necessary
 
-    return Attribute::make_attribute(m_thread_scope->tree.node(id));
+    return Attribute::make_attribute(sT->tree.node(id));
 }
 
 /// \brief Get all attributes.
@@ -695,33 +610,82 @@ std::vector<Attribute>
 Caliper::get_attributes() const
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
     std::lock_guard<std::mutex>
-        g_a(mG->attribute_lock);
+        g_a(sG->attribute_lock);
 
     std::vector<Attribute> ret;
-    ret.reserve(mG->attribute_nodes.size());
+    ret.reserve(sG->attribute_nodes.size());
 
-    for (auto it : mG->attribute_nodes)
+    for (auto it : sG->attribute_nodes)
         ret.push_back(Attribute::make_attribute(it.second));
 
     return ret;
 }
 
-///   Returns all entries with CALI_ATTR_GLOBAL set from the current
+//
+// --- Annotation dispatch API
+//
+
+/// Dispatch annotation region begin across all active channels
+void
+Caliper::begin(const Attribute& attr, const Variant& data)
+{
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            begin(chn.get(), attr, data);
+}
+
+/// Dispatch annotation region end across all active channels
+void
+Caliper::end(const Attribute& attr)
+{
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            end(chn.get(), attr);
+}
+
+/// Dispatch annotation region set across all active channels
+void
+Caliper::set(const Attribute& attr, const Variant& data)
+{
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            set(chn.get(), attr, data);
+}
+
+/// Dispatch memory region annotation across all active channels
+void
+Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])
+{
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            memory_region_begin(chn.get(), ptr, label, elem_size, ndim, dims);
+}
+
+/// Dispatch memory region annotation end across all active channels
+void
+Caliper::memory_region_end(const void* ptr)
+{
+    for (auto& chn : sG->channels)
+        if (chn && chn->is_active())
+            memory_region_end(chn.get(), ptr);
+}
+
+///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
 /// blackboard.
 
 std::vector<Entry>
-Caliper::get_globals()
+Caliper::get_globals(Channel* chn)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     SnapshotRecord::FixedSnapshotRecord<80> rec_data;
     SnapshotRecord rec(rec_data);
     
     // All global attributes are process scope, so just grab the process blackboard
-    mG->process_scope->blackboard.snapshot(&rec);
+    chn->mP->blackboard.snapshot(&rec);
 
     std::vector<const Node*> nodes;
 
@@ -750,11 +714,18 @@ Caliper::get_globals()
     return ret;
 }
 
+std::vector<Entry>
+Caliper::get_globals()
+{
+    return get_globals(sG->channels.front().get());
+}
+
 // --- Snapshot interface
 
 /// \brief Trigger and return a snapshot.
 ///
-/// This function triggers a snapshot and returns a snapshot record to the caller.
+/// This function triggers a snapshot for a given channel and returns a snapshot
+/// record to the caller
 /// The returned snapshot record contains the current blackboard contents, measurement
 /// values provided by service modules, and the contents of the trigger_info list
 /// provided by the caller.
@@ -776,25 +747,48 @@ Caliper::get_globals()
 /// \param sbuf         Caller-provided snapshot record buffer in which the snapshot record is
 ///                     returned. Must have sufficient space for the snapshot contents.
 void
-Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
+Caliper::pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // Save trigger info in snapshot buf
 
     if (trigger_info)
         sbuf->append(*trigger_info);
 
-    // Invoke callbacks and get contextbuffer data
+    // Invoke callbacks
 
-    mG->events.snapshot(this, scopes, trigger_info, sbuf);
+    chn->mP->events.snapshot(this, chn, scopes, trigger_info, sbuf);
 
-    for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
-        if (scopes & s)
-            scope(s)->blackboard.snapshot(sbuf);
+    Channel::ThreadData* chnT = sT->channel_thread_data(chn);
+
+    // Get thread blackboard data
+    if (scopes & CALI_SCOPE_THREAD) {
+        chnT->blackboard.snapshot(sbuf);
+    }
+
+    // Get process blackboard data
+    if (scopes & CALI_SCOPE_PROCESS) {
+        //   Check if the process blackboard has been updated since the
+        // last snapshot on this thread.
+        //   We keep a copy of the last process snapshot data in our
+        // thread-local storage so we don't have to access (and lock) the
+        // process blackboard when it hasn't changed.
+
+        int proc_bb_count_now = chn->mP->blackboard.count();
+        
+        if (proc_bb_count_now > chnT->proc_bb_count) {
+            //   Process blackboard has been updated:
+            // update thread-local snapshot data
+            chnT->proc_snap = SnapshotRecord(chnT->proc_snap_data);
+            chn->mP->blackboard.snapshot(&chnT->proc_snap);
+
+            chnT->proc_bb_count = proc_bb_count_now;
+        }
+
+        sbuf->append(chnT->proc_snap);
+    }
 }
 
 /// \brief Trigger and process a snapshot.
@@ -820,45 +814,45 @@ Caliper::pull_snapshot(int scopes, const SnapshotRecord* trigger_info, SnapshotR
 ///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
 void
-Caliper::push_snapshot(int scopes, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info)
 {
-    assert(mG != 0);
-
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
-    pull_snapshot(scopes, trigger_info, &sbuf);
+    pull_snapshot(chn, scopes, trigger_info, &sbuf);
 
-    mG->events.process_snapshot(this, trigger_info, &sbuf);
+    chn->mP->events.process_snapshot(this, chn, trigger_info, &sbuf);
 }
 
 
 /// \brief Flush aggregation/trace buffer contents.
 void
-Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.pre_flush_evt(this, flush_info);
+    chn->mP->events.pre_flush_evt(this, chn, flush_info);
 
-    if (mG->events.postprocess_snapshot.empty()) {
-        mG->events.flush_evt(this, flush_info, proc_fn);
+    if (chn->mP->events.postprocess_snapshot.empty()) {
+        chn->mP->events.flush_evt(this, chn, flush_info, proc_fn);
     } else {
-        mG->events.flush_evt(this, flush_info,
-                             [this,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
+        chn->mP->events.flush_evt(this, chn, flush_info,
+                             [this,chn,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
                                  SnapshotRecord::FixedSnapshotRecord<80> data;
                                  SnapshotRecord snapshot(data);
 
                                  snapshot.append(*input_snapshot);
 
-                                 mG->events.postprocess_snapshot(this, &snapshot);
+                                 chn->mP->events.postprocess_snapshot(this, chn, &snapshot);
                                  return proc_fn(&snapshot);
                              });
     }
+
+    chn->mP->events.post_flush_evt(this, chn, flush_info);
 }
 
 
@@ -874,31 +868,27 @@ Caliper::flush(const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 /// \param input_flush_info User-provided flush context information. Currently unused.
 
 void
-Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
     SnapshotRecord flush_info(snapshot_data);
 
     if (input_flush_info)
         flush_info.append(*input_flush_info);
 
-    m_thread_scope->blackboard.snapshot(&flush_info);
-    mG->process_scope->blackboard.snapshot(&flush_info);
+    chn->mP->blackboard.snapshot(&flush_info);
+    sT->chnT[chn->id()]->blackboard.snapshot(&flush_info);
 
-    Log(1).stream() << "Flushing Caliper data" << std::endl;
+    Log(1).stream() << chn->name() << ": Flushing Caliper data" << std::endl;
 
-    mG->events.pre_write_evt(this, &flush_info);
-
-    flush(&flush_info,
-          [this,&flush_info](const SnapshotRecord* snapshot){
-              mG->events.write_snapshot(this, &flush_info, snapshot);
+    flush(chn, &flush_info,
+          [this,chn,&flush_info](const SnapshotRecord* snapshot){
+              chn->mP->events.write_snapshot(this, chn, &flush_info, snapshot);
               return true;
           });
-
-    mG->events.post_write_evt(this, &flush_info);
 }
 
 
@@ -910,18 +900,18 @@ Caliper::flush_and_write(const SnapshotRecord* input_flush_info)
 /// \note This function is not signal safe.
 
 void
-Caliper::clear()
+Caliper::clear(Channel* chn)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.clear_evt(this);
+    chn->mP->events.clear_evt(this, chn);
 }
 
 
 // --- Annotation interface
 
-/// \brief Push attribute:value pair on blackboard.
+/// \brief Push attribute:value pair on blackboard of the given channel.
 ///
 /// Adds the given attribute/value pair on the blackboard. Appends
 /// the value to any previous values of the same attribute,
@@ -932,37 +922,46 @@ Caliper::clear()
 ///
 /// This function is signal safe.
 ///
+/// \param chn  Channel
 /// \param attr Attribute key
 /// \param data Value to set
 
 cali_err
-Caliper::begin(const Attribute& attr, const Variant& data)
+Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
 {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
-    if (!mG || attr == Attribute::invalid)
+    if (!chn || attr == Attribute::invalid)
         return CALI_EINV;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.pre_begin_evt(this, attr, data);
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+        chn->mP->events.pre_begin_evt(this, chn, attr, data);
 
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
+    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
 
-    if (attr.store_as_value())
-        ret = sb->set(attr, data);
+    if (prop & CALI_ATTR_ASVALUE)
+        bb->set(attr, data);
     else
-        ret = sb->set_node(mG->get_key(attr),
-                           m_thread_scope->tree.get_path(1, &attr, &data,
-                                                         sb->get_node(mG->get_key(attr))));
+        bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(key)));
 
     // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.post_begin_evt(this, attr, data);
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+        chn->mP->events.post_begin_evt(this, chn, attr, data);
 
     return ret;
 }
@@ -977,41 +976,48 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 /// \param attr Attribute key.
 
 cali_err
-Caliper::end(const Attribute& attr)
+Caliper::end(Channel* chn, const Attribute& attr)
 {
-    if (!mG || attr == Attribute::invalid)
-        return CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
-    cali_err ret = CALI_EINV;
-
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
-
-    Entry  e = get(attr);
+    Entry e = get(chn, attr);
 
     if (e.is_empty())
         return CALI_ESTACK;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         if (!e.is_empty()) // prevent executing events for
-            mG->events.pre_end_evt(this, attr, e.value());
+            chn->mP->events.pre_end_evt(this, chn, attr, e.value());
 
-    if (attr.store_as_value())
-        ret = sb->unset(attr);
+    Attribute key = chn->mP->get_key(attr, sG->key_attr);
+
+    if (prop & CALI_ATTR_ASVALUE)
+        bb->unset(attr);
     else {
-        Node* node = sb->get_node(mG->get_key(attr));
+        Node* node = bb->get_node(key);
 
         if (node) {
-            node = m_thread_scope->tree.remove_first_in_path(node, attr);
+            node = sT->tree.remove_first_in_path(node, attr);
 
-            if (node == m_thread_scope->tree.root())
-                ret = sb->unset(mG->get_key(attr));
+            if (node == sT->tree.root())
+                bb->unset(key);
             else if (node)
-                ret = sb->set_node(mG->get_key(attr), node);
+                bb->set(key, node);
         }
 
         if (!node)
@@ -1019,8 +1025,8 @@ Caliper::end(const Attribute& attr)
     }
 
     // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.post_end_evt(this, attr, e.value());
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+        chn->mP->events.post_end_evt(this, chn, attr, e.value());
 
     return ret;
 }
@@ -1039,34 +1045,42 @@ Caliper::end(const Attribute& attr)
 /// \param data Value to set
 
 cali_err
-Caliper::set(const Attribute& attr, const Variant& data)
+Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
 {
-    cali_err ret = CALI_EINV;
+    cali_err ret = CALI_SUCCESS;
 
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return CALI_EINV;
 
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
 
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &(sT->channel_thread_data(chn)->blackboard);
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr, data);
+        chn->mP->events.pre_set_evt(this, chn, attr, data);
 
     if (attr.store_as_value())
-        ret = sb->set(attr, data);
+        bb->set(attr, data);
     else {
-        Attribute key = mG->get_key(attr);
-
-        ret = sb->set_node(key, m_thread_scope->tree.replace_first_in_path(sb->get_node(key), attr, data));
+        bb->set(key, sT->tree.replace_first_in_path(bb->get_node(key), attr, data));
     }
 
     // invoke callbacks
     if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr, data);
+        chn->mP->events.post_set_evt(this, chn, attr, data);
 
     return ret;
 }
@@ -1086,44 +1100,52 @@ Caliper::set(const Attribute& attr, const Variant& data)
 /// \param data List (array) of values
 
 cali_err
-Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
-    cali_err ret = CALI_EINV;
+Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* data) {
+    cali_err ret = CALI_SUCCESS;
 
     if (n < 1)
         return CALI_SUCCESS;
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return CALI_EINV;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
-
-    Scope* s = scope(attr2caliscope(attr));
-    ContextBuffer* sb = &s->blackboard;
-
+        g(sT->lock);
+    
     // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.pre_set_evt(this, attr, data[n-1]);
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+        chn->mP->events.pre_set_evt(this, chn, attr, data[n-1]);
 
-    if (attr.store_as_value()) {
+    if (prop & CALI_ATTR_ASVALUE) {
         Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
         ret = CALI_EINV;
     } else {
-        Attribute key = mG->get_key(attr);
+        Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
-        ret = sb->set_node(key,
-                           m_thread_scope->tree.replace_all_in_path(sb->get_node(key), attr, n, data));
+        bb->set(key, sT->tree.replace_all_in_path(bb->get_node(key), attr, n, data));
     }
 
     // invoke callbacks
-    if (!attr.skip_events())
-        mG->events.post_set_evt(this, attr, data[n-1]);
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+        chn->mP->events.post_set_evt(this, chn, attr, data[n-1]);
 
     return ret;
 }
 
 // --- Query
 
-/// \brief Retrieve top-most entry for the given attribute key from the blackboard.
+/// \brief Retrieve top-most entry for the given attribute key from the blackboard
+///    of the given channel.
 ///
 /// This function is signal safe.
 ///
@@ -1133,22 +1155,31 @@ Caliper::set_path(const Attribute& attr, size_t n, const Variant* data) {
 ///         An empty Entry object if this attribute is not set.
 
 Entry
-Caliper::get(const Attribute& attr)
+Caliper::get(Channel* chn, const Attribute& attr)
 {
     Entry e {  Entry::empty };
 
-    if (!mG || attr == Attribute::invalid)
+    if (attr == Attribute::invalid)
         return Entry::empty;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    ContextBuffer* sb = &(scope(attr2caliscope(attr))->blackboard);
-
-    if (attr.store_as_value())
-        return Entry(attr, sb->get(attr));
+    if (prop & CALI_ATTR_ASVALUE)
+        return Entry(attr, bb->get(attr));
     else
-        return Entry(m_thread_scope->tree.find_node_with_attribute(attr, sb->get_node(mG->get_key(attr))));
+        return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(chn->mP->get_key(attr, sG->key_attr))));
 
     return e;
 }
@@ -1156,21 +1187,21 @@ Caliper::get(const Attribute& attr)
 // --- Memory region tracking
 
 void
-Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
+Caliper::memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.track_mem_evt(this, ptr, label, elem_size, ndims, dims);    
+    chn->mP->events.track_mem_evt(this, chn, ptr, label, elem_size, ndims, dims);    
 }
 
 void
-Caliper::memory_region_end(const void* ptr)
+Caliper::memory_region_end(Channel* chn, const void* ptr)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    mG->events.untrack_mem_evt(this, ptr);
+    chn->mP->events.untrack_mem_evt(this, chn, ptr);
 }
 
 // --- Generic entry API
@@ -1188,7 +1219,7 @@ void
 Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     Node* node = parent;
 
@@ -1196,7 +1227,7 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
         if (attr[i].store_as_value())
             list.append(attr[i].id(), value[i]);
         else
-            node = m_thread_scope->tree.get_path(1, &attr[i], &value[i], node);
+            node = sT->tree.get_path(1, &attr[i], &value[i], node);
 
     if (node && node != parent)
         list.append(node);
@@ -1219,13 +1250,13 @@ Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, S
         return;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
     if (attr.store_as_value())
         // only store one value entry
         list.append(attr.id(), value[0]);
     else
-        list.append(m_thread_scope->tree.get_path(attr, n, value, nullptr));
+        list.append(sT->tree.get_path(attr, n, value, nullptr));
 }
 
 /// \brief Return a context tree path for the key:value pairs from a given list of
@@ -1243,9 +1274,9 @@ Node*
 Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    return m_thread_scope->tree.get_path(n, nodelist, parent);
+    return sT->tree.get_path(n, nodelist, parent);
 }
 
 /// \brief Return a context tree path for the given key:value pairs.
@@ -1265,9 +1296,9 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
         return nullptr;
 
     std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+        g(sT->lock);
 
-    return m_thread_scope->tree.get_path(1, &attr, &data, parent);
+    return sT->tree.get_path(1, &attr, &data, parent);
 }
 
 /// \brief Return the node with the given id.
@@ -1280,15 +1311,7 @@ Node*
 Caliper::node(cali_id_t id) const
 {
     // no siglock necessary
-    return m_thread_scope->tree.node(id);
-}
-
-// --- Events interface
-
-Caliper::Events&
-Caliper::events()
-{
-    return mG->events;
+    return sT->tree.node(id);
 }
 
 /// Exchange value on the blackboard. Atomically updates value for given
@@ -1302,14 +1325,142 @@ Caliper::events()
 /// \return The previous value for the given key.
 
 Variant
-Caliper::exchange(const Attribute& attr, const Variant& data)
+Caliper::exchange(Channel* chn, const Attribute& attr, const Variant& data)
 {
-    std::lock_guard<::siglock>
-        g(m_thread_scope->lock);
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
 
-    return scope(attr2caliscope(attr))->blackboard.exchange(attr, data);
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    return bb->exchange(attr, data);
 }
 
+//
+// --- Channel API
+//
+
+/// \brief Create a %Caliper channel with the given runtime configuration.
+///
+/// An channel controls %Caliper's annotation tracking and measurement 
+/// activities. Multiple channels can be active at the same time, independent
+/// of each other. Each channel has its own runtime configuration, 
+/// blackboard, and active services.
+///
+/// Creating channels is \b not thread-safe. Users must make sure that no
+/// %Caliper activities (e.g. annotations) are active on any program thread 
+/// during channel creation.
+///
+/// The call returns a pointer to the created channel object. %Caliper
+/// retains ownership of the channel object. This pointer becomes invalid
+/// when the channel is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an channel is about to be deleted.
+///
+/// \param name Name of the channel. This is used to identify the channel
+///   in %Caliper log output.
+/// \param cfg The channel's runtime configuration.
+/// \return Pointer to the channel. Null pointer if the channel could
+///   not be created.
+Channel*
+Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
+{
+    Channel* chn = new Channel(sG->channels.size(), name, cfg);
+    sG->channels.emplace_back(chn);
+
+    sT->check_and_alloc(sG->channels.size(), true);
+
+    // Create and set key & version attributes
+
+    set(chn, create_attribute("cali.caliper.version", CALI_TYPE_STRING,
+                              CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+        Variant(CALI_TYPE_STRING, CALIPER_VERSION, sizeof(CALIPER_VERSION)));
+    set(chn, create_attribute("cali.channel", CALI_TYPE_STRING,
+                              CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+        Variant(CALI_TYPE_STRING, name, strlen(name)+1));
+        
+    Services::register_services(this, chn);
+
+    Log(1).stream() << "Creating channel " << name << std::endl;
+
+    if (chn->config().get("caliper", "config_check").to_bool())
+        config_sanity_check(chn->config());
+    if (Log::verbosity() >= 3)
+        chn->config().print( Log(3).stream() << "Configuration:\n" );
+
+    chn->mP->events.post_init_evt(this, chn);
+
+    return chn;
+}
+
+/// \brief Return pointer to channel object with the given ID.
+///
+/// The call returns a pointer to the created channel object. %Caliper
+/// retains ownership of the channel object. This pointer becomes invalid
+/// when the channel is deleted. %Caliper notifies users with the 
+/// finish_evt callback when an channel is about to be deleted.
+Channel*
+Caliper::get_channel(cali_id_t id)
+{
+    if (sG->channels.size() <= id)
+        return nullptr;
+
+    return sG->channels[id].get();
+}
+
+/// \brief Return all existing channels (active and inactive).
+std::vector<Channel*>
+Caliper::get_all_channels()
+{
+    std::vector<Channel*> ret;
+
+    ret.reserve(sG->channels.size());
+
+    for (auto &chn : sG->channels)
+        if (chn)
+            ret.push_back(chn.get());
+
+    return ret;
+}
+
+/// \brief Delete the given channel.
+///
+/// Deleting channels is \b not thread-safe. Users must make sure that no
+/// %Caliper activities (e.g. annotations) are active on any program thread 
+/// during channel creation.
+void
+Caliper::delete_channel(Channel* chn)
+{
+    Log(1).stream() << "Deleting channel " << chn->name() << std::endl;
+    
+    chn->mP->events.finish_evt(this, chn);
+    sG->channels[chn->id()].reset();
+}
+
+/// \brief Activate the given channel.
+///
+/// Inactive channels will not track or process annotations and other  
+/// blackboard updates. 
+void
+Caliper::activate_channel(Channel* chn)
+{
+    chn->mP->active = true;
+}
+
+/// \brief Deactivate the given channel.
+/// \copydetails Caliper::activate_channel
+void
+Caliper::deactivate_channel(Channel* chn)
+{
+    chn->mP->active = false;
+}
 
 //
 // --- Caliper constructor & singleton API
@@ -1319,7 +1470,7 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 /// \see instance()
 
 Caliper::Caliper()
-    : mG(0), m_thread_scope(0), m_task_scope(0)
+    : m_is_signal(false)
 {
     *this = Caliper::instance();
 }
@@ -1343,24 +1494,41 @@ Caliper::Caliper()
 
 Caliper
 Caliper::instance()
-{
+{    
     if (GlobalData::s_init_lock != 0) {
         if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
-            return Caliper(0);
+            return Caliper(true);
 
         lock_guard<mutex> lock(GlobalData::s_init_mutex);
 
-        if (!GlobalData::sG) {
-            if (atexit(::exit_handler) != 0)
-                Log(0).stream() << "Unable to register exit handler";
+        if (!sG) {            
+            sT.reset(new ThreadData(16, true /* is_initial_thread */));
+            sG.reset(new GlobalData);
 
-            GlobalData::sG = new Caliper::GlobalData;
+            sG->init();
+
+            // NOTE: We handle Caliper exit in ThreadData destructor now
+            // if (atexit(&Caliper::release) != 0)
+            //     Log(0).stream() << "Unable to register exit handler";
+
             GlobalData::s_init_lock = 0;
         }
     }
 
-    return Caliper(GlobalData::sG, GlobalData::sG->acquire_thread_scope());
+    if (!sT) {
+        sT.reset(new ThreadData(sG->channels.size()));
+
+        Caliper c(false);
+
+        for (auto& chn : sG->channels)
+            if (chn)
+                chn->mP->events.create_thread_evt(&c, chn.get());
+    }
+
+    sT->check_and_alloc(sG->channels.size(), true /* can alloc */);
+    
+    return Caliper(false);
 }
 
 /// \brief Construct a signal-safe Caliper instance object.
@@ -1375,23 +1543,33 @@ Caliper::instance()
 Caliper
 Caliper::sigsafe_instance()
 {
-    if (GlobalData::s_init_lock != 0)
-        return Caliper(0);
+    return Caliper(true);
+}
 
-    Scope* task_scope   = 0; // FIXME: figure out task scope
-    Scope* thread_scope = GlobalData::sG->acquire_thread_scope(false);
-
-    if (!thread_scope || thread_scope->lock.is_locked())
-        return Caliper(0);
-
-    return Caliper(GlobalData::sG, thread_scope, task_scope, true /* is signal */);
+Caliper::operator bool() const
+{    
+    return (sG && sT && sT->check_and_alloc(sG->channels.size(), !m_is_signal) && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
 Caliper::release()
 {
-    delete GlobalData::sG;
-    GlobalData::sG = 0;
+    Caliper c;
+
+    if (c) {
+        Log(1).stream() << "Finishing ..." << std::endl;
+            
+        for (auto &chn : sG->channels) 
+            if (chn) {
+                if (chn->mP->flush_on_exit) 
+                    c.flush_and_write(chn.get(), nullptr);
+
+                c.clear(chn.get());
+                chn->mP->events.finish_evt(&c, chn.get());
+            }
+        
+        sG.reset();
+    }
 }
 
 /// \brief Test if Caliper has been initialized yet.
@@ -1399,7 +1577,7 @@ Caliper::release()
 bool
 Caliper::is_initialized()
 {
-    return GlobalData::sG != nullptr;
+    return sG && sT;
 }
 
 /// \brief Add a list of available caliper services.
@@ -1438,5 +1616,5 @@ Caliper::add_init_hook(void (*hook)())
     if (is_initialized())
         Log(0).stream() << "add_init_hook(): Caliper is already initialized - cannot add init hook" << std::endl;
     else
-        GlobalData::add_init_hook(hook);
+        sG->add_init_hook(hook);
 }

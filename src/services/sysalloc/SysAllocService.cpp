@@ -38,6 +38,11 @@
 
 #include <gotcha/gotcha.h>
 
+#include <algorithm>
+#include <vector>
+
+#include <errno.h>
+
 using namespace cali;
 
 namespace
@@ -69,6 +74,8 @@ struct gotcha_binding_t alloc_bindings[] = {
     { free_str,     (void*) cali_free_wrapper,      &orig_free_handle    }
 };
 
+std::vector<Channel*> sysalloc_channels;
+
 void* cali_malloc_wrapper(size_t size)
 {
     decltype(&malloc) orig_malloc =
@@ -76,10 +83,15 @@ void* cali_malloc_wrapper(size_t size)
     
     void *ret = (*orig_malloc)(size);
 
+    int saved_errno = errno;
+
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        c.memory_region_begin(ret, "malloc", 1, 1, &size);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "malloc", 1, 1, &size);
+
+    errno = saved_errno;
 
     return ret;
 }
@@ -91,11 +103,16 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 
     void *ret = (*orig_calloc)(num, size);
 
+    int saved_errno = errno;
+
     Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
     if (c)
-        c.memory_region_begin(ret, "calloc", size, 1, &num);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "calloc", size, 1, &num);
 
+    errno = saved_errno;
+    
     return ret;
 }
 
@@ -104,15 +121,22 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     decltype(&realloc) orig_realloc =
         reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
 
+    Caliper c = Caliper::sigsafe_instance();
+    
+    if (c)
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_end(chn, ptr);
+
     void *ret = (*orig_realloc)(ptr, size);
 
-    Caliper c = Caliper::sigsafe_instance();
+    int saved_errno = errno;
 
-    if (c) {
-        c.memory_region_end(ptr);
-        c.memory_region_begin(ret, "realloc", 1, 1, &size);
-    }
+    if (c)
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_begin(chn, ret, "realloc", 1, 1, &size);
 
+    errno = saved_errno;
+    
     return ret;
 }
 
@@ -121,16 +145,17 @@ void cali_free_wrapper(void *ptr)
     decltype(&free) orig_free =
         reinterpret_cast<decltype(&free)>(gotcha_get_wrappee(orig_free_handle));
 
-    (*orig_free)(ptr);
-
     Caliper c = Caliper::sigsafe_instance();
 
     if (c)
-        c.memory_region_end(ptr);
+        for (Channel* chn : sysalloc_channels)
+            c.memory_region_end(chn, ptr);
+
+    (*orig_free)(ptr);
 }
 
 
-void init_alloc_hooks(Caliper*) {
+void init_alloc_hooks() {
     Log(1).stream() << "sysalloc: Initializing system alloc hooks" << std::endl;
 
     gotcha_wrap(alloc_bindings,
@@ -140,7 +165,7 @@ void init_alloc_hooks(Caliper*) {
     bindings_are_active = true;
 }
 
-void clear_alloc_hooks(Caliper*)
+void clear_alloc_hooks()
 {
     if (!bindings_are_active)
         return;
@@ -163,9 +188,26 @@ void clear_alloc_hooks(Caliper*)
     bindings_are_active = false;
 }
 
-void sysalloc_initialize(Caliper* c) {
-    c->events().post_init_evt.connect(init_alloc_hooks);
-    c->events().finish_evt.connect(clear_alloc_hooks);
+void sysalloc_initialize(Caliper* c, Channel* chn) {
+    chn->events().post_init_evt.connect(
+        [](Caliper* c, Channel* chn){
+            if (!bindings_are_active)
+                init_alloc_hooks();
+            
+            sysalloc_channels.push_back(chn);
+        });
+    
+    chn->events().finish_evt.connect(
+        [](Caliper* c, Channel* chn){
+            sysalloc_channels.erase(
+                std::find(sysalloc_channels.begin(), sysalloc_channels.end(),
+                          chn));
+
+            if (sysalloc_channels.empty())
+                clear_alloc_hooks();
+        });
+
+    Log(1).stream() << chn->name() << ": Registered sysalloc service" << std::endl;
 }
 
 } // namespace [anonymous]

@@ -32,16 +32,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * ********************************************************************************************/
 
+/**
+ * \file cali_definitions.h
+ * \brief Various type definitions for the %Caliper runtime system.
+ */
+
 #ifndef CALI_CALI_DEFINITIONS_H
 #define CALI_CALI_DEFINITIONS_H
-
-#define GCC_VERSION (__GNUC__ * 10000 \
-                     + __GNUC_MINOR__ * 100 \
-                     + __GNUC_PATCHLEVEL__)
-/* Test for GCC > 3.2.0 */
-
-
-#define VARIADIC_RETURN_SAFE
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +49,24 @@ typedef enum {
   CALI_SCOPE_THREAD  = 2,
   CALI_SCOPE_TASK    = 4 
 } cali_context_scope_t;
+
+/**
+ * Flush options
+ */
+typedef enum {
+    /** Clear trace and aggregation buffers after flush. */
+    CALI_FLUSH_CLEAR_BUFFERS = 1
+} cali_flush_opt;
+  
+/**
+ * Channel creation options
+ */    
+typedef enum {
+    /** Leave the channel inactive after it is created. */
+    CALI_CHANNEL_LEAVE_INACTIVE = 1,
+    /** Allow reading configuration entries from environment variables. */
+    CALI_CHANNEL_ALLOW_READ_ENV = 2
+} cali_channel_opt;
 
 #ifdef __cplusplus
 } // extern "C"

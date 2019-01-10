@@ -14,10 +14,9 @@ class spinlock {
 
 public:
 
-    spinlock()
-        {
-            m_lock.clear();
-        }
+    constexpr spinlock()
+        : m_lock { ATOMIC_FLAG_INIT }
+        { }
 
     void lock() {
         while (m_lock.test_and_set(std::memory_order_acquire))
