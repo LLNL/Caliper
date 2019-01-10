@@ -124,11 +124,14 @@ print_available_services(std::ostream& os)
 // Managed by the Caliper object.
 
 struct Channel::ThreadData {
+    // this channel's thread blackboard
     Blackboard     blackboard;
-    
+
+    // copy of this channel's last process blackboard snapshot
     SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> proc_snap_data;
     SnapshotRecord proc_snap;
 
+    // version of the last process blackboard snapshot
     int            proc_bb_count;
 
     ThreadData()
@@ -767,11 +770,21 @@ Caliper::pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_i
 
     // Get process blackboard data
     if (scopes & CALI_SCOPE_PROCESS) {
-        if (chn->mP->blackboard.count() > chnT->proc_bb_count) {
+        //   Check if the process blackboard has been updated since the
+        // last snapshot on this thread.
+        //   We keep a copy of the last process snapshot data in our
+        // thread-local storage so we don't have to access (and lock) the
+        // process blackboard when it hasn't changed.
+
+        int proc_bb_count_now = chn->mP->blackboard.count();
+        
+        if (proc_bb_count_now > chnT->proc_bb_count) {
+            //   Process blackboard has been updated:
+            // update thread-local snapshot data
             chnT->proc_snap = SnapshotRecord(chnT->proc_snap_data);
             chn->mP->blackboard.snapshot(&chnT->proc_snap);
 
-            chnT->proc_bb_count = chn->mP->blackboard.count();
+            chnT->proc_bb_count = proc_bb_count_now;
         }
 
         sbuf->append(chnT->proc_snap);
@@ -860,13 +873,11 @@ Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
     SnapshotRecord flush_info(snapshot_data);
 
     if (input_flush_info)
         flush_info.append(*input_flush_info);
-
-    using chnI = Channel::ChannelImpl;
 
     chn->mP->blackboard.snapshot(&flush_info);
     sT->chnT[chn->id()]->blackboard.snapshot(&flush_info);
