@@ -4,6 +4,7 @@
 
 #include "caliper/common/util/spinlock.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
@@ -44,6 +45,8 @@ class Blackboard {
 
     size_t   num_skipped;
 
+    std::atomic<int>   ucount; // update count
+
     mutable util::spinlock lock;
     
     inline size_t find_existing_entry(cali_id_t id) const {
@@ -77,7 +80,8 @@ public:
           imm_toctoc      { 0 },
           num_entries     { 0 },
           max_num_entries { 0 },
-          num_skipped     { 0 }
+          num_skipped     { 0 },
+          ucount          { 0 } 
         { }
 
     inline cali::Variant
@@ -117,6 +121,8 @@ public:
     void    snapshot(SnapshotRecord* rec) const;
 
     size_t  num_skipped_entries() const { return num_skipped; }
+
+    int     count() const { return ucount.load(); }
 
     std::ostream& print_statistics(std::ostream& os) const;
 };

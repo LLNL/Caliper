@@ -43,6 +43,8 @@ TEST(BlackboardTest, BasicFunctionality) {
     bb.set(attr_hidden, Variant(2211));
     EXPECT_EQ(bb.get(attr_hidden).to_int(), 2211);
 
+    EXPECT_EQ(bb.count(), 4);
+
     //
     // --- unset
     //
@@ -56,6 +58,8 @@ TEST(BlackboardTest, BasicFunctionality) {
     EXPECT_EQ(bb.get(attr_uns).to_int(), 3344);
     bb.unset(attr_uns);
     EXPECT_TRUE(bb.get(attr_uns).empty());
+
+    EXPECT_EQ(bb.count(), 8);
 
     //
     // --- snapshot

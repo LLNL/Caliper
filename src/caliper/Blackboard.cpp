@@ -52,7 +52,7 @@ Blackboard::add_entry(const Attribute& attr, cali::Node* node)
         ref_toc[I/32] |= (1 << (I%32));
         ref_toctoc    |= (1 << (I/32));
     }
-    
+
     ++num_entries;
     max_num_entries = std::max(num_entries, max_num_entries);
 }
@@ -70,6 +70,8 @@ Blackboard::set(const Attribute& attr, const Variant& val)
         hashtable[I].data.immediate = val;
     else
         add_entry(attr, val);
+
+    ++ucount;
 }
 
 void
@@ -84,6 +86,8 @@ Blackboard::set(const Attribute& attr, Node* node)
         hashtable[I].data.reference = node;
     else
         add_entry(attr, node);
+
+    ++ucount;
 }
 
 void
@@ -102,7 +106,8 @@ Blackboard::unset(const Attribute& attr)
     hashtable[I].data.immediate = Variant();
 
     --num_entries;
-
+    ++ucount;
+    
     if (attr.is_hidden())
         return;
 
@@ -133,6 +138,8 @@ Blackboard::exchange(const Attribute& attr, const Variant& value)
         hashtable[I].data.immediate = value;
     } else
         add_entry(attr, value);
+
+    ++ucount;
 
     return ret;
 }

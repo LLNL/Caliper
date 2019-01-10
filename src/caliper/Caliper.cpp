@@ -63,6 +63,8 @@
 #include <vector>
 #include <utility>
 
+#define SNAP_MAX 80
+
 using namespace cali;
 using namespace std;
 
@@ -122,21 +124,17 @@ print_available_services(std::ostream& os)
 // Managed by the Caliper object.
 
 struct Channel::ThreadData {
-    std::vector< std::unique_ptr<Blackboard> > blackboards;
+    Blackboard     blackboard;
+    
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> proc_snap_data;
+    SnapshotRecord proc_snap;
 
-    ThreadData(size_t min_num_entries)
-        {
-            while (min_num_entries--)
-                blackboards.emplace_back(new Blackboard);
-        }
+    int            proc_bb_count;
 
-    bool check_and_alloc(size_t min_num_entries, bool can_alloc) {
-        if (can_alloc)
-            for (size_t s = blackboards.size(); s < min_num_entries; ++s)
-                blackboards.emplace_back(new Blackboard);
-
-        return (blackboards.size() >= min_num_entries);
-    }
+    ThreadData()
+        : proc_snap(proc_snap_data),
+          proc_bb_count(0)
+        { }
 };
 
 //
@@ -187,48 +185,6 @@ struct Channel::ChannelImpl
             return attr;
 
         return key_attr;
-    }
-
-    inline static Blackboard*
-    get_blackboard(Channel& chn, ThreadData& chnT, const Attribute& attr) {        
-        switch (attr.properties() & CALI_ATTR_SCOPE_MASK)
-        {
-        case CALI_ATTR_SCOPE_THREAD:
-        case CALI_ATTR_SCOPE_TASK:
-        {
-            cali_id_t chn_id = chn.id();
-            
-            if (chnT.blackboards.size() > chn_id)
-                return chnT.blackboards[chn_id].get();
-            else
-                return nullptr;
-        }
-        break;
-        case CALI_ATTR_SCOPE_PROCESS:
-            return &chn.mP->blackboard;
-        }
-        
-        return nullptr;
-    }
-    
-    inline static Blackboard*
-    get_blackboard(Channel& chn, ThreadData& chnT, cali_context_scope_t scope) {
-        cali_id_t chn_id = chn.id();
-        
-        switch (scope)
-        {
-        case CALI_SCOPE_THREAD:
-        case CALI_SCOPE_TASK:
-            if (chnT.blackboards.size() > chn_id)
-                return chnT.blackboards[chn_id].get();
-            else
-                return nullptr;
-        break;
-        case CALI_SCOPE_PROCESS:
-            return &chn.mP->blackboard;
-        }
-        
-        return nullptr;
     }
 };
 
@@ -295,13 +251,17 @@ struct Caliper::ThreadData
     MetadataTree                  tree;
     ::siglock                     lock;
 
-    Channel::ThreadData           chnT;
+    std::vector< std::unique_ptr<Channel::ThreadData> >
+                                  chnT;
 
     bool                          is_initial_thread;
 
     ThreadData(size_t min_num_chn, bool initial_thread = false)
-        : chnT(min_num_chn), is_initial_thread(initial_thread)
-        { }
+        : is_initial_thread(initial_thread)
+        {
+            while (min_num_chn--)
+                chnT.emplace_back(new Channel::ThreadData);
+        }
 
     ~ThreadData() {
         if (is_initial_thread)
@@ -309,6 +269,19 @@ struct Caliper::ThreadData
             
         if (Log::verbosity() >= 2)
             tree.print_statistics( Log(2).stream() << "Releasing Caliper thread data: \n" ) << std::endl;
+    }
+
+    bool check_and_alloc(size_t min_num_chn, bool alloc) {
+        if (alloc)
+            for (size_t s = chnT.size(); s < min_num_chn; ++s)
+                chnT.emplace_back(new Channel::ThreadData);
+
+        return (chnT.size() >= min_num_chn);
+    }
+
+    inline Channel::ThreadData*
+    channel_thread_data(Channel* chn) {
+        return chnT[chn->id()].get();
     }
 };
 
@@ -781,13 +754,28 @@ Caliper::pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_i
     if (trigger_info)
         sbuf->append(*trigger_info);
 
-    // Invoke callbacks and get contextbuffer data
+    // Invoke callbacks
 
     chn->mP->events.snapshot(this, chn, scopes, trigger_info, sbuf);
 
-    for (cali_context_scope_t s : { CALI_SCOPE_TASK, CALI_SCOPE_THREAD, CALI_SCOPE_PROCESS })
-        if (scopes & s)
-            Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, s)->snapshot(sbuf);
+    Channel::ThreadData* chnT = sT->channel_thread_data(chn);
+
+    // Get thread blackboard data
+    if (scopes & CALI_SCOPE_THREAD) {
+        chnT->blackboard.snapshot(sbuf);
+    }
+
+    // Get process blackboard data
+    if (scopes & CALI_SCOPE_PROCESS) {
+        if (chn->mP->blackboard.count() > chnT->proc_bb_count) {
+            chnT->proc_snap = SnapshotRecord(chnT->proc_snap_data);
+            chn->mP->blackboard.snapshot(&chnT->proc_snap);
+
+            chnT->proc_bb_count = chn->mP->blackboard.count();
+        }
+
+        sbuf->append(chnT->proc_snap);
+    }
 }
 
 /// \brief Trigger and process a snapshot.
@@ -818,7 +806,7 @@ Caliper::push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_i
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
     pull_snapshot(chn, scopes, trigger_info, &sbuf);
@@ -880,8 +868,8 @@ Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
 
     using chnI = Channel::ChannelImpl;
 
-    chnI::get_blackboard(*chn, sT->chnT, CALI_SCOPE_PROCESS)->snapshot(&flush_info);
-    chnI::get_blackboard(*chn, sT->chnT, CALI_SCOPE_THREAD )->snapshot(&flush_info);
+    chn->mP->blackboard.snapshot(&flush_info);
+    sT->chnT[chn->id()]->blackboard.snapshot(&flush_info);
 
     Log(1).stream() << chn->name() << ": Flushing Caliper data" << std::endl;
 
@@ -935,24 +923,33 @@ Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
     if (!chn || attr == Attribute::invalid)
         return CALI_EINV;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.pre_begin_evt(this, chn, attr, data);
 
     Attribute  key = chn->mP->get_key(attr, sG->key_attr);
-    Blackboard* bb =
-        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
-    if (attr.store_as_value())
+    if (prop & CALI_ATTR_ASVALUE)
         bb->set(attr, data);
     else
         bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(key)));
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.post_begin_evt(this, chn, attr, data);
 
     return ret;
@@ -972,25 +969,33 @@ Caliper::end(Channel* chn, const Attribute& attr)
 {
     cali_err ret = CALI_SUCCESS;
 
-    Blackboard* bb =
-        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
-
     Entry e = get(chn, attr);
 
     if (e.is_empty())
         return CALI_ESTACK;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         if (!e.is_empty()) // prevent executing events for
             chn->mP->events.pre_end_evt(this, chn, attr, e.value());
 
     Attribute key = chn->mP->get_key(attr, sG->key_attr);
 
-    if (attr.store_as_value())
+    if (prop & CALI_ATTR_ASVALUE)
         bb->unset(attr);
     else {
         Node* node = bb->get_node(key);
@@ -1009,7 +1014,7 @@ Caliper::end(Channel* chn, const Attribute& attr)
     }
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.post_end_evt(this, chn, attr, e.value());
 
     return ret;
@@ -1036,12 +1041,21 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
     if (attr == Attribute::invalid)
         return CALI_EINV;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &(sT->channel_thread_data(chn)->blackboard);
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
     Attribute  key = chn->mP->get_key(attr, sG->key_attr);
-    Blackboard* bb =
-        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
 
     // invoke callbacks
     if (!attr.skip_events())
@@ -1083,17 +1097,25 @@ Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* 
     if (attr == Attribute::invalid)
         return CALI_EINV;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
     
-    Blackboard* bb =
-        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
-
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.pre_set_evt(this, chn, attr, data[n-1]);
 
-    if (attr.store_as_value()) {
+    if (prop & CALI_ATTR_ASVALUE) {
         Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
         ret = CALI_EINV;
     } else {
@@ -1103,7 +1125,7 @@ Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* 
     }
 
     // invoke callbacks
-    if (!attr.skip_events())
+    if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.post_set_evt(this, chn, attr, data[n-1]);
 
     return ret;
@@ -1129,13 +1151,21 @@ Caliper::get(Channel* chn, const Attribute& attr)
     if (attr == Attribute::invalid)
         return Entry::empty;
 
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Blackboard* bb = 
-        Channel::ChannelImpl::get_blackboard(*chn, sT->chnT, attr);
-
-    if (attr.store_as_value())
+    if (prop & CALI_ATTR_ASVALUE)
         return Entry(attr, bb->get(attr));
     else
         return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(chn->mP->get_key(attr, sG->key_attr))));
@@ -1286,12 +1316,21 @@ Caliper::node(cali_id_t id) const
 Variant
 Caliper::exchange(Channel* chn, const Attribute& attr, const Variant& data)
 {
+    int prop  = attr.properties();
+    int scope = prop & CALI_ATTR_SCOPE_MASK;
+    
+    Blackboard* bb = nullptr;
+
+    if (scope == CALI_ATTR_SCOPE_THREAD) {
+        bb = &sT->chnT[chn->id()]->blackboard;
+    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
+        bb = &chn->mP->blackboard;
+    }
+
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    using chnI = Channel::ChannelImpl;
-
-    return chnI::get_blackboard(*chn, sT->chnT, attr)->exchange(attr, data);
+    return bb->exchange(attr, data);
 }
 
 //
@@ -1325,7 +1364,7 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     Channel* chn = new Channel(sG->channels.size(), name, cfg);
     sG->channels.emplace_back(chn);
 
-    sT->chnT.check_and_alloc(sG->channels.size(), true);
+    sT->check_and_alloc(sG->channels.size(), true);
 
     // Create and set key & version attributes
 
@@ -1476,7 +1515,7 @@ Caliper::instance()
                 chn->mP->events.create_thread_evt(&c, chn.get());
     }
 
-    sT->chnT.check_and_alloc(sG->channels.size(), true /* can alloc */);
+    sT->check_and_alloc(sG->channels.size(), true /* can alloc */);
     
     return Caliper(false);
 }
@@ -1498,7 +1537,7 @@ Caliper::sigsafe_instance()
 
 Caliper::operator bool() const
 {    
-    return (sG && sT && sT->chnT.check_and_alloc(sG->channels.size(), !m_is_signal) && !(m_is_signal && sT->lock.is_locked()));
+    return (sG && sT && sT->check_and_alloc(sG->channels.size(), !m_is_signal) && !(m_is_signal && sT->lock.is_locked()));
 }
 
 void
