@@ -8,17 +8,15 @@
 using namespace cali;
 
 TEST(ChannelAPITest, MultiChannel) {
-    RuntimeConfig cfg;
-
-    cfg.set("CALI_CALIPER_CONFIG_CHECK", "false");
-    cfg.allow_read_env(false);
-
     Caliper     c;
 
-    Channel* chn_a =
-        c.create_channel("chn.m.a", cfg);
-    Channel* chn_b =
-        c.create_channel("chn.m.b", cfg);
+    cali_id_t chn_a_id =
+        create_channel("chn.m.a", 0, { { "CALI_CALIPER_CONFIG_CHECK", "false" } });
+    cali_id_t chn_b_id =
+        create_channel("chn.m.b", 0, { { "CALI_CALIPER_CONFIG_CHECK", "false" } });
+
+    Channel* chn_a = c.get_channel(chn_a_id);
+    Channel* chn_b = c.get_channel(chn_b_id);
 
     Attribute   attr_global =
         c.create_attribute("multichn.global", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
@@ -39,9 +37,6 @@ TEST(ChannelAPITest, MultiChannel) {
 
     EXPECT_TRUE(c.get(chn_default, attr_local).is_empty());
     EXPECT_EQ(c.get(chn_default, attr_global).value().to_int(), 42);
-
-    cali_id_t chn_a_id = chn_a->id();
-    cali_id_t chn_b_id = chn_b->id();
 
     c.delete_channel(chn_a);
 
