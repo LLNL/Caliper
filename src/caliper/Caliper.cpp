@@ -184,7 +184,7 @@ struct Channel::ChannelImpl
     get_key(const Attribute& attr, const Attribute& key_attr) const {
         int prop = attr.properties();
         
-        if (!automerge || (prop & CALI_ATTR_ASVALUE)  || !(prop & CALI_ATTR_NOMERGE))
+        if (!automerge || (prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
             return attr;
 
         return key_attr;
@@ -391,7 +391,7 @@ struct Caliper::GlobalData
         Caliper c(false);
         
         key_attr =
-            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_HIDDEN);
+            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_DEFAULT);
         
         init_attribute_classes(&c);
         init_api_attributes(&c);
