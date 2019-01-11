@@ -4,6 +4,7 @@
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Node.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -17,7 +18,7 @@ using namespace cali;
 
 TEST(AttributeAPITest, ValidAttribute) {
     Caliper c;
-    
+
     Attribute meta_attr =
         c.create_attribute("test.attribute.api.meta", CALI_TYPE_INT, CALI_ATTR_HIDDEN);
 
@@ -32,7 +33,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     int64_t     meta_val      = 42;
     const void* meta_vals[1]  = { &meta_val };
     size_t      meta_sizes[1] = { sizeof(int64_t) };
-    
+
     cali_id_t attr_id =
         cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING,
                                             CALI_ATTR_NESTED | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_NOMERGE,
@@ -53,7 +54,7 @@ TEST(AttributeAPITest, ValidAttribute) {
 
     char buf[120];
     ASSERT_GE(cali_prop2string(cali_attribute_properties(attr_id), buf, 120), 1);
-    
+
     std::vector<std::string> props;
     util::split(std::string(buf), ':',  std::back_inserter(props));
 
@@ -100,4 +101,47 @@ TEST(AttributeAPITest, GlobalAttributes) {
     ASSERT_NE(it, globals.end());
 
     EXPECT_EQ(it->value(global_attr).to_int(), 42);
+}
+
+TEST(AttributeAPITest, NestedAttribute) {
+    Caliper c;
+
+    Attribute nested_a =
+        c.create_attribute("test.attr.nested.a", CALI_TYPE_INT, CALI_ATTR_NESTED);
+    Attribute nested_b =
+        c.create_attribute("test.attr.nested.b", CALI_TYPE_INT, CALI_ATTR_NESTED);
+    Attribute nomerge  =
+        c.create_attribute("test.attr.nomerge",  CALI_TYPE_INT, CALI_ATTR_NESTED | CALI_ATTR_NOMERGE);
+
+    EXPECT_TRUE(nested_a.is_nested());
+    EXPECT_TRUE(nested_a.is_autocombineable());
+    EXPECT_TRUE(nomerge.is_nested());
+    EXPECT_FALSE(nomerge.is_autocombineable());
+
+    c.begin(nested_a, Variant(16));
+    c.begin(nomerge,  Variant(25));
+    c.begin(nested_b, Variant(36));
+
+    Channel* chn = c.get_channel(0);
+
+    const Node* node = c.get(chn, nested_b).node();
+
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->attribute(), nested_b.id());
+
+    node = node->parent();
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->attribute(), nested_a.id());
+    EXPECT_EQ(node->data().to_int(), 16);
+
+    node = c.get(chn, nomerge).node();
+
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->attribute(), nomerge.id());
+    EXPECT_EQ(node->data().to_int(), 25);
+
+    // nomerge attribute should have hidden root node as parent even though it's nested
+    node = node->parent();
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(node->attribute(), CALI_INV_ID);
 }
