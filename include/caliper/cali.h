@@ -162,7 +162,8 @@ cali_attribute_properties(cali_id_t attr_id);
  */
 
 /**
- * \brief Take a snapshot and push it into the processing queue.
+ * \brief Take a snapshot on the default channel and push it into
+ *   its processing queue.
  * \param scope Indicates which scopes (process, thread, or task) the
  *   snapshot should span
  * \param n Number of event info entries
@@ -175,6 +176,24 @@ cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
                    const void*     trigger_info_val_list[],
                    const size_t    trigger_info_size_list[]);
+
+/**
+ * \brief Take a snapshot on the given channel and push it into its
+ *    processing queue.
+ * \param chn_id Channel to take snapshot on
+ * \param scope Indicates which scopes (process, thread, or task) the
+ *   snapshot should span
+ * \param n Number of event info entries
+ * \param trigger_info_attr_list Attribute IDs of event info entries
+ * \param trigger_info_val_list  Pointers to values of event info entries
+ * \param trigger_info_size_list Sizes (in bytes) of event info entries
+ */
+void
+cali_channel_push_snapshot(cali_id_t chn_id,
+                           int scope, int n,
+                           const cali_id_t trigger_info_attr_list[],
+                           const void*     trigger_info_val_list[],
+                           const size_t    trigger_info_size_list[]);
 
 /**
  * \brief Take a snapshot on the default channel
@@ -321,7 +340,8 @@ cali_find_all_in_snapshot(const unsigned char* buf,
  */
 
 /**
- * \brief Return top-most value for attribute \a attr_id from the blackboard.
+ * \brief Return top-most value for attribute \a attr_id from the
+ *   blackboard on the default channel.
  *
  * \note This function is async-signal safe.
  *
@@ -331,6 +351,20 @@ cali_find_all_in_snapshot(const unsigned char* buf,
  */
 cali_variant_t
 cali_get(cali_id_t attr_id);
+
+/**
+ * \brief Return top-most value for attribute \a attr_id from the
+ *   blackboard on the given channel.
+ *
+ * \note This function is async-signal safe.
+ *
+ * \param chn_id  Channel to grab value from
+ * \param attr_id Attribute ID to find
+ * \return The top-most stacked value on the blackboard for the given
+ *    attribute ID, or an empty variant if it was not found
+ */
+cali_variant_t
+cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
 
 /**
  * \}
@@ -443,7 +477,7 @@ cali_set_string_byname(const char* attr_name, const char* val);
 void
 cali_end_byname(const char* attr_name);
 
-/*
+/**
  * \brief Set a global attribute with name \a attr_name to \a val.
  */
 void

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -54,7 +54,7 @@ using namespace cali;
 // --- Attribute interface
 //
 
-cali_id_t 
+cali_id_t
 cali_create_attribute(const char* name, cali_attr_type type, int properties)
 {
     Attribute a = Caliper::instance().create_attribute(name, type, properties);
@@ -133,8 +133,20 @@ cali_push_snapshot(int scope, int n,
                    const void* trigger_info_val_list[],
                    const size_t trigger_info_size_list[])
 {
+    cali_channel_push_snapshot(0, scope, n,
+                               trigger_info_attr_list,
+                               trigger_info_val_list,
+                               trigger_info_size_list);
+}
+
+void
+cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
+                   const cali_id_t trigger_info_attr_list[],
+                   const void* trigger_info_val_list[],
+                   const size_t trigger_info_size_list[])
+{
     Caliper   c;
-    
+
     Attribute attr[64];
     Variant   data[64];
 
@@ -150,32 +162,16 @@ cali_push_snapshot(int scope, int n,
 
     c.make_entrylist(n, attr, data, trigger_info);
 
-    Channel* chn = c.get_channel(0);
-    
-    if (chn && chn->is_active())
+    Channel* chn = c.get_channel(chn_id);
+
+    if (chn)
         c.push_snapshot(chn, scope, &trigger_info);
 }
 
 size_t
 cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
 {
-    Caliper c = Caliper::sigsafe_instance();
-
-    if (!c)
-        return 0;
-
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
-    SnapshotRecord snapshot(snapshot_buffer);
-
-    Channel* chn = c.get_channel(0);
-
-    if (chn)
-        c.pull_snapshot(chn, scopes, nullptr, &snapshot);
-
-    CompressedSnapshotRecord rec(len, buf);
-    rec.append(&snapshot);
-
-    return rec.needed_len();
+    return cali_channel_pull_snapshot(0, scopes, len, buf);
 }
 
 size_t
@@ -195,7 +191,7 @@ cali_channel_pull_snapshot(cali_id_t chn_id, int scopes, size_t len, unsigned ch
         c.pull_snapshot(chn, scopes, nullptr, &snapshot);
     else
         Log(0).stream() << "cali_channel_pull_snapshot(): invalid channel id " << chn_id << std::endl;
-            
+
     CompressedSnapshotRecord rec(len, buf);
     rec.append(&snapshot);
 
@@ -210,7 +206,7 @@ namespace
 {
     // Helper operator to unpack entries from
     // CompressedSnapshotRecordView::unpack()
-    
+
     class UnpackEntryOp {
         void*              m_arg;
         cali_entry_proc_fn m_fn;
@@ -246,7 +242,7 @@ namespace
             : m_arg(user_arg), m_fn(fn), m_id(id)
         { }
 
-        inline bool operator()(const Entry& e) {            
+        inline bool operator()(const Entry& e) {
             if (e.is_immediate() && e.attribute() == m_id) {
                 if ((*m_fn)(m_arg, e.attribute(), e.value().c_variant()) == 0)
                     return false;
@@ -258,7 +254,7 @@ namespace
             }
 
             return true;
-        }        
+        }
     };
 }
 
@@ -268,7 +264,7 @@ cali_unpack_snapshot(const unsigned char* buf,
                      cali_entry_proc_fn   proc_fn,
                      void*                user_arg)
 {
-    size_t pos = 0;    
+    size_t pos = 0;
     ::UnpackEntryOp op(proc_fn, user_arg);
 
     // FIXME: Need sigsafe instance? Only does read-only
@@ -321,7 +317,7 @@ cali_find_all_in_snapshot(const unsigned char* buf,
                           cali_entry_proc_fn   proc_fn,
                           void*                user_arg)
 {
-    size_t pos = 0;    
+    size_t pos = 0;
     ::UnpackAttributeEntryOp op(attr_id, proc_fn, user_arg);
 
     // FIXME: Need sigsafe instance? Only does read-only
@@ -341,9 +337,15 @@ cali_find_all_in_snapshot(const unsigned char* buf,
 cali_variant_t
 cali_get(cali_id_t attr_id)
 {
+    return cali_channel_get(0, attr_id);
+}
+
+cali_variant_t
+cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
+{
     Caliper       c = Caliper::sigsafe_instance();
-    Channel* chn = c.get_channel(0);
-    
+    Channel* chn = c.get_channel(chn_id);
+
     if (!c)
         return cali_make_empty_variant();
 
@@ -372,7 +374,7 @@ cali_end(cali_id_t attr_id)
     c.end(attr);
 }
 
-void  
+void
 cali_set(cali_id_t attr_id, const void* value, size_t size)
 {
     Caliper   c;
@@ -440,11 +442,11 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
 {
     cali_err  ret  = CALI_SUCCESS;
 
-    Caliper   c;    
-    Attribute attr = c.get_attribute(attr_id);    
-    
+    Caliper   c;
+    Attribute attr = c.get_attribute(attr_id);
+
     // manually go over all channels
-    
+
     std::vector<Channel*> channels = c.get_all_channels();
 
     for (Channel* chn : channels) {
@@ -454,12 +456,12 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
             Log(1).stream() << chn->name() << ": Trying to end "
                             << attr.name() << " which is not a string" << std::endl;
         }
-            
+
         if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size())) {
             // FIXME: Replace log output with smart error tracker
-            Log(1).stream() << chn->name() << ": begin/end marker mismatch: Trying to end " 
+            Log(1).stream() << chn->name() << ": begin/end marker mismatch: Trying to end "
                             << attr.name() << "=" << val
-                            << " but current value for " 
+                            << " but current value for "
                             << attr.name() << " is \"" << v.to_string() << "\""
                             << std::endl;
         }
@@ -469,7 +471,7 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
 }
 
 //
-// --- By-name annotation interface 
+// --- By-name annotation interface
 //
 
 void
@@ -692,10 +694,10 @@ cali_create_channel(const char* name, int flags, cali_configset_t cfgset)
 void
 cali_delete_channel(cali_id_t chn_id)
 {
-    Caliper c;    
+    Caliper c;
     Channel* chn = c.get_channel(chn_id);
 
-    if (chn) 
+    if (chn)
         c.delete_channel(chn);
     else
         Log(0).stream() << "cali_channel_delete(): invalid channel id " << chn_id << std::endl;
@@ -704,7 +706,7 @@ cali_delete_channel(cali_id_t chn_id)
 void
 cali_activate_channel(cali_id_t chn_id)
 {
-    Caliper c;    
+    Caliper c;
     Channel* chn = c.get_channel(chn_id);
 
     if (chn)
@@ -743,7 +745,7 @@ cali_flush(int flush_opts)
 {
     Caliper    c;
     Channel* chn = c.get_channel(0);
-    
+
     c.flush_and_write(chn, nullptr);
 
     if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
@@ -791,13 +793,13 @@ cali_make_loop_iteration_attribute(const char* name)
     Variant v_true(true);
 
     Caliper   c;
-    Attribute attr = 
+    Attribute attr =
         c.create_attribute(std::string("iteration#").append(name),
                            CALI_TYPE_INT,
                            CALI_ATTR_ASVALUE,
                            1, &class_iteration_attr, &v_true);
 
-    return attr.id();                           
+    return attr.id();
 }
 
 //
@@ -817,7 +819,7 @@ create_channel(const char* name, int flags, const config_map_t& cfgmap)
 
     Caliper     c;
     Channel* chn = c.create_channel(name, cfg);
- 
+
     if (!chn)
         return CALI_INV_ID;
     if (flags & CALI_CHANNEL_LEAVE_INACTIVE)
