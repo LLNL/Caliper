@@ -160,7 +160,7 @@ cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
     SnapshotRecord::FixedSnapshotRecord<64> trigger_info_data;
     SnapshotRecord trigger_info(trigger_info_data);
 
-    c.make_entrylist(n, attr, data, trigger_info);
+    c.make_record(n, attr, data, trigger_info);
 
     Channel* chn = c.get_channel(chn_id);
 

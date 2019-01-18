@@ -1216,7 +1216,7 @@ Caliper::memory_region_end(Channel* chn, const void* ptr)
 /// \param list   Output record. Must be large enough to hold all entries.
 /// \param parent (Optional) parent node for any treee elements.
 void
-Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
+Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1231,32 +1231,6 @@ Caliper::make_entrylist(size_t n, const Attribute* attr, const Variant* value, S
 
     if (node && node != parent)
         list.append(node);
-}
-
-/// \brief Create a snapshot record (entry list) from the given attribute and
-///   list of values
-///
-/// This function is signal-safe.
-///
-/// \param attr   Attribute list
-/// \param n      Number of elements in attribute/value lists
-/// \param value  Value list
-/// \param list   Output record. Must be large enough to hold all entries.
-
-void
-Caliper::make_entrylist(const Attribute& attr, size_t n, const Variant* value, SnapshotRecord& list)
-{
-    if (n < 1)
-        return;
-
-    std::lock_guard<::siglock>
-        g(sT->lock);
-
-    if (attr.store_as_value())
-        // only store one value entry
-        list.append(attr.id(), value[0]);
-    else
-        list.append(sT->tree.get_path(attr, n, value, nullptr));
 }
 
 /// \brief Return a context tree path for the key:value pairs from a given list of
@@ -1299,6 +1273,28 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
         g(sT->lock);
 
     return sT->tree.get_path(1, &attr, &data, parent);
+}
+
+/// \brief Return a context tree branch for the list of values with the given attribute.
+///
+/// \note This function is signal safe.
+///
+/// \param attr   Attribute. Cannot have the AS VALUE property.
+/// \param n      Number of values in \a data array
+/// \param data   Array of values
+/// \param parent Construct path off this parent node
+///
+/// \return Node pointing to the end of the new path
+Node*
+Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
+{
+    if (attr.store_as_value())
+        return nullptr;
+
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    return sT->tree.get_path(attr, n, data, parent);
 }
 
 /// \brief Return the node with the given id.

@@ -252,7 +252,7 @@ void test_aggr_warnings()
     cali::SnapshotRecord::FixedSnapshotRecord<16> info_data;
     cali::SnapshotRecord info(info_data);
 
-    c.make_entrylist(6, attr, data, info);
+    c.make_record(6, attr, data, info);
     c.push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &info);
 }
 

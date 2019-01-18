@@ -133,7 +133,7 @@ TEST(C_Snapshot_Test, Unpack) {
         node_int_2
     };
 
-    c.make_entrylist(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot);
 
     ASSERT_EQ(snapshot.size().n_nodes, 1);
     ASSERT_EQ(snapshot.size().n_immediate, 2);
@@ -356,7 +356,7 @@ TEST(C_Snapshot_Test, FindFirstInSnapshot) {
         node_int_2
     };
 
-    c.make_entrylist(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot);
 
     ASSERT_EQ(snapshot.size().n_nodes, 1);
     ASSERT_EQ(snapshot.size().n_immediate, 2);
@@ -435,7 +435,7 @@ TEST(C_Snapshot_Test, FindAllInSnapshot) {
         node_int_2
     };
 
-    c.make_entrylist(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot);
 
     ASSERT_EQ(snapshot.size().n_nodes, 1);
     ASSERT_EQ(snapshot.size().n_immediate, 2);

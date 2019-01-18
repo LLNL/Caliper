@@ -345,7 +345,7 @@ class CuptiTraceService
             SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
             SnapshotRecord snapshot(snapshot_data);
         
-            c->make_entrylist(6, attr, data, snapshot, parent);
+            c->make_record(6, attr, data, snapshot, parent);
             
             proc_fn(&snapshot);
 
@@ -410,7 +410,7 @@ class CuptiTraceService
             SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
             SnapshotRecord snapshot(snapshot_data);
         
-            c->make_entrylist(5, attr, data, snapshot, parent);
+            c->make_record(5, attr, data, snapshot, parent);
             
             proc_fn(&snapshot);
 
