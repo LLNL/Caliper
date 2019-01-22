@@ -342,11 +342,11 @@ class Aggregate
         }
 
         if (num_skipped_keys > 0)
-            Log(1).stream() << chn->name() << "Aggregate: Dropped " << num_skipped_keys
+            Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_skipped_keys
                             << " entries because key exceeded max length!" 
                             << std::endl;
         if (num_dropped_entries > 0)
-            Log(1).stream() << chn->name() << "Aggregate: Dropped " << num_dropped_entries
+            Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_dropped_entries
                             << " entries because key could not be allocated!" 
                             << std::endl;
     }
@@ -426,7 +426,8 @@ class Aggregate
     }
 
     Aggregate(Caliper* c, Channel* chn)
-        : config(chn->config().init("aggregate", s_configdata))
+        : config(chn->config().init("aggregate", s_configdata)),
+          num_dropped_snapshots(0)
         {
             tdb_lock.unlock();
 

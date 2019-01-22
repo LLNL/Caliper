@@ -244,6 +244,7 @@ void test_aggr_warnings()
     cali_id_t chn_id =
         cali::create_channel("test_aggregate_warnings", 0, {
                 { "CALI_SERVICES_ENABLE",      "aggregate" },
+                { "CALI_AGGREGATE_KEY",        "function,aw.dbl,aw.int.1,aw.int.2,aw.int.3,aw.int.4,aw.int.5" },
                 { "CALI_CALIPER_CONFIG_CHECK", "false"     }
             });
 
@@ -306,11 +307,11 @@ void test_config_after_init()
 
 int main(int argc, char* argv[])
 {
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
+    
     // instance test has to run before Caliper initialization
 
     test_instance();
-    
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
 
     CALI_CXX_MARK_FUNCTION;
         
