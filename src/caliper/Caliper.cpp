@@ -444,8 +444,6 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
 /// Attribute names must be unique. If an attribute with the given name already exists, the
 /// existing attribute is returned.
 ///
-/// Before a new attribute is created, the pre_create_attr_evt callback will be invoked,
-/// which allows modifications of the user-provided parameters (such as the property flags).
 /// After a new attribute has been created, this function will invoke the create_attr_evt callback.
 /// If an attribute with the given name already exists, the callbacks will not be invoked.
 /// If two threads create an attribute with the same name simultaneously, the pre_create_attr_evt
@@ -511,12 +509,6 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         auto propit = sG->attribute_prop_presets.find(name);
         if (propit != sG->attribute_prop_presets.end())
             prop = propit->second;
-
-        // Run pre-attribute creation callbacks.
-        //   This may add additional nodes to our parent branch.
-        for (auto& chn : sG->channels)
-            if (chn)
-                chn->mP->events.pre_create_attr_evt(this, chn.get(), name, type, &prop, &node);
 
         // Set scope to PROCESS for all global attributes
         if (prop & CALI_ATTR_GLOBAL) {

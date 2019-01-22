@@ -83,8 +83,6 @@ public:
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const std::string&,cali_attr_type,int*,Node**)>
-            pre_create_attr_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*,Channel*)>
@@ -107,7 +105,6 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
 
-        pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
 
         update_cbvec           pre_begin_evt;
