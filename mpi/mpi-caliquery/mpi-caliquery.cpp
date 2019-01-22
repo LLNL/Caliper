@@ -167,30 +167,15 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
 
 void setup_caliper_config(const Args& args)
 {
-    const char* summary_profile[][2] = {
-        { "CALI_SERVICES_ENABLE", "aggregate:event:mpi:mpireport:textlog:timestamp" },
-        { "CALI_AGGREGATE_KEY", "function" },
-        { "CALI_EVENT_TRIGGER", "function" },
-
-        { "CALI_MPIREPORT_CONFIG",
-          "SELECT function,statistics(sum#time.inclusive.duration) GROUP BY function FORMAT table" },
-
-        { NULL, NULL }
-    };
-    
     cali_config_preset("CALI_LOG_VERBOSITY", "0");
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
 
     cali_config_allow_read_env(false);
 
-    cali_config_define_profile("mpi-caliquery_summary_profile", summary_profile);
-
     cali_config_set("CALI_CONFIG_FILE", "mpi-caliquery_caliper.config");
     
     if (args.is_set("verbose"))
         cali_config_preset("CALI_LOG_VERBOSITY", "1");
-    if (args.is_set("profile"))
-        cali_config_set("CALI_CONFIG_PROFILE", "mpi-caliquery_summary_profile");
 
     std::vector<std::string> config_list = 
         StringConverter(args.get("caliper-config")).to_stringlist();
@@ -206,6 +191,12 @@ void setup_caliper_config(const Args& args)
 
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
+
+    if (args.is_set("profile"))
+        cali::create_channel("profile", 0, {
+                { "CALI_CONFIG_PROFILE",     "mpi-runtime-report" },
+                { "CALI_MPIREPORT_FILENAME", "stderr" }
+            });
 }
 
 } // namespace [anonymous]

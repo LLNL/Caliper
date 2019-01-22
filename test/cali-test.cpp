@@ -208,23 +208,7 @@ void test_attr_prop_preset()
 
 void test_aggr_warnings()
 {
-    cali::Caliper c;
-    
-    // make a separate channel for this
-    const char* cfg_profile[][2] = {
-        { "CALI_SERVICES_ENABLE",      "aggregate" },
-        { "CALI_CALIPER_CONFIG_CHECK", "false"     },
-        { nullptr, nullptr }
-    };
-    
-    cali::RuntimeConfig cfg;
-
-    cfg.allow_read_env(false);
-    cfg.define_profile("test_aggregate_warnings", cfg_profile);
-    cfg.set("CALI_CONFIG_PROFILE", "test_aggregate_warnings");
-    
-    cali::Channel* chn =
-        c.create_channel("test_aggregate_warnings", cfg);
+    cali::Caliper c;    
     
     // create an immediate attribute with double type: should create warning if used in aggregation key
     cali::Attribute d  = c.create_attribute("aw.dbl",   CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
@@ -237,23 +221,36 @@ void test_aggr_warnings()
 
     uint64_t largeval = 0xFFFFFFFFFFFFFFFF;
 
-    // make a snapshot with "-1, -2, -3" entries. this should cause the aggregation key 
+    //   make a snapshot with "-1, -2, -3" entries. this should cause the aggregation key 
     // getting too long, as negative values aren't be compressed well currently
-    cali::Attribute attr[6] = { d, i1, i2, i3, i4, i5 };
-    cali::Variant   data[6] = { 
-        cali::Variant(1.0), 
-        cali::Variant(-1), 
-        cali::Variant(-2), 
-        cali::Variant(-3),
-        cali::Variant(CALI_TYPE_UINT, &largeval, sizeof(uint64_t)), 
-        cali::Variant(CALI_TYPE_UINT, &largeval, sizeof(uint64_t))
+
+    double   val_d  = 1.0;
+    int      val_i1 = -1, val_i2 = -2, val_i3 = -3;
+    
+    size_t   d_s = sizeof(double), i_s = sizeof(int), u_s = sizeof(uint64_t);
+
+    cali_id_t   attr[6] = {
+        d.id(),  i1.id(),   i2.id(),
+        i3.id(), i4.id(),   i5.id()
     };
+    const void* data[6] = {
+        &val_d,  &val_i1,   &val_i2,
+        &val_i3, &largeval, &largeval
+    };
+    size_t      size[6] = {
+        d_s, i_s, i_s, i_s, u_s, u_s
+    };
+        
+    cali_id_t chn_id =
+        cali::create_channel("test_aggregate_warnings", 0, {
+                { "CALI_SERVICES_ENABLE",      "aggregate" },
+                { "CALI_CALIPER_CONFIG_CHECK", "false"     }
+            });
 
-    cali::SnapshotRecord::FixedSnapshotRecord<16> info_data;
-    cali::SnapshotRecord info(info_data);
+    cali_channel_push_snapshot(chn_id, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS,
+                               6, attr, data, size);
 
-    c.make_record(6, attr, data, info);
-    c.push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &info);
+    cali_delete_channel(chn_id);
 }
 
 std::ostream& print_padded(std::ostream& os, const char* string, int fieldlen)

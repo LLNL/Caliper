@@ -523,42 +523,6 @@ void
 cali_config_set(const char* key, const char* value);
 
 /**
- * \copybrief cali::RuntimeConfig::define_profile
- *
- * A configuration profile is a named set of specific
- * configuration settings. The entire set can be enabled by its name
- * with a single configuration entry.
- *
- * This function only defines a configuration profile, but does not
- * enable it. %Caliper uses the profiles named in the
- * \c CALI_CONFIG_PROFILE configuration entry; to enable a profile
- * set this configuration entry accordingly.
- *
- * Example:
- *
- * \code
- *   const char* my_profile[][2] =
- *     { { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
- *       { "CALI_EVENT_TRIGGER",   "annotation" },
- *       { NULL, NULL }
- *     };
- *
- *   // Define the "my_profile" config profile
- *   cali_config_define_profile("my_profile", my_profile);
- *   cali_config_set("CALI_CONFIG_PROFILE", "my_profile");
- * \endcode
- *
- * \param name Name of the configuration profile.
- * \param keyvallist A list of key-value pairs as array of two strings
- *    that contains the profile's configuration entries. The first string
- *    in each entry is the configuration key, the second string is its
- *    value. Keys must be all uppercase. Terminate the list with two
- *    NULL entries: <tt> { NULL, NULL } </tt>.
- */
-void
-cali_config_define_profile(const char* name, const char* keyvallist[][2]);
-
-/**
  * \brief Enable or disable reading environment variables for the default
  *   configset.
  */

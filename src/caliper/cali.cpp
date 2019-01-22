@@ -630,12 +630,6 @@ cali_config_set(const char* key, const char* value)
 }
 
 void
-cali_config_define_profile(const char* name, const char* keyvallist[][2])
-{
-    RuntimeConfig::get_default_config().define_profile(name, keyvallist);
-}
-
-void
 cali_config_allow_read_env(int allow)
 {
     RuntimeConfig::get_default_config().allow_read_env(allow != 0);
