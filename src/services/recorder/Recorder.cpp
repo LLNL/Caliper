@@ -40,7 +40,6 @@
 
 #include "caliper/common/csv/CsvWriter.h"
 
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"

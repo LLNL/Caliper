@@ -46,13 +46,11 @@
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/StringConverter.h"
 
 #include "caliper/common/csv/CsvReader.h"
-#include "caliper/common/csv/CsvWriter.h"
 
 #include "caliper/common/util/split.hpp"
 

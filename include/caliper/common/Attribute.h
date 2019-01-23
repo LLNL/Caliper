@@ -117,8 +117,6 @@ public:
         return s_keys;
     }
 
-    // RecordMap record() const;
-
     static const Attribute invalid;
 
 private:

@@ -41,8 +41,6 @@
 #include "cali_types.h"
 
 #include "IdType.h"
-#include "Record.h"
-#include "RecordMap.h"
 #include "Variant.h"
 
 #include "util/lockfree-tree.hpp"
@@ -61,8 +59,6 @@ class Node : public IdType, public util::LockfreeIntrusiveTree<Node>
 
     cali_id_t m_attribute;
     Variant   m_data;
-
-    static const RecordDescriptor s_record;
 
 public:
 
@@ -85,10 +81,6 @@ public:
 
     cali_id_t attribute() const { return m_attribute; }
     Variant   data() const      { return m_data;      }    
-    
-    static const RecordDescriptor& record_descriptor() { return s_record; }
-
-    RecordMap record() const;
 };
 
 } // namespace cali

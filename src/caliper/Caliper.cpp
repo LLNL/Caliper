@@ -42,7 +42,6 @@
 #include "Blackboard.h"
 #include "MetadataTree.h"
 
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"

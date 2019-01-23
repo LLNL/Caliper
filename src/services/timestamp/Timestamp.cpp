@@ -39,7 +39,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Log.h"
 
 #include <cassert>

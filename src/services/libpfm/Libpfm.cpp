@@ -41,7 +41,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/ContextRecord.h"
 
 #include <mutex>
 

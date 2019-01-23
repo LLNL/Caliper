@@ -72,9 +72,6 @@ public:
 
     void write_globals(const CaliperMetadataAccessInterface& db,
                        const std::vector<Entry>&);
-
-    void operator()(const CaliperMetadataAccessInterface&, const Node*);
-    void operator()(const CaliperMetadataAccessInterface&, const std::vector<Entry>&);
 };
 
 }

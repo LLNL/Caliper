@@ -34,13 +34,66 @@
 /// CsvReader implementation
 
 #include "caliper/common/csv/CsvReader.h"
-#include "caliper/common/csv/CsvSpec.h"
+
+#include "caliper/common/Log.h"
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 using namespace cali;
 using namespace std;
+
+namespace
+{
+
+vector<string> split(const string& line, char sep, bool keep_escape = false) {
+    vector<string> vec;
+    string str;
+    bool   escaped = false;
+        
+    for (auto it = line.begin(); it != line.end(); ++it) {
+        if (!escaped && *it == '\\') {
+            escaped = true;
+                
+            if (keep_escape)
+                str.push_back('\\');
+        } else if (!escaped && *it == sep) {
+            vec.push_back(str);
+            str.clear();
+        } else {
+            str.push_back(*it);
+            escaped = false;
+        }
+    }
+
+    vec.push_back(str);
+
+    return vec;
+}
+
+RecordMap read_record(const string& line) {
+    vector<string> entries = split(line, ',', true /* keep escape */ );
+    RecordMap      rec;
+
+    for (const string& entry : entries) {
+        vector<string> keyval = split(entry, '=', false);
+
+        if (keyval.size() > 1) {
+            vector<std::string> data;
+
+            for (auto it = keyval.begin()+1; it != keyval.end(); ++it)
+                data.emplace_back(*it);
+
+            rec.insert(make_pair(keyval[0], std::move(data)));                
+        } else
+            Log(0).stream() << "Invalid CSV entry: " << entry << endl;
+    }
+
+    return rec;
+}
+
+} // namespace [anonymous]
 
 struct CsvReader::CsvReaderImpl
 {
@@ -55,7 +108,7 @@ struct CsvReader::CsvReaderImpl
             // empty file: read from stdin
 
             for (string line ; getline(std::cin, line); )
-                rec_handler(CsvSpec::read_record(line));
+                rec_handler(::read_record(line));
         } else {
             // read from file
 
@@ -65,7 +118,7 @@ struct CsvReader::CsvReaderImpl
                 return false;
 
             for (string line ; getline(is, line); )
-                rec_handler(CsvSpec::read_record(line));
+                rec_handler(::read_record(line));
         }
 
         return true;

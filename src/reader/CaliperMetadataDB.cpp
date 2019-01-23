@@ -429,8 +429,18 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (       rec_name_it->second.front() == "node"   ) {
             const Node* node = merge_node_record(rec, idmap);
 
-            if (node)
-                return node->record();
+            if (node) {
+                RecordMap rec;
+
+                rec["__rec"].push_back("node");
+                rec["id"   ].push_back(std::to_string(node->id()));
+                rec["data" ].push_back(node->data().to_string());
+
+                if (node->parent() && node->parent()->id() != CALI_INV_ID)
+                    rec["parent"].push_back(std::to_string(node->parent()->id()));
+
+                return rec;
+            }
         } else if (rec_name_it->second.front() == "ctx"    ) {
             return merge_ctx_record(rec, idmap);
         } else if (rec_name_it->second.front() == "globals") {

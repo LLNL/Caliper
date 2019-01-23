@@ -1,6 +1,5 @@
 set(CALIPER_CSV_SOURCES
     CsvReader.cpp
-    CsvSpec.cpp
     CsvWriter.cpp)
 
 add_library(caliper-csv OBJECT ${CALIPER_CSV_SOURCES})
