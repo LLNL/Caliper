@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,48 +30,33 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file CsvWriter.h
-/// \brief CsvWriter implementation
+/// \file  CaliReader.h
+/// \brief CaliReader class definition
 
 #pragma once
 
-#include "../Entry.h"
+#include "RecordProcessor.h"
 
 #include <memory>
-#include <vector>
+#include <string>
 
 namespace cali
 {
 
-class CaliperMetadataAccessInterface;
-class Node;
-class OutputStream;
-    
-class CsvWriter
+class CaliperMetadataDB;
+
+class CaliReader
 {
-    struct CsvWriterImpl;
-    std::shared_ptr<CsvWriterImpl> mP;
+    struct CaliReaderImpl;
+    std::unique_ptr<CaliReaderImpl> mP;
 
 public:
 
-    CsvWriter()
-    { }
-    
-    CsvWriter(OutputStream& os);
+    CaliReader(const std::string& filename);
 
-    ~CsvWriter();
+    ~CaliReader();
 
-    size_t num_written() const;
-    
-    void write_snapshot(const CaliperMetadataAccessInterface& db,
-                        size_t n_nodes, const cali_id_t nodes[],
-                        size_t n_imm,   const cali_id_t attr[], const Variant vals[]);
-    
-    void write_snapshot(const CaliperMetadataAccessInterface& db,
-                        const std::vector<Entry>&);
-
-    void write_globals(const CaliperMetadataAccessInterface& db,
-                       const std::vector<Entry>&);
+    bool read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);
 };
 
-}
+} // namespace cali

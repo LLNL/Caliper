@@ -39,8 +39,6 @@
 #include "Formatter.h"
 #include "RecordProcessor.h"
 
-#include "../common/RecordMap.h"
-
 #include <memory>
 
 namespace cali

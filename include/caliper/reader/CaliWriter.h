@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,33 +30,48 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Query.cpp
-/// Query interface implementation
+/// \file CaliWriter.h
+/// \brief CaliWriter implementation
 
-#include "caliper/common/RecordMap.h"
+#pragma once
 
-#include <iostream>
+#include "caliper/common/Entry.h"
 
-std::string cali::get_record_type(const cali::RecordMap& rec)
+#include <memory>
+#include <vector>
+
+namespace cali
 {
-    auto rec_entry_it = rec.find("__rec");
 
-    if (rec_entry_it != rec.end() && !rec_entry_it->second.empty())
-        return rec_entry_it->second.front();
-
-    return { };
-}
-
-std::ostream& cali::operator << (std::ostream& os, const cali::RecordMap& record)
+class CaliperMetadataAccessInterface;
+class Node;
+class OutputStream;
+    
+class CaliWriter
 {
-    int count = 0;
+    struct CaliWriterImpl;
+    std::shared_ptr<CaliWriterImpl> mP;
 
-    for (const auto &entry : record) {
-        if (!entry.second.empty())
-            os << (count++ ? "," : "") << entry.first;
-        for (const auto &elem : entry.second)
-            os << '=' << elem;
-    }
+public:
 
-    return os;
+    CaliWriter()
+        { }
+    
+    CaliWriter(OutputStream& os);
+
+    ~CaliWriter();
+
+    size_t num_written() const;
+    
+    void write_snapshot(const CaliperMetadataAccessInterface& db,
+                        size_t n_nodes, const cali_id_t nodes[],
+                        size_t n_imm,   const cali_id_t attr[], const Variant vals[]);
+    
+    void write_snapshot(const CaliperMetadataAccessInterface& db,
+                        const std::vector<Entry>&);
+
+    void write_globals(const CaliperMetadataAccessInterface& db,
+                       const std::vector<Entry>&);
+};
+
 }

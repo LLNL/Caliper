@@ -33,13 +33,13 @@
 /// \file CsvWriter.cpp
 /// CsvWriter implementation
 
-#include "caliper/common/csv/CsvWriter.h"
+#include "caliper/reader/CaliWriter.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
-#include "../util/write_util.h"
+#include "../common/util/write_util.h"
 
 #include <mutex>
 #include <set>
@@ -126,7 +126,7 @@ void write_record_content(std::ostream& os, const char* record_type, int nr, int
 
 } // namespace [anonymous]
 
-struct CsvWriter::CsvWriterImpl
+struct CaliWriter::CaliWriterImpl
 {
     OutputStream  m_os;
     std::mutex    m_os_lock;
@@ -137,7 +137,7 @@ struct CsvWriter::CsvWriterImpl
     std::size_t   m_num_written;
 
 
-    CsvWriterImpl(OutputStream& os)
+    CaliWriterImpl(OutputStream& os)
         : m_os(os),
           m_num_written(0)
     { }
@@ -236,33 +236,33 @@ struct CsvWriter::CsvWriterImpl
 };
 
 
-CsvWriter::CsvWriter(OutputStream& os)
-    : mP(new CsvWriterImpl(os))
+CaliWriter::CaliWriter(OutputStream& os)
+    : mP(new CaliWriterImpl(os))
 { }
 
-CsvWriter::~CsvWriter()
+CaliWriter::~CaliWriter()
 {
     mP.reset();
 }
 
-size_t CsvWriter::num_written() const
+size_t CaliWriter::num_written() const
 {
     return mP ? mP->m_num_written : 0;
 }
 
-void CsvWriter::write_snapshot(const CaliperMetadataAccessInterface& db,
+void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db,
                                size_t n_nodes, const cali_id_t nodes[],
                                size_t n_imm,   const cali_id_t attr[], const Variant vals[])
 {
     mP->write_snapshot(db, n_nodes, nodes, n_imm, attr, vals);
 }
 
-void CsvWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
     mP->write_entrylist(db, "ctx", list);
 }
 
-void CsvWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
+void CaliWriter::write_globals(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)
 {
     mP->write_entrylist(db, "globals", list);
 }

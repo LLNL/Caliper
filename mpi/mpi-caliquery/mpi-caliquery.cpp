@@ -38,6 +38,7 @@
 #include "caliper/tools-util/Args.h"
 
 #include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/FormatProcessor.h"
 #include "caliper/reader/QuerySpec.h"
@@ -47,8 +48,6 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/StringConverter.h"
-#include "caliper/common/csv/CsvReader.h"
-#include "caliper/common/csv/CsvWriter.h"
 
 #include <iostream>
 
@@ -152,8 +151,7 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
         if (!args.arguments().front().empty())
             filename = args.arguments().front() + "/" + filename;
 
-    CsvReader reader(filename);
-    IdMap idmap;
+    CaliReader reader(filename);
 
     NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
     SnapshotProcessFn snap_proc = aggregate;
@@ -161,7 +159,7 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
         snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
 
-    if (!reader.read([&](const RecordMap& rec){ db.merge(rec, idmap, node_proc, snap_proc); }))
+    if (!reader.read(db, node_proc, snap_proc))
         std::cerr << "mpi-caliquery (" << rank << "): cannot read " << filename << std::endl;
 }
 
