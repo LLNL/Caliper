@@ -602,7 +602,7 @@ CaliperMetadataDB::get_attribute(const std::string& name) const
 }
 
 std::vector<Attribute>
-CaliperMetadataDB::get_attributes() const
+CaliperMetadataDB::get_all_attributes() const
 {
     return mP->get_attributes();
 }

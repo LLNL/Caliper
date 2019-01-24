@@ -40,7 +40,7 @@ using namespace cali;
 std::vector<Attribute>
 CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) const
 {
-    std::vector<Attribute> vec = get_attributes();
+    std::vector<Attribute> vec = get_all_attributes();
     std::vector<Attribute> ret;
 
     for (Attribute attr : vec)

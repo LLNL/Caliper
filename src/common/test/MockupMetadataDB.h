@@ -101,7 +101,7 @@ public:
     }
 
     inline std::vector<Attribute>
-    get_attributes() const {
+    get_all_attributes() const {
         std::vector<Attribute> vec;
 
         for (auto p : m_attr_map)

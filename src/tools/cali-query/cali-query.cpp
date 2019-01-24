@@ -436,7 +436,7 @@ int main(int argc, const char* argv[])
 
             spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
 
-            for (const Attribute& attr : metadb.get_attributes())
+            for (const Attribute& attr : metadb.get_all_attributes())
                 if (attr.is_global())
                     spec.attribute_selection.list.push_back(attr.name());
 

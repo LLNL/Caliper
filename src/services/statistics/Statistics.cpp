@@ -68,7 +68,7 @@ class Statistics
         if (chn->id() == 0) { 
             // only print this for the default channel
 
-            auto vec = c->get_attributes();
+            auto vec = c->get_all_attributes();
             
             Log(1).stream() << "Global statistics:"
                             << "\n  Number of attributes:   " << vec.size()

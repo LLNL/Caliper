@@ -268,7 +268,7 @@ public:
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 
-    std::vector<Attribute> get_attributes() const;
+    std::vector<Attribute> get_all_attributes() const;
 
     Attribute create_attribute(const std::string& name,
                                cali_attr_type     type,

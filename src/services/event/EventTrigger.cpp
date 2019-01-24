@@ -302,7 +302,7 @@ class EventTrigger
     //
 
     void check_existing_attributes(Caliper* c, Channel* chn) {
-        auto attributes = c->get_attributes();
+        auto attributes = c->get_all_attributes();
 
         for (const Attribute& attr : attributes)
             check_attribute(c, chn, attr);

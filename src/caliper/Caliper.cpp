@@ -598,7 +598,7 @@ Caliper::get_attribute(cali_id_t id) const
 /// \return   A vector that containing all attribute objects
 
 std::vector<Attribute>
-Caliper::get_attributes() const
+Caliper::get_all_attributes() const
 {
     std::lock_guard<::siglock>
         g(sT->lock);

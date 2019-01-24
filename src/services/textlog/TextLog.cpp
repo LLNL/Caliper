@@ -138,7 +138,7 @@ class TextLogService
             return;
         }
 
-        for (const Attribute& a : c->get_attributes())
+        for (const Attribute& a : c->get_all_attributes())
             check_attribute(a);
 
         chn->events().process_snapshot.connect(
