@@ -38,12 +38,11 @@
 #include "caliper/Annotation.h"
 
 #include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/RecordProcessor.h"
 
 #include "caliper/common/Node.h"
-
-#include "caliper/common/csv/CsvReader.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -265,10 +264,9 @@ int main(int argc, const char* argv[])
         Annotation::Guard 
             g_s(Annotation("cali-graph.stream").set(file.c_str()));
             
-        CsvReader reader(file);
-        IdMap     idmap;
+        CaliReader reader(file);
 
-        if (!reader.read([&](const RecordMap& rec){ metadb.merge(rec, idmap, node_proc, snap_proc); }))
+        if (!reader.read(metadb, node_proc, snap_proc))
             cerr << "Could not read file " << file << endl;
     }
 
