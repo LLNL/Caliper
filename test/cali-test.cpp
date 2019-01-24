@@ -224,21 +224,17 @@ void test_aggr_warnings()
     //   make a snapshot with "-1, -2, -3" entries. this should cause the aggregation key 
     // getting too long, as negative values aren't be compressed well currently
 
-    double   val_d  = 1.0;
-    int      val_i1 = -1, val_i2 = -2, val_i3 = -3;
-    
-    size_t   d_s = sizeof(double), i_s = sizeof(int), u_s = sizeof(uint64_t);
-
-    cali_id_t   attr[6] = {
+    cali_id_t attr[6] = {
         d.id(),  i1.id(),   i2.id(),
         i3.id(), i4.id(),   i5.id()
     };
-    const void* data[6] = {
-        &val_d,  &val_i1,   &val_i2,
-        &val_i3, &largeval, &largeval
-    };
-    size_t      size[6] = {
-        d_s, i_s, i_s, i_s, u_s, u_s
+    cali_variant_t data[6] = {
+        cali_make_variant_from_double(1.0),
+        cali_make_variant_from_int(-1),
+        cali_make_variant_from_int(-2),
+        cali_make_variant_from_int(-3),
+        cali_make_variant_from_uint(largeval),
+        cali_make_variant_from_uint(largeval)
     };
         
     cali_id_t chn_id =
@@ -249,7 +245,7 @@ void test_aggr_warnings()
             });
 
     cali_channel_push_snapshot(chn_id, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS,
-                               6, attr, data, size);
+                               6, attr, data);
 
     cali_delete_channel(chn_id);
 }

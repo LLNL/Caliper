@@ -29,15 +29,13 @@ TEST(AttributeAPITest, ValidAttribute) {
     EXPECT_FALSE(meta_attr.is_nested());
     EXPECT_FALSE(meta_attr.store_as_value());
 
-    cali_id_t   meta_ids[1]   = { meta_attr.id()  };
-    int64_t     meta_val      = 42;
-    const void* meta_vals[1]  = { &meta_val };
-    size_t      meta_sizes[1] = { sizeof(int64_t) };
+    cali_id_t      meta_id  = meta_attr.id();
+    cali_variant_t meta_val = cali_make_variant_from_int(42);
 
     cali_id_t attr_id =
         cali_create_attribute_with_metadata("test.attribute.api", CALI_TYPE_STRING,
                                             CALI_ATTR_NESTED | CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_NOMERGE,
-                                            1, meta_ids, meta_vals, meta_sizes);
+                                            1, &meta_id, &meta_val);
 
     ASSERT_NE(attr_id, CALI_INV_ID);
 

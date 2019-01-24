@@ -100,8 +100,7 @@ cali_create_attribute(const char*     name,
  * \param properties Attribute properties
  * \param n Number of metadata entries
  * \param meta_attr_list Attribute IDs of the metadata entries
- * \param meta_val_list  Pointers to values of the metadata entries
- * \param meta_size_list Sizes (in bytes) of the metadata values
+ * \param meta_val_list  Values of the metadata entries
  * \return Attribute id
  * \sa cali_create_attribute
  */
@@ -112,8 +111,7 @@ cali_create_attribute_with_metadata(const char*     name,
                                     int             properties,
                                     int             n,
                                     const cali_id_t meta_attr_list[],
-                                    const void*     meta_val_list[],
-                                    const size_t    meta_size_list[]);
+                                    const cali_variant_t meta_val_list[]);
 
 /**
  * \brief Find attribute by name
@@ -168,14 +166,12 @@ cali_attribute_properties(cali_id_t attr_id);
  *   snapshot should span
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
- * \param trigger_info_val_list  Pointers to values of event info entries
- * \param trigger_info_size_list Sizes (in bytes) of event info entries
+ * \param trigger_info_val_list  Values of event info entries
  */
 void
 cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
-                   const void*     trigger_info_val_list[],
-                   const size_t    trigger_info_size_list[]);
+                   const cali_variant_t trigger_info_val_list[]);
 
 /**
  * \brief Take a snapshot on the given channel and push it into its
@@ -185,15 +181,14 @@ cali_push_snapshot(int scope, int n,
  *   snapshot should span
  * \param n Number of event info entries
  * \param trigger_info_attr_list Attribute IDs of event info entries
- * \param trigger_info_val_list  Pointers to values of event info entries
- * \param trigger_info_size_list Sizes (in bytes) of event info entries
+ * \param trigger_info_val_list  Values of event info entries
  */
 void
 cali_channel_push_snapshot(cali_id_t chn_id,
                            int scope, int n,
                            const cali_id_t trigger_info_attr_list[],
-                           const void*     trigger_info_val_list[],
-                           const size_t    trigger_info_size_list[]);
+                           const cali_variant_t trigger_info_val_list[]);
+                           
 
 /**
  * \brief Take a snapshot on the default channel

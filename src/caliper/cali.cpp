@@ -66,8 +66,7 @@ cali_id_t
 cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int properties,
                                     int n,
                                     const cali_id_t meta_attr_list[],
-                                    const void* meta_val_list[],
-                                    const size_t meta_size_list[])
+                                    const cali_variant_t meta_val_list[])
 {
     if (n < 1)
         return cali_create_attribute(name, type, properties);
@@ -83,7 +82,7 @@ cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int p
         if (meta_attr[i] == Attribute::invalid)
             continue;
 
-        meta_data[i] = Variant(meta_attr[i].type(), meta_val_list[i], meta_size_list[i]);
+        meta_data[i] = Variant(meta_val_list[i]);
     }
 
     Attribute attr =
@@ -130,20 +129,17 @@ cali_attribute_name(cali_id_t attr_id)
 void
 cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
-                   const void* trigger_info_val_list[],
-                   const size_t trigger_info_size_list[])
+                   const cali_variant_t trigger_info_val_list[])
 {
     cali_channel_push_snapshot(0, scope, n,
                                trigger_info_attr_list,
-                               trigger_info_val_list,
-                               trigger_info_size_list);
+                               trigger_info_val_list);
 }
 
 void
 cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
-                   const cali_id_t trigger_info_attr_list[],
-                   const void* trigger_info_val_list[],
-                   const size_t trigger_info_size_list[])
+                           const cali_id_t trigger_info_attr_list[],
+                           const cali_variant_t trigger_info_val_list[])
 {
     Caliper   c;
 
@@ -154,7 +150,7 @@ cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
 
     for (int i = 0; i < n; ++i) {
         attr[i] = c.get_attribute(trigger_info_attr_list[i]);
-        data[i] = Variant(attr[i].type(), trigger_info_val_list[i], trigger_info_size_list[i]);
+        data[i] = Variant(trigger_info_val_list[i]);
     }
 
     SnapshotRecord::FixedSnapshotRecord<64> trigger_info_data;

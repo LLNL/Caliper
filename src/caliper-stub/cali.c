@@ -49,8 +49,7 @@ cali_id_t
 cali_create_attribute_with_metadata(const char* name, cali_attr_type type, int properties,
                                     int n,
                                     const cali_id_t meta_attr_list[],
-                                    const void* meta_val_list[],
-                                    const size_t meta_size_list[])
+                                    const cali_variant_t meta_val_list[])
 {
     return CALI_INV_ID;
 }
@@ -69,8 +68,7 @@ cali_find_attribute(const char* name)
 void
 cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
-                   const void* trigger_info_val_list[],
-                   const size_t trigger_info_size_list[])
+                   const cali_variant_t trigger_info_vals[])
 {
 }
 
