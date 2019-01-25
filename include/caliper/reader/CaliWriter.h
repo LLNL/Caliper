@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2017, Lawrence Livermore National Security, LLC.  
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,25 +30,48 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "caliper/common/ContextRecord.h"
+/// \file CaliWriter.h
+/// \brief CaliWriter implementation
 
-#include "caliper/common/StringConverter.h"
+#pragma once
 
-using namespace cali;
+#include "caliper/common/Entry.h"
 
-namespace 
+#include <memory>
+#include <vector>
+
+namespace cali
 {
-    const char* RecordElements[] = { "ref", "attr", "data" };
 
-    inline cali_id_t
-    id_from_string(const std::string& str) {
-        bool ok = false;
-        cali_id_t id = StringConverter(str).to_uint(&ok);
+class CaliperMetadataAccessInterface;
+class Node;
+class OutputStream;
+    
+class CaliWriter
+{
+    struct CaliWriterImpl;
+    std::shared_ptr<CaliWriterImpl> mP;
 
-        return ok ? id : CALI_INV_ID;
-    }
+public:
+
+    CaliWriter()
+        { }
+    
+    CaliWriter(OutputStream& os);
+
+    ~CaliWriter();
+
+    size_t num_written() const;
+    
+    void write_snapshot(const CaliperMetadataAccessInterface& db,
+                        size_t n_nodes, const cali_id_t nodes[],
+                        size_t n_imm,   const cali_id_t attr[], const Variant vals[]);
+    
+    void write_snapshot(const CaliperMetadataAccessInterface& db,
+                        const std::vector<Entry>&);
+
+    void write_globals(const CaliperMetadataAccessInterface& db,
+                       const std::vector<Entry>&);
+};
+
 }
-
-const RecordDescriptor ContextRecord::s_record         { 0x101, "ctx",     3, ::RecordElements };
-
-const RecordDescriptor ContextRecord::s_globals_record { 0x102, "globals", 3, ::RecordElements };

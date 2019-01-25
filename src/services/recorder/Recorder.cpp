@@ -38,13 +38,12 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/csv/CsvWriter.h"
-
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
+
+#include "caliper/reader/CaliWriter.h"
 
 #include <sys/stat.h>
 #include <unistd.h>
@@ -68,7 +67,7 @@ class Recorder
     static const ConfigSet::Entry s_configdata[];
 
     ConfigSet m_config;
-    CsvWriter m_writer;
+    CaliWriter m_writer;
     
     // --- helpers
 
@@ -115,7 +114,7 @@ class Recorder
         OutputStream stream;
         stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
         
-        m_writer = CsvWriter(stream);
+        m_writer = CaliWriter(stream);
     }
 
     void write_snapshot(Caliper* c, const SnapshotRecord* snapshot) {        

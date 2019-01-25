@@ -2,13 +2,11 @@ set(CALIPER_COMMON_SOURCES
     Attribute.cpp
     CaliperMetadataAccessInterface.cpp
     CompressedSnapshotRecord.cpp
-    ContextRecord.cpp
     Entry.cpp
     Log.cpp
     Node.cpp
     NodeBuffer.cpp
     OutputStream.cpp
-    RecordMap.cpp
     RuntimeConfig.cpp
     SnapshotBuffer.cpp
     SnapshotTextFormatter.cpp
@@ -17,12 +15,10 @@ set(CALIPER_COMMON_SOURCES
     cali_types.c
     cali_variant.c)
 
-add_subdirectory(csv)
 add_subdirectory(c-util)
 add_subdirectory(util)
 
 add_library(caliper-common
-  $<TARGET_OBJECTS:caliper-csv>
   $<TARGET_OBJECTS:c-util>
   $<TARGET_OBJECTS:util>
   ${CALIPER_COMMON_SOURCES})

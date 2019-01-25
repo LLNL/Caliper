@@ -241,7 +241,7 @@ class InstLookup
 
         // Add entries to snapshot. Strings are copied here, temporary mempool will be free'd
         if (attr.size() > 0)
-            c->make_entrylist(attr.size(), attr.data(), data.data(), *snapshot);
+            c->make_record(attr.size(), attr.data(), data.data(), *snapshot);
     }
 
     // some final log output; print warning if we didn't find an address attribute

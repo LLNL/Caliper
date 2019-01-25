@@ -32,6 +32,7 @@
 
 #include "caliper/reader/FormatProcessor.h"
 
+#include "caliper/reader/CaliWriter.h"
 #include "caliper/reader/Expand.h"
 #include "caliper/reader/JsonFormatter.h"
 #include "caliper/reader/JsonSplitFormatter.h"
@@ -41,8 +42,6 @@
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/OutputStream.h"
-
-#include "caliper/common/csv/CsvWriter.h"
 
 using namespace cali;
 
@@ -78,12 +77,12 @@ const QuerySpec::FunctionSignature formatters[] = {
 
 class CaliFormatter : public Formatter
 {
-    CsvWriter m_writer;
+    CaliWriter m_writer;
 
 public:
 
     CaliFormatter(OutputStream& os)
-        : m_writer(CsvWriter(os))
+        : m_writer(CaliWriter(os))
     { }
 
     void process_record(CaliperMetadataAccessInterface& db, const EntryList& list) {

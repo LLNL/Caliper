@@ -34,11 +34,9 @@
 /// \brief Various type definitions for the reader API
 /// \ingroup ReaderAPI
 
-#ifndef CALI_RECORDPROCESSOR_H
-#define CALI_RECORDPROCESSOR_H
+#pragma once
 
 #include "../common/Entry.h"
-#include "../common/RecordMap.h"
 
 #include <functional>
 #include <vector>
@@ -49,11 +47,6 @@ namespace cali
 
     typedef std::vector<Entry> 
         EntryList;
-
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec)> 
-        RecordProcessFn;
-    typedef std::function<void(CaliperMetadataAccessInterface& db,const RecordMap& rec, RecordProcessFn)> 
-        RecordFilterFn;
 
     typedef std::function<void(CaliperMetadataAccessInterface& db,const Node* node)> 
         NodeProcessFn;
@@ -66,5 +59,3 @@ namespace cali
         SnapshotFilterFn;
 
 } // namespace cali
-
-#endif

@@ -41,7 +41,6 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
-#include "caliper/common/ContextRecord.h"
 
 #include <mutex>
 
@@ -701,7 +700,7 @@ class LibpfmService
         }
 
         if (attr.size() > 0)
-            c->make_entrylist(attr.size(), attr.data(), data.data(), *snapshot);
+            c->make_record(attr.size(), attr.data(), data.data(), *snapshot);
     }
 
     LibpfmService(Caliper* c, Channel* chn)

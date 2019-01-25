@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -30,33 +30,33 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-///@file Query.cpp
-/// Query interface implementation
+/// \file  CaliReader.h
+/// \brief CaliReader class definition
 
-#include "caliper/common/RecordMap.h"
+#pragma once
 
-#include <iostream>
+#include "RecordProcessor.h"
 
-std::string cali::get_record_type(const cali::RecordMap& rec)
+#include <memory>
+#include <string>
+
+namespace cali
 {
-    auto rec_entry_it = rec.find("__rec");
 
-    if (rec_entry_it != rec.end() && !rec_entry_it->second.empty())
-        return rec_entry_it->second.front();
+class CaliperMetadataDB;
 
-    return { };
-}
-
-std::ostream& cali::operator << (std::ostream& os, const cali::RecordMap& record)
+class CaliReader
 {
-    int count = 0;
+    struct CaliReaderImpl;
+    std::unique_ptr<CaliReaderImpl> mP;
 
-    for (const auto &entry : record) {
-        if (!entry.second.empty())
-            os << (count++ ? "," : "") << entry.first;
-        for (const auto &elem : entry.second)
-            os << '=' << elem;
-    }
+public:
 
-    return os;
-}
+    CaliReader(const std::string& filename);
+
+    ~CaliReader();
+
+    bool read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc);
+};
+
+} // namespace cali

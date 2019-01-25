@@ -38,8 +38,6 @@
 
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
-#include "caliper/common/ContextRecord.h"
-#include "caliper/common/IdType.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 
@@ -259,9 +257,9 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         std::vector<Attribute> attrs;
 
         if (m_select_all)
-            attrs = db.get_attributes();
+            attrs = db.get_all_attributes();
         else {
-            std::vector<Attribute> tmp_attrs = db.get_attributes();
+            std::vector<Attribute> tmp_attrs = db.get_all_attributes();
 
             std::copy_if(tmp_attrs.begin(), tmp_attrs.end(),
                          std::back_inserter(attrs),

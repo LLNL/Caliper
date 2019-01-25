@@ -64,7 +64,7 @@ public:
 
     /// \brief Return all attributes
     virtual std::vector<Attribute>
-    get_attributes() const = 0;
+    get_all_attributes() const = 0;
 
     /// \brief Return all attributes that have a metadata entry \a meta, of any value
     std::vector<Attribute>

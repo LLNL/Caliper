@@ -38,14 +38,12 @@
 #include "caliper/tools-util/Args.h"
 
 #include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/RecordProcessor.h"
 
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/StringConverter.h"
-
-#include "caliper/common/csv/CsvReader.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -133,31 +131,15 @@ namespace
             }
         }
         
-        void process_snapshot(const CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            auto ref_it = rec.find("ref");
-
-            int ref = ref_it == rec.end() ? 0 : static_cast<int>(ref_it->second.size());
-
-            if (ref_it != rec.end())
-                for ( const std::string& node_id_str : ref_it->second )
-                    for (const Node* node = db.node(StringConverter(node_id_str).to_id()); node; node = node->parent()) {
+        void process_rec(const CaliperMetadataAccessInterface& db, const EntryList& rec) {
+            for (const Entry& e : rec)
+                if (e.is_reference())
+                    for (const Node* node = e.node(); node; node = node->parent()) {
                         auto it = mS->reuse.find(node->attribute());
 
                         if (it != mS->reuse.end())
                             ++(it->second.data[node->data().to_string()]);
-                    }   
-        }
-
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            string type = get_record_type(rec);
-            
-            if      (type == "node") {
-                auto id_entry_it = rec.find("id");
-
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    process_node(db, db.node(StringConverter(id_entry_it->second.front()).to_id()));
-            } else if (type == "ctx")
-                process_snapshot(db, rec);
+                    }
         }
     };
     
@@ -250,116 +232,58 @@ namespace
             cali_attr_type type = db.get_attribute(node->attribute()).type();
             
             mS->size_nodes += 3 * 8 +
-                (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? node->data().to_string().size() : 8);
+                (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? node->data().size() : 8);
         }
 
-        void process_snapshot(const CaliperMetadataAccessInterface& db, const RecordMap& rec) {
+        void process_rec(const CaliperMetadataAccessInterface& db, const EntryList& rec) {
             ++mS->n_snapshots;
             
-            auto ref_entry_it  = rec.find("ref");
-            auto attr_entry_it = rec.find("attr");
-            auto val_entry_it  = rec.find("data");
-            
-            int ref = ref_entry_it == rec.end() ? 0 : static_cast<int>(ref_entry_it->second.size());
-            int val = val_entry_it == rec.end() ? 0 : static_cast<int>(val_entry_it->second.size());
+            int ref = 0;
+            int imm = 0;
 
             int ref_attr = 0;
-            
-            if (ref_entry_it != rec.end())
-                for ( const std::string& node_id_str : ref_entry_it->second )
-                    for (const Node* node = db.node(StringConverter(node_id_str).to_id()); node && node->id() != CALI_INV_ID; node = node->parent())
+
+            for (const Entry& e : rec) {
+                if (e.is_immediate()) {
+                    ++imm;
+                } else if (e.is_reference()) {
+                    ++ref;
+                    for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent())
                         ++ref_attr;
-                    
+                }
+            }
+            
             mS->n_ref += ref;
-            mS->n_val += val;
-            mS->n_tot += ref + 2*val;
+            mS->n_val += imm;
+            mS->n_tot += ref + 2*imm;
 
-            mS->n_min_snapshot = std::min(mS->n_min_snapshot, ref + 2*val);
-            mS->n_max_snapshot = std::max(mS->n_max_snapshot, ref + 2*val);
+            mS->n_min_snapshot = std::min(mS->n_min_snapshot, ref + 2*imm);
+            mS->n_max_snapshot = std::max(mS->n_max_snapshot, ref + 2*imm);
 
-            mS->n_attr_refs += ref_attr + val;
+            mS->n_attr_refs += ref_attr + imm;
 
             mS->size_snapshots += ref * 8;
-            
-            for (int i = 0; i < val; ++i) {
-                cali_attr_type type = db.get_attribute(StringConverter(attr_entry_it->second[i]).to_id()).type();
-
-                mS->size_snapshots +=
-                    (type == CALI_TYPE_USR || type == CALI_TYPE_STRING ? val_entry_it->second[i].size() : 8);
-            }
         }        
+    };    
 
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            string type = get_record_type(rec);
-            
-            if      (type == "node") {
-                auto id_entry_it = rec.find("id");
+    struct Processor {
+        CaliStreamStat stream_stat;
+        ReuseStat      reuse_stat;
 
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty())
-                    process_node(db, db.node(StringConverter(id_entry_it->second.front()).to_id()));
-            } else if (type == "ctx")
-                process_snapshot(db, rec);
-        }
-    };
-    
-
-    /// A node record filter that filters redundant identical node records.
-    /// Redundant node records can occur when merging/unifying two streams.
-    class FilterDuplicateNodes {
-        cali_id_t       m_max_node;
-
-    public:
-
-        FilterDuplicateNodes()
-            : m_max_node { 0 }
-            { } 
+        bool           do_reuse_stat;
         
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec, RecordProcessFn push) {
-            if (get_record_type(rec) == "node") {
-                auto id_entry_it = rec.find("id");
+        void operator()(CaliperMetadataAccessInterface& db, const Node* node) {
+            stream_stat.process_node(db, node);
 
-                if (id_entry_it != rec.end() && !id_entry_it->second.empty()) {
-                    cali_id_t id = StringConverter(id_entry_it->second.front()).to_id();
-
-                    if (id != CALI_INV_ID) {
-                        if (id < m_max_node)
-                            return;
-                        else
-                            m_max_node = id;
-                    }
-                }                
-            }
-
-            push(db, rec);
+            if (do_reuse_stat)
+                reuse_stat.process_node(db, node);
         }
-    };
+        
+        void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+            stream_stat.process_rec(db, rec);
 
-    /// FilterStep helper struct
-    /// Basically the chain link in the processing chain.
-    /// Passes result of @param m_filter_fn to @param m_push_fn
-    struct FilterStep {
-        RecordFilterFn  m_filter_fn; ///< This processing step
-        RecordProcessFn m_push_fn;   ///< Next processing step
-
-        FilterStep(RecordFilterFn filter_fn, RecordProcessFn push_fn) 
-            : m_filter_fn { filter_fn }, m_push_fn { push_fn }
-            { }
-
-        void operator ()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            m_filter_fn(db, rec, m_push_fn);
-        }
-    };
-
-    struct MultiProcessor {
-        vector<RecordProcessFn> m_processors;
-
-        void add(RecordProcessFn fn) {
-            m_processors.push_back(fn);
-        }
-
-        void operator()(CaliperMetadataAccessInterface& db, const RecordMap& rec) {
-            for (auto &f : m_processors)
-                f(db, rec);
+            if (do_reuse_stat)
+                reuse_stat.process_rec(db, rec);
         }
     };
 }
@@ -427,17 +351,9 @@ int main(int argc, const char* argv[])
     // --- Build up processing chain (from back to front)
     //
 
-    ::ReuseStat      reuse_stat;
-    ::CaliStreamStat stream_stat;
+    Processor processor;
     
-    MultiProcessor   stats;
-    
-    if (args.is_set("reuse"))
-        stats.add(reuse_stat);
-
-    stats.add(stream_stat);
-
-    RecordProcessFn  processor = ::FilterStep(::FilterDuplicateNodes(), stats);
+    processor.do_reuse_stat = args.is_set("reuse");
 
     //
     // --- Process inputs
@@ -451,15 +367,14 @@ int main(int argc, const char* argv[])
         Annotation::Guard 
             g_s(Annotation("cali-stat.stream").set(file.c_str()));
             
-        CsvReader reader(file);
-        IdMap     idmap;
+        CaliReader reader(file);
 
-        if (!reader.read([&](const RecordMap& rec){ processor(metadb, metadb.merge(rec, idmap)); }))
+        if (!reader.read(metadb, processor, processor))
             cerr << "Could not read file " << file << endl;
     }
 
-    stream_stat.print_results(fs.is_open() ? fs : cout);
+    processor.stream_stat.print_results(fs.is_open() ? fs : cout);
 
     if (args.is_set("reuse"))
-        reuse_stat.print_results(metadb, fs.is_open() ? fs : cout);
+        processor.reuse_stat.print_results(metadb, fs.is_open() ? fs : cout);
 }

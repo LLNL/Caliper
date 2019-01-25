@@ -178,7 +178,7 @@ AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
 {
     // check and mark existing attributes
     
-    std::vector<Attribute> attributes = c->get_attributes();
+    std::vector<Attribute> attributes = c->get_all_attributes();
     
     for (const Attribute& attr : attributes)
         check_attribute(c, chn, attr);

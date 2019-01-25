@@ -323,15 +323,6 @@ struct RuntimeConfig::RuntimeConfigImpl
         return ret;
     }
 
-    void define_profile(const char* name, const char* keyvallist[][2]) {
-        ::config_profile_t profile;
-
-        for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
-            profile[string((*keyvallist)[0])] = string((*keyvallist)[1]);
-
-        m_config_profiles[string(name)] = std::move(profile);
-    }
-
     void print(std::ostream& os) const {
         for ( auto set : m_database )
             for ( auto entry : set.second->m_dict )
@@ -413,13 +404,6 @@ void
 RuntimeConfig::import(const std::map<std::string,std::string>& values)
 {
     mP->import(values);
-}
-
-void
-RuntimeConfig::define_profile(const char* name,
-                              const char* keyvallist[][2])
-{
-    mP->define_profile(name, keyvallist);
 }
 
 void

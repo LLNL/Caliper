@@ -38,8 +38,9 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include <cstring>
 #include <string>
@@ -73,6 +74,8 @@ class Callpath
     bool      use_addr { false };
 
     unsigned  skip_frames { 0 };
+
+    Node      callpath_root_node;
 
 #ifdef CALIPER_HAVE_LIBDW
     Dwfl* dwfl;
@@ -142,9 +145,13 @@ class Callpath
 
         if (n > 0) {
             if (use_addr)
-                c->make_entrylist(callpath_addr_attr, n, v_addr+(MAX_PATH-n), *snapshot);
+                snapshot->append(
+                    c->make_tree_entry(callpath_addr_attr, n, v_addr+(MAX_PATH-n),
+                                       &callpath_root_node));
             if (use_name)
-                c->make_entrylist(callpath_name_attr, n, v_name+(MAX_PATH-n), *snapshot);        
+                snapshot->append(
+                    c->make_tree_entry(callpath_name_attr, n, v_name+(MAX_PATH-n),
+                                       &callpath_root_node));        
         }
     }
 
@@ -181,27 +188,29 @@ class Callpath
 #endif
     }
 
-    Callpath(Caliper* c, Channel* chn) {
-        ConfigSet config =
-            chn->config().init("callpath", s_configdata);
+    Callpath(Caliper* c, Channel* chn)
+        : callpath_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
+        {
+            ConfigSet config =
+                chn->config().init("callpath", s_configdata);
 
-        use_name    = config.get("use_name").to_bool();
-        use_addr    = config.get("use_address").to_bool();
-        skip_frames = config.get("skip_frames").to_uint();
+            use_name    = config.get("use_name").to_bool();
+            use_addr    = config.get("use_address").to_bool();
+            skip_frames = config.get("skip_frames").to_uint();
 
-        Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
-        Variant v_true(true);
+            Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
+            Variant v_true(true);
 
-        callpath_addr_attr = 
-            c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_NOMERGE,
-                                1, &symbol_class_attr, &v_true);
-        callpath_name_attr = 
-            c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
-                                CALI_ATTR_SKIP_EVENTS | 
-                                CALI_ATTR_NOMERGE);
-    }
+            callpath_addr_attr = 
+                c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_NOMERGE,
+                                    1, &symbol_class_attr, &v_true);
+            callpath_name_attr = 
+                c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
+                                    CALI_ATTR_SKIP_EVENTS | 
+                                    CALI_ATTR_NOMERGE);
+        }
 
 public:
 

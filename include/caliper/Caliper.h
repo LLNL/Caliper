@@ -83,8 +83,6 @@ public:
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
             create_attr_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const std::string&,cali_attr_type,int*,Node**)>
-            pre_create_attr_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*,Channel*)>
@@ -107,7 +105,6 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
 
-        pre_create_attr_cbvec  pre_create_attr_evt;
         create_attr_cbvec      create_attr_evt;
 
         update_cbvec           pre_begin_evt;
@@ -254,15 +251,11 @@ public:
     /// \name Explicit snapshot record manipulation
     /// \{
 
-    void      make_entrylist(size_t n,
-                             const Attribute  attr[],
-                             const Variant    data[],
-                             SnapshotRecord&  list,
-                             cali::Node*      parent = nullptr);
-    void      make_entrylist(const Attribute& attr,
-                             size_t           n,
-                             const Variant    data[],
-                             SnapshotRecord&  list);
+    void      make_record(size_t n,
+                          const Attribute  attr[],
+                          const Variant    data[],
+                          SnapshotRecord&  list,
+                          cali::Node*      parent = nullptr);
 
     // --- Metadata Access Interface
 
@@ -275,7 +268,7 @@ public:
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 
-    std::vector<Attribute> get_attributes() const;
+    std::vector<Attribute> get_all_attributes() const;
 
     Attribute create_attribute(const std::string& name,
                                cali_attr_type     type,
@@ -287,12 +280,15 @@ public:
     /// \brief Return node by id
     Node*     node(cali_id_t id) const;
 
-    /// \brief Get or create tree path with data from given nodes in given order
+    /// \brief Get or create tree branch with data from given nodes in given order
     Node*     make_tree_entry(size_t n, const Node* nodelist[], Node* parent = nullptr);
 
     /// \brief Get or create tree entry with given attribute/value pair
     Node*     make_tree_entry(const Attribute& attr, const Variant& value, Node* parent = nullptr);
 
+    /// \brief Get or create tree branch with given attribute and values
+    Node*     make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
+                              
     /// \}
     /// \name Channel API
     /// \{

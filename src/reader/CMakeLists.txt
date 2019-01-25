@@ -1,5 +1,7 @@
 set(CALIPER_READER_SOURCES
     Aggregator.cpp
+    CaliReader.cpp
+    CaliWriter.cpp
     CalQLParser.cpp
     Expand.cpp
     FormatProcessor.cpp

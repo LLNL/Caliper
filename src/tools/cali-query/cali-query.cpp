@@ -41,18 +41,15 @@
 #include "caliper/cali.h"
 
 #include "caliper/reader/Aggregator.h"
+#include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/FormatProcessor.h"
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
 
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/StringConverter.h"
-
-#include "caliper/common/csv/CsvReader.h"
-#include "caliper/common/csv/CsvWriter.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -400,12 +397,9 @@ int main(int argc, const char* argv[])
                 std::cerr << "cali-query: Reading " << filename << std::endl;
             }
            
-            CsvReader reader(files[i]);
-            IdMap     idmap;
+            CaliReader reader(files[i]);
 
-            if (!reader.read([&](const RecordMap& rec){
-                        metadb.merge(rec, idmap, node_proc, snap_proc);
-                    })) {
+            if (!reader.read(metadb, node_proc, snap_proc)) {
                 std::lock_guard<std::mutex>
                     g(msgmutex);
                 
@@ -442,7 +436,7 @@ int main(int argc, const char* argv[])
 
             spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
 
-            for (const Attribute& attr : metadb.get_attributes())
+            for (const Attribute& attr : metadb.get_all_attributes())
                 if (attr.is_global())
                     spec.attribute_selection.list.push_back(attr.name());
 

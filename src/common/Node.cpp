@@ -34,34 +34,9 @@
 
 #include "caliper/common/Node.h"
 
-#include <cstring>
-
 using namespace cali;
-using namespace std;
-
-namespace
-{
-    const char* NodeRecordElements[] = { "id", "attr", "data", "parent" };
-}
-
-const RecordDescriptor Node::s_record { 0x100, "node", 4, ::NodeRecordElements };
 
 Node::~Node()
 {
     // unlink();
-}
-
-RecordMap Node::record() const
-{
-    RecordMap rec;
-    
-    rec["__rec"].push_back(s_record.name);
-    rec["id"   ].push_back(std::to_string(id()));
-    rec["attr" ].push_back(std::to_string(m_attribute));
-    rec["data" ].push_back(m_data.to_string());
-
-    if (parent() && parent()->id() != CALI_INV_ID)
-        rec["parent"].push_back(std::to_string(parent()->id()));
-
-    return rec;
 }

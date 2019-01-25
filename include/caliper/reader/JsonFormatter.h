@@ -38,7 +38,6 @@
 #include "Formatter.h"
 #include "RecordProcessor.h"
 
-#include "../common/RecordMap.h"
 #include "../common/OutputStream.h"
 
 #include <memory>

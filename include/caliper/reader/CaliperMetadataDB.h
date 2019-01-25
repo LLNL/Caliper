@@ -40,7 +40,6 @@
 
 #include "../common/Attribute.h"
 #include "../common/CaliperMetadataAccessInterface.h"
-#include "../common/RecordMap.h"
 
 #include <map>
 #include <memory>
@@ -72,14 +71,16 @@ public:
     // --- I/O API 
     // 
 
-    RecordMap   merge(const RecordMap& rec, IdMap& map);
-    void        merge(const RecordMap& rec, IdMap& map, NodeProcessFn node_fn, SnapshotProcessFn snap_fn);
-
-    // Merge node and snapshots. Note: this interface may change.
     const Node* merge_node    (cali_id_t       node_id, 
                                cali_id_t       attr_id, 
                                cali_id_t       prnt_id, 
                                const Variant&  v_data, 
+                               IdMap&          idmap);
+    
+    const Node* merge_node    (cali_id_t       node_id, 
+                               cali_id_t       attr_id, 
+                               cali_id_t       prnt_id, 
+                               const std::string& data, 
                                IdMap&          idmap);
 
     EntryList   merge_snapshot(size_t          n_nodes, 
@@ -89,13 +90,26 @@ public:
                                const Variant   values[],
                                const IdMap&    idmap) const;
 
-    /// \brief Merge snapshot record bound to metadata DB \a db into this metadata DB
+    /// \brief Merge snapshot record bound to metadata DB \a db
+    ///   into this metadata DB
     EntryList   merge_snapshot(size_t          n_nodes,
                                const Node* const* nodes, 
                                size_t          n_imm,   
                                const cali_id_t attr_ids[], 
                                const Variant   values[],
-                               const CaliperMetadataAccessInterface& db);
+                               const CaliperMetadataAccessInterface& db);    
+    
+    Entry       merge_entry   (cali_id_t       node_id,
+                               const IdMap&    idmap);
+    Entry       merge_entry   (cali_id_t       attr_id,
+                               const std::string& data,
+                               const IdMap&    idmap);
+    
+    void        merge_global  (cali_id_t       node_id,
+                               const IdMap&    idmap);
+    void        merge_global  (cali_id_t       attr_id,
+                               const std::string& data,
+                               const IdMap&    idmap);
     
     //
     // --- Query API
@@ -106,7 +120,7 @@ public:
     Attribute   get_attribute(cali_id_t id) const;
     Attribute   get_attribute(const std::string& name) const;
 
-    std::vector<Attribute> get_attributes() const;
+    std::vector<Attribute> get_all_attributes() const;
     
     //
     // --- Manipulation

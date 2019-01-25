@@ -26,14 +26,13 @@ int main()
   cali_begin_byname("ci_test_c_ann.meta-attr");
 
   cali_id_t meta_attr =
-      cali_create_attribute("meta-attr", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
-  int val  = 47;
-  size_t meta_sizes = sizeof(int);
-  const void* meta_val[1] = { &val };
+    cali_create_attribute("meta-attr", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+  cali_variant_t meta_val =
+    cali_make_variant_from_int(47);
 
   cali_id_t test_attr =
       cali_create_attribute_with_metadata("test-attr-with-metadata", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
-                                          1, &meta_attr, meta_val, &meta_sizes);
+                                          1, &meta_attr, &meta_val);
 
   cali_set_string(test_attr, "abracadabra");
   

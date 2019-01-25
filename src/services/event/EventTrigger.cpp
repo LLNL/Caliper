@@ -200,7 +200,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
+            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -242,7 +242,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
+            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -290,7 +290,7 @@ class EventTrigger
             SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_entrylist(3, attrs, vals, trigger_info, &event_root_node);
+            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
         } else {
             c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
@@ -302,7 +302,7 @@ class EventTrigger
     //
 
     void check_existing_attributes(Caliper* c, Channel* chn) {
-        auto attributes = c->get_attributes();
+        auto attributes = c->get_all_attributes();
 
         for (const Attribute& attr : attributes)
             check_attribute(c, chn, attr);

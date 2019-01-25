@@ -2,21 +2,16 @@
 
 #include "caliper/cali.h"
 
-const char* report_profile[][2] = {
-    { "CALI_SERVICES_ENABLE", "event, trace, report" },
-
-    { "CALI_REPORT_CONFIG",
-      "SELECT function,annotation,count() WHERE annotation,function GROUP BY annotation,function FORMAT table" },
-
-    { NULL, NULL }
-};
-
 int main()
 {
     cali_config_allow_read_env(0);
     cali_config_preset("CALI_LOG_VERBOSITY", "0");
-    cali_config_define_profile("report profile", report_profile);
-    cali_config_set("CALI_CONFIG_PROFILE", "\"report profile\"");
+
+    cali::create_channel("report profile", 0, {
+            { "CALI_SERVICES_ENABLE", "event, trace, report" },
+            { "CALI_REPORT_CONFIG",
+                    "SELECT function,annotation,count() WHERE annotation,function GROUP BY annotation,function FORMAT table" }
+        });
 
     CALI_CXX_MARK_FUNCTION;
 

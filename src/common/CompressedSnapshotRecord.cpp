@@ -6,7 +6,6 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
-#include "caliper/common/ContextRecord.h"
 #include "caliper/common/Entry.h"
 #include "caliper/common/Node.h"
 

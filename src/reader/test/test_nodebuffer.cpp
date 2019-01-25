@@ -3,7 +3,6 @@
 #include "caliper/reader/CaliperMetadataDB.h"
 
 #include "caliper/common/Node.h"
-#include "caliper/common/csv/CsvSpec.h"
 
 #include <gtest/gtest.h>
 

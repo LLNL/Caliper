@@ -189,7 +189,7 @@ class AllocService
         SnapshotRecord::FixedSnapshotRecord<3> snapshot_data;
         SnapshotRecord trigger_info(snapshot_data);
 
-        c->make_entrylist(3, attr, data, trigger_info, &g_alloc_root_node);
+        c->make_record(3, attr, data, trigger_info, &g_alloc_root_node);
         c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
     }
 
