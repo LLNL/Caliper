@@ -19,7 +19,15 @@
 #cmakedefine CALIPER_HAVE_LIBDW
 #cmakedefine CALIPER_HAVE_VTUNE
 
+#cmakedefine CALIPER_REDUCED_CONSTEXPR_USAGE
+
 #cmakedefine CALIPER_MPIWRAP_USE_GOTCHA
+
+#ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
+#define CONSTEXPR_UNLESS_PGI 
+#else
+#define CONSTEXPR_UNLESS_PGI constexpr
+#endif
 
 // Version information -- numerical and a version string
 #define CALIPER_MAJOR_VERSION @CALIPER_MAJOR_VERSION@

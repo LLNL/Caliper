@@ -272,6 +272,13 @@ if (WITH_SAMPLER)
   endif()
 endif()
 
+# PGI 17.x has issues with some constexpr constructors
+if(CMAKE_CXX_COMPILER_ID MATCHES PGI) 
+  set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
+else()
+  set(CALIPER_REDUCED_CONSTEXPR_USAGE FALSE)
+endif() 
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in
