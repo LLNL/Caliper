@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -50,25 +50,30 @@ namespace
 
 vector<string> split(const string& line, char sep, bool keep_escape = false) {
     vector<string> vec;
+    vec.reserve(8);
+
     string str;
+    str.reserve(line.size());
+
     bool   escaped = false;
-        
+
     for (auto it = line.begin(); it != line.end(); ++it) {
         if (!escaped && *it == '\\') {
             escaped = true;
-                
+
             if (keep_escape)
                 str.push_back('\\');
         } else if (!escaped && *it == sep) {
-            vec.push_back(str);
+            vec.emplace_back(std::move(str));
             str.clear();
+            str.reserve(line.size());
         } else {
             str.push_back(*it);
             escaped = false;
         }
     }
 
-    vec.push_back(str);
+    vec.emplace_back(std::move(str));
 
     return vec;
 }
@@ -96,7 +101,7 @@ void process_node(const string& line, const vector<string>& entries, CaliperMeta
     }
 
     const Node* node = db.merge_node(node_id, attr_id, prnt_id, data, idmap);
-    
+
     if (node)
         node_proc(db, node);
     else
@@ -128,7 +133,7 @@ void process_snapshot(const string& line, const vector<string>& entries, Caliper
 
     if (attr.size() != data.size())
         Log(0).stream() << "CaliReader: attr/data length mismatch: " << line << endl;
-    
+
     EntryList rec;
     rec.reserve(refs.size() + attr.size());
 
@@ -208,7 +213,7 @@ struct CaliReader::CaliReaderImpl
 
     bool read(CaliperMetadataDB& db, NodeProcessFn node_proc, SnapshotProcessFn snap_proc) {
         IdMap idmap;
-        
+
         if (m_filename.empty()) {
             // empty file: read from stdin
 
