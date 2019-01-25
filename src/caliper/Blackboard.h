@@ -2,6 +2,7 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/Variant.h"
 
+#include "caliper/caliper-config.h"
 #include "caliper/common/util/spinlock.hpp"
 
 #include <atomic>
@@ -26,7 +27,9 @@ class Blackboard {
             Empty = 0, ReferenceEntry, ImmediateEntry
         }         state;
         
-        union {
+        union blackboard_entry_data_t {
+            CONSTEXPR_UNLESS_PGI blackboard_entry_data_t() : immediate() {};
+            CONSTEXPR_UNLESS_PGI blackboard_entry_data_t(const cali::Variant& iref) : immediate(iref) {};
             cali::Variant immediate;
             cali::Node*   reference;
         }         data;
@@ -72,7 +75,7 @@ class Blackboard {
     
 public:
 
-    constexpr Blackboard()
+    CONSTEXPR_UNLESS_PGI Blackboard()
         : hashtable { { 0, blackboard_entry_t::Empty, { cali::Variant() } } },
           ref_toc         { 0 },
           ref_toctoc      { 0 },

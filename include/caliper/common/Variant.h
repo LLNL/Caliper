@@ -37,7 +37,7 @@
 
 #include "cali_types.h"
 #include "cali_variant.h"
-
+#include "caliper/caliper-config.h"
 #include <string>
 #include <iostream>
 
@@ -60,8 +60,7 @@ class Variant
     cali_variant_t m_v;
     
 public:
-
-    constexpr Variant()
+    CONSTEXPR_UNLESS_PGI Variant()
         : m_v { CALI_TYPE_INV, { .v_uint = 0 } } { }
     
     Variant(const cali_variant_t& v)

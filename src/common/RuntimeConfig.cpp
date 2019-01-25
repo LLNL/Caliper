@@ -90,11 +90,8 @@ namespace
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string
 
-        string str;
-
-        for ( string s : { prefix, string("_"), name, string("_"), key } )
-            str.append(s);
-
+        string str = prefix + string("_") + name + string("_") + key; // old formulation broke PGI
+        
         transform(str.begin(), str.end(), str.begin(), ::toupper);
 
         return str;
