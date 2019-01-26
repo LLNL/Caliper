@@ -15,7 +15,7 @@ class spinlock {
 public:
 
     constexpr spinlock()
-        : m_lock { ATOMIC_FLAG_INIT }
+        : m_lock { 0 }
         { }
 
     void lock() {
