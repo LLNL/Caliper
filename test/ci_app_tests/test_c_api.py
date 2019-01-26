@@ -65,7 +65,8 @@ class CaliperCAPITest(unittest.TestCase):
         
     def test_c_ann_metadata(self):
         target_cmd = [ './ci_test_c_ann' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', '--list-attributes' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', '--list-attributes',
+                       '--print-attributes', 'cali.attribute.name,cali.attribute.type,meta-attr' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
