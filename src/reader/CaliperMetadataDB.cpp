@@ -187,10 +187,12 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         std::lock_guard<std::mutex>
             g(m_string_db_lock);
                 
-        auto it = std::upper_bound(m_string_db.begin(), m_string_db.end(), str,
-                                   [len](const char* a, const char* b) { return strncmp(a, b, len) < 0; });
+        auto it = std::lower_bound(m_string_db.begin(), m_string_db.end(), str,
+                                   [](const char* a, const char* b) {
+                                       return strcmp(a, b) < 0;
+                                   });
 
-        if (it != m_string_db.end() && str == *it)
+        if (it != m_string_db.end() && strcmp(str, *it) == 0)
             return Variant(CALI_TYPE_STRING, *it, len);
 
         char* ptr = new char[len + 1];
