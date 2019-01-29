@@ -321,7 +321,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             std::lock_guard<std::mutex>
                 g(m_globals_lock);
 
-            m_globals.push_back(Entry(glbl_node));
+            Entry e = Entry(glbl_node);
+
+            if (std::find(m_globals.begin(), m_globals.end(), e) == m_globals.end())
+                m_globals.push_back(e);
         }
     }
 
