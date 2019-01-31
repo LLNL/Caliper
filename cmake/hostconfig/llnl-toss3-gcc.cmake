@@ -15,7 +15,7 @@ set(WITH_CUPTI    Off CACHE BOOL "")
 set(WITH_PAPI     On  CACHE BOOL "")
 set(WITH_LIBPFM   On  CACHE BOOL "")
 set(WITH_DYNINST  On  CACHE BOOL "")
-set(WITH_SAMPLER  On  Cache BOOL "")
+set(WITH_SAMPLER  On  CACHE BOOL "")
 set(WITH_MPI      On  CACHE BOOL "")
 set(WITH_MPIT     Off CACHE BOOL "") # default toss3 mvapich2-2.2 doesn't have any MPI-T stuff
 set(WITH_GOTCHA   On  CACHE BOOL "")
