@@ -54,7 +54,7 @@ public:
     /// For immediate entries, returns the stored attribute id.
     /// For reference entries, returns the referenced node's 
     /// attribute id.
-    cali_id_t attribute() const;
+    cali_id_t attribute() const { return m_node ? m_node->attribute() : m_attr_id; }
 
     /// \brief Count instances of attribute \a attr_id in this entry
     int       count(cali_id_t attr_id = CALI_INV_ID) const;
@@ -63,7 +63,7 @@ public:
     }
 
     /// \brief Return top-level data value of this entry
-    Variant   value() const;
+    Variant   value() const { return m_node ? m_node->data() : m_value; }
 
     /// \brief Extract data value for attribute \a attr_id from this entry
     Variant   value(cali_id_t attr_id) const;

@@ -948,13 +948,13 @@ Caliper::begin(Channel* chn, const Attribute& attr, const Variant& data)
     if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.pre_begin_evt(this, chn, attr, data);
 
-    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
-
     if (prop & CALI_ATTR_ASVALUE)
         bb->set(attr, data);
-    else
+    else {
+        Attribute key = chn->mP->get_key(attr, sG->key_attr);
         bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(key)));
-
+    }
+    
     // invoke callbacks
     if (!(prop & CALI_ATTR_SKIP_EVENTS))
         chn->mP->events.post_begin_evt(this, chn, attr, data);
@@ -1000,12 +1000,11 @@ Caliper::end(Channel* chn, const Attribute& attr)
         if (!e.is_empty()) // prevent executing events for
             chn->mP->events.pre_end_evt(this, chn, attr, e.value());
 
-    Attribute key = chn->mP->get_key(attr, sG->key_attr);
-
     if (prop & CALI_ATTR_ASVALUE)
         bb->unset(attr);
     else {
-        Node* node = bb->get_node(key);
+        Attribute key = chn->mP->get_key(attr, sG->key_attr);
+        Node*    node = bb->get_node(key);
 
         if (node) {
             node = sT->tree.remove_first_in_path(node, attr);
@@ -1062,8 +1061,6 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Attribute  key = chn->mP->get_key(attr, sG->key_attr);
-
     // invoke callbacks
     if (!attr.skip_events())
         chn->mP->events.pre_set_evt(this, chn, attr, data);
@@ -1071,6 +1068,7 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
     if (attr.store_as_value())
         bb->set(attr, data);
     else {
+        Attribute key = chn->mP->get_key(attr, sG->key_attr);
         bb->set(key, sT->tree.replace_first_in_path(bb->get_node(key), attr, data));
     }
 
@@ -1153,8 +1151,6 @@ Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* 
 Entry
 Caliper::get(Channel* chn, const Attribute& attr)
 {
-    Entry e {  Entry::empty };
-
     if (attr == Attribute::invalid)
         return Entry::empty;
 
@@ -1173,11 +1169,9 @@ Caliper::get(Channel* chn, const Attribute& attr)
         g(sT->lock);
 
     if (prop & CALI_ATTR_ASVALUE)
-        return Entry(attr, bb->get(attr));
+        return Entry(attr, bb->get_immediate(attr));
     else
         return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(chn->mP->get_key(attr, sG->key_attr))));
-
-    return e;
 }
 
 // --- Memory region tracking

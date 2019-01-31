@@ -38,17 +38,16 @@
 #ifndef CALI_ATTRIBUTE_H
 #define CALI_ATTRIBUTE_H
 
-#include "cali_types.h"
+#include "caliper/common/cali_types.h"
 
-#include "Variant.h"
+#include "caliper/common/Node.h"
+#include "caliper/common/Variant.h"
 
 #include <iostream>
 #include <string>
 
 namespace cali
 {
-
-class Node;
     
 struct MetaAttributeIDs {
     cali_id_t name_attr_id;
@@ -75,7 +74,7 @@ public:
         : m_node(0)
         { }
 
-    cali_id_t      id() const;
+    cali_id_t      id() const { return m_node ? m_node->id() : CALI_INV_ID; }
 
     std::string    name() const;
     const char*    name_c_str() const;
