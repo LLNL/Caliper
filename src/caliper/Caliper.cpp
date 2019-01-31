@@ -266,6 +266,11 @@ struct Caliper::ThreadData
         }
 
     ~ThreadData() {
+        {
+            Caliper c;
+            c.release_thread();
+        }
+        
         if (is_initial_thread)
             Caliper::release();
             
@@ -1447,6 +1452,15 @@ void
 Caliper::deactivate_channel(Channel* chn)
 {
     chn->mP->active = false;
+}
+
+/// \brief Release current thread
+void
+Caliper::release_thread()
+{
+    for (auto &chn : sG->channels)
+        if (chn)
+            chn->mP->events.release_thread_evt(this, chn.get());
 }
 
 //

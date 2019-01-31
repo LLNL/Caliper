@@ -11,6 +11,7 @@ using namespace cali;
 TEST(Variant_Test, FromString) {
     const char* teststr = "My wonderful test string";
     uint64_t uval = 0xef10;
+    void* ptr = nullptr;
     
     const struct testcase_t {
         cali_attr_type type;
@@ -40,6 +41,8 @@ TEST(Variant_Test, FromString) {
         { CALI_TYPE_TYPE,   "int",   true,  Variant(CALI_TYPE_INT) },
         { CALI_TYPE_TYPE,   "bla",   false, Variant()      },
 
+        { CALI_TYPE_PTR,    "0",     false, Variant()      },
+
         { CALI_TYPE_INV, 0, false, Variant() }
     };
 
@@ -62,6 +65,7 @@ TEST(Variant_Test, PackUnpack) {
     const void*    val_5_inv  = NULL;
     cali_attr_type val_6_type = CALI_TYPE_ADDR;
     bool           val_7_bool = true;
+    void*          val_8_ptr  = this;
 
     cali::Variant  v_1_int_in(val_1_int);
     cali::Variant  v_2_uint_in(CALI_TYPE_UINT, &val_2_uint, sizeof(uint64_t));
@@ -70,11 +74,12 @@ TEST(Variant_Test, PackUnpack) {
     cali::Variant  v_5_inv_in;
     cali::Variant  v_6_type_in(val_6_type);
     cali::Variant  v_7_bool_in(val_7_bool);
+    cali::Variant  v_8_ptr_in(cali_make_variant_from_ptr(val_8_ptr));
 
-    unsigned char buf[160]; // must be >= 7*22 = 154 bytes
+    unsigned char buf[180]; // must be >= 8*22 = 154 bytes
     size_t pos = 0;
 
-    memset(buf, 0, 160);
+    memset(buf, 0, 180);
 
     pos += v_1_int_in.pack(buf+pos);
     pos += v_2_uint_in.pack(buf+pos);
@@ -83,8 +88,9 @@ TEST(Variant_Test, PackUnpack) {
     pos += v_5_inv_in.pack(buf+pos);
     pos += v_6_type_in.pack(buf+pos);
     pos += v_7_bool_in.pack(buf+pos);
+    pos += v_8_ptr_in.pack(buf+pos);
 
-    EXPECT_LE(pos, 154);
+    EXPECT_LE(pos, 176);
 
     bool ok = false;
     pos = 0;
@@ -103,25 +109,40 @@ TEST(Variant_Test, PackUnpack) {
     EXPECT_TRUE(ok && "v_6 unpack (type)");
     Variant v_7_bool_out = Variant::unpack(buf+pos, &pos, &ok);
     EXPECT_TRUE(ok && "v_7 unpack (bool)");
+    Variant v_8_ptr_out  = Variant::unpack(buf+pos, &pos, &ok);
+    EXPECT_TRUE(ok && "v_8 unpack (ptr)");
 
     EXPECT_EQ(v_1_int_out.type(), CALI_TYPE_INT);
     EXPECT_EQ(v_1_int_out.to_int(), val_1_int);
+    EXPECT_EQ(v_1_int_in, v_1_int_out);
 
     EXPECT_EQ(v_2_uint_out.type(), CALI_TYPE_UINT);
     EXPECT_EQ(v_2_uint_out.to_uint(), val_2_uint);
+    EXPECT_EQ(v_2_uint_in, v_2_uint_out);
 
     EXPECT_EQ(v_3_str_out.type(), CALI_TYPE_STRING);
+    EXPECT_EQ(v_3_str_out.size(), strlen(val_3_str)+1);
+    EXPECT_EQ(v_3_str_out.data(), static_cast<const void*>(val_3_str));
     EXPECT_EQ(v_3_str_out.to_string(), std::string(val_3_str));
+    EXPECT_EQ(v_3_str_in, v_3_str_out);
 
     EXPECT_EQ(v_4_dbl_out.type(), CALI_TYPE_DOUBLE);
     EXPECT_EQ(v_4_dbl_out.to_double(), val_4_dbl);
+    EXPECT_EQ(v_4_dbl_in, v_4_dbl_out);
 
     EXPECT_EQ(v_5_inv_out.type(), CALI_TYPE_INV);
     EXPECT_TRUE(v_5_inv_out.empty());
+    EXPECT_EQ(v_5_inv_in, v_5_inv_out);
 
     EXPECT_EQ(v_6_type_out.type(), CALI_TYPE_TYPE);
     EXPECT_EQ(v_6_type_out.to_attr_type(), val_6_type);
+    EXPECT_EQ(v_6_type_in, v_6_type_out);
 
     EXPECT_EQ(v_7_bool_out.type(), CALI_TYPE_BOOL);
     EXPECT_EQ(v_7_bool_out.to_bool(), val_7_bool);
+    EXPECT_EQ(v_7_bool_in, v_7_bool_out);
+
+    EXPECT_EQ(v_8_ptr_out.type(), CALI_TYPE_PTR);
+    EXPECT_EQ(v_8_ptr_out.get_ptr(), val_8_ptr);
+    EXPECT_EQ(v_8_ptr_in, v_8_ptr_out);
 }

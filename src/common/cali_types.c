@@ -20,6 +20,7 @@ static const struct typemap_t {
   { "double", CALI_TYPE_DOUBLE },
   { "bool",   CALI_TYPE_BOOL   },
   { "type",   CALI_TYPE_TYPE   },
+  { "ptr",    CALI_TYPE_PTR    },
   { NULL,     CALI_TYPE_INV    }
 };
 

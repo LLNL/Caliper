@@ -167,6 +167,8 @@ class Caliper : public CaliperMetadataAccessInterface
         : m_is_signal(sig)
         { }
 
+    void release_thread();
+
 public:
 
     //

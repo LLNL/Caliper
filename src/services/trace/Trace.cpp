@@ -87,92 +87,50 @@ class Trace
         }
     };
 
-    class ThreadData {
-        std::vector<TraceBuffer*> chn_buffers;
-
-        //   The TraceBuffer objects are managed through the tbuf_list in the 
-        // Trace object for the channel they belong to. Here, we store
-        // pointers to the currently active trace buffers for all channels
-        // on the local thread.
-        //   Channels and their TraceBuffer objects can be deleted behind
-        // the back of the thread-local data objects. Therefore, we keep track
-        // of active channels in s_active_chns so we don't touch stale
-        // TraceBuffer pointers whose channels have been deleted.
-        
-        static std::vector<bool>  s_active_chns;
-        static std::mutex         s_active_chns_lock;
-
-    public:
-
-        ~ThreadData() {
-            std::lock_guard<std::mutex>
-                g(s_active_chns_lock);
-
-            for (size_t i = 0; i < std::min<size_t>(chn_buffers.size(), s_active_chns.size()); ++i)
-                if (s_active_chns[i] && chn_buffers[i])
-                    chn_buffers[i]->retired.store(true);
-        }
-
-        static void deactivate_chn(Channel* chn) {
-            std::lock_guard<std::mutex>
-                g(s_active_chns_lock);
-            
-            s_active_chns[chn->id()] = false;
-        }
-
-        TraceBuffer* acquire_tbuf(Trace* trace, Channel* chn, bool alloc) {
-            size_t       chnI = chn->id(); 
-            TraceBuffer* tbuf = nullptr;
-            
-            if (chnI < chn_buffers.size())
-                tbuf = chn_buffers[chnI];
-
-            if (!tbuf && alloc) {
-                tbuf = new TraceBuffer(trace->buffersize);
-
-                if (chn_buffers.size() <= chnI)
-                    chn_buffers.resize(std::max<size_t>(16, chnI+1));
-
-                chn_buffers[chnI] = tbuf;
-
-                {
-                    std::lock_guard<std::mutex>
-                        g(s_active_chns_lock);
-
-                    if (s_active_chns.size() <= chnI)
-                        s_active_chns.resize(std::max<size_t>(16, chnI+1));
-
-                    s_active_chns[chnI] = true;
-                }
-
-                std::lock_guard<util::spinlock>
-                    g(trace->tbuf_lock);
-
-                if (trace->tbuf_list)
-                    trace->tbuf_list->prev = tbuf;
-
-                tbuf->next       = trace->tbuf_list;
-                trace->tbuf_list = tbuf;
-            }
-
-            return tbuf;
-        }
-    };
-
     static const ConfigSet::Entry    s_configdata[];
-
-    static thread_local ThreadData   sT;
     
     BufferPolicy   policy            = BufferPolicy::Grow;
     size_t         buffersize        = 2 * 1024 * 1024;
 
-    size_t         dropped_snapshots = 0;    
+    size_t         dropped_snapshots = 0;
+    
+    unsigned       num_acquired      = 0;
+    unsigned       num_released      = 0;
+    unsigned       num_retired       = 0;
+    
+    Attribute      tbuf_attr;
 
-    TraceBuffer*   tbuf_list  = nullptr;
+    TraceBuffer*   tbuf_list = nullptr;
     util::spinlock tbuf_lock;
 
     std::mutex     flush_lock;
 
+    TraceBuffer* acquire_tbuf(Caliper* c, Channel* chn, bool can_alloc) {
+        //   we store a pointer to the thread-local trace buffer for this channel
+        // on the thread's blackboard
+
+        TraceBuffer* tbuf =
+            static_cast<TraceBuffer*>(c->get(chn, tbuf_attr).value().get_ptr());
+
+        if (!tbuf && can_alloc) {
+            tbuf = new TraceBuffer(buffersize);
+
+            c->set(chn, tbuf_attr, Variant(cali_make_variant_from_ptr(tbuf)));
+            
+            std::lock_guard<util::spinlock>
+                g(tbuf_lock);
+
+            if (tbuf_list)
+                tbuf_list->prev = tbuf;
+
+            tbuf->next = tbuf_list;
+            tbuf_list  = tbuf;
+
+            ++num_acquired;
+        }
+        
+        return tbuf;
+    }
     
     TraceBuffer* handle_overflow(Caliper* c, Channel* chn, TraceBuffer* tbuf) {
         switch (policy) {
@@ -212,7 +170,7 @@ class Trace
     }
     
     void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* sbuf) {
-        TraceBuffer* tbuf = sT.acquire_tbuf(this, chn, !c->is_signal());
+        TraceBuffer* tbuf = acquire_tbuf(c, chn, !c->is_signal());
 
         if (!tbuf || tbuf->stopped.load()) {
             ++dropped_snapshots;
@@ -310,6 +268,8 @@ class Trace
 
                     if (tbuf == tbuf_list)
                         tbuf_list = tmp;
+
+                    ++num_released;
                 }
                 
                 delete tbuf;
@@ -336,16 +296,34 @@ class Trace
 
     void create_thread_cb(Caliper* c, Channel* chn) {
         // init trace buffer on new threads
-        sT.acquire_tbuf(this, chn, true);
+        acquire_tbuf(c, chn, true);
+    }
+
+    void release_thread_cb(Caliper* c, Channel* chn) {
+        TraceBuffer* tbuf = acquire_tbuf(c, chn, false);
+
+        if (tbuf) {
+            tbuf->retired.store(true);
+
+            std::lock_guard<util::spinlock>
+                g(tbuf_lock);
+            
+            ++num_retired;
+        }
     }
 
     void finish_cb(Caliper* c, Channel* chn) {
         if (dropped_snapshots > 0)
             Log(1).stream() << chn->name() << ": Trace: dropped "
                             << dropped_snapshots << " snapshots." << std::endl;
+        if (Log::verbosity() >= 2)
+            Log(2).stream() << chn->name() << ": Trace: "
+                            << num_acquired << " thread trace buffers acquired, "
+                            << num_retired  << " retired, "
+                            << num_released << " released." << std::endl;
     }
 
-    Trace(Channel* chn)
+    Trace(Caliper* c, Channel* chn)
         : dropped_snapshots(0)
         {
             tbuf_lock.unlock();
@@ -355,6 +333,14 @@ class Trace
                     
             init_overflow_policy(cfg.get("buffer_policy").to_string());
             buffersize = cfg.get("buffer_size").to_uint() * 1024 * 1024;
+
+            tbuf_attr =
+                c->create_attribute(std::string("trace.tbuf.")+std::to_string(chn->id()),
+                                    CALI_TYPE_PTR,
+                                    CALI_ATTR_SCOPE_THREAD |
+                                    CALI_ATTR_ASVALUE      |
+                                    CALI_ATTR_SKIP_EVENTS  |
+                                    CALI_ATTR_HIDDEN);
         }
     
 public:
@@ -369,11 +355,15 @@ public:
         }
     
     static void trace_register(Caliper* c, Channel* chn) {
-        Trace* instance = new Trace(chn);
+        Trace* instance = new Trace(c, chn);
         
         chn->events().create_thread_evt.connect(
             [instance](Caliper* c, Channel* chn){
                 instance->create_thread_cb(c, chn);
+            });
+        chn->events().release_thread_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->release_thread_cb(c, chn);
             });
         chn->events().process_snapshot.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* trigger, const SnapshotRecord* snapshot){
@@ -389,13 +379,13 @@ public:
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
-                sT.deactivate_chn(chn);
+                // sT.deactivate_chn(chn);
                 instance->finish_cb(c, chn);
                 delete instance;
             });
 
         // Initialize trace buffer on master thread
-        sT.acquire_tbuf(instance, chn, true);
+        instance->acquire_tbuf(c, chn, true);
         
         Log(1).stream() << chn->name() << ": Registered trace service" << std::endl;
     }
@@ -415,11 +405,6 @@ const ConfigSet::Entry Trace::s_configdata[] = {
     
     ConfigSet::Terminator
 };
-
-thread_local Trace::ThreadData Trace::sT;
-
-std::vector<bool> Trace::ThreadData::s_active_chns;
-std::mutex        Trace::ThreadData::s_active_chns_lock;
 
 } // namespace
 

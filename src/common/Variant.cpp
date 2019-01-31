@@ -111,10 +111,14 @@ Variant::to_string() const
         ret = to_bool() ? "true" : "false";
         break;
     case CALI_TYPE_TYPE:
-    {
         ret = cali_type2string(to_attr_type());
-    }
         break;
+    case CALI_TYPE_PTR:
+    {
+        std::ostringstream os;
+        os << std::hex << reinterpret_cast<uint64_t>(data());
+        ret = os.str();
+    }
     }
 
     return ret;
@@ -129,6 +133,7 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
     switch (type) {
     case CALI_TYPE_INV:
     case CALI_TYPE_USR:
+    case CALI_TYPE_PTR:
         // Can't convert USR or INV types at this point
         break;
     case CALI_TYPE_STRING:
