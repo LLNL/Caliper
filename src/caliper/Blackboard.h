@@ -120,7 +120,7 @@ public:
 
         size_t I = find_existing_entry(attr.id());
         
-        return hashtable[I].id == attr.id() ? hashtable[I].data.immediate : nullptr;
+        return hashtable[I].id == attr.id() ? hashtable[I].data.immediate : Variant();
     }
 
     void    set(const cali::Attribute& attr, const cali::Variant& val);
