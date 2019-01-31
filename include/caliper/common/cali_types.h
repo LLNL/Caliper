@@ -63,10 +63,11 @@ typedef enum {
   CALI_TYPE_ADDR   = 5, /**< 64-bit address             */
   CALI_TYPE_DOUBLE = 6, /**< Double-precision floating point type */
   CALI_TYPE_BOOL   = 7, /**< C or C++ boolean           */
-  CALI_TYPE_TYPE   = 8  /**< Instance of cali_attr_type */
+  CALI_TYPE_TYPE   = 8, /**< Instance of cali_attr_type */
+  CALI_TYPE_PTR    = 9  /**< Raw pointer. Internal use only. */
 } cali_attr_type;
 
-#define CALI_MAXTYPE CALI_TYPE_TYPE
+#define CALI_MAXTYPE CALI_TYPE_PTR
 
 /**
  * \brief 

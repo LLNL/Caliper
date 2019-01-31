@@ -92,7 +92,8 @@ struct MetadataTree::MetadataTreeImpl
                     {  8, 8,  { CALI_TYPE_STRING, "cali.attribute.name",  19 }, 3 },
                     {  9, 8,  { CALI_TYPE_STRING, "cali.attribute.type",  19 }, 7 },
                     { 10, 8,  { CALI_TYPE_STRING, "cali.attribute.prop",  19 }, 1 },
-                    { CALI_INV_ID, CALI_INV_ID, { }, CALI_INV_ID },
+                    { 11, 9,  { CALI_TYPE_PTR    }, CALI_INV_ID },
+                    { CALI_INV_ID, CALI_INV_ID, { }, CALI_INV_ID }
                 };
 
                 for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
@@ -109,7 +110,7 @@ struct MetadataTree::MetadataTreeImpl
                 }
 
                 node_blocks[0].chunk = chunk;
-                node_blocks[0].index = 11;
+                node_blocks[0].index = 12;
             }
 
         ~GlobalData() {

@@ -39,12 +39,6 @@
 
 using namespace cali;
 
-cali_id_t
-Entry::attribute() const
-{
-    return m_node ? m_node->attribute() : m_attr_id;
-}
-
 int 
 Entry::count(cali_id_t attr_id) const 
 {
@@ -60,12 +54,6 @@ Entry::count(cali_id_t attr_id) const
     }
 
     return res;
-}
-
-Variant 
-Entry::value() const
-{
-    return m_node ? m_node->data() : m_value;
 }
 
 Variant 

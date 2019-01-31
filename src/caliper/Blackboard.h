@@ -113,6 +113,16 @@ public:
         return hashtable[I].id == attr.id() ? hashtable[I].data.reference : nullptr;
     }
 
+    inline Variant
+    get_immediate(const cali::Attribute& attr) const {
+        std::lock_guard<util::spinlock>
+            g(lock);
+
+        size_t I = find_existing_entry(attr.id());
+        
+        return hashtable[I].id == attr.id() ? hashtable[I].data.immediate : Variant();
+    }
+
     void    set(const cali::Attribute& attr, const cali::Variant& val);
     void    set(const cali::Attribute& attr, cali::Node* node);
 

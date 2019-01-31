@@ -60,8 +60,9 @@ class Variant
     cali_variant_t m_v;
     
 public:
+    
     CONSTEXPR_UNLESS_PGI Variant()
-        : m_v { CALI_TYPE_INV, { .v_uint = 0 } } { }
+        : m_v { CALI_TYPE_INV, { .v_uint = 0 } }  { }
     
     Variant(const cali_variant_t& v)
         : m_v(v) { }
@@ -91,10 +92,12 @@ public:
 
     cali_variant_t c_variant() const { return m_v; }
     
-    cali_attr_type type() const { return cali_variant_get_type(m_v);  }
-    const void*    data() const { return cali_variant_get_data(&m_v); }
-    size_t         size() const { return cali_variant_get_size(m_v);  }
+    cali_attr_type type() const    { return cali_variant_get_type(m_v);  }
+    const void* const data() const { return cali_variant_get_data(&m_v); }
+    size_t         size() const    { return cali_variant_get_size(m_v);  }
 
+    void* const    get_ptr() const { return cali_variant_get_ptr(m_v);   }
+    
     cali_id_t      to_id(bool* okptr = nullptr) const;
     int            to_int(bool* okptr = nullptr) const {
         return cali_variant_to_int(m_v, okptr);

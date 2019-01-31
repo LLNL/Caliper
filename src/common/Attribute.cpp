@@ -57,12 +57,6 @@ Attribute::make_attribute(const Node* node)
     return Attribute::invalid;
 }
 
-cali_id_t
-Attribute::id() const
-{ 
-    return m_node ? m_node->id() : CALI_INV_ID;
-}
-
 std::string
 Attribute::name() const 
 {

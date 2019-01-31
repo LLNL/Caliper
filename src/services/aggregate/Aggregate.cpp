@@ -70,8 +70,8 @@ class Aggregate
     //
 
     //   ThreadDB manages an aggregation DB for one thread.
-    // All ThreadDBs belonging to an channel are linked so they
-    // can be flushed, cleared, and deleted from a single thread.
+    // All ThreadDBs belonging to a channel are linked so they
+    // can be flushed, cleared, and deleted from any thread.
     
     struct ThreadDB {
         //
@@ -98,83 +98,6 @@ class Aggregate
             { }        
     };
 
-    //   ThreadData manages the static thread-local object. It contains
-    // an array with each channel's ThreadDBs for the local thread.
-    
-    class ThreadData {
-        std::vector<ThreadDB*>   chn_thread_dbs;
-
-        //   The ThreadDB objects are managed through the tdb_list in the 
-        // Aggregate object for the channel they belong to. Here, we store
-        // pointers to the currently active DBs for all channels on the
-        // local thread.
-        //   Channels and their ThreadDB objects can be deleted behind
-        // the back of the thread-local data objects. Therefore, we keep track
-        // of active channels in s_active_chns so we don't touch stale
-        // ThreadDB pointers whose channels have been deleted.
-
-        static std::vector<bool> s_active_chns;
-        static std::mutex        s_active_chns_lock;
-        
-    public:
-
-        ~ThreadData() {
-            std::lock_guard<std::mutex>
-                g(s_active_chns_lock);
-
-            for (size_t i = 0; i < std::min<size_t>(chn_thread_dbs.size(), s_active_chns.size()); ++i)
-                if (s_active_chns[i] && chn_thread_dbs[i])
-                    chn_thread_dbs[i]->retired.store(true);
-        }
-
-        static void deactivate_chn(Channel* chn) {
-            std::lock_guard<std::mutex>
-                g(s_active_chns_lock);
-            
-            s_active_chns[chn->id()] = false;
-        }
-
-        ThreadDB* acquire_tdb(Aggregate* agg, Channel* chn, bool alloc) {
-            size_t    chnI = chn->id();
-            ThreadDB* tdb  = nullptr;
-
-            if (chnI < chn_thread_dbs.size())
-                tdb = chn_thread_dbs[chnI];
-
-            if (!tdb && alloc) {
-                tdb = new ThreadDB;
-
-                if (chn_thread_dbs.size() <= chnI)
-                    chn_thread_dbs.resize(std::max<size_t>(16, chnI+1));
-
-                chn_thread_dbs[chnI] = tdb;
-
-                {
-                    std::lock_guard<std::mutex>
-                        g(s_active_chns_lock);
-
-                    if (s_active_chns.size() <= chnI)
-                        s_active_chns.resize(std::max<size_t>(16, chnI+1));
-
-                    s_active_chns[chnI] = true;
-                }
-
-                std::lock_guard<util::spinlock>
-                    g(agg->tdb_lock);
-
-                if (agg->tdb_list)
-                    agg->tdb_list->prev = tdb;
-
-                tdb->next     = agg->tdb_list;
-                agg->tdb_list = tdb;
-            }
-
-            return tdb;
-        }
-    };
-    
-    static thread_local ThreadData sT;
-
     static const ConfigSet::Entry  s_configdata[];
 
     ConfigSet                      config;
@@ -185,7 +108,34 @@ class Aggregate
     AggregateAttributeInfo         aI;
     std::vector<std::string>       key_attribute_names;
 
+    Attribute                      tdb_attr;
+
     size_t                         num_dropped_snapshots;
+
+    ThreadDB* acquire_tdb(Caliper* c, Channel* chn, bool can_alloc) {
+        //   we store a pointer to the thread-local aggregation DB for this channel
+        // on the thread's blackboard
+
+        ThreadDB* tdb =
+            static_cast<ThreadDB*>(c->get(chn, tdb_attr).value().get_ptr());
+
+        if (!tdb && can_alloc) {
+            tdb = new ThreadDB;
+
+            c->set(chn, tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
+            
+            std::lock_guard<util::spinlock>
+                g(tdb_lock);
+
+            if (tdb_list)
+                tdb_list->prev = tdb;
+
+            tdb->next = tdb_list;
+            tdb_list  = tdb;            
+        }
+        
+        return tdb;        
+    }
 
     void init_aggregation_attributes(Caliper* c) {
         std::vector<std::string> aggr_attr_names =
@@ -352,7 +302,7 @@ class Aggregate
     }
 
     void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        ThreadDB* tdb = sT.acquire_tdb(this, chn, !c->is_signal());
+        ThreadDB* tdb = acquire_tdb(c, chn, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
             tdb->db.process_snapshot(aI, c, snapshot);
@@ -374,7 +324,7 @@ class Aggregate
         init_aggregation_attributes(c);
 
         // Initialize master-thread aggregation DB
-        sT.acquire_tdb(this, chn, true);
+        acquire_tdb(c, chn, true);
     }
 
     void create_attribute_cb(Caliper* c, const Attribute& attr) {
@@ -409,7 +359,14 @@ class Aggregate
     }
 
     void create_thread_cb(Caliper* c, Channel* chn) {
-        sT.acquire_tdb(this, chn, true);
+        acquire_tdb(c, chn, true);
+    }
+
+    void release_thread_cb(Caliper* c, Channel* chn) {
+        ThreadDB* tdb = acquire_tdb(c, chn, false);
+
+        if (tdb)
+            tdb->retired.store(true);
     }
 
     void finish_cb(Caliper* c, Channel* chn) {
@@ -435,6 +392,14 @@ class Aggregate
 
             aI.key_attribute_ids.assign(key_attribute_names.size(), CALI_INV_ID);
             aI.key_attributes.assign(key_attribute_names.size(), Attribute::invalid);
+
+            tdb_attr =
+                c->create_attribute(std::string("aggregate.tdb.") + std::to_string(chn->id()),
+                                    CALI_TYPE_PTR,
+                                    CALI_ATTR_SCOPE_THREAD |
+                                    CALI_ATTR_ASVALUE      |
+                                    CALI_ATTR_SKIP_EVENTS  |
+                                    CALI_ATTR_HIDDEN);
         }
         
 public:
@@ -470,6 +435,10 @@ public:
             [instance](Caliper* c, Channel* chn){
                 instance->create_thread_cb(c, chn);
             });
+        chn->events().release_thread_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->release_thread_cb(c, chn);
+            });
         chn->events().process_snapshot.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info, const SnapshotRecord* snapshot){
                 instance->process_snapshot_cb(c, chn, info, snapshot);
@@ -484,7 +453,6 @@ public:
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
-                sT.deactivate_chn(chn);
                 instance->clear_cb(c, chn); // prints logs
                 instance->finish_cb(c, chn);
                 delete instance;
@@ -507,11 +475,6 @@ const ConfigSet::Entry Aggregate::s_configdata[] = {
       "If specified, only group by the given attributes." },
     ConfigSet::Terminator
 };
-
-thread_local Aggregate::ThreadData Aggregate::sT;
-
-std::vector<bool>       Aggregate::ThreadData::s_active_chns;
-std::mutex              Aggregate::ThreadData::s_active_chns_lock;
 
 } // namespace [anonymous]
 
