@@ -237,10 +237,13 @@ void setup_caliper_config(const Args& args)
     if (args.is_set("profile"))
         cali::create_channel("profile", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
+                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_EVENT_TRIGGER",   "annotation" },
+                { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
+                { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
                 { "CALI_REPORT_FILENAME", "stderr" },
                 { "CALI_REPORT_CONFIG",
-                        "SELECT annotation,sum#time.inclusive.duration WHERE event.end#annotation FORMAT table" }
+                     "SELECT annotation as Phase,sum#time.duration as \"Time (usec)\" WHERE annotation FORMAT table" }
             } );
 
     if (args.is_set("progress"))
