@@ -206,11 +206,9 @@ aggregate_over_mpi(CaliperMetadataDB& metadb, Aggregator& aggr, MPI_Comm comm)
     MPI_Comm_rank(comm, &rank);
     
     for (int step = 0, steppow2 = 1; steppow2 < commsize; ++step, steppow2 *= 2) {
-        size_t bytes = 0;
-        
         // receive and merge
         if (rank % (2*steppow2) == 0 && rank + steppow2 < commsize)
-            bytes = ::receive_and_merge(rank + steppow2, metadb, aggr, comm);
+            ::receive_and_merge(rank + steppow2, metadb, aggr, comm);
 
         // send up the tree (happens only in one step for each rank, and never for rank 0)
         if (rank % steppow2 == 0 && rank % (2*steppow2) != 0)

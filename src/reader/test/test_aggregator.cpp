@@ -74,10 +74,8 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Test with default key and count kernel
@@ -177,10 +175,8 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Test with default key, count and sum kernel
@@ -291,10 +287,8 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Test with ctx2 key, count and sum kernel
@@ -401,10 +395,8 @@ TEST(AggregatorTest, InclusiveSumOp) {
         { 101, ctx1.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Test with ctx2 key, count and sum kernel
@@ -512,10 +504,8 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Test with ctx2 key, count and sum kernel
@@ -601,10 +591,8 @@ TEST(AggregatorTest, StatisticsKernels) {
         { 101, ctx.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Make spec with default key and statistics kernel for "val"
@@ -688,10 +676,8 @@ TEST(AggregatorTest, PercentTotalKernel) {
         { 102, ctx.id(), 100,         Variant(24) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     //
     // --- Make spec with default key and statistics kernel for "val"

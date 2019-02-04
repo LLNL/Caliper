@@ -27,7 +27,6 @@ void ci_test_alloc()
     cali_datatracker_allocate_dimensional("test_alloc_A", sizeof(int), (const size_t[]) { 42 }, 1);
 
   cali_id_t  attrs[2] = { ptr_in_attr,  ptr_out_attr };
-  size_t     sizes[2] = { sizeof(int*), sizeof(int*) };
   int        scope    = CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD;
 
   cali_begin_byname("test_alloc.allocated.0");

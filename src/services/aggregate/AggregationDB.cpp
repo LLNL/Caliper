@@ -63,7 +63,7 @@ struct AggregateKernel {
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
           max(std::numeric_limits<double>::min()),
-          sum(0), count(0), avg(0)
+          sum(0), avg(0), count(0)
         { }
 
     void add(double val) {
@@ -209,10 +209,7 @@ struct AggregationDB::AggregationDBImpl
 
         // --- write aggregate entries
 
-        int       num_aggr_attr = info.aggr_attributes.size();
-
-        Variant   attr_vec[SNAP_MAX];
-        Variant   data_vec[SNAP_MAX];
+        int num_aggr_attr = info.aggr_attributes.size();
 
         for (int a = 0; a < std::min(num_aggr_attr, SNAP_MAX/3); ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);

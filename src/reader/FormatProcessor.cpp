@@ -132,7 +132,7 @@ struct FormatProcessor::FormatProcessorImpl
     }
     
     FormatProcessorImpl(OutputStream& stream, const QuerySpec& spec)
-        : m_stream(stream), m_formatter(nullptr)
+        : m_formatter(nullptr), m_stream(stream)
     {
         create_formatter(spec);
     }

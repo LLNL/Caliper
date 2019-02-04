@@ -11,7 +11,6 @@ using namespace cali;
 TEST(Variant_Test, FromString) {
     const char* teststr = "My wonderful test string";
     uint64_t uval = 0xef10;
-    void* ptr = nullptr;
     
     const struct testcase_t {
         cali_attr_type type;
@@ -62,7 +61,7 @@ TEST(Variant_Test, PackUnpack) {
     uint64_t       val_2_uint = 0xFFFFFFFFAA;
     const char*    val_3_str  = "My wonderful test string";
     double         val_4_dbl  = 42.42;
-    const void*    val_5_inv  = NULL;
+    // const void*    val_5_inv  = NULL;
     cali_attr_type val_6_type = CALI_TYPE_ADDR;
     bool           val_7_bool = true;
     void*          val_8_ptr  = this;

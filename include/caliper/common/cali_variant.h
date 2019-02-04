@@ -101,7 +101,7 @@ cali_variant_get_size(cali_variant_t v);
 
 /** \brief Get a pointer to the variant's data
  */
-const void* const
+const void*
 cali_variant_get_data(const cali_variant_t* v);
 
 /** \brief Construct variant from type, pointer, and size
@@ -170,7 +170,7 @@ cali_make_variant_from_ptr(void* ptr)
 /** \brief Return the pointer stored in the variant. Only works for
  *    CALI_TYPE_PTR.
  */
-inline void* const
+inline void*
 cali_variant_get_ptr(cali_variant_t v)
 {
     return v.type_and_size == CALI_TYPE_PTR ? v.value.unmanaged_ptr : NULL;

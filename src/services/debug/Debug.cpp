@@ -95,18 +95,6 @@ string scope2string(int scope)
     return out;
 }
 
-string format_triggerinfo(const Entry* entry)
-{
-    string out("trigger=");
-
-    if (entry)
-        out.append(std::to_string(static_cast<uint64_t>(entry->attribute())));
-    else
-        out.append("UNKNOWN");
-
-    return out;
-}
-
 void create_thread_cb(Caliper* c, Channel* chn)
 {
     lock_guard<mutex> lock(dbg_mutex);

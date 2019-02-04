@@ -61,8 +61,6 @@ void cali_free_wrapper(void *ptr);
 const char *malloc_str = "malloc";
 const char *calloc_str = "calloc";
 const char *realloc_str = "realloc";
-const char *realloc_free_str = "realloc(free)";
-const char *realloc_alloc_str = "realloc(alloc)";
 const char *free_str = "free";
 
 bool bindings_are_active = false;

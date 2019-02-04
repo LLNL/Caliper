@@ -88,7 +88,7 @@ cali_variant_get_size(cali_variant_t v)
     return 0;
 }
 
-const void* const
+const void*
 cali_variant_get_data(const cali_variant_t* v)
 {
     uint64_t          t = _EXTRACT_TYPE(v->type_and_size);
@@ -175,7 +175,7 @@ cali_make_variant_from_type(cali_attr_type value);
 extern inline cali_variant_t
 cali_make_variant_from_ptr(void* ptr);
 
-extern inline void* const
+extern inline void*
 cali_variant_get_ptr(cali_variant_t v);
 
 /** \brief Return the variant's value as integer

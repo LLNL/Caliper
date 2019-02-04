@@ -436,8 +436,6 @@ cali_set_string(cali_id_t attr_id, const char* val)
 void
 cali_safe_end_string(cali_id_t attr_id, const char* val)
 {
-    cali_err  ret  = CALI_SUCCESS;
-
     Caliper   c;
     Attribute attr = c.get_attribute(attr_id);
 

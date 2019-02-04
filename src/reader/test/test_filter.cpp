@@ -74,10 +74,8 @@ TEST(RecordFilterTest, TestExist) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     Variant v_val47(47);
 
@@ -245,10 +243,8 @@ TEST(RecordFilterTest, TestEqual) {
         { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 5) }
     };
 
-    const Node* node = nullptr;
-
     for ( const NodeInfo& nI : test_nodes )
-        node = db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
 
     Variant v_val47(47);
 

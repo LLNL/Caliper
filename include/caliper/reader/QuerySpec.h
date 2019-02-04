@@ -103,7 +103,7 @@ struct QuerySpec
         std::string attribute;
 
         SortSpec(const std::string& s, Order o = Ascending)
-            : attribute(s), order(o)
+            : order(o), attribute(s)
         { }
     };
 

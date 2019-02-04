@@ -141,11 +141,11 @@ void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
 
     SnapshotRecord::Data addr = s->data();
 
-    for (int i = 0; i < sizes.n_nodes; ++i)
+    for (size_t i = 0; i < sizes.n_nodes; ++i)
         m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
-    for (int i = 0; i < sizes.n_immediate;  ++i)
+    for (size_t i = 0; i < sizes.n_immediate;  ++i)
         m_pos += vlenc_u64(addr.immediate_attr[i],     m_data + m_pos);
-    for (int i = 0; i < sizes.n_immediate;  ++i)
+    for (size_t i = 0; i < sizes.n_immediate;  ++i)
         m_pos += addr.immediate_data[i].pack(m_data + m_pos);
 
     ++m_nrec;

@@ -240,8 +240,6 @@ class AllocService
         auto tree_node = g_tree.find(HasStartAddress(reinterpret_cast<uint64_t>(ptr)));
     
         if (tree_node) {
-            size_t size = (*tree_node).total_size;
-
             if (g_track_allocations)
                 track_mem_snapshot(c, chn, mem_free_attr,
                                    Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),

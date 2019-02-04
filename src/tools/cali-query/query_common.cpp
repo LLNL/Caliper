@@ -154,11 +154,12 @@ parse_functioncall(std::istream& is, const QuerySpec::FunctionSignature* defs)
 
     // read argument list    
     std::vector<std::string> args = parse_arglist(is);
+    int argsize = static_cast<int>(args.size());
 
-    if (args.size() < defs[retid].min_args || args.size() > defs[retid].max_args) {
+    if (argsize < defs[retid].min_args || argsize > defs[retid].max_args) {
         Log(0).stream() << "Error: Expected " << defs[retid].min_args
                         << " arguments for function \"" << defs[retid].name
-                        << "\" but got " << args.size() << std::endl;
+                        << "\" but got " << argsize << std::endl;
 
         return std::make_pair(-1, std::vector<std::string>());
     }
@@ -281,7 +282,7 @@ QueryArgsParser::parse_args(const Args& args)
                 }
 
             // NOTE: This check isn't complete yet.
-            if (m_spec.format.args.size() < fmtsig->min_args) {                
+            if (m_spec.format.args.size() < static_cast<std::size_t>(fmtsig->min_args)) {
                 m_error     = true;
                 m_error_msg = std::string("Insufficient arguments for formatter ") + fmtsig->name;
 
