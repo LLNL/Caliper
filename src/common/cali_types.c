@@ -62,7 +62,7 @@ cali_prop2string(int prop, char* buf, size_t len)
   int ret = 0;
   
   for (const struct propmap_t* p = propmap; p->str; ++p) {
-    if (!((prop & p->mask) == p->prop))
+      if (!((prop & p->mask) == (int) p->prop))
       continue;
     
     size_t slen = strlen(p->str);

@@ -181,7 +181,7 @@ const ConfigSet::Entry Recorder::s_configdata[] = {
       " or a file name pattern. By default, a filename is auto-generated.\n"
     },
     { "directory", CALI_TYPE_STRING, "",
-      "A directory to write .cali files to."
+      "A directory to write .cali files to.",
       "A directory to write .cali files to. The directory must exist,\n"
       "Caliper does not create it\n"
     },

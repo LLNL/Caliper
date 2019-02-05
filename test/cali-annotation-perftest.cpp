@@ -145,9 +145,10 @@ int main(int argc, char* argv[])
           "Iterations",         "ITERATIONS"
         },
         { "csv",         "print-csv",   'c', false,
-          "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime."
+          "CSV output. Fields: Tree depth, tree width, number of updates, threads, total runtime.",
+          nullptr
         },
-        { "channels", "channels", 'x', true,
+        { "channels",     "channels",   'x', true,
           "Number of replicated channel instances",
           "EXPERIMENTS"
         },

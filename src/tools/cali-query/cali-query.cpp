@@ -149,6 +149,7 @@ namespace
         { "help",   "help",   'h', false, "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
           "Extract and list attributes in Caliper stream instead of snapshot records",
+          nullptr
         },
         { "list-globals", "list-globals", 0, false,
           "Extract and list global per-run attributes",
