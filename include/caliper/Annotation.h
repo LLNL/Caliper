@@ -41,7 +41,7 @@
 #define CALI_ANNOTATION_H
 
 #include "common/cali_types.h"
-
+#include <map>
 namespace cali
 {
     
@@ -134,6 +134,16 @@ public:
     /// \param opt  %Attribute flags. Bitwise OR combination 
     ///   of \ref cali_attr_properties values.
     Annotation(const char* name, int opt = 0);
+    
+    using MetadataListType = std::map<const char*, Variant>;
+    /// \brief Creates an annotation object to manipulate 
+    ///   the context attribute with the given \a name. 
+    /// 
+    /// \param name The attribute name
+    /// \param opt  %Attribute flags. Bitwise OR combination 
+    ///   of \ref cali_attr_properties values.
+    /// \param metadata: a map of 
+    Annotation(const char* name, const MetadataListType& metadata, int opt=0);
 
     Annotation(const Annotation&);
 

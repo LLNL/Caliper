@@ -35,6 +35,7 @@
 #include "caliper/Annotation.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/cali.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Variant.h"
@@ -136,27 +137,52 @@ Loop::end()
 // --- Annotation implementation object
 
 struct Annotation::Impl {
-    std::atomic<Attribute*> m_attr;
-    std::string             m_name;
-    int                     m_opt;
-    std::atomic<int>        m_refcount;
+    std::atomic<Attribute*>  m_attr;
+    std::string              m_name;
+    std::vector<cali_id_t>   m_metadata_keys;
+    std::vector<cali_variant_t>     m_metadata_values;
+    int                      m_opt;
+    std::atomic<int>         m_refcount;
+    Impl(const std::string& name, MetadataListType metadata, int opt)
+        : m_attr(nullptr), 
+          m_name(name), 
+          m_opt(opt),
+          m_refcount(1)
+        {
+            Caliper c;
+            if(!c.attribute_exists(m_name)){
+                for(auto kv : metadata){
+                    
+                    m_metadata_keys.push_back(cali_create_attribute(kv.first,kv.second.type(),0));
+                    m_metadata_values.push_back(kv.second.c_variant());
+                }
+            }
+        }
 
     Impl(const std::string& name, int opt)
         : m_attr(nullptr), 
           m_name(name), 
           m_opt(opt),
           m_refcount(1)
-        { }
+        {}
 
     ~Impl() {
         delete m_attr.load();
     }
-    
+    void establish_metadata(cali_attr_type type){
+        if(m_metadata_keys.empty()){
+            return;
+        }
+        cali_create_attribute_with_metadata(m_name.c_str(),type,m_opt,m_metadata_keys.size(),m_metadata_keys.data(),m_metadata_values.data());
+        m_metadata_keys.clear();
+    } 
     void begin(const Variant& data) {
+        cali_attr_type type = data.type();
+        establish_metadata(type);
         Caliper   c;
-        Attribute attr = get_attribute(c, data.type());
+        Attribute attr = get_attribute(c, type);
 
-        if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
+        if ((attr.type() == type) && attr.type() != CALI_TYPE_INV)
             c.begin(attr, data);
     }
 
@@ -228,6 +254,9 @@ Annotation::Guard::~Guard()
 }
 
 // --- Constructors / destructor
+Annotation::Annotation(const char* name, const MetadataListType& metadata, int opt)
+    : pI(new Impl(name, metadata, opt))
+{ }
 
 Annotation::Annotation(const char* name, int opt)
     : pI(new Impl(name, opt))
