@@ -135,7 +135,7 @@ public:
     ///   of \ref cali_attr_properties values.
     Annotation(const char* name, int opt = 0);
     
-    using MetadataListType = std::map<const char*, Variant>;
+    typedef std::map<const char*, Variant> MetadataListType ;
     /// \brief Creates an annotation object to manipulate 
     ///   the context attribute with the given \a name. 
     /// 

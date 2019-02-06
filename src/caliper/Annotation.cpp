@@ -139,8 +139,8 @@ Loop::end()
 struct Annotation::Impl {
     std::atomic<Attribute*>  m_attr;
     std::string              m_name;
-    std::vector<cali_id_t>   m_metadata_keys;
-    std::vector<cali_variant_t>     m_metadata_values;
+    std::vector<Attribute>   m_metadata_keys;
+    std::vector<Variant>     m_metadata_values;
     int                      m_opt;
     std::atomic<int>         m_refcount;
     Impl(const std::string& name, MetadataListType metadata, int opt)
@@ -152,9 +152,8 @@ struct Annotation::Impl {
             Caliper c;
             if(!c.attribute_exists(m_name)){
                 for(auto kv : metadata){
-                    
-                    m_metadata_keys.push_back(cali_create_attribute(kv.first,kv.second.type(),0));
-                    m_metadata_values.push_back(kv.second.c_variant());
+                    m_metadata_keys.push_back(c.create_attribute(kv.first,kv.second.type(),0));
+                    m_metadata_values.push_back(kv.second);
                 }
             }
         }
@@ -169,30 +168,19 @@ struct Annotation::Impl {
     ~Impl() {
         delete m_attr.load();
     }
-    void establish_metadata(cali_attr_type type){
-        if(m_metadata_keys.empty()){
-            return;
-        }
-        cali_create_attribute_with_metadata(m_name.c_str(),type,m_opt,m_metadata_keys.size(),m_metadata_keys.data(),m_metadata_values.data());
-        m_metadata_keys.clear();
-    } 
     void begin(const Variant& data) {
-        cali_attr_type type = data.type();
-        establish_metadata(type);
         Caliper   c;
-        Attribute attr = get_attribute(c, type);
+        Attribute attr = get_attribute(c, data.type(), m_metadata_keys, m_metadata_values);
 
-        if ((attr.type() == type) && attr.type() != CALI_TYPE_INV)
+        if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
             c.begin(attr, data);
     }
 
     void set(const Variant& data) {
-        cali_attr_type type = data.type();
-        establish_metadata(type);
         Caliper   c;
-        Attribute attr = get_attribute(c, type);
+        Attribute attr = get_attribute(c, data.type(), m_metadata_keys, m_metadata_values);
 
-        if ((attr.type() == type) && attr.type() != CALI_TYPE_INV)
+        if ((attr.type() == data.type()) && attr.type() != CALI_TYPE_INV)
             c.set(attr, data);
     }
 
@@ -202,13 +190,13 @@ struct Annotation::Impl {
         c.end(get_attribute(c));
     }
 
-    Attribute get_attribute(Caliper& c, cali_attr_type type = CALI_TYPE_INV) {
+    Attribute get_attribute(Caliper& c, cali_attr_type type = CALI_TYPE_INV, const std::vector<cali::Attribute>& attrs = {}, const std::vector<cali::Variant>& values = {}) {
         Attribute* attr_p = m_attr.load();
 
         if (!attr_p) {
             Attribute* new_attr = type == CALI_TYPE_INV ?
                 new Attribute(c.get_attribute(m_name)) :
-                new Attribute(c.create_attribute(m_name, type, m_opt));
+                new Attribute(c.create_attribute(m_name, type, m_opt,attrs.size(),attrs.data(),values.data()));
 
             // Don't store invalid attribute in shared pointer
             if (*new_attr == Attribute::invalid)
