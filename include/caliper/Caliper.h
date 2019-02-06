@@ -267,6 +267,8 @@ public:
 
     size_t    num_attributes() const;
 
+    bool      attribute_exists(const std::string& name) const;
+
     Attribute get_attribute(cali_id_t id) const;
     Attribute get_attribute(const std::string& name) const;
 

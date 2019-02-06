@@ -563,6 +563,28 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
 /// While it should be signal safe, we do not recommend using this function in a signal handler.
 ///
 /// \param name The attribute name
+/// \return true if the attribute exists, false otherwise
+
+bool
+Caliper::attribute_exists(const std::string& name) const
+{
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    sG->attribute_lock.lock();
+
+    auto it = sG->attribute_nodes.find(name);
+
+    sG->attribute_lock.unlock();
+
+    return (it!= sG->attribute_nodes.end());
+}
+
+/// \brief Find an attribute by name
+///
+/// While it should be signal safe, we do not recommend using this function in a signal handler.
+///
+/// \param name The attribute name
 /// \return Attribute object, or Attribute::invalid if not found.
 
 Attribute
