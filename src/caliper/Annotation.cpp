@@ -190,9 +190,9 @@ struct Annotation::Impl {
         cali_attr_type type = data.type();
         establish_metadata(type);
         Caliper   c;
-        Attribute attr = get_attribute(c, type());
+        Attribute attr = get_attribute(c, type);
 
-        if ((attr.type() == type()) && attr.type() != CALI_TYPE_INV)
+        if ((attr.type() == type) && attr.type() != CALI_TYPE_INV)
             c.set(attr, data);
     }
 
