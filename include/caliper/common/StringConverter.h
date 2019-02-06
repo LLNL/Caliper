@@ -67,7 +67,11 @@ public:
 
     double        to_double(bool* okptr = nullptr) const;
 
-    std::string   to_string(bool* okptr = nullptr) const { return m_str; }
+    std::string   to_string(bool* okptr = nullptr) const {
+        if (okptr)
+            *okptr = true;
+        return m_str;
+    }
 
     std::vector<std::string>
     to_stringlist(const char* separators = ",", bool* okptr = nullptr) const;

@@ -328,7 +328,6 @@ class LibpfmService
     int setup_process_signals() {
         struct sigaction sa;
         sigset_t set, oldsig, newsig;
-        int ret, i;
 
         memset(&sa, 0, sizeof(sa));
         sigemptyset(&set);
@@ -351,7 +350,8 @@ class LibpfmService
         if (pthread_sigmask(SIG_BLOCK, &set, NULL))
             Log(0).stream() << "libpfm: cannot mask SIGIO in main thread" << std::endl;
 
-        ret = sigprocmask(SIG_SETMASK, NULL, &oldsig);
+        int ret = sigprocmask(SIG_SETMASK, NULL, &oldsig);
+        
         if (ret)
             Log(0).stream() << "libpfm: sigprocmask failed" << std::endl;
 
@@ -366,9 +366,9 @@ class LibpfmService
     }
 
     int begin_thread_sampling() {
-        int i, ret;
+        int ret = 0;
         
-        for (i=0; i<sT.num_events; i++) {
+        for (int i=0; i<sT.num_events; i++) {
             ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
             if (ret == -1)
@@ -384,10 +384,10 @@ class LibpfmService
     }
 
     int end_thread_sampling() {
-        int i, ret;
+        int ret;
         size_t pgsz = sysconf(_SC_PAGESIZE);
 
-        for (i=0; i<sT.num_events; i++) {
+        for (int i=0; i<sT.num_events; i++) {
             ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_DISABLE, 0);
 
             if (ret)
@@ -488,8 +488,8 @@ class LibpfmService
             config1_strvec         = config.get("config1").to_stringlist();
 
             if (events_listed != sampling_period_strvec.size()
-                | events_listed != precise_ip_strvec.size()
-                | events_listed != config1_strvec.size()) {
+                || events_listed != precise_ip_strvec.size()
+                || events_listed != config1_strvec.size()) {
                 
                 Log(0).stream() << "libpfm: invalid arguments specified!" << std::endl;
                 Log(0).stream() << "libpfm: if sampling enabled, event list, sampling period, precise IP, "
@@ -534,15 +534,12 @@ class LibpfmService
 
     void setup_thread_pointers() {
         uint64_t value;
-        cali_id_t attribute_id;
-        size_t attribute_type;
+        size_t   attribute_type;
+        
         for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
-
-            attribute_id = libpfm_attributes[attribute_index];
             attribute_type = libpfm_attribute_types[attribute_index];
 
             switch (attribute_type) {
-
                 case (PERF_SAMPLE_IP):
                     sT.sample_attribute_pointers[attribute_index] = &sT.sample.ip;
                     break;

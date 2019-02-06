@@ -21,17 +21,17 @@ class Blackboard {
     constexpr static size_t jump = 7;
     
     struct blackboard_entry_t {
-        cali_id_t id;
+        cali_id_t id    { CALI_INV_ID };
         
         enum {
             Empty = 0, ReferenceEntry, ImmediateEntry
-        }         state;
+        }         state { Empty };
         
         union blackboard_entry_data_t {
             CONSTEXPR_UNLESS_PGI blackboard_entry_data_t() : immediate() {};
             CONSTEXPR_UNLESS_PGI blackboard_entry_data_t(const cali::Variant& iref) : immediate(iref) {};
             cali::Variant immediate;
-            cali::Node*   reference;
+            cali::Node*   reference { nullptr };
         }         data;
     };
 
@@ -76,7 +76,7 @@ class Blackboard {
 public:
 
     CONSTEXPR_UNLESS_PGI Blackboard()
-        : hashtable { { 0, blackboard_entry_t::Empty, { cali::Variant() } } },
+        : hashtable       {   },
           ref_toc         { 0 },
           ref_toctoc      { 0 },
           imm_toc         { 0 },

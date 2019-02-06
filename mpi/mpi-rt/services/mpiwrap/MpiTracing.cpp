@@ -133,7 +133,7 @@ struct MpiTracing::MpiTracingImpl
             { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT,
               &comm_list_attr  },
             
-            { nullptr, CALI_TYPE_INV, 0 }
+            { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
 
         for (const attr_info_t* p = attr_info_tbl; p->name; ++p)

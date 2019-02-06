@@ -789,8 +789,8 @@ perf_read_sample(perf_event_desc_t *fds,
     size_t sz;
     uint64_t type, fmt;
     uint64_t val64;
-    const char *str;
     int ret, e;
+    const char* str;
 
     if (!fds || !s || !ehdr  || num_fds < 0 || idx < 0 ||  idx >= num_fds)
         return -1;
@@ -818,7 +818,6 @@ perf_read_sample(perf_event_desc_t *fds,
      * That order is different from the enum perf_event_sample_format
      */
     if (type & PERF_SAMPLE_IP) {
-        const char *xtra = " ";
         ret = perf_read_buffer_64(hw, &val64);
         if (ret) {
             fprintf(ferr, "libpfm: cannot read IP");

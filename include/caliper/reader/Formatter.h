@@ -56,7 +56,7 @@ public:
     virtual void process_record(CaliperMetadataAccessInterface&, const EntryList&) = 0;
 
     /// Flush processed contents to stream. Need not be implemented for stream formatters.
-    virtual void flush(CaliperMetadataAccessInterface&, std::ostream& os)
+    virtual void flush(CaliperMetadataAccessInterface&, std::ostream&)
     { }
 };
 

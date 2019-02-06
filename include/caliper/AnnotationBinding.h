@@ -135,7 +135,7 @@ protected:
     /// \param chn  The channel instance
     /// \param attr The attribute being marked
     virtual void on_mark_attribute(Caliper*           c,
-                                   Channel*        chn,
+                                   Channel*           chn,
                                    const Attribute&   attr)
     { }
 

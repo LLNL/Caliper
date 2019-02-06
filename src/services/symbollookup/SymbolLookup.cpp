@@ -154,12 +154,10 @@ class SymbolLookup
                                std::vector<Variant>&   data) {
         std::vector<Statement*> statements;
         SymtabAPI::Function* function = 0;
-        SymtabAPI::Module*   module   = 0;
         std::string          modname  = "UNKNOWN";
 
         bool     ret_line = false;
         bool     ret_func = false;
-        bool     ret_mod  = false;
 
         uint64_t address  = e.value().to_uint();
 
