@@ -163,8 +163,8 @@ class InstLookup
                 {
                     // Get and decode instruction
                     InstructionDecoder dec(inst_raw, m_inst_length, m_arch);
-                    Instruction::Ptr inst = dec.decode();
-                    Operation op = inst->getOperation();
+                    Instruction inst = dec.decode();
+                    Operation op = inst.getOperation();
                     entryID eid = op.getID();
                     
                     // Extract semantics
@@ -174,10 +174,10 @@ class InstLookup
 
                     inst_name = NS_x86::entryNames_IAPI[eid];
 
-                    if(inst->readsMemory()) {
+                    if(inst.readsMemory()) {
                         read_size = getReadSize(inst);
                     }
-                    if(inst->writesMemory()) {
+                    if(inst.writesMemory()) {
                         read_size = getWriteSize(inst);
                     }
 
