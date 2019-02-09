@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -59,21 +59,18 @@
 using namespace cali;
 using namespace std;
 
-namespace 
+namespace
 {
 
 class Recorder
-{    
+{
     static const ConfigSet::Entry s_configdata[];
 
-    ConfigSet m_config;
-    CaliWriter m_writer;
-    
     // --- helpers
 
     string random_string(string::size_type len) {
         static std::mt19937 rgen(chrono::system_clock::now().time_since_epoch().count());
-        
+
         static const char characters[] = "0123456789"
             "abcdefghiyklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXZY";
@@ -97,14 +94,11 @@ class Recorder
         return string(timestring) + "_" + std::to_string(pid) + "_" + random_string(12) + ".cali";
     }
 
-    void pre_flush_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
-        // Generate m_filename from pattern in the config file and the attributes
-        // in flush_info.
-        // The actual output stream will be created on-demand 
-        // with the first flush_snapshot call.
+    void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+        ConfigSet cfg = chn->config().init("recorder", s_configdata);
 
-        std::string filename  = m_config.get("filename").to_string();
-        std::string directory = m_config.get("directory").to_string();
+        std::string filename  = cfg.get("filename").to_string();
+        std::string directory = cfg.get("directory").to_string();
 
         if (filename.empty())
             filename = create_filename();
@@ -113,60 +107,43 @@ class Recorder
 
         OutputStream stream;
         stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
-        
-        m_writer = CaliWriter(stream);
-    }
 
-    void write_snapshot(Caliper* c, const SnapshotRecord* snapshot) {        
-        SnapshotRecord::Data   data = snapshot->data();
-        SnapshotRecord::Sizes sizes = snapshot->size();
+        CaliWriter writer(stream);
 
-        cali_id_t node_ids[128];
-        size_t    nn = std::min<size_t>(sizes.n_nodes, 128);
-        
-        for (size_t i = 0; i < nn; ++i)
-            node_ids[i] = data.node_entries[i]->id();
+        c->flush(chn, flush_info, [c,&writer](const SnapshotRecord* rec){
+                SnapshotRecord::Data   data = rec->data();
+                SnapshotRecord::Sizes sizes = rec->size();
 
-        m_writer.write_snapshot(*c, nn, node_ids,
-                                sizes.n_immediate, data.immediate_attr, data.immediate_data);
-    }
+                cali_id_t node_ids[128];
+                size_t    nn = std::min<size_t>(sizes.n_nodes, 128);
 
-    void post_flush_cb(Caliper* c, Channel* chn) {
-        m_writer.write_globals(*c, c->get_globals(chn));
-    }
+                for (size_t i = 0; i < nn; ++i)
+                    node_ids[i] = data.node_entries[i]->id();
 
-    void finish_cb(Caliper* c, Channel* chn) {
+                writer.write_snapshot(*c, nn, node_ids,
+                                      sizes.n_immediate, data.immediate_attr, data.immediate_data);
+            });
+
+        writer.write_globals(*c, c->get_globals(chn));
+
         Log(1).stream() << chn->name()
-            << ": Recorder: Wrote " << m_writer.num_written() << " records." << std::endl;
-    }    
-
-    Recorder(Caliper* c, Channel* chn)
-        : m_config(chn->config().init("recorder", s_configdata))
-    { }
+            << ": Recorder: Wrote " << writer.num_written() << " records." << std::endl;
+    }
 
 public:
 
-    ~Recorder() 
+    ~Recorder()
         { }
 
     static void recorder_register(Caliper* c, Channel* chn) {
-        Recorder* instance = new Recorder(c, chn);
+        Recorder* instance = new Recorder;
 
-        chn->events().pre_flush_evt.connect(
+        chn->events().write_output_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* flush_info){
-                instance->pre_flush_cb(c, chn, flush_info);
-            });
-        chn->events().write_snapshot.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* flush_info, const SnapshotRecord* snapshot){
-                instance->write_snapshot(c, snapshot);
-            });
-        chn->events().post_flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* flush_info){
-                instance->post_flush_cb(c, chn);
+                instance->write_output_cb(c, chn, flush_info);
             });
         chn->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* chn){
-                instance->finish_cb(c, chn);
+            [instance](Caliper*, Channel*){
                 delete instance;
             });
     }

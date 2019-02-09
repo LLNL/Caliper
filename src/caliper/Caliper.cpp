@@ -902,11 +902,7 @@ Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
 
     Log(1).stream() << chn->name() << ": Flushing Caliper data" << std::endl;
 
-    flush(chn, &flush_info,
-          [this,chn,&flush_info](const SnapshotRecord* snapshot){
-              chn->mP->events.write_snapshot(this, chn, &flush_info, snapshot);
-              return true;
-          });
+    chn->mP->events.write_output_evt(this, chn, &flush_info);
 }
 
 

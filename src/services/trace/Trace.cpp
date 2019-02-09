@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -54,7 +54,7 @@
 using namespace trace;
 using namespace cali;
 
-namespace 
+namespace
 {
 
 class Trace
@@ -62,7 +62,7 @@ class Trace
     enum   BufferPolicy {
         Flush, Grow, Stop
     };
-    
+
     struct TraceBuffer {
         std::atomic<bool>  stopped;
         std::atomic<bool>  retired;
@@ -74,7 +74,7 @@ class Trace
         TraceBuffer(size_t s)
             : stopped(false), retired(false), chunks(new TraceBufferChunk(s)), next(0), prev(0)
             { }
-        
+
         ~TraceBuffer() {
             delete chunks;
         }
@@ -88,16 +88,16 @@ class Trace
     };
 
     static const ConfigSet::Entry    s_configdata[];
-    
+
     BufferPolicy   policy            = BufferPolicy::Grow;
     size_t         buffersize        = 2 * 1024 * 1024;
 
     size_t         dropped_snapshots = 0;
-    
+
     unsigned       num_acquired      = 0;
     unsigned       num_released      = 0;
     unsigned       num_retired       = 0;
-    
+
     Attribute      tbuf_attr;
 
     TraceBuffer*   tbuf_list = nullptr;
@@ -116,7 +116,7 @@ class Trace
             tbuf = new TraceBuffer(buffersize);
 
             c->set(chn, tbuf_attr, Variant(cali_make_variant_from_ptr(tbuf)));
-            
+
             std::lock_guard<util::spinlock>
                 g(tbuf_lock);
 
@@ -128,17 +128,17 @@ class Trace
 
             ++num_acquired;
         }
-        
+
         return tbuf;
     }
-    
+
     TraceBuffer* handle_overflow(Caliper* c, Channel* chn, TraceBuffer* tbuf) {
         switch (policy) {
         case BufferPolicy::Stop:
             tbuf->stopped.store(true);
             Log(1).stream() << chn->name() << ": Trace buffer full: recording stopped." << std::endl;
             return 0;
-                
+
         case BufferPolicy::Grow:
         {
             TraceBufferChunk* newchunk = new TraceBufferChunk(buffersize);
@@ -148,27 +148,27 @@ class Trace
                 tbuf->stopped.store(true);
                 return 0;
             }
-            
+
             newchunk->append(tbuf->chunks);
             tbuf->chunks = newchunk;
 
             return tbuf;
         }
-            
+
         case BufferPolicy::Flush:
         {
             Log(1).stream() << chn->name() << ": Trace buffer full: flushing." << std::endl;
 
             c->flush_and_write(chn, nullptr);
-            
+
             return tbuf;
         }
-        
+
         } // switch (policy)
 
         return 0;
     }
-    
+
     void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* sbuf) {
         TraceBuffer* tbuf = acquire_tbuf(c, chn, !c->is_signal());
 
@@ -176,94 +176,80 @@ class Trace
             ++dropped_snapshots;
             return;
         }
-        
+
         if (!tbuf->chunks->fits(sbuf))
             tbuf = handle_overflow(c, chn, tbuf);
         if (!tbuf)
             return;
 
         tbuf->chunks->save_snapshot(sbuf);
-    }        
+    }
 
     void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
         std::lock_guard<std::mutex>
             g(flush_lock);
 
         TraceBuffer* tbuf = nullptr;
-        
+
         {
             std::lock_guard<util::spinlock>
                 g(tbuf_lock);
-            
+
             tbuf = tbuf_list;
         }
 
         size_t num_written = 0;
 
-        TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
-        
         for (; tbuf; tbuf = tbuf->next) {
             // Stop tracing while we flush: writers won't block
             // but just drop the snapshot
-            
+
             tbuf->stopped.store(true);
 
-            // Accumulate usage statistics before they're reset in flush
-            if (Log::verbosity() > 1) {
-                TraceBufferChunk::UsageInfo info = tbuf->chunks->info();
-
-                aggregate_info.nchunks  += info.nchunks;
-                aggregate_info.reserved += info.reserved;
-                aggregate_info.used     += info.used;
-            }
-            
             num_written += tbuf->chunks->flush(c, proc_fn);
             tbuf->stopped.store(false);
         }
 
-        if (Log::verbosity() > 1) {
-            unitfmt_result bytes_reserved 
-                = unitfmt(aggregate_info.reserved, unitfmt_bytes);
-            unitfmt_result bytes_used     
-                = unitfmt(aggregate_info.used,     unitfmt_bytes);
-
-            Log(2).stream() << chn->name()             << ": Trace: "
-                            << bytes_reserved.val      << " " 
-                            << bytes_reserved.symbol   << " reserved, "
-                            << bytes_used.val          << " " 
-                            << bytes_used.symbol       << " used, "
-                            << aggregate_info.nchunks  << " chunks." << std::endl;
-        }
-        
         Log(1).stream() << chn->name() << ": Trace: Flushed " << num_written << " snapshots." << std::endl;
     }
 
-    void clear_cb(Caliper* c, Channel*) {
+    void clear_cb(Caliper* c, Channel* chn) {
         std::lock_guard<std::mutex>
             g(flush_lock);
 
         TraceBuffer* tbuf = nullptr;
-        
+
         {
             std::lock_guard<util::spinlock>
                 g(tbuf_lock);
-            
+
             tbuf = tbuf_list;
         }
 
+        TraceBufferChunk::UsageInfo aggregate_info { 0, 0, 0 };
+
         while (tbuf) {
             tbuf->stopped.store(true);
+
+            // Accumulate usage statistics before they're reset
+            TraceBufferChunk::UsageInfo info = tbuf->chunks->info();
+
+            aggregate_info.nchunks  += info.nchunks;
+            aggregate_info.reserved += info.reserved;
+            aggregate_info.used     += info.used;
+
             tbuf->chunks->reset();
+
             tbuf->stopped.store(false);
 
             if (tbuf->retired.load()) {
-                // delete retired thread's trace buffer                
+                // delete retired thread's trace buffer
                 TraceBuffer* tmp = tbuf->next;
 
                 {
                     std::lock_guard<util::spinlock>
                         g(tbuf_lock);
-                
+
                     tbuf->unlink();
 
                     if (tbuf == tbuf_list)
@@ -271,13 +257,27 @@ class Trace
 
                     ++num_released;
                 }
-                
+
                 delete tbuf;
                 tbuf = tmp;
             } else {
                 tbuf = tbuf->next;
             }
-        }        
+        }
+
+        if (Log::verbosity() > 1) {
+            unitfmt_result bytes_reserved
+                = unitfmt(aggregate_info.reserved, unitfmt_bytes);
+            unitfmt_result bytes_used
+                = unitfmt(aggregate_info.used,     unitfmt_bytes);
+
+            Log(2).stream() << chn->name()             << ": Trace: "
+                            << bytes_reserved.val      << " "
+                            << bytes_reserved.symbol   << " reserved, "
+                            << bytes_used.val          << " "
+                            << bytes_used.symbol       << " used, "
+                            << aggregate_info.nchunks  << " chunks." << std::endl;
+        }
     }
 
     void init_overflow_policy(const std::string& polname) {
@@ -285,7 +285,7 @@ class Trace
             { "grow",    BufferPolicy::Grow    },
             { "flush",   BufferPolicy::Flush   },
             { "stop",    BufferPolicy::Stop    } };
-        
+
         auto it = polmap.find(polname);
 
         if (it != polmap.end())
@@ -307,7 +307,7 @@ class Trace
 
             std::lock_guard<util::spinlock>
                 g(tbuf_lock);
-            
+
             ++num_retired;
         }
     }
@@ -328,9 +328,9 @@ class Trace
         {
             tbuf_lock.unlock();
             flush_lock.unlock();
-            
+
             ConfigSet cfg = chn->config().init("trace", s_configdata);
-                    
+
             init_overflow_policy(cfg.get("buffer_policy").to_string());
             buffersize = cfg.get("buffer_size").to_uint() * 1024 * 1024;
 
@@ -342,7 +342,7 @@ class Trace
                                     CALI_ATTR_SKIP_EVENTS  |
                                     CALI_ATTR_HIDDEN);
         }
-    
+
 public:
 
     ~Trace()
@@ -353,10 +353,10 @@ public:
 
             tbuf_list = nullptr;
         }
-    
+
     static void trace_register(Caliper* c, Channel* chn) {
         Trace* instance = new Trace(c, chn);
-        
+
         chn->events().create_thread_evt.connect(
             [instance](Caliper* c, Channel* chn){
                 instance->create_thread_cb(c, chn);
@@ -386,7 +386,7 @@ public:
 
         // Initialize trace buffer on master thread
         instance->acquire_tbuf(c, chn, true);
-        
+
         Log(1).stream() << chn->name() << ": Registered trace service" << std::endl;
     }
 }; // class Trace
@@ -402,7 +402,7 @@ const ConfigSet::Entry Trace::s_configdata[] = {
       "   grow:   Increase buffer size\n"
       "   stop:   Stop recording.\n"
       "Default: grow" },
-    
+
     ConfigSet::Terminator
 };
 

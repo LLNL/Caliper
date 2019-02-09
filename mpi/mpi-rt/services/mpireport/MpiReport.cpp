@@ -56,39 +56,40 @@ class MpiReport
 {
     static const ConfigSet::Entry s_configdata[];
 
-    QuerySpec         m_spec;
-    CaliperMetadataDB m_db;
+    QuerySpec   m_spec;
+    std::string m_filename;
 
-    struct ReportProcessor {
-        Aggregator        agg;
-        RecordSelector    filter;
+    void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+        // check if we can use MPI
 
-        explicit ReportProcessor(const QuerySpec& spec)
-            : agg(spec), filter(spec)
-            { }
-    };
+        int initialized = 0;
+        int finalized   = 0;
 
-    std::unique_ptr<ReportProcessor> m_p;
-    
-    std::string       m_filename;
+        PMPI_Initialized(&initialized);
+        PMPI_Finalized(&finalized);
 
-    void add(Caliper* c, const SnapshotRecord* snapshot) {
-        // this function processes our local snapshots during flush:
-        //   add them to our local aggregator (m_a)
+        if (!initialized || finalized)
+            return;
 
-        SnapshotRecord::Sizes s = snapshot->size();
-        SnapshotRecord::Data  d = snapshot->data();
+        CaliperMetadataDB db;
 
-        EntryList rec =
-            m_db.merge_snapshot(s.n_nodes,     d.node_entries,
-                                s.n_immediate, d.immediate_attr, d.immediate_data,
-                                *c);
+        Aggregator        agg(m_spec);
+        RecordSelector    filter(m_spec);
 
-        if (m_p->filter.pass(m_db, rec))
-            m_p->agg.add(m_db, rec);
-    }
+        // flush this rank's caliper data into local aggregator
+        c->flush(chn, flush_info, [c,&db,&agg,&filter](const SnapshotRecord* srec){
+                SnapshotRecord::Sizes s = srec->size();
+                SnapshotRecord::Data  d = srec->data();
 
-    void flush_finish(Caliper* c, const SnapshotRecord* flush_info) {
+                EntryList rec =
+                    db.merge_snapshot(s.n_nodes,     d.node_entries,
+                                      s.n_immediate, d.immediate_attr, d.immediate_data,
+                                      *c);
+
+                if (filter.pass(db, rec))
+                    agg.add(db, rec);
+            });
+
         MPI_Comm comm;
         MPI_Comm_dup(MPI_COMM_WORLD, &comm);
         int rank;
@@ -96,7 +97,7 @@ class MpiReport
 
         // do the global cross-process aggregation:
         //   aggregate_over_mpi() does all the magic
-        aggregate_over_mpi(m_db, m_p->agg, comm);
+        aggregate_over_mpi(db, agg, comm);
 
         MPI_Comm_free(&comm);
 
@@ -115,27 +116,10 @@ class MpiReport
 
             FormatProcessor formatter(m_spec, stream);
 
-            m_p->agg.flush(m_db, formatter);
-            formatter.flush(m_db);
+            agg.flush(db, formatter);
+            formatter.flush(db);
         }
     }
-
-    void pre_flush() {
-        m_p.reset();
-
-        // check if we can use MPI
-
-        int initialized = 0;
-        int finalized   = 0;
-
-        PMPI_Initialized(&initialized);
-        PMPI_Finalized(&finalized);
-
-        if (!initialized || finalized)
-            return;
-
-        m_p.reset(new ReportProcessor(m_spec));
-    }    
 
     MpiReport(const QuerySpec& spec, const std::string& filename)
         : m_spec(spec), m_filename(filename)
@@ -145,7 +129,7 @@ public:
 
     static void init(Caliper* c, Channel* chn) {
         ConfigSet   config = chn->config().init("mpireport", s_configdata);
-        CalQLParser parser(config.get("config").to_string().c_str());        
+        CalQLParser parser(config.get("config").to_string().c_str());
 
         if (parser.error()) {
             Log(0).stream() << chn->name() << ": mpireport: config parse error: "
@@ -157,25 +141,15 @@ public:
         MpiReport* instance =
             new MpiReport(parser.spec(), config.get("filename").to_string());
 
-        chn->events().pre_flush_evt.connect(
-            [instance](Caliper*, Channel*, const SnapshotRecord*){
-                instance->pre_flush();
-            });
-        chn->events().write_snapshot.connect(
-            [instance](Caliper* c, Channel*, const SnapshotRecord*, const SnapshotRecord* rec){
-                if (instance->m_p)
-                    instance->add(c, rec);
-            });
-        chn->events().post_flush_evt.connect(
-            [instance](Caliper* c, Channel*, const SnapshotRecord* info){
-                if (instance->m_p)
-                    instance->flush_finish(c, info);
+        chn->events().write_output_evt.connect(
+            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+                instance->write_output_cb(c, chn, info);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper*, Channel*){
                 delete instance;
             });
-        
+
         if (config.get("write_on_finalize").to_bool() == true)
             mpiwrap_get_events(chn).mpi_finalize_evt.connect(
                 [](Caliper* c, Channel* chn){
@@ -200,7 +174,7 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
     },
     { "write_on_finalize", CALI_TYPE_BOOL, "true",
       "Flush Caliper buffers on MPI_Finalize",
-      "Flush Caliper buffers on MPI_Finalize"      
+      "Flush Caliper buffers on MPI_Finalize"
     },
     ConfigSet::Terminator
 };

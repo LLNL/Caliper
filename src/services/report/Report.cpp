@@ -1,4 +1,4 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -31,7 +31,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Report.cpp
-// Generates text reports from Caliper snapshots on flush() events 
+// Generates text reports from Caliper snapshots on flush() events
 
 
 #include "caliper/CaliperService.h"
@@ -55,17 +55,13 @@ namespace
 {
 
 class Report {
-    static const ConfigSet::Entry   s_configdata[];
-
-    std::unique_ptr<QueryProcessor> queryP;
+    static const ConfigSet::Entry s_configdata[];
 
     //
     // --- callback functions
     //
 
-    void pre_flush(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
-        queryP.reset(nullptr);
-        
+    void write_output(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
         ConfigSet   config(chn->config().init("report", s_configdata));
         CalQLParser parser(config.get("config").to_string().c_str());
 
@@ -80,7 +76,7 @@ class Report {
         // set format default to table if it hasn't been set in the query config
         if (spec.format.opt == QuerySpec::FormatSpec::Default)
             spec.format = CalQLParser("format table").spec().format;
-                
+
         OutputStream stream;
 
         stream.set_stream(OutputStream::StdOut);
@@ -89,18 +85,14 @@ class Report {
 
         if (!filename.empty())
             stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
-            
-        queryP.reset(new QueryProcessor(spec, stream));
-    }
 
-    void write_snapshot(Caliper* c, const SnapshotRecord* snapshot) {
-        if (queryP)
-            queryP->process_record(*c, snapshot->to_entrylist());
-    }
+        QueryProcessor queryP(spec, stream);
 
-    void post_flush(Caliper* c) {
-        if (queryP)
-            queryP->flush(*c);
+        c->flush(chn, flush_info, [c,&queryP](const SnapshotRecord* rec){
+                queryP.process_record(*c, rec->to_entrylist());
+            });
+
+        queryP.flush(*c);
     }
 
 public:
@@ -110,18 +102,10 @@ public:
 
     static void create(Caliper* c, Channel* chn) {
         Report* instance = new Report;
-        
-        chn->events().pre_flush_evt.connect(
+
+        chn->events().write_output_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
-                instance->pre_flush(c, chn, info);
-            });
-        chn->events().write_snapshot.connect(
-            [instance](Caliper* c, Channel*, const SnapshotRecord*, const SnapshotRecord* snapshot){
-                instance->write_snapshot(c, snapshot);
-            });
-        chn->events().post_flush_evt.connect(
-            [instance](Caliper* c, Channel*, const SnapshotRecord*){
-                instance->post_flush(c);
+                instance->write_output(c, chn, info);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper*, Channel*){
@@ -131,7 +115,7 @@ public:
         Log(1).stream() << chn->name() << ": Registered report service" << std::endl;
     }
 };
-    
+
 const ConfigSet::Entry  Report::s_configdata[] = {
     { "filename", CALI_TYPE_STRING, "stdout",
       "File name for report stream. Default: stdout.",
@@ -147,7 +131,7 @@ const ConfigSet::Entry  Report::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-} // namespace 
+} // namespace
 
 namespace cali
 {
