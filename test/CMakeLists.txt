@@ -12,6 +12,7 @@ endif()
 
 set(CALIPER_TEST_APPS
   cali-annotation-perftest
+  cali-flush-perftest
   cali-test
   cali-throughput-pthread)
 
@@ -22,14 +23,22 @@ foreach(app ${CALIPER_TEST_APPS})
   target_link_libraries(${app} caliper)
 endforeach()
 
+set(CALIPER_TEST_OMP_APPS
+  cali-annotation-perftest
+  cali-flush-perftest)
+
 if (${OpenMP_FOUND})
-  target_compile_options(cali-annotation-perftest
-    PRIVATE ${OpenMP_CXX_FLAGS})
-  target_link_libraries(cali-annotation-perftest
-    ${OpenMP_CXX_FLAGS})
+  foreach (app ${CALIPER_TEST_OMP_APPS})
+    target_compile_options(${app}
+      PRIVATE ${OpenMP_CXX_FLAGS})
+    target_link_libraries(${app}
+      ${OpenMP_CXX_FLAGS})
+  endforeach()
 endif()
 
 target_link_libraries(cali-annotation-perftest
+  caliper-tools-util)
+target_link_libraries(cali-flush-perftest
   caliper-tools-util)
 target_link_libraries(cali-throughput-pthread
   caliper-tools-util

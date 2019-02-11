@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
         },
         { "channels",     "channels",   'x', true,
           "Number of replicated channel instances",
-          "EXPERIMENTS"
+          "CHANNELS"
         },
 
         { "help", "help", 'h', false, "Print help", nullptr },
@@ -208,12 +208,12 @@ int main(int argc, char* argv[])
 
     if (!print_csv)
         std::cout << "cali-annotation-perftest:"
-                  << "\n    Channels: " << cfg.channels
-                  << "\n    Tree width:  " << cfg.tree_width
-                  << "\n    Tree depth:  " << cfg.tree_depth
-                  << "\n    Iterations:  " << cfg.iter
+                  << "\n    Channels:   " << cfg.channels
+                  << "\n    Tree width: " << cfg.tree_width
+                  << "\n    Tree depth: " << cfg.tree_depth
+                  << "\n    Iterations: " << cfg.iter
 #ifdef _OPENMP
-                  << "\n    Threads:     " << omp_get_max_threads()
+                  << "\n    Threads:    " << omp_get_max_threads()
 #endif
                   << std::endl;
 
