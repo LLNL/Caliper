@@ -91,14 +91,10 @@ public:
                                const IdMap&    idmap) const;
 
     /// \brief Merge snapshot record bound to metadata DB \a db
-    ///   into this metadata DB
-    EntryList   merge_snapshot(size_t          n_nodes,
-                               const Node* const* nodes, 
-                               size_t          n_imm,   
-                               const cali_id_t attr_ids[], 
-                               const Variant   values[],
-                               const CaliperMetadataAccessInterface& db);    
-    
+    ///   into this metadata DB    
+    EntryList   merge_snapshot(const CaliperMetadataAccessInterface& db,
+                               const std::vector<Entry>& rec);
+
     Entry       merge_entry   (cali_id_t       node_id,
                                const IdMap&    idmap);
     Entry       merge_entry   (cali_id_t       attr_id,

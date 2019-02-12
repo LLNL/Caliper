@@ -301,16 +301,17 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         return merge_node(node->id(), attr_node->id(), parent ? parent->id() : CALI_INV_ID, v_data);
     }
 
-    EntryList merge_snapshot(size_t n_nodes, const Node* const* nodes,
-                             size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
-                             const CaliperMetadataAccessInterface& db)
+    EntryList merge_snapshot(const CaliperMetadataAccessInterface& db,
+                             const EntryList& rec)
     {
         EntryList list;
+        list.reserve(rec.size());
 
-        for (size_t i = 0; i < n_nodes; ++i)
-            list.push_back(Entry(recursive_merge_node(nodes[i], db)));
-        for (size_t i = 0; i < n_imm; ++i)
-            list.push_back(Entry(recursive_merge_node(db.node(attr_ids[i]), db)->id(), values[i]));
+        for (const Entry& e : rec)
+            if (e.is_reference())
+                list.push_back(Entry(recursive_merge_node(e.node(), db)));
+            else if (e.is_immediate())
+                list.push_back(Entry(recursive_merge_node(db.node(e.attribute()), db)->id(), e.value()));
 
         return list;
     }
@@ -560,11 +561,10 @@ CaliperMetadataDB::merge_snapshot(size_t n_nodes, const cali_id_t node_ids[],
 }
 
 EntryList
-CaliperMetadataDB::merge_snapshot(size_t n_nodes, const Node* const* nodes,
-                                  size_t n_imm,   const cali_id_t attr_ids[], const Variant values[],
-                                  const CaliperMetadataAccessInterface& db)
+CaliperMetadataDB::merge_snapshot(const CaliperMetadataAccessInterface& db,
+                                  const std::vector<Entry>& rec)
 {
-    return mP->merge_snapshot(n_nodes, nodes, n_imm, attr_ids, values, db);
+    return mP->merge_snapshot(db, rec);
 }
 
 Entry

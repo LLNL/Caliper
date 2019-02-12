@@ -11,15 +11,15 @@ using namespace cali;
 namespace 
 {
 
-void postprocess_snapshot_cb(Caliper* c, Channel*, SnapshotRecord* snapshot)
-{
+void postprocess_snapshot_cb(Caliper* c, Channel*, std::vector<Entry>& rec)
+{    
     Attribute val_attr  = 
         c->create_attribute("postprocess.val",  CALI_TYPE_INT, CALI_ATTR_ASVALUE);
     Attribute node_attr =
         c->create_attribute("postprocess.node", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
 
-    snapshot->append(val_attr.id(), Variant(42));
-    snapshot->append(c->make_tree_entry(node_attr, Variant(36)));
+    rec.push_back(Entry(val_attr, Variant(42)));
+    rec.push_back(Entry(c->make_tree_entry(node_attr, Variant(36))));
 }
 
 }

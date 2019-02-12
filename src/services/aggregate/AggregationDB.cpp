@@ -48,7 +48,6 @@ using namespace cali;
 using namespace aggregate;
 
 #define MAX_KEYLEN          32
-#define SNAP_MAX            80 // max snapshot size
 
 namespace
 {
@@ -180,9 +179,6 @@ struct AggregationDB::AggregationDBImpl
     }
 
     void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
-        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-        SnapshotRecord snapshot(snapshot_data);
-
         // --- decode key
 
         size_t    p = 0;
@@ -190,8 +186,11 @@ struct AggregationDB::AggregationDBImpl
         uint64_t  toc = vldec_u64(key+p, &p); // first entry is 2*num_nodes + (1 : w/ immediate, 0 : w/o immediate)
         int       num_nodes = static_cast<int>(toc)/2;
 
-        for (int i = 0; i < std::min(num_nodes, SNAP_MAX); ++i)
-            snapshot.append(c->node(vldec_u64(key + p, &p)));
+        std::vector<Entry> rec;
+        rec.reserve(num_nodes + info.key_attribute_ids.size() + 5);
+
+        for (int i = 0; i < num_nodes; ++i)
+            rec.push_back(Entry(c->node(vldec_u64(key + p, &p))));
 
         if (toc % 2 == 1) {
             // there are immediate key entries
@@ -203,7 +202,7 @@ struct AggregationDB::AggregationDBImpl
                     uint64_t val = vldec_u64(key+p, &p);
                     Variant  v(info.key_attributes[k].type(), &val, sizeof(uint64_t));
 
-                    snapshot.append(info.key_attribute_ids[k], v);
+                    rec.push_back(Entry(info.key_attribute_ids[k], v));
                 }
         }
 
@@ -211,7 +210,7 @@ struct AggregationDB::AggregationDBImpl
 
         int num_aggr_attr = info.aggr_attributes.size();
 
-        for (int a = 0; a < std::min(num_aggr_attr, SNAP_MAX/3); ++a) {
+        for (int a = 0; a < num_aggr_attr; ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
 
             if (!k)
@@ -219,19 +218,19 @@ struct AggregationDB::AggregationDBImpl
             if (k->count == 0)
                 continue;
 
-            snapshot.append(info.stats_attributes[a].min_attr.id(), Variant(k->min));
-            snapshot.append(info.stats_attributes[a].max_attr.id(), Variant(k->max));
-            snapshot.append(info.stats_attributes[a].sum_attr.id(), Variant(k->sum));
-            snapshot.append(info.stats_attributes[a].avg_attr.id(), Variant(k->avg));
+            rec.push_back(Entry(info.stats_attributes[a].min_attr.id(), Variant(k->min)));
+            rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
+            rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
+            rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
         }
 
         uint64_t count = entry->count;
 
-        snapshot.append(info.count_attribute.id(), Variant(CALI_TYPE_UINT, &count, sizeof(uint64_t)));
+        rec.push_back(Entry(info.count_attribute.id(), Variant(cali_make_variant_from_uint(count))));
 
         // --- write snapshot record
 
-        proc_fn(&snapshot);
+        proc_fn(*c, rec);
     }
 
     size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {

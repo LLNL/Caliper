@@ -185,24 +185,6 @@ struct CaliWriter::CaliWriterImpl
             m_written_nodes.insert(id);
         }
     }
-                            
-    void write_snapshot(const CaliperMetadataAccessInterface& db,
-                        size_t n_nodes, const cali_id_t nodes[],
-                        size_t n_imm,   const cali_id_t attr[], const Variant vals[])
-    {
-        for (size_t i = 0; i < n_nodes; ++i)
-            recursive_write_node(db, nodes[i]);
-        for (size_t i = 0; i < n_imm;   ++i)
-            recursive_write_node(db, attr[i]);
-
-        {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
-
-            ::write_snapshot_content(m_os.stream(), n_nodes, nodes, n_imm, attr, vals);
-            ++m_num_written;
-        }
-    }
 
     void write_entrylist(const CaliperMetadataAccessInterface& db,
                          const char* record_type,
@@ -248,13 +230,6 @@ CaliWriter::~CaliWriter()
 size_t CaliWriter::num_written() const
 {
     return mP ? mP->m_num_written : 0;
-}
-
-void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db,
-                               size_t n_nodes, const cali_id_t nodes[],
-                               size_t n_imm,   const cali_id_t attr[], const Variant vals[])
-{
-    mP->write_snapshot(db, n_nodes, nodes, n_imm, attr, vals);
 }
 
 void CaliWriter::write_snapshot(const CaliperMetadataAccessInterface& db, const std::vector<Entry>& list)

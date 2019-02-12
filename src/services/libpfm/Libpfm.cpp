@@ -657,47 +657,45 @@ class LibpfmService
 
     struct DataSrcAttrs data_src_attrs;
 
-    void postprocess_snapshot_cb(Caliper* c, Channel* chn, SnapshotRecord* snapshot) {
-
-        std::vector<Attribute> attr;
-        std::vector<Variant>   data;
-
-        std::string mem_lvl;
-        std::string hit;
-        std::string op;
-        std::string snoop;
-        std::string tlb;
-
+    void postprocess_snapshot_cb(Caliper* c, Channel* chn, std::vector<Entry>& rec) {
         // Decode data_src encoding
         if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
+            cali_id_t sample_src_attr_id = libpfm_attribute_type_to_attr[PERF_SAMPLE_DATA_SRC].id();
 
-            Entry e = snapshot->get(libpfm_attribute_type_to_attr[PERF_SAMPLE_DATA_SRC]);
+            auto it = std::find_if(rec.begin(), rec.end(), [&sample_src_attr_id](const Entry& e){
+                    return e.attribute() == sample_src_attr_id;
+                });
 
-            if (!e.is_empty()) {
-                uint64_t data_src = e.value().to_uint();
+            if (it != rec.end()) {
+                uint64_t data_src = it->value().to_uint();
 
-                mem_lvl = datasource_mem_lvl(data_src);
-                hit = datasource_mem_hit(data_src);
-                op = datasource_mem_op(data_src);
-                snoop = datasource_mem_snoop(data_src);
-                tlb = datasource_mem_tlb(data_src);
+                std::string mem_lvl = datasource_mem_lvl(data_src);
+                std::string hit = datasource_mem_hit(data_src);
+                std::string op = datasource_mem_op(data_src);
+                std::string snoop = datasource_mem_snoop(data_src);
+                std::string tlb = datasource_mem_tlb(data_src);
 
-                attr.push_back(data_src_attrs.mem_lvl_attr);
-                attr.push_back(data_src_attrs.mem_hit_attr);
-                attr.push_back(data_src_attrs.mem_op_attr);
-                attr.push_back(data_src_attrs.mem_snoop_attr);
-                attr.push_back(data_src_attrs.mem_tlb_attr);
+                Node* node = nullptr;
 
-                data.push_back(Variant(CALI_TYPE_STRING, mem_lvl.c_str(), mem_lvl.size()));
-                data.push_back(Variant(CALI_TYPE_STRING, hit.c_str(), hit.size()));
-                data.push_back(Variant(CALI_TYPE_STRING, op.c_str(), op.size()));
-                data.push_back(Variant(CALI_TYPE_STRING, snoop.c_str(), snoop.size()));
-                data.push_back(Variant(CALI_TYPE_STRING, tlb.c_str(), tlb.size()));
+                node = c->make_tree_entry(data_src_attrs.mem_lvl_attr,
+                                          Variant(CALI_TYPE_STRING, mem_lvl.c_str(), mem_lvl.size()),
+                                          node);
+                node = c->make_tree_entry(data_src_attrs.mem_hit_attr,
+                                          Variant(CALI_TYPE_STRING, hit.c_str(), hit.size()),
+                                          node);
+                node = c->make_tree_entry(data_src_attrs.mem_op_attr,
+                                          Variant(CALI_TYPE_STRING, op.c_str(), op.size()),
+                                          node);
+                node = c->make_tree_entry(data_src_attrs.mem_snoop_attr,
+                                          Variant(CALI_TYPE_STRING, snoop.c_str(), snoop.size()),
+                                          node);
+                node = c->make_tree_entry(data_src_attrs.mem_tlb_attr,
+                                          Variant(CALI_TYPE_STRING, tlb.c_str(), tlb.size()),
+                                          node);
+
+                rec.push_back(Entry(node));
             }
         }
-
-        if (attr.size() > 0)
-            c->make_record(attr.size(), attr.data(), data.data(), *snapshot);
     }
 
     LibpfmService(Caliper* c, Channel* chn)
@@ -769,7 +767,7 @@ public:
 
         if (sI->enable_sampling)
             chn->events().postprocess_snapshot.connect(
-                [](Caliper* c, Channel* chn, SnapshotRecord* rec){
+                [](Caliper* c, Channel* chn, std::vector<Entry>& rec){
                     sI->postprocess_snapshot_cb(c, chn, rec);
                 });        
         if (sI->record_counters)

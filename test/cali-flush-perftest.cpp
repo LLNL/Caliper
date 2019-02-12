@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
         if (cfg.write)
             c.flush_and_write(chn, nullptr);
         else
-            c.flush(chn, nullptr, [](const cali::SnapshotRecord*) { return true; });
+            c.flush(chn, nullptr, [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
 
     auto etime = std::chrono::system_clock::now();
 
