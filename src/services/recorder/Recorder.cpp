@@ -45,7 +45,7 @@
 
 #include "caliper/reader/CaliWriter.h"
 
-#include <sys/unistd.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <chrono>

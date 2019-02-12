@@ -64,34 +64,6 @@ void write_node_content(std::ostream& os, const cali::Node* node)
     os << '\n';
 }
 
-void write_snapshot_content(std::ostream& os,
-                            size_t n_nodes, const cali_id_t nodes[],
-                            size_t n_imm,   const cali_id_t attr[], const Variant vals[])
-{
-    os << "__rec=ctx";
-
-    if (n_nodes > 0) {
-        os << ",ref";
-            
-        for (size_t i = 0; i < n_nodes; ++i)
-            os << '=' << nodes[i];
-    }
-
-    if (n_imm > 0) {
-        os << ",attr";
-
-        for (size_t i = 0; i < n_imm; ++i)
-            os << '=' << attr[i];
-
-        os << ",data";
-
-        for (size_t i = 0; i < n_imm; ++i)
-            util::write_esc_string(os << '=', vals[i].to_string(), esc_chars);
-    }
-
-    os << '\n';
-}
-
 void write_record_content(std::ostream& os, const char* record_type, int nr, int ni, const std::vector<Entry>& rec) {
     os << "__rec=" << record_type;
             
