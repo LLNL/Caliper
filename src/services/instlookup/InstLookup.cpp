@@ -200,7 +200,7 @@ class InstLookup
         
     }
 
-    void process_snapshot(Caliper* c, SnapshotRecord* snapshot) {
+    void process_snapshot(Caliper* c, std::vector<Entry>& rec) {
         if (m_sym_attr_map.empty())
             return;
 
@@ -224,15 +224,16 @@ class InstLookup
 
         // unpack nodes, check for address attributes, and perform inst lookup
         for (auto it : sym_map) {
-            Entry e = snapshot->get(it.first);
+            cali_id_t sym_attr_id = it.first.id();
 
-            if (e.node()) {
-                for (const cali::Node* node = e.node(); node; node = node->parent()) 
-                    if (node->attribute() == it.first.id())
-                        add_inst_attributes(Entry(node), it.second, mempool, attr, data);
-            } else if (e.is_immediate()) {
-                add_inst_attributes(e, it.second, mempool, attr, data);
-            }
+            for (const Entry& e : rec)
+                if (e.node()) {
+                    for (const cali::Node* node = e.node(); node; node = node->parent()) 
+                        if (node->attribute() == sym_attr_id)
+                            add_inst_attributes(Entry(node), it.second, mempool, attr, data);
+                } else if (e.attribute() == sym_attr_id) {
+                    add_inst_attributes(e, it.second, mempool, attr, data);
+                }
         }
 
         // reverse vectors to restore correct hierarchical order
@@ -240,8 +241,16 @@ class InstLookup
         std::reverse(data.begin(), data.end());
 
         // Add entries to snapshot. Strings are copied here, temporary mempool will be free'd
-        if (attr.size() > 0)
-            c->make_record(attr.size(), attr.data(), data.data(), *snapshot);
+        Node* node = nullptr;
+
+        for (size_t i = 0; i < attr.size(); ++i)
+            if (attr[i].store_as_value())
+                rec.push_back(Entry(attr[i].id(), data[i]));
+            else
+                node = c->make_tree_entry(attr[i], data[i], node);
+
+        if (node)
+            rec.push_back(Entry(node));
     }
 
     // some final log output; print warning if we didn't find an address attribute
@@ -305,8 +314,8 @@ public:
                 instance->init_lookup();
             });
         chn->events().postprocess_snapshot.connect(
-            [instance](Caliper* c, Channel* chn, SnapshotRecord* snapshot){
-                instance->process_snapshot(c, snapshot);
+            [instance](Caliper* c, Channel* chn, std::vector<Entry>& rec){
+                instance->process_snapshot(c, rec);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){

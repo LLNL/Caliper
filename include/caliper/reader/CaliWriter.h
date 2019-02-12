@@ -63,14 +63,10 @@ public:
 
     size_t num_written() const;
     
-    void write_snapshot(const CaliperMetadataAccessInterface& db,
-                        size_t n_nodes, const cali_id_t nodes[],
-                        size_t n_imm,   const cali_id_t attr[], const Variant vals[]);
-    
-    void write_snapshot(const CaliperMetadataAccessInterface& db,
+    void write_snapshot(const CaliperMetadataAccessInterface&,
                         const std::vector<Entry>&);
 
-    void write_globals(const CaliperMetadataAccessInterface& db,
+    void write_globals(const CaliperMetadataAccessInterface&,
                        const std::vector<Entry>&);
 };
 

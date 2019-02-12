@@ -21,13 +21,12 @@ TEST(MetaDBTest, MergeSnapshotFromDB) {
     const Node* b_in = 
         db1.merge_node(201, str_attr.id(), 200,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
 
-    cali_id_t attr_in = int_attr.id();
-    Variant   data_in(42);
+    EntryList list_in { Entry(b_in), Entry(int_attr, Variant(42)) };
 
     CaliperMetadataDB db2;
 
     EntryList list_out = 
-        db2.merge_snapshot(1, &b_in, 1, &attr_in, &data_in, db1);
+        db2.merge_snapshot(db1, list_in);
 
     Attribute str_attr_out = db2.get_attribute("str.attr");
     Attribute int_attr_out = db2.get_attribute("int.attr");

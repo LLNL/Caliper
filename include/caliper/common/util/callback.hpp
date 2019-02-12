@@ -26,15 +26,15 @@ public:
     }
 
     template<class... Args>
-    void operator()(Args... a) {
+    void operator()(Args&&... a) {
         for ( auto& f : mCb )
-            f(a...);
+            f(std::forward<Args>(a)...);
     }
 
     template<class Op, class R, class... Args>
-    R accumulate(Op op, R init, Args... a) {
+    R accumulate(Op op, R init, Args&&... a) {
         for ( auto& f : mCb )
-            init = Op(init, f(a...));
+            init = Op(init, f(std::forward<Args>(a)...));
 
         return init;
     }

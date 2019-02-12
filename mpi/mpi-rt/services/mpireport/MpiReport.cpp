@@ -77,17 +77,11 @@ class MpiReport
         RecordSelector    filter(m_spec);
 
         // flush this rank's caliper data into local aggregator
-        c->flush(chn, flush_info, [c,&db,&agg,&filter](const SnapshotRecord* srec){
-                SnapshotRecord::Sizes s = srec->size();
-                SnapshotRecord::Data  d = srec->data();
+        c->flush(chn, flush_info, [&db,&agg,&filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                EntryList mrec = db.merge_snapshot(in_db, rec);
 
-                EntryList rec =
-                    db.merge_snapshot(s.n_nodes,     d.node_entries,
-                                      s.n_immediate, d.immediate_attr, d.immediate_data,
-                                      *c);
-
-                if (filter.pass(db, rec))
-                    agg.add(db, rec);
+                if (filter.pass(db, mrec))
+                    agg.add(db, mrec);
             });
 
         MPI_Comm comm;

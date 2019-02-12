@@ -60,7 +60,7 @@ class SnapshotRecord;
 
 // --- Typedefs
 
-typedef std::function<void(const SnapshotRecord*)> SnapshotFlushFn;
+typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cali::Entry>&)> SnapshotFlushFn;
 
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data.
@@ -92,7 +92,7 @@ public:
             snapshot_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,const SnapshotRecord*)>
             process_snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,std::vector<Entry>&)>
             edit_snapshot_cbvec;
 
         typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,SnapshotFlushFn)>

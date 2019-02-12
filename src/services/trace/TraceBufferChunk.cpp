@@ -41,8 +41,6 @@
 
 #include "caliper/common/c-util/vlenc.h"
 
-#define SNAP_MAX 80
-
 using namespace trace;
 using namespace cali;
 
@@ -89,28 +87,30 @@ size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
 
     for (size_t r = 0; r < m_nrec; ++r) {
         // decode snapshot record
+        std::vector<Entry> rec;        
                 
-        int n_nodes = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
-        int n_attr  = static_cast<int>(std::min(static_cast<int>(vldec_u64(m_data + p, &p)), SNAP_MAX));
+        uint64_t n_nodes = vldec_u64(m_data + p, &p);
+        uint64_t n_attr  = vldec_u64(m_data + p, &p);
 
-        SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-        SnapshotRecord snapshot(snapshot_data);
+        rec.reserve(n_nodes + n_attr);
 
-        cali_id_t attr[SNAP_MAX];
-        Variant   data[SNAP_MAX];
+        for (size_t i = 0; i < n_nodes; ++i)
+            rec.push_back(Entry(c->node(vldec_u64(m_data + p, &p))));
 
-        for (int i = 0; i < n_nodes; ++i)
-            snapshot.append(c->node(vldec_u64(m_data + p, &p)));
-        for (int i = 0; i < n_attr;  ++i) 
+        std::vector<cali_id_t> attr(n_attr);
+        std::vector<Variant>   data(n_attr);
+        
+        for (size_t i = 0; i < n_attr;  ++i) 
             attr[i] = vldec_u64(m_data + p, &p);
-        for (int i = 0; i < n_attr;  ++i)
+        for (size_t i = 0; i < n_attr;  ++i)
             data[i] = Variant::unpack(m_data + p, &p, nullptr);
 
-        snapshot.append(n_attr, attr, data);
+        for (size_t i = 0; i < n_attr; ++i)
+            rec.push_back(Entry(attr[i], data[i]));
 
         // write snapshot                
 
-        proc_fn(&snapshot);
+        proc_fn(*c, rec);
     }
 
     written += m_nrec;
@@ -132,9 +132,6 @@ void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
 
     if ((sizes.n_nodes + sizes.n_immediate) == 0)
         return;
-
-    sizes.n_nodes     = std::min<size_t>(sizes.n_nodes,     SNAP_MAX);
-    sizes.n_immediate = std::min<size_t>(sizes.n_immediate, SNAP_MAX);
                 
     m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
     m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);

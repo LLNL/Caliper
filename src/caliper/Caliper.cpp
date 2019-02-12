@@ -858,16 +858,12 @@ Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn p
     if (chn->mP->events.postprocess_snapshot.empty()) {
         chn->mP->events.flush_evt(this, chn, flush_info, proc_fn);
     } else {
-        chn->mP->events.flush_evt(this, chn, flush_info,
-                             [this,chn,flush_info,proc_fn](const SnapshotRecord* input_snapshot) {
-                                 SnapshotRecord::FixedSnapshotRecord<80> data;
-                                 SnapshotRecord snapshot(data);
-
-                                 snapshot.append(*input_snapshot);
-
-                                 chn->mP->events.postprocess_snapshot(this, chn, &snapshot);
-                                 return proc_fn(&snapshot);
-                             });
+        chn->mP->events.flush_evt(this, chn, flush_info, [this,chn,proc_fn](CaliperMetadataAccessInterface&, const std::vector<Entry>& rec) {
+                std::vector<Entry> mrec(rec);
+                
+                chn->mP->events.postprocess_snapshot(this, chn, mrec);
+                proc_fn(*this, mrec);
+            });
     }
 
     chn->mP->events.post_flush_evt(this, chn, flush_info);

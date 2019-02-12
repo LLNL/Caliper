@@ -88,9 +88,9 @@ class Report {
 
         QueryProcessor queryP(spec, stream);
 
-        c->flush(chn, flush_info, [c,&queryP](const SnapshotRecord* rec){
-                queryP.process_record(*c, rec->to_entrylist());
-            });
+        c->flush(chn, flush_info, [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                queryP.process_record(db, rec);
+            } );
 
         queryP.flush(*c);
     }

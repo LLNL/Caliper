@@ -45,14 +45,11 @@
 
 #include "caliper/reader/CaliWriter.h"
 
-#include <sys/stat.h>
-#include <unistd.h>
+#include <sys/unistd.h>
 
 #include <algorithm>
 #include <chrono>
 #include <iostream>
-#include <mutex>
-#include <fstream>
 #include <random>
 #include <string>
 
@@ -125,20 +122,10 @@ void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info)
 
     CaliWriter writer(stream);
 
-    c->flush(chn, flush_info, [c,&writer](const SnapshotRecord* rec){
-            SnapshotRecord::Data   data = rec->data();
-            SnapshotRecord::Sizes sizes = rec->size();
-
-            cali_id_t node_ids[128];
-            size_t    nn = std::min<size_t>(sizes.n_nodes, 128);
-
-            for (size_t i = 0; i < nn; ++i)
-                node_ids[i] = data.node_entries[i]->id();
-
-            writer.write_snapshot(*c, nn, node_ids,
-                                  sizes.n_immediate, data.immediate_attr, data.immediate_data);
+    c->flush(chn, flush_info, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+            writer.write_snapshot(db, rec);
         });
-
+    
     writer.write_globals(*c, c->get_globals(chn));
 
     Log(1).stream() << chn->name()
