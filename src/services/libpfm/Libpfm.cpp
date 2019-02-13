@@ -532,12 +532,9 @@ class LibpfmService
         return true;
     }
 
-    void setup_thread_pointers() {
-        uint64_t value;
-        size_t   attribute_type;
-        
+    void setup_thread_pointers() {        
         for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
-            attribute_type = libpfm_attribute_types[attribute_index];
+            size_t attribute_type = libpfm_attribute_types[attribute_index];
 
             switch (attribute_type) {
                 case (PERF_SAMPLE_IP):

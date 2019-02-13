@@ -96,18 +96,12 @@ size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
 
         for (size_t i = 0; i < n_nodes; ++i)
             rec.push_back(Entry(c->node(vldec_u64(m_data + p, &p))));
-
-        std::vector<cali_id_t> attr(n_attr);
-        std::vector<Variant>   data(n_attr);
+        for (size_t i = 0; i < n_attr;  ++i) {
+            cali_id_t attr_id = vldec_u64(m_data + p, &p);
+            Variant   data    = Variant::unpack(m_data + p, &p, nullptr);
+            rec.push_back(Entry(attr_id, data));
+        }
         
-        for (size_t i = 0; i < n_attr;  ++i) 
-            attr[i] = vldec_u64(m_data + p, &p);
-        for (size_t i = 0; i < n_attr;  ++i)
-            data[i] = Variant::unpack(m_data + p, &p, nullptr);
-
-        for (size_t i = 0; i < n_attr; ++i)
-            rec.push_back(Entry(attr[i], data[i]));
-
         // write snapshot                
 
         proc_fn(*c, rec);
@@ -140,10 +134,10 @@ void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
 
     for (size_t i = 0; i < sizes.n_nodes; ++i)
         m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
-    for (size_t i = 0; i < sizes.n_immediate;  ++i)
-        m_pos += vlenc_u64(addr.immediate_attr[i],     m_data + m_pos);
-    for (size_t i = 0; i < sizes.n_immediate;  ++i)
+    for (size_t i = 0; i < sizes.n_immediate;  ++i) {
+        m_pos += vlenc_u64(addr.immediate_attr[i], m_data + m_pos);
         m_pos += addr.immediate_data[i].pack(m_data + m_pos);
+    }
 
     ++m_nrec;
 }
