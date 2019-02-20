@@ -182,7 +182,7 @@ namespace
                } 
              }
              else {
-               const char* json_string = "{}";
+               const char* json_string = "{\"show_exclusive\" : false}";
                std::string y_axis = y_axes[i];
                rapidjson::Value y_axis_value;
                rapidjson::Value title_value;
