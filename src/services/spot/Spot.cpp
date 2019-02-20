@@ -70,20 +70,29 @@ namespace
         int divisor;
         template<typename T>
         using List = std::vector<T>;
-        using AggregationHandler = cali::Aggregator*;
-        using SelectionHandler = cali::RecordSelector*;
+        
+        using AggregationHandler = cali::Aggregator;
+        using SelectionHandler = cali::RecordSelector;
         using TimeType = unsigned int;
         using SingleJsonEntryType = List<std::pair<std::string,TimeType>>;
         using JsonListType = List<SingleJsonEntryType>;
         using AggregationDescriptor = std::pair<std::string, std::string>;
         using AggregationDescriptorList = List<AggregationDescriptor>;
-        List<std::pair<AggregationHandler,SelectionHandler>> m_queries;
+
+        struct QueryThing {
+            AggregationHandler agg;
+            SelectionHandler   selector;
+        };
+        
+        List<QueryThing> m_queries;
+        
         std::vector<std::string> y_axes;
         AggregationDescriptorList m_annotations_and_places;
         JsonListType m_jsons;
         std::string code_version;
         std::string recorded_time;
         std::vector<std::string> title;
+        
         void process_snapshot(Caliper* c, Channel* chn, const SnapshotRecord* snapshot) {
           for(auto& m_query : m_queries){
             auto entries = snapshot->to_entrylist();
@@ -92,6 +101,52 @@ namespace
             }
           }
         }
+
+        void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+            for (int i = 0; i < m_queries.size(); ++i) {
+                Log(2).stream() << "spot: Flushing query " << i << std::endl;
+
+                auto &query = m_queries[i];
+
+                c->flush(chn, flush_info, [this,query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                        if (query.selector.pass(db, rec)) {
+                            query.agg.add(db, rec);
+                        }
+                    });
+
+                auto &json = m_jsons[i];
+
+                query.agg.flush(*c,[json](CaliperMetadataAccessInterface& db,const EntryList& list) {
+                        std::string name;
+                        TimeType value = 0;
+                        Log(2).stream() << "Banzai: inner flush\n";
+
+                        for (const Entry& e : list) {
+                            Log(2).stream() << "Banzai: entry\n";
+                            if (e.is_reference()) {
+                            //Log(2).stream() << "Banzai: reference entry\n";
+                                for (const Node* node = e.node(); node; node = node->parent()) {
+                                    if (db.get_attribute(node->attribute()).is_nested()) {
+                                        name = node->data().to_string() + (name.empty() ? "": "/") + name;
+                                    }
+                                }
+                            } else if (db.get_attribute(e.attribute()).name() == "inclusive#sum#time.duration") {
+                                Log(2).stream() << "Banzai: Correct attribute\n";
+                                value = e.value().to_uint();
+                            }
+                            else{
+                                Log(2).stream() << "Banzai: Incorrect attribute: "<<db.get_attribute(e.attribute()).name()<<"\n";
+                            }
+                        }
+                        if (!name.empty()) {
+                            json.push_back(std::make_pair(name, value));
+                        }
+                    });
+            }
+
+            write_jsons(/*...*/);
+        }
+
         void flush(Caliper* c, Channel* chn, const SnapshotRecord*) {
           for(int i =0 ;i<m_queries.size();i++) {
             auto& m_query = m_queries[i];
@@ -215,6 +270,7 @@ std::string name;
             doc.Accept(writer);
           }
         }
+        
         Spot(Caliper* c, Channel* chn) {
             ConfigSet    config = chn->config().init("spot", s_configdata);
             std::string  config_string = config.get("config").to_string().c_str();
@@ -257,14 +313,14 @@ std::string name;
 
         }
 
-        static std::pair<AggregationHandler,SelectionHandler> create_query_processor(std::string query){
+        QueryThing create_query_processor(std::string query){
            CalQLParser parser(query.c_str()); 
            if (parser.error()) {
                Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
                return std::make_pair(nullptr,nullptr);
            }
            QuerySpec    spec(parser.spec());
-           return std::make_pair(new Aggregator(spec),new RecordSelector(spec));
+           return { Aggregator(spec), RecordSelector(spec) };
         }
                
         static std::string query_for_annotation(std::string grouping, std::string metric = "inclusive_sum(sum#time.duration)"){
@@ -281,16 +337,15 @@ std::string name;
 
         static void create(Caliper* c, Channel* chn) {
             Spot* instance = new Spot(c, chn);
-            chn->events().process_snapshot.connect(
-                [instance](Caliper* c, Channel* chn, const SnapshotRecord* sr1, const SnapshotRecord* sr2){
-                  instance->process_snapshot(c, chn, sr2);
-                }
-            );
-            chn->events().post_flush_evt.connect(
-                [instance](Caliper* c, Channel* chn, const SnapshotRecord* sr){
-                  instance->flush(c, chn, sr);
-                }
-            );
+            
+            chn->events().write_output_evt.connect(
+                [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+                    instance->write_output(c, chn, info);
+                });
+            chn->events().finish_evt.connect(
+                [instance](Caliper*, Channel*){
+                    delete instance;
+                });
 
             Log(1).stream() << chn->name() << "Registered Spot service" << std::endl;
         }
