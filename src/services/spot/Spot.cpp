@@ -66,76 +66,79 @@ namespace
 {
 
     class Spot {
+
         static const ConfigSet::Entry  s_configdata[];
+
         int divisor;
+
         template<typename T>
         using List = std::vector<T>;
         
         using AggregationHandler = cali::Aggregator;
         using SelectionHandler = cali::RecordSelector;
+
         using TimeType = unsigned int;
+
         using SingleJsonEntryType = List<std::pair<std::string,TimeType>>;
         using JsonListType = List<SingleJsonEntryType>;
-        using AggregationDescriptor = std::pair<std::string, std::string>;
+
+        struct AggregationDescriptor {
+          std::string hierarchical_annotation_name;
+          std::string metric_name;
+          std::string json_location;
+        };
+
         using AggregationDescriptorList = List<AggregationDescriptor>;
 
-        struct QueryThing {
-            AggregationHandler agg;
+        struct QueryProcessingPipeline {
+            QueryProcessingPipeline(AggregationHandler agg_in, SelectionHandler sel_in) : aggregator(agg_in), selector(sel_in) {}
+            AggregationHandler aggregator;
             SelectionHandler   selector;
         };
         
-        List<QueryThing> m_queries;
+        List<QueryProcessingPipeline> m_queries;
         
         std::vector<std::string> y_axes;
+
         AggregationDescriptorList m_annotations_and_places;
         JsonListType m_jsons;
         std::string code_version;
         std::string recorded_time;
         std::vector<std::string> title;
         
-        void process_snapshot(Caliper* c, Channel* chn, const SnapshotRecord* snapshot) {
-          for(auto& m_query : m_queries){
-            auto entries = snapshot->to_entrylist();
-            if(m_query.second->pass(*c,entries)){
-              m_query.first->add(*c, entries);
-            }
-          }
-        }
-
         void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
-            for (int i = 0; i < m_queries.size(); ++i) {
+            int num_queries = m_queries.size();
+            for (int i = 0; i < num_queries; ++i) {
                 Log(2).stream() << "spot: Flushing query " << i << std::endl;
 
                 auto &query = m_queries[i];
 
-                c->flush(chn, flush_info, [this,query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                c->flush(chn, flush_info, 
+                    [this,&query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
                         if (query.selector.pass(db, rec)) {
-                            query.agg.add(db, rec);
+                            query.aggregator.add(db, rec);
                         }
-                    });
+                    }
+                );
 
                 auto &json = m_jsons[i];
 
-                query.agg.flush(*c,[json](CaliperMetadataAccessInterface& db,const EntryList& list) {
+                query.aggregator.flush(*c,
+                    [&json](CaliperMetadataAccessInterface& db,const EntryList& list) {
                         std::string name;
                         TimeType value = 0;
-                        Log(2).stream() << "Banzai: inner flush\n";
 
                         for (const Entry& e : list) {
-                            Log(2).stream() << "Banzai: entry\n";
                             if (e.is_reference()) {
-                            //Log(2).stream() << "Banzai: reference entry\n";
                                 for (const Node* node = e.node(); node; node = node->parent()) {
                                     if (db.get_attribute(node->attribute()).is_nested()) {
                                         name = node->data().to_string() + (name.empty() ? "": "/") + name;
                                     }
                                 }
                             } else if (db.get_attribute(e.attribute()).name() == "inclusive#sum#time.duration") {
-                                Log(2).stream() << "Banzai: Correct attribute\n";
                                 value = e.value().to_uint();
                             }
                             else{
-                                Log(2).stream() << "Banzai: Incorrect attribute: "<<db.get_attribute(e.attribute()).name()<<"\n";
                             }
                         }
                         if (!name.empty()) {
@@ -144,60 +147,21 @@ namespace
                     });
             }
 
-            write_jsons(/*...*/);
+            write_jsons(num_queries);
         }
-
-        void flush(Caliper* c, Channel* chn, const SnapshotRecord*) {
-          for(int i =0 ;i<m_queries.size();i++) {
-            auto& m_query = m_queries[i];
-            auto& m_json = m_jsons[i];
-            std::string grouping = m_annotations_and_places[i].first;
-            std::string end_grouping = "event.end#"+grouping;
-            std::vector<std::string> metrics_of_interest { "time.inclusive.duration", 
-              grouping, end_grouping};
-            Log(2).stream() << "Banzai: outer flush\n";
-            m_query.first->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
-std::string name;
-                    TimeType value = 0;
-                    Log(2).stream() << "Banzai: inner flush\n";
-
-                    for (const Entry& e : list) {
-                        Log(2).stream() << "Banzai: entry\n";
-                        if (e.is_reference()) {
-                            //Log(2).stream() << "Banzai: reference entry\n";
-                            for (const Node* node = e.node(); node; node = node->parent()) {
-                                if (db.get_attribute(node->attribute()).is_nested()) {
-                                    name = node->data().to_string() + (name.empty() ? "": "/") + name;
-                                }
-                            }
-                        } else if (db.get_attribute(e.attribute()).name() == "inclusive#sum#time.duration") {
-                            Log(2).stream() << "Banzai: Correct attribute\n";
-                            value = e.value().to_uint();
-                        }
-                        else{
-                            Log(2).stream() << "Banzai: Incorrect attribute: "<<db.get_attribute(e.attribute()).name()<<"\n";
-                        }
-                    }
-                    if (!name.empty()) {
-                       m_json.push_back(std::make_pair(name, value));
-                    }
-            });
-          }
-          for(int i =0 ;i<m_jsons.size();i++) {
-             auto place = m_annotations_and_places[i].second;
+        void write_jsons(int num_queries) {
+          for(int i=0;i<num_queries;i++) {
+             auto place = m_annotations_and_places[i].json_location;
              auto json = m_jsons[i];
              std::string title_string = title[i];
              std::ifstream ifs(place);
-             std::cout << "Banzai: opening ifs at "<<place<<"\n";
              std::string str(std::istreambuf_iterator<char>{ifs}, {});
-             std::cout << "Banzai: string ("<<str<<")\n";
              rapidjson::Document doc;
              rapidjson::Value xtic_value; 
              rapidjson::Value commit_value; 
              xtic_value.SetString(recorded_time.c_str(),doc.GetAllocator());
              commit_value.SetString(code_version.c_str(),doc.GetAllocator());
              if(str.size() > 0){
-               std::cout << "Banzai: existing document\n";
                doc.Parse(str.c_str());
                auto& json_series_values = doc["series"];
                auto& json_commits = doc["commits"];
@@ -207,8 +171,6 @@ std::string name;
                for(auto datum : json){
                   bool found = false;
                   std::string series_name = datum.first;
-                  //for(auto& existing_series_name : json_series_values.GetArray()){
-                     //if(!series_name.compare(existing_series_name.GetString())){
                        found = true;
                        auto series_data = doc[series_name.c_str()].GetArray();
                        rapidjson::Value arrarr;
@@ -216,58 +178,56 @@ std::string name;
                        arrarr.PushBack(0,doc.GetAllocator());
                        arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
                        series_data.PushBack(arrarr,doc.GetAllocator());
-                     //} 
-                  //}
                   TimeType value = datum.second;
                } 
-            }
-            else{
-               std::cout << "Banzai: not existing document\n";
-              const char* json_string = "{}";
-              std::string y_axis = y_axes[i];
-              rapidjson::Value y_axis_value;
-              rapidjson::Value title_value;
-              title_value.SetString(title_string.c_str(),doc.GetAllocator());
-              doc.Parse(json_string);
-              y_axis_value.SetString(y_axis.c_str(), doc.GetAllocator());
-              rapidjson::Value series_array_create;
-              series_array_create.SetArray();
-              rapidjson::Value commit_array_create;
-              commit_array_create.SetArray();
-              rapidjson::Value xtic_array_create;
-              xtic_array_create.SetArray();
-              doc.AddMember("series",series_array_create,doc.GetAllocator());
-              doc.AddMember("XTics",xtic_array_create,doc.GetAllocator());
-              doc.AddMember("commits",commit_array_create,doc.GetAllocator());
-              doc.AddMember("yAxis",y_axis_value,doc.GetAllocator());
-              doc.AddMember("title",title_value,doc.GetAllocator());
-              auto& json_commits = doc["commits"];
-              auto& json_times = doc["XTics"];
-              json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
-              json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
-              rapidjson::Value& series_array = doc["series"]; 
-              for(auto datum : json) {
-                 std::string series_name = datum.first;
-                 if(series_name.size()>1){
-                   rapidjson::Value value_series_name; 
-                   value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
-                   series_array.GetArray().PushBack(value_series_name,doc.GetAllocator());
-                   rapidjson::Value outarr;
-                   outarr.SetArray();
-                   rapidjson::Value arrarr;
-                   arrarr.SetArray();
-                   arrarr.PushBack(0,doc.GetAllocator());
-                   arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
-                   outarr.PushBack(arrarr,doc.GetAllocator());
-                   value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
-                   doc.AddMember(value_series_name,outarr,doc.GetAllocator());
-                 }
-              } 
-            }
-            std::ofstream ofs(place.c_str());
-            rapidjson::OStreamWrapper osw(ofs);
-            rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
-            doc.Accept(writer);
+             }
+             else {
+               const char* json_string = "{}";
+               std::string y_axis = y_axes[i];
+               rapidjson::Value y_axis_value;
+               rapidjson::Value title_value;
+               title_value.SetString(title_string.c_str(),doc.GetAllocator());
+               doc.Parse(json_string);
+               y_axis_value.SetString(y_axis.c_str(), doc.GetAllocator());
+               rapidjson::Value series_array_create;
+               series_array_create.SetArray();
+               rapidjson::Value commit_array_create;
+               commit_array_create.SetArray();
+               rapidjson::Value xtic_array_create;
+               xtic_array_create.SetArray();
+               doc.AddMember("series",series_array_create,doc.GetAllocator());
+               doc.AddMember("XTics",xtic_array_create,doc.GetAllocator());
+               doc.AddMember("commits",commit_array_create,doc.GetAllocator());
+               doc.AddMember("yAxis",y_axis_value,doc.GetAllocator());
+               doc.AddMember("title",title_value,doc.GetAllocator());
+               auto& json_commits = doc["commits"];
+               auto& json_times = doc["XTics"];
+               json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
+               json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
+               rapidjson::Value& series_array = doc["series"]; 
+               for(auto datum : json) {
+                  std::string series_name = datum.first;
+                  if(series_name.size()>1){
+                    rapidjson::Value value_series_name; 
+                    value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
+                    series_array.GetArray().PushBack(value_series_name,doc.GetAllocator());
+                    rapidjson::Value outarr;
+                    outarr.SetArray();
+                    rapidjson::Value arrarr;
+                    arrarr.SetArray();
+                    arrarr.PushBack(0,doc.GetAllocator());
+                    arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
+                    outarr.PushBack(arrarr,doc.GetAllocator());
+                    value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
+                    doc.AddMember(value_series_name,outarr,doc.GetAllocator());
+                  }
+               } 
+             }
+
+             std::ofstream ofs(place.c_str());
+             rapidjson::OStreamWrapper osw(ofs);
+             rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+             doc.Accept(writer);
           }
         }
         
@@ -277,7 +237,7 @@ std::string name;
             divisor = config.get("time_divisor").to_int();
             code_version = config.get("code_version").to_string();
             recorded_time = config.get("recorded_time").to_string();
-            if(recorded_time.size()==0){
+            if(recorded_time.size()==0) {
               time_t rawtime;
               struct tm * timeinfo;
               time (&rawtime);
@@ -302,7 +262,7 @@ std::string name;
               std::string query = query_for_annotation(annotation);
               Log(2).stream() << "Spot: establishing query \"" <<query<<'"'<<std::endl;
               m_queries.emplace_back(create_query_processor(query));
-              m_annotations_and_places.push_back(std::make_pair(annotation,place));
+              m_annotations_and_places.push_back({annotation,"time.duration",place});
               if(use_default_title){
                 title.push_back(place);
               }
@@ -313,11 +273,13 @@ std::string name;
 
         }
 
-        QueryThing create_query_processor(std::string query){
+        QueryProcessingPipeline create_query_processor(std::string query){
            CalQLParser parser(query.c_str()); 
            if (parser.error()) {
+               CalQLParser default_parser("SELECT *"); 
+               QuerySpec default_spec(default_parser.spec());
                Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
-               return std::make_pair(nullptr,nullptr);
+               return QueryProcessingPipeline(Aggregator(default_spec),RecordSelector(default_spec));
            }
            QuerySpec    spec(parser.spec());
            return { Aggregator(spec), RecordSelector(spec) };
@@ -325,7 +287,6 @@ std::string name;
                
         static std::string query_for_annotation(std::string grouping, std::string metric = "inclusive_sum(sum#time.duration)"){
           std::string end_grouping = "event.end#"+grouping;
-          //return "SELECT " + grouping+","+metric+" " + "WHERE " +grouping+" GROUP BY " + grouping;
           return "SELECT " + grouping+","+metric+",* WHERE " +grouping;
         }
 
@@ -340,14 +301,14 @@ std::string name;
             
             chn->events().write_output_evt.connect(
                 [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
-                    instance->write_output(c, chn, info);
+                    instance->write_output_cb(c, chn, info);
                 });
             chn->events().finish_evt.connect(
                 [instance](Caliper*, Channel*){
                     delete instance;
                 });
 
-            Log(1).stream() << chn->name() << "Registered Spot service" << std::endl;
+            Log(1).stream() << "["<<chn->name() << "] : Registered Spot service" << std::endl;
         }
     };
 
