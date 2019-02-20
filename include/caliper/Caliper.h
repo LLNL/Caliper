@@ -146,6 +146,7 @@ public:
     std::string    name() const;
 
     bool           is_active() const;
+    void subscribe(Channel* data_source);
 
     friend class Caliper;
 };

@@ -92,20 +92,6 @@ namespace
             }
           }
         }
-        std::string extract_parent_name(CaliperMetadataAccessInterface& db,const Node* node,std::string metric = "time.inclusive.duration",bool initcall=false){
-          if((!node) ||(!node->attribute()) ){
-            return "";
-          }
-          if(db.get_attribute(node->attribute()).name()!=metric){
-            return extract_parent_name(db,node->parent(),metric);
-          }
-          std::string my_name = node->data().to_string();
-          if(my_name.size()>0){
-            std::string parent_name = extract_parent_name(db,node->parent(),metric);
-            return parent_name+my_name+(initcall ? "" : "/");
-          }
-          return my_name;
-        } 
         void flush(Caliper* c, Channel* chn, const SnapshotRecord*) {
           for(int i =0 ;i<m_queries.size();i++) {
             auto& m_query = m_queries[i];
@@ -114,24 +100,32 @@ namespace
             std::string end_grouping = "event.end#"+grouping;
             std::vector<std::string> metrics_of_interest { "time.inclusive.duration", 
               grouping, end_grouping};
+            Log(2).stream() << "Banzai: outer flush\n";
             m_query.first->flush(*c,[&](CaliperMetadataAccessInterface& db,const EntryList& list) {
 std::string name;
                     TimeType value = 0;
+                    Log(2).stream() << "Banzai: inner flush\n";
 
                     for (const Entry& e : list) {
+                        Log(2).stream() << "Banzai: entry\n";
                         if (e.is_reference()) {
+                            //Log(2).stream() << "Banzai: reference entry\n";
                             for (const Node* node = e.node(); node; node = node->parent()) {
                                 if (db.get_attribute(node->attribute()).is_nested()) {
                                     name = node->data().to_string() + (name.empty() ? "": "/") + name;
                                 }
                             }
                         } else if (db.get_attribute(e.attribute()).name() == "inclusive#sum#time.duration") {
+                            Log(2).stream() << "Banzai: Correct attribute\n";
                             value = e.value().to_uint();
                         }
+                        else{
+                            Log(2).stream() << "Banzai: Incorrect attribute: "<<db.get_attribute(e.attribute()).name()<<"\n";
+                        }
                     }
-                    
-                    if (!name.empty())
-m_json.push_back(std::make_pair(name, value));
+                    if (!name.empty()) {
+                       m_json.push_back(std::make_pair(name, value));
+                    }
             });
           }
           for(int i =0 ;i<m_jsons.size();i++) {
@@ -139,13 +133,16 @@ m_json.push_back(std::make_pair(name, value));
              auto json = m_jsons[i];
              std::string title_string = title[i];
              std::ifstream ifs(place);
+             std::cout << "Banzai: opening ifs at "<<place<<"\n";
              std::string str(std::istreambuf_iterator<char>{ifs}, {});
+             std::cout << "Banzai: string ("<<str<<")\n";
              rapidjson::Document doc;
              rapidjson::Value xtic_value; 
              rapidjson::Value commit_value; 
              xtic_value.SetString(recorded_time.c_str(),doc.GetAllocator());
              commit_value.SetString(code_version.c_str(),doc.GetAllocator());
              if(str.size() > 0){
+               std::cout << "Banzai: existing document\n";
                doc.Parse(str.c_str());
                auto& json_series_values = doc["series"];
                auto& json_commits = doc["commits"];
@@ -166,13 +163,11 @@ m_json.push_back(std::make_pair(name, value));
                        series_data.PushBack(arrarr,doc.GetAllocator());
                      //} 
                   //}
-                  if(!found){
-                     std::cout << "Error in adding record, bumped into unknown series "<<series_name<<std::endl;
-                  }
                   TimeType value = datum.second;
                } 
             }
             else{
+               std::cout << "Banzai: not existing document\n";
               const char* json_string = "{}";
               std::string y_axis = y_axes[i];
               rapidjson::Value y_axis_value;
@@ -211,7 +206,6 @@ m_json.push_back(std::make_pair(name, value));
                    outarr.PushBack(arrarr,doc.GetAllocator());
                    value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                    doc.AddMember(value_series_name,outarr,doc.GetAllocator());
-                   std::cout << "New series entry: "<<series_name<<std::endl;
                  }
               } 
             }
@@ -221,29 +215,9 @@ m_json.push_back(std::make_pair(name, value));
             doc.Accept(writer);
           }
         }
-        // TODO: reimplement
-        Spot(Caliper* c, Channel* chn)
-            { }
-
-        //
-        // --- callback functions
-        //
-        static std::pair<AggregationHandler,SelectionHandler> create_query_processor(std::string query){
-           CalQLParser parser(query.c_str()); 
-           if (parser.error()) {
-               Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
-               return std::make_pair(nullptr,nullptr);
-           }
-           QuerySpec    spec(parser.spec());
-           return std::make_pair(new Aggregator(spec),new RecordSelector(spec));
-        }
-        static std::string query_for_annotation(std::string grouping, std::string metric = "time.inclusive.duration"){
-          std::string end_grouping = "event.end#"+grouping;
-          return "SELECT " + grouping+","+end_grouping+",sum("+metric+") " + "WHERE " +grouping+","+end_grouping+","+metric + " GROUP BY " + end_grouping+","+grouping;
-        }
-        void pre_write_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+        Spot(Caliper* c, Channel* chn) {
             ConfigSet    config = chn->config().init("spot", s_configdata);
-            const std::string&  config_string = config.get("config").to_string().c_str();
+            std::string  config_string = config.get("config").to_string().c_str();
             divisor = config.get("time_divisor").to_int();
             code_version = config.get("code_version").to_string();
             recorded_time = config.get("recorded_time").to_string();
@@ -257,7 +231,7 @@ m_json.push_back(std::make_pair(name, value));
             std::string title_string = config.get("title").to_string();
             bool use_default_title = (title_string.size() == 0);
             if(use_default_title){
-              Log(0).stream() << "Spot: using default titles for graphs\n";
+              Log(2).stream() << "Spot: using default titles for graphs\n";
             }
             std::string y_axes_string = config.get("y_axes").to_string();
             util::split(y_axes_string,':',std::back_inserter(y_axes));
@@ -270,7 +244,7 @@ m_json.push_back(std::make_pair(name, value));
               std::string annotation = annotation_and_place[0];
               std::string& place = annotation_and_place[1];
               std::string query = query_for_annotation(annotation);
-              Log(0).stream() << "Spot: establishing query \"" <<query<<'"'<<std::endl;
+              Log(2).stream() << "Spot: establishing query \"" <<query<<'"'<<std::endl;
               m_queries.emplace_back(create_query_processor(query));
               m_annotations_and_places.push_back(std::make_pair(annotation,place));
               if(use_default_title){
@@ -283,32 +257,30 @@ m_json.push_back(std::make_pair(name, value));
 
         }
 
-        //static void write_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* snapshot) {
-        //    if (!s_instance)
-        //        return;
-
-        //    s_instance->process_snapshot(c, snapshot);
-        //}
-
-        //static void post_write_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
-        //    if (!s_instance)
-        //        return;
-
-        //    s_instance->flush(c, flush_info);
-        //}
+        static std::pair<AggregationHandler,SelectionHandler> create_query_processor(std::string query){
+           CalQLParser parser(query.c_str()); 
+           if (parser.error()) {
+               Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
+               return std::make_pair(nullptr,nullptr);
+           }
+           QuerySpec    spec(parser.spec());
+           return std::make_pair(new Aggregator(spec),new RecordSelector(spec));
+        }
+               
+        static std::string query_for_annotation(std::string grouping, std::string metric = "inclusive_sum(sum#time.duration)"){
+          std::string end_grouping = "event.end#"+grouping;
+          //return "SELECT " + grouping+","+metric+" " + "WHERE " +grouping+" GROUP BY " + grouping;
+          return "SELECT " + grouping+","+metric+",* WHERE " +grouping;
+        }
 
     public:
 
         ~Spot()
-            { }
+            { 
+            }
 
         static void create(Caliper* c, Channel* chn) {
             Spot* instance = new Spot(c, chn);
-            chn->events().pre_flush_evt.connect(
-                [instance](Caliper* c, Channel* chn, const SnapshotRecord* sr){
-                  instance->pre_write_cb(c,chn,sr);
-                }
-            );
             chn->events().process_snapshot.connect(
                 [instance](Caliper* c, Channel* chn, const SnapshotRecord* sr1, const SnapshotRecord* sr2){
                   instance->process_snapshot(c, chn, sr2);
@@ -320,7 +292,7 @@ m_json.push_back(std::make_pair(name, value));
                 }
             );
 
-            Log(1).stream() << "Registered Spot service" << std::endl;
+            Log(1).stream() << chn->name() << "Registered Spot service" << std::endl;
         }
     };
 
@@ -329,7 +301,6 @@ m_json.push_back(std::make_pair(name, value));
           "Attribute:Filename pairs in which to dump Spot data",
           "Attribute:Filename pairs in which to dump Spot data\n"
           "Example: function:testname.json,physics_package:packages.json"
-          "   stderr: Standard error stream,\n"
           " or a file name.\n"
         },
         { "recorded_time", CALI_TYPE_STRING, "",
