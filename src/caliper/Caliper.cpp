@@ -225,18 +225,6 @@ Channel::events()
     return mP->events;
 }
 
-void Channel::subscribe(Channel* data_source){
-  Caliper c;
-  data_source->events().write_output_evt.connect(
-      [this](Caliper* c, Channel* chn, const SnapshotRecord* sr){
-        std::vector<Entry> entry_list = sr->to_entrylist();
-        for(auto entry: entry_list){
-
-        }
-      }
-      );
-}
-
 RuntimeConfig
 Channel::config()
 {
