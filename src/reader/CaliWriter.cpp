@@ -142,8 +142,10 @@ struct CaliWriter::CaliWriterImpl
         {
             std::lock_guard<std::mutex>
                 g(m_os_lock);
+
+            std::ostream* real_os = m_os.stream();
             
-            ::write_node_content(m_os.stream(), node);
+            ::write_node_content(*real_os, node);
             ++m_num_written;
         }
 
@@ -183,7 +185,9 @@ struct CaliWriter::CaliWriterImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
 
-            ::write_record_content(m_os.stream(), record_type, nr, ni, rec);
+            std::ostream* real_os = m_os.stream();
+
+            ::write_record_content(*real_os, record_type, nr, ni, rec);
             ++m_num_written;
         }
     }

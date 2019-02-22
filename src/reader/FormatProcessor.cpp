@@ -169,6 +169,8 @@ FormatProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryL
 void
 FormatProcessor::flush(CaliperMetadataAccessInterface& db)
 {
-    if (mP->m_formatter)
-        mP->m_formatter->flush(db, mP->m_stream.stream());
+    if (mP->m_formatter) {
+        std::ostream* os = mP->m_stream.stream();        
+        mP->m_formatter->flush(db, *os);
+    }
 }

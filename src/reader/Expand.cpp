@@ -165,8 +165,10 @@ struct Expand::ExpandImpl
         if (nentry > 0) {
             std::lock_guard<std::mutex>
                 g(m_os_lock);
+
+            std::ostream* real_os = m_os.stream();
             
-            m_os.stream() << os.str() << endl;
+            *real_os << os.str() << endl;
         }
     }
 };

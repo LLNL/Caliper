@@ -119,7 +119,9 @@ class TextLogService
         if (!stream)
             stream.set_filename(stream_filename.c_str(), *c, rec);
 
-        formatter.print(stream.stream(), *c, rec) << std::endl;
+        std::ostream* osptr = stream.stream();
+
+        formatter.print(*osptr, *c, rec) << std::endl;
     }
 
     void post_init(Caliper* c, Channel* chn) {
