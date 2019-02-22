@@ -271,11 +271,13 @@ struct JsonFormatter::JsonFormatterImpl
         if (!key_value_pairs.empty()) {
             std::lock_guard<std::mutex>
                 g(m_os_lock);
+
+            std::ostream* real_os = m_os.stream();
             
-            m_os.stream() << (m_opt_split ? "" : (m_first_row ? "[\n" : ","));
-            m_os.stream() << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
-            m_os.stream() << os.str();
-            m_os.stream() << (m_opt_pretty ? "\n" : "" ) << "}";
+            *real_os << (m_opt_split ? "" : (m_first_row ? "[\n" : ","));
+            *real_os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
+            *real_os << os.str();
+            *real_os << (m_opt_pretty ? "\n" : "" ) << "}";
             
             m_first_row = false;
         }
@@ -321,14 +323,16 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
     mP->print(db, list);
 }
 
-void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
+void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
+    std::ostream* real_os = mP->m_os.stream();
+    
     if (!mP->m_opt_split)
-        os << "\n]";
+        *real_os << "\n]";
 
     if (mP->m_opt_globals)
-        mP->write_globals(db, os);
+        mP->write_globals(db, *real_os);
     
-    os << std::endl;
+    *real_os << std::endl;
 }
 

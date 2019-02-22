@@ -181,8 +181,10 @@ struct UserFormatter::FormatImpl
         {
             std::lock_guard<std::mutex>
                 g(m_os_lock);
+
+            std::ostream* real_os = m_os.stream();
             
-            m_os.stream() << os.str() <<std::endl;
+            *real_os << os.str() <<std::endl;
         }
     }
 };
@@ -193,8 +195,10 @@ UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec)
 {
     mP->configure(spec);
 
-    if (spec.format.args.size() > 1)
-        os.stream() << spec.format.args[1] << std::endl;
+    if (spec.format.args.size() > 1) {
+        std::ostream* real_os = os.stream();
+        *real_os << spec.format.args[1] << std::endl;
+    }
 }
 
 UserFormatter::~UserFormatter()

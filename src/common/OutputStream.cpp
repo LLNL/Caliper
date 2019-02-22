@@ -52,6 +52,8 @@ struct OutputStream::OutputStreamImpl
     std::string   filename;
     std::ofstream fs;
 
+    std::ostream* user_os;
+
     void init() {        
         if (is_initialized)
             return;
@@ -72,32 +74,37 @@ struct OutputStream::OutputStreamImpl
         }
     }
 
-    std::ostream& stream() {
+    std::ostream* stream() {
         init();
     
         switch (type) {
+        case None:
+            return &fs;
         case StdOut:
-            return std::cout;
+            return &std::cout;
         case StdErr:
-            return std::cerr;
-        default:
-            return fs;
+            return &std::cerr;
+        case File:
+            return &fs;
+        case User:
+            return user_os;
         }
     }
 
     void reset() {
         fs.close();
-        filename.clear();        
+        filename.clear();
+        user_os = nullptr;
         type = StreamType::None;
         is_initialized = false;
     }
     
     OutputStreamImpl()
-        : type(StreamType::None), is_initialized(false)
+        : type(StreamType::None), is_initialized(false), user_os(nullptr)
     { }
 
     OutputStreamImpl(const char* name)
-        : type(StreamType::None), is_initialized(false), filename(name)
+        : type(StreamType::None), is_initialized(false), filename(name), user_os(nullptr)
     { }
 };
 
@@ -121,7 +128,7 @@ OutputStream::type() const
     return mP->type;
 }
 
-std::ostream&
+std::ostream*
 OutputStream::stream()
 {
     return mP->stream();
@@ -132,6 +139,15 @@ OutputStream::set_stream(StreamType type)
 {
     mP->reset();
     mP->type = type;
+}
+
+void
+OutputStream::set_stream(std::ostream* os)
+{
+    mP->reset();
+    
+    mP->type    = StreamType::User;
+    mP->user_os = os;
 }
 
 void

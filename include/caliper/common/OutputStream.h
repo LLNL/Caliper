@@ -60,7 +60,8 @@ public:
         None,
         StdOut,
         StdErr,
-        File
+        File,
+        User
     };
 
     /// \brief Returns \a true if the stream is initialized, otherwise
@@ -71,7 +72,7 @@ public:
 
     /// \brief Return a C++ ostream. Opens/creates the underlying file stream
     ///   if needed.
-    std::ostream& stream();
+    std::ostream* stream();
 
     OutputStream();
 
@@ -80,6 +81,10 @@ public:
     /// \brief Set stream type. (Note: for file streams, use \a set_filename).
     void
     set_stream(StreamType type);
+
+    /// \brief Assign a user-given stream
+    void
+    set_stream(std::ostream* os);
 
     /// \brief Set stream's file name to \a filename
     void

@@ -362,7 +362,9 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             std::lock_guard<std::mutex>
                 g(m_os_lock);
 
-            m_os.stream() << (m_row_count++ > 0 ? ",\n    " : "{\n  \"data\": [\n    ") << os.str();
+            std::ostream* real_os = m_os.stream();
+
+            *real_os << (m_row_count++ > 0 ? ",\n    " : "{\n  \"data\": [\n    ") << os.str();
         }
     }
 
@@ -391,34 +393,36 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     }
     
     void write_metadata(CaliperMetadataAccessInterface& db) {
+        std::ostream* real_os = m_os.stream();
+        
         // close "data" field, start "columns" 
-        m_os.stream() << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
+        *real_os << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
 
         {
             int count = 0;
             for (const Column& c : m_columns)
-                util::write_esc_string(m_os.stream() << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
+                util::write_esc_string(*real_os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
         }
         
         // close "columns", start "column_metadata"
-        m_os.stream() << " ],\n  \"column_metadata\": [";
+        *real_os << " ],\n  \"column_metadata\": [";
         
         {
             int count = 0;
             
             for (const Column& c : m_columns) 
-                m_os.stream() << (count++ > 0 ? " }, { " : " { ")
+                *real_os << (count++ > 0 ? " }, { " : " { ")
                               << "\"is_value\": " << (c.is_hierarchy ? "false" : "true");
             
             if (count > 0)
-                m_os.stream() << " } ";
+                *real_os << " } ";
         }
         
         // close "column_metadata", write "nodes"
-        m_hierarchy.write_nodes( m_os.stream() << " ],\n  " );
+        m_hierarchy.write_nodes( *real_os << " ],\n  " );
 
         // write globals and finish
-        write_globals(m_os.stream(), db) << "\n}" << std::endl;
+        write_globals(*real_os, db) << "\n}" << std::endl;
     }
 };
 
