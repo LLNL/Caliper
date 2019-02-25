@@ -759,6 +759,7 @@ cali_make_loop_iteration_attribute(const char* name);
 
 #ifdef __cplusplus
 
+#include <iostream>
 #include <map>
 #include <string>
 
@@ -771,7 +772,7 @@ typedef std::map<std::string, std::string> config_map_t;
  * \brief Create a new %Caliper channel with a given key-value
  *   configuration profile.
  *
- * An channel controls %Caliper's annotation tracking and measurement
+ * A channel controls %Caliper's annotation tracking and measurement
  * activities. Multiple channels can be active at the same time, independent
  * of each other. Each channel has its own runtime configuration,
  * blackboard, and active services.
@@ -807,7 +808,46 @@ typedef std::map<std::string, std::string> config_map_t;
 cali_id_t
 create_channel(const char* name, int flags, const config_map_t& cfg);
 
-}
+/**
+ * \brief Run a CalQL query on channel \a channel_id and write its output into
+ *   the given C++ ostream.
+ *
+ * This call will flush a channel's trace or aggregation buffers, run a CalQL
+ * query on the output, and write the query result into the given C++ 
+ * ostream.
+ *
+ * Example:
+ *
+ * \code
+ *   // Create a channel for profiling
+ *   cali_id_t profile_chn = 
+ *     cali::create_channel("profile", 0, {
+ *         { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
+ *         { "CALI_TIMESTAMP_SNAPSHOT_DURATION", "true" },
+ *       });
+ * 
+ *   const char* query = 
+ *     "SELECT annotation AS Region,sum(sum#time.duration AS Time WHERE annotation FORMAT table";
+ *
+ *   CALI_MARK_BEGIN("My region");
+ *   // ... 
+ *   CALI_MARK_END("My region");
+ *
+ *   // Write a profile report to std::cout
+ *   cali::write_report_for_query(profile_chn, query, CALI_FLUSH_CLEAR_BUFFERS, std::cout);
+ * \endcode
+ * 
+ * \param channel_id ID of the channel to flush/query.
+ * \param query      The query to run in CalQL syntax. 
+ *    Should include at least a FORMAT statement.
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
+ *    Use 0 for default behavior.
+ * \param os         A C++ ostream to write the query output to.
+ */
+void
+write_report_for_query(cali_id_t channel_id, const char* query, int flush_opts, std::ostream& os);
+
+} // namespace cali
 
 #endif
 
