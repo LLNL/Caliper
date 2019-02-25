@@ -40,8 +40,12 @@
 #include "caliper/common/CompressedSnapshotRecord.h"
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
+
+#include "caliper/reader/CalQLParser.h"
+#include "caliper/reader/QueryProcessor.h"
 
 #include <cstring>
 #include <unordered_map>
@@ -805,7 +809,7 @@ create_channel(const char* name, int flags, const config_map_t& cfgmap)
     cfg.allow_read_env(flags & CALI_CHANNEL_ALLOW_READ_ENV);
     cfg.import(cfgmap);
 
-    Caliper     c;
+    Caliper  c;
     Channel* chn = c.create_channel(name, cfg);
 
     if (!chn)
@@ -814,6 +818,43 @@ create_channel(const char* name, int flags, const config_map_t& cfgmap)
         c.deactivate_channel(chn);
 
     return chn->id();
+}
+
+void
+write_report_for_query(cali_id_t chn_id, const char* query, int flush_opts, std::ostream& os)
+{
+    Caliper  c;
+    Channel* chn = c.get_channel(chn_id);
+
+    if (!chn) {
+        Log(0).stream() << "write_report_for_query(): invalid channel id " << chn_id
+                        << std::endl;
+
+        return;
+    }
+            
+    CalQLParser parser(query);
+
+    if (parser.error()) {
+        Log(0).stream() << "write_report_for_query(): query parse error: "
+                        << parser.error_msg()
+                        << std::endl;
+
+        return;
+    }
+
+    QuerySpec    spec(parser.spec());
+    OutputStream stream;
+
+    stream.set_stream(&os);
+
+    QueryProcessor queryP(spec, stream);
+
+    c.flush(chn, nullptr, [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+            queryP.process_record(db, rec);
+        });
+
+    queryP.flush(c);
 }
 
 }

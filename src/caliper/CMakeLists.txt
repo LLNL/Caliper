@@ -10,8 +10,6 @@ set(CALIPER_SOURCES
     cali.cpp
     cali_datatracker.cpp
     config_sanity_check.cpp)
-
-# add_subdirectory(report)
   
 add_library(caliper 
   $<TARGET_OBJECTS:caliper-services>

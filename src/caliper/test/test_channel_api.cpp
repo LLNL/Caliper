@@ -184,3 +184,25 @@ TEST(ChannelAPITest, C_API) {
     EXPECT_EQ(c.get_channel(chn_b_id), nullptr);
     EXPECT_EQ(c.get_channel(chn_c_id), nullptr);
 }
+
+TEST(ChannelAPITest, WriteReport) {
+    Caliper   c;
+    cali_id_t chn_id =
+        create_channel("chn.report", 0, {
+                { "CALI_SERVICES_ENABLE", "event,trace" }
+            });
+
+    cali_begin_int_byname("chn.report.int", 42);
+    cali_end_byname("chn.report.int");
+
+    std::ostringstream oss;
+
+    const char* query =
+        "SELECT chn.report.int WHERE chn.report.int FORMAT expand";
+
+    write_report_for_query(chn_id, query, 0, oss);
+
+    EXPECT_EQ(oss.str(), std::string("chn.report.int=42\n"));
+
+    cali_delete_channel(chn_id);
+}
