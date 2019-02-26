@@ -196,7 +196,7 @@ void test_aggr_warnings()
         cali::create_channel("test_aggregate_warnings", 0, {
                 { "CALI_SERVICES_ENABLE",      "aggregate" },
                 { "CALI_AGGREGATE_KEY",        "function,aw.dbl,aw.int.1,aw.int.2,aw.int.3,aw.int.4,aw.int.5" },
-                { "CALI_CALIPER_CONFIG_CHECK", "false"     }
+                { "CALI_CHANNEL_CONFIG_CHECK", "false"     }
             });
 
     cali_channel_push_snapshot(chn_id, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS,
