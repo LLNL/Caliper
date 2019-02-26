@@ -220,7 +220,6 @@ public:
     cali_err  begin(Channel* chn, const Attribute& attr, const Variant& data);
     cali_err  end(Channel* chn, const Attribute& attr);
     cali_err  set(Channel* chn, const Attribute& attr, const Variant& data);
-    cali_err  set_path(Channel* chn, const Attribute& attr, size_t n, const Variant data[]);
 
     /// \}
     /// \name Memory region tracking (single channel)

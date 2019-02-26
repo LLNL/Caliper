@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -39,6 +39,9 @@
 #include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/OutputStream.h"
+
+#include "caliper/reader/Expand.h"
 
 #include <atomic>
 #include <iostream>
@@ -53,28 +56,20 @@ using namespace cali;
 namespace
 {
 
-std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os) 
+std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
 {
     SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
     SnapshotRecord snapshot(snapshot_data);
 
     c->pull_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);
 
-    std::map< Attribute, std::vector<Variant> > rec = snapshot.unpack(*c);
-
     os << "{ ";
 
-    int ca = 0;
+    OutputStream stream;
+    stream.set_stream(&os);
 
-    for ( auto const &p : rec ) {
-        os << (ca++ > 0 ? ", " : "") << "\"" << p.first.name() << "\"=\"";
-
-        int cv = 0;
-        for ( auto const &v : p.second )
-            os << (cv++ > 0 ? "/" : "") << v.to_string();
-
-        os << "\"";
-    }
+    cali::Expand exp(stream, "");
+    exp.process_record(*c, snapshot.to_entrylist());
 
     return os << " }";
 }
@@ -83,7 +78,7 @@ class ValidatorService
 {
     static Attribute s_class_nested_attr;
 
-    class StackValidator 
+    class StackValidator
     {
         std::map< Attribute, std::vector<Variant> > m_region_stack;
         bool m_error_found;
@@ -120,9 +115,9 @@ class ValidatorService
                 m_error_found = true;
 
                 print_snapshot(c, chn,
-                               Log(0).stream() << "validator: end(\"" 
+                               Log(0).stream() << "validator: end(\""
                                << attr.name() << "\"=\"" << value.to_string() << "\") "
-                               << " has no matching begin().\n    context: " ) 
+                               << " has no matching begin().\n    context: " )
                     << std::endl;
             } else {
                 Variant v_stack_attr;
@@ -144,9 +139,9 @@ class ValidatorService
 
                     print_snapshot(c, chn,
                                    Log(0).stream() << "validator: incorrect nesting: trying to end \""
-                                   << attr.name() << "\"=\"" << value.to_string() 
-                                   << "\" but current attribute is \"" 
-                                   << c->get_attribute(v_stack_attr.to_id()).name() 
+                                   << attr.name() << "\"=\"" << value.to_string()
+                                   << "\" but current attribute is \""
+                                   << c->get_attribute(v_stack_attr.to_id()).name()
                                    << "\".\n    context: " )
                         << std::endl;
                 } else if (!(value == v_stack_val)) {
@@ -154,8 +149,8 @@ class ValidatorService
 
                     print_snapshot(c, chn,
                                    Log(0).stream() << "validator: incorrect nesting: trying to end \""
-                                   << attr.name() << "\"=\"" << value.to_string() 
-                                   << "\" but current value is \"" 
+                                   << attr.name() << "\"=\"" << value.to_string()
+                                   << "\" but current value is \""
                                    << v_stack_val.to_string() << "\".\n    context: " )
                         << std::endl;
                 }
@@ -173,7 +168,7 @@ class ValidatorService
                        << p.first.name() << "=";
 
                     int cv = 0;
-                    for (auto const &v : p.second) 
+                    for (auto const &v : p.second)
                         os << (cv++ > 0 ? "/" : "") << v;
 
                     Log(0).stream() << os.str() << std::endl;
@@ -216,7 +211,7 @@ class ValidatorService
 
             if (!v) {
                 v = new StackValidator;
-                
+
                 if (exp_validators.size() <= expI)
                     exp_validators.resize(expI + 1);
 
@@ -248,10 +243,10 @@ class ValidatorService
         //     ++global_errors;
 
         if (global_errors.load() > 0)
-            Log(0).stream() << "validator: Annotation nesting errors found" 
+            Log(0).stream() << "validator: Annotation nesting errors found"
                             << std::endl;
         else
-            Log(1).stream() << "validator: No annotation nesting errors found" 
+            Log(1).stream() << "validator: No annotation nesting errors found"
                             << std::endl;
     }
 
@@ -284,7 +279,7 @@ class ValidatorService
                 ++global_errors;
         }
     }
-    
+
     ValidatorService(Caliper* c, Channel*)
             : proc_stack(new StackValidator), global_errors(0)
         { }
@@ -293,8 +288,8 @@ public:
 
     static void validator_register(Caliper* c, Channel* chn) {
         if (s_class_nested_attr == Attribute::invalid)
-            s_class_nested_attr = 
-                c->create_attribute("validator.nested", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);            
+            s_class_nested_attr =
+                c->create_attribute("validator.nested", CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
 
         ValidatorService* instance = new ValidatorService(c, chn);
 

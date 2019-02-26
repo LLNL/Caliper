@@ -59,34 +59,6 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
-void make_hierarchy_1(cali::Channel* chn)
-{
-    cali::Caliper   c;    
-    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
-
-    cali::Variant   data[3] = {
-        { CALI_TYPE_STRING, "h1_l0", 5 },
-        { CALI_TYPE_STRING, "h1_l1", 5 },
-        { CALI_TYPE_STRING, "h1_l2", 5 }
-    };
-
-    c.set_path(chn, attr, 3, data);
-}
-
-void make_hierarchy_2(cali::Channel* chn)
-{
-    cali::Caliper   c;
-    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
-
-    cali::Variant   data[3] = {
-        { CALI_TYPE_STRING, "h2_l0", 5 },
-        { CALI_TYPE_STRING, "h2_l1", 5 },
-        { CALI_TYPE_STRING, "h2_l2", 5 }
-    };
-
-    c.set_path(chn, attr, 3, data);
-}
-
 void test_blob()
 {
     // An annotation with a user-defined datatype
@@ -177,23 +149,6 @@ void test_escaping()
     w.end();
 }
 
-void test_hierarchy()
-{
-    cali::RuntimeConfig cfg;
-    
-    cali::Caliper      c;
-    cali::Channel*   chn =
-        c.create_channel("hierarchy.channel", cfg);
-    
-    cali::Annotation h("hierarchy");
-
-    h.set(1);
-    make_hierarchy_1(chn);
-    h.set(2);
-    make_hierarchy_2(chn);
-    h.end();
-}
-
 void test_cross_scope()
 {
     begin_foo_op();
@@ -241,7 +196,7 @@ void test_aggr_warnings()
         cali::create_channel("test_aggregate_warnings", 0, {
                 { "CALI_SERVICES_ENABLE",      "aggregate" },
                 { "CALI_AGGREGATE_KEY",        "function,aw.dbl,aw.int.1,aw.int.2,aw.int.3,aw.int.4,aw.int.5" },
-                { "CALI_CALIPER_CONFIG_CHECK", "false"     }
+                { "CALI_CHANNEL_CONFIG_CHECK", "false"     }
             });
 
     cali_channel_push_snapshot(chn_id, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS,
@@ -301,6 +256,17 @@ void test_config_after_init()
     cali_config_set("CALI_SERVICES_ENABLE", "debug");
 }
 
+void test_nesting_error()
+{
+    cali::Annotation a("test.nesting-error.a", CALI_ATTR_NESTED);
+    cali::Annotation b("test.nesting-error.b", CALI_ATTR_NESTED);
+
+    a.begin(11);
+    b.begin(22);
+    a.end();
+    b.end();
+}
+
 int main(int argc, char* argv[])
 {
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
@@ -325,6 +291,7 @@ int main(int argc, char* argv[])
         { "cross-scope",              test_cross_scope        },
         { "attribute-prop-preset",    test_attr_prop_preset   },
         { "config-after-init",        test_config_after_init  },
+        { "nesting-error",            test_nesting_error      },
         { 0, 0 }
     };
     

@@ -42,6 +42,7 @@ TEST(AttributeAPITest, ValidAttribute) {
     EXPECT_STREQ(cali_attribute_name(attr_id), "test.attribute.api");
     EXPECT_EQ(cali_attribute_type(attr_id), CALI_TYPE_STRING);
     EXPECT_EQ(cali_find_attribute("test.attribute.api"), attr_id);
+    EXPECT_TRUE(c.attribute_exists("test.attribute.api"));
 
     Attribute attr = c.get_attribute(attr_id);
 
@@ -71,6 +72,8 @@ TEST(AttributeAPITest, InvalidAttribute) {
     EXPECT_EQ(cali_attribute_type(CALI_INV_ID), CALI_TYPE_INV);
     EXPECT_EQ(cali_attribute_name(CALI_INV_ID), nullptr);
     EXPECT_EQ(cali_find_attribute("test.attribute.api.nope"), CALI_INV_ID);
+    EXPECT_FALSE(Caliper::instance().attribute_exists("test.attribute.api.nope"));
+
 }
 
 TEST(AttributeAPITest, GlobalAttributes) {
