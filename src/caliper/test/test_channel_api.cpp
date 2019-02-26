@@ -11,9 +11,9 @@ TEST(ChannelAPITest, MultiChannel) {
     Caliper     c;
 
     cali_id_t chn_a_id =
-        create_channel("chn.m.a", 0, { { "CALI_CALIPER_CONFIG_CHECK", "false" } });
+        create_channel("chn.m.a", 0, { { "CALI_CHANNEL_CONFIG_CHECK", "false" } });
     cali_id_t chn_b_id =
-        create_channel("chn.m.b", 0, { { "CALI_CALIPER_CONFIG_CHECK", "false" } });
+        create_channel("chn.m.b", 0, { { "CALI_CHANNEL_CONFIG_CHECK", "false" } });
 
     Channel* chn_a = c.get_channel(chn_a_id);
     Channel* chn_b = c.get_channel(chn_b_id);
@@ -57,7 +57,7 @@ TEST(ChannelAPITest, MultiChannel) {
 
 TEST(ChannelAPITest, C_API) {
     const char* cfg[][2] = {
-        { "CALI_CALIPER_CONFIG_CHECK",  "false" },
+        { "CALI_CHANNEL_CONFIG_CHECK",  "false" },
         { nullptr, nullptr }
     };
 
@@ -189,7 +189,8 @@ TEST(ChannelAPITest, WriteReport) {
     Caliper   c;
     cali_id_t chn_id =
         create_channel("chn.report", 0, {
-                { "CALI_SERVICES_ENABLE", "event,trace" }
+                { "CALI_SERVICES_ENABLE",      "event,trace" },
+                { "CALI_CHANNEL_CONFIG_CHECK", "false"       }
             });
 
     cali_begin_int_byname("chn.report.int", 42);

@@ -275,7 +275,19 @@ struct Caliper::ThreadData
             Caliper::release();
             
         if (Log::verbosity() >= 2)
-            tree.print_statistics( Log(2).stream() << "Releasing Caliper thread data: \n" ) << std::endl;
+            print_detailed_stats( Log(2).stream() );
+    }
+
+    void print_detailed_stats(std::ostream& os) {
+        tree.print_statistics( os << "Releasing Caliper thread data: \n" )
+            << std::endl;
+
+        for (size_t i = 0; i < chnT.size(); ++i) {
+            if (chnT[i] && chnT[i]->blackboard.count() > 0) {
+                chnT[i]->blackboard.print_statistics( os << "  channel " << i << " blackboard:\n    " )
+                    << std::endl;
+            }
+        }
     }
 
     bool check_and_alloc(size_t min_num_chn, bool alloc) {
@@ -569,15 +581,11 @@ bool
 Caliper::attribute_exists(const std::string& name) const
 {
     std::lock_guard<::siglock>
-        g(sT->lock);
+        gs(sT->lock);
+    std::lock_guard<std::mutex>
+        ga(sG->attribute_lock);
 
-    sG->attribute_lock.lock();
-
-    auto it = sG->attribute_nodes.find(name);
-
-    sG->attribute_lock.unlock();
-
-    return (it!= sG->attribute_nodes.end());
+    return (sG->attribute_nodes.find(name) != sG->attribute_nodes.end());
 }
 
 /// \brief Find an attribute by name
@@ -1093,63 +1101,6 @@ Caliper::set(Channel* chn, const Attribute& attr, const Variant& data)
     return ret;
 }
 
-/// \brief Set a list of values for attribute \a attr blackboard.
-///
-/// Sets the given values on the blackboard. Overwrites
-/// the previous values of the same attribute.
-///
-/// This function invokes pre_set/post_set callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key
-/// \param n    Number of values in list
-/// \param data List (array) of values
-
-cali_err
-Caliper::set_path(Channel* chn, const Attribute& attr, size_t n, const Variant* data) {
-    cali_err ret = CALI_SUCCESS;
-
-    if (n < 1)
-        return CALI_SUCCESS;
-    if (attr == Attribute::invalid)
-        return CALI_EINV;
-
-    int prop  = attr.properties();
-    int scope = prop & CALI_ATTR_SCOPE_MASK;
-    
-    Blackboard* bb = nullptr;
-
-    if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->chnT[chn->id()]->blackboard;
-    } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &chn->mP->blackboard;
-    }
-
-    std::lock_guard<::siglock>
-        g(sT->lock);
-    
-    // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
-        chn->mP->events.pre_set_evt(this, chn, attr, data[n-1]);
-
-    if (prop & CALI_ATTR_ASVALUE) {
-        Log(0).stream() << "error: set_path() invoked with immediate-value attribute " << attr.name() << endl;
-        ret = CALI_EINV;
-    } else {
-        Attribute key = chn->mP->get_key(attr, sG->key_attr);
-
-        bb->set(key, sT->tree.replace_all_in_path(bb->get_node(key), attr, n, data));
-    }
-
-    // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
-        chn->mP->events.post_set_evt(this, chn, attr, data[n-1]);
-
-    return ret;
-}
-
 // --- Query
 
 /// \brief Retrieve top-most entry for the given attribute key from the blackboard
@@ -1390,7 +1341,7 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 
     Log(1).stream() << "Creating channel " << name << std::endl;
 
-    if (chn->config().get("caliper", "config_check").to_bool())
+    if (chn->config().get("channel", "config_check").to_bool())
         config_sanity_check(chn->config());
     if (Log::verbosity() >= 3)
         chn->config().print( Log(3).stream() << "Configuration:\n" );

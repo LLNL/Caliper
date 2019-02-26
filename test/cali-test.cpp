@@ -59,34 +59,6 @@ void end_foo_op()
     cali::Annotation("foo").end();
 }
 
-void make_hierarchy_1(cali::Channel* chn)
-{
-    cali::Caliper   c;    
-    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
-
-    cali::Variant   data[3] = {
-        { CALI_TYPE_STRING, "h1_l0", 5 },
-        { CALI_TYPE_STRING, "h1_l1", 5 },
-        { CALI_TYPE_STRING, "h1_l2", 5 }
-    };
-
-    c.set_path(chn, attr, 3, data);
-}
-
-void make_hierarchy_2(cali::Channel* chn)
-{
-    cali::Caliper   c;
-    cali::Attribute attr = c.create_attribute("misc.hierarchy", CALI_TYPE_STRING);
-
-    cali::Variant   data[3] = {
-        { CALI_TYPE_STRING, "h2_l0", 5 },
-        { CALI_TYPE_STRING, "h2_l1", 5 },
-        { CALI_TYPE_STRING, "h2_l2", 5 }
-    };
-
-    c.set_path(chn, attr, 3, data);
-}
-
 void test_blob()
 {
     // An annotation with a user-defined datatype
@@ -175,23 +147,6 @@ void test_escaping()
     w.end();
     w.end();
     w.end();
-}
-
-void test_hierarchy()
-{
-    cali::RuntimeConfig cfg;
-    
-    cali::Caliper      c;
-    cali::Channel*   chn =
-        c.create_channel("hierarchy.channel", cfg);
-    
-    cali::Annotation h("hierarchy");
-
-    h.set(1);
-    make_hierarchy_1(chn);
-    h.set(2);
-    make_hierarchy_2(chn);
-    h.end();
 }
 
 void test_cross_scope()
