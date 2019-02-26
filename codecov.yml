@@ -3,3 +3,4 @@ coverage:
     - test/**
     - **/test/**
     - **/rapidjson/**
+    - src/reader/sqlite/**
