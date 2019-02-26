@@ -227,7 +227,7 @@ class CuptiTraceService
     }
 
     size_t
-    flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {    
+    flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
         switch (rec->kind) {
         case CUPTI_ACTIVITY_KIND_DEVICE:
         {
@@ -347,7 +347,7 @@ class CuptiTraceService
         
             c->make_record(6, attr, data, snapshot, parent);
             
-            proc_fn(&snapshot);
+            proc_fn(*c, snapshot.to_entrylist());
 
             ++num_memcpy_recs;
 
@@ -412,7 +412,7 @@ class CuptiTraceService
         
             c->make_record(5, attr, data, snapshot, parent);
             
-            proc_fn(&snapshot);
+            proc_fn(*c, snapshot.to_entrylist());
 
             ++num_kernel_recs;
 
