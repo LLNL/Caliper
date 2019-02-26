@@ -115,21 +115,3 @@ SnapshotRecord::to_entrylist() const
 
     return vec;
 }
-
-std::map< Attribute, std::vector<Variant> >
-SnapshotRecord::unpack(CaliperMetadataAccessInterface& db) const
-{
-    std::map< Attribute, std::vector<Variant> > rec;
-
-    // unpack node entries 
-    for (size_t i = 0; i < m_sizes.n_nodes; ++i)
-        for (const cali::Node* node = m_node_array[i]; node; node = node->parent())
-            if (node->attribute() != CALI_INV_ID)
-                rec[db.get_attribute(node->attribute())].push_back(node->data());
-
-    // unpack immediate entries
-    for (size_t i = 0; i < m_sizes.n_immediate; ++i)
-        rec[db.get_attribute(m_attr_array[i])].push_back(m_data_array[i]);
-
-    return rec;
-}

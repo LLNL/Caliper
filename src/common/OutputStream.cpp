@@ -89,6 +89,8 @@ struct OutputStream::OutputStreamImpl
         case User:
             return user_os;
         }
+
+        return &fs;
     }
 
     void reset() {

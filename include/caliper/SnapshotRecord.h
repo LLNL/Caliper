@@ -152,9 +152,6 @@ public:
     std::vector<Entry> 
     to_entrylist() const;
 
-    std::map< cali::Attribute, std::vector<cali::Variant> > 
-    unpack(CaliperMetadataAccessInterface&) const;
-
 private:
     
     cali::Node**   m_node_array;

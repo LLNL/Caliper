@@ -1019,8 +1019,7 @@ Caliper::end(Channel* chn, const Attribute& attr)
 
     // invoke callbacks
     if (!(prop & CALI_ATTR_SKIP_EVENTS))
-        if (!e.is_empty()) // prevent executing events for
-            chn->mP->events.pre_end_evt(this, chn, attr, e.value());
+        chn->mP->events.pre_end_evt(this, chn, attr, e.value());
 
     if (prop & CALI_ATTR_ASVALUE)
         bb->unset(attr);

@@ -256,6 +256,17 @@ void test_config_after_init()
     cali_config_set("CALI_SERVICES_ENABLE", "debug");
 }
 
+void test_nesting_error()
+{
+    cali::Annotation a("test.nesting-error.a", CALI_ATTR_NESTED);
+    cali::Annotation b("test.nesting-error.b", CALI_ATTR_NESTED);
+
+    a.begin(11);
+    b.begin(22);
+    a.end();
+    b.end();
+}
+
 int main(int argc, char* argv[])
 {
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "test-prop-preset=asvalue:process_scope");
@@ -280,6 +291,7 @@ int main(int argc, char* argv[])
         { "cross-scope",              test_cross_scope        },
         { "attribute-prop-preset",    test_attr_prop_preset   },
         { "config-after-init",        test_config_after_init  },
+        { "nesting-error",            test_nesting_error      },
         { 0, 0 }
     };
     
