@@ -30,6 +30,24 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
 
+    def test_ann_metadata(self):
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,meta.int' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'cali.attribute.name': 'phase',
+                         'meta.int':            '42',
+            }))
+
     def test_largetrace(self):
         target_cmd = [ './ci_test_loop', '80000' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]

@@ -24,7 +24,7 @@ TEST(ChannelAPITest, MultiChannel) {
         c.create_attribute("multichn.local",  CALI_TYPE_INT, CALI_ATTR_DEFAULT);
 
     c.begin(attr_global, Variant(42));
-    
+
     c.begin(chn_a, attr_local, Variant(1144));
     c.begin(chn_b, attr_local, Variant(4411));
 
@@ -96,6 +96,9 @@ TEST(ChannelAPITest, C_API) {
     /* chn_a should have both values */
 
     {
+        EXPECT_EQ(cali_variant_to_int(cali_channel_get(chn_a_id, attr_a), NULL), 7744);
+        EXPECT_EQ(cali_variant_to_int(cali_channel_get(chn_a_id, attr_b), NULL), 4477);
+
         unsigned char rec[60];
         size_t len =
             cali_channel_pull_snapshot(chn_a_id, CALI_SCOPE_THREAD, 60, rec);
@@ -111,9 +114,9 @@ TEST(ChannelAPITest, C_API) {
         EXPECT_EQ(cali_variant_to_int(val_a, nullptr), 7744);
         EXPECT_EQ(cali_variant_to_int(val_b, nullptr), 4477);
     }
-    
+
     /* chn_b should only have "all" */
-    
+
     {
         unsigned char rec[60];
         size_t len =
@@ -132,7 +135,7 @@ TEST(ChannelAPITest, C_API) {
     }
 
     /* chn_c should have nothing */
-    
+
     {
         unsigned char rec[60];
         size_t len =
@@ -159,7 +162,7 @@ TEST(ChannelAPITest, C_API) {
     cali_end(attr_a);
 
     /* check if "all" is closed on channel b now */
-    
+
     {
         unsigned char rec[60];
         size_t len =

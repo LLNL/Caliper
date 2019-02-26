@@ -1,17 +1,24 @@
-// --- Caliper continuous integration test app for basic trace test
+// --- Caliper continuous integration test app for C++ annotation class
 
 #include "caliper/Annotation.h"
 
-int main() 
+#include "caliper/common/Variant.h"
+
+int main()
 {
-    cali::Annotation phase_ann("phase");
+    std::map<const char*, cali::Variant> metadata = {
+        { "meta.int", cali::Variant(42) }
+    };
+
+    cali::Annotation phase_ann("phase", metadata);
 
     phase_ann.begin("initialization");
     const int count = 4;
     phase_ann.end();
 
-    phase_ann.begin("loop");
-    
+    cali::Annotation copy_ann = phase_ann;
+    copy_ann.begin("loop");
+
     cali::Annotation iter_ann("iteration", CALI_ATTR_ASVALUE);
 
     for (int i = 0; i < count; ++i) {
@@ -19,5 +26,6 @@ int main()
             g_iter_ann(iter_ann.begin(i));
     }
 
+    phase_ann = copy_ann;
     phase_ann.end();
 }
