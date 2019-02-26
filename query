@@ -1,0 +1,2 @@
+.headers ON
+SELECT pathname,metric_name,SUM(metric_value) FROM (SELECT measurements.node_id,nodes.data AS metric_name,measurements.data AS metric_value FROM measurements LEFT JOIN nodes ON measurements.attr = nodes.node_id) AS named_measurements INNER JOIN calltree ON named_measurements.node_id = calltree.node_id WHERE metric_name LIKE 'time.inclusive.duration' GROUP BY pathname;

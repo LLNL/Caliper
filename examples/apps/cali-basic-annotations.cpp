@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     // Mark begin and end of a code region.
     //   Sets "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
-
+    cali::Annotation("dog_goodness",CALI_ATTR_GLOBAL).set(9999999);
     int    count = 4;
     double t = 0, delta_t = 0.42;
 

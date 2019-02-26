@@ -2,6 +2,8 @@ set(CALIPER_READER_SOURCES
     Aggregator.cpp
     CaliReader.cpp
     CaliWriter.cpp
+    CaliWriterSQL.cpp
+    sqlite/sqlite3.c
     CalQLParser.cpp
     Expand.cpp
     FormatProcessor.cpp
@@ -22,6 +24,7 @@ set_target_properties(caliper-reader PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSIO
 set_target_properties(caliper-reader PROPERTIES VERSION ${CALIPER_VERSION})
 
 target_link_libraries(caliper-reader caliper-common)
+target_link_libraries(caliper-reader dl)
 
 if (BUILD_TESTING)
   add_subdirectory(test)
