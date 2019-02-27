@@ -62,120 +62,116 @@ cali_find_attribute(const char* name)
 
 
 //
-// --- Context interface
-//
-
-void
-cali_push_snapshot(int scope, int n,
-                   const cali_id_t trigger_info_attr_list[],
-                   const cali_variant_t trigger_info_vals[])
-{
-}
-
-//
 // --- Annotation interface
 //
 
 void
 cali_begin(cali_id_t attr)
 {
-    
 }
 
 void
 cali_end(cali_id_t attr)
 {
-    
 }
 
 void  
 cali_set(cali_id_t attr, const void* val, size_t size)
 {
-    
 }
 
 void  
 cali_begin_double(cali_id_t attr, double val)
 {
-    
 }
 
 void  
 cali_begin_int(cali_id_t id, int val)
 {
-    
 }
 
 void  
 cali_begin_string(cali_id_t id, const char* val)
 {
-    
 }
 
 void  
 cali_set_double(cali_id_t attr, double val)
 {
-    
 }
 
 void  
 cali_set_int(cali_id_t attr, int val)
 {
-    
 }
 
 void  
 cali_set_string(cali_id_t attr, const char* val)
 {
-    
 }
 
 void
 cali_begin_double_byname(const char* attr_name, double val)
 {
-    
 }
 
 void
 cali_begin_int_byname(const char* attr_name, int val)
 {
-    
 }
 
 void
 cali_begin_byname(const char* attr_name)
 {
-    
 }
 
 void
 cali_begin_string_byname(const char* attr_name, const char* val)
 {
-    
 }
 
 void
 cali_set_double_byname(const char* attr_name, double val)
 {
-    
 }
 
 void
 cali_set_int_byname(const char* attr_name, int val)
 {
-    
 }
 
 void
 cali_set_string_byname(const char* attr_name, const char* val)
 {
-    
 }
 
 void
 cali_end_byname(const char* attr_name)
 {
-    
+}
+
+void
+cali_safe_end_string(cali_id_t attr, const char* val)
+{
+}
+
+void
+cali_set_global_double_byname(const char* name, double val)
+{
+}
+
+void
+cali_set_global_uint_byname(const char* name, uint64_t val)
+{
+}
+void
+cali_set_global_string_byname(const char* name, const char* val)
+{
+}
+
+void
+cali_set_global_int_byname(const char* name, int val)
+{
 }
 
 //

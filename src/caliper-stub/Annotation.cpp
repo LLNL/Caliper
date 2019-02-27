@@ -38,11 +38,39 @@
 
 using namespace cali;
 
+struct Loop::Impl { };
+
+Loop::Iteration::Iteration(const Impl*, int)
+    : pI(0)
+{ }
+
+Loop::Iteration::~Iteration()
+{ }
+
+Loop::Loop(const char*)
+    : pI(0)
+{ }
+
+Loop::Loop(const Loop&)
+    : pI(0)
+{ }
+
+Loop::~Loop()
+{ }
+
+Loop::Iteration Loop::iteration(int i) const
+{
+    return Loop::Iteration(nullptr, i);
+} 
+
+void Loop::end()
+{}
+
 struct Annotation::Impl { };
 
 // --- Guard subclass
 
-Annotation::Guard::Guard(Annotation& a)
+Annotation::Guard::Guard(Annotation&)
 { }
 
 Annotation::Guard::~Guard()
@@ -55,11 +83,15 @@ Annotation::Guard::~Guard()
 /// Construct an annotation object for context attribute \c name. 
 /// 
 
-Annotation::Annotation(const char* name, int opt)
+Annotation::Annotation(const char*, int)
     : pI(0)
 { }
 
 Annotation::Annotation(const Annotation&)
+    : pI(0)
+{ }
+
+Annotation::Annotation(const char*, const MetadataListType&, int)
     : pI(0)
 { }
 
