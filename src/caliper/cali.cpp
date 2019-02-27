@@ -51,6 +51,7 @@
 #include <unordered_map>
 #include <mutex>
 
+#define SNAP_MAX 120
 
 using namespace cali;
 
@@ -182,7 +183,7 @@ cali_channel_pull_snapshot(cali_id_t chn_id, int scopes, size_t len, unsigned ch
     if (!c)
         return 0;
 
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_buffer;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_buffer;
     SnapshotRecord snapshot(snapshot_buffer);
 
     Channel* chn = c.get_channel(chn_id);

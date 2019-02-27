@@ -62,7 +62,7 @@
 #include <vector>
 #include <utility>
 
-#define SNAP_MAX 80
+#define SNAP_MAX 120
 
 using namespace cali;
 using namespace std;
@@ -707,7 +707,7 @@ Caliper::get_globals(Channel* chn)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<80> rec_data;
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
     SnapshotRecord rec(rec_data);
     
     // All global attributes are process scope, so just grab the process blackboard
