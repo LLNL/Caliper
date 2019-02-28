@@ -160,8 +160,11 @@ cali_attribute_properties(cali_id_t attr_id);
  */
 
 /**
- * \brief Take a snapshot on the default channel and push it into
- *   its processing queue.
+ * \brief Take and process a snapshot on all active channels.
+ *
+ * Use with caution: programs actively taking snapshots should
+ * probably use a dedicated channel to do so.
+ *
  * \param scope Indicates which scopes (process, thread, or task) the
  *   snapshot should span
  * \param n Number of event info entries
@@ -176,6 +179,10 @@ cali_push_snapshot(int scope, int n,
 /**
  * \brief Take a snapshot on the given channel and push it into its
  *    processing queue.
+ *
+ * The snapshot will only be taken if the channel is currently
+ * active.
+ *
  * \param chn_id Channel to take snapshot on
  * \param scope Indicates which scopes (process, thread, or task) the
  *   snapshot should span
@@ -188,33 +195,6 @@ cali_channel_push_snapshot(cali_id_t chn_id,
                            int scope, int n,
                            const cali_id_t trigger_info_attr_list[],
                            const cali_variant_t trigger_info_val_list[]);
-                           
-
-/**
- * \brief Take a snapshot on the default channel
- *   and write it into the user-provided buffer.
- *
- * This function can be safely called from a signal handler. However,
- * it is not guaranteed to succeed. Specifically, the function will
- * fail if the signal handler interrupts already running Caliper
- * code.
- *
- * The snapshot representation returned in \a buf is valid only on the
- * local process, while Caliper is active (which is up until Caliper's
- * `finish_evt` callback is invoked).
- * It can be parsed with cali_unpack_snapshot().
- *
- * \param scope Indicates which scopes (process, thread, or task) the
- *   snapshot should span
- * \param len   Length of the provided snapshot buffer.
- * \param buf   User-provided snapshot storage buffer.
- * \return Actual size of the snapshot representation.
- *   If this is larger than `len`, the provided buffer was too small and
- *   not all of the snapshot was returned.
- *   If this is zero, no snapshot was taken.
- */
-size_t
-cali_pull_snapshot(int scope, size_t len, unsigned char* buf);
 
 /**
  * \brief Take a snapshot on the given channel
@@ -673,19 +653,24 @@ cali_channel_is_active(cali_id_t chn_id);
  */
 
 /**
- * \brief For all channels, forward aggregation or trace buffer
- *   contents to output services.
+ * \brief Forward aggregation or trace buffer contents to output
+ *   services on all active channels.
+ *
+ * Use with caution: this call flushes all active channels. Programs
+ * that explicitly flush Caliper data should preferrably use
+ * dedicated channels.
  *
  * Flushes trace buffers and/or aggreation database in the trace and
- * aggregation services, respectively. This will forward all buffered snapshot
- * records to output services, e.g., recorder, report, or mpireport.
+ * aggregation services, respectively. This will forward all buffered
+ * snapshot records to output services, e.g., recorder, report, or
+ * mpireport.
  *
- * By default, the trace/aggregation buffers will not be cleared after the
- * flush. This can be changed by adding \a CALI_FLUSH_CLEAR_BUFFERS to
- * the \a flush_opts flags.
+ * By default, the trace/aggregation buffers will not be cleared after
+ * the flush. This can be changed by adding \a
+ * CALI_FLUSH_CLEAR_BUFFERS to the \a flush_opts flags.
  *
- * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
- *    Use 0 for default behavior.
+ * \param flush_opts Flush options as bitwise-OR of cali_flush_opt
+ *    flags. Use 0 for default behavior.
  */
 void
 cali_flush(int flush_opts);
@@ -813,32 +798,32 @@ create_channel(const char* name, int flags, const config_map_t& cfg);
  *   the given C++ ostream.
  *
  * This call will flush a channel's trace or aggregation buffers, run a CalQL
- * query on the output, and write the query result into the given C++ 
+ * query on the output, and write the query result into the given C++
  * ostream.
  *
  * Example:
  *
  * \code
  *   // Create a channel for profiling
- *   cali_id_t profile_chn = 
+ *   cali_id_t profile_chn =
  *     cali::create_channel("profile", 0, {
  *         { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
  *         { "CALI_TIMESTAMP_SNAPSHOT_DURATION", "true" },
  *       });
- * 
- *   const char* query = 
+ *
+ *   const char* query =
  *     "SELECT annotation AS Region,sum(sum#time.duration AS Time WHERE annotation FORMAT table";
  *
  *   CALI_MARK_BEGIN("My region");
- *   // ... 
+ *   // ...
  *   CALI_MARK_END("My region");
  *
  *   // Write a profile report to std::cout
  *   cali::write_report_for_query(profile_chn, query, CALI_FLUSH_CLEAR_BUFFERS, std::cout);
  * \endcode
- * 
+ *
  * \param channel_id ID of the channel to flush/query.
- * \param query      The query to run in CalQL syntax. 
+ * \param query      The query to run in CalQL syntax.
  *    Should include at least a FORMAT statement.
  * \param flush_opts Flush options as bitwise-OR of cali_flush_opt flags.
  *    Use 0 for default behavior.
