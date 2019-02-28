@@ -1520,7 +1520,7 @@ Caliper::release()
             
         for (auto &chn : sG->channels) 
             if (chn) {
-                if (chn->mP->flush_on_exit) 
+                if (chn->is_active() && chn->mP->flush_on_exit) 
                     c.flush_and_write(chn.get(), nullptr);
 
                 c.clear(chn.get());

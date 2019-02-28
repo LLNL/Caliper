@@ -21,7 +21,7 @@ namespace
         cali_id_t attr_id;
         Variant   val;
     };
-    
+
     struct UnpackSnapshotTestData {
         int max_visit_count;
         int visit_count;
@@ -35,7 +35,7 @@ namespace
 
     int test_entry_proc_op(void* user_arg, cali_id_t attr_id, cali_variant_t val) {
         UnpackSnapshotTestData* arg = static_cast<UnpackSnapshotTestData*>(user_arg);
-        
+
         if (arg->max_visit_count >= 0 && arg->visit_count >= arg->max_visit_count)
             return 0; // quit
 
@@ -74,12 +74,12 @@ TEST(C_Snapshot_Test, UnpackImmediates) {
 
     UnpackSnapshotTestData t1;
     size_t bytes_read = 0;
-    
+
     cali_unpack_snapshot(rec.data(), &bytes_read, ::test_entry_proc_op, &t1);
 
     EXPECT_EQ(t1.visit_count, 3);
     EXPECT_EQ(t1.entries.size(), 3);
-    
+
     for (int i : { 0, 2, 3 } ) {
         auto it = std::find_if(t1.entries.begin(), t1.entries.end(),
                                [i,attr_in,data_in](const entry_data_t& e) {
@@ -94,9 +94,9 @@ TEST(C_Snapshot_Test, UnpackImmediates) {
 
 TEST(C_Snapshot_Test, Unpack) {
     // Mixed node/immediate record unpack test. Modifies a Caliper instance.
-    
+
     Caliper c;
-    
+
     Attribute node_str_attr =
         c.create_attribute("unpack.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     Attribute node_int_attr =
@@ -144,7 +144,7 @@ TEST(C_Snapshot_Test, Unpack) {
 
     {
         // do a full unpack
-        
+
         UnpackSnapshotTestData t1;
         size_t bytes_read = 0;
 
@@ -163,7 +163,7 @@ TEST(C_Snapshot_Test, Unpack) {
 
             EXPECT_NE(it, t1.entries.end()) << " entry ("
                                             << attr_in[i] << "," << data_in[i]
-                                            << ") not found!" << std::endl;        
+                                            << ") not found!" << std::endl;
         }
     }
 
@@ -172,9 +172,9 @@ TEST(C_Snapshot_Test, Unpack) {
 
         UnpackSnapshotTestData t2;
         size_t bytes_read = 0;
-        
+
         t2.max_visit_count = 2;
-    
+
         cali_unpack_snapshot(rec.data(), &bytes_read, ::test_entry_proc_op, &t2);
 
         EXPECT_EQ(bytes_read, rec.size());
@@ -185,7 +185,7 @@ TEST(C_Snapshot_Test, Unpack) {
         for (entry_data_t e : t2.entries) {
             // just check values
             int p = 0;
-            
+
             for ( ; p < 6 && data_in[p] != e.val; ++p)
                 ;
 
@@ -237,6 +237,14 @@ TEST(C_Snapshot_Test, PullSnapshot) {
         node_int_2
     };
 
+    const char* cfg[][2] = {
+        { NULL, NULL }
+    };
+
+    cali_configset_t cfgset = cali_create_configset(cfg);
+    cali_id_t test_channel = cali_create_channel("test.push_snapshot", 0, cfgset);
+    cali_delete_configset(cfgset);
+
     const int count = 6;
 
     for (int p = 0; p < count; ++p)
@@ -244,15 +252,16 @@ TEST(C_Snapshot_Test, PullSnapshot) {
 
     {
         // full snapshot
-        
+
         const size_t bufsize = 512;
         unsigned char buf[512];
 
-        size_t ret = cali_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+        size_t ret =
+            cali_channel_pull_snapshot(test_channel, CALI_SCOPE_THREAD, bufsize, buf);
 
         ASSERT_NE(ret, 0);
         ASSERT_LE(ret, bufsize);
-    
+
         UnpackSnapshotTestData t1;
         size_t bytes_read = 0;
 
@@ -271,8 +280,8 @@ TEST(C_Snapshot_Test, PullSnapshot) {
 
             EXPECT_NE(it, t1.entries.end()) << " entry ("
                                             << attr_in[i] << "," << data_in[i]
-                                            << ") not found!" << std::endl;        
-        }        
+                                            << ") not found!" << std::endl;
+        }
     }
 
     {
@@ -281,7 +290,8 @@ TEST(C_Snapshot_Test, PullSnapshot) {
         const size_t bufsize = 4;
         unsigned char buf[512];
 
-        size_t ret = cali_pull_snapshot(CALI_SCOPE_THREAD, bufsize, buf);
+        size_t ret =
+            cali_channel_pull_snapshot(test_channel, CALI_SCOPE_THREAD, bufsize, buf);
 
         ASSERT_NE(ret, 0);
         EXPECT_GT(ret, bufsize);
@@ -298,7 +308,7 @@ TEST(C_Snapshot_Test, PullSnapshot) {
 
         ASSERT_LE(ret, 512);
 
-        ret = cali_pull_snapshot(CALI_SCOPE_THREAD, ret, buf);
+        ret = cali_channel_pull_snapshot(test_channel, CALI_SCOPE_THREAD, ret, buf);
 
         ASSERT_NE(ret, 0);
         ASSERT_LT(ret, 512);
@@ -310,16 +320,18 @@ TEST(C_Snapshot_Test, PullSnapshot) {
         EXPECT_GE(t3.visit_count, count);
         EXPECT_GE(t3.entries.size(), count);
     }
-    
+
     for (int p = count-1; p >= 0; --p)
         c.end(attr_in[p]);
+
+    cali_delete_channel(test_channel);
 }
 
 TEST(C_Snapshot_Test, FindFirstInSnapshot) {
      // Mixed node/immediate record unpack test. Modifies a Caliper instance.
-    
+
     Caliper c;
-    
+
     Attribute node_str_attr =
         c.create_attribute("findfirst.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     Attribute node_int_attr =
@@ -364,7 +376,7 @@ TEST(C_Snapshot_Test, FindFirstInSnapshot) {
     CompressedSnapshotRecord rec;
 
     ASSERT_EQ(rec.append(&snapshot), 0);
-    
+
     UnpackSnapshotTestData t1;
     size_t bytes_read = 0;
 
@@ -391,14 +403,14 @@ TEST(C_Snapshot_Test, FindFirstInSnapshot) {
     val = cali_find_first_in_snapshot(rec.data(), CALI_INV_ID, &bytes_read);
 
     EXPECT_EQ(bytes_read, rec.size());
-    EXPECT_TRUE(Variant(val).empty());    
+    EXPECT_TRUE(Variant(val).empty());
 }
 
 TEST(C_Snapshot_Test, FindAllInSnapshot) {
     // Mixed node/immediate record unpack test. Modifies a Caliper instance.
-    
+
     Caliper c;
-    
+
     Attribute node_str_attr =
         c.create_attribute("findall.node.str", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     Attribute node_int_attr =
@@ -491,7 +503,7 @@ TEST(C_Snapshot_Test, FindAllInSnapshot) {
 
     {
         // empty
-        
+
         UnpackSnapshotTestData t4;
         size_t bytes_read = 0;
 
@@ -503,10 +515,10 @@ TEST(C_Snapshot_Test, FindAllInSnapshot) {
         EXPECT_EQ(t4.entries.size(), 0);
     }
 
-    
+
     {
         // quit after 1st
-        
+
         UnpackSnapshotTestData t5;
         t5.max_visit_count = 1;
         size_t bytes_read = 0;

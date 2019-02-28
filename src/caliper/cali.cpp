@@ -136,9 +136,26 @@ cali_push_snapshot(int scope, int n,
                    const cali_id_t trigger_info_attr_list[],
                    const cali_variant_t trigger_info_val_list[])
 {
-    cali_channel_push_snapshot(0, scope, n,
-                               trigger_info_attr_list,
-                               trigger_info_val_list);
+    Caliper   c;
+
+    Attribute attr[64];
+    Variant   data[64];
+
+    n = std::min(std::max(n, 0), 64);
+
+    for (int i = 0; i < n; ++i) {
+        attr[i] = c.get_attribute(trigger_info_attr_list[i]);
+        data[i] = Variant(trigger_info_val_list[i]);
+    }
+
+    SnapshotRecord::FixedSnapshotRecord<64> trigger_info_data;
+    SnapshotRecord trigger_info(trigger_info_data);
+
+    c.make_record(n, attr, data, trigger_info);
+
+    for (auto chn : c.get_all_channels())
+        if (chn->is_active())
+            c.push_snapshot(chn, scope, &trigger_info);
 }
 
 void
@@ -165,14 +182,8 @@ cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
 
     Channel* chn = c.get_channel(chn_id);
 
-    if (chn)
+    if (chn && chn->is_active())
         c.push_snapshot(chn, scope, &trigger_info);
-}
-
-size_t
-cali_pull_snapshot(int scopes, size_t len, unsigned char* buf)
-{
-    return cali_channel_pull_snapshot(0, scopes, len, buf);
 }
 
 size_t
@@ -736,13 +747,15 @@ cali_channel_is_active(cali_id_t chn_id)
 void
 cali_flush(int flush_opts)
 {
-    Caliper    c;
-    Channel* chn = c.get_channel(0);
+    Caliper c;
 
-    c.flush_and_write(chn, nullptr);
+    for (auto chn : c.get_all_channels())
+        if (chn->is_active()) {
+            c.flush_and_write(chn, nullptr);
 
-    if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
-        c.clear(chn);
+            if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
+                c.clear(chn);
+        }
 }
 
 void
@@ -833,7 +846,7 @@ write_report_for_query(cali_id_t chn_id, const char* query, int flush_opts, std:
 
         return;
     }
-            
+
     CalQLParser parser(query);
 
     if (parser.error()) {
