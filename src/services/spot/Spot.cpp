@@ -36,6 +36,7 @@
 
 #include "caliper/CaliperService.h"
 
+#include "caliper/caliper-config.h"
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -49,12 +50,17 @@
 #include "caliper/common/OutputStream.h"
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/util/split.hpp"
-
+#ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
+#define OLD_GNUC __GNUC__
+#undef __GNUC__
+#endif
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/writer.h"
-
+#ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
+#define __GNUC_ OLD_GNUC
+#endif
 #include <iostream>
 #include <sstream>
 #include <iterator>
