@@ -104,9 +104,11 @@ class EventTrigger
         for ( evt_attr_setup_t setup : evt_attr_setup ) {
             std::string s = setup.prefix;
             s.append(attr.name());
+
+            int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
             
             evt_attr_ids[setup.index] =
-                c->create_attribute(s, type, (prop & ~CALI_ATTR_NESTED) | CALI_ATTR_SKIP_EVENTS).id();
+                c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
         }
 
         std::string s = "cali.lvl#";
