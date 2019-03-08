@@ -178,7 +178,7 @@ public:
                                         << " does not have CALI_ATTR_ASVALUE property!"
                                         << std::endl;
             }
-            
+
             return m_aggr_attr;
         }
 
@@ -266,7 +266,7 @@ public:
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
             if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
-                
+
                 if (m_target_attr != Attribute::invalid)
                     if (!m_target_attr.store_as_value())
                         Log(0).stream() << "min(" << m_target_attr_name << "): Attribute "
@@ -274,7 +274,7 @@ public:
                                         << " does not have CALI_ATTR_ASVALUE property!"
                                         << std::endl;
             }
-            
+
             return m_target_attr;
         }
 
@@ -331,49 +331,59 @@ public:
         switch (target_attr.type()) {
         case CALI_TYPE_DOUBLE:
         {
-            if (m_min.empty())
-                m_min = Variant(std::numeric_limits<double>::max());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     double val = e.value().to_double();
 
-                    m_min = Variant(std::min(m_min.to_double(), val));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(m_min.to_double(), val));
+
                     ++m_count;
                 } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_double(), m_min.to_double()));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(e.value().to_double(), m_min.to_double()));
                 }
             }
         }
         break;
         case CALI_TYPE_INT:
         {
-            if (m_min.empty())
-                m_min = Variant(std::numeric_limits<int>::max());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     int val = e.value().to_int();
 
-                    m_min = Variant(std::min(m_min.to_int(), val));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(m_min.to_int(), val));
                 } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
                 }
             }
         }
         break;
         case CALI_TYPE_UINT:
         {
-            if (m_min.empty())
-                m_min = Variant(std::numeric_limits<uint64_t>::max());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     uint64_t val = e.value().to_uint();
 
-                    m_min = Variant(std::min(m_min.to_uint(), val));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(m_min.to_uint(), val));
                 } else if (e.attribute() == stat_attr.min.id()) {
-                    m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
+                    if (m_min.empty())
+                        m_min = e.value();
+                    else
+                        m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
                 }
             }
         }
@@ -488,48 +498,57 @@ public:
         switch (target_attr.type()) {
         case CALI_TYPE_DOUBLE:
         {
-            if (m_max.empty())
-                m_max = Variant(std::numeric_limits<double>::min());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     double val = e.value().to_double();
 
-                    m_max = Variant(std::max(m_max.to_double(), val));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(m_max.to_double(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
-                    m_max = Variant(std::max(e.value().to_double(), m_max.to_double()));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(e.value().to_double(), m_max.to_double()));
                 }
             }
         }
         break;
         case CALI_TYPE_INT:
         {
-            if (m_max.empty())
-                m_max = Variant(std::numeric_limits<int>::min());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     int val = e.value().to_int();
 
-                    m_max = Variant(std::max(m_max.to_int(), val));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(m_max.to_int(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
-                    m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
                 }
             }
         }
         break;
         case CALI_TYPE_UINT:
         {
-            if (m_max.empty())
-                m_max = Variant(std::numeric_limits<uint64_t>::min());
-
             for (const Entry& e : list) {
                 if (e.attribute() == target_attr.id()) {
                     uint64_t val = e.value().to_uint();
 
-                    m_max = Variant(std::max(m_max.to_uint(), val));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(m_max.to_uint(), val));
                 } else if (e.attribute() == stat_attr.max.id()) {
-                    m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
+                    if (m_max.empty())
+                        m_max = e.value();
+                    else
+                        m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
                 }
             }
         }
@@ -747,7 +766,7 @@ public:
         std::pair<Attribute,Attribute> get_target_attrs(CaliperMetadataAccessInterface& db) {
             if (m_target_attr1 == Attribute::invalid) {
                 m_target_attr1 = db.get_attribute(m_target_attr1_name);
-                
+
                 if (m_target_attr1 != Attribute::invalid)
                     if (!m_target_attr1.store_as_value())
                         Log(0).stream() << "percentage(): Attribute "
@@ -1032,7 +1051,7 @@ public:
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
             if (m_target_attr == Attribute::invalid) {
                 m_target_attr = db.get_attribute(m_target_attr_name);
-                
+
                 if (m_target_attr != Attribute::invalid)
                     if (!m_target_attr.store_as_value())
                         Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
