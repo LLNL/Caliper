@@ -21,9 +21,9 @@
 namespace cali
 {
 
-extern Attribute   mpifn_attr;
-extern Attribute   mpirank_attr;
-extern Attribute   mpisize_attr;
+extern Attribute mpifn_attr;
+extern Attribute mpirank_attr;
+extern Attribute mpisize_attr;
 
 }
 
@@ -88,7 +88,7 @@ struct MpiWrapperConfig
 
     MpiEvents   mpi_events;
     
-    Channel* channel = nullptr;
+    Channel*    channel = nullptr;
 
     bool        enable_msg_tracing;
     MpiTracing  tracing;
@@ -190,8 +190,8 @@ mpi_init_cb(Caliper* c, Channel* chn)
     PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
     PMPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    c->set(chn, mpirank_attr, Variant(rank));
-    c->set(chn, mpisize_attr, Variant(size));
+    c->set(mpirank_attr, Variant(rank));
+    c->set(mpisize_attr, Variant(size));
 
     MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(chn);
 
@@ -1590,7 +1590,7 @@ void mpiwrap_init(Caliper* c, Channel* chn)
         mwc->tracing.init(c, chn);
 
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
-    Log(2).stream() << "mpiwrap: Using GOTCHA wrappers." << std::endl;
+    Log(2).stream() << chn->name() << ": mpiwrap: Using GOTCHA wrappers." << std::endl;
 
     std::vector<struct gotcha_binding_t> bindings;
 
@@ -1615,7 +1615,7 @@ void mpiwrap_init(Caliper* c, Channel* chn)
 
     gotcha_wrap(bindings.data(), bindings.size(), "caliper/mpi");
 #else
-    Log(2).stream() << "mpiwrap: Using PMPI wrappers." << std::endl;
+    Log(2).stream() << chn->name() << ": mpiwrap: Using PMPI wrappers." << std::endl;
 #endif
 }
 
