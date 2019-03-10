@@ -45,8 +45,6 @@
 
 #include "caliper/common/c-util/vlenc.h"
 
-#include "caliper/common/util/split.hpp"
-
 #include <algorithm>
 #include <cassert>
 #include <cstring>
@@ -229,7 +227,6 @@ public:
                 }
 
                 ++m_count;
-
                 break;
             }
         }
@@ -303,9 +300,7 @@ public:
         Config(const std::string& name)
             : m_target_attr_name(name),
               m_target_attr(Attribute::invalid)
-            {
-                Log(2).stream() << "aggregate: creating min kernel for attribute " << m_target_attr_name << std::endl;
-            }
+            { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -328,69 +323,26 @@ public:
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
 
-        switch (target_attr.type()) {
-        case CALI_TYPE_DOUBLE:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    double val = e.value().to_double();
-
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(m_min.to_double(), val));
-
-                    ++m_count;
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(e.value().to_double(), m_min.to_double()));
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attr.id() || e.attribute() == stat_attr.min.id()) {
+                if (m_min.empty()) {
+                    m_min = e.value();
+                } else {
+                    switch (target_attr.type()) {
+                    case CALI_TYPE_INT:
+                        m_min = Variant(std::min(m_min.to_int(),    e.value().to_int()));
+                        break;
+                    case CALI_TYPE_DOUBLE:
+                        m_min = Variant(std::min(m_min.to_double(), e.value().to_double()));
+                        break;
+                    case CALI_TYPE_UINT:
+                        m_min = Variant(std::min(m_min.to_uint(),   e.value().to_uint()));
+                        break;
+                    default:
+                        ;
+                    }
                 }
             }
-        }
-        break;
-        case CALI_TYPE_INT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    int val = e.value().to_int();
-
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(m_min.to_int(), val));
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(e.value().to_int(), m_min.to_int()));
-                }
-            }
-        }
-        break;
-        case CALI_TYPE_UINT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    uint64_t val = e.value().to_uint();
-
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(m_min.to_uint(), val));
-                } else if (e.attribute() == stat_attr.min.id()) {
-                    if (m_min.empty())
-                        m_min = e.value();
-                    else
-                        m_min = Variant(std::min(e.value().to_uint(), m_min.to_uint()));
-                }
-            }
-        }
-        break;
-        default:
-            // some error?
-            ;
         }
     }
 
@@ -407,11 +359,8 @@ public:
 
 private:
 
-    unsigned   m_count;
     Variant    m_min;
-
     std::mutex m_lock;
-
     Config*    m_config;
 };
 
@@ -470,9 +419,7 @@ public:
         Config(const std::string& name)
             : m_target_attr_name(name),
               m_target_attr(Attribute::invalid)
-            {
-                Log(2).stream() << "aggregate: creating max kernel for attribute " << m_target_attr_name << std::endl;
-            }
+            { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -495,67 +442,26 @@ public:
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
 
-        switch (target_attr.type()) {
-        case CALI_TYPE_DOUBLE:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    double val = e.value().to_double();
-
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(m_max.to_double(), val));
-                } else if (e.attribute() == stat_attr.max.id()) {
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(e.value().to_double(), m_max.to_double()));
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attr.id() || e.attribute() == stat_attr.max.id()) {
+                if (m_max.empty()) {
+                    m_max = e.value();
+                } else {
+                    switch (target_attr.type()) {
+                    case CALI_TYPE_INT:
+                        m_max = Variant(std::max(m_max.to_int(),    e.value().to_int()));
+                        break;
+                    case CALI_TYPE_DOUBLE:
+                        m_max = Variant(std::max(m_max.to_double(), e.value().to_double()));
+                        break;
+                    case CALI_TYPE_UINT:
+                        m_max = Variant(std::max(m_max.to_uint(),   e.value().to_uint()));
+                        break;
+                    default:
+                        ;
+                    }
                 }
             }
-        }
-        break;
-        case CALI_TYPE_INT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    int val = e.value().to_int();
-
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(m_max.to_int(), val));
-                } else if (e.attribute() == stat_attr.max.id()) {
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(e.value().to_int(), m_max.to_int()));
-                }
-            }
-        }
-        break;
-        case CALI_TYPE_UINT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    uint64_t val = e.value().to_uint();
-
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(m_max.to_uint(), val));
-                } else if (e.attribute() == stat_attr.max.id()) {
-                    if (m_max.empty())
-                        m_max = e.value();
-                    else
-                        m_max = Variant(std::max(e.value().to_uint(), m_max.to_uint()));
-                }
-            }
-        }
-        break;
-        default:
-            // some error?
-            ;
         }
     }
 
@@ -618,15 +524,14 @@ public:
                 return true;
             }
 
-            cali_attr_type type = m_target_attr.type();
-            int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
+            int prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
-            m_stat_attrs.sum =
-                db.create_attribute("sum#" + m_target_attr_name, type, prop);
             m_stat_attrs.avg =
                 db.create_attribute("avg#" + m_target_attr_name, CALI_TYPE_DOUBLE, prop);
             m_stat_attrs.count =
-                db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT, prop | CALI_ATTR_HIDDEN);
+                db.create_attribute("avg.count#" + m_target_attr_name, CALI_TYPE_UINT,   prop | CALI_ATTR_HIDDEN);
+            m_stat_attrs.sum =
+                db.create_attribute("avg.sum#"   + m_target_attr_name, CALI_TYPE_DOUBLE, prop | CALI_ATTR_HIDDEN);
 
             a = m_stat_attrs;
             return true;
@@ -639,9 +544,7 @@ public:
         Config(const std::string& name)
             : m_target_attr_name(name),
               m_target_attr(Attribute::invalid)
-            {
-                Log(2).stream() << "aggregate: creating avg kernel for attribute " << m_target_attr_name << std::endl;
-            }
+            { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front());
@@ -649,7 +552,7 @@ public:
     };
 
     AvgKernel(Config* config)
-        : m_count(0), m_sum(0), m_config(config)
+        : m_count(0), m_sum(0.0), m_config(config)
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
@@ -664,60 +567,15 @@ public:
         if (!m_config->get_statistics_attributes(db, stat_attr))
             return;
 
-        switch (target_attr.type()) {
-        case CALI_TYPE_DOUBLE:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    double val = e.value().to_double();
-
-                    m_sum = Variant(m_sum.to_double() + val);
-
-                    ++m_count;
-                } else if (e.attribute() == stat_attr.sum.id()) {
-                    m_sum = Variant(e.value().to_double() + m_sum.to_double());
-                } else if (e.attribute() == stat_attr.count.id()) {
-                    m_count += e.value().to_uint();
-                }
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attr.id()) {
+                m_sum += e.value().to_double();
+                ++m_count;
+            } else if (e.attribute() == stat_attr.sum.id()) {
+                m_sum += e.value().to_double();
+            } else if (e.attribute() == stat_attr.count.id()) {
+                m_count += e.value().to_uint();
             }
-        }
-        break;
-        case CALI_TYPE_INT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    int val = e.value().to_int();
-
-                    m_sum = Variant(m_sum.to_int() + val);
-                    ++m_count;
-                } else if (e.attribute() == stat_attr.sum.id()) {
-                    m_sum = Variant(e.value().to_int() + m_sum.to_int());
-                } else if (e.attribute() == stat_attr.count.id()) {
-                    m_count += e.value().to_uint();
-                }
-            }
-        }
-        break;
-        case CALI_TYPE_UINT:
-        {
-            for (const Entry& e : list) {
-                if (e.attribute() == target_attr.id()) {
-                    uint64_t val = e.value().to_uint();
-
-                    m_sum = Variant(m_sum.to_uint() + val);
-
-                    ++m_count;
-                } else if (e.attribute() == stat_attr.sum.id()) {
-                    m_sum = Variant(e.value().to_uint() + m_sum.to_uint());
-                } else if (e.attribute() == stat_attr.count.id()) {
-                    m_count += e.value().to_uint();
-                }
-            }
-        }
-        break;
-        default:
-            // some error?
-            ;
         }
     }
 
@@ -728,8 +586,8 @@ public:
             if (!m_config->get_statistics_attributes(db, stat_attr))
                 return;
 
-            list.push_back(Entry(stat_attr.avg, Variant(m_sum.to_double() / m_count)));
-            list.push_back(Entry(stat_attr.sum, m_sum));
+            list.push_back(Entry(stat_attr.avg, Variant(m_sum / m_count)));
+            list.push_back(Entry(stat_attr.sum, Variant(m_sum)));
             list.push_back(Entry(stat_attr.count, Variant(cali_make_variant_from_uint(m_count))));
         }
     }
@@ -737,7 +595,7 @@ public:
 private:
 
     unsigned   m_count;
-    Variant    m_sum;
+    double     m_sum;
 
     std::mutex m_lock;
 
@@ -1071,8 +929,7 @@ public:
                 m_sum_attr = db.create_attribute("inclusive#" + m_target_attr_name,
                                                  CALI_TYPE_DOUBLE,
                                                  CALI_ATTR_SKIP_EVENTS |
-                                                 CALI_ATTR_ASVALUE     |
-                                                 CALI_ATTR_HIDDEN);
+                                                 CALI_ATTR_ASVALUE);
 
             return m_sum_attr;
         }
@@ -1129,7 +986,6 @@ public:
                 }
 
                 ++m_count;
-
                 break;
             }
         }
@@ -1226,40 +1082,6 @@ struct Aggregator::AggregatorImpl
     //
     // --- parse config
     //
-
-    void parse_key(const string& key) {
-        util::split(key, ':', back_inserter(m_key_strings));
-        m_select_all = m_key_strings.empty();
-    }
-
-    void parse_aggr_config(const string& configstr) {
-        vector<string> aggregators;
-
-        util::split(configstr, ':', back_inserter(aggregators));
-
-        for (const string& s : aggregators) {
-            string::size_type oparen = s.find_first_of('(');
-            string::size_type cparen = s.find_last_of(')');
-
-            string kernelname = s.substr(0, oparen);
-            vector<string> kernelattrs;
-
-            if (cparen != string::npos && cparen > oparen+1) {
-                string kernelattrs_str = s.substr(oparen+1, cparen-oparen-1);
-                util::split(kernelattrs_str, ',', back_inserter(kernelattrs));
-            }
-
-            const ::KernelInfo* ki = ::kernel_list;
-
-            for ( ; ki->name && ki->create && kernelname != ki->name; ++ki)
-                ;
-
-            if (ki->create)
-                m_kernel_configs.push_back((*ki->create)(kernelattrs));
-            else
-                Log(0).stream() << "aggregator: unknown aggregation kernel \"" << kernelname << "\"" << std::endl;
-        }
-    }
 
     void configure(const QuerySpec& spec) {
         //
@@ -1614,13 +1436,6 @@ struct Aggregator::AggregatorImpl
         m_kernel_configs.clear();
     }
 };
-
-Aggregator::Aggregator(const string& aggr_config, const string& key)
-    : mP { new AggregatorImpl() }
-{
-    mP->parse_aggr_config(aggr_config);
-    mP->parse_key(key);
-}
 
 Aggregator::Aggregator(const QuerySpec& spec)
     : mP { new AggregatorImpl(spec) }

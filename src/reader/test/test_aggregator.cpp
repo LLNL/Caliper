@@ -626,12 +626,10 @@ TEST(AggregatorTest, StatisticsKernels) {
 
     Attribute attr_min = db.get_attribute("min#val");
     Attribute attr_max = db.get_attribute("max#val");
-    Attribute attr_sum = db.get_attribute("sum#val");
     Attribute attr_avg = db.get_attribute("avg#val");
 
     ASSERT_NE(attr_min, Attribute::invalid);
     ASSERT_NE(attr_max, Attribute::invalid);
-    ASSERT_NE(attr_sum, Attribute::invalid);
     ASSERT_NE(attr_avg, Attribute::invalid);
 
     std::vector<EntryList> resdb;
@@ -648,7 +646,6 @@ TEST(AggregatorTest, StatisticsKernels) {
 
     EXPECT_EQ(dict[attr_min.id()].value().to_int(), -4);
     EXPECT_EQ(dict[attr_max.id()].value().to_int(), 36);
-    EXPECT_EQ(dict[attr_sum.id()].value().to_int(), 66);
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
 }
 
