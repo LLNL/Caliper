@@ -704,23 +704,21 @@ class LibpfmService
 
             libpfm_event_name_attr_id = libpfm_event_name_attr.id();
 
-            if (sample_attributes & PERF_SAMPLE_DATA_SRC) {
-                data_src_attrs.mem_lvl_attr   = 
-                    c->create_attribute("libpfm.memory_level",
-                                        CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-                data_src_attrs.mem_hit_attr   = 
-                    c->create_attribute("libpfm.hit_type",
-                                        CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-                data_src_attrs.mem_op_attr    = 
-                    c->create_attribute("libpfm.operation",
-                                        CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-                data_src_attrs.mem_snoop_attr = 
-                    c->create_attribute("libpfm.snoop",
-                                        CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-                data_src_attrs.mem_tlb_attr   = 
-                    c->create_attribute("libpfm.tlb",
-                                        CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            }
+            data_src_attrs.mem_lvl_attr   =
+                c->create_attribute("libpfm.memory_level",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_hit_attr   =
+                c->create_attribute("libpfm.hit_type",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_op_attr    =
+                c->create_attribute("libpfm.operation",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_snoop_attr =
+                c->create_attribute("libpfm.snoop",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            data_src_attrs.mem_tlb_attr   =
+                c->create_attribute("libpfm.tlb",
+                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         }
 
 public:
@@ -773,7 +771,7 @@ public:
                     sI->snapshot_cb(c, chn, scope, info, rec);
                 });
 
-        Log(1).stream() << "Registered libpfm service" << endl;
+        Log(1).stream() << chn->name() << ": Registered libpfm service" << endl;
     }
 }; // class LibpfmService
 

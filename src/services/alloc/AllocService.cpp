@@ -376,7 +376,7 @@ class AllocService
                 { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
                   &alloc_num_elems_attr
                 },
-                { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+                { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
                   &alloc_total_size_attr
                 },
                 { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, nullptr }
