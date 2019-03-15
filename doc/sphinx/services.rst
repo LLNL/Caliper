@@ -395,7 +395,9 @@ CUpti, not by Caliper's timestamp service. The
 ``CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS`` option collects CUpti
 timestamps for all Caliper snapshots, allowing one to compare
 timestamps between the CUDA activity records and host-side Caliper
-events.
+events. With ``CALI_CUPTITRACE_SNAPSHOT_DURATION``, cuptitrace will  
+also calculate the time duration of host-side events based on CUpti
+timestamps.
 
 .. envvar:: CALI_CUPTITRACE_ACTIVITIES
 
@@ -426,6 +428,13 @@ events.
 
     Default: false
 
+.. envvar:: CALI_CUPTITRACE_SNAPSHOT_DURATION
+
+    Calculate duration of host-side events using CUpti timestamps. Useful
+    to compare duration of GPU and Host activities. Boolean.
+
+    Default: false
+
 CUptiTrace records contain the following attributes:
 
 +-------------------------+--------------------------------------------------+
@@ -439,6 +448,8 @@ CUptiTrace records contain the following attributes:
 |                         | timestamp).                                      |
 +-------------------------+--------------------------------------------------+
 | cupti.activity.duration | Duration of the CUDA activity in nanoseconds.    |
++-------------------------+--------------------------------------------------+
+| cupti.host.duration     | Duration of a host-side activity in nanoseconds. |
 +-------------------------+--------------------------------------------------+
 | cupti.kernel.name       | For kernels, the function name of the kernel.    |
 +-------------------------+--------------------------------------------------+
