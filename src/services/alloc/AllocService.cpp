@@ -307,11 +307,11 @@ class AllocService
         struct alloc_attrs attrs = {
             attr,
             c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING,
-                                CALI_ATTR_DEFAULT),
+                                CALI_ATTR_SCOPE_THREAD),
             c->create_attribute("alloc.uid#"   + attr.name(), CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE),
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE),
             c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE)
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE)
         };
 
         g_memoryaddress_attrs.push_back(attrs);    
@@ -355,28 +355,28 @@ class AllocService
                 int            prop;
                 Attribute*     attr;
             } attr_info[] = {
-                { "mem.alloc",        CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                { "mem.alloc",        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
                   &mem_alloc_attr
                 },
-                { "mem.free" ,        CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+                { "mem.free" ,        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
                   &mem_free_attr
                 },
-                { "mem.active" ,      CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+                { "mem.active" ,      CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   &active_mem_attr
                 },
-                { "alloc.uid",        CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+                { "alloc.uid",        CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   &alloc_uid_attr
                 },
-                { "alloc.address",    CALI_TYPE_ADDR,   CALI_ATTR_ASVALUE,
+                { "alloc.address",    CALI_TYPE_ADDR,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   &alloc_addr_attr
                 },
-                { "alloc.elem_size",  CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+                { "alloc.elem_size",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
                   &alloc_elem_size_attr
                 },
-                { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_DEFAULT,
+                { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
                   &alloc_num_elems_attr
                 },
-                { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+                { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   &alloc_total_size_attr
                 },
                 { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, nullptr }

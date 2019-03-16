@@ -74,7 +74,7 @@
 #endif
 
 
-cali::Annotation         test_annotation("test.attr", CALI_ATTR_DEFAULT);
+cali::Annotation         test_annotation("test.attr", CALI_ATTR_SCOPE_THREAD);
 std::vector<std::string> annotation_strings;
 
 struct Config

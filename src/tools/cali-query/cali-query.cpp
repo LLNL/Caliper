@@ -399,13 +399,13 @@ int main(int argc, const char* argv[])
 
     auto thread_fn = [&](unsigned t) {
         Annotation::Guard
-            g_t(Annotation("thread").set(static_cast<int>(t)));
+            g_t(Annotation("thread", CALI_ATTR_SCOPE_THREAD).set(static_cast<int>(t)));
 
         for (unsigned i = index++; i < files.size(); i = index++) { // "index++" is atomic read-mod-write
             const char* filename = (files[i].empty() ? "stdin" : files[i].c_str());
 
             Annotation::Guard
-                g_s(Annotation("cali-query.stream").begin(filename));
+                g_s(Annotation("cali-query.stream", CALI_ATTR_SCOPE_THREAD).begin(filename));
 
             if (verbose) {
                 std::lock_guard<std::mutex>

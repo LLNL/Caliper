@@ -345,13 +345,15 @@ struct Caliper::GlobalData
     Attribute                          key_attr;
 
     map<string, int>                   attribute_prop_presets;
+    int                                attribute_default_scope;
 
     vector< std::unique_ptr<Channel> > channels;
 
     // --- constructor
 
     GlobalData()
-        : key_attr { Attribute::invalid }
+        : key_attr { Attribute::invalid },
+          attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {        
         channels.reserve(16);
 
@@ -379,7 +381,7 @@ struct Caliper::GlobalData
         s_init_lock = 2;
     }
     
-    void parse_attribute_property_presets(const ConfigSet& config) {
+    void parse_attribute_config(const ConfigSet& config) {
         auto preset_cfg = config.get("attribute_properties").to_stringlist();
         
         for (const string& s : preset_cfg) {
@@ -392,12 +394,23 @@ struct Caliper::GlobalData
 
             attribute_prop_presets.insert(make_pair(s.substr(0, p), prop));
         }
+
+        std::string scope_str = config.get("attribute_default_scope").to_string();
+
+        if (scope_str == "process")
+            attribute_default_scope = CALI_ATTR_SCOPE_PROCESS;
+        else if (scope_str == "thread")
+            attribute_default_scope = CALI_ATTR_SCOPE_THREAD;
+        else
+            Log(0).stream() << "Invalid value \"" << scope_str
+                            << "\" for CALI_ATTRIBUTE_DEFAULT_SCOPE"
+                            << std::endl;
     }
 
     void init() {
         run_init_hooks();
 
-        parse_attribute_property_presets(RuntimeConfig::get_default_config().init("caliper", s_configdata));
+        parse_attribute_config(RuntimeConfig::get_default_config().init("caliper", s_configdata));
         
         Services::add_default_services();
 
@@ -443,6 +456,12 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "  skip_events:   Do not invoke callback functions for updates\n"
       "  hidden:        Do not include this attribute in snapshots\n"
       "  nested:        Values are properly nested with the call stack and other nested attributes\n"
+    },
+    { "attribute_default_scope", CALI_TYPE_STRING, "thread",
+      "Default scope for attributes",
+      "Default scope for attributes. Possible values are\n"
+      "  process:   Process scope\n"
+      "  thread:    Thread scope"
     },
     ConfigSet::Terminator
 };
@@ -531,9 +550,9 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
             prop &= ~CALI_ATTR_SCOPE_MASK;
             prop |= CALI_ATTR_SCOPE_PROCESS;
         }
-        // Set THREAD scope if none is set
+        // Set scope to default scope if none is set
         if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
-            prop |= CALI_ATTR_SCOPE_THREAD;
+            prop |= sG->attribute_default_scope;
 
         Attribute attr[2] { prop_attr, name_attr };
         Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };

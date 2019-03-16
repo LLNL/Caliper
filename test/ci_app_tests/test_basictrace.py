@@ -32,7 +32,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
     def test_ann_metadata(self):
         target_cmd = [ './ci_test_basic' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,meta.int' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,meta.int,cali.attribute.prop' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -46,6 +46,31 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'cali.attribute.name': 'phase',
                          'meta.int':            '42',
+                         'cali.attribute.prop': '20' # default property: CALI_ATTR_SCOPE_THREAD
+            }))
+
+    def test_default_scope_switch(self):
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,meta.int,cali.attribute.prop' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE' : 'process',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'cali.attribute.name': 'phase',
+                         'meta.int':            '42',
+                         'cali.attribute.prop': '12' # CALI_ATTR_SCOPE_PROCESS
+            }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'cali.attribute.name': 'iteration',
+                         'cali.attribute.prop': '13' # CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE
             }))
 
     def test_largetrace(self):
