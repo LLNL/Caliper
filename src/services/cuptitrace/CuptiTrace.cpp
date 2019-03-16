@@ -729,6 +729,7 @@ class CuptiTraceService
                                     1, &aggr_class_attr, &true_val);
             starttime_attr =
                 c->create_attribute("cupti.starttime",         CALI_TYPE_UINT,
+                                    CALI_ATTR_SCOPE_PROCESS | 
                                     CALI_ATTR_SKIP_EVENTS);
             device_uuid_attr =
                 c->create_attribute("cupti.device.uuid",       CALI_TYPE_STRING,
@@ -745,12 +746,14 @@ class CuptiTraceService
 
                 timestamp_attr =
                     c->create_attribute("cupti.timestamp", CALI_TYPE_UINT,
-                                        CALI_ATTR_ASVALUE     |
-                                        CALI_ATTR_SKIP_EVENTS |
+                                        CALI_ATTR_SCOPE_THREAD |
+                                        CALI_ATTR_ASVALUE      |
+                                        CALI_ATTR_SKIP_EVENTS  |
                                         hide_offset);
                 duration_attr =
                     c->create_attribute("cupti.host.duration", CALI_TYPE_UINT,
-                                        CALI_ATTR_ASVALUE     |
+                                        CALI_ATTR_SCOPE_THREAD |
+                                        CALI_ATTR_ASVALUE      |
                                         CALI_ATTR_SKIP_EVENTS,
                                         2, meta_attr, meta_vals);
             }

@@ -202,13 +202,15 @@ class Callpath
             Variant v_true(true);
 
             callpath_addr_attr = 
-                c->create_attribute("callpath.address", CALI_TYPE_ADDR,   
-                                    CALI_ATTR_SKIP_EVENTS |
+                c->create_attribute("callpath.address", CALI_TYPE_ADDR,
+                                    CALI_ATTR_SCOPE_THREAD | 
+                                    CALI_ATTR_SKIP_EVENTS  |
                                     CALI_ATTR_NOMERGE,
                                     1, &symbol_class_attr, &v_true);
             callpath_name_attr = 
-                c->create_attribute("callpath.regname", CALI_TYPE_STRING, 
-                                    CALI_ATTR_SKIP_EVENTS | 
+                c->create_attribute("callpath.regname", CALI_TYPE_STRING,
+                                    CALI_ATTR_SCOPE_THREAD |
+                                    CALI_ATTR_SKIP_EVENTS  |
                                     CALI_ATTR_NOMERGE);
         }
 

@@ -101,14 +101,14 @@ class InstLookup
 
         sym_attribs.op_attr = 
             c->create_attribute("instruction.op#" + attr.name(), 
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
 
         sym_attribs.read_size_attr = 
             c->create_attribute("instruction.read_size#" + attr.name(), 
-                                CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_UINT, CALI_ATTR_SCOPE_THREAD);
         sym_attribs.write_size_attr = 
             c->create_attribute("instruction.write_size#" + attr.name(), 
-                                CALI_TYPE_UINT, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_UINT, CALI_ATTR_SCOPE_THREAD);
 
         std::lock_guard<std::mutex>
             g(m_sym_attr_mutex);

@@ -706,19 +706,19 @@ class LibpfmService
 
             data_src_attrs.mem_lvl_attr   =
                 c->create_attribute("libpfm.memory_level",
-                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
             data_src_attrs.mem_hit_attr   =
                 c->create_attribute("libpfm.hit_type",
-                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
             data_src_attrs.mem_op_attr    =
                 c->create_attribute("libpfm.operation",
-                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
             data_src_attrs.mem_snoop_attr =
                 c->create_attribute("libpfm.snoop",
-                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
             data_src_attrs.mem_tlb_attr   =
                 c->create_attribute("libpfm.tlb",
-                                    CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
         }
 
 public:
