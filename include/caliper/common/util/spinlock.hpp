@@ -10,12 +10,11 @@ namespace util
 {
     
 class spinlock {
-    std::atomic_flag m_lock;
+    std::atomic_flag m_lock = ATOMIC_FLAG_INIT;
 
 public:
 
-    constexpr spinlock()
-        : m_lock { 0 }
+    spinlock()
         { }
 
     void lock() {
