@@ -75,7 +75,7 @@ class Blackboard {
     
 public:
 
-    CONSTEXPR_UNLESS_PGI Blackboard()
+    Blackboard()
         : hashtable       {   },
           ref_toc         { 0 },
           ref_toctoc      { 0 },
