@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -117,11 +117,11 @@ class LibpfmService
     };
 
     static const ConfigSet::Entry s_configdata[];
-    
+
     /*
      * Service configuration variables
      */
-    
+
     int num_attributes = 0;
     bool record_counters;
     bool enable_sampling;
@@ -139,13 +139,15 @@ class LibpfmService
     uint64_t bad_samples;
     uint64_t null_events;
     uint64_t null_cali_instances;
+    unsigned event_read_fail;
+    unsigned event_reset_fail;
 
     /*
      * libpfm sampling variables
      */
 
     struct ThreadState {
-        ThreadState() 
+        ThreadState()
             : tid(0), fds(nullptr), num_events(0)
             { }
 
@@ -153,22 +155,22 @@ class LibpfmService
             {
                 if (sI)
                     sI->end_thread_sampling();
-            } 
+            }
 
         pid_t               tid;
-        
+
         perf_event_desc_t   *fds;
         perf_event_sample_t sample;
-        
+
         uint64_t*           sample_attribute_pointers[MAX_ATTRIBUTES];
         int                 num_events;
     };
 
     static thread_local ThreadState sT;
-    
+
     static Channel*    sC;
     static LibpfmService* sI;
-    
+
     const int signum       = SIGIO;
     const int buffer_pages = 1;
 
@@ -257,7 +259,7 @@ class LibpfmService
 
         if (ret || !check_num_events)
             Log(0).stream() << "libpfm: WARNING: invalid event(s) specified!" << std::endl;
-        
+
         if (check_num_events > MAX_EVENTS)
             Log(0).stream() << "libpfm: WARNING: too many events specified for libpfm service! Maximum is " << MAX_EVENTS << std::endl;
 
@@ -282,7 +284,7 @@ class LibpfmService
         // Get perf_event from string
         sT.fds = NULL;
         sT.num_events = 0;
-        
+
         perf_setup_list_events(events_string.c_str(), &sT.fds, &sT.num_events);
 
         for(i=0; i < sT.num_events; i++) {
@@ -294,7 +296,7 @@ class LibpfmService
             if (enable_sampling) {
                 sT.fds[i].hw.wakeup_events = 1;
                 sT.fds[i].hw.sample_type = sample_attributes;
-                sT.fds[i].hw.sample_period = sampling_period_list[i]; 
+                sT.fds[i].hw.sample_period = sampling_period_list[i];
                 sT.fds[i].hw.precise_ip = precise_ip_list[i];
                 sT.fds[i].hw.config1 = config1_list[i];
             }
@@ -351,7 +353,7 @@ class LibpfmService
             Log(0).stream() << "libpfm: cannot mask SIGIO in main thread" << std::endl;
 
         int ret = sigprocmask(SIG_SETMASK, NULL, &oldsig);
-        
+
         if (ret)
             Log(0).stream() << "libpfm: sigprocmask failed" << std::endl;
 
@@ -367,7 +369,7 @@ class LibpfmService
 
     int begin_thread_sampling() {
         int ret = 0;
-        
+
         for (int i=0; i<sT.num_events; i++) {
             ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
@@ -490,7 +492,7 @@ class LibpfmService
             if (events_listed != sampling_period_strvec.size()
                 || events_listed != precise_ip_strvec.size()
                 || events_listed != config1_strvec.size()) {
-                
+
                 Log(0).stream() << "libpfm: invalid arguments specified!" << std::endl;
                 Log(0).stream() << "libpfm: if sampling enabled, event list, sampling period, precise IP, "
                                 << "and config1 must all have the same number of values." << std::endl;
@@ -518,9 +520,9 @@ class LibpfmService
 
             // Create attribute for each event counter
             if (record_counters) {
-                Attribute event_counter_attr = 
+                Attribute event_counter_attr =
                     c->create_attribute(std::string("libpfm.counter.") + event_list[i],
-                                            CALI_TYPE_UINT, 
+                                            CALI_TYPE_UINT,
                                             CALI_ATTR_ASVALUE
                                             | CALI_ATTR_SCOPE_THREAD
                                             | CALI_ATTR_SKIP_EVENTS,
@@ -532,7 +534,7 @@ class LibpfmService
         return true;
     }
 
-    void setup_thread_pointers() {        
+    void setup_thread_pointers() {
         for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
             size_t attribute_type = libpfm_attribute_types[attribute_index];
 
@@ -585,33 +587,31 @@ class LibpfmService
     };
 
     void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
-        int i, ret;
-        Variant data[MAX_EVENTS];
+        Variant data[MAX_EVENTS] = { Variant() };
 
-        struct read_format counter_reads[MAX_EVENTS];
+        for (int i=0; i<sT.num_events; i++) {
+            int ret = 0;
+            struct read_format counter_reads = { 0, 0, 0 };
 
-        for (i=0; i<sT.num_events; i++) {
-
-            ret = read(sT.fds[i].fd, &counter_reads[i], sizeof(struct read_format));
+            ret = read(sT.fds[i].fd, &counter_reads, sizeof(struct read_format));
 
             if (ret < sizeof(struct read_format))
-                Log(1).stream() << "libpfm: failed to read counter for event " << sT.fds[i].name << std::endl;
+                ++event_read_fail;
+            else {
+                // FIXME: everyone does this but it does not make sense...
+                //      : 1. this calculation scales down rather than interpolate for missing values
+                //      : 2. time_enabled and time_running are not reset when counters are reset
+                // double raw     = (double)counter_reads[i].value;
+                // double enabled = (double)counter_reads[i].time_enabled;
+                // double running = (double)counter_reads[i].time_running;
+                // uint64_t scaled = (uint64_t)((enabled < running) ? (raw * enabled / running) : raw);
+                data[i] = Variant(counter_reads.value);
+            }
 
             ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
             if (ret)
-                Log(1).stream() << "libpfm: failed to reset counter for event " << sT.fds[i].name << std::endl;
-        }
-
-        for (i=0; i<sT.num_events; i++) {
-            // FIXME: everyone does this but it does not make sense...
-            //      : 1. this calculation scales down rather than interpolate for missing values
-            //      : 2. time_enabled and time_running are not reset when counters are reset
-            // double raw     = (double)counter_reads[i].value;
-            // double enabled = (double)counter_reads[i].time_enabled;
-            // double running = (double)counter_reads[i].time_running;
-            // uint64_t scaled = (uint64_t)((enabled < running) ? (raw * enabled / running) : raw);
-            data[i] = Variant(counter_reads[i].value);
+                ++event_reset_fail;
         }
 
         snapshot->append(sT.num_events, libpfm_event_counter_attr_ids.data(), data);
@@ -642,6 +642,10 @@ class LibpfmService
                             << "\tbad samples: " << sI->bad_samples
                             << "\tunknown events: " << sI->null_events
                             << "\tnull Caliper instances: " << sI->null_cali_instances << std::endl;
+        if (record_counters && (event_read_fail > 0 || event_reset_fail > 0))
+            Log(1).stream() << chn->name() << ": libpfm: "
+                            << event_read_fail  << " counter reads failed, "
+                            << event_reset_fail << " counter resets failed." << std::endl;
     }
 
     struct DataSrcAttrs {
@@ -697,9 +701,9 @@ class LibpfmService
 
     LibpfmService(Caliper* c, Channel* chn)
         {
-            libpfm_event_name_attr = 
+            libpfm_event_name_attr =
                 c->create_attribute("libpfm.event_sample_name",
-                                    CALI_TYPE_STRING, 
+                                    CALI_TYPE_STRING,
                                     CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
             libpfm_event_name_attr_id = libpfm_event_name_attr.id();
@@ -722,14 +726,14 @@ class LibpfmService
         }
 
 public:
-    
+
     // Initialization handler
     static void libpfm_service_register(Caliper* c, Channel* chn) {
         if (sC) {
             Log(0).stream() << chn->name() << ": libpfm: Cannot enable libpfm service twice!"
                             << " It is already enabled in channel "
                             << sC->name() << std::endl;
-            
+
             return;
         }
 
@@ -743,7 +747,7 @@ public:
         sC = chn;
 
         sI->setup_process_signals();
-        
+
         chn->events().create_thread_evt.connect(
             [](Caliper* c, Channel* chn){
                 sI->create_thread_cb(c, chn);
@@ -758,13 +762,13 @@ public:
                 delete sI;
                 sI   = nullptr;
                 sC = nullptr;
-            }); 
+            });
 
         if (sI->enable_sampling)
             chn->events().postprocess_snapshot.connect(
                 [](Caliper* c, Channel* chn, std::vector<Entry>& rec){
                     sI->postprocess_snapshot_cb(c, chn, rec);
-                });        
+                });
         if (sI->record_counters)
             chn->events().snapshot.connect(
                 [](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
@@ -786,11 +790,11 @@ const ConfigSet::Entry LibpfmService::s_configdata[] = {
      "Comma-separated list of events to sample"
     },
     {"record_counters", CALI_TYPE_BOOL, "true",
-     "Record counter values (true|false)",   
+     "Record counter values (true|false)",
      "Whether to record event counter values at each snapshot (true|false)"
     },
     {"enable_sampling", CALI_TYPE_BOOL, "true",
-     "Enable sampling",   
+     "Enable sampling",
      "Whether to trigger and record samples"
     },
     {"sample_attributes", CALI_TYPE_STRING, "ip,time,tid,cpu",
@@ -815,7 +819,7 @@ const ConfigSet::Entry LibpfmService::s_configdata[] = {
 } // namespace
 
 
-namespace cali 
+namespace cali
 {
 
 CaliperService libpfm_service = { "libpfm", ::LibpfmService::libpfm_service_register };
