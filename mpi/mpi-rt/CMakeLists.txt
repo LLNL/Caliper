@@ -31,7 +31,8 @@ add_subdirectory(services/mpiwrap)
 add_subdirectory(services/mpireport)
 
 if (CALIPER_HAVE_MPIT)
-  add_subdirectory(services/mpit)
+  # add_subdirectory(services/mpit)
+  message(WARNING "MPIT option is currently not supported")
 endif()
 
 add_library(caliper-mpi
