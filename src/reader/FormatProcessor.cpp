@@ -49,7 +49,7 @@ namespace
 {
 
 const char* format_kernel_args[] = { "format", "title" };
-const char* tree_kernel_args[]   = { "path-attributes" }; 
+const char* tree_kernel_args[]   = { "path-attributes", "column-width" }; 
 const char* json_kernel_args[]   = { "split", "pretty", "quote-all" }; 
 
 enum FormatterID {
@@ -69,7 +69,7 @@ const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
     { FormatterID::Table,     "table",      0, 0, nullptr },
-    { FormatterID::Tree,      "tree",       0, 1, tree_kernel_args   },
+    { FormatterID::Tree,      "tree",       0, 2, tree_kernel_args   },
     { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
     
     QuerySpec::FunctionSignatureTerminator

@@ -238,7 +238,7 @@ TEST(CalQLParserTest, FormatSpec) {
     EXPECT_STREQ(q2.format.formatter.name, "table");
     EXPECT_EQ(q2.format.args.size(), 0);
 
-    CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd)");
+    CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd, e)");
 
     EXPECT_TRUE(p3.error());
 }

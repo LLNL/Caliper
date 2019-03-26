@@ -40,9 +40,13 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/StringConverter.h"
 
 #include "caliper/common/util/split.hpp"
+
+#include "../common/util/format_util.h"
 
 #include <algorithm>
 #include <cassert>
@@ -51,28 +55,6 @@
 #include <utility>
 
 using namespace cali;
-
-namespace
-{
-
-const char whitespace[120+1] =
-    "                                        "
-    "                                        "
-    "                                        ";
-
-inline std::ostream& pad_right(std::ostream& os, const std::string& str, std::size_t width)
-{
-    os << str << whitespace+(120-std::min<std::size_t>(120, 1+width-str.size()));
-    return os;
-}
-
-inline std::ostream& pad_left (std::ostream& os, const std::string& str, std::size_t width)
-{
-    os << whitespace+(120 - std::min<std::size_t>(120, width-str.size())) << str << ' ';
-    return os;
-}
-
-} // namespace [anonymous]
 
 
 struct TreeFormatter::TreeFormatterImpl
@@ -89,6 +71,7 @@ struct TreeFormatter::TreeFormatterImpl
     std::map<Attribute, ColumnInfo> m_column_info;
 
     int                      m_path_column_width;
+    int                      m_max_column_width;
 
     std::map<std::string, std::string> m_aliases;
 
@@ -104,6 +87,21 @@ struct TreeFormatter::TreeFormatterImpl
             util::split(spec.format.args.front(), ',',
                         std::back_inserter(m_path_key_names));
 
+        // set max column width
+        if (spec.format.args.size() > 1) {
+            bool ok = false;
+            
+            m_max_column_width = StringConverter(spec.format.args[1]).to_int(&ok);
+
+            if (!ok) {
+                Log(0).stream() << "TreeFormatter: invalid column width argument \"" 
+                                << spec.format.args[1] << "\""
+                                << std::endl;
+                
+                m_max_column_width = -1;
+            }
+        }
+        
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
         m_attribute_columns = spec.attribute_selection;
         m_aliases = spec.aliases;
@@ -193,10 +191,14 @@ struct TreeFormatter::TreeFormatterImpl
         //
 
         std::string path_str;
-        path_str.assign(2*level, ' ');
-        path_str.append(node->label_value().to_string());
+        path_str.append(std::min(2*level, m_path_column_width-2), ' ');
+        
+        if (2*level >= m_path_column_width)
+            path_str.append("..");
+        else
+            path_str.append(util::clamp_string(node->label_value().to_string(), m_path_column_width-2*level));
 
-        ::pad_right(os, path_str, m_path_column_width);
+        util::pad_right(os, path_str, m_path_column_width);
 
         for (const Attribute& a : attributes) {
             std::string str;
@@ -214,9 +216,9 @@ struct TreeFormatter::TreeFormatterImpl
                                 t == CALI_TYPE_ADDR);
 
             if (align_right)
-                ::pad_left (os, str, m_column_info[a].width);
+                util::pad_left (os, str, m_column_info[a].width);
             else
-                ::pad_right(os, str, m_column_info[a].width);
+                util::pad_right(os, str, m_column_info[a].width);
         }
 
         os << std::endl;
@@ -232,6 +234,9 @@ struct TreeFormatter::TreeFormatterImpl
     void flush(const CaliperMetadataAccessInterface& db, std::ostream& os) {
         m_path_column_width = std::max<std::size_t>(m_path_column_width, 4 /* strlen("Path") */);
 
+        if (m_max_column_width > 0)
+            m_path_column_width = std::min(m_path_column_width, std::max(4, m_max_column_width));
+        
         //
         // establish order of attribute columns
         //
@@ -274,10 +279,10 @@ struct TreeFormatter::TreeFormatterImpl
         // print header
         //
 
-        ::pad_right(os, "Path", m_path_column_width);
+        util::pad_right(os, "Path", m_path_column_width);
 
         for (const Attribute& a : attributes)
-            ::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
+            util::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
 
         os << std::endl;
 
@@ -293,7 +298,8 @@ struct TreeFormatter::TreeFormatterImpl
     }
 
     TreeFormatterImpl()
-        : m_path_column_width(0)
+        : m_path_column_width(0),
+          m_max_column_width(100)
     { }
 };
 

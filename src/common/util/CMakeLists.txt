@@ -1,5 +1,6 @@
 set(UTIL_SOURCES
-    parse_util.cpp)
+  format_util.cpp
+  parse_util.cpp)
 
 add_library(util OBJECT ${UTIL_SOURCES})
 

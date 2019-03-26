@@ -43,6 +43,8 @@
 
 #include "caliper/common/util/split.hpp"
 
+#include "../common/util/format_util.h"
+
 #include <algorithm>
 #include <iterator>
 #include <mutex>
@@ -291,19 +293,13 @@ struct TableFormatter::TableImpl
                                          return lhs.size() > rhs.size();
                                      cali_attr_type type = this->m_cols[c].attr.type();
                                      return Variant::from_string(type, lhs[c].c_str()) > Variant::from_string(type, rhs[c].c_str());
-                                 });
-                
-
-        const char whitespace[120+1] =
-            "                                        "
-            "                                        "
-            "                                        ";
+                                 });                
 
         // print header
 
         for (const Column& col : m_cols)
             if (col.print)
-                os << col.display_name << whitespace+(120 - std::min<std::size_t>(120, 1+col.max_width-col.display_name.size()));
+                util::pad_right(os, col.display_name, col.max_width);
 
         os << std::endl;
 
@@ -316,13 +312,14 @@ struct TableFormatter::TableImpl
 
                 std::string    str = row[c];
                 cali_attr_type t   = m_cols[c].attr.type();
-                bool           align_right = (t == CALI_TYPE_INT || t == CALI_TYPE_UINT || t == CALI_TYPE_DOUBLE);
-                std::size_t    len = m_cols[c].max_width-str.size();
+                bool           align_right = (t == CALI_TYPE_INT  ||
+                                              t == CALI_TYPE_UINT ||
+                                              t == CALI_TYPE_DOUBLE);
 
                 if (align_right)
-                    os << whitespace+(120 - std::min<std::size_t>(120, len)) << str << ' ';
+                    util::pad_left (os, str, m_cols[c].max_width);
                 else
-                    os << str << whitespace+(120 - std::min<std::size_t>(120, 1+len));
+                    util::pad_right(os, str, m_cols[c].max_width);
             }
 
             os << std::endl;
