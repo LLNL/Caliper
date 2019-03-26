@@ -92,13 +92,13 @@ namespace {
 
 class LibpfmService
 {
-
     cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
     Attribute libpfm_event_name_attr;
     cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
     std::vector<cali_id_t> libpfm_event_counter_attr_ids;
     size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
+    uint64_t perf_event_sample_t::* sample_attribute_pointers[MAX_ATTRIBUTES];
 
     std::vector<Node*> event_name_nodes;
 
@@ -158,11 +158,7 @@ class LibpfmService
             }
 
         pid_t               tid;
-
         perf_event_desc_t   *fds;
-        perf_event_sample_t sample;
-
-        uint64_t*           sample_attribute_pointers[MAX_ATTRIBUTES];
         int                 num_events;
     };
 
@@ -178,7 +174,7 @@ class LibpfmService
         return (pid_t) syscall(__NR_gettid);
     }
 
-    void sample_handler(int event_index) {
+    inline void sample_handler(int event_index, const perf_event_sample_t& sample) {
         Caliper c = Caliper::sigsafe_instance();
 
         if (!c) {
@@ -188,15 +184,12 @@ class LibpfmService
 
         Variant data[MAX_ATTRIBUTES];
 
-        uint64_t *vptr;
-        for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
-            vptr = sT.sample_attribute_pointers[attribute_index];
-            data[attribute_index] = Variant(*vptr);
-        }
+        for (int i = 0; i < num_attributes; ++i)
+            data[i] = cali_make_variant_from_uint(sample.*sample_attribute_pointers[i]);
 
-        SnapshotRecord trigger_info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
+        SnapshotRecord info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
 
-        c.push_snapshot(sC, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(sC, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &info);
 
         sI->samples_produced++;
     }
@@ -230,13 +223,14 @@ class LibpfmService
 
             if (ehdr.type == PERF_RECORD_SAMPLE) {
                 // Read and record
-                ret = perf_read_sample(fdx, 1, 0, &ehdr, &sT.sample, stderr); // any way to print to Log(1)?
+                perf_event_sample_t sample;
+                ret = perf_read_sample(fdx, 1, 0, &ehdr, &sample, stderr); // any way to print to Log(1)?
                 if (ret) {
                     Log(1).stream() << "libpfm: cannot read sample" << std::endl;
                 }
 
                 // Run handler to push snapshot
-                sI->sample_handler(i);
+                sI->sample_handler(i, sample);
             } else {
                 sI->bad_samples++;
                 perf_skip_buffer(fdx, ehdr.size);
@@ -534,43 +528,43 @@ class LibpfmService
         return true;
     }
 
-    void setup_thread_pointers() {
-        for (int attribute_index = 0; attribute_index < num_attributes; attribute_index++) {
-            size_t attribute_type = libpfm_attribute_types[attribute_index];
+    void setup_sample_pointers() {
+        for (int a = 0; a < num_attributes; a++) {
+            size_t attribute_type = libpfm_attribute_types[a];
 
             switch (attribute_type) {
                 case (PERF_SAMPLE_IP):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.ip;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::ip;
                     break;
                 case (PERF_SAMPLE_ID):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.id;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::id;
                     break;
                 case (PERF_SAMPLE_STREAM_ID):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.stream_id;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::stream_id;
                     break;
                 case (PERF_SAMPLE_TIME):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.time;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::time;
                     break;
                 case (PERF_SAMPLE_TID):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.tid;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::tid;
                     break;
                 case (PERF_SAMPLE_PERIOD):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.period;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::period;
                     break;
                 case (PERF_SAMPLE_CPU):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.cpu;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::cpu;
                     break;
                 case (PERF_SAMPLE_ADDR):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.addr;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::addr;
                     break;
                 case (PERF_SAMPLE_WEIGHT):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.weight;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::weight;
                     break;
                 case (PERF_SAMPLE_TRANSACTION):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.transaction;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::transaction;
                     break;
                 case (PERF_SAMPLE_DATA_SRC):
-                    sT.sample_attribute_pointers[attribute_index] = &sT.sample.data_src;
+                    sample_attribute_pointers[a] = &perf_event_sample_t::data_src;
                     break;
                 default:
                     Log(0).stream() << "libpfm: attribute unrecognized!" << std::endl;
@@ -618,16 +612,16 @@ class LibpfmService
     }
 
     void post_init_cb(Caliper* c, Channel*) {
+        setup_sample_pointers();
+
         // Run on master thread initialization
         setup_process_events(c);
         setup_thread_events(c);
-        setup_thread_pointers();
         begin_thread_sampling();
     }
 
     void create_thread_cb(Caliper* c, Channel*) {
         setup_thread_events(c);
-        setup_thread_pointers();
         begin_thread_sampling();
     }
 
