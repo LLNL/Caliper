@@ -40,7 +40,9 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/StringConverter.h"
 
 #include "caliper/common/util/split.hpp"
 
@@ -62,16 +64,43 @@ const char whitespace[120+1] =
 
 inline std::ostream& pad_right(std::ostream& os, const std::string& str, std::size_t width)
 {
-    os << str << whitespace+(120-std::min<std::size_t>(120, 1+width-str.size()));
+    os << str;
+
+    if (str.size() > width)
+        os << ' ';
+    else {
+        std::size_t s = 1 + width - str.size();
+
+        for ( ; s > 120; s -= 120)
+            os << whitespace;
+
+        os << whitespace+(120-s);
+    }
+    
     return os;
 }
 
 inline std::ostream& pad_left (std::ostream& os, const std::string& str, std::size_t width)
 {
-    os << whitespace+(120 - std::min<std::size_t>(120, width-str.size())) << str << ' ';
+    os << whitespace+(120 - std::min<std::size_t>(120, width-std::min<std::size_t>(120, str.size()))) << str << ' ';
     return os;
 }
 
+inline std::string clamp_string(const std::string& str, std::size_t max_width)
+{
+    if (str.length() < max_width)
+        return str;
+
+    if (max_width < 8)
+        return str.substr(0, max_width);
+
+    std::string ret(str, 0, max_width/2-3);
+    ret.append(" [..] ");
+    ret.append(str, str.length()-(max_width/2-3), std::string::npos);
+
+    return ret;
+}
+    
 } // namespace [anonymous]
 
 
@@ -89,6 +118,7 @@ struct TreeFormatter::TreeFormatterImpl
     std::map<Attribute, ColumnInfo> m_column_info;
 
     int                      m_path_column_width;
+    int                      m_max_column_width;
 
     std::map<std::string, std::string> m_aliases;
 
@@ -104,6 +134,21 @@ struct TreeFormatter::TreeFormatterImpl
             util::split(spec.format.args.front(), ',',
                         std::back_inserter(m_path_key_names));
 
+        // set max column width
+        if (spec.format.args.size() > 1) {
+            bool ok = false;
+            
+            m_max_column_width = StringConverter(spec.format.args[1]).to_int(&ok);
+
+            if (!ok) {
+                Log(0).stream() << "TreeFormatter: invalid column width argument \"" 
+                                << spec.format.args[1] << "\""
+                                << std::endl;
+                
+                m_max_column_width = -1;
+            }
+        }
+        
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
         m_attribute_columns = spec.attribute_selection;
         m_aliases = spec.aliases;
@@ -193,8 +238,12 @@ struct TreeFormatter::TreeFormatterImpl
         //
 
         std::string path_str;
-        path_str.assign(2*level, ' ');
-        path_str.append(node->label_value().to_string());
+        path_str.append(std::min(2*level, m_path_column_width-2), ' ');
+        
+        if (2*level >= m_path_column_width)
+            path_str.append("..");
+        else
+            path_str.append(clamp_string(node->label_value().to_string(), m_path_column_width-2*level));
 
         ::pad_right(os, path_str, m_path_column_width);
 
@@ -232,6 +281,9 @@ struct TreeFormatter::TreeFormatterImpl
     void flush(const CaliperMetadataAccessInterface& db, std::ostream& os) {
         m_path_column_width = std::max<std::size_t>(m_path_column_width, 4 /* strlen("Path") */);
 
+        if (m_max_column_width > 0)
+            m_path_column_width = std::min(m_path_column_width, std::max(4, m_max_column_width));
+        
         //
         // establish order of attribute columns
         //
@@ -293,7 +345,8 @@ struct TreeFormatter::TreeFormatterImpl
     }
 
     TreeFormatterImpl()
-        : m_path_column_width(0)
+        : m_path_column_width(0),
+          m_max_column_width(100)
     { }
 };
 
