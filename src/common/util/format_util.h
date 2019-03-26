@@ -30,8 +30,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/// \file write_util.h
-/// Helper functions for writing strings with proper escaping
+/// \file format_util.h
+/// Helper functions for formatting strings
 
 #pragma once
 
@@ -64,5 +64,14 @@ write_esc_string(std::ostream& os, const std::string& str, const char* mask_char
 {
     return write_esc_string(os, str.data(), str.size(), mask_chars, esc);
 }
+
+std::ostream&
+pad_right(std::ostream& os, const std::string& str, std::size_t width);
+
+std::ostream&
+pad_left (std::ostream& os, const std::string& str, std::size_t width);
+
+std::string
+clamp_string(const std::string& str, std::size_t max_width);
 
 } // namespace util

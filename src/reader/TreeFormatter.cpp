@@ -46,6 +46,8 @@
 
 #include "caliper/common/util/split.hpp"
 
+#include "../common/util/format_util.h"
+
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -53,55 +55,6 @@
 #include <utility>
 
 using namespace cali;
-
-namespace
-{
-
-const char whitespace[120+1] =
-    "                                        "
-    "                                        "
-    "                                        ";
-
-inline std::ostream& pad_right(std::ostream& os, const std::string& str, std::size_t width)
-{
-    os << str;
-
-    if (str.size() > width)
-        os << ' ';
-    else {
-        std::size_t s = 1 + width - str.size();
-
-        for ( ; s > 120; s -= 120)
-            os << whitespace;
-
-        os << whitespace+(120-s);
-    }
-    
-    return os;
-}
-
-inline std::ostream& pad_left (std::ostream& os, const std::string& str, std::size_t width)
-{
-    os << whitespace+(120 - std::min<std::size_t>(120, width-std::min<std::size_t>(120, str.size()))) << str << ' ';
-    return os;
-}
-
-inline std::string clamp_string(const std::string& str, std::size_t max_width)
-{
-    if (str.length() < max_width)
-        return str;
-
-    if (max_width < 8)
-        return str.substr(0, max_width);
-
-    std::string ret(str, 0, max_width/2-3);
-    ret.append(" [..] ");
-    ret.append(str, str.length()-(max_width/2-3), std::string::npos);
-
-    return ret;
-}
-    
-} // namespace [anonymous]
 
 
 struct TreeFormatter::TreeFormatterImpl
@@ -243,9 +196,9 @@ struct TreeFormatter::TreeFormatterImpl
         if (2*level >= m_path_column_width)
             path_str.append("..");
         else
-            path_str.append(clamp_string(node->label_value().to_string(), m_path_column_width-2*level));
+            path_str.append(util::clamp_string(node->label_value().to_string(), m_path_column_width-2*level));
 
-        ::pad_right(os, path_str, m_path_column_width);
+        util::pad_right(os, path_str, m_path_column_width);
 
         for (const Attribute& a : attributes) {
             std::string str;
@@ -263,9 +216,9 @@ struct TreeFormatter::TreeFormatterImpl
                                 t == CALI_TYPE_ADDR);
 
             if (align_right)
-                ::pad_left (os, str, m_column_info[a].width);
+                util::pad_left (os, str, m_column_info[a].width);
             else
-                ::pad_right(os, str, m_column_info[a].width);
+                util::pad_right(os, str, m_column_info[a].width);
         }
 
         os << std::endl;
@@ -326,10 +279,10 @@ struct TreeFormatter::TreeFormatterImpl
         // print header
         //
 
-        ::pad_right(os, "Path", m_path_column_width);
+        util::pad_right(os, "Path", m_path_column_width);
 
         for (const Attribute& a : attributes)
-            ::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
+            util::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
 
         os << std::endl;
 

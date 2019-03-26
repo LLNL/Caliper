@@ -43,7 +43,7 @@
 
 #include "caliper/common/util/lockfree-tree.hpp"
 
-#include "../common/util/write_util.h"
+#include "../common/util/format_util.h"
 
 #include <algorithm>
 #include <functional>
