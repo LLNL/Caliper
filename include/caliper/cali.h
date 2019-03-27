@@ -577,7 +577,7 @@ cali_configset_set(cali_configset_t cfg, const char* key, const char* value);
  *     };
  *
  *   cali_configset_t cfg =
- *     cali_create_configset("trace_config", false, trace_config);
+ *     cali_create_configset(trace_config);
  *
  *   //   Create a new channel "trace" but leave it inactive initially.
  *   // (By default, channels are active immediately.)
@@ -808,11 +808,11 @@ create_channel(const char* name, int flags, const config_map_t& cfg);
  *   cali_id_t profile_chn =
  *     cali::create_channel("profile", 0, {
  *         { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
- *         { "CALI_TIMESTAMP_SNAPSHOT_DURATION", "true" },
+ *         { "CALI_TIMESTAMP_SNAPSHOT_DURATION", "true" }
  *       });
  *
  *   const char* query =
- *     "SELECT annotation AS Region,sum(sum#time.duration AS Time WHERE annotation FORMAT table";
+ *     "SELECT annotation AS Region,sum(sum#time.duration) AS Time WHERE annotation FORMAT table";
  *
  *   CALI_MARK_BEGIN("My region");
  *   // ...
