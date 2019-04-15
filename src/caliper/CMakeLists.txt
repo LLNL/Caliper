@@ -3,6 +3,7 @@ set(CALIPER_SOURCES
     AnnotationBinding.cpp
     Blackboard.cpp
     Caliper.cpp
+    ChannelController.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
