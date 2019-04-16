@@ -1,0 +1,10 @@
+build-quartz-intel:
+  stage: build
+  tags:
+    - quartz
+    - shell
+  script:
+    - echo "==== Build quartz/intel ===="
+    - mkdir build-quartz-intel && cd build-quartz-intel
+    - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
+    - make
