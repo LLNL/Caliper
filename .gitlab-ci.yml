@@ -8,3 +8,15 @@ build-quartz-intel:
     - mkdir build-quartz-intel && cd build-quartz-intel
     - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
     - make
+
+build-butte-xlc:
+  stage: build
+  tags:
+    - butte
+    - shell
+  script:
+    - echo "==== Build butte/xlc ===="
+    - module load cmake
+    - mkdir build-butte-xlc && cd build-butte-xlc
+    - cmake -C ../cmake/hostconfig/gitlab-butte-xlc.cmake ..
+    - make
