@@ -68,6 +68,11 @@ else()
   set(CMAKE_SKIP_RPATH TRUE)
 endif(BUILD_SHARED_LIBS)
 
+if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+  set(CALIPER_HAVE_CPUINFO TRUE)
+  set(CALIPER_cpuinfo_CMAKE_MSG "Yes")
+endif()
+
 if(WITH_VTUNE)
   include(FindITTAPI)
   if (ITT_FOUND)
@@ -352,6 +357,7 @@ message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
 message(STATUS "Build Caliper tools       : ${WITH_TOOLS}")
 
 set(CALIPER_MODULES
+  cpuinfo
   GOTCHA
   PAPI
   Libpfm

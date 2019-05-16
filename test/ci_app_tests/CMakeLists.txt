@@ -53,6 +53,9 @@ set(PYTHON_SCRIPTS
   test_thread.py
   calipertest.py)
 
+if (CALIPER_HAVE_CPUINFO)
+  list(APPEND PYTHON_SCRIPTS test_cpuinfo.py)
+endif()
 if (CALIPER_HAVE_LIBUNWIND)
   list(APPEND PYTHON_SCRIPTS test_callpath.py)
 endif()
