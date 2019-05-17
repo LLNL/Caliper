@@ -41,27 +41,50 @@ bool {{foo}}_is_wrapped = false;
 
 struct MpiWrapperConfig
 {
-    static ConfigSet::Entry s_configdata[];
+    static ConfigSet::Entry  s_configdata[];
+
+    static MpiWrapperConfig* s_mwcs;
     
     //
     // The list of MPI configs
     //
-    
-    static std::vector<MpiWrapperConfig*> s_wrapper_configs;        
+
+    static MpiWrapperConfig* get_wrapper_config() {
+        return s_mwcs;
+    }
 
     static MpiWrapperConfig* get_wrapper_config(Channel* chn) {
-        auto it = std::find_if(s_wrapper_configs.begin(), s_wrapper_configs.end(),
-                               [chn](MpiWrapperConfig* mwc){
-                                   return mwc->channel->id() == chn->id();
-                               });
+        MpiWrapperConfig* mwc = s_mwcs;
 
-        if (it != s_wrapper_configs.end())
-            return *it;
+        while (mwc && mwc->channel->id() != chn->id())
+            mwc = mwc->next;
 
-        MpiWrapperConfig* mwc = new MpiWrapperConfig(chn);
-        s_wrapper_configs.push_back(mwc);
+        if (!mwc) {
+            mwc = new MpiWrapperConfig(chn);
+
+            if (s_mwcs)
+                s_mwcs->prev = mwc;
+
+            mwc->next = s_mwcs;
+            s_mwcs = mwc;
+        }
 
         return mwc;        
+    }
+
+    static void delete_wrapper_config(Channel* chn) {
+        MpiWrapperConfig* mwc = s_mwcs;
+
+        while (mwc && mwc->channel->id() != chn->id())
+            mwc = mwc->next;
+
+        if (mwc) {
+            if (mwc == s_mwcs)
+                s_mwcs = mwc->next;
+
+            mwc->unlink();
+            delete mwc;
+        }
     }
 
     // Constructor / destructor
@@ -77,11 +100,7 @@ struct MpiWrapperConfig
         }
     
     ~MpiWrapperConfig()
-        {
-            s_wrapper_configs.erase(
-                std::find(s_wrapper_configs.begin(), s_wrapper_configs.end(),
-                          this));
-        }
+        { }
 
     // Per-channel variables
     //
@@ -93,12 +112,22 @@ struct MpiWrapperConfig
     bool        enable_msg_tracing;
     MpiTracing  tracing;
 
+    MpiWrapperConfig* next;
+    MpiWrapperConfig* prev;
+
     {{forallfn foo}}
     bool enable_{{foo}} = false;
     {{endforallfn}}
 
     // Helper functions
     //
+
+    void unlink() {
+        if (next)
+            next->prev = prev;
+        if (prev)
+            prev->next = next;
+    }
     
     void setup_filter(const std::string& whitelist_string, const std::string& blacklist_string) {
         std::vector<std::string> whitelist =
@@ -162,7 +191,7 @@ struct MpiWrapperConfig
     }
 }; // struct MpiWrapperConfig
 
-std::vector<MpiWrapperConfig*> MpiWrapperConfig::s_wrapper_configs;
+MpiWrapperConfig* MpiWrapperConfig::s_mwcs = nullptr;
 
 ConfigSet::Entry MpiWrapperConfig::s_configdata[] = {
     { "whitelist", CALI_TYPE_STRING, "", 
@@ -227,7 +256,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -237,7 +266,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}});
@@ -260,7 +289,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -270,7 +299,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_send_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
@@ -293,7 +322,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -308,7 +337,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_recv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
@@ -331,7 +360,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -346,7 +375,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{10}});
@@ -371,7 +400,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -386,7 +415,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     mwc->tracing.handle_send(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{7}});
@@ -411,7 +440,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -421,7 +450,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_irecv(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
@@ -444,7 +473,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -454,7 +483,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_recv_init(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}});
@@ -477,7 +506,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -487,7 +516,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_start(&c, mwc->channel, 1, {{0}});
@@ -510,7 +539,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -520,7 +549,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_start(&c, mwc->channel, {{0}}, {{1}});
@@ -549,7 +578,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);        
@@ -559,7 +588,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{1}});
@@ -589,7 +618,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         bool any_msg_tracing = false;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
@@ -605,7 +634,7 @@ post_init_cb(Caliper* c, Channel* chn)
                 {{2}} = tmp_statuses;
         }
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -615,7 +644,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{2}});
@@ -650,7 +679,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         bool any_msg_tracing = false;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
@@ -664,7 +693,7 @@ post_init_cb(Caliper* c, Channel* chn)
                 {{3}} = &tmp_status;
         }
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -674,7 +703,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && nreq > 0)
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{3}});
@@ -707,7 +736,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         bool any_msg_tracing = false;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
@@ -723,7 +752,7 @@ post_init_cb(Caliper* c, Channel* chn)
                 {{4}} = tmp_statuses;
         }
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -733,7 +762,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing > 0)
                     for (int i = 0; i < *{{2}}; ++i)
@@ -768,7 +797,7 @@ post_init_cb(Caliper* c, Channel* chn)
         if ({{2}} == MPI_STATUS_IGNORE)
             {{2}} = &tmp_status;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -778,7 +807,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{1}})
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, &tmp_req, {{2}});
@@ -808,7 +837,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         bool any_msg_tracing = false;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
@@ -824,7 +853,7 @@ post_init_cb(Caliper* c, Channel* chn)
             {{3}} = tmp_statuses;
         }
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) 
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -834,7 +863,7 @@ post_init_cb(Caliper* c, Channel* chn)
                 
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{2}})
                     mwc->tracing.handle_completion(&c, mwc->channel, nreq, tmp_req, {{3}});
@@ -869,7 +898,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         bool any_msg_tracing = false;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active() && mwc->enable_msg_tracing) {
                 any_msg_tracing = true;
                 break;
@@ -883,7 +912,7 @@ post_init_cb(Caliper* c, Channel* chn)
                 {{4}} = &tmp_status;
         }
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -893,7 +922,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing && *{{3}})
                     mwc->tracing.handle_completion(&c, mwc->channel, 1, tmp_req+(*{{2}}), {{4}});
@@ -919,7 +948,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -932,7 +961,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 c.end(mwc->channel, mpifn_attr);
         
@@ -956,7 +985,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -966,7 +995,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_barrier(&c, mwc->channel, {{0}});
@@ -989,7 +1018,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -999,7 +1028,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{3}}, {{4}});
@@ -1022,7 +1051,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1032,7 +1061,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_12n(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
@@ -1055,7 +1084,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1065,7 +1094,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
@@ -1093,7 +1122,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1103,7 +1132,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{6}}, {{7}});
@@ -1126,7 +1155,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1136,7 +1165,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n21(&c, mwc->channel, {{1}}, {{2}}, {{7}}, {{8}});
@@ -1159,7 +1188,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1169,7 +1198,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n21(&c, mwc->channel, {{2}}, {{3}}, {{5}}, {{6}});
@@ -1192,7 +1221,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1202,7 +1231,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
@@ -1225,7 +1254,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1235,7 +1264,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_rank = 0;
@@ -1262,7 +1291,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1272,7 +1301,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n2n(&c, mwc->channel, {{2}}, {{3}}, {{5}});
@@ -1295,7 +1324,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1305,7 +1334,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{6}});
@@ -1328,7 +1357,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1338,7 +1367,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.handle_n2n(&c, mwc->channel, {{1}}, {{2}}, {{7}});
@@ -1361,7 +1390,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1371,7 +1400,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
@@ -1398,7 +1427,7 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
 
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing)
                     mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1408,7 +1437,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active()) {
                 if (mwc->enable_msg_tracing) {
                     int tmp_commsize = 0;
@@ -1442,7 +1471,7 @@ post_init_cb(Caliper* c, Channel* chn)
     
     // cheat a bit: put begin/ends around a barrier here
     
-    for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs) {
+    for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
         //   Run mpi init events here if Caliper was initialized before MPI_Init
         // Otherwise they will run via the Caliper initialization above.
         if (run_init_evts)
@@ -1458,7 +1487,7 @@ post_init_cb(Caliper* c, Channel* chn)
     
     PMPI_Barrier(MPI_COMM_WORLD);
 
-    for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+    for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
         if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
                 mwc->tracing.handle_init(&c, mwc->channel);
@@ -1475,7 +1504,7 @@ post_init_cb(Caliper* c, Channel* chn)
 
     // cheat a bit: put begin/ends around a barrier here
     
-    for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+    for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
         if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
                 mwc->tracing.push_call_id(&c, mwc->channel);
@@ -1485,7 +1514,7 @@ post_init_cb(Caliper* c, Channel* chn)
         
     PMPI_Barrier(MPI_COMM_WORLD);
 
-    for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs) {
+    for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
         if (mwc->enable_{{func}} && mwc->channel->is_active()) {
             if (mwc->enable_msg_tracing)
                 mwc->tracing.handle_finalize(&c, mwc->channel);
@@ -1529,13 +1558,13 @@ post_init_cb(Caliper* c, Channel* chn)
 #endif
         Caliper c;
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active())
                 c.begin(mwc->channel, mpifn_attr, Variant(CALI_TYPE_STRING, "{{func}}", strlen("{{func}}")));
         
         {{callfn}}
         
-        for (MpiWrapperConfig* mwc : MpiWrapperConfig::s_wrapper_configs)
+        for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
             if (mwc->enable_{{func}} && mwc->channel->is_active())
                 c.end(mwc->channel, mpifn_attr);
 #ifndef CALIPER_MPIWRAP_USE_GOTCHA
@@ -1574,8 +1603,7 @@ void mpiwrap_init(Caliper* c, Channel* chn)
     chn->events().finish_evt.connect(
         [](Caliper* c, Channel* chn){
             Log(2).stream() << chn->name() << ": Finishing mpi service" << std::endl;
-                
-            delete MpiWrapperConfig::get_wrapper_config(chn);
+            MpiWrapperConfig::delete_wrapper_config(chn);
         });
 
     // --- setup wrappers
