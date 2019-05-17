@@ -38,14 +38,14 @@
  *  \brief Caliper variant type definition
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "cali_types.h"
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** The variant struct manages values of different types in Caliper.
  *  Types with fixed size (i.e., numeric types) are stored in the variant directly.

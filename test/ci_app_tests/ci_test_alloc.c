@@ -68,4 +68,6 @@ int main()
   ci_test_alloc();
 
   CALI_MARK_FUNCTION_END;
+
+  return 0;
 }

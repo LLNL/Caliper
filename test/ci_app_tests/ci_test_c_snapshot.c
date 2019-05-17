@@ -30,4 +30,6 @@ int main()
                      2, event_attr, event_data);
 
   cali_end_byname("ci_test_c");
+
+  return 0;
 }

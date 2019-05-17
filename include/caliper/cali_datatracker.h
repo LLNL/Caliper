@@ -40,11 +40,6 @@
 #ifndef CALI_CALI_DATATRACKER_H
 #define CALI_CALI_DATATRACKER_H
 
-#include "cali_definitions.h"
-
-#include "common/cali_types.h"
-#include "common/cali_variant.h"
-
 #include <stddef.h> /* size_t */
 
 #ifdef __cplusplus

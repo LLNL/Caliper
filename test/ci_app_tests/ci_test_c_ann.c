@@ -47,4 +47,6 @@ int main()
   cali_end_byname("ci_test_c_ann.setbyname");
 
   cali_flush(CALI_FLUSH_CLEAR_BUFFERS);
+
+  return 0;
 }
