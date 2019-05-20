@@ -8,6 +8,7 @@ build-quartz-intel:
     - mkdir build-quartz-intel && cd build-quartz-intel
     - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
     - make
+    - make test
 
 build-butte-xlc:
   stage: build

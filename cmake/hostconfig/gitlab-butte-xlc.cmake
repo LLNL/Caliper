@@ -11,7 +11,7 @@ set(CUPTI_PREFIX "/usr/tce/packages/cuda/cuda-9.2.148/extras/CUPTI" CACHE PATH "
 # undefined references or non-existing include files. Turn it off for now.
 # Build with spack if dyninst is needed.
 #set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
- 
+
 set(WITH_CALLPATH Off CACHE BOOL "")
 set(WITH_NVPROF   On  CACHE BOOL "")
 set(WITH_CUPTI    On  CACHE BOOL "")
