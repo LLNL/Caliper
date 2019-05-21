@@ -10,6 +10,18 @@ build-quartz-intel:
     - make
     - make test
 
+build-quartz-pgi:
+  stage: build
+  tags:
+    - quartz
+    - shell
+  script:
+    - echo "==== Build quartz/pgi ===="
+    - mkdir build-quartz-pgi && cd build-quartz-pgi
+    - cmake -C ../cmake/hostconfig/gitlab-quartz-pgi.cmake ..
+    - make
+    - make test
+
 build-butte-xlc:
   stage: build
   tags:

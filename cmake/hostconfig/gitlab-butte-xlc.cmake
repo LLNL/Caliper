@@ -25,4 +25,5 @@ set(WITH_GOTCHA   On  CACHE BOOL "")
 set(WITH_VTUNE    Off CACHE BOOL "")
 
 set(WITH_DOCS     Off CACHE BOOL "")
-set(BUILD_TESTING On  CACHE BOOL "")
+set(BUILD_TESTING Off CACHE BOOL "") # Can't download gtest in butte runner currently
+
