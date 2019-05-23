@@ -521,6 +521,14 @@ struct CalQLParser::CalQLParserImpl
 
             parse_clause_from_word(w, is);
         }
+
+        if (!error && is.good()) {
+            // check if there are unexpected characters left in the stream
+            char c = util::read_char(is);
+
+            if (is.good() && c != '\0' && c != '\n')
+                set_error(std::string("Expected clause, got ")+c, is);
+        }
     }
 
     CalQLParserImpl()
