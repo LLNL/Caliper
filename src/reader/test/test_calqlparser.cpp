@@ -325,7 +325,7 @@ TEST(CalQLParserTest, AliasAggregate) {
 TEST(CalQLParserTest, FullStatement) {
     const char* s1 =
         "SELECT a,bb, cc, count() where bb< 42, NOT d=\"foo,\"\\ bar, c GROUP BY a, bb,d\n"
-        "FORMAT json";
+        "FORMAT json  ";
     
     CalQLParser p1(s1);
 
@@ -365,7 +365,7 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_STREQ(q1.format.formatter.name, "json");
 
     const char* s2 =
-        "SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group";
+        " SELECT count(), *, SUM(x\\\\y)  GROUP BY a.b.c where group ";
 
     CalQLParser p2(s2);
 
@@ -404,4 +404,12 @@ TEST(CalQLParserTest, FullStatement) {
     EXPECT_EQ(q4.aggregation_key.selection, QuerySpec::AttributeSelection::Default);
     EXPECT_EQ(q4.filter.selection, QuerySpec::FilterSelection::None);
     EXPECT_EQ(q4.format.opt, QuerySpec::FormatSpec::User);    
+}
+
+TEST(CalQLParserTest, GarbageAtEnd) {
+    CalQLParser p1(" select a,b,c format tree = where b");
+    EXPECT_TRUE(p1.error());
+
+    CalQLParser p2("where bla()");
+    EXPECT_TRUE(p2.error());
 }
