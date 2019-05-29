@@ -3,6 +3,6 @@ if(BUILD_TESTING)
 endif()
 
 if (WITH_GOTCHA AND NOT USE_EXTERNAL_GOTCHA)
-  add_subdirectory(gotcha)
+  add_subdirectory(gotcha/src)
 endif()
 

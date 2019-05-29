@@ -21,7 +21,7 @@ set(WITH_DYNINST  Off CACHE BOOL "") # turn off for now
 set(WITH_SAMPLER  On  CACHE BOOL "")
 set(WITH_MPI      On  CACHE BOOL "")
 set(WITH_MPIT     Off CACHE BOOL "") # default toss3 mvapich2-2.2 doesn't have any MPI-T stuff
-set(WITH_GOTCHA   Off CACHE BOOL "")
+set(WITH_GOTCHA   On  CACHE BOOL "")
 set(WITH_VTUNE    On  CACHE BOOL "")
 
 set(WITH_DOCS     Off CACHE BOOL "")

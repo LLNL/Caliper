@@ -14,9 +14,9 @@ set(CALIPER_SOURCES
   
 add_library(caliper 
   $<TARGET_OBJECTS:caliper-services>
-#  $<TARGET_OBJECTS:caliper-reporters>
   ${CALIPER_SOURCES} 
-  ${CALIPER_SERVICES_LIBS})
+  ${CALIPER_SERVICES_LIBS}
+  ${CALIPER_EXTERNAL_SOURCES})
 
 set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
