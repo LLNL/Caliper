@@ -3,6 +3,7 @@ set(CALIPER_TEST_SOURCES
   test_blackboard.cpp
   test_channel_api.cpp
   test_channel_controller.cpp
+  test_configmanager.cpp
   test_metadatatree.cpp
   test_c_snapshot.cpp)
 

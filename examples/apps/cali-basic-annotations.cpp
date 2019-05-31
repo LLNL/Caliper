@@ -41,8 +41,12 @@ int main(int argc, char* argv[])
 
     mgr.use_mpi(false);
 
-    if (argc > 1)
+    if (argc > 1) {
         mgr.add(argv[1]);
+
+        if (mgr.error())
+            std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
+    }
 
     auto channels = mgr.get_all_channels();
 

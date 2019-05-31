@@ -5,7 +5,7 @@
 
 #include "caliper/ConfigManager.hpp"
 
-#include "RuntimeProfileController.hpp"
+#include "caliper/ChannelController.h"
 
 #include "../src/common/util/parse_util.h"
 
@@ -13,35 +13,23 @@
 
 using namespace cali;
 
-namespace
+namespace cali
 {
 
-cali::ChannelController*
-make_runtime_report_controller(const ConfigManager::argmap_t& args, bool use_mpi)
-{
-    auto it = args.find("output");
-    std::string output = (it == args.end() ? "" : it->second);
+// defined in controllers/controllers.cpp
+extern ConfigManager::ConfigInfo builtin_controllers_table[];
 
-    if (output.empty())
-        output = "stderr";
-    
-    return new RuntimeProfileController(use_mpi, output.c_str());
 }
 
-const char* runtime_report_args[] = { "output", nullptr };
-
-ConfigManager::ConfigInfo config_table[] = {
-    { "runtime-report", runtime_report_args, make_runtime_report_controller },
-    
-    { nullptr, nullptr, nullptr }
-};
+namespace
+{
 
 struct ConfigInfoList {
     const ConfigManager::ConfigInfo* configs;
     ConfigInfoList* next;
 };
 
-ConfigInfoList  s_default_configs { config_table, nullptr };
+ConfigInfoList  s_default_configs { cali::builtin_controllers_table, nullptr };
 ConfigInfoList* s_config_list     { &s_default_configs };
 
 }
