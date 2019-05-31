@@ -4,6 +4,7 @@ set(CALIPER_SOURCES
     Blackboard.cpp
     Caliper.cpp
     ChannelController.cpp
+    ConfigManager.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp
@@ -11,9 +12,12 @@ set(CALIPER_SOURCES
     cali.cpp
     cali_datatracker.cpp
     config_sanity_check.cpp)
+
+add_subdirectory(controllers)
   
 add_library(caliper 
   $<TARGET_OBJECTS:caliper-services>
+  $<TARGET_OBJECTS:caliper-controllers>
   ${CALIPER_SOURCES} 
   ${CALIPER_SERVICES_LIBS}
   ${CALIPER_EXTERNAL_SOURCES})

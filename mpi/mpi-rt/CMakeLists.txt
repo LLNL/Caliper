@@ -30,12 +30,15 @@ endmacro()
 add_subdirectory(services/mpiwrap)
 add_subdirectory(services/mpireport)
 
+add_subdirectory(controllers)
+
 if (CALIPER_HAVE_MPIT)
   # add_subdirectory(services/mpit)
   message(WARNING "MPIT option is currently not supported")
 endif()
 
 add_library(caliper-mpi
+  $<TARGET_OBJECTS:caliper-mpi-controllers>
   ${CALIPER_MPI_SOURCES} 
   ${CALIPER_MPI_LIBS})
 

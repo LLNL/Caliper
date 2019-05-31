@@ -2,6 +2,7 @@
 
 #include <caliper/cali.h>
 #include <caliper/cali-mpi.h>
+#include <caliper/cali-manager.h>
 
 #include <mpi.h>
 
@@ -11,21 +12,40 @@ int main(int argc, char* argv[])
     
     MPI_Init(&argc, &argv);
 
-    CALI_CXX_MARK_FUNCTION;
+    cali::ConfigManager mgr;
 
-    // some MPI functions to test the wrapper blacklist/whitelist
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    int val = 42;
+    mgr.use_mpi(true);
     
-    MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (argc > 1)
+        mgr.add(argv[1]);
+    if (mgr.error())
+        MPI_Abort(MPI_COMM_WORLD, -1);
 
-    int in  = val, out;
+    auto list = mgr.get_all_channels();
+    
+    for (auto channel : list)
+        channel->start();
 
-    MPI_Reduce(&in, &out, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    {
+        CALI_CXX_MARK_FUNCTION;
+
+        // some MPI functions to test the wrapper blacklist/whitelist
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        int val = 42;
+    
+        MPI_Bcast(&val, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        int in  = val, out;
+
+        MPI_Reduce(&in, &out, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
               
-    MPI_Barrier(MPI_COMM_WORLD);
-
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    
+    for (auto channel : list)
+        channel->flush();
+    
     MPI_Finalize();
 }

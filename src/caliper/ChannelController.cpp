@@ -104,6 +104,12 @@ ChannelController::flush()
         Caliper().flush_and_write(chn, nullptr);
 }
 
+std::string
+ChannelController::name() const
+{
+    return mP->name;
+}
+
 ChannelController::ChannelController(const char* name, int flags, const config_map_t& cfg)
     : mP { new ChannelControllerImpl(name, flags, cfg) }
 {

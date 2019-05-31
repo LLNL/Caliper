@@ -36,6 +36,7 @@
 
 #include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
+#include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
 
@@ -61,6 +62,16 @@ CaliperService cali_mpi_services[] = {
     mpit_service,
 #endif
     { nullptr, nullptr }
+};
+
+extern ConfigManager::ConfigInfo spot_controller_info;
+extern ConfigManager::ConfigInfo spot_v1_controller_info;
+
+ConfigManager::ConfigInfo mpi_controllers[] = {
+    spot_controller_info,
+    spot_v1_controller_info,
+
+    { nullptr, nullptr, nullptr }
 };
 
 bool is_initialized = false;
@@ -101,6 +112,8 @@ mpirt_constructor()
 {
     Caliper::add_services(cali_mpi_services);
     Caliper::add_init_hook(setup_mpi);
+    
+    ConfigManager::add_controllers(mpi_controllers);
 
     is_initialized = true;
 }
