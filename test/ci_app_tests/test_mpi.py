@@ -166,5 +166,21 @@ class CaliperMPITest(unittest.TestCase):
             snapshots, { 'function', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
             }))
 
+    def test_spot_controller(self):
+        target_cmd = [ './ci_test_mpi_before_cali', 'spot(output=stdout)' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_keys(
+            snapshots, { 'function', 'avg#inclusive#sum#time.duration'
+            }))
+        
 if __name__ == "__main__":
     unittest.main()

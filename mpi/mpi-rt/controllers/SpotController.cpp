@@ -128,7 +128,6 @@ public:
     SpotController(bool use_mpi, const char* output)
         : ChannelController("spot", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,env,event,timestamp" },
-                { "CALI_EVENT_TRIGGER",   "function,loop" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },
