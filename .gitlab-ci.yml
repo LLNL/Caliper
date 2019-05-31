@@ -33,3 +33,4 @@ build-butte-xlc:
     - mkdir build-butte-xlc && cd build-butte-xlc
     - cmake -C ../cmake/hostconfig/gitlab-butte-xlc.cmake ..
     - make
+    - make test
