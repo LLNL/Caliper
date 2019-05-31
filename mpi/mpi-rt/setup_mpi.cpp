@@ -36,7 +36,7 @@
 
 #include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
-#include "caliper/ConfigManager.hpp"
+#include "caliper/ConfigManager.h"
 
 #include "caliper/common/Log.h"
 

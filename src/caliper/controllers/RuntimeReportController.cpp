@@ -1,5 +1,5 @@
 #include "caliper/ChannelController.h"
-#include "caliper/ConfigManager.hpp"
+#include "caliper/ConfigManager.h"
 
 using namespace cali;
 

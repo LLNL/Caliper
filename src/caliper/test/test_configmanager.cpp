@@ -1,4 +1,4 @@
-#include "caliper/ConfigManager.hpp"
+#include "caliper/ConfigManager.h"
 
 #include "caliper/ChannelController.h"
 

@@ -2,7 +2,7 @@
 
 #include <caliper/Caliper.h>
 #include <caliper/ChannelController.h>
-#include <caliper/ConfigManager.hpp>
+#include <caliper/ConfigManager.h>
 
 #include <caliper/reader/Aggregator.h>
 #include <caliper/reader/CaliperMetadataDB.h>
