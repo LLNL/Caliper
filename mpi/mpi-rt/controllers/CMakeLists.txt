@@ -1,5 +1,6 @@
 set(CALIPER_MPI_CONTROLLER_SOURCES
-  SpotController.cpp)
+  SpotController.cpp
+  SpotV1Controller.cpp)
 
 add_library(caliper-mpi-controllers OBJECT ${CALIPER_MPI_CONTROLLER_SOURCES})
 
