@@ -4,6 +4,8 @@ set(CALIPER_SOURCES
     Blackboard.cpp
     Caliper.cpp
     ChannelController.cpp
+    ConfigManager.cpp
+    RuntimeProfileController.cpp
     SnapshotRecord.cpp
     MemoryPool.cpp
     MetadataTree.cpp

@@ -68,6 +68,9 @@ public:
     /// \brief Returns true if channel exists and is active, false otherwise.
     bool is_active() const;
 
+    /// \brief Returns the name of the underlying channel
+    std::string name() const;
+
     /// \brief Flush the underlying %Caliper channel.
     ///
     ///   Allows derived classes to implement custom %Caliper data processing.

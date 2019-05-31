@@ -33,9 +33,22 @@
 // A C++ Caliper instrumentation demo
 
 #include <caliper/cali.h>
+#include <caliper/cali-manager.h>
 
 int main(int argc, char* argv[])
 {
+    cali::ConfigManager mgr;
+
+    mgr.use_mpi(false);
+
+    if (argc > 1)
+        mgr.add(argv[1]);
+
+    auto channels = mgr.get_all_channels();
+
+    for (auto &c : channels)
+        c->start();
+    
     // Mark begin/end of the current function.
     //   Sets "function=main" in Caliper.
     CALI_CXX_MARK_FUNCTION;
@@ -65,4 +78,7 @@ int main(int argc, char* argv[])
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);
+
+    for (auto &c : channels)
+        c->flush();
 }
