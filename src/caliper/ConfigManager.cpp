@@ -7,6 +7,8 @@
 
 #include "caliper/ChannelController.h"
 
+#include "caliper/common/Log.h"
+
 #include "../src/common/util/parse_util.h"
 
 #include <sstream>
