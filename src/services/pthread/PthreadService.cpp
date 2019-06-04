@@ -152,5 +152,7 @@ pthreadservice_initialize(Caliper* c, Channel* chn)
 
 namespace cali
 {
-    CaliperService pthread_service { "pthread", ::pthreadservice_initialize };
+
+CaliperService pthread_service { "pthread", ::pthreadservice_initialize };
+
 }
