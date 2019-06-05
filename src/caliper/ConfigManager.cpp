@@ -70,8 +70,6 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            const char** arg = argtbl;
-
             while (*argtbl && key != std::string(*argtbl))
                 ++argtbl;
 

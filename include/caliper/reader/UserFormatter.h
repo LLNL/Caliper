@@ -46,7 +46,7 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 class OutputStream;
-class QuerySpec;
+struct QuerySpec;
 
 /// \brief Prints snapshot records using a user-defined format string
 /// \ingroup ReaderAPI

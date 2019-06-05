@@ -52,11 +52,11 @@ namespace cali
 
 // --- Forward declarations
 
-class Caliper;
-class CaliperService;
-class Node;
-class RuntimeConfig;
-class SnapshotRecord;
+class  Caliper;
+struct CaliperService;
+class  Node;
+class  RuntimeConfig;
+class  SnapshotRecord;
 
 // --- Typedefs
 

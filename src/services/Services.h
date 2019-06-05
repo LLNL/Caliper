@@ -44,7 +44,7 @@ namespace cali
 {
 
 class Caliper;
-class CaliperService;
+struct CaliperService;
 class Channel;
 
 class Services

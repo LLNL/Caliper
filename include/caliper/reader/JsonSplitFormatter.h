@@ -46,7 +46,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
-class QuerySpec;
+struct QuerySpec;
 
 /// \brief Prints snapshot records as sparse JSON
 /// \ingroup ReaderAPI

@@ -45,7 +45,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
-class OutputStream;
+struct OutputStream;
 
 /// \brief Execute a given query (filter, aggregation, and output formatting)
 ///   on a series of snapshot records.

@@ -114,7 +114,7 @@ public:
             : m_attr { Attribute::invalid }
             { }
 
-        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+        static AggregateKernelConfig* create(const std::vector<std::string>&) {
             return new Config;
         }
     };
@@ -1207,7 +1207,7 @@ struct Aggregator::AggregatorImpl
         return m_key_attrs;
     }
 
-    bool is_key(const CaliperMetadataAccessInterface& db, const std::vector<Attribute>& key_attrs, cali_id_t attr_id) {
+    inline bool is_key(const CaliperMetadataAccessInterface& db, const std::vector<Attribute>& key_attrs, cali_id_t attr_id) {
         Attribute attr = db.get_attribute(attr_id);
 
         if (m_select_nested && attr.is_nested())
@@ -1223,7 +1223,7 @@ struct Aggregator::AggregatorImpl
         return false;
     }
 
-    size_t pack_key(const Node* key_node, const vector<Entry>& immediates, CaliperMetadataAccessInterface& db, unsigned char* key) {
+    inline size_t pack_key(const Node* key_node, const vector<Entry>& immediates, unsigned char* key) {
         unsigned char node_key[10];
         size_t        node_key_len  = 0;
 
@@ -1273,7 +1273,7 @@ struct Aggregator::AggregatorImpl
         // --- Pack key
 
         unsigned char key[MAX_KEYLEN];
-        size_t        pos  = pack_key(key_node, immediates, db, key);
+        size_t        pos  = pack_key(key_node, immediates, key);
 
         return find_trienode(pos, key);
     }

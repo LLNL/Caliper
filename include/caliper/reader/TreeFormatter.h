@@ -45,7 +45,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
-class QuerySpec;
+struct QuerySpec;
 
 /// \brief Print a set of snapshot records in a tree 
 /// \ingroup ReaderAPI

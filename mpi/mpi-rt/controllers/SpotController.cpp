@@ -134,8 +134,8 @@ public:
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
                 { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
             }),
-          m_use_mpi(use_mpi),
-          m_output(output)
+          m_output(output),
+          m_use_mpi(use_mpi)
         { }
     
     ~SpotController()
