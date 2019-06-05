@@ -1341,6 +1341,9 @@ Caliper::exchange(Channel* chn, const Attribute& attr, const Variant& data)
 Channel*
 Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 {
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
     Channel* chn = new Channel(sG->channels.size(), name, cfg);
     sG->channels.emplace_back(chn);
 
@@ -1407,6 +1410,9 @@ Caliper::get_all_channels()
 void
 Caliper::delete_channel(Channel* chn)
 {
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
     Log(1).stream() << "Deleting channel " << chn->name() << std::endl;
     
     chn->mP->events.finish_evt(this, chn);

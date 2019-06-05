@@ -35,6 +35,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../util/ChannelList.hpp"
+
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
@@ -48,6 +50,7 @@
 #include <vector>
 
 using namespace cali;
+using util::ChannelList;
 
 namespace
 {
@@ -57,7 +60,7 @@ gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 Attribute id_attr = Attribute::invalid;
 Attribute master_attr = Attribute::invalid;
 
-std::vector<Channel*> pthread_channels;
+ChannelList* pthread_channels = nullptr;
 
 bool is_wrapped = false;
 
@@ -75,10 +78,10 @@ thread_wrapper(void *arg)
     uint64_t id = static_cast<uint64_t>(pthread_self());
     Caliper  c;
 
-    for (Channel* chn : pthread_channels)
-        if (chn->is_active()) {
+    for (ChannelList* p = pthread_channels; p; p = p->next)
+        if (p->channel->is_active()) {
             c.set(master_attr, Variant(false));
-            c.set(chn, id_attr, Variant(cali_make_variant_from_uint(id)));
+            c.set(p->channel, id_attr, Variant(cali_make_variant_from_uint(id)));
         }
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
@@ -131,7 +134,7 @@ pthreadservice_initialize(Caliper* c, Channel* chn)
         is_wrapped = true;
     }
 
-    pthread_channels.push_back(chn);
+    ChannelList::add(&pthread_channels, chn);
 
     chn->events().post_init_evt.connect(
         [](Caliper* c, Channel* chn){
@@ -139,9 +142,7 @@ pthreadservice_initialize(Caliper* c, Channel* chn)
         });
     chn->events().finish_evt.connect(
         [](Caliper* c, Channel* chn){
-            pthread_channels.erase(
-                std::find(pthread_channels.begin(), pthread_channels.end(),
-                          chn));
+            ChannelList::remove(&pthread_channels, chn);
         });
 
     Log(1).stream() << chn->name() << ": Registered pthread service" << std::endl;
@@ -151,5 +152,7 @@ pthreadservice_initialize(Caliper* c, Channel* chn)
 
 namespace cali
 {
-    CaliperService pthread_service { "pthread", ::pthreadservice_initialize };
+
+CaliperService pthread_service { "pthread", ::pthreadservice_initialize };
+
 }
