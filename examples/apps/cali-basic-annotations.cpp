@@ -52,10 +52,10 @@ int main(int argc, char* argv[])
 
     for (auto &c : channels)
         c->start();
-    
+
     // Mark begin/end of the current function.
     //   Sets "function=main" in Caliper.
-    CALI_CXX_MARK_FUNCTION;
+    CALI_MARK_FUNCTION_BEGIN;
 
     // Mark begin and end of a code region.
     //   Sets "annotation=init" in Caliper.
@@ -82,6 +82,8 @@ int main(int argc, char* argv[])
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);
+
+    CALI_MARK_FUNCTION_END;
 
     for (auto &c : channels)
         c->flush();
