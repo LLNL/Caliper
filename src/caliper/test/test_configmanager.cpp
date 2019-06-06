@@ -25,6 +25,20 @@ TEST(ConfigManagerTest, ParseErrors) {
 
         EXPECT_EQ(list.size(), 0);
     }
+
+    {
+        cali::ConfigManager mgr(" runtime-report(output)");
+        
+        EXPECT_TRUE(mgr.error());
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected '=' after output");
+    }
+
+    {
+        cali::ConfigManager mgr("event-trace(output=stdout");
+
+        EXPECT_TRUE(mgr.error());
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected ')'");
+    }
 }
 
 TEST(ConfigManagerTest, ParseConfig) {
