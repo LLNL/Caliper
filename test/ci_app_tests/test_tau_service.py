@@ -8,14 +8,13 @@ class CaliperReportTest(unittest.TestCase):
     """ Caliper TAU service test case """
 
     def test_tau(self):
-        target_cmd = [ './ci_test_tau_service' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query',
-                       '-q', 'SELECT count(),iteration#fooloop WHERE loop=fooloop GROUP BY iteration#fooloop FORMAT expand' ]
+        target_cmd = [ './ci_test_mpi_before_cali' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'event,trace,report,tau',
-            'CALI_REPORT_CONFIG'     : 'format cali',
-            'CALI_LOG_VERBOSITY'     : '0'
+            'CALI_SERVICES_ENABLE'   : 'tau',
+            'CALI_LOG_VERBOSITY'     : '0',
+            'TAU_PROFILE'            : '0',
+            'TAU_TRACE'              : '0'
         }
 
         #query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)

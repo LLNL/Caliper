@@ -74,12 +74,6 @@ if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_DYNINST)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
 endif()
 
-if (CALIPER_HAVE_TAU)
-  add_executable(ci_test_tau_service ci_test_tau_service.cpp)
-  target_link_libraries(ci_test_tau_service caliper ${TAU_LIBRARIES})
-  list(APPEND PYTHON_SCRIPTS test_tau_service.py)
-endif()
-
 if (CALIPER_HAVE_MPI)
   include_directories(${MPI_CXX_INCLUDE_PATH})
   include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
@@ -91,7 +85,11 @@ if (CALIPER_HAVE_MPI)
 
   if (RUN_MPI_TESTS)
     list(APPEND PYTHON_SCRIPTS test_mpi.py)
-  endif()
+
+    if (CALIPER_HAVE_TAU)
+      list(APPEND PYTHON_SCRIPTS test_tau_service.py)
+    endif()
+  endif()  
 endif()
 
 foreach(file ${PYTHON_SCRIPTS})

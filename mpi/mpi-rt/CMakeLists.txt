@@ -30,6 +30,10 @@ endmacro()
 add_subdirectory(services/mpiwrap)
 add_subdirectory(services/mpireport)
 
+if (CALIPER_HAVE_TAU)
+  add_subdirectory(services/tau)
+endif()
+
 add_subdirectory(controllers)
 
 if (CALIPER_HAVE_MPIT)
@@ -44,6 +48,10 @@ add_library(caliper-mpi
 
 set_target_properties(caliper-mpi PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper-mpi PROPERTIES VERSION ${CALIPER_VERSION})
+
+foreach (_extlib ${CALIPER_MPI_EXTERNAL_LIBS})
+  target_link_libraries(caliper-mpi PRIVATE ${_extlib})
+endforeach()
 
 target_link_libraries(caliper-mpi PUBLIC caliper-mpi-common caliper)
 target_link_libraries(caliper-mpi PRIVATE ${MPI_CXX_LIBRARIES})

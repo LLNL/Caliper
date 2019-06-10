@@ -5,5 +5,5 @@ set(CALIPER_TAU_SOURCES
 
 add_library(caliper-tau OBJECT ${CALIPER_TAU_SOURCES})
 
-add_service_objlib("caliper-tau")
-add_caliper_service("tau CALIPER_HAVE_TAU")
+add_mpi_service_objlib("caliper-tau")
+

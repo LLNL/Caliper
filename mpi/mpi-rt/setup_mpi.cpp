@@ -54,12 +54,18 @@ extern CaliperService mpireport_service;
 #ifdef CALIPER_HAVE_MPIT
 extern CaliperService mpit_service;
 #endif
+#ifdef CALIPER_HAVE_TAU
+extern CaliperService tau_service;
+#endif
 
 CaliperService cali_mpi_services[] = {
     mpiwrap_service,
     mpireport_service,
 #ifdef CALIPER_HAVE_MPIT
     mpit_service,
+#endif
+#ifdef CALIPER_HAVE_TAU
+    tau_service,
 #endif
     { nullptr, nullptr }
 };
