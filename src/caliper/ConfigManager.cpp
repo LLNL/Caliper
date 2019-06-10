@@ -187,7 +187,8 @@ void
 ConfigManager::use_mpi(bool enable)
 {
 #ifndef CALIPER_HAVE_MPI
-    Log(0).stream() << "ConfigManager: Cannot enable MPI support in non-MPI Caliper build!" << std::endl;
+    if (enable)
+        Log(0).stream() << "ConfigManager: Cannot enable MPI support in non-MPI Caliper build!" << std::endl;
 #endif
     mP->m_use_mpi = enable;
 }
