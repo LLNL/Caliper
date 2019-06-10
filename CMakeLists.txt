@@ -109,18 +109,6 @@ if(WITH_CUPTI)
   endif()
 endif()
 
-if(WITH_TAU)
-  find_package(TAU QUIET)
-  if (TAU_FOUND)
-    set(CALIPER_HAVE_TAU TRUE)
-    set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARIES}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${TAU_LIBRARIES})
-  else()
-    message(WARNING "TAU bindings requested but TAU API was not found!\n"
-  "Set TAU_PREFIX to installation path and re-run cmake.")
-  endif()
-endif()
-
 # Find PAPI
 if (WITH_PAPI)
   include(FindPAPI)
@@ -259,6 +247,23 @@ if (WITH_MPI)
     else()
       set(CALIPER_MPIWRAP_CMAKE_MSG "Yes, using PMPI")
     endif()
+  endif()
+endif()
+
+
+if(WITH_TAU)
+  if (CALIPER_HAVE_MPI)
+    find_package(TAU QUIET)
+    if (TAU_FOUND)
+      set(CALIPER_HAVE_TAU TRUE)
+      set(CALIPER_TAU_CMAKE_MSG "Yes, using ${TAU_LIBRARIES}")
+      list(APPEND CALIPER_MPI_EXTERNAL_LIBS ${TAU_LIBRARIES})
+    else()
+      message(WARNING "TAU bindings requested but TAU API was not found!\n"
+        "Set TAU_PREFIX to installation path and re-run cmake.")
+    endif()
+  else()
+    message(WARNING "TAU support requires MPI-enabled build!\n")
   endif()
 endif()
 

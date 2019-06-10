@@ -44,6 +44,7 @@
 #define TAU_DOT_H_LESS_HEADERS
 #include "TAU.h"
 
+#include <mpi.h>
 
 using namespace cali;
 
@@ -62,19 +63,22 @@ public:
         char* argv[1];
         argv[0] = const_cast<char*>(dummy);
         Tau_init(argc,argv);
-        // want to get the *real* MPI rank.  How do I get it? like this.
-        Attribute mpi_rank_attr = c->get_attribute("mpi.rank");
-        if (mpi_rank_attr == Attribute::invalid) {
-            // no MPI
+
+        int flag = 0;        
+        PMPI_Initialized(&flag);
+
+        if (flag == 0) {
             Tau_set_node(0);
         } else {
-            // have MPI, get the rank
-            Tau_set_node(c->get(chn, mpi_rank_attr).value().to_int());
+            int rank = 0;
+            PMPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            
+            Tau_set_node(rank);
         }
         // register for events of interest?
     }
 
-    void finalize(Caliper* c) {
+    void finalize(Caliper*, Channel*) {
         // do something?
     }
 
@@ -92,7 +96,7 @@ public:
     // handle an end event by stopping a TAU timer
     void on_end(Caliper* c, Channel*, const Attribute& attr, const Variant& value) {
         if (attr.type() == CALI_TYPE_STRING) {
-            Tau_stop((const char*)(value.data());
+            Tau_stop((const char*) value.data());
         } else {
             Tau_stop((const char*)(value.to_string().data()));
         }
@@ -101,7 +105,10 @@ public:
 
 } // namespace
 
-namespace cali {
-    CaliperService tau_service { "tau", &AnnotationBinding::make_binding<::TAUBinding> };
+namespace cali
+{
+
+CaliperService tau_service { "tau", &AnnotationBinding::make_binding<::TAUBinding> };
+
 }
 
