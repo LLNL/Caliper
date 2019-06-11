@@ -42,6 +42,7 @@ if (CALIPER_HAVE_MPIT)
 endif()
 
 add_library(caliper-mpi
+  $<TARGET_OBJECTS:caliper-mpi-common>
   $<TARGET_OBJECTS:caliper-mpi-controllers>
   ${CALIPER_MPI_SOURCES} 
   ${CALIPER_MPI_LIBS})
@@ -53,7 +54,8 @@ foreach (_extlib ${CALIPER_MPI_EXTERNAL_LIBS})
   target_link_libraries(caliper-mpi PRIVATE ${_extlib})
 endforeach()
 
-target_link_libraries(caliper-mpi PUBLIC caliper-mpi-common caliper)
+# target_link_libraries(caliper-mpi PUBLIC caliper-mpi-common caliper)
+target_link_libraries(caliper-mpi PUBLIC caliper)
 target_link_libraries(caliper-mpi PRIVATE ${MPI_CXX_LIBRARIES})
 
 install(TARGETS caliper-mpi
