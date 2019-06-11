@@ -32,6 +32,9 @@
 
 // A C++ Caliper instrumentation demo
 
+//   Usage: $ cali-basic-annotations <configuration-string>
+// e.g. $ cali-basic-annotations "runtime-report,event-trace(output=trace.cali)"
+
 #include <caliper/cali.h>
 #include <caliper/cali-manager.h>
 
@@ -39,8 +42,7 @@ int main(int argc, char* argv[])
 {
     cali::ConfigManager mgr;
 
-    mgr.use_mpi(false);
-
+    // Read configuration string from command-line argument
     if (argc > 1) {
         mgr.add(argv[1]);
 
@@ -48,6 +50,8 @@ int main(int argc, char* argv[])
             std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
     }
 
+    //   Get all requested Caliper configuration channel controllers,
+    // and start them. Should be done prior to the first region annotations.
     auto channels = mgr.get_all_channels();
 
     for (auto &c : channels)
@@ -85,6 +89,7 @@ int main(int argc, char* argv[])
 
     CALI_MARK_FUNCTION_END;
 
+    // Trigger output in all configuration channels
     for (auto &c : channels)
         c->flush();
 }
