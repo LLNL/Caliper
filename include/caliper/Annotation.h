@@ -31,7 +31,7 @@
 // ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /// \file Annotation.h
-/// Caliper C++ annotation interface
+/// %Caliper C++ annotation interface
 
 //
 // --- NOTE: This interface must be C++98 only!
