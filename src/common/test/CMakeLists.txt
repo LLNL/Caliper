@@ -7,9 +7,12 @@ set(CALIPER_COMMON_TEST_SOURCES
   test_stringconverter.cpp
   test_variant.cpp)
 
-add_executable(test_caliper-common ${CALIPER_COMMON_TEST_SOURCES})
+add_executable(test_caliper-common
+  $<TARGET_OBJECTS:util>
+  $<TARGET_OBJECTS:caliper-common>
+  ${CALIPER_COMMON_TEST_SOURCES})
 
-target_link_libraries(test_caliper-common caliper-common gtest_main)
+target_link_libraries(test_caliper-common gtest_main)
 
 add_custom_target(caliper-common_test.config ALL
   COMMAND ${CMAKE_COMMAND} -E create_symlink

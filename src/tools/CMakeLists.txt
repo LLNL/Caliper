@@ -1,4 +1,7 @@
+add_subdirectory(util)
 add_subdirectory(cali-graph)
 add_subdirectory(cali-query)
 add_subdirectory(cali-stat)
-add_subdirectory(util)
+if (CALIPER_HAVE_MPI)
+  add_subdirectory(mpi-caliquery)
+endif()

@@ -1,6 +1,8 @@
 set(UTIL_SOURCES
   format_util.cpp
-  parse_util.cpp)
+  parse_util.cpp
+  unitfmt.c
+  vlenc.c)
 
 add_library(util OBJECT ${UTIL_SOURCES})
 

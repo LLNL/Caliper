@@ -1,45 +1,65 @@
 set(CALIPER_SOURCES
-    Annotation.cpp
-    AnnotationBinding.cpp
-    Blackboard.cpp
-    Caliper.cpp
-    ChannelController.cpp
-    ConfigManager.cpp
-    SnapshotRecord.cpp
-    MemoryPool.cpp
-    MetadataTree.cpp
-    api.cpp
-    cali.cpp
-    cali_datatracker.cpp
-    config_sanity_check.cpp)
+  Annotation.cpp
+  AnnotationBinding.cpp
+  Blackboard.cpp
+  Caliper.cpp
+  ChannelController.cpp
+  ConfigManager.cpp
+  SnapshotRecord.cpp
+  MemoryPool.cpp
+  MetadataTree.cpp
+  api.cpp
+  cali.cpp
+  cali_datatracker.cpp
+  config_sanity_check.cpp)
 
 add_subdirectory(controllers)
-  
-add_library(caliper 
+
+add_library(caliper-serial-obj OBJECT ${CALIPER_SOURCES})
+
+if (${BUILD_SHARED_LIBS})
+  set_property(TARGET caliper-serial-obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endif()
+
+set(CALIPER_SERIAL_OBJS
+  $<TARGET_OBJECTS:util>
+  $<TARGET_OBJECTS:caliper-common>
+
+  $<TARGET_OBJECTS:caliper-reader>
+
   $<TARGET_OBJECTS:caliper-services>
   $<TARGET_OBJECTS:caliper-controllers>
-  ${CALIPER_SOURCES} 
+
+  $<TARGET_OBJECTS:caliper-serial-obj>
   ${CALIPER_SERVICES_LIBS}
   ${CALIPER_EXTERNAL_SOURCES})
 
-set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
-set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
+add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
 
-target_link_libraries(caliper PUBLIC caliper-common)
-target_link_libraries(caliper PRIVATE Threads::Threads)
+set_target_properties(caliper-serial PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
+set_target_properties(caliper-serial PROPERTIES VERSION ${CALIPER_VERSION})
+
+target_link_libraries(caliper-serial PRIVATE Threads::Threads)
 
 foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
-  target_link_libraries(caliper PRIVATE ${_extlib})
+  target_link_libraries(caliper-serial PRIVATE ${_extlib})
 endforeach()
+
+# Add serial objects and dependencies to global list for combined caliper lib
+list(APPEND CALIPER_ALL_OBJS
+  ${CALIPER_SERIAL_OBJS})
+list(APPEND CALIPER_ALL_EXTERNAL_LIBS
+  Threads::Threads
+  ${CALIPER_EXTERNAL_LIBS})
+
+set(CALIPER_ALL_OBJS ${CALIPER_ALL_OBJS} PARENT_SCOPE)
+set(CALIPER_ALL_EXTERNAL_LIBS ${CALIPER_ALL_EXTERNAL_LIBS} PARENT_SCOPE)
 
 if (BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-# Add reader lib to runtime (for report service)
-target_link_libraries(caliper PUBLIC caliper-reader)
-
-install(TARGETS caliper 
+install(TARGETS caliper-serial
   EXPORT caliper 
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

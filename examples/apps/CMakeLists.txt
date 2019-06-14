@@ -24,7 +24,7 @@ set(CALIPER_C_EXAMPLE_APPS
 
 foreach(app ${CALIPER_CXX_EXAMPLE_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper)
+  target_link_libraries(${app} caliper-serial)
 endforeach()
 
 foreach(app ${CALIPER_C_EXAMPLE_APPS})

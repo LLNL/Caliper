@@ -149,28 +149,9 @@ Static libraries
 It is possible to build Caliper as a static library. To do so, set
 ``BUILD_SHARED_LIBS=Off``::
 
-    cmake -DBUILD_SHARED_LIBS=Off ..
+  cmake -DBUILD_SHARED_LIBS=Off ..
 
-In this case, the ``libcaliper-reader.a`` and ``libcaliper-common.a``
-libraries must be added explicitly in addition to
-``libcaliper.a``. Example::
-
-    g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lcaliper-reader -lcaliper-common
-
-MPI
-................................
-
-Caliper provides wrappers for MPI calls in the separate
-``libcaliper-mpi.so`` library. It is not strictly necessary to use the
-wrapper library for MPI programs with Caliper annotations. However, it
-will make Caliper's behavior more multi-process friendly, e.g. by
-reducing log output on most ranks. The wrapper library *is* required
-to use Caliper's "mpi" and "mpireport" services.
-
-To use the wrapper library, add it before the Caliper libraries in a
-link command: ::
-
-  mpicxx -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib -lcaliper-mpi -lcaliper
+  g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 
 CMake
 ................................
@@ -209,13 +190,8 @@ The CMake package defines the following variables and targets:
 +----------------------------+------------------------------------------+
 | caliper                    | The Caliper runtime library (target)     |
 +----------------------------+------------------------------------------+
-| caliper-common             | Common data structures used by Caliper   |
-|                            | (target)                                 |
-+----------------------------+------------------------------------------+
-| caliper-mpi                | Caliper MPI runtime library (target)     |
-+----------------------------+------------------------------------------+
-| caliper-reader             | Library for processing caliper output    |
-|                            | (target)                                 |
+| caliper-serial             | Caliper runtime library without MPI      |
+|                            | dependencies (target)                    |
 +----------------------------+------------------------------------------+
 | caliper-tools-util         | Utilities for caliper tools (target)     |
 +----------------------------+------------------------------------------+

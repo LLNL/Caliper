@@ -27,7 +27,7 @@ set(CALIPER_CI_MPI_TEST_APPS
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper)
+  target_link_libraries(${app} caliper-serial)
 endforeach()
 
 target_link_libraries(ci_test_thread       Threads::Threads)
@@ -37,7 +37,7 @@ target_link_libraries(ci_test_multichannel Threads::Threads)
 foreach(app ${CALIPER_CI_C_TEST_APPS})
   add_executable(${app} ${app}.c)
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
-  target_link_libraries(${app} caliper)
+  target_link_libraries(${app} caliper-serial)
 endforeach()
 
 # add symlinks to the python test driver scripts
@@ -80,7 +80,7 @@ if (CALIPER_HAVE_MPI)
   
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
-    target_link_libraries(${app} caliper caliper-mpi ${MPI_CXX_LIBRARIES})
+    target_link_libraries(${app} caliper ${MPI_CXX_LIBRARIES})
   endforeach()
 
   if (RUN_MPI_TESTS)

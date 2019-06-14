@@ -5,7 +5,12 @@ set(CALIPER_READER_TEST_SOURCES
   test_metadb.cpp
   test_nodebuffer.cpp)
 
-add_executable(test_caliper-reader ${CALIPER_READER_TEST_SOURCES})
-target_link_libraries(test_caliper-reader caliper-reader gtest_main)
+add_executable(test_caliper-reader
+  $<TARGET_OBJECTS:util>
+  $<TARGET_OBJECTS:caliper-common>
+  $<TARGET_OBJECTS:caliper-reader>
+  ${CALIPER_READER_TEST_SOURCES})
+
+target_link_libraries(test_caliper-reader gtest_main)
 
 add_test(NAME test-caliper-reader COMMAND test_caliper-reader)
