@@ -20,7 +20,7 @@ find_package(OpenMP)
 
 foreach(app ${CALIPER_TEST_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper)
+  target_link_libraries(${app} caliper-serial)
 endforeach()
 
 set(CALIPER_TEST_OMP_APPS

@@ -149,13 +149,9 @@ Static libraries
 It is possible to build Caliper as a static library. To do so, set
 ``BUILD_SHARED_LIBS=Off``::
 
-    cmake -DBUILD_SHARED_LIBS=Off ..
+  cmake -DBUILD_SHARED_LIBS=Off ..
 
-In this case, the ``libcaliper-reader.a`` and ``libcaliper-common.a``
-libraries must be added explicitly in addition to
-``libcaliper.a``. Example::
-
-    g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lcaliper-reader -lcaliper-common
+  g++ -o target $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 
 MPI
 ................................
@@ -209,13 +205,7 @@ The CMake package defines the following variables and targets:
 +----------------------------+------------------------------------------+
 | caliper                    | The Caliper runtime library (target)     |
 +----------------------------+------------------------------------------+
-| caliper-common             | Common data structures used by Caliper   |
-|                            | (target)                                 |
-+----------------------------+------------------------------------------+
 | caliper-mpi                | Caliper MPI runtime library (target)     |
-+----------------------------+------------------------------------------+
-| caliper-reader             | Library for processing caliper output    |
-|                            | (target)                                 |
 +----------------------------+------------------------------------------+
 | caliper-tools-util         | Utilities for caliper tools (target)     |
 +----------------------------+------------------------------------------+

@@ -1,3 +1,5 @@
+include_directories(${MPI_CXX_INCLUDE_PATH})
+
 set(CALIPER_MPI_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CALIPER_MPI_SOURCES
@@ -41,11 +43,21 @@ if (CALIPER_HAVE_MPIT)
   message(WARNING "MPIT option is currently not supported")
 endif()
 
-add_library(caliper-mpi
+add_library(caliper-mpi-obj OBJECT ${CALIPER_MPI_SOURCES})
+
+if (${BUILD_SHARED_LIBS})
+  set_property(TARGET caliper-mpi-obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+endif()
+
+set(CALIPER_MPI_OBJS
   $<TARGET_OBJECTS:caliper-mpi-common>
   $<TARGET_OBJECTS:caliper-mpi-controllers>
-  ${CALIPER_MPI_SOURCES} 
+  $<TARGET_OBJECTS:caliper-mpi-obj>
   ${CALIPER_MPI_LIBS})
+
+#   libcaliper-mpi is deprecated and exists for backward compatibility only.
+# Use the combined libcaliper instead.
+add_library(caliper-mpi ${CALIPER_MPI_OBJS})
 
 set_target_properties(caliper-mpi PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper-mpi PROPERTIES VERSION ${CALIPER_VERSION})
@@ -54,9 +66,18 @@ foreach (_extlib ${CALIPER_MPI_EXTERNAL_LIBS})
   target_link_libraries(caliper-mpi PRIVATE ${_extlib})
 endforeach()
 
-# target_link_libraries(caliper-mpi PUBLIC caliper-mpi-common caliper)
-target_link_libraries(caliper-mpi PUBLIC caliper)
+target_link_libraries(caliper-mpi PUBLIC caliper-serial)
 target_link_libraries(caliper-mpi PRIVATE ${MPI_CXX_LIBRARIES})
+
+# Add mpi objects and dependencies to global list for combined caliper lib
+list(APPEND CALIPER_ALL_OBJS
+  ${CALIPER_MPI_OBJS})
+list(APPEND CALIPER_ALL_EXTERNAL_LIBS
+  ${CALIPER_MPI_EXTERNAL_LIBS}
+  ${MPI_CXX_LIBRARIES})
+
+set(CALIPER_ALL_OBJS ${CALIPER_ALL_OBJS} PARENT_SCOPE)
+set(CALIPER_ALL_EXTERNAL_LIBS ${CALIPER_ALL_EXTERNAL_LIBS} PARENT_SCOPE)
 
 install(TARGETS caliper-mpi
   EXPORT caliper

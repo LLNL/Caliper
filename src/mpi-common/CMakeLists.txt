@@ -1,3 +1,5 @@
+include_directories(${MPI_CXX_INCLUDE_PATH})
+
 set(CALIPER_MPI_SOURCES
   aggregate_over_mpi.cpp)
 
