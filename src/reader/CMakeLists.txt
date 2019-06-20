@@ -5,6 +5,7 @@ set(CALIPER_READER_SOURCES
   CalQLParser.cpp
   Expand.cpp
   FlatExclusiveRegionProfile.cpp
+  FlatInclusiveRegionProfile.cpp
   FormatProcessor.cpp
   CaliperMetadataDB.cpp
   QueryProcessor.cpp

@@ -6,6 +6,7 @@
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/FlatExclusiveRegionProfile.h"
+#include "caliper/reader/FlatInclusiveRegionProfile.h"
 
 #include "caliper/common/Log.h"
 
@@ -38,23 +39,30 @@ RegionProfile::RegionProfile()
 RegionProfile::region_profile_t
 RegionProfile::exclusive_region_times(const std::string& region_type)
 {
-    std::string query = std::string("aggregate sum(sum#time.duration) group by ") +
-        (region_type.empty() ? "prop:nested" : region_type);
-    
-    QuerySpec  spec = CalQLParser(query.c_str()).spec();
-    
-    Aggregator agg(spec);
     Caliper c;
-
-    if (channel())
-        c.flush(channel(), nullptr, agg);
-    else
-        Log(0).stream() << "RegionProfile::exclusive_region_times(): channel is not enabled"
-                        << std::endl;        
-        
     FlatExclusiveRegionProfile rp(c, "sum#time.duration", region_type.c_str());
 
-    agg.flush(c, rp);
+    if (channel())
+        c.flush(channel(), nullptr, rp);
+    else
+        Log(1).stream() << "RegionProfile::exclusive_region_times(): channel is not enabled"
+                        << std::endl;
+
+    return rp.result();
+}
+
+
+RegionProfile::region_profile_t
+RegionProfile::inclusive_region_times(const std::string& region_type)
+{
+    Caliper c;
+    FlatInclusiveRegionProfile rp(c, "sum#time.duration", region_type.c_str());
+
+    if (channel())
+        c.flush(channel(), nullptr, rp);
+    else
+        Log(1).stream() << "RegionProfile::inclusive_region_times(): channel is not enabled"
+                        << std::endl;
 
     return rp.result();
 }

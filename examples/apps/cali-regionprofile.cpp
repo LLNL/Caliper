@@ -43,38 +43,54 @@ int main()
     // Stop recording
     rp.stop();
 
+    // Get and print the inclusive time spent in each region
+    {
+        std::map<std::string, double> region_times;
+        double total_time;
+        
+        std::tie(region_times, std::ignore, total_time) =
+            rp.inclusive_region_times();
+
+        std::cerr << "Inclusive time per region (usec):"
+                  << "\n  main:       " << region_times["main"]
+                  << "\n    init:     " << region_times["init"]
+                  << "\n    mainloop: " << region_times["mainloop"]
+                  << "\n      foo:    " << region_times["foo"]
+                  << "\n(Total profiling time: " << total_time << " usec)\n"
+                  << std::endl;
+    }
+
     // Get and print the exclusive time spent in each region
     {
         std::map<std::string, double> region_times;
-        double total;
+        double total_time;
         
-        std::tie(region_times, std::ignore, total) =
+        std::tie(region_times, std::ignore, total_time) =
             rp.exclusive_region_times();
 
-        std::cerr << "Exclusive time per region: \n";
-        
-        for (auto &p : region_times)
-            std::cerr << "  " << p.first << ": " << p.second << " usec ("
-                      << p.second / total * 100.0 << "% of total)\n";
-
-        std::cerr << "(Total: " << total << " usec)\n" << std::endl;
+        std::cerr << "Exclusive time per region (usec):"
+                  << "\n  main:       " << region_times["main"]
+                  << "\n    init:     " << region_times["init"]
+                  << "\n    mainloop: " << region_times["mainloop"]
+                  << "\n      foo:    " << region_times["foo"]
+                  << "\n(Total profiling time: " << total_time << " usec)\n"
+                  << std::endl;
     }
 
     // Get and print the exclusive time in function regions
     {
         std::map<std::string, double> region_times;
-        double total_func;
-        double total;
+        double total_function_time;
+        double total_time;
         
-        std::tie(region_times, total_func, total) =
+        std::tie(region_times, total_function_time, total_time) =
             rp.exclusive_region_times("function");
 
-        std::cerr << "Exclusive time per region (functions only): \n";
-        
-        for (auto &p : region_times)
-            std::cerr << "  " << p.first << ": " << p.second << " usec" << std::endl;
-
-        std::cerr << "(Total time in functions: " << total_func
-                  << " of " << total << " usec)" << std::endl;
+        std::cerr << "Exclusive time per region (usec) (functions only):"
+                  << "\n  main:       " << region_times["main"]
+                  << "\n    foo:      " << region_times["foo"]
+                  << "\n(Total exclusive time in functions: " << total_function_time
+                  << " of " << total_time << " usec)"
+                  << std::endl;
     }    
 }

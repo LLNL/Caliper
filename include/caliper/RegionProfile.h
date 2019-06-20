@@ -29,6 +29,9 @@ public:
     region_profile_t
     exclusive_region_times(const std::string& region_type = "");
 
+    region_profile_t
+    inclusive_region_times(const std::string& region_type = "");
+
     void
     clear();
 };
