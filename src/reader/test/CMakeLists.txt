@@ -2,7 +2,11 @@ set(CALIPER_READER_TEST_SOURCES
   test_aggregator.cpp
   test_calqlparser.cpp
   test_filter.cpp
+  test_flatexclusiveregionprofile.cpp
+  test_flatinclusiveregionprofile.cpp
   test_metadb.cpp
+  test_nestedexclusiveregionprofile.cpp
+  test_nestedinclusiveregionprofile.cpp
   test_nodebuffer.cpp)
 
 add_executable(test_caliper-reader

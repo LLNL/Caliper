@@ -5,9 +5,10 @@ set(CALIPER_SOURCES
   Caliper.cpp
   ChannelController.cpp
   ConfigManager.cpp
-  SnapshotRecord.cpp
   MemoryPool.cpp
   MetadataTree.cpp
+  RegionProfile.cpp
+  SnapshotRecord.cpp
   api.cpp
   cali.cpp
   cali_datatracker.cpp

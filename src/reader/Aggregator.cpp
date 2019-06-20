@@ -1284,7 +1284,6 @@ struct Aggregator::AggregatorImpl
         // --- Unravel nodes, filter for key attributes
 
         std::vector<const Node*> nodes;
-        std::vector<const Node*> rv_nodes;
         std::vector<Entry>       immediates;
 
         nodes.reserve(80);
