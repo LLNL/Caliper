@@ -2,6 +2,7 @@ set(CALIPER_READER_TEST_SOURCES
   test_aggregator.cpp
   test_calqlparser.cpp
   test_filter.cpp
+  test_flatexclusiveregionprofile.cpp
   test_metadb.cpp
   test_nodebuffer.cpp)
 
