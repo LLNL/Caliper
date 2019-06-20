@@ -2,12 +2,14 @@ set(CALIPER_READER_SOURCES
   Aggregator.cpp
   CaliReader.cpp
   CaliWriter.cpp
+  CaliperMetadataDB.cpp
   CalQLParser.cpp
   Expand.cpp
   FlatExclusiveRegionProfile.cpp
   FlatInclusiveRegionProfile.cpp
   FormatProcessor.cpp
-  CaliperMetadataDB.cpp
+  NestedExclusiveRegionProfile.cpp
+  NestedInclusiveRegionProfile.cpp
   QueryProcessor.cpp
   QuerySpec.cpp
   RecordSelector.cpp

@@ -31,7 +31,7 @@ public:
 
     void operator ()(CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec);
 
-    /// Return tuple with { { region name -> value } map, sum in given region type, total sum }
+    /// \brief Return tuple with { { region name -> value } map, sum in given region type, total sum }
     std::tuple< std::map<std::string, double>, double, double >
     result() const;
 };

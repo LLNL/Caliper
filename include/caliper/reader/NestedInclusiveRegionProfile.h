@@ -1,8 +1,8 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
 // See top-level LICENSE file for details.
 
-/// \file FlatInclusiveRegionProfile.h
-/// FlatInclusiveRegionProfile class
+/// \file NestedInclusiveRegionProfile.h
+/// NestedInclusiveRegionProfile class
 
 #pragma once
 
@@ -19,13 +19,13 @@ class CaliperMetadataAccessInterface;
 class Entry;
 
 /// \brief Calculate a flat exclusive region profile
-class FlatInclusiveRegionProfile {
-    struct FlatInclusiveRegionProfileImpl;
-    std::shared_ptr<FlatInclusiveRegionProfileImpl> mP;
+class NestedInclusiveRegionProfile {
+    struct NestedInclusiveRegionProfileImpl;
+    std::shared_ptr<NestedInclusiveRegionProfileImpl> mP;
 
 public:
     
-    FlatInclusiveRegionProfile(CaliperMetadataAccessInterface& db,
+    NestedInclusiveRegionProfile(CaliperMetadataAccessInterface& db,
                                const char* metric_attr_name,
                                const char* region_attr_name = "");
 
