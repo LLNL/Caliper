@@ -18,6 +18,7 @@
 #cmakedefine CALIPER_HAVE_CUPTI
 #cmakedefine CALIPER_HAVE_LIBDW
 #cmakedefine CALIPER_HAVE_VTUNE
+#cmakedefine CALIPER_HAVE_ADIAK
 
 #cmakedefine CALIPER_REDUCED_CONSTEXPR_USAGE
 

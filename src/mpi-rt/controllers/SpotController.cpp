@@ -8,6 +8,7 @@
 #include <caliper/reader/CaliperMetadataDB.h>
 #include <caliper/reader/CalQLParser.h>
 #include <caliper/reader/FormatProcessor.h>
+#include <caliper/reader/NestedExclusiveRegionProfile.h>
 
 #include <caliper/common/Log.h>
 #include <caliper/common/OutputStream.h>
@@ -19,6 +20,10 @@
 #include "caliper/cali-mpi.h"
 
 #include <mpi.h>
+
+#ifdef CALIPER_HAVE_ADIAK
+#include <adiak.h>
+#endif
 
 using namespace cali;
 
@@ -34,6 +39,48 @@ make_filename()
 
     return std::string(timestr) + std::to_string(getpid()) + ".cali";
 }
+
+#ifdef CALIPER_HAVE_ADIAK
+void
+write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
+{
+    Log(2).stream() << "[spot controller]: Writing adiak output" << std::endl;
+    
+    //   Extract / calculate avg inclusive time for paths.
+    // Use exclusive processor b/c values are inclusive already.
+
+    NestedExclusiveRegionProfile rp(db, "avg#inclusive#sum#time.duration");
+    output_agg.flush(db, rp);
+    
+    std::map<std::string, double> nested_region_times;
+    double total_time;
+
+    std::tie(nested_region_times, std::ignore, total_time) =
+        rp.result();
+
+    // export time profile into adiak
+
+    adiak_namevalue("total_time", adiak_performance, "%f", total_time);
+
+    struct keyval_t {
+        const char* key; double val;
+    };
+    
+    keyval_t* keyval = new keyval_t[nested_region_times.size()];
+    size_t i = 0;
+    
+    for (auto &p : nested_region_times) {
+        keyval[i].key = p.first.c_str();
+        keyval[i].val = p.second;
+        ++i;
+    }
+
+    adiak_namevalue("avg#inclusive#sum#time.duration",
+                    adiak_performance, "[(%p,%f)]", keyval, nested_region_times.size(), 2);
+
+    delete[] keyval;
+}
+#endif
 
 class SpotController : public cali::ChannelController
 {
@@ -112,16 +159,24 @@ public:
 
             std::string output = m_output;
 
-            if (m_output.empty())
-                output = ::make_filename();
+            if (output == "adiak") {
+#ifdef CALIPER_HAVE_ADIAK
+                ::write_adiak(db, output_agg);
+#else
+                Log(0).stream() << "[spot controller]: cannot use adiak output: adiak is not enabled!" << std::endl;
+#endif
+            } else {
+                if (m_output.empty())
+                    output = ::make_filename();
         
-            OutputStream    stream;
-            stream.set_filename(output.c_str(), c, c.get_globals());
+                OutputStream    stream;
+                stream.set_filename(output.c_str(), c, c.get_globals());
 
-            FormatProcessor formatter(output_spec, stream);
+                FormatProcessor formatter(output_spec, stream);
 
-            output_agg.flush(db, formatter);
-            formatter.flush(db);
+                output_agg.flush(db, formatter);
+                formatter.flush(db);
+            }
         }
     }
     
