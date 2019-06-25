@@ -1,8 +1,8 @@
 set(CMAKE_C_COMPILER   "/usr/tce/bin/gcc" CACHE PATH "C Compiler (gcc 4.9.3)")
 set(CMAKE_CXX_COMPILER "/usr/tce/bin/g++" CACHE PATH "C++ Compiler (g++ 4.9.3)")
 
-set(MPI_C_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.2-gcc-4.9.3/bin/mpicc" CACHE PATH "")
-set(MPI_CXX_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.2-gcc-4.9.3/bin/mpicxx" CACHE PATH "")
+set(MPI_C_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/bin/mpicc" CACHE PATH "")
+set(MPI_CXX_COMPILER "/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-4.9.3/bin/mpicxx" CACHE PATH "")
 
 set(PAPI_PREFIX "/usr/tce/packages/papi/papi-5.5.1" CACHE PATH "")
 set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
