@@ -35,6 +35,9 @@ endmacro()
 # Service subdirectories
 
 add_subdirectory(alloc)
+if (CALIPER_HAVE_ADIAK)
+  add_subdirectory(adiak)
+endif()
 add_subdirectory(aggregate)
 if (CALIPER_HAVE_LIBUNWIND)
   add_subdirectory(callpath)
