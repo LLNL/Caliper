@@ -24,7 +24,8 @@ void snapshot_cb(Caliper*, Channel*, int scopes, const SnapshotRecord*, Snapshot
 {
     if (scopes & CALI_SCOPE_THREAD) {
         unsigned cpu = 0, node = 0;
-        
+
+#ifdef SYS_getcpu
         if (syscall(SYS_getcpu, &cpu, &node, NULL) == 0) {
             rec->append(cpu_attr.id(),
                         cali_make_variant_from_uint(cpu));
@@ -32,6 +33,7 @@ void snapshot_cb(Caliper*, Channel*, int scopes, const SnapshotRecord*, Snapshot
                         cali_make_variant_from_uint(node));
         }
     }
+#endif
 }
 
 void cpuinfo_register(Caliper* c, Channel* chn)
