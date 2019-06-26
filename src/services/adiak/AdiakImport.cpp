@@ -3,8 +3,6 @@
 
 #include "caliper/CaliperService.h"
 
-#include "../util/ChannelList.hpp"
-
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
@@ -17,7 +15,6 @@
 #include <sstream>
 
 using namespace cali;
-using util::ChannelList;
 
 namespace
 {
