@@ -34,7 +34,7 @@ public:
 const char* event_trace_args[] = { "output", nullptr };
 
 static cali::ChannelController*
-make_event_trace_controller(const cali::ConfigManager::argmap_t& args, bool /*use_mpi*/ )
+make_event_trace_controller(const cali::ConfigManager::argmap_t& args)
 {
     std::string output;
     auto it = args.find("output");

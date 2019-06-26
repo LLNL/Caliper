@@ -11,6 +11,7 @@
 
 #include <caliper/common/Log.h>
 #include <caliper/common/OutputStream.h>
+#include <caliper/common/StringConverter.h>
 
 #include <unistd.h>
 
@@ -145,9 +146,18 @@ public:
 const char* spot_args[] = { "output", nullptr };
 
 cali::ChannelController*
-make_spot_controller(const cali::ConfigManager::argmap_t& args, bool use_mpi) {
+make_spot_controller(const cali::ConfigManager::argmap_t& args) {
     auto it = args.find("output");
     std::string output = (it == args.end() ? "" : it->second);
+
+    bool use_mpi = false;
+#ifdef CALIPER_HAVE_MPI
+    use_mpi = true;
+#endif
+    
+    it = args.find("mpi");
+    if (it != args.end())
+        use_mpi = StringConverter(it->second).to_bool();
 
     return new SpotController(use_mpi, output.c_str());
 }
