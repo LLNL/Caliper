@@ -50,7 +50,7 @@ public:
 const char* spot_v1_args[] = { "config", "code_version", "title", nullptr };
 
 cali::ChannelController*
-make_spot_v1_controller(const cali::ConfigManager::argmap_t& args, bool /*use_mpi*/)
+make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
 {
     return new SpotV1Controller(args);
 }

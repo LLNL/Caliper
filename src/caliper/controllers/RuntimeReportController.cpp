@@ -1,6 +1,8 @@
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
+#include "caliper/common/StringConverter.h"
+
 using namespace cali;
 
 namespace
@@ -29,10 +31,19 @@ public:
 const char* runtime_report_args[] = { "output", nullptr };
 
 static cali::ChannelController*
-make_runtime_report_controller(const cali::ConfigManager::argmap_t& args, bool use_mpi)
+make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
 {
     auto it = args.find("output");
     std::string output =  (it == args.end() ? "" : "stderr");
+
+    bool use_mpi = false;
+#ifdef CALIPER_HAVE_MPI
+    use_mpi = true;
+#endif
+    
+    it = args.find("mpi");
+    if (it != args.end())
+        use_mpi = StringConverter(it->second).to_bool();
 
     return new RuntimeReportController(use_mpi, output.c_str());
 }
