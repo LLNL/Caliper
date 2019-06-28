@@ -200,25 +200,28 @@ if (WITH_GOTCHA)
 endif()
 
 if (WITH_ADIAK)
-  find_library(adiak_LIBRARIES
-    NAMES adiak
-    HINTS ${adiak_DIR}/lib)
-  find_path(adiak_INCLUDE_DIRS
-    NAMES adiak.h
-    HINTS ${adiak_DIR}/include)
-  include(FindPackageHandleStandardArgs)
-  find_package_handle_standard_args(adiak DEFAULT_MSG
-    adiak_LIBRARIES
-    adiak_INCLUDE_DIRS)
-  mark_as_advanced(adiak_LIBRARIES adiak_INCLUDE_DIRS)  
-
+  # find_library(adiak_LIBRARIES
+  #   NAMES adiak
+  #   HINTS ${adiak_DIR}/lib)
+  # find_path(adiak_INCLUDE_DIRS
+  #   NAMES adiak.h
+  #   HINTS ${adiak_DIR}/include)
+  # include(FindPackageHandleStandardArgs)
+  # find_package_handle_standard_args(adiak DEFAULT_MSG
+  #   adiak_LIBRARIES
+  #   adiak_INCLUDE_DIRS)
+  # mark_as_advanced(adiak_LIBRARIES adiak_INCLUDE_DIRS)  
+  find_package(adiak)
   if (adiak_FOUND)
-    set(CALIPER_adiak_CMAKE_MSG "Yes, using ${adiak_LIBRARIES}")
+    get_target_property(_adiak_location adiak LOCATION)
+    set(CALIPER_adiak_CMAKE_MSG "Yes, using ${_adiak_location}")
     set(CALIPER_HAVE_ADIAK TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS ${adiak_LIBRARIES})
     if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
       list(APPEND CALIPER_EXTERNAL_LIBS "-ldl")
     endif()
+  else()
+    message(WARNING "Adiak support was requested but Adiak was not found")
   endif()
 endif()
 

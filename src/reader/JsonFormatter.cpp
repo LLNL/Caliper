@@ -70,6 +70,8 @@ struct JsonFormatter::JsonFormatterImpl
 
     std::mutex   m_os_lock;
 
+    unsigned     m_written = 0;
+
     bool         m_first_row = true;
 
     bool         m_opt_split     = false;
@@ -278,7 +280,8 @@ struct JsonFormatter::JsonFormatterImpl
             *real_os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
             *real_os << os.str();
             *real_os << (m_opt_pretty ? "\n" : "" ) << "}";
-            
+
+            ++m_written;
             m_first_row = false;
         }
     }
@@ -301,7 +304,8 @@ struct JsonFormatter::JsonFormatterImpl
                 global_vals[e.attribute()] = e.value().to_string();
         
         for (auto &p : global_vals)
-            os << ",\n\"" << db.get_attribute(p.first).name() << "\": "
+            os << (m_written++ > 0 ? ",\n" : "")
+               << "\"" << db.get_attribute(p.first).name() << "\": "
                << '\"' << p.second << '\"';
     }
 };
@@ -327,7 +331,7 @@ void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
     std::ostream* real_os = mP->m_os.stream();
     
-    if (!mP->m_opt_split)
+    if (!mP->m_opt_split && mP->m_written > 0)
         *real_os << "\n]";
 
     if (mP->m_opt_globals)

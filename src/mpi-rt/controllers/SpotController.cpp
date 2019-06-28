@@ -90,7 +90,7 @@ class SpotController : public cali::ChannelController
 public:
     
     void
-    flush() {    
+    flush() {        
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator
@@ -155,7 +155,7 @@ public:
             Log(2).stream() << "[spot controller]: Writing output" << std::endl;
 
             // import globals from Caliper runtime object
-            db.import_globals(c);
+            db.import_globals(c, c.get_globals(channel()));
 
             std::string output = m_output;
 
@@ -191,7 +191,12 @@ public:
             }),
           m_output(output),
           m_use_mpi(use_mpi)
-        { }
+        {
+#ifdef CALIPER_HAVE_ADIAK
+            if (output != "adiak")
+                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+#endif
+        }
     
     ~SpotController()
         { }

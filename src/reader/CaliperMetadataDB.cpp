@@ -478,9 +478,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         }
     }
 
-    std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db) {
-        std::vector<Entry> import_globals = db.get_globals();
-
+    std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& import_globals) {
         std::lock_guard<std::mutex>
             g(m_globals_lock);
 
@@ -646,5 +644,12 @@ CaliperMetadataDB::set_global(const Attribute& attr, const Variant& value)
 std::vector<Entry>
 CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db)
 {
-    return mP->import_globals(db);
+    return mP->import_globals(db, db.get_globals());
+}
+
+
+std::vector<Entry>
+CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals)
+{
+    return mP->import_globals(db, globals);
 }
