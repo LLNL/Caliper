@@ -15,6 +15,7 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <ctime>
 
 #include "caliper/cali-mpi.h"
@@ -22,7 +23,7 @@
 #include <mpi.h>
 
 #ifdef CALIPER_HAVE_ADIAK
-#include <adiak.h>
+#include <adiak.hpp>
 #endif
 
 using namespace cali;
@@ -45,13 +46,13 @@ void
 write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
 {
     Log(2).stream() << "[spot controller]: Writing adiak output" << std::endl;
-    
+
     //   Extract / calculate avg inclusive time for paths.
     // Use exclusive processor b/c values are inclusive already.
 
     NestedExclusiveRegionProfile rp(db, "avg#inclusive#sum#time.duration");
     output_agg.flush(db, rp);
-    
+
     std::map<std::string, double> nested_region_times;
     double total_time;
 
@@ -60,25 +61,17 @@ write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
 
     // export time profile into adiak
 
-    adiak_namevalue("total_time", adiak_performance, "%f", total_time);
+    adiak::value("total_time", total_time, adiak_performance);
 
-    struct keyval_t {
-        const char* key; double val;
-    };
-    
-    keyval_t* keyval = new keyval_t[nested_region_times.size()];
-    size_t i = 0;
-    
-    for (auto &p : nested_region_times) {
-        keyval[i].key = p.first.c_str();
-        keyval[i].val = p.second;
-        ++i;
-    }
+    // copy our map into a vector that adiak can process
+    std::vector< std::tuple<std::string, double> > tmpvec(nested_region_times.size());
 
-    adiak_namevalue("avg#inclusive#sum#time.duration",
-                    adiak_performance, "[(%p,%f)]", keyval, nested_region_times.size(), 2);
+    std::transform(nested_region_times.begin(), nested_region_times.end(), tmpvec.begin(),
+                   [](std::pair<std::string,double>&& p){
+                       return std::make_tuple(std::move(p.first), p.second);
+                   });
 
-    delete[] keyval;
+    adiak::value("avg#inclusive#sum#time.duration", tmpvec, adiak_performance);
 }
 #endif
 
@@ -86,11 +79,11 @@ class SpotController : public cali::ChannelController
 {
     std::string m_output;
     bool m_use_mpi;
-    
+
 public:
-    
+
     void
-    flush() {        
+    flush() {
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator
@@ -168,7 +161,7 @@ public:
             } else {
                 if (m_output.empty())
                     output = ::make_filename();
-        
+
                 OutputStream    stream;
                 stream.set_filename(output.c_str(), c, c.get_globals());
 
@@ -179,7 +172,7 @@ public:
             }
         }
     }
-    
+
     SpotController(bool use_mpi, const char* output)
         : ChannelController("spot", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,env,event,timestamp" },
@@ -197,7 +190,7 @@ public:
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
         }
-    
+
     ~SpotController()
         { }
 };

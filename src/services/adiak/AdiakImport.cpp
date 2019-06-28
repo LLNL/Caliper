@@ -100,6 +100,8 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
     default:
         ++s_unknown_type_error;
     }
+
+    return os;
 }
 
 void
@@ -207,7 +209,7 @@ register_adiak_import(Caliper* c, Channel* chn)
             
             adiak_list_namevals(1, adiak_category_all, nameval_cb, &args);
             
-            Log(1).stream() << chn->name() << ": Imported " << args.count
+            Log(1).stream() << chn->name() << ": adiak_import: Imported " << args.count
                             << " adiak values" << std::endl;
         });
 
