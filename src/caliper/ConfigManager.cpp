@@ -68,10 +68,11 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            while (*argtbl && key != std::string(*argtbl))
-                ++argtbl;
+            const char** argptr = argtbl;
+            while (*argptr && key != std::string(*argptr))
+                ++argptr;
 
-            if (*argtbl == nullptr) {
+            if (*argptr == nullptr) {
                 set_error("Unknown argument: " + key);
                 args.clear();
                 return args;
