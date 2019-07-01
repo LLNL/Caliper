@@ -97,8 +97,11 @@ struct ConfigManager::ConfigManagerImpl
 
         return args;
     }
-    
-    bool add(const char* config_string) {
+
+    std::vector< std::pair<const ConfigInfo*, argmap_t> >
+    parse_configstring(const char* config_string) {
+        std::vector< std::pair<const ConfigInfo*, argmap_t> > ret;
+        
         std::istringstream is(config_string);
         char c = 0;
 
@@ -122,20 +125,30 @@ struct ConfigManager::ConfigManagerImpl
             
             if (!cfg_p || !cfg_p->name) {
                 set_error("Unknown config: " + name);
-                return false;
+                return ret;
             }
 
             auto args = parse_arglist(is, cfg_p->args);
 
             if (m_error)
-                return false;
-            
-            m_channels.emplace_back( (*cfg_p->create)(args) );
+                return ret;
+
+            ret.push_back(std::make_pair(cfg_p, std::move(args)));
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
         
-        return !m_error;
+        return ret;
+    }
+
+    bool add(const char* config_string) {
+        auto configs = parse_configstring(config_string);
+
+        if (!m_error)
+            for (auto cfg : configs)
+                m_channels.emplace_back( (cfg.first->create)(std::move(cfg.second)) );
+
+        return m_error;
     }
 
     ConfigManagerImpl()
@@ -203,4 +216,37 @@ ConfigManager::add_controllers(const ConfigManager::ConfigInfo* ctrlrs)
 {
     ::ConfigInfoList* elem = new ConfigInfoList { ctrlrs, ::s_config_list };
     s_config_list = elem;
+}
+
+std::vector<std::string>
+ConfigManager::available_configs()
+{
+    std::vector<std::string> ret;
+    
+    for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
+        for (const ConfigInfo* cp = lp->configs; cp && cp->name; ++cp)
+            ret.push_back(cp->name);
+
+    return ret;
+}
+
+std::vector<std::string>
+ConfigManager::get_config_docstrings()
+{
+    std::vector<std::string> ret;
+
+    for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
+        for (const ConfigInfo* cp = lp->configs; cp && cp->name; ++cp)
+            ret.push_back(cp->description);
+
+    return ret;
+}
+
+std::string
+ConfigManager::check_config_string(const char* config_string)
+{
+    ConfigManagerImpl tmp;
+    tmp.parse_configstring(config_string);
+
+    return tmp.m_error_msg;
 }

@@ -1,7 +1,11 @@
+#include "caliper/caliper-config.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
 #include "caliper/common/StringConverter.h"
+
+#include <iostream>
 
 using namespace cali;
 
@@ -28,19 +32,19 @@ public:
         }
 };
 
-const char* runtime_report_args[] = { "output", nullptr };
+const char* runtime_report_args[] = { "output", "mpi", nullptr };
 
 static cali::ChannelController*
 make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
 {
     auto it = args.find("output");
-    std::string output =  (it == args.end() ? "" : "stderr");
+    std::string output = (it == args.end() ? "stderr" : it->second);
 
     bool use_mpi = false;
 #ifdef CALIPER_HAVE_MPI
     use_mpi = true;
 #endif
-    
+
     it = args.find("mpi");
     if (it != args.end())
         use_mpi = StringConverter(it->second).to_bool();
@@ -55,7 +59,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", "runtime-report(output=<filename>,mpi=true|false): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }
