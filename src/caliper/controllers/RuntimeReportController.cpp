@@ -1,3 +1,5 @@
+#include "caliper/caliper-config.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
@@ -28,13 +30,13 @@ public:
         }
 };
 
-const char* runtime_report_args[] = { "output", nullptr };
+const char* runtime_report_args[] = { "output", "mpi", nullptr };
 
 static cali::ChannelController*
 make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
 {
     auto it = args.find("output");
-    std::string output =  (it == args.end() ? "" : "stderr");
+    std::string output = (it == args.end() ? "stderr" : it->second);
 
     bool use_mpi = false;
 #ifdef CALIPER_HAVE_MPI

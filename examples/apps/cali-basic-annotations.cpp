@@ -41,6 +41,7 @@
 int main(int argc, char* argv[])
 {
     cali::ConfigManager mgr;
+    mgr.set_default_parameter("mpi", "false");
 
     // Read configuration string from command-line argument
     if (argc > 1) {
