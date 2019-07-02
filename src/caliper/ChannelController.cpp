@@ -67,6 +67,12 @@ ChannelController::create()
 
     on_create(&c, mP->channel);
 
+    //   Reset the object's channel pointer if the channel is destroyed
+    // behind our back (e.g., in Caliper::release())
+    mP->channel->events().finish_evt.connect([this](Caliper*, Channel*){
+            mP->channel = nullptr;
+        });
+
     return mP->channel;
 }
 
