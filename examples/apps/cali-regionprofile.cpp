@@ -51,12 +51,12 @@ int main()
         std::tie(region_times, std::ignore, total_time) =
             rp.inclusive_region_times();
 
-        std::cerr << "Inclusive time per region (usec):"
+        std::cerr << "Inclusive time per region:"
                   << "\n  main:       " << region_times["main"]
                   << "\n    init:     " << region_times["init"]
                   << "\n    mainloop: " << region_times["mainloop"]
                   << "\n      foo:    " << region_times["foo"]
-                  << "\n(Total profiling time: " << total_time << " usec)\n"
+                  << "\n(Total profiling time: " << total_time << " sec)\n"
                   << std::endl;
     }
 
@@ -68,12 +68,12 @@ int main()
         std::tie(region_times, std::ignore, total_time) =
             rp.exclusive_region_times();
 
-        std::cerr << "Exclusive time per region (usec):"
+        std::cerr << "Exclusive time per region:"
                   << "\n  main:       " << region_times["main"]
                   << "\n    init:     " << region_times["init"]
                   << "\n    mainloop: " << region_times["mainloop"]
                   << "\n      foo:    " << region_times["foo"]
-                  << "\n(Total profiling time: " << total_time << " usec)\n"
+                  << "\n(Total profiling time: " << total_time << " sec)\n"
                   << std::endl;
     }
 
@@ -86,11 +86,11 @@ int main()
         std::tie(region_times, total_function_time, total_time) =
             rp.exclusive_region_times("function");
 
-        std::cerr << "Exclusive time per region (usec) (functions only):"
+        std::cerr << "Exclusive time per region (functions only):"
                   << "\n  main:       " << region_times["main"]
                   << "\n    foo:      " << region_times["foo"]
                   << "\n(Total exclusive time in functions: " << total_function_time
-                  << " of " << total_time << " usec)"
+                  << " of " << total_time << " sec)"
                   << std::endl;
     }    
 }
