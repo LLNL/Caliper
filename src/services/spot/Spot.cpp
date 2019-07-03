@@ -54,10 +54,13 @@
 #define OLD_GNUC __GNUC__
 #undef __GNUC__
 #endif
+
+#define RAPIDJSON_NAMESPACE cali_rapidjson
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/writer.h"
+
 #ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
 #define __GNUC_ OLD_GNUC
 #endif
@@ -162,9 +165,9 @@ namespace
              std::string title_string = title[i];
              std::ifstream ifs(place);
              std::string str(std::istreambuf_iterator<char>{ifs}, {});
-             rapidjson::Document doc;
-             rapidjson::Value xtic_value; 
-             rapidjson::Value commit_value; 
+             cali_rapidjson::Document doc;
+             cali_rapidjson::Value xtic_value; 
+             cali_rapidjson::Value commit_value; 
              xtic_value.SetString(recorded_time.c_str(),doc.GetAllocator());
              commit_value.SetString(code_version.c_str(),doc.GetAllocator());
              if(str.size() > 0){
@@ -179,7 +182,7 @@ namespace
                   std::string series_name = datum.first;
                        found = true;
                        auto series_data = doc[series_name.c_str()].GetArray();
-                       rapidjson::Value arrarr;
+                       cali_rapidjson::Value arrarr;
                        arrarr.SetArray();
                        arrarr.PushBack(0,doc.GetAllocator());
                        arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
@@ -190,16 +193,16 @@ namespace
              else {
                const char* json_string = "{\"show_exclusive\" : false}";
                std::string y_axis = y_axes[i];
-               rapidjson::Value y_axis_value;
-               rapidjson::Value title_value;
+               cali_rapidjson::Value y_axis_value;
+               cali_rapidjson::Value title_value;
                title_value.SetString(title_string.c_str(),doc.GetAllocator());
                doc.Parse(json_string);
                y_axis_value.SetString(y_axis.c_str(), doc.GetAllocator());
-               rapidjson::Value series_array_create;
+               cali_rapidjson::Value series_array_create;
                series_array_create.SetArray();
-               rapidjson::Value commit_array_create;
+               cali_rapidjson::Value commit_array_create;
                commit_array_create.SetArray();
-               rapidjson::Value xtic_array_create;
+               cali_rapidjson::Value xtic_array_create;
                xtic_array_create.SetArray();
                doc.AddMember("series",series_array_create,doc.GetAllocator());
                doc.AddMember("XTics",xtic_array_create,doc.GetAllocator());
@@ -210,16 +213,16 @@ namespace
                auto& json_times = doc["XTics"];
                json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
                json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
-               rapidjson::Value& series_array = doc["series"]; 
+               cali_rapidjson::Value& series_array = doc["series"]; 
                for(auto datum : json) {
                   std::string series_name = datum.first;
                   if(series_name.size()>1){
-                    rapidjson::Value value_series_name; 
+                    cali_rapidjson::Value value_series_name; 
                     value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                     series_array.GetArray().PushBack(value_series_name,doc.GetAllocator());
-                    rapidjson::Value outarr;
+                    cali_rapidjson::Value outarr;
                     outarr.SetArray();
-                    rapidjson::Value arrarr;
+                    cali_rapidjson::Value arrarr;
                     arrarr.SetArray();
                     arrarr.PushBack(0,doc.GetAllocator());
                     arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
@@ -231,8 +234,8 @@ namespace
              }
 
              std::ofstream ofs(place.c_str());
-             rapidjson::OStreamWrapper osw(ofs);
-             rapidjson::Writer<rapidjson::OStreamWrapper> writer(osw);
+             cali_rapidjson::OStreamWrapper osw(ofs);
+             cali_rapidjson::Writer<cali_rapidjson::OStreamWrapper> writer(osw);
              doc.Accept(writer);
           }
         }
