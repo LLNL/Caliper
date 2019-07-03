@@ -13,8 +13,6 @@ int main(int argc, char* argv[])
     MPI_Init(&argc, &argv);
 
     cali::ConfigManager mgr;
-
-    mgr.use_mpi(true);
     
     if (argc > 1)
         mgr.add(argv[1]);

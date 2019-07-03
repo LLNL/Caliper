@@ -40,8 +40,6 @@ struct ConfigManager::ConfigManagerImpl
 {
     ChannelList m_channels;
 
-    bool        m_use_mpi;
-
     bool        m_error = false;
     std::string m_error_msg = "";
 
@@ -70,10 +68,11 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            while (*argtbl && key != std::string(*argtbl))
-                ++argtbl;
+            const char** argptr = argtbl;
+            while (*argptr && key != std::string(*argptr))
+                ++argptr;
 
-            if (*argtbl == nullptr) {
+            if (*argptr == nullptr) {
                 set_error("Unknown argument: " + key);
                 args.clear();
                 return args;
@@ -132,7 +131,7 @@ struct ConfigManager::ConfigManagerImpl
             if (m_error)
                 return false;
             
-            m_channels.emplace_back( (*cfg_p->create)(args, m_use_mpi) );
+            m_channels.emplace_back( (*cfg_p->create)(args) );
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
@@ -141,12 +140,7 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     ConfigManagerImpl()
-        : m_use_mpi(false)
-        {
-#ifdef CALIPER_HAVE_MPI
-            m_use_mpi = true;
-#endif
-        }
+        { }
 };
 
 
@@ -181,16 +175,6 @@ std::string
 ConfigManager::error_msg() const
 {
     return mP->m_error_msg;
-}
-
-void
-ConfigManager::use_mpi(bool enable)
-{
-#ifndef CALIPER_HAVE_MPI
-    if (enable)
-        Log(0).stream() << "ConfigManager: Cannot enable MPI support in non-MPI Caliper build!" << std::endl;
-#endif
-    mP->m_use_mpi = enable;
 }
 
 void

@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -45,6 +45,7 @@
 #include <chrono>
 #include <map>
 #include <mutex>
+#include <ratio>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -52,7 +53,7 @@
 using namespace cali;
 using namespace std;
 
-namespace 
+namespace
 {
 
 class Timestamp
@@ -61,13 +62,15 @@ class Timestamp
 
     Attribute timestamp_attr { Attribute::invalid } ;
     Attribute timeoffs_attr  { Attribute::invalid } ;
-    Attribute snapshot_duration_attr { Attribute::invalid };
-    Attribute phase_duration_attr    { Attribute::invalid };
+    cali_id_t snapshot_duration_attr_id { CALI_INV_ID };
+    cali_id_t phase_duration_attr_id    { CALI_INV_ID };
 
     bool      record_timestamp;
     bool      record_offset;
     bool      record_duration;
     bool      record_phases;
+
+    double    scale_factor   { 1.0 };
 
     Attribute begin_evt_attr { Attribute::invalid };
     Attribute set_evt_attr   { Attribute::invalid };
@@ -87,7 +90,7 @@ class Timestamp
 
         uint64_t lvl_k = static_cast<uint64_t>(level) << 48;
 
-        return lvl_k | attr_id;    
+        return lvl_k | attr_id;
     }
 
     // Get or create a hidden offset attribute for the given attribute and its
@@ -99,7 +102,7 @@ class Timestamp
         {
             std::lock_guard<std::mutex>  lock(offset_attributes_mutex);
             OffsetAttributeMap::iterator it = offset_attributes.find(key);
-    
+
             if (it != offset_attributes.end())
                 return it->second;
         }
@@ -111,7 +114,7 @@ class Timestamp
         name.append(".");
         name.append(std::to_string(level));
 
-        Attribute offs_attr = 
+        Attribute offs_attr =
             c->create_attribute(name, CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE     |
                                 CALI_ATTR_SKIP_EVENTS |
@@ -133,7 +136,7 @@ class Timestamp
         {
             std::lock_guard<std::mutex>  lock(offset_attributes_mutex);
             OffsetAttributeMap::iterator it = offset_attributes.find(key);
-    
+
             if (it != offset_attributes.end())
                 return it->second;
         }
@@ -145,15 +148,12 @@ class Timestamp
         auto now = chrono::high_resolution_clock::now();
 
         if ((record_duration || record_phases || record_offset) && scope & CALI_SCOPE_THREAD) {
-            uint64_t  usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
-            Variant v_usec = Variant(usec);
-            Variant v_offs = c->exchange(chn, timeoffs_attr, v_usec);
+            uint64_t  usec = chrono::duration_cast<std::chrono::microseconds>(now - tstart).count();
+            Variant v_usec(usec);
+            Variant v_offs(c->exchange(chn, timeoffs_attr, v_usec));
 
-            if (record_duration && !v_offs.empty()) {
-                uint64_t duration = usec - v_offs.to_uint();
-
-                sbuf->append(snapshot_duration_attr.id(), Variant(duration));
-            }
+            if (record_duration && !v_offs.empty())
+                sbuf->append(snapshot_duration_attr_id, Variant(scale_factor * (usec - v_offs.to_uint())));
 
             if (record_phases && info) {
                 Entry event = info->get(begin_evt_attr);
@@ -167,7 +167,7 @@ class Timestamp
                     event = info->get(end_evt_attr);
                 if (event.is_empty())
                     goto record_phases_exit;
-            
+
                 evt_attr_id = event.value().to_id();
                 v_level     = info->get(lvl_attr).value();
 
@@ -181,25 +181,25 @@ class Timestamp
                 } else if (event.attribute() == set_evt_attr.id())   {
                     // set event: get saved time for current entry and calculate duration
 
-                    Variant v_p_usec    = 
+                    Variant v_p_usec    =
                         c->exchange(chn, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
 
                     if (!v_p_usec.empty())
-                        sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
+                        sbuf->append(phase_duration_attr_id, Variant(scale_factor * (usec - v_p_usec.to_uint())));
                 } else if (event.attribute() == end_evt_attr.id())   {
                     // end event: get saved time for current entry and calculate duration
 
-                    Attribute offs_attr = 
+                    Attribute offs_attr =
                         find_offset_attribute(c, evt_attr_id, v_level.to_uint());
 
                     if (offs_attr == Attribute::invalid)
                         goto record_phases_exit;
 
-                    Variant v_p_usec    = 
+                    Variant v_p_usec    =
                         c->exchange(chn, offs_attr, Variant());
 
                     if (!v_p_usec.empty())
-                        sbuf->append(phase_duration_attr.id(), Variant(usec - v_p_usec.to_uint()));
+                        sbuf->append(phase_duration_attr_id, Variant(scale_factor * (usec - v_p_usec.to_uint())));
                 }
             record_phases_exit:
                 ;
@@ -219,7 +219,7 @@ class Timestamp
         end_evt_attr   = c->get_attribute("cali.event.end");
         lvl_attr       = c->get_attribute("cali.event.attr.level");
 
-        if (begin_evt_attr == Attribute::invalid || 
+        if (begin_evt_attr == Attribute::invalid ||
             set_evt_attr   == Attribute::invalid ||
             end_evt_attr   == Attribute::invalid ||
             lvl_attr       == Attribute::invalid) {
@@ -241,54 +241,65 @@ class Timestamp
             record_timestamp = config.get("timestamp").to_bool();
             record_phases    = config.get("inclusive_duration").to_bool();
 
-            Attribute unit_attr = 
+            Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-            Attribute aggr_class_attr = 
+            Attribute aggr_class_attr =
                 c->get_attribute("class.aggregatable");
 
-            Variant   usec_val  = Variant(CALI_TYPE_STRING, "usec", 4);
-            Variant   sec_val   = Variant(CALI_TYPE_STRING, "sec",  3);
+            Variant   usec_val  = Variant(CALI_TYPE_STRING, "usec", 5);
+            Variant   sec_val   = Variant(CALI_TYPE_STRING, "sec",  4);
             Variant   true_val  = Variant(true);
-    
+
             int hide_offset =
                 ((record_duration || record_phases) && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
-            Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
-            Variant   meta_vals[2] = { true_val,        usec_val  };
+            Variant   unit_val  = usec_val;
 
-            timestamp_attr = 
-                c->create_attribute("time.timestamp", CALI_TYPE_UINT, 
-                                    CALI_ATTR_ASVALUE       | 
-                                    CALI_ATTR_SCOPE_PROCESS | 
+            std::string unitstr = config.get("unit").to_string();
+
+            if (unitstr == "sec") {
+                unit_val = sec_val;
+                scale_factor = 1e-6;
+            } else if (unitstr != "usec")
+                Log(0).stream() << chn->name() << ": timestamp: Unknown unit " << unitstr
+                                << std::endl;
+
+            Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
+            Variant   meta_vals[2] = { true_val,        unit_val  };
+
+            timestamp_attr =
+                c->create_attribute("time.timestamp", CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE       |
+                                    CALI_ATTR_SCOPE_PROCESS |
                                     CALI_ATTR_SKIP_EVENTS,
                                     1, &unit_attr, &sec_val);
-            timeoffs_attr = 
-                c->create_attribute("time.offset",    CALI_TYPE_UINT, 
-                                    CALI_ATTR_ASVALUE       | 
-                                    CALI_ATTR_SCOPE_THREAD  | 
+            timeoffs_attr =
+                c->create_attribute("time.offset",    CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE       |
+                                    CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS | hide_offset,
                                     1, &unit_attr, &usec_val);
-            snapshot_duration_attr = 
-                c->create_attribute("time.duration",  CALI_TYPE_UINT, 
-                                    CALI_ATTR_ASVALUE       | 
-                                    CALI_ATTR_SCOPE_THREAD  | 
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals);
-            phase_duration_attr = 
-                c->create_attribute("time.inclusive.duration", CALI_TYPE_UINT, 
+            snapshot_duration_attr_id =
+                c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
-                                    CALI_ATTR_SCOPE_THREAD  | 
+                                    CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals);
+                                    2, meta_attr, meta_vals).id();
+            phase_duration_attr_id =
+                c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
+                                    CALI_ATTR_ASVALUE       |
+                                    CALI_ATTR_SCOPE_THREAD  |
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    2, meta_attr, meta_vals).id();
 
-            c->set(chn, timeoffs_attr, Variant(static_cast<uint64_t>(0)));
+            c->set(chn, timeoffs_attr, Variant(cali_make_variant_from_uint(0)));
         }
 
 public:
 
     static void timestamp_register(Caliper* c, Channel* chn) {
         Timestamp* instance = new Timestamp(c, chn);
-        
+
         chn->events().post_init_evt.connect(
             [instance](Caliper* c, Channel* chn){
                 instance->post_init_cb(c, chn);
@@ -323,6 +334,10 @@ const ConfigSet::Entry Timestamp::s_configdata[] = {
     { "inclusive_duration", CALI_TYPE_BOOL, "true",
       "Record inclusive duration of begin/end phases.",
       "Record inclusive duration of begin/end phases."
+    },
+    { "unit", CALI_TYPE_STRING, "usec",
+      "Unit for time durations (sec or usec)",
+      "Unit for time durations (sec or usec)"
     },
     ConfigSet::Terminator
 };

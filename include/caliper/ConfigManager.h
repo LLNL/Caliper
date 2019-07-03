@@ -56,7 +56,7 @@ public:
     
     typedef std::map<std::string, std::string> argmap_t;
 
-    typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&, bool);
+    typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&);
 
     struct ConfigInfo {
         const char*    name;
@@ -96,8 +96,6 @@ public:
     ///
     /// add() can be invoked multiple times.
     bool add(const char* config_string);
-
-    void use_mpi(bool);
 
     /// \brief Pre-set parameter \a key to \a value for all configurations
     void set_default_parameter(const char* key, const char* value);
