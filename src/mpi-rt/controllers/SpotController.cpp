@@ -168,6 +168,6 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info { "spot", ::spot_args, ::make_spot_controller };
+ConfigManager::ConfigInfo spot_controller_info { "spot", "spot(output=<filename>,mpi=true|false): Write Spot output", ::spot_args, ::make_spot_controller };
 
 }

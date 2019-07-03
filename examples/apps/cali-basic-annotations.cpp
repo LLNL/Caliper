@@ -38,6 +38,10 @@
 #include <caliper/cali.h>
 #include <caliper/cali-manager.h>
 
+#include <cstring>
+#include <iostream>
+#include <iterator>
+
 int main(int argc, char* argv[])
 {
     cali::ConfigManager mgr;
@@ -45,10 +49,22 @@ int main(int argc, char* argv[])
 
     // Read configuration string from command-line argument
     if (argc > 1) {
-        mgr.add(argv[1]);
+        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+            std::cerr << "Usage: cali-basic-annotations [caliper-config(arg=...,),...]."
+                      << " Available configurations: ";            
 
-        if (mgr.error())
-            std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
+            for (auto str : cali::ConfigManager::get_config_docstrings())
+                std::cerr << "\n  " << str;
+
+            std::cerr << std::endl;
+
+            return 0;
+        } else {
+            mgr.add(argv[1]);
+
+            if (mgr.error())
+                std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
+        }
     }
 
     //   Get all requested Caliper configuration channel controllers,

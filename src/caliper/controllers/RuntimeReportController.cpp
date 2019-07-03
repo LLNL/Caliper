@@ -79,8 +79,9 @@ use_mpi(const cali::ConfigManager::argmap_t& args)
         std::find(services.begin(), services.end(), "mpireport") != services.end();
 
     bool use_mpi = have_mpireport;
-
+    
     auto it = args.find("mpi");
+    
     if (it != args.end())
         use_mpi = StringConverter(it->second).to_bool();
 
@@ -147,7 +148,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", "runtime-report(output=<filename>,mpi=true|false,profile=[mpi:cupti]): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }

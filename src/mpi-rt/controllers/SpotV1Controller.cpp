@@ -60,6 +60,6 @@ make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
 namespace cali
 {
 
-cali::ConfigManager::ConfigInfo spot_v1_controller_info { "spot-v1", ::spot_v1_args, ::make_spot_v1_controller };
+cali::ConfigManager::ConfigInfo spot_v1_controller_info { "spot-v1", "spot-v1(config=...,code_version=...,title=...): Write Spot v1 json output", ::spot_v1_args, ::make_spot_v1_controller };
 
 }
