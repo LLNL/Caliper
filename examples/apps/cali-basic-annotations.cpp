@@ -59,15 +59,6 @@ int main(int argc, char* argv[])
             std::cerr << std::endl;
 
             return 0;
-        } else if (strcmp(argv[1], "--list-configs") == 0) {
-            std::cerr << "Available Caliper configurations: ";
-
-            int c = 0;
-            for (auto str : cali::ConfigManager::available_configs())
-                std::cerr << (c++ > 0 ? "," : "") << str;
-            
-            std::cerr << std::endl;
-            return 0;
         } else {
             mgr.add(argv[1]);
 

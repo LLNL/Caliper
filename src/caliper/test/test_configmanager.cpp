@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 using namespace cali;
 
 TEST(ConfigManagerTest, ParseErrors) {
@@ -14,7 +16,7 @@ TEST(ConfigManagerTest, ParseErrors) {
         EXPECT_TRUE(mgr.error());
         EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown config: foo");
     }
-
+    
     {
         cali::ConfigManager mgr("  event-trace(foo  = bar)");
 
@@ -39,6 +41,11 @@ TEST(ConfigManagerTest, ParseErrors) {
         EXPECT_TRUE(mgr.error());
         EXPECT_STREQ(mgr.error_msg().c_str(), "Expected ')'");
     }
+
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(),
+                 "Unknown config: foo");
+    EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(),
+                 "Unknown config: ");
 }
 
 TEST(ConfigManagerTest, ParseConfig) {
@@ -71,7 +78,7 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout)  "));
+        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cupti) "));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -81,4 +88,17 @@ TEST(ConfigManagerTest, ParseConfig) {
         EXPECT_EQ(std::string("event-trace"), list[0]->name());
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
     }
+
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
 }
+
+TEST(ConfigManagerTest, AvailableConfigs) {
+    auto configs = cali::ConfigManager::available_configs();
+    std::sort(configs.begin(), configs.end());
+    
+    std::string expected_configs[] = { "event-trace", "runtime-report" };
+
+    EXPECT_TRUE(std::includes(configs.begin(), configs.end(),
+                              std::begin(expected_configs), std::end(expected_configs)));
+}
+

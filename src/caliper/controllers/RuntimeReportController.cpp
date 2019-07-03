@@ -148,7 +148,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", "runtime-report(output=<filename>,mpi=true|false): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", "runtime-report(output=<filename>,mpi=true|false,profile=[mpi:cupti]): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }
