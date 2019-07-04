@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/CaliperService.h"
@@ -6,18 +6,21 @@
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/Node.h"
 
 #include <adiak_tool.h>
 
 #include <cstring>
-#include <time.h>
-
+#include <ctime>
+#include <memory>
 #include <sstream>
 
 using namespace cali;
 
 namespace
 {
+
+Attribute type_meta_attr;
 
 unsigned s_unknown_type_error = 0;
 
@@ -64,18 +67,6 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
     case adiak_set:
     {
         adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
-        os << '{';
-        for (int i = 0; i < t->num_elements; ++i) {
-            if (i > 0)
-                os << ',';
-            recursive_unpack(os, subvals+i, t->subtype[0]);
-        }
-        os << '}';
-    }
-    break;
-    case adiak_list:
-    {
-        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
         os << '[';
         for (int i = 0; i < t->num_elements; ++i) {
             if (i > 0)
@@ -83,6 +74,18 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
             recursive_unpack(os, subvals+i, t->subtype[0]);
         }
         os << ']';
+    }
+    break;
+    case adiak_list:
+    {
+        adiak_value_t* subvals = static_cast<adiak_value_t*>(val->v_ptr);
+        os << '{';
+        for (int i = 0; i < t->num_elements; ++i) {
+            if (i > 0)
+                os << ',';
+            recursive_unpack(os, subvals+i, t->subtype[0]);
+        }
+        os << '}';
     }
     break;
     case adiak_tuple:
@@ -105,10 +108,16 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
 }
 
 void
-set_val(Channel* channel, const char* name, const Variant& val)
+set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type)
 {
     Caliper c;
-    Attribute attr = c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL);
+
+    std::shared_ptr<char> typestr(adiak_type_to_string(type, 0), free);
+    Variant v_typestr(CALI_TYPE_STRING, typestr.get(), strlen(typestr.get())+1);
+
+    Attribute attr =
+        c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL,
+                           1, &type_meta_attr, &v_typestr);
 
     c.set(channel, attr, val);
 }
@@ -122,16 +131,16 @@ void
 nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatype_t *t, void* usr_args)
 {
     nameval_usr_args_t* args = static_cast<nameval_usr_args_t*>(usr_args);
-    
-    Channel* channel = args->channel;    
+
+    Channel* channel = args->channel;
 
     if (!channel)
         return;
-    
+
     Caliper c;
 
     cali_attr_type attr_type = CALI_TYPE_INV;
-    
+
     switch (t->dtype) {
     case adiak_type_unset:
     {
@@ -145,33 +154,33 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
         return;
     }
     case adiak_long:
-        set_val(channel, name, Variant(static_cast<int>(val->v_long)));
+        set_val(channel, name, Variant(static_cast<int>(val->v_long)), t);
         ++args->count;
         break;
     case adiak_int:
-        set_val(channel, name, Variant(val->v_int));
+        set_val(channel, name, Variant(val->v_int), t);
         ++args->count;
         break;
     case adiak_ulong:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)));
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t);
         ++args->count;
         break;
     case adiak_uint:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)));
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)), t);
         ++args->count;
         break;
     case adiak_double:
-        set_val(channel, name, Variant(val->v_double));
+        set_val(channel, name, Variant(val->v_double), t);
         ++args->count;
         break;
     case adiak_date:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)));
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t);
         ++args->count;
         break;
     case adiak_timeval:
     {
         struct timeval *tval = static_cast<struct timeval*>(val->v_ptr);
-        set_val(channel, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0));
+        set_val(channel, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0), t);
         ++args->count;
         break;
     }
@@ -179,7 +188,7 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
     case adiak_string:
     case adiak_catstring:
     case adiak_path:
-        set_val(channel, name, Variant(CALI_TYPE_STRING, val->v_ptr, strlen(static_cast<const char*>(val->v_ptr))));
+        set_val(channel, name, Variant(CALI_TYPE_STRING, val->v_ptr, strlen(static_cast<const char*>(val->v_ptr))), t);
         ++args->count;
         break;
     case adiak_range:
@@ -191,24 +200,27 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
         recursive_unpack(os, val, t);
         std::string str = os.str();
 
-        set_val(channel, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length()+1));
+        set_val(channel, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length()+1), t);
         ++args->count;
         break;
     }
     default:
         ++s_unknown_type_error;
-    }   
+    }
 }
 
 void
 register_adiak_import(Caliper* c, Channel* chn)
 {
+    type_meta_attr =
+        c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
     chn->events().pre_flush_evt.connect(
         [](Caliper*, Channel* chn, const SnapshotRecord*){
             nameval_usr_args_t args { chn, 0 };
-            
+
             adiak_list_namevals(1, adiak_category_all, nameval_cb, &args);
-            
+
             Log(1).stream() << chn->name() << ": adiak_import: Imported " << args.count
                             << " adiak values" << std::endl;
         });
