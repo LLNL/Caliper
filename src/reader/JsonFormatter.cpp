@@ -1,34 +1,5 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // Print web-readable table in sparse format
 
@@ -56,11 +27,6 @@
 using namespace cali;
 using namespace std;
 
-const std::string opt_split     = std::string("split");
-const std::string opt_pretty    = std::string("pretty");
-const std::string opt_quote_all = std::string("quote-all");
-const std::string opt_globals   = std::string("globals");
-
 struct JsonFormatter::JsonFormatterImpl
 {
     set<string>  m_selected;
@@ -76,10 +42,10 @@ struct JsonFormatter::JsonFormatterImpl
     bool         m_opt_pretty     = false;
     bool         m_opt_quote_all  = false;
     bool         m_opt_globals    = false;
-    bool         m_opt_sep_nested = false; 
+    bool         m_opt_sep_nested = false;
 
     std::map<std::string,std::string> m_aliases;
-    
+
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
         { }
@@ -135,7 +101,7 @@ struct JsonFormatter::JsonFormatterImpl
 
     inline std::string get_key(const Attribute& attr) {
         std::string name = attr.name();
-        
+
         bool selected =
             m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
 
@@ -149,7 +115,7 @@ struct JsonFormatter::JsonFormatterImpl
 
         return (it == m_aliases.end() ? name : it->second);
     }
-    
+
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::map<std::string, std::string> noquote_kvs;
         std::map<std::string, std::string> quote_kvs;
@@ -192,22 +158,22 @@ struct JsonFormatter::JsonFormatterImpl
         //
         // write the key-value pairs
         //
-        
+
         std::lock_guard<std::mutex>
             g(m_os_lock);
-        
+
         std::ostream* real_os = m_os.stream();
 
         if (noquote_kvs.size() + quote_kvs.size() > 0) {
             if (m_num_recs == 0 && !m_opt_split)
                 *real_os << "[\n";
-            
+
             *real_os << (m_num_recs > 0 ? ",\n" : "") << "{";
 
             int count = 0;
             for (auto &p : quote_kvs) {
                 *real_os << (count++ > 0 ? "," : "")
-                         << (m_opt_pretty ? "\n\t" : "");                
+                         << (m_opt_pretty ? "\n\t" : "");
                 util::write_esc_string(*real_os << "\"", p.first) << "\":";
                 util::write_esc_string(*real_os << "\"", p.second) << "\"";
             }
@@ -217,7 +183,7 @@ struct JsonFormatter::JsonFormatterImpl
                 util::write_esc_string(*real_os << "\"", p.first) << "\":";
                 util::write_esc_string(*real_os, p.second);
             }
-            
+
             *real_os << (m_opt_pretty ? "\n" : "") << "}";
 
             ++m_num_recs;
@@ -232,19 +198,19 @@ struct JsonFormatter::JsonFormatterImpl
             if (e.is_reference())
                 for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent()) {
                     std::string s = node->data().to_string();
-                    
+
                     if (global_vals[node->attribute()].size() > 0)
                         s.append("/").append(global_vals[node->attribute()]);
 
-                    global_vals[node->attribute()] = s;                        
+                    global_vals[node->attribute()] = s;
                 }
             else
                 global_vals[e.attribute()] = e.value().to_string();
-        
+
         for (auto &p : global_vals) {
             if (m_num_recs++ > 0 || !m_opt_split)
                 os << ",\n";
-                      
+
             util::write_esc_string(os << '\"', db.get_attribute(p.first).name()) << "\": ";
             util::write_esc_string(os << '\"', p.second) << '\"';
         }
@@ -262,7 +228,7 @@ JsonFormatter::~JsonFormatter()
     mP.reset();
 }
 
-void 
+void
 JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
@@ -271,13 +237,12 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
     std::ostream* real_os = mP->m_os.stream();
-    
-    if (!mP->m_opt_split) 
+
+    if (!mP->m_opt_split)
         *real_os << (mP->m_num_recs == 0 ? "[" : "") << "\n]";
 
     if (mP->m_opt_globals)
         mP->write_globals(db, *real_os);
-    
+
     *real_os << std::endl;
 }
-
