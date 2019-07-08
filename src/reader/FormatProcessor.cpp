@@ -50,7 +50,7 @@ namespace
 
 const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes", "column-width" }; 
-const char* json_kernel_args[]   = { "split", "pretty", "quote-all" }; 
+const char* json_kernel_args[]   = { "split", "pretty", "quote-all", "globals", "separate-nested" }; 
 
 enum FormatterID {
     Cali        = 0,
