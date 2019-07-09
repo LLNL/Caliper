@@ -55,7 +55,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         self.assertTrue('cali.caliper.version' in obj['globals'].keys())
         self.assertTrue('count' in obj['attributes'].keys())
-        self.assertEqual(obj['attributes']['cali.caliper.version']['is_global'], 1)
+        self.assertEqual(obj['attributes']['cali.caliper.version']['is_global'], True)
 
         
     def test_jsontree(self):
