@@ -239,7 +239,7 @@ struct JsonFormatter::JsonFormatterImpl
             
             // encode some properties
             os << "\"is_global\": " << a.is_global()
-               << ", \"type\": \""    << cali_type2string(a.type()) << '\"';
+               << ",\"is_nested\": " << a.is_nested();
 
             // print meta-info
             for (const Node* node = a.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
