@@ -330,19 +330,6 @@ int main(int argc, const char* argv[])
 
     QuerySpec         spec = query_parser.spec();
 
-    //   The attribute name/type/prop meta-attributes are hidden by default.
-    // Select them in list-attributes mode unless the user has explicitly
-    // specified a selection list already.
-    if (args.is_set("list-attributes") &&
-        spec.attribute_selection.selection != QuerySpec::AttributeSelection::List) {
-        spec.attribute_selection.selection = QuerySpec::AttributeSelection::List;
-
-        spec.attribute_selection.list.push_back("cali.attribute.name");
-        spec.attribute_selection.list.push_back("attribute.id");
-        spec.attribute_selection.list.push_back("cali.attribute.prop");
-        spec.attribute_selection.list.push_back("cali.attribute.type");
-    }
-
     // setup format spec
 
     FormatProcessor   format(spec, stream);
