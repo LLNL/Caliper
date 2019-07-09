@@ -38,10 +38,17 @@ struct JsonFormatter::JsonFormatterImpl
 
     unsigned     m_num_recs = 0;
 
+    enum Layout {
+        Records,
+        Split,
+        Object
+    };
+
+    Layout       m_layout         = Records;
+
     bool         m_opt_split      = false;
     bool         m_opt_pretty     = false;
     bool         m_opt_quote_all  = false;
-    bool         m_opt_globals    = false;
     bool         m_opt_sep_nested = false;
 
     std::map<std::string,std::string> m_aliases;
@@ -69,16 +76,18 @@ struct JsonFormatter::JsonFormatterImpl
 
     void configure(const QuerySpec& spec) {
         for (auto arg : spec.format.args) {
-            if (arg == "split")
-                m_opt_split = true;
             if (arg == "pretty")
                 m_opt_pretty = true;
-            if (arg == "quote-all")
+            else if (arg == "quote-all")
                 m_opt_quote_all = true;
-            if (arg == "globals")
-                m_opt_globals = true;
-            if (arg == "separate-nested")
+            else if (arg == "separate-nested")
                 m_opt_sep_nested = true;
+            else if (arg == "records")
+                m_layout = Records;
+            else if (arg == "split")
+                m_layout = Split;
+            else if (arg == "object")
+                m_layout = Object;
         }
 
         switch (spec.attribute_selection.selection) {
@@ -114,6 +123,18 @@ struct JsonFormatter::JsonFormatterImpl
         auto it = m_aliases.find(name);
 
         return (it == m_aliases.end() ? name : it->second);
+    }
+
+    void begin_records_section(std::ostream& os) {
+        if (m_layout == Records)
+            os << "[\n";
+        else if (m_layout == Object)
+            os << "{\n\"records\": [\n";
+    }
+
+    void end_records_section(std::ostream& os) {
+        if (m_layout == Records || m_layout == Object)
+            os << "\n]";
     }
 
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -165,9 +186,9 @@ struct JsonFormatter::JsonFormatterImpl
         std::ostream* real_os = m_os.stream();
 
         if (noquote_kvs.size() + quote_kvs.size() > 0) {
-            if (m_num_recs == 0 && !m_opt_split)
-                *real_os << "[\n";
-
+            if (m_num_recs == 0)
+                begin_records_section(*real_os);
+            
             *real_os << (m_num_recs > 0 ? ",\n" : "") << "{";
 
             int count = 0;
@@ -190,7 +211,49 @@ struct JsonFormatter::JsonFormatterImpl
         }
     }
 
-    void write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
+    std::ostream& write_attributes(CaliperMetadataAccessInterface& db, std::ostream& os) {
+        std::vector<Attribute> attrs;
+        
+        if (m_selected.empty())
+            attrs = db.get_all_attributes();
+        else
+            for (const std::string& str : m_selected)
+                attrs.push_back(db.get_attribute(str));
+
+        // remove nested and hidden attributes
+        if (!m_opt_sep_nested)
+            attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
+                                       [](const Attribute& a){ return a.is_nested(); }),
+                        attrs.end());
+
+        attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
+                                   [](const Attribute& a){ return a.is_hidden(); }),
+                    attrs.end());
+        
+        // write "attr1": { "prop": "value", ... } , "attr2" : ...
+
+        int count = 0;
+        for (const Attribute& a : attrs) {
+            os << (count++ > 0 ? ",\n" : "\n") << (m_opt_pretty ? "\t" : "")
+               << '\"' << a.name() << "\": {";
+            
+            // encode some properties
+            os << "\"is_global\": " << a.is_global()
+               << ", \"type\": \""    << cali_type2string(a.type()) << '\"';
+
+            // print meta-info
+            for (const Node* node = a.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                util::write_esc_string(os << ",\"", db.get_attribute(node->attribute()).name()) << "\": ";
+                util::write_esc_string(os << "\"", node->data().to_string()) << '\"';
+            }
+                                                   
+            os << "}";
+        }
+
+        return os;
+    }
+    
+    std::ostream& write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
         std::vector<Entry>               globals = db.get_globals();
         std::map<cali_id_t, std::string> global_vals;
 
@@ -207,13 +270,36 @@ struct JsonFormatter::JsonFormatterImpl
             else
                 global_vals[e.attribute()] = e.value().to_string();
 
+        int count = 0;
         for (auto &p : global_vals) {
-            if (m_num_recs++ > 0 || !m_opt_split)
+            if (count++ > 0)
                 os << ",\n";
+            if (m_opt_pretty)
+                os << '\t';
 
             util::write_esc_string(os << '\"', db.get_attribute(p.first).name()) << "\": ";
             util::write_esc_string(os << '\"', p.second) << '\"';
         }
+
+        return os;
+    }
+
+    void flush(CaliperMetadataAccessInterface& db) {
+        std::ostream* real_os = m_os.stream();
+        
+        // close records section
+        if (m_num_recs == 0)
+            begin_records_section(*real_os);
+
+        end_records_section(*real_os);
+
+        if (m_layout == Object) {
+            write_globals(db, *real_os << ",\n\"globals\": {\n") << "\n}";
+            write_attributes(db, *real_os << ",\n\"attributes\": {") << "\n}";
+            *real_os << "\n}"; // close object opened in begin_records_section()
+        }
+
+        *real_os << std::endl;
     }
 };
 
@@ -236,13 +322,5 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 
 void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
-    std::ostream* real_os = mP->m_os.stream();
-
-    if (!mP->m_opt_split)
-        *real_os << (mP->m_num_recs == 0 ? "[" : "") << "\n]";
-
-    if (mP->m_opt_globals)
-        mP->write_globals(db, *real_os);
-
-    *real_os << std::endl;
+    mP->flush(db);
 }

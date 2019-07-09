@@ -50,7 +50,7 @@ namespace
 
 const char* format_kernel_args[] = { "format", "title" };
 const char* tree_kernel_args[]   = { "path-attributes", "column-width" }; 
-const char* json_kernel_args[]   = { "split", "pretty", "quote-all", "globals", "separate-nested" }; 
+const char* json_kernel_args[]   = { "layout", "pretty", "quote-all", "separate-nested" };
 
 enum FormatterID {
     Cali        = 0,
@@ -65,7 +65,7 @@ enum FormatterID {
 const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Cali,      "cali",       0, 0, nullptr },
     { FormatterID::Cali,      "csv",        0, 0, nullptr }, // keep old "csv" name for backwards compatibility
-    { FormatterID::Json,      "json",       0, 3, json_kernel_args },
+    { FormatterID::Json,      "json",       0, 4, json_kernel_args },
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
     { FormatterID::Table,     "table",      0, 0, nullptr },
