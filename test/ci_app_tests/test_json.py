@@ -8,6 +8,56 @@ import calipertest as cat
 class CaliperJSONTest(unittest.TestCase):
     """ Caliper JSON formatters test cases """
 
+    def test_jsonobject(self):
+        """ Test json object layout """
+
+        target_cmd = [ './ci_test_macros' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query',
+                       '-q', 'SELECT count(),* group by prop:nested where function format json(object)' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config ) )
+
+        self.assertTrue( { 'records', 'globals', 'attributes' }.issubset(set(obj.keys())) )
+
+        self.assertEqual(len(obj['records']), 6)
+        self.assertTrue('path' in obj['records'][0].keys())
+
+        self.assertTrue('cali.caliper.version' in obj['globals'].keys())
+        self.assertTrue('count' in obj['attributes'].keys())
+        self.assertEqual(obj['attributes']['cali.caliper.version']['is_global'], 1)        
+
+        
+    def test_jsonobject_pretty(self):
+        """ Test json object layout """
+
+        target_cmd = [ './ci_test_macros' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query',
+                       '-q', 'SELECT count(),* group by prop:nested where function format json(object,pretty)' ]
+
+        caliper_config = {
+            'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_RECORDER_FILENAME' : 'stdout',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config ) )
+
+        self.assertTrue( { 'records', 'globals', 'attributes' }.issubset(set(obj.keys())) )
+
+        self.assertEqual(len(obj['records']), 6)
+        self.assertTrue('path' in obj['records'][0].keys())
+
+        self.assertTrue('cali.caliper.version' in obj['globals'].keys())
+        self.assertTrue('count' in obj['attributes'].keys())
+        self.assertEqual(obj['attributes']['cali.caliper.version']['is_global'], 1)
+
+        
     def test_jsontree(self):
         """ Test basic json-tree formatter """
 
