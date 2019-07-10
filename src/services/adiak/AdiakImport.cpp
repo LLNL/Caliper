@@ -20,7 +20,7 @@ using namespace cali;
 namespace
 {
 
-Attribute type_meta_attr;
+Attribute meta_attr[2];
 
 unsigned s_unknown_type_error = 0;
 
@@ -108,16 +108,21 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
 }
 
 void
-set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type)
+set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type, adiak_category_t, const char *subcategory)
 {
     Caliper c;
+    Variant v_metavals[2];
 
-    std::shared_ptr<char> typestr(adiak_type_to_string(type, 0), free);
-    Variant v_typestr(CALI_TYPE_STRING, typestr.get(), strlen(typestr.get())+1);
+    std::shared_ptr<char> typestr(adiak_type_to_string(type, 1), free);
+    v_metavals[0] = Variant(CALI_TYPE_STRING, typestr.get(), strlen(typestr.get())+1);
+
+    if (!subcategory || subcategory[0] == '\0')
+       subcategory = "none";
+    v_metavals[1] = Variant(CALI_TYPE_STRING, subcategory, strlen(subcategory)+1);
 
     Attribute attr =
-        c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL,
-                           1, &type_meta_attr, &v_typestr);
+       c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL,
+                          2, meta_attr, v_metavals);
 
     c.set(channel, attr, val);
 }
@@ -128,7 +133,7 @@ struct nameval_usr_args_t {
 };
 
 void
-nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatype_t *t, void* usr_args)
+nameval_cb(const char *name, adiak_category_t category, const char *subcategory, adiak_value_t *val, adiak_datatype_t *t, void* usr_args)
 {
     nameval_usr_args_t* args = static_cast<nameval_usr_args_t*>(usr_args);
 
@@ -136,6 +141,8 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
 
     if (!channel)
         return;
+    if (category == adiak_control)
+       return;
 
     Caliper c;
 
@@ -154,33 +161,33 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
         return;
     }
     case adiak_long:
-        set_val(channel, name, Variant(static_cast<int>(val->v_long)), t);
+        set_val(channel, name, Variant(static_cast<int>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_int:
-        set_val(channel, name, Variant(val->v_int), t);
+        set_val(channel, name, Variant(val->v_int), t, category, subcategory);
         ++args->count;
         break;
     case adiak_ulong:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t);
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_uint:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)), t);
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_double:
-        set_val(channel, name, Variant(val->v_double), t);
+        set_val(channel, name, Variant(val->v_double), t, category, subcategory);
         ++args->count;
         break;
     case adiak_date:
-        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t);
+        set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
     case adiak_timeval:
     {
         struct timeval *tval = static_cast<struct timeval*>(val->v_ptr);
-        set_val(channel, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0), t);
+        set_val(channel, name, Variant(tval->tv_sec + tval->tv_usec / 1000000.0), t, category, subcategory);
         ++args->count;
         break;
     }
@@ -188,7 +195,7 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
     case adiak_string:
     case adiak_catstring:
     case adiak_path:
-        set_val(channel, name, Variant(CALI_TYPE_STRING, val->v_ptr, strlen(static_cast<const char*>(val->v_ptr))), t);
+        set_val(channel, name, Variant(CALI_TYPE_STRING, val->v_ptr, strlen(static_cast<const char*>(val->v_ptr))), t, category, subcategory);
         ++args->count;
         break;
     case adiak_range:
@@ -200,7 +207,7 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
         recursive_unpack(os, val, t);
         std::string str = os.str();
 
-        set_val(channel, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length()+1), t);
+        set_val(channel, name, Variant(CALI_TYPE_STRING, str.c_str(), str.length()+1), t, category, subcategory);
         ++args->count;
         break;
     }
@@ -212,8 +219,10 @@ nameval_cb(const char *name, adiak_category_t, adiak_value_t *val, adiak_datatyp
 void
 register_adiak_import(Caliper* c, Channel* chn)
 {
-    type_meta_attr =
+    meta_attr[0] =
         c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    meta_attr[1] =
+       c->create_attribute("adiak.category", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     chn->events().pre_flush_evt.connect(
         [](Caliper*, Channel* chn, const SnapshotRecord*){
