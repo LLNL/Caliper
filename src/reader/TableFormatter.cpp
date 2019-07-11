@@ -167,13 +167,7 @@ struct TableFormatter::TableImpl
         if (attr == Attribute::invalid)
             return;
 
-        std::string name = attr.name();
-
-        // Skip internal "cali." and ".event" attributes
-        if (name.compare(0, 5, "cali." ) == 0 ||
-            name.compare(0, 6, "event.") == 0)
-            return;
-
+        std::string name  = attr.name();
         std::string alias = name;
         
         {

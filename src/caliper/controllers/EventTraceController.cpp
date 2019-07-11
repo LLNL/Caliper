@@ -52,7 +52,7 @@ namespace cali
 
 ConfigManager::ConfigInfo event_trace_controller_info
 {
-    "event-trace", ::event_trace_args, ::make_event_trace_controller
+    "event-trace", "event-trace(output=<filename>): Record event trace", ::event_trace_args, ::make_event_trace_controller
 };
 
 }

@@ -1,34 +1,5 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.  
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // Print web-readable table in sparse format
 
@@ -56,11 +27,6 @@
 using namespace cali;
 using namespace std;
 
-const std::string opt_split     = std::string("split");
-const std::string opt_pretty    = std::string("pretty");
-const std::string opt_quote_all = std::string("quote-all");
-const std::string opt_globals   = std::string("globals");
-
 struct JsonFormatter::JsonFormatterImpl
 {
     set<string>  m_selected;
@@ -70,17 +36,23 @@ struct JsonFormatter::JsonFormatterImpl
 
     std::mutex   m_os_lock;
 
-    unsigned     m_written = 0;
+    unsigned     m_num_recs = 0;
 
-    bool         m_first_row = true;
+    enum Layout {
+        Records,
+        Split,
+        Object
+    };
 
-    bool         m_opt_split     = false;
-    bool         m_opt_pretty    = false;
-    bool         m_opt_quote_all = false;
-    bool         m_opt_globals   = false;
+    Layout       m_layout         = Records;
+
+    bool         m_opt_split      = false;
+    bool         m_opt_pretty     = false;
+    bool         m_opt_quote_all  = false;
+    bool         m_opt_sep_nested = false;
 
     std::map<std::string,std::string> m_aliases;
-    
+
     JsonFormatterImpl(OutputStream &os)
         : m_os(os)
         { }
@@ -104,14 +76,18 @@ struct JsonFormatter::JsonFormatterImpl
 
     void configure(const QuerySpec& spec) {
         for (auto arg : spec.format.args) {
-            if (arg == opt_split)
-                m_opt_split = true;
-            if (arg == opt_pretty)
+            if (arg == "pretty")
                 m_opt_pretty = true;
-            if (arg == opt_quote_all)
+            else if (arg == "quote-all")
                 m_opt_quote_all = true;
-            if (arg == opt_globals)
-                m_opt_globals = true;
+            else if (arg == "separate-nested")
+                m_opt_sep_nested = true;
+            else if (arg == "records")
+                m_layout = Records;
+            else if (arg == "split")
+                m_layout = Split;
+            else if (arg == "object")
+                m_layout = Object;
         }
 
         switch (spec.attribute_selection.selection) {
@@ -131,162 +107,153 @@ struct JsonFormatter::JsonFormatterImpl
 
         m_aliases = spec.aliases;
     }
-    
+
+    inline std::string get_key(const Attribute& attr) {
+        std::string name = attr.name();
+
+        bool selected =
+            m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
+
+        if (!selected && (!m_selected.empty() || attr.is_hidden() || attr.is_global()))
+            return "";
+
+        if (attr.is_nested() && !m_opt_sep_nested)
+            return "path";
+
+        auto it = m_aliases.find(name);
+
+        return (it == m_aliases.end() ? name : it->second);
+    }
+
+    void begin_records_section(std::ostream& os) {
+        if (m_layout == Records)
+            os << "[\n";
+        else if (m_layout == Object)
+            os << "{\n\"records\": [\n";
+    }
+
+    void end_records_section(std::ostream& os) {
+        if (m_layout == Records || m_layout == Object)
+            os << "\n]";
+    }
+
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::map<std::string, std::string> noquote_kvs;
+        std::map<std::string, std::string> quote_kvs;
 
-        std::vector<std::string> key_value_pairs;
-        std::ostringstream ss_key_value;
+        //
+        // collect json key-value pairs for this record
+        //
 
-        std::ostringstream os;
-
-        bool writing_attr_data = false;
-        
         for (const Entry& e : list) {
-
-            if (e.node()) {
-
-                // First find all nodes selected for printing
-                vector<const Node*> nodes;
+            if (e.is_reference()) {
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
-                    Attribute attr = db.get_attribute(node->attribute());
-                    string name = attr.name();
+                    std::string key = get_key(db.get_attribute(node->attribute()));
 
-                    bool selected = m_selected.count(name) > 0 && !(m_deselected.count(name) > 0);
-
-                    if (!selected && (!m_selected.empty() || attr.is_hidden() || attr.is_global()))
+                    if (key.empty())
                         continue;
 
-                    nodes.push_back(node);
+                    auto it = quote_kvs.find(key);
+
+                    if (it == quote_kvs.end())
+                        quote_kvs.emplace(std::make_pair(std::move(key), node->data().to_string()));
+                    else
+                        it->second = node->data().to_string().append("/").append(it->second);
                 }
-
-                if (nodes.empty())
-                    continue;
-
-                // Sort all nodes consistently baseed on attribute id
-                stable_sort(nodes.begin(), nodes.end(), [](const Node* a, const Node* b) {
-                        return a->attribute() < b->attribute();
-                    } );
-	  
-                cali_id_t prev_attr_id = CALI_INV_ID;
-
-                bool quotes = m_opt_quote_all | false;
-
-                // Go through all nodes in reverse order
-                for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
-
-                    // Get attribute information
-                    cali_id_t attr_id = (*it)->attribute();
-                    Attribute attr = db.get_attribute(attr_id);
-                    cali_attr_type attr_type = attr.type();
-
-                    // Check if we encountered a new attribute
-                    if (attr_id != prev_attr_id) {
-
-                        // Check if we are completing a previous attribute
-                        if (writing_attr_data) {
-                            // Complete a pair and push it back, then clear the stringstream
-                            ss_key_value << (quotes ? "\"" : "");
-                            key_value_pairs.push_back(ss_key_value.str());
-                            ss_key_value.str(std::string());
-                        }
-
-                        std::string name = attr.name();
-
-                        {
-                            auto aliasit = m_aliases.find(name);
-                            if (aliasit != m_aliases.end())
-                                name = aliasit->second;
-                        }
-
-                        // Start new attribute
-                        quotes = m_opt_quote_all | false;
-                        util::write_esc_string(ss_key_value << '"', name) << '"' << ':';
-
-                        // If STRING or USR, or if nested attribute values x/y/z, start quotes
-                        if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR 
-                                || ((it+1 != nodes.rend()) && (*(it+1))->attribute()) != attr_id) {
-                            quotes = true;
-                        }
-
-                        if (quotes) {
-                            ss_key_value << '"';
-                        }
-
-                        writing_attr_data = true;
-                        prev_attr_id = attr_id;
-
-                    } else {
-                        ss_key_value << '/';
-                    }
-
-                    util::write_esc_string(ss_key_value, (*it)->data().to_string());
-                }
-
-                if (writing_attr_data) {
-                    ss_key_value << (quotes ? "\"" : "");
-                    key_value_pairs.push_back(ss_key_value.str());
-                    ss_key_value.str(std::string());
-                    writing_attr_data = false;
-                    quotes = m_opt_quote_all | false;
-                }
-
-            } else if (e.attribute() != CALI_INV_ID) {
+            } else if (e.is_immediate()) {
                 Attribute attr = db.get_attribute(e.attribute());
-                string name = attr.name();
-                cali_attr_type attr_type = attr.type();
+                std::string key = get_key(attr);
 
-                // Check if this attribute is selected for printing
-                if (attr.is_hidden() || (!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))
+                if (key.empty())
                     continue;
 
-                {
-                    auto aliasit = m_aliases.find(name);
-                    if (aliasit != m_aliases.end())
-                        name = aliasit->second;
-                }
+                cali_attr_type type = attr.type();
 
-                bool quotes = m_opt_quote_all | false;
-
-                util::write_esc_string(ss_key_value << '"', name) << '"' << ':' ;
-                
-                string data = e.value().to_string();
-                if (attr_type == CALI_TYPE_STRING || attr_type == CALI_TYPE_USR)
-                    quotes = true;
-
-                if (quotes)
-                    ss_key_value << '"' << data << '"';
+                if (m_opt_quote_all || type == CALI_TYPE_STRING || type == CALI_TYPE_USR)
+                    quote_kvs[std::move(key)] = e.value().to_string();
                 else
-                    ss_key_value << data;
-
-                key_value_pairs.push_back(ss_key_value.str());
-                ss_key_value.str(std::string());
+                    noquote_kvs[std::move(key)] = e.value().to_string();
             }
-        }
+        } // for (Entry& ... )
 
-        for(size_t i = 0; i < key_value_pairs.size(); ++i)
-        {
-            if(i != 0)
-                os << "," << (m_opt_pretty ? "\n\t" : "");
-            os << key_value_pairs[i];
-        }
+        //
+        // write the key-value pairs
+        //
 
-        if (!key_value_pairs.empty()) {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
+        std::lock_guard<std::mutex>
+            g(m_os_lock);
 
-            std::ostream* real_os = m_os.stream();
+        std::ostream* real_os = m_os.stream();
+
+        if (noquote_kvs.size() + quote_kvs.size() > 0) {
+            if (m_num_recs == 0)
+                begin_records_section(*real_os);
             
-            *real_os << (m_opt_split ? "" : (m_first_row ? "[\n" : ","));
-            *real_os << (m_first_row ? "" : "\n") << "{" << (m_opt_pretty ? "\n\t" : "");
-            *real_os << os.str();
-            *real_os << (m_opt_pretty ? "\n" : "" ) << "}";
+            *real_os << (m_num_recs > 0 ? ",\n" : "") << "{";
 
-            ++m_written;
-            m_first_row = false;
+            int count = 0;
+            for (auto &p : quote_kvs) {
+                *real_os << (count++ > 0 ? "," : "")
+                         << (m_opt_pretty ? "\n\t" : "");
+                util::write_esc_string(*real_os << "\"", p.first) << "\":";
+                util::write_esc_string(*real_os << "\"", p.second) << "\"";
+            }
+            for (auto &p : noquote_kvs) {
+                *real_os << (count++ > 0 ? "," : "")
+                         << (m_opt_pretty ? "\n\t" : "");
+                util::write_esc_string(*real_os << "\"", p.first) << "\":";
+                util::write_esc_string(*real_os, p.second);
+            }
+
+            *real_os << (m_opt_pretty ? "\n" : "") << "}";
+
+            ++m_num_recs;
         }
     }
 
-    void write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
+    std::ostream& write_attributes(CaliperMetadataAccessInterface& db, std::ostream& os) {
+        std::vector<Attribute> attrs;
+        
+        if (m_selected.empty())
+            attrs = db.get_all_attributes();
+        else
+            for (const std::string& str : m_selected)
+                attrs.push_back(db.get_attribute(str));
+
+        // remove nested and hidden attributes
+        if (!m_opt_sep_nested)
+            attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
+                                       [](const Attribute& a){ return a.is_nested(); }),
+                        attrs.end());
+
+        attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
+                                   [](const Attribute& a){ return a.is_hidden(); }),
+                    attrs.end());
+        
+        // write "attr1": { "prop": "value", ... } , "attr2" : ...
+
+        int count = 0;
+        for (const Attribute& a : attrs) {
+            os << (count++ > 0 ? ",\n" : "\n") << (m_opt_pretty ? "\t" : "")
+               << '\"' << a.name() << "\": {";
+            
+            // encode some properties
+            os << "\"is_global\": "  << (a.is_global() ? "true" : "false")
+               << ",\"is_nested\": " << (a.is_nested() ? "true" : "false");
+
+            // print meta-info
+            for (const Node* node = a.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
+                util::write_esc_string(os << ",\"", db.get_attribute(node->attribute()).name()) << "\": ";
+                util::write_esc_string(os << "\"", node->data().to_string()) << '\"';
+            }
+                                                   
+            os << "}";
+        }
+
+        return os;
+    }
+    
+    std::ostream& write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
         std::vector<Entry>               globals = db.get_globals();
         std::map<cali_id_t, std::string> global_vals;
 
@@ -294,19 +261,45 @@ struct JsonFormatter::JsonFormatterImpl
             if (e.is_reference())
                 for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent()) {
                     std::string s = node->data().to_string();
-                    
+
                     if (global_vals[node->attribute()].size() > 0)
                         s.append("/").append(global_vals[node->attribute()]);
 
-                    global_vals[node->attribute()] = s;                        
+                    global_vals[node->attribute()] = s;
                 }
             else
                 global_vals[e.attribute()] = e.value().to_string();
+
+        int count = 0;
+        for (auto &p : global_vals) {
+            if (count++ > 0)
+                os << ",\n";
+            if (m_opt_pretty)
+                os << '\t';
+
+            util::write_esc_string(os << '\"', db.get_attribute(p.first).name()) << "\": ";
+            util::write_esc_string(os << '\"', p.second) << '\"';
+        }
+
+        return os;
+    }
+
+    void flush(CaliperMetadataAccessInterface& db) {
+        std::ostream* real_os = m_os.stream();
         
-        for (auto &p : global_vals)
-            os << (m_written++ > 0 ? ",\n" : "")
-               << "\"" << db.get_attribute(p.first).name() << "\": "
-               << '\"' << p.second << '\"';
+        // close records section
+        if (m_num_recs == 0)
+            begin_records_section(*real_os);
+
+        end_records_section(*real_os);
+
+        if (m_layout == Object) {
+            write_globals(db, *real_os << ",\n\"globals\": {\n") << "\n}";
+            write_attributes(db, *real_os << ",\n\"attributes\": {") << "\n}";
+            *real_os << "\n}"; // close object opened in begin_records_section()
+        }
+
+        *real_os << std::endl;
     }
 };
 
@@ -321,7 +314,7 @@ JsonFormatter::~JsonFormatter()
     mP.reset();
 }
 
-void 
+void
 JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);
@@ -329,14 +322,5 @@ JsonFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 
 void JsonFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
 {
-    std::ostream* real_os = mP->m_os.stream();
-    
-    if (!mP->m_opt_split && mP->m_written > 0)
-        *real_os << "\n]";
-
-    if (mP->m_opt_globals)
-        mP->write_globals(db, *real_os);
-    
-    *real_os << std::endl;
+    mP->flush(db);
 }
-

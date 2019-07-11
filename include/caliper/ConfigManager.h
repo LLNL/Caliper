@@ -60,6 +60,7 @@ public:
 
     struct ConfigInfo {
         const char*    name;
+        const char*    description;
         const char**   args;
         CreateConfigFn create;
     };
@@ -126,6 +127,19 @@ public:
     /// channel exists.
     ChannelPtr
     get_channel(const char* name);
+
+    /// \brief Return names of available configs
+    static std::vector<std::string>
+    available_configs();
+
+    /// \brief Return descriptions for all available configs
+    static std::vector<std::string>
+    get_config_docstrings();
+
+    /// \brief Check if given config string is valid.
+    ///   Return error message, or empty string if input is valid.
+    static std::string
+    check_config_string(const char* config_string);
 };
 
 } // namespace cali
