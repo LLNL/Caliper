@@ -151,6 +151,15 @@ public:
             // import globals from Caliper runtime object
             db.import_globals(c, c.get_globals(channel()));
 
+            std::string spot_metrics =
+                "avg#inclusive#sum#time.duration"
+                ",min#inclusive#sum#time.duration"
+                ",max#inclusive#sum#time.duration";
+
+            // set the spot.metrics value                
+            db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
+                          Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
+
             std::string output = m_output;
 
             if (output == "adiak") {
@@ -176,7 +185,7 @@ public:
 
     SpotController(bool use_mpi, const char* output)
         : ChannelController("spot", 0, {
-                { "CALI_SERVICES_ENABLE", "aggregate,env,event,timestamp" },
+                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },

@@ -39,12 +39,12 @@ copyrightNotice="""
 
 initial_service_string = "@CALIPER_SERVICE_NAMES@"
 def insert_magic_here(service_string):
-    service_list=[x for x in service_string.split(" ") if x is not '']
+    service_list=[x for x in service_string.split(";") if x is not '']
     # print service_list
     service_ret = []
     for service in service_list:
         # print service
-        items = service.split(";")
+        items = service.split(":")
         condition=""
         if(len(items)>1):
             condition=items[1]
