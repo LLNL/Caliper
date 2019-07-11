@@ -18,8 +18,11 @@ macro(add_service_sources)
 endmacro()
 
 macro(add_caliper_service)
-  string(REPLACE " " ";" NEW_SERVICE ${ARGV0})
-  set(CALIPER_SERVICE_NAMES "${CALIPER_SERVICE_NAMES} ${NEW_SERVICE}" PARENT_SCOPE)
+  foreach (_srv ${ARGN})
+    string(REPLACE " " ":" NEW_SERVICE ${_srv})
+    list(APPEND CALIPER_SERVICE_NAMES ${NEW_SERVICE})
+  endforeach()
+  set(CALIPER_SERVICE_NAMES ${CALIPER_SERVICE_NAMES} PARENT_SCOPE)
 endmacro()
 # A macro to include service modules as object libs in the caliper runtime lib.
 # Used when service subdirectories needs additional includes etc.
@@ -35,6 +38,9 @@ endmacro()
 # Service subdirectories
 
 add_subdirectory(alloc)
+if (CALIPER_HAVE_ADIAK)
+  add_subdirectory(adiak)
+endif()
 add_subdirectory(aggregate)
 if (CALIPER_HAVE_LIBUNWIND)
   add_subdirectory(callpath)

@@ -8,6 +8,7 @@
 #include <caliper/reader/CaliperMetadataDB.h>
 #include <caliper/reader/CalQLParser.h>
 #include <caliper/reader/FormatProcessor.h>
+#include <caliper/reader/NestedExclusiveRegionProfile.h>
 
 #include <caliper/common/Log.h>
 #include <caliper/common/OutputStream.h>
@@ -15,11 +16,16 @@
 
 #include <unistd.h>
 
+#include <algorithm>
 #include <ctime>
 
 #include "caliper/cali-mpi.h"
 
 #include <mpi.h>
+
+#ifdef CALIPER_HAVE_ADIAK
+#include <adiak.hpp>
+#endif
 
 using namespace cali;
 
@@ -36,15 +42,49 @@ make_filename()
     return std::string(timestr) + std::to_string(getpid()) + ".cali";
 }
 
+#ifdef CALIPER_HAVE_ADIAK
+void
+write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
+{
+    Log(2).stream() << "[spot controller]: Writing adiak output" << std::endl;
+
+    //   Extract / calculate avg inclusive time for paths.
+    // Use exclusive processor b/c values are inclusive already.
+
+    NestedExclusiveRegionProfile rp(db, "avg#inclusive#sum#time.duration");
+    output_agg.flush(db, rp);
+
+    std::map<std::string, double> nested_region_times;
+    double total_time;
+
+    std::tie(nested_region_times, std::ignore, total_time) =
+        rp.result();
+
+    // export time profile into adiak
+
+    adiak::value("total_time", total_time, adiak_performance);
+
+    // copy our map into a vector that adiak can process
+    std::vector< std::tuple<std::string, double> > tmpvec(nested_region_times.size());
+
+    std::transform(nested_region_times.begin(), nested_region_times.end(), tmpvec.begin(),
+                   [](std::pair<std::string,double>&& p){
+                       return std::make_tuple(std::move(p.first), p.second);
+                   });
+
+    adiak::value("avg#inclusive#sum#time.duration", tmpvec, adiak_performance);
+}
+#endif
+
 class SpotController : public cali::ChannelController
 {
     std::string m_output;
     bool m_use_mpi;
-    
+
 public:
-    
+
     void
-    flush() {    
+    flush() {
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator
@@ -109,26 +149,43 @@ public:
             Log(2).stream() << "[spot controller]: Writing output" << std::endl;
 
             // import globals from Caliper runtime object
-            db.import_globals(c);
+            db.import_globals(c, c.get_globals(channel()));
+
+            std::string spot_metrics =
+                "avg#inclusive#sum#time.duration"
+                ",min#inclusive#sum#time.duration"
+                ",max#inclusive#sum#time.duration";
+
+            // set the spot.metrics value                
+            db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
+                          Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
 
             std::string output = m_output;
 
-            if (m_output.empty())
-                output = ::make_filename();
-        
-            OutputStream    stream;
-            stream.set_filename(output.c_str(), c, c.get_globals());
+            if (output == "adiak") {
+#ifdef CALIPER_HAVE_ADIAK
+                ::write_adiak(db, output_agg);
+#else
+                Log(0).stream() << "[spot controller]: cannot use adiak output: adiak is not enabled!" << std::endl;
+#endif
+            } else {
+                if (m_output.empty())
+                    output = ::make_filename();
 
-            FormatProcessor formatter(output_spec, stream);
+                OutputStream    stream;
+                stream.set_filename(output.c_str(), c, c.get_globals());
 
-            output_agg.flush(db, formatter);
-            formatter.flush(db);
+                FormatProcessor formatter(output_spec, stream);
+
+                output_agg.flush(db, formatter);
+                formatter.flush(db);
+            }
         }
     }
-    
+
     SpotController(bool use_mpi, const char* output)
         : ChannelController("spot", 0, {
-                { "CALI_SERVICES_ENABLE", "aggregate,env,event,timestamp" },
+                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },
@@ -138,8 +195,13 @@ public:
             }),
           m_output(output),
           m_use_mpi(use_mpi)
-        { }
-    
+        {
+#ifdef CALIPER_HAVE_ADIAK
+            if (output != "adiak")
+                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+#endif
+        }
+
     ~SpotController()
         { }
 };

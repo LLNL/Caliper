@@ -143,6 +143,10 @@ public:
     /// \brief Import global entries from metadata DB \a db into this
     ///   metadata DB
     std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db);
+
+    /// \brief Import globals in record \a rec from metadata DB \a db into this
+    ///   metadata DB
+    std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals);
 };
 
 }

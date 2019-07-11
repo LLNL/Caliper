@@ -42,6 +42,7 @@ option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
+option(WITH_ADIAK     "Enable adiak support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -195,6 +196,32 @@ if (WITH_GOTCHA)
     set(gotcha_LIBRARIES $<TARGET_OBJECTS:gotcha>)
     set(CALIPER_HAVE_GOTCHA TRUE)
     list(APPEND CALIPER_EXTERNAL_SOURCES ${gotcha_LIBRARIES})
+  endif()
+endif()
+
+if (WITH_ADIAK)
+  # find_library(adiak_LIBRARIES
+  #   NAMES adiak
+  #   HINTS ${adiak_DIR}/lib)
+  # find_path(adiak_INCLUDE_DIRS
+  #   NAMES adiak.h
+  #   HINTS ${adiak_DIR}/include)
+  # include(FindPackageHandleStandardArgs)
+  # find_package_handle_standard_args(adiak DEFAULT_MSG
+  #   adiak_LIBRARIES
+  #   adiak_INCLUDE_DIRS)
+  # mark_as_advanced(adiak_LIBRARIES adiak_INCLUDE_DIRS)  
+  find_package(adiak)
+  if (adiak_FOUND)
+    get_target_property(_adiak_location adiak LOCATION)
+    set(CALIPER_adiak_CMAKE_MSG "Yes, using ${_adiak_location}")
+    set(CALIPER_HAVE_ADIAK TRUE)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${adiak_LIBRARIES})
+    if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+      list(APPEND CALIPER_EXTERNAL_LIBS "-ldl")
+    endif()
+  else()
+    message(WARNING "Adiak support was requested but Adiak was not found")
   endif()
 endif()
 
@@ -359,6 +386,7 @@ message(STATUS "Build Caliper tools       : ${WITH_TOOLS}")
 
 set(CALIPER_MODULES
   cpuinfo
+  adiak
   GOTCHA
   PAPI
   Libpfm
