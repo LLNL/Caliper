@@ -68,7 +68,7 @@ namespace
 bool has_marker(const Attribute& attr, const Attribute& marker_attr)
 {
     cali_id_t marker_attr_id = marker_attr.id();
-    
+
     for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
         if (node->attribute() == marker_attr_id)
             return true;
@@ -101,16 +101,16 @@ AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& at
                       attr.name()) == m_trigger_attr_names.end())
             return;
     }
-    
+
     // Add the binding marker for this attribute
-    
+
     Variant v_true(true);
     c->make_tree_entry(m_marker_attr, v_true, c->node(attr.node()->id()));
-    
+
     // Invoke derived functions
 
     on_mark_attribute(c, chn, attr);
-    
+
     Log(2).stream() << "Adding " << this->service_tag()
                     << " bindings for attribute \"" << attr.name()
                     << "\" in " << chn->name() << " channel" << std::endl;
@@ -154,13 +154,14 @@ void
 AnnotationBinding::base_pre_initialize(Caliper* c, Channel* chn)
 {
     const char* tag = service_tag();
+    std::string cfgname = std::string(tag) + "_binding";
 
-    m_config = chn->config().init(tag, s_configdata);
+    m_config = chn->config().init(cfgname.c_str(), s_configdata);
 
     if (m_config.get("regex").to_string().size() > 0)
         m_filter = new RegexFilter(tag, m_config);
 
-    m_trigger_attr_names = 
+    m_trigger_attr_names =
         m_config.get("trigger_attributes").to_stringlist(",:");
 
     std::string marker_attr_name("cali.binding.");
@@ -177,9 +178,9 @@ void
 AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
 {
     // check and mark existing attributes
-    
+
     std::vector<Attribute> attributes = c->get_all_attributes();
-    
+
     for (const Attribute& attr : attributes)
         check_attribute(c, chn, attr);
 }
