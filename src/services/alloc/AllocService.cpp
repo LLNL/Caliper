@@ -349,41 +349,56 @@ class AllocService
 
     AllocService(Caliper* c, Channel* chn)
         {
+            Attribute class_aggr_attr =
+                c->get_attribute("class.aggregatable");
+            Variant   v_true(true);
+            
             struct attr_info_t {
                 const char*    name;
                 cali_attr_type type;
                 int            prop;
+                int            meta_count;
+                Attribute*     meta_attr;
+                Variant*       meta_vals;
                 Attribute*     attr;
             } attr_info[] = {
                 { "mem.alloc",        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
+                  0, nullptr, nullptr,
                   &mem_alloc_attr
                 },
                 { "mem.free" ,        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
+                  0, nullptr, nullptr,
                   &mem_free_attr
                 },
                 { "mem.active" ,      CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                  0, nullptr, nullptr,
                   &active_mem_attr
                 },
                 { "alloc.uid",        CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                  0, nullptr, nullptr,
                   &alloc_uid_attr
                 },
                 { "alloc.address",    CALI_TYPE_ADDR,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                  0, nullptr, nullptr,
                   &alloc_addr_attr
                 },
                 { "alloc.elem_size",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
+                  0, nullptr, nullptr,
                   &alloc_elem_size_attr
                 },
                 { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
+                  0, nullptr, nullptr,
                   &alloc_num_elems_attr
                 },
                 { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                  1, &class_aggr_attr, &v_true,
                   &alloc_total_size_attr
                 },
-                { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, nullptr }
+                { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, nullptr, nullptr, nullptr }
             };
         
             for (attr_info_t *p = attr_info; p->name; ++p)
-                *(p->attr) = c->create_attribute(p->name, p->type, p->prop);
+                *(p->attr) = c->create_attribute(p->name, p->type, p->prop, p->meta_count, p->meta_attr, p->meta_vals);
     
             ConfigSet config = chn->config().init("alloc", s_configdata);
     
