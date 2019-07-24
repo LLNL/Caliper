@@ -17,9 +17,9 @@ namespace
 {
 
 enum ProfileConfig {
-    WrapMpi  = 1,
-    WrapCuda = 2,
-    MemUsageMetric = 4
+    WrapMpi    = 1,
+    WrapCuda   = 2,
+    MallocInfo = 4
 };
 
 class RuntimeReportController : public cali::ChannelController
@@ -44,10 +44,10 @@ public:
                     ",avg(sum#time.duration) as \"Avg time/rank\""
                     ",percent_total(sum#time.duration) as \"Time % (total)\"";
 
-                if (profile & MemUsageMetric)
+                if (profile & MallocInfo)
                     query +=
-                        ",min(min#malloc.total.bytes) as \"Alloc'd Mem (min)\""
-                        ",max(max#malloc.total.bytes) as \"Alloc'd Mem (max)\"";
+                        ",sum(sum#malloc.bytes) as \"Heap Allocations\""
+                        ",max(max#malloc.total.bytes) as \"Max Total Bytes on Heap\"";
 
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
@@ -60,17 +60,17 @@ public:
                     ",sum(sum#time.duration) as \"Exclusive time\""
                     ",percent_total(sum#time.duration) as \"Time %\"";
 
-                if (profile & MemUsageMetric)
+                if (profile & MallocInfo)
                     query +=
-                        ",min(min#malloc.total.bytes) as \"Alloc'd Mem (min)\""
-                        ",max(max#malloc.total.bytes) as \"Alloc'd Mem (max)\"";
+                        ",sum(sum#malloc.bytes) as \"Heap Allocations\""
+                        ",max(max#malloc.total.bytes) as \"Max Total Bytes on Heap\"";
                     
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] = query;
             }
 
-            if (profile & MemUsageMetric) {
+            if (profile & MallocInfo) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",memusage");
             }
             
@@ -127,9 +127,9 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     auto srvcs = Services::get_available_services();
 
     const std::vector< std::tuple<std::string, ProfileConfig, std::string> > profinfo {
-        { std::make_tuple( "mpi",    WrapMpi,        "mpi")      },
-        { std::make_tuple( "cuda",   WrapCuda,       "cupti")    },
-        { std::make_tuple( "memory", MemUsageMetric, "memusage") }
+        { std::make_tuple( "mpi",    WrapMpi,    "mpi")      },
+        { std::make_tuple( "cuda",   WrapCuda,   "cupti")    },
+        { std::make_tuple( "malloc", MallocInfo, "memusage") }
     };
 
     int profile = 0;
