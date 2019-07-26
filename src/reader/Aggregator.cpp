@@ -603,97 +603,78 @@ private:
 };
 
 //
-// --- PercentageKernel
+// --- ScaledRatioKernel
 //
 
-class PercentageKernel : public AggregateKernel {
+class ScaledRatioKernel : public AggregateKernel {
 public:
 
     class Config : public AggregateKernelConfig {
-        std::string          m_target_attr1_name;
-        std::string          m_target_attr2_name;
-        Attribute            m_target_attr1;
-        Attribute            m_target_attr2;
-        Attribute            m_sum1_attr;
-        Attribute            m_sum2_attr;
+        std::string m_tgt1_attr_name;
+        std::string m_tgt2_attr_name;
 
-        Attribute m_percentage_attr;
+        Attribute   m_tgt1_attr;
+        Attribute   m_tgt2_attr;
+        Attribute   m_sum1_attr;
+        Attribute   m_sum2_attr;
+
+        Attribute   m_ratio_attr;
+
+        double      m_scale;
 
     public:
 
-        std::pair<Attribute,Attribute> get_target_attrs(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr1 == Attribute::invalid) {
-                m_target_attr1 = db.get_attribute(m_target_attr1_name);
+        double get_scale() { return m_scale; }
 
-                if (m_target_attr1 != Attribute::invalid)
-                    if (!m_target_attr1.store_as_value())
-                        Log(0).stream() << "percentage(): Attribute "
-                                        << m_target_attr1_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
+        std::pair<Attribute,Attribute> get_target_attributes(CaliperMetadataAccessInterface& db) {
+            if (m_tgt1_attr == Attribute::invalid)
+                m_tgt1_attr = db.get_attribute(m_tgt1_attr_name);
+            if (m_tgt2_attr == Attribute::invalid)
+                m_tgt2_attr = db.get_attribute(m_tgt2_attr_name);
 
-            if (m_target_attr2 == Attribute::invalid) {
-                m_target_attr2 = db.get_attribute(m_target_attr2_name);
-
-                if (m_target_attr2 != Attribute::invalid)
-                    if (!m_target_attr2.store_as_value())
-                        Log(0).stream() << "percentage(): Attribute "
-                                        << m_target_attr2_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
-
-            return std::pair<Attribute,Attribute>(m_target_attr1, m_target_attr2);
+            return std::pair<Attribute,Attribute>(m_tgt1_attr, m_tgt2_attr);
         }
 
-        bool get_percentage_attributes(CaliperMetadataAccessInterface& db,
-                                       Attribute& percentage_attr,
-                                       Attribute& sum1_attr,
-                                       Attribute& sum2_attr) {
-            if (m_target_attr1 == Attribute::invalid)
-                return false;
-            if (m_target_attr2 == Attribute::invalid)
-                return false;
-            if (m_percentage_attr != Attribute::invalid) {
-                percentage_attr = m_percentage_attr;
-                sum1_attr = m_sum1_attr;
-                sum2_attr = m_sum2_attr;
-                return true;
-            }
+        std::pair<Attribute,Attribute> get_sum_attributes(CaliperMetadataAccessInterface& db) {
+            if (m_sum1_attr == Attribute::invalid)
+                m_sum1_attr =
+                    db.create_attribute("sr.sum#" + m_tgt1_attr_name, CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_SKIP_EVENTS |
+                                        CALI_ATTR_ASVALUE     |
+                                        CALI_ATTR_HIDDEN);
+            if (m_sum2_attr == Attribute::invalid)
+                m_sum2_attr =
+                    db.create_attribute("sr.sum#" + m_tgt2_attr_name, CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_SKIP_EVENTS |
+                                        CALI_ATTR_ASVALUE     |
+                                        CALI_ATTR_HIDDEN);
 
-            m_percentage_attr =
-                db.create_attribute(m_target_attr1_name + "/" + m_target_attr2_name,
-                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+            return std::make_pair(m_sum1_attr, m_sum2_attr);
+        }
 
-            m_sum1_attr =
-                db.create_attribute("pc.sum#" + m_target_attr1_name,
-                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
+        Attribute get_ratio_attribute(CaliperMetadataAccessInterface& db) {
+            if (m_ratio_attr == Attribute::invalid)
+                m_ratio_attr =
+                    db.create_attribute(m_tgt1_attr_name + "/" + m_tgt2_attr_name,
+                                        CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
-            m_sum2_attr =
-                db.create_attribute("pc.sum#" + m_target_attr2_name,
-                        CALI_TYPE_DOUBLE, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
-
-            percentage_attr = m_percentage_attr;
-            sum1_attr = m_sum1_attr;
-            sum2_attr = m_sum2_attr;
-
-            return true;
+            return m_ratio_attr;
         }
 
         AggregateKernel* make_kernel() {
-            return new PercentageKernel(this);
+            return new ScaledRatioKernel(this);
         }
 
-        Config(const std::vector<std::string>& names)
-            : m_target_attr1_name(names.front()), // We have already checked that there are two strings given
-              m_target_attr2_name(names.back()),
-              m_target_attr1(Attribute::invalid),
-              m_target_attr2(Attribute::invalid)
+        Config(const std::vector<std::string>& cfg)
+            : m_tgt1_attr_name(cfg[0]), // We have already checked that there are two strings given
+              m_tgt2_attr_name(cfg[1]),
+              m_tgt1_attr(Attribute::invalid),
+              m_tgt2_attr(Attribute::invalid),
+              m_scale(1.0)
             {
-                Log(2).stream() << "aggregate: creating percentage kernel for attributes "
-                                << m_target_attr1_name << " / " << m_target_attr2_name <<std::endl;
+                if (cfg.size() > 2)
+                    m_scale = std::stod(cfg[2]);
             }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -701,7 +682,7 @@ public:
         }
     };
 
-    PercentageKernel(Config* config)
+    ScaledRatioKernel(Config* config)
         : m_sum1(0), m_sum2(0), m_config(config)
         { }
 
@@ -711,20 +692,15 @@ public:
         std::lock_guard<std::mutex>
             g(m_lock);
 
-        std::pair<Attribute,Attribute> target_attrs = m_config->get_target_attrs(db);
-        Attribute percentage_attr, sum1_attr, sum2_attr;
-
-        if (!m_config->get_percentage_attributes(db, percentage_attr, sum1_attr, sum2_attr))
-            return;
+        auto tattrs = m_config->get_target_attributes(db);
+        auto sattrs = m_config->get_sum_attributes(db);
 
         for (const Entry& e : list) {
-            if (e.attribute() == target_attrs.first.id()) {
+            cali_id_t attr = e.attribute();
+
+            if        (attr == tattrs.first.id()  || attr == sattrs.first.id())  {
                 m_sum1 += e.value().to_double();
-            } else if (e.attribute() == target_attrs.second.id()) {
-                m_sum2 += e.value().to_double();
-            } else if (e.attribute() == sum1_attr.id()) {
-                m_sum1 += e.value().to_double();
-            } else if (e.attribute() == sum2_attr.id()) {
+            } else if (attr == tattrs.second.id() || attr == sattrs.second.id()) {
                 m_sum2 += e.value().to_double();
             }
         }
@@ -732,25 +708,25 @@ public:
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         if (m_sum2 > 0) {
-            Attribute percentage_attr, sum1_attr, sum2_attr;
+            auto sum_attrs = m_config->get_sum_attributes(db);
 
-            if (!m_config->get_percentage_attributes(db, percentage_attr, sum1_attr, sum2_attr))
-                return;
+            list.push_back(Entry(sum_attrs.first,  Variant(m_sum1)));
+            list.push_back(Entry(sum_attrs.second, Variant(m_sum2)));
 
-            list.push_back(Entry(sum1_attr, Variant(m_sum1)));
-            list.push_back(Entry(sum2_attr, Variant(m_sum2)));
-            list.push_back(Entry(percentage_attr, Variant(m_sum1 / m_sum2)));
+            Attribute ratio_attr = m_config->get_ratio_attribute(db);
+
+            list.push_back(Entry(ratio_attr, Variant(m_config->get_scale() * m_sum1 / m_sum2)));
         }
     }
 
 private:
 
-    double    m_sum1;
-    double    m_sum2;
+    double  m_sum1;
+    double  m_sum2;
 
     std::mutex m_lock;
 
-    Config*    m_config;
+    Config* m_config;
 };
 
 //
@@ -1008,7 +984,7 @@ private:
 enum KernelID {
     Count        = 0,
     Sum          = 1,
-    Percentage   = 2,
+    ScaledRatio  = 2,
     PercentTotal = 3,
     InclusiveSum = 4,
     Min          = 5,
@@ -1018,13 +994,13 @@ enum KernelID {
 
 #define MAX_KERNEL_ID 7
 
-const char* kernel_args[] = { "attribute" };
-const char* kernel_2args[] = { "numerator", "denominator" };
+const char* kernel_args[]  = { "attribute" };
+const char* sratio_args[]  = { "numerator", "denominator", "scale" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,        "count",         0, 0, nullptr      },
     { KernelID::Sum,          "sum",           1, 1, kernel_args  },
-    { KernelID::Percentage,   "percentage",    2, 2, kernel_2args },
+    { KernelID::ScaledRatio,  "ratio",         2, 3, sratio_args  },
     { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
     { KernelID::InclusiveSum, "inclusive_sum", 1, 1, kernel_args  },
     { KernelID::Min,          "min",           1, 1, kernel_args  },
@@ -1040,7 +1016,7 @@ const struct KernelInfo {
 } kernel_list[] = {
     { "count",         CountKernel::Config::create        },
     { "sum",           SumKernel::Config::create          },
-    { "percentage",    PercentageKernel::Config::create   },
+    { "ratio",         ScaledRatioKernel::Config::create  },
     { "percent_total", PercentTotalKernel::Config::create },
     { "inclusive_sum", InclusiveSumKernel::Config::create },
     { "min",           MinKernel::Config::create          },
@@ -1472,7 +1448,7 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return "count";
     case KernelID::Sum:
         return op.args[0];
-    case KernelID::Percentage:
+    case KernelID::ScaledRatio:
         return op.args[0] + std::string("/") + op.args[1];
     case KernelID::PercentTotal:
         return std::string("percent_total#") + op.args[0];
