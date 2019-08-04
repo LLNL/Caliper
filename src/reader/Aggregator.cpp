@@ -707,10 +707,11 @@ public:
     }
 
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
-        if (m_sum2 > 0) {
-            auto sum_attrs = m_config->get_sum_attributes(db);
+        auto sum_attrs = m_config->get_sum_attributes(db);
 
+        if (m_sum1 > 0)
             list.push_back(Entry(sum_attrs.first,  Variant(m_sum1)));
+        if (m_sum2 > 0) {
             list.push_back(Entry(sum_attrs.second, Variant(m_sum2)));
 
             Attribute ratio_attr = m_config->get_ratio_attribute(db);
