@@ -78,7 +78,7 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cupti) "));
+        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cuda ) "));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
