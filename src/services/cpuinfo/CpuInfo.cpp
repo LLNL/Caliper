@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/CaliperService.h"
@@ -22,10 +22,10 @@ Attribute node_attr;
 
 void snapshot_cb(Caliper*, Channel*, int scopes, const SnapshotRecord*, SnapshotRecord* rec)
 {
+#ifdef SYS_getcpu
     if (scopes & CALI_SCOPE_THREAD) {
         unsigned cpu = 0, node = 0;
 
-#ifdef SYS_getcpu
         if (syscall(SYS_getcpu, &cpu, &node, NULL) == 0) {
             rec->append(cpu_attr.id(),
                         cali_make_variant_from_uint(cpu));
