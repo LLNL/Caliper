@@ -33,12 +33,15 @@
 
 // A basic tool for Caliper metadata queries
 
+#include "caliper/caliper-config.h"
+
 #include "AttributeExtract.h"
 #include "query_common.h"
 
 #include "caliper/tools-util/Args.h"
 
 #include "caliper/cali.h"
+#include "caliper/cali-manager.h"
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/CaliReader.h"
@@ -129,24 +132,18 @@ namespace
           "Execute a query in CalQL format",
           "QUERY STRING"
         },
-        { "profile", "print-performance-profile", 0, false,
-          "Show performance summary at the end",
-          nullptr
+        { "caliper-config", "caliper-config", 'P', true,
+          "Set Caliper configuration for profiling cali-query",
+          "CALIPER-CONFIG"
         },
-        { "progress", "print-progress", 'p', false,
-          "Show progress when processing multiple input files",
-          nullptr
-        },
-        { "caliper-config", "caliper-config", 0, true,
+        { "caliper-config-vars", "caliper-config-vars", 0, true,
           "Caliper configuration flags (for cali-query profiling)",
           "KEY=VALUE,..."
         },
-        { "verbose", "verbose", 'v', false,
-          "Be verbose.",
-          nullptr
-        },
-        { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
-        { "help",   "help",   'h', false, "Print help message",       nullptr },
+        { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
+        { "version", "version",  0,  false, "Print version number",     nullptr },
+        { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
+        { "help",    "help",    'h', false, "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
           "Extract and list attributes in Caliper stream instead of snapshot records",
           nullptr
@@ -202,6 +199,27 @@ namespace
 
 }
 
+// A ChannelController for printing cali-query progress
+class ProgressController : public cali::ChannelController
+{
+public:
+
+    ProgressController()
+        : ChannelController("progress", 0, {
+                { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
+                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
+                { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
+                { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
+                { "CALI_TEXTLOG_FILENAME", "stderr"            },
+                { "CALI_TEXTLOG_FORMATSTRING",
+                        "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" }
+            })
+    {}
+
+    static ChannelController* create(const ConfigManager::argmap_t&) {
+        return new ProgressController;
+    }
+};
 
 void setup_caliper_config(const Args& args)
 {
@@ -209,7 +227,7 @@ void setup_caliper_config(const Args& args)
     // the "cali-query_caliper.config" file or the "caliper-config" command line arg
 
     cali_config_preset("CALI_LOG_VERBOSITY", "0");
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
     cali_config_allow_read_env(false);
     cali_config_set("CALI_CONFIG_FILE", "cali-query_caliper.config");
@@ -218,7 +236,7 @@ void setup_caliper_config(const Args& args)
         cali_config_preset("CALI_LOG_VERBOSITY", "1");
 
     std::vector<std::string> config_list =
-        StringConverter(args.get("caliper-config")).to_stringlist();
+        StringConverter(args.get("caliper-config-vars")).to_stringlist();
 
     for (const std::string entry : config_list) {
         auto p = entry.find('=');
@@ -232,30 +250,12 @@ void setup_caliper_config(const Args& args)
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
 
-    //   Now create cali-query's pre-defined channels.
-    // Do this last as this will initialize Caliper.
+    ConfigManager::ConfigInfo cfglist[] = {
+        { "progress", "Print cali-query progress", nullptr, ProgressController::create },
+        { nullptr, nullptr, nullptr, nullptr }
+    };
 
-    if (args.is_set("profile"))
-        cali::create_channel("profile", 0, {
-                { "CALI_SERVICES_ENABLE", "aggregate,event,report,timestamp" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-                { "CALI_EVENT_TRIGGER",   "annotation" },
-                { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
-                { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
-                { "CALI_REPORT_FILENAME", "stderr" },
-                { "CALI_REPORT_CONFIG",
-                     "SELECT annotation as Phase,sum#time.duration as \"Time (usec)\" WHERE annotation FORMAT table" }
-            } );
-
-    if (args.is_set("progress"))
-        cali::create_channel("progress", 0, {
-                { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
-                { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
-                { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
-                { "CALI_TEXTLOG_FILENAME", "stderr"            },
-                { "CALI_TEXTLOG_FORMATSTRING",
-                        "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" }
-            } );
+    ConfigManager::add_controllers(cfglist);
 }
 
 
@@ -291,12 +291,29 @@ int main(int argc, const char* argv[])
 
             return 0;
         }
+
+        if (args.is_set("version")) {
+            cerr << CALIPER_VERSION << std::endl;
+            return 0;
+        }
     }
 
     bool verbose = args.is_set("verbose");
 
     // The Caliper config setup must run before Caliper runtime initialization
     setup_caliper_config(args);
+
+    ConfigManager mgr(args.get("caliper-config").c_str());
+
+    if (mgr.error()) {
+        std::cerr << "cali-query: Caliper config parse error: "
+                  << mgr.error_msg() << std::endl;
+        return -1;
+    }
+
+    auto channels = mgr.get_all_channels();
+    for (auto &chn : channels)
+        chn->start();
 
     cali::Annotation("cali-query.build.date", CALI_ATTR_GLOBAL).set(__DATE__);
     cali::Annotation("cali-query.build.time", CALI_ATTR_GLOBAL).set(__TIME__);
@@ -455,4 +472,7 @@ int main(int argc, const char* argv[])
     }
 
     CALI_MARK_END("Writing");
+
+    for (auto &chn : channels)
+        chn->flush();
 }
