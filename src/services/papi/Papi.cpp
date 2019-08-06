@@ -190,6 +190,10 @@ void papi_register(Caliper* c, Channel* chn) {
         [](Caliper* c, Channel* chn){
             init_thread_counters(c->is_signal());
         });
+    chn->events().create_thread_evt.connect(
+        [](Caliper* c, Channel* chn){
+            init_thread_counters(c->is_signal());
+        });
     chn->events().finish_evt.connect(
         [](Caliper* c, Channel* chn){
             papi_finish(c, chn);
