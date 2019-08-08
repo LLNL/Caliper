@@ -92,6 +92,22 @@ TEST(ConfigManagerTest, ParseConfig) {
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
 }
 
+TEST(ConfigManagerTest, ParseEmptyConfig) {
+    {
+        cali::ConfigManager mgr;
+        mgr.add("");
+
+        EXPECT_FALSE(mgr.error());
+    }
+
+    {
+        cali::ConfigManager mgr;
+        mgr.add("  ");
+
+        EXPECT_FALSE(mgr.error());        
+    }
+}
+
 TEST(ConfigManagerTest, AvailableConfigs) {
     auto configs = cali::ConfigManager::available_configs();
     std::sort(configs.begin(), configs.end());
