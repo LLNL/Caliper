@@ -147,7 +147,7 @@ struct ConfigManager::ConfigManagerImpl
 
         if (!m_error)
             for (auto cfg : configs)
-                m_channels.emplace_back( (cfg.first->create)(std::move(cfg.second)) );
+                m_channels.emplace_back( (cfg.first->create)(cfg.second) );
 
         return !m_error;
     }

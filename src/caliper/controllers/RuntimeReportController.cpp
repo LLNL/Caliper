@@ -96,7 +96,7 @@ use_mpi(const cali::ConfigManager::argmap_t& args)
 
 // Parse the "profile=" argument
 int
-wrappers(const cali::ConfigManager::argmap_t& args)
+profile_cfg(const cali::ConfigManager::argmap_t& args)
 {
     auto argit = args.find("profile");
 
@@ -106,18 +106,18 @@ wrappers(const cali::ConfigManager::argmap_t& args)
     int wrappers = 0;
     auto srvcs = Services::get_available_services();
 
-    const std::vector< std::tuple<std::string, Wrapper, std::string> > wrapinfo {
+    const std::vector< std::tuple<const char*, Wrapper, const char*> > wrapinfo {
         { std::make_tuple( "mpi",  WrapMpi,  "mpi")   },
         { std::make_tuple( "cuda", WrapCuda, "cupti") }
     };
 
     for (const std::string& s : StringConverter(argit->second).to_stringlist(",:")) {
         auto it = std::find_if(wrapinfo.begin(), wrapinfo.end(), [s](decltype(wrapinfo.front()) tpl){
-                return std::get<0>(tpl) == s;
+                return s == std::get<0>(tpl);
             });
 
         if (it == wrapinfo.end())
-            Log(0).stream() << "runtime-report: Unknown wrapper \"" << s << "\"" << std::endl;
+            Log(0).stream() << "runtime-report: Unknown profile option \"" << s << "\"" << std::endl;
         else {
             if (std::find(srvcs.begin(), srvcs.end(), std::get<2>(*it)) == srvcs.end())
                 Log(0).stream() << "runtime-report: cannot enable " << std::get<0>(*it)
@@ -138,7 +138,7 @@ make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
     auto it = args.find("output");
     std::string output = (it == args.end() ? "stderr" : it->second);
 
-    return new RuntimeReportController(use_mpi(args), output.c_str(), wrappers(args));
+    return new RuntimeReportController(use_mpi(args), output.c_str(), profile_cfg(args));
 }
 
 } // namespace [anonymous]

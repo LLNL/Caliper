@@ -12,9 +12,9 @@ namespace
 {
 
 QuerySpec::AggregationOp
-make_op(const char* name, const char* arg = nullptr)
+make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr, const char* arg3 = nullptr)
 {
-    QuerySpec::AggregationOp op;    
+    QuerySpec::AggregationOp op;
     const QuerySpec::FunctionSignature* p = Aggregator::aggregation_defs();
 
     for ( ; p && p->name && (0 != strcmp(p->name, name)); ++p )
@@ -23,8 +23,12 @@ make_op(const char* name, const char* arg = nullptr)
     if (p->name) {
         op.op = *p;
 
-        if (arg)
-            op.args.push_back(arg);
+        if (arg1)
+            op.args.push_back(arg1);
+        if (arg2)
+            op.args.push_back(arg2);
+        if (arg3)
+            op.args.push_back(arg3);
     }
 
     return op;
@@ -34,7 +38,7 @@ std::map<cali_id_t, cali::Entry>
 make_dict_from_entrylist(const EntryList& list)
 {
     std::map<cali_id_t, Entry> dict;
-    
+
     for ( const Entry& e : list )
         dict[e.attribute()] = e;
 
@@ -48,21 +52,21 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
     //
     // --- setup
     //
-    
+
     CaliperMetadataDB db;
     IdMap             idmap;
 
     // create some context attributes
-    
+
     Attribute ctx1 =
         db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 = 
+    Attribute ctx2 =
         db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -82,20 +86,20 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
     //
 
     // create spec with default key and aggregator
-        
+
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("count"));
 
     Aggregator a(spec);
-    
+
     // add some entries
 
     Variant   v_val(47);
-    
+
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t val_id    = val_attr.id();
@@ -119,7 +123,7 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
     ASSERT_NE(count_attr, Attribute::invalid);
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 3); // one entry for 101, 102, (empty key)
 
     int rescount = 0;
@@ -149,21 +153,21 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
     //
     // --- setup
     //
-    
+
     CaliperMetadataDB db;
     IdMap             idmap;
 
     // create some context attributes
-    
+
     Attribute ctx1 =
         db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 = 
+    Attribute ctx2 =
         db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -181,28 +185,28 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
     //
     // --- Test with default key, count and sum kernel
     //
-    
+
     // create spec with default key and aggregator
-        
+
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
 
     ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
-    
+
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
 
     Aggregator a(spec);
-    
+
     // add some entries
 
     Variant   v_val(7);
-    
+
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t val_id    = val_attr.id();
@@ -226,14 +230,14 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
     ASSERT_NE(count_attr, Attribute::invalid);
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 3); // one entry for 101, 102, (empty key)
 
     int rescount = 0;
 
     std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
             auto dict = make_dict_from_entrylist(list);
-                
+
             int  aggr = dict[count_attr.id()].value().to_int();
             int  val  = dict[val_attr.id()  ].value().to_int();
 
@@ -261,21 +265,21 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
     //
     // --- setup
     //
-    
+
     CaliperMetadataDB db;
     IdMap             idmap;
 
     // create some context attributes
-    
+
     Attribute ctx1 =
         db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 = 
+    Attribute ctx2 =
         db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -298,22 +302,22 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::List;
     spec.aggregation_key.list.push_back("ctx.2");
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
 
     ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
-    
+
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
 
     Aggregator a(spec);
-    
+
     // add some entries
 
     Variant   v_val(7);
-    
+
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t node_ctx3 = 100;
@@ -328,7 +332,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
     a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val,  idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 0, nullptr, nullptr, idmap));
-        
+
     std::vector<EntryList> resdb;
 
     a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
@@ -340,14 +344,14 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
     ASSERT_NE(count_attr, Attribute::invalid);
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 2); // one entry for 102, (empty key)
 
     int rescount = 0;
 
     std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
             auto dict = make_dict_from_entrylist(list);
-                
+
             int  count = dict[count_attr.id()].value().to_int();
             int  val   = dict[val_attr.id()  ].value().to_int();
 
@@ -370,21 +374,21 @@ TEST(AggregatorTest, InclusiveSumOp) {
     //
     // --- setup
     //
-    
+
     CaliperMetadataDB db;
     IdMap             idmap;
 
     // create some context attributes
-    
+
     Attribute ctx1 =
         db.create_attribute("ictx.1", CALI_TYPE_STRING, CALI_ATTR_NESTED);
-    Attribute ctx2 = 
+    Attribute ctx2 =
         db.create_attribute("ictx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -405,23 +409,23 @@ TEST(AggregatorTest, InclusiveSumOp) {
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
     spec.aggregation_ops.list.push_back(::make_op("inclusive_sum", "val"));
 
     ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 3);
-    
+
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
 
     Aggregator a(spec);
-    
+
     // add some entries
 
     Variant   v_val(7);
-    
+
     cali_id_t node_ctx1 = 101;
     cali_id_t node_ctx2 = 100;
     cali_id_t val_id    = val_attr.id();
@@ -433,7 +437,7 @@ TEST(AggregatorTest, InclusiveSumOp) {
     a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 1, &val_id, &v_val,  idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx2, 0, nullptr, nullptr, idmap));
-        
+
     std::vector<EntryList> resdb;
 
     a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
@@ -447,14 +451,14 @@ TEST(AggregatorTest, InclusiveSumOp) {
     ASSERT_NE(isum_attr,  Attribute::invalid);
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 3); // one entry for 100, 101, (empty)
 
     int rescount = 0;
 
     std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
             auto dict = make_dict_from_entrylist(list);
-                
+
             int  count = dict[count_attr.id()].value().to_int();
             int  val   = dict[val_attr.id()  ].value().to_int();
             int  ival  = dict[isum_attr.id() ].value().to_int();
@@ -478,21 +482,21 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     //
     // --- setup
     //
-    
+
     CaliperMetadataDB db;
     IdMap             idmap;
 
     // create some context attributes
-    
+
     Attribute ctx1 =
         db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute ctx2 = 
+    Attribute ctx2 =
         db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -514,22 +518,22 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
 
     ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 2);
-    
+
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
 
     Aggregator a(spec);
-    
+
     // add some entries
 
     Variant   v_val(7);
-    
+
     cali_id_t node_ctx1 = 102;
     cali_id_t node_ctx2 = 101;
     cali_id_t node_ctx3 = 100;
@@ -544,7 +548,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     a.add(db, db.merge_snapshot(0, nullptr,    0, nullptr, nullptr, idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 1, &val_id, &v_val,  idmap));
     a.add(db, db.merge_snapshot(1, &node_ctx3, 0, nullptr, nullptr, idmap));
-        
+
     std::vector<EntryList> resdb;
 
     a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
@@ -556,11 +560,11 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     ASSERT_NE(count_attr, Attribute::invalid);
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 1); // one for (empty key)
 
     auto dict  = make_dict_from_entrylist(resdb.front());
-                
+
     int  count = dict[count_attr.id()].value().to_int();
     int  val   = dict[val_attr.id()  ].value().to_int();
 
@@ -573,14 +577,14 @@ TEST(AggregatorTest, StatisticsKernels) {
     IdMap             idmap;
 
      // create some context attributes
-    
+
     Attribute ctx =
         db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -601,7 +605,7 @@ TEST(AggregatorTest, StatisticsKernels) {
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("min", "val"));
     spec.aggregation_ops.list.push_back(::make_op("max", "val"));
@@ -639,7 +643,7 @@ TEST(AggregatorTest, StatisticsKernels) {
         });
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 1); // one entry
 
     auto dict  = make_dict_from_entrylist(resdb.front());
@@ -649,19 +653,60 @@ TEST(AggregatorTest, StatisticsKernels) {
     EXPECT_DOUBLE_EQ(dict[attr_avg.id()].value().to_double(), 16.5);
 }
 
+TEST(AggregatorTest, ScaledRatioKernel) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute x_attr =
+        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute y_attr =
+        db.create_attribute("y", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("ratio", "x", "y", "10"));
+
+    Aggregator a(spec);
+
+    Variant    v_ints[4] = { Variant(10), Variant(20), Variant(74), Variant(22) };
+    cali_id_t  attrs[2]  = { x_attr.id(), y_attr.id() };
+
+    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints+0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 2, attrs, v_ints+2, idmap));
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    ASSERT_EQ(resdb.size(), 1);
+
+    Attribute attr_ratio = db.get_attribute("x/y");
+
+    ASSERT_NE(attr_ratio, Attribute::invalid);
+
+    auto dict = make_dict_from_entrylist(resdb.front());
+
+    EXPECT_DOUBLE_EQ(dict[attr_ratio.id()].value().to_double(), 20.0);
+}
+
 TEST(AggregatorTest, PercentTotalKernel) {
     CaliperMetadataDB db;
     IdMap             idmap;
 
      // create some context attributes
-    
+
     Attribute ctx =
         db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
     Attribute val_attr =
         db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
     // make some nodes
-    
+
     const struct NodeInfo {
         cali_id_t node_id;
         cali_id_t attr_id;
@@ -683,7 +728,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
     QuerySpec spec;
 
     spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
-    
+
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
 
@@ -704,7 +749,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     // merge b into a
     b.flush(db, a);
-    
+
     Attribute attr_pct = db.get_attribute("percent_total#val");
 
     ASSERT_NE(attr_pct, Attribute::invalid);
@@ -716,7 +761,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
         });
 
     // check results
-    
+
     EXPECT_EQ(resdb.size(), 2); // two entries
 
     auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
