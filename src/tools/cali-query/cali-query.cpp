@@ -143,7 +143,7 @@ namespace
         { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
         { "version", "version",  0,  false, "Print version number",     nullptr },
         { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
-        { "help",    "help",    'h', false, "Print help message",       nullptr },
+        { "help",    "help",    'h', true,  "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
           "Extract and list attributes in Caliper stream instead of snapshot records",
           nullptr
@@ -221,6 +221,11 @@ public:
     }
 };
 
+const ConfigManager::ConfigInfo caliquery_cfglist[] = {
+    { "progress", "progress: Print cali-query progress (when processing multiple files)", nullptr, ProgressController::create },
+    { nullptr, nullptr, nullptr, nullptr }
+};
+
 void setup_caliper_config(const Args& args)
 {
     //   Configure the default config, which can be provided by the user through
@@ -249,13 +254,6 @@ void setup_caliper_config(const Args& args)
 
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
-
-    ConfigManager::ConfigInfo cfglist[] = {
-        { "progress", "Print cali-query progress", nullptr, ProgressController::create },
-        { nullptr, nullptr, nullptr, nullptr }
-    };
-
-    ConfigManager::add_controllers(cfglist);
 }
 
 
@@ -265,7 +263,8 @@ void setup_caliper_config(const Args& args)
 
 int main(int argc, const char* argv[])
 {
-
+    ConfigManager::add_controllers(caliquery_cfglist);
+    
     Args args(::option_table);
 
     //
@@ -285,10 +284,21 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            cerr << usage << "\n\n";
-
-            args.print_available_options(cerr);
-
+            std::string helpopt = args.get("help");
+            
+            if (helpopt == "configs") {
+                for (const auto &s : ConfigManager::get_config_docstrings())
+                    std::cerr << s << std::endl;
+            } else if (!helpopt.empty()) {
+                std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
+                          << "\n  [none]:  Describe cali-query usage (default)"
+                          << "\n  configs: Describe Caliper profiling configurations"
+                          << std::endl;
+            } else {
+                std::cerr << usage << "\n\n";
+                args.print_available_options(std::cerr);
+            }
+            
             return 0;
         }
 
