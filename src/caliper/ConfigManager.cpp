@@ -107,6 +107,15 @@ struct ConfigManager::ConfigManagerImpl
         char c = 0;
 
         do {
+            c = util::read_char(is);
+        } while (is.good() && isspace(c));
+
+        if (is.good())
+            is.unget();
+        else
+            return ret;
+
+        do {
             std::string name = util::read_word(is, ",=()\n");
 
             const ::ConfigInfoList* lst_p = ::s_config_list;
