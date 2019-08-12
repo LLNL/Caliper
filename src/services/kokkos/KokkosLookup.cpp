@@ -46,7 +46,7 @@
 #include <set>
 #include <iterator>
 #include <map>
-#include <memory>
+#include <cstring>
 #include <mutex>
 #include <cstdint>
 
@@ -245,7 +245,7 @@ public:
         });
 
         kokkosp_callbacks.kokkosp_deallocate_callback.connect([&](const SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
-            tracked_pointers.erase(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr)});
+            tracked_pointers.erase(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr),"",0,SpaceHandle{}});
         });
         chn->events().pre_flush_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
