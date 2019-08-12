@@ -150,7 +150,7 @@ class KokkosLookup
 
         uint64_t address  = e.value().to_uint();
         
-        auto lookup = tracked_pointers.find(NamedPointer{address});
+        auto lookup = tracked_pointers.find(NamedPointer{address,"",0,SpaceHandle{}});
         if(lookup != tracked_pointers.end()){
           attr.push_back(sym_attr.variable_name_attr); 
           data.emplace_back(Variant(CALI_TYPE_STRING,lookup->name,strnlen(lookup->name,512)));
@@ -238,6 +238,7 @@ class KokkosLookup
 public:
 
     static void kokkoslookup_register(Caliper* c, Channel* chn) {
+
         auto* instance = new KokkosLookup(c, chn);
         kokkosp_callbacks.kokkosp_allocate_callback.connect([&](const SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
             tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), name, size, handle});
