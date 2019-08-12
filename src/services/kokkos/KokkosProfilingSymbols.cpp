@@ -1,5 +1,6 @@
 #include <cstdint>
 #include "types.hpp"
+#include "caliper/Annotation.h"
 
 caliper::kokkos::callbacks kokkosp_callbacks;
 
@@ -7,6 +8,8 @@ extern "C" void kokkosp_init_library(const int loadSeq,
   const uint64_t interfaceVer,
   const uint32_t devInfoCount,
   void* deviceInfo) {
+    cali::Annotation("caliper_initialization_trigger",CALI_ATTR_HIDDEN).begin();
+    cali::Annotation("callback_initialization_trigger",CALI_ATTR_HIDDEN).end();
     kokkosp_callbacks.kokkosp_init_callback(loadSeq,interfaceVer,devInfoCount, deviceInfo);
 }
 
