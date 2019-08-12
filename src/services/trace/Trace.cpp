@@ -348,8 +348,10 @@ public:
     ~Trace()
         {
             // clear all trace buffers
-            for (TraceBuffer* tbuf = tbuf_list; tbuf; tbuf = tbuf->next)
+            for (TraceBuffer* tbuf = tbuf_list, *tmp = nullptr; tbuf; tbuf = tmp) {
+                tmp = tbuf->next;
                 delete tbuf;
+            }
 
             tbuf_list = nullptr;
         }
