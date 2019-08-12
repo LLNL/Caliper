@@ -101,6 +101,12 @@ namespace {
                         kokkosp_callbacks.kokkosp_end_parallel_scan_callback.connect([&](const uint64_t){
                             instance->popRegion();
                         });
+                        kokkosp_callbacks.kokkosp_push_region_callback.connect([&](char* regionName){
+                            instance->pushRegion(regionName,"kokkos.user_region");
+                        });
+                        kokkosp_callbacks.kokkosp_pop_region_callback.connect([&](){
+                            instance->popRegion();
+                        });
                     });
 
             Log(1).stream() << chn->name() << ": Registered kokkostime service" << std::endl;
