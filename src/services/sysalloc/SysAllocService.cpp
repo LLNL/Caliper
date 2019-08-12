@@ -111,7 +111,7 @@ void* cali_calloc_wrapper(size_t num, size_t size)
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-        if (p->channel->is_active())
+        if (c && p->channel->is_active())
             c.memory_region_begin(p->channel, ret, "calloc", size, 1, &num);
     }
 
@@ -125,21 +125,23 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     decltype(&realloc) orig_realloc =
         reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
 
-    Caliper c = Caliper::sigsafe_instance();
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance();
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_end(p->channel, ptr);
+        if (c && p->channel->is_active())
+            c.memory_region_end(p->channel, ptr);
+    }
 
     void *ret = (*orig_realloc)(ptr, size);
 
     int saved_errno = errno;
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_begin(p->channel, ret, "realloc", 1, 1, &size);
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance();
+
+        if (c && p->channel->is_active())
+            c.memory_region_begin(p->channel, ret, "realloc", 1, 1, &size);
+    }
 
     errno = saved_errno;
 
@@ -206,6 +208,7 @@ void sysalloc_initialize(Caliper* c, Channel* chn) {
 
     chn->events().finish_evt.connect(
         [](Caliper* c, Channel* chn){
+            Log(2).stream() << chn->name() << ": Removing sysalloc hooks" << std::endl;
             ChannelList::remove(&sysalloc_channels, chn);
         });
 
