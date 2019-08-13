@@ -147,7 +147,7 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
             });
 
         if (it == profinfo.end())
-            Log(0).stream() << "runtime-report: Unknown wrapper \"" << s << "\"" << std::endl;
+            Log(0).stream() << "runtime-report: Unknown profile option \"" << s << "\"" << std::endl;
         else {
             if (std::find(srvcs.begin(), srvcs.end(), std::get<2>(*it)) == srvcs.end())
                 Log(0).stream() << "runtime-report: cannot enable " << std::get<0>(*it)

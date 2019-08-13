@@ -107,6 +107,15 @@ struct ConfigManager::ConfigManagerImpl
         char c = 0;
 
         do {
+            c = util::read_char(is);
+        } while (is.good() && isspace(c));
+
+        if (is.good())
+            is.unget();
+        else
+            return ret;
+
+        do {
             std::string name = util::read_word(is, ",=()\n");
 
             const ::ConfigInfoList* lst_p = ::s_config_list;
@@ -147,7 +156,7 @@ struct ConfigManager::ConfigManagerImpl
 
         if (!m_error)
             for (auto cfg : configs)
-                m_channels.emplace_back( (cfg.first->create)(std::move(cfg.second)) );
+                m_channels.emplace_back( (cfg.first->create)(cfg.second) );
 
         return !m_error;
     }

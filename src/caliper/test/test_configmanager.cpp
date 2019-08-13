@@ -78,7 +78,7 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cupti) "));
+        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cuda ) "));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -90,6 +90,22 @@ TEST(ConfigManagerTest, ParseConfig) {
     }
 
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
+}
+
+TEST(ConfigManagerTest, ParseEmptyConfig) {
+    {
+        cali::ConfigManager mgr;
+        mgr.add("");
+
+        EXPECT_FALSE(mgr.error());
+    }
+
+    {
+        cali::ConfigManager mgr;
+        mgr.add("  ");
+
+        EXPECT_FALSE(mgr.error());        
+    }
 }
 
 TEST(ConfigManagerTest, AvailableConfigs) {

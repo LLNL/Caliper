@@ -168,7 +168,7 @@ public:
                 ",max#inclusive#sum#time.duration";
 
             if (m_profilecfg & MemHighWaterMark)
-                spot_metrics.append("max#max#max#alloc.region.highwatermark");
+                spot_metrics.append(",max#max#max#alloc.region.highwatermark");
 
             // set the spot.metrics value                
             db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
