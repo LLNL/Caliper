@@ -138,6 +138,10 @@ void Services::add_services(const CaliperService* services)
 
 void Services::add_default_services()
 {
+    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+        if (lp->services == caliper_services)
+            return;
+    
     add_services(caliper_services);
 }
 

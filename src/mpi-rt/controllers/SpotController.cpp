@@ -32,6 +32,10 @@ using namespace cali;
 namespace
 {
 
+enum ProfileConfig {
+    MemHighWaterMark = 1
+};
+
 std::string
 make_filename()
 {
@@ -79,6 +83,7 @@ write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
 class SpotController : public cali::ChannelController
 {
     std::string m_output;
+    int  m_profilecfg;
     bool m_use_mpi;
 
 public:
@@ -88,13 +93,16 @@ public:
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator
+        std::string select = 
+            " *"
+            ",min(inclusive#sum#time.duration)"
+            ",max(inclusive#sum#time.duration)"
+            ",avg(inclusive#sum#time.duration)";
 
-        QuerySpec  output_spec =
-            CalQLParser("select *,"
-                        " min(inclusive#sum#time.duration)"
-                        ",max(inclusive#sum#time.duration)"
-                        ",avg(inclusive#sum#time.duration)"
-                        " format cali").spec();
+        if (m_profilecfg & MemHighWaterMark)
+            select.append(",max(max#max#alloc.region.highwatermark)");
+
+        QuerySpec output_spec = CalQLParser((std::string(" select ") + select + " format cali").c_str()).spec();
 
         Aggregator output_agg(output_spec);
 
@@ -105,10 +113,13 @@ public:
         //     inclusive times
 
         {
-            QuerySpec  inclusive_spec =
-                CalQLParser("aggregate"
-                            " inclusive_sum(sum#time.duration)"
-                            " group by prop:nested").spec();
+            std::string aggcfg = "inclusive_sum(sum#time.duration)";
+
+            if (m_profilecfg & MemHighWaterMark)
+                aggcfg.append(",max(max#alloc.region.highwatermark)");
+
+            QuerySpec  inclusive_spec = 
+                CalQLParser(std::string("aggregate " + aggcfg + " group by prop:nested").c_str()).spec();
 
             Aggregator inclusive_agg(inclusive_spec);
 
@@ -156,6 +167,9 @@ public:
                 ",min#inclusive#sum#time.duration"
                 ",max#inclusive#sum#time.duration";
 
+            if (m_profilecfg & MemHighWaterMark)
+                spot_metrics.append(",max#max#max#alloc.region.highwatermark");
+
             // set the spot.metrics value                
             db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
                           Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
@@ -183,7 +197,7 @@ public:
         }
     }
 
-    SpotController(bool use_mpi, const char* output)
+    SpotController(bool use_mpi, int profilecfg, const char* output)
         : ChannelController("spot", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
@@ -194,19 +208,26 @@ public:
                 { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
             }),
           m_output(output),
+          m_profilecfg(profilecfg),
           m_use_mpi(use_mpi)
         {
 #ifdef CALIPER_HAVE_ADIAK
             if (output != "adiak")
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
+            if (profilecfg & MemHighWaterMark) {
+                config()["CALI_SERVICES_ENABLE"].append(",alloc,sysalloc");
+
+                config()["CALI_ALLOC_TRACK_ALLOCATIONS"   ] = "false";
+                config()["CALI_ALLOC_RECORD_HIGHWATERMARK"] = "true";
+            }
         }
 
     ~SpotController()
         { }
 };
 
-const char* spot_args[] = { "output", nullptr };
+const char* spot_args[] = { "output", "profile", nullptr };
 
 cali::ChannelController*
 make_spot_controller(const cali::ConfigManager::argmap_t& args) {
@@ -222,7 +243,13 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
     if (it != args.end())
         use_mpi = StringConverter(it->second).to_bool();
 
-    return new SpotController(use_mpi, output.c_str());
+    int profilecfg = 0;
+
+    it = args.find("profile");
+    if (it != args.end() && it->second == "mem.highwatermark")
+        profilecfg |= MemHighWaterMark;
+
+    return new SpotController(use_mpi, profilecfg, output.c_str());
 }
 
 } // namespace [anonymous]

@@ -16,16 +16,18 @@ using namespace cali;
 namespace
 {
 
-enum Wrapper {
-    WrapMpi  = 1,
-    WrapCuda = 2
+enum ProfileConfig {
+    WrapMpi    = 1,
+    WrapCuda   = 2,
+    MallocInfo = 4,
+    MemHighWaterMark = 8
 };
 
 class RuntimeReportController : public cali::ChannelController
 {
 public:
 
-    RuntimeReportController(bool use_mpi, const char* output, int wrappers)
+    RuntimeReportController(bool use_mpi, const char* output, int profile)
         : ChannelController("runtime-report", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
                 { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
@@ -35,34 +37,57 @@ public:
                 { "CALI_TIMER_UNIT", "sec" }
             })
         {
+            std::string select;
+            std::string groupby = "prop:nested";
+
             if (use_mpi) {
-                config()["CALI_SERVICES_ENABLE"   ].append(",mpireport");
-                config()["CALI_MPIREPORT_FILENAME"] = output;
-                config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-                config()["CALI_MPIREPORT_CONFIG"  ] =
-                    "select min(sum#time.duration) as \"Min time/rank\""
+                select =
+                    " min(sum#time.duration) as \"Min time/rank\""
                     ",max(sum#time.duration) as \"Max time/rank\""
                     ",avg(sum#time.duration) as \"Avg time/rank\""
-                    ",percent_total(sum#time.duration) as \"Time % (total)\""
-                    " group by prop:nested format tree";
+                    ",percent_total(sum#time.duration) as \"Time % (total)\"";
             } else {
-                config()["CALI_SERVICES_ENABLE"   ].append(",report");
-                config()["CALI_REPORT_FILENAME"   ] = output;
-                config()["CALI_REPORT_CONFIG"     ] =
-                    "select inclusive_sum(sum#time.duration) as \"Inclusive time\""
+                select =
+                    " inclusive_sum(sum#time.duration) as \"Inclusive time\""
                     ",sum(sum#time.duration) as \"Exclusive time\""
-                    ",percent_total(sum#time.duration) as \"Time %\""
-                    " group by prop:nested format tree";
+                    ",percent_total(sum#time.duration) as \"Time %\"";
             }
 
-            if (wrappers & WrapMpi) {
+            if (profile & MallocInfo) {
+                select +=
+                    ",sum(sum#malloc.bytes) as \"Heap Allocations\""
+                    ",max(max#malloc.total.bytes) as \"Max Total Bytes on Heap\"";
+
+                config()["CALI_SERVICES_ENABLE"   ].append(",mallinfo");
+            }
+            if (profile & MemHighWaterMark) {
+                select += 
+                    ",max(max#alloc.region.highwatermark) as \"Max Alloc'd Mem\"";
+                
+                config()["CALI_SERVICES_ENABLE"   ].append(",alloc,sysalloc");
+                config()["CALI_ALLOC_RECORD_HIGHWATERMARK"] = "true";
+                config()["CALI_ALLOC_TRACK_ALLOCATIONS"   ] = "false";
+            }
+            if (profile & WrapMpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi");
                 config()["CALI_MPI_BLACKLIST"     ] =
                     "MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime";
             }
-
-            if (wrappers & WrapCuda) {
+            if (profile & WrapCuda) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",cupti");
+            }
+
+            if (use_mpi) {
+                config()["CALI_SERVICES_ENABLE"   ].append(",mpireport");
+                config()["CALI_MPIREPORT_FILENAME"] = output;
+                config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
+                config()["CALI_MPIREPORT_CONFIG"  ] = 
+                    std::string("select ") + select + " group by " + groupby + " format tree";
+            } else {
+                config()["CALI_SERVICES_ENABLE"   ].append(",report");
+                config()["CALI_REPORT_FILENAME"   ] = output;
+                config()["CALI_REPORT_CONFIG"     ] = 
+                    std::string("select ") + select + " group by " + groupby + " format tree";
             }
         }
 };
@@ -96,27 +121,32 @@ use_mpi(const cali::ConfigManager::argmap_t& args)
 
 // Parse the "profile=" argument
 int
-profile_cfg(const cali::ConfigManager::argmap_t& args)
+get_profile_cfg(const cali::ConfigManager::argmap_t& args)
 {
     auto argit = args.find("profile");
 
     if (argit == args.end())
         return 0;
 
-    int wrappers = 0;
+    // make sure default services are loaded
+    Services::add_default_services();
     auto srvcs = Services::get_available_services();
 
-    const std::vector< std::tuple<const char*, Wrapper, const char*> > wrapinfo {
-        { std::make_tuple( "mpi",  WrapMpi,  "mpi")   },
-        { std::make_tuple( "cuda", WrapCuda, "cupti") }
+    const std::vector< std::tuple<const char*, ProfileConfig, const char*> > profinfo {
+        { std::make_tuple( "mpi",    WrapMpi,    "mpi")      },
+        { std::make_tuple( "cuda",   WrapCuda,   "cupti")    },
+        { std::make_tuple( "malloc", MallocInfo, "memusage") },
+        { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" )}
     };
 
+    int profile = 0;
+    
     for (const std::string& s : StringConverter(argit->second).to_stringlist(",:")) {
-        auto it = std::find_if(wrapinfo.begin(), wrapinfo.end(), [s](decltype(wrapinfo.front()) tpl){
+        auto it = std::find_if(profinfo.begin(), profinfo.end(), [s](decltype(profinfo.front()) tpl){
                 return s == std::get<0>(tpl);
             });
 
-        if (it == wrapinfo.end())
+        if (it == profinfo.end())
             Log(0).stream() << "runtime-report: Unknown profile option \"" << s << "\"" << std::endl;
         else {
             if (std::find(srvcs.begin(), srvcs.end(), std::get<2>(*it)) == srvcs.end())
@@ -125,11 +155,11 @@ profile_cfg(const cali::ConfigManager::argmap_t& args)
                               << " service is not available."
                               << std::endl;
             else
-                wrappers |= std::get<1>(*it);
+                profile |= std::get<1>(*it);
         }
     }
 
-    return wrappers;
+    return profile;
 }
 
 cali::ChannelController*
@@ -138,7 +168,7 @@ make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
     auto it = args.find("output");
     std::string output = (it == args.end() ? "stderr" : it->second);
 
-    return new RuntimeReportController(use_mpi(args), output.c_str(), profile_cfg(args));
+    return new RuntimeReportController(use_mpi(args), output.c_str(), get_profile_cfg(args));
 }
 
 } // namespace [anonymous]
@@ -148,7 +178,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", "runtime-report(output=<filename>,mpi=true|false,profile=[mpi:cupti]): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", "runtime-report(output=<filename>,mpi=true|false,profile=[mpi:cupti:memory]): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }

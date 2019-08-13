@@ -75,7 +75,9 @@ endif(BUILD_SHARED_LIBS)
 
 if (${CALIPER_HAVE_LINUX})
   set(CALIPER_HAVE_CPUINFO TRUE)
+  set(CALIPER_HAVE_MEMUSAGE TRUE)
   set(CALIPER_cpuinfo_CMAKE_MSG "Yes")
+  set(CALIPER_memusage_CMAKE_MSG "Yes")
 endif()
 
 if(WITH_VTUNE)
@@ -396,6 +398,7 @@ message(STATUS "Build tests               : ${BUILD_TESTING}")
 
 set(CALIPER_MODULES
   cpuinfo
+  memusage
   adiak
   GOTCHA
   PAPI

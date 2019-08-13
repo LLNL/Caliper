@@ -68,12 +68,16 @@ struct AllocInfo {
     uint64_t                 start_addr;
     uint64_t                 total_size;
     Variant                  v_uid;
-    Variant                  v_size;
     size_t                   elem_size;
     size_t                   num_elems;
-    std::vector<cali::Node*> memattr_label_nodes;
-    std::vector<size_t>      dimensions;
-    std::string              label;
+
+    cali::Node*              alloc_label_node;
+    cali::Node*              free_label_node;
+    cali::Node*              addr_label_node;
+    
+    // std::vector<cali::Node*> memattr_label_nodes;
+    // std::vector<size_t>      dimensions;
+    // std::string              label;
     
     size_t index_1D(uint64_t addr) const {
         return (addr - start_addr) / elem_size;
@@ -135,6 +139,7 @@ class AllocService
     bool g_resolve_addresses        { false };
     bool g_track_allocations        { true  };
     bool g_record_active_mem        { false };
+    bool g_record_highwatermark     { false };
 
 // DataTracker attributes
     Attribute mem_alloc_attr        { Attribute::invalid };
@@ -145,6 +150,8 @@ class AllocService
     Attribute alloc_num_elems_attr  { Attribute::invalid };
     Attribute alloc_total_size_attr { Attribute::invalid };
     Attribute active_mem_attr       { Attribute::invalid };
+
+    Attribute region_hwm_attr       { Attribute::invalid };
 
 // Derived attributes for class.memoryaddress attributes 
     struct alloc_attrs {
@@ -163,34 +170,30 @@ class AllocService
     std::mutex                 g_tree_lock;
 
     uint64_t                   g_active_mem      { 0 };
+    uint64_t                   g_hwm             { 0 };
+    uint64_t                   g_region_hwm      { 0 };
 
     unsigned long              g_current_tracked { 0 };
     unsigned long              g_max_tracked     { 0 };
     unsigned long              g_total_tracked   { 0 };
     unsigned                   g_failed_untrack  { 0 };
 
-    void track_mem_snapshot(Caliper*    c,
+    void track_mem_snapshot(Caliper* c,
                             Channel* chn,
-                            const Attribute& alloc_or_free_attr, 
-                            const Variant&   v_label, 
-                            const Variant&   v_size, 
-                            const Variant&   v_uid) {
-        Attribute attr[] = {
-            alloc_or_free_attr,
-            alloc_total_size_attr,
-            alloc_uid_attr
+                            cali::Node*    label_node, 
+                            const Variant& v_size, 
+                            const Variant& v_uid) {
+        cali_id_t attr[] = {
+            alloc_total_size_attr.id(),
+            alloc_uid_attr.id()
         };
         Variant   data[] = {
-            v_label,
             v_size,
             v_uid
         };
 
-        SnapshotRecord::FixedSnapshotRecord<3> snapshot_data;
-        SnapshotRecord trigger_info(snapshot_data);
-
-        c->make_record(3, attr, data, trigger_info, &g_alloc_root_node);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);    
+        SnapshotRecord trigger_info(1, &label_node, 2, attr, data);
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
     }
 
     void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims) {
@@ -202,21 +205,24 @@ class AllocService
         info.start_addr = reinterpret_cast<uint64_t>(ptr);
         info.total_size = total_size;
         info.v_uid      = Variant(cali_make_variant_from_uint(++g_alloc_uid));
-        info.v_size     = Variant(cali_make_variant_from_uint(total_size));
         info.elem_size  = elem_size;
         info.num_elems  = total_size / elem_size;
 
-        info.memattr_label_nodes.resize(g_memoryaddress_attrs.size());
-        info.dimensions.assign(dims, dims+ndims);
-
-        info.label      = label;
-
         Variant v_label(CALI_TYPE_STRING, label, strlen(label));
-        
-        // make label nodes for each memory address attribute
-        for (std::vector<cali::Node*>::size_type i = 0; i < g_memoryaddress_attrs.size(); ++i)
-            info.memattr_label_nodes[i] =
-                c->make_tree_entry(g_memoryaddress_attrs[i].alloc_label_attr, v_label, &g_alloc_root_node);
+
+        info.alloc_label_node = 
+            c->make_tree_entry(mem_alloc_attr, v_label, &g_alloc_root_node);
+        info.free_label_node  = 
+            c->make_tree_entry(mem_free_attr,  v_label, &g_alloc_root_node);
+
+        if (!g_memoryaddress_attrs.empty())
+            info.addr_label_node = 
+                c->make_tree_entry(g_memoryaddress_attrs.front().alloc_label_attr, v_label, &g_alloc_root_node);
+        else
+            info.addr_label_node = nullptr;
+
+        if (g_track_allocations)
+            track_mem_snapshot(c, chn, info.alloc_label_node, Variant(static_cast<int>(total_size)), info.v_uid);
 
         {
             std::lock_guard<std::mutex>
@@ -226,11 +232,10 @@ class AllocService
         
             g_max_tracked  = std::max(++g_current_tracked, g_max_tracked);
             g_active_mem  += total_size;
+            g_hwm          = std::max(g_hwm, g_active_mem);
+            g_region_hwm   = std::max(g_region_hwm, g_active_mem);
             ++g_total_tracked;
         }
-
-        if (g_track_allocations)
-            track_mem_snapshot(c, chn, mem_alloc_attr, v_label, info.v_size, info.v_uid);
     }
 
     void untrack_mem_cb(Caliper* c, Channel* chn, const void* ptr) {    
@@ -240,11 +245,14 @@ class AllocService
         auto tree_node = g_tree.find(HasStartAddress(reinterpret_cast<uint64_t>(ptr)));
     
         if (tree_node) {
-            if (g_track_allocations)
-                track_mem_snapshot(c, chn, mem_free_attr,
-                                   Variant(CALI_TYPE_STRING, (*tree_node).label.c_str(), (*tree_node).label.size()),
-                                   (*tree_node).v_size,
+            if (g_track_allocations) {
+                int size = static_cast<int>((*tree_node).total_size);
+
+                track_mem_snapshot(c, chn, 
+                                   (*tree_node).free_label_node,
+                                   Variant(-size),
                                    (*tree_node).v_uid);
+            }
 
             g_active_mem -= (*tree_node).total_size;
             g_tree.remove(tree_node);
@@ -256,42 +264,50 @@ class AllocService
     }
 
     void resolve_addresses(Caliper* c, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
-        for (std::vector<alloc_attrs>::size_type i = 0; i < g_memoryaddress_attrs.size(); ++i) {
-            Entry e = trigger_info->get(g_memoryaddress_attrs[i].memoryaddress_attr);
+        if (g_memoryaddress_attrs.empty())
+            return;
 
-            if (e.is_empty())
-                continue;
+        Entry e = trigger_info->get(g_memoryaddress_attrs.front().memoryaddress_attr);
 
-            uint64_t addr = e.value().to_uint();
+        if (e.is_empty())
+            return;
 
-            cali_id_t   attr[2] = {
-                g_memoryaddress_attrs[i].alloc_uid_attr.id(),
-                g_memoryaddress_attrs[i].alloc_index_attr.id()
-            };
-            Variant     data[2];
-            cali::Node* label_node = nullptr;
+        uint64_t addr = e.value().to_uint();
 
-            {
-                std::lock_guard<std::mutex>
-                    g(g_tree_lock);
+        cali_id_t   attr[2] = {
+            g_memoryaddress_attrs.front().alloc_uid_attr.id(),
+            g_memoryaddress_attrs.front().alloc_index_attr.id()
+        };
+        Variant     data[2];
+        cali::Node* label_node = nullptr;
 
-                auto tree_node = g_tree.find(ContainsAddress(addr));
+        {
+            std::lock_guard<std::mutex>
+                g(g_tree_lock);
 
-                if (!tree_node)
-                    continue;
+            auto tree_node = g_tree.find(ContainsAddress(addr));
 
-                data[0] = (*tree_node).v_uid;
-                data[1] = cali_make_variant_from_uint((*tree_node).index_1D(addr));
+            if (!tree_node)
+                return;
 
-                if (i < (*tree_node).memattr_label_nodes.size())
-                    label_node = (*tree_node).memattr_label_nodes[i];
-            }
+            data[0] = (*tree_node).v_uid;
+            data[1] = cali_make_variant_from_uint((*tree_node).index_1D(addr));
 
-            snapshot->append(2, attr, data);
-
-            if (label_node)
-                snapshot->append(label_node);
+            label_node = (*tree_node).addr_label_node;
         }
+
+        snapshot->append(2, attr, data);
+
+        if (label_node)
+            snapshot->append(label_node);
+    }
+
+    void record_highwatermark(Caliper* c, Channel* chn, SnapshotRecord* rec) {
+        std::lock_guard<std::mutex>
+            g(g_tree_lock);
+
+        rec->append(region_hwm_attr.id(), Variant(cali_make_variant_from_uint(g_region_hwm)));
+        g_region_hwm = g_active_mem;
     }
 
     void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
@@ -301,6 +317,9 @@ class AllocService
 
         if (g_resolve_addresses)
             resolve_addresses(c, trigger_info, snapshot);
+
+        if (g_record_highwatermark)
+            record_highwatermark(c, chn, snapshot);
     }
 
     void make_address_attributes(Caliper* c, const Attribute& attr) {
@@ -314,7 +333,12 @@ class AllocService
                                 CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE)
         };
 
-        g_memoryaddress_attrs.push_back(attrs);    
+        // We currently support only one active memory address attribute  
+        if (g_memoryaddress_attrs.size() > 0)
+            Log(1).stream() << "alloc: Can't perform lookup for more than one attribute. Skipping "
+                            << attr.name() << std::endl;
+
+        g_memoryaddress_attrs.push_back(attrs);
     }
 
     void create_attr_cb(Caliper* c, const Attribute& attr) {
@@ -362,37 +386,41 @@ class AllocService
                 Variant*       meta_vals;
                 Attribute*     attr;
             } attr_info[] = {
-                { "mem.alloc",        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
+                { "mem.alloc",        CALI_TYPE_STRING,  CALI_ATTR_SCOPE_THREAD,
                   0, nullptr, nullptr,
                   &mem_alloc_attr
                 },
-                { "mem.free" ,        CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD,
+                { "mem.free" ,        CALI_TYPE_STRING,  CALI_ATTR_SCOPE_THREAD,
                   0, nullptr, nullptr,
                   &mem_free_attr
                 },
-                { "mem.active" ,      CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                { "mem.active" ,      CALI_TYPE_UINT,    CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   0, nullptr, nullptr,
                   &active_mem_attr
                 },
-                { "alloc.uid",        CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                { "alloc.uid",        CALI_TYPE_UINT,    CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   0, nullptr, nullptr,
                   &alloc_uid_attr
                 },
-                { "alloc.address",    CALI_TYPE_ADDR,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                { "alloc.address",    CALI_TYPE_ADDR,    CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                   0, nullptr, nullptr,
                   &alloc_addr_attr
                 },
-                { "alloc.elem_size",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
+                { "alloc.elem_size",  CALI_TYPE_UINT,    CALI_ATTR_SCOPE_THREAD,
                   0, nullptr, nullptr,
                   &alloc_elem_size_attr
                 },
-                { "alloc.num_elems",  CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD,
+                { "alloc.num_elems",  CALI_TYPE_UINT,    CALI_ATTR_SCOPE_THREAD,
                   0, nullptr, nullptr,
                   &alloc_num_elems_attr
                 },
-                { "alloc.total_size", CALI_TYPE_UINT,   CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
+                { "alloc.total_size", CALI_TYPE_INT,     CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_ASVALUE,
                   1, &class_aggr_attr, &v_true,
                   &alloc_total_size_attr
+                },
+                { "alloc.region.highwatermark", CALI_TYPE_UINT, CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE,
+                  1, &class_aggr_attr, &v_true,
+                  &region_hwm_attr
                 },
                 { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, nullptr, nullptr, nullptr }
             };
@@ -402,9 +430,10 @@ class AllocService
     
             ConfigSet config = chn->config().init("alloc", s_configdata);
     
-            g_resolve_addresses = config.get("resolve_addresses").to_bool();
-            g_track_allocations = config.get("track_allocations").to_bool();
-            g_record_active_mem = config.get("record_active_mem").to_bool();
+            g_resolve_addresses    = config.get("resolve_addresses").to_bool();
+            g_track_allocations    = config.get("track_allocations").to_bool();
+            g_record_active_mem    = config.get("record_active_mem").to_bool();
+            g_record_highwatermark = config.get("record_highwatermark").to_bool();
         }
 
 public:
@@ -421,7 +450,7 @@ public:
                 instance->untrack_mem_cb(c, chn, ptr);
             });
 
-        if (instance->g_resolve_addresses || instance->g_record_active_mem)
+        if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)
             chn->events().snapshot.connect(
                 [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
                     instance->snapshot_cb(c, chn, scope, info, snapshot);
@@ -454,6 +483,10 @@ const ConfigSet::Entry AllocService::s_configdata[] = {
       "Record the active allocated memory at each snapshot.",
       "Record the active allocated memory at each snapshot."
     },
+    { "record_highwatermark", CALI_TYPE_BOOL, "false", 
+      "Record the high water mark of allocated memory at each snapshot.",
+      "Record the high water mark of allocated memory at each snapshot."
+    },
     
     ConfigSet::Terminator
 };
@@ -465,5 +498,6 @@ namespace cali
 {
 
 CaliperService alloc_service { "alloc", ::AllocService::allocservice_initialize };
+
 
 }

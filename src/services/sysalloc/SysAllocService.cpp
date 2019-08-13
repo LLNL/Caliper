@@ -82,17 +82,17 @@ void* cali_malloc_wrapper(size_t size)
 {
     decltype(&malloc) orig_malloc =
         reinterpret_cast<decltype(&malloc)>(gotcha_get_wrappee(orig_malloc_handle));
-    
+
     void *ret = (*orig_malloc)(size);
 
     int saved_errno = errno;
 
-    Caliper c = Caliper::sigsafe_instance(); // prevent reentry
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_begin(p->channel, ret, "malloc", 1, 1, &size);
+        if (c && p->channel->is_active())
+            c.memory_region_begin(p->channel, ret, "malloc", 1, 1, &size);
+    }
 
     errno = saved_errno;
 
@@ -108,15 +108,15 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 
     int saved_errno = errno;
 
-    Caliper c = Caliper::sigsafe_instance(); // prevent reentry
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance(); // prevent reentry
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_begin(p->channel, ret, "calloc", size, 1, &num);
+        if (c && p->channel->is_active())
+            c.memory_region_begin(p->channel, ret, "calloc", size, 1, &num);
+    }
 
     errno = saved_errno;
-    
+
     return ret;
 }
 
@@ -125,24 +125,26 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
     decltype(&realloc) orig_realloc =
         reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
 
-    Caliper c = Caliper::sigsafe_instance();
-    
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_end(p->channel, ptr);
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance();
+
+        if (c && p->channel->is_active())
+            c.memory_region_end(p->channel, ptr);
+    }
 
     void *ret = (*orig_realloc)(ptr, size);
 
     int saved_errno = errno;
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_begin(p->channel, ret, "realloc", 1, 1, &size);
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance();
+
+        if (c && p->channel->is_active())
+            c.memory_region_begin(p->channel, ret, "realloc", 1, 1, &size);
+    }
 
     errno = saved_errno;
-    
+
     return ret;
 }
 
@@ -151,12 +153,12 @@ void cali_free_wrapper(void *ptr)
     decltype(&free) orig_free =
         reinterpret_cast<decltype(&free)>(gotcha_get_wrappee(orig_free_handle));
 
-    Caliper c = Caliper::sigsafe_instance();
+    for (ChannelList* p = sysalloc_channels; p; p = p->next) {
+        Caliper c = Caliper::sigsafe_instance();
 
-    if (c)
-        for (ChannelList* p = sysalloc_channels; p; p = p->next)
-            if (p->channel->is_active())
-                c.memory_region_end(p->channel, ptr);
+        if (c && p->channel->is_active())
+            c.memory_region_end(p->channel, ptr);
+    }
 
     (*orig_free)(ptr);
 }
@@ -176,7 +178,7 @@ void clear_alloc_hooks()
 {
     if (!bindings_are_active)
         return;
-    
+
     Log(1).stream() << "sysalloc: Removing system alloc hooks" << std::endl;
 
     gotcha_wrappee_handle_t dummy = 0x0;
@@ -195,7 +197,7 @@ void clear_alloc_hooks()
     bindings_are_active = false;
 }
 
-void sysalloc_initialize(Caliper* c, Channel* chn) {    
+void sysalloc_initialize(Caliper* c, Channel* chn) {
     chn->events().post_init_evt.connect(
         [](Caliper* c, Channel* chn){
             if (!bindings_are_active)
@@ -203,13 +205,11 @@ void sysalloc_initialize(Caliper* c, Channel* chn) {
 
             ChannelList::add(&sysalloc_channels, chn);
         });
-    
+
     chn->events().finish_evt.connect(
         [](Caliper* c, Channel* chn){
+            Log(2).stream() << chn->name() << ": Removing sysalloc hooks" << std::endl;
             ChannelList::remove(&sysalloc_channels, chn);
-
-            if (sysalloc_channels == nullptr)
-                clear_alloc_hooks();
         });
 
     Log(1).stream() << chn->name() << ": Registered sysalloc service" << std::endl;
