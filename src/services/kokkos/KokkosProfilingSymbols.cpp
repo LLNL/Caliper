@@ -1,6 +1,7 @@
 #include <cstdint>
 #include "types.hpp"
 #include "caliper/Annotation.h"
+#include "caliper/cali.h"
 
 caliper::kokkos::callbacks kokkosp_callbacks;
 
@@ -43,7 +44,6 @@ extern "C" void kokkosp_push_profile_region(char* regionName) {
 extern "C" void kokkosp_pop_profile_region() {
     kokkosp_callbacks.kokkosp_pop_region_callback();
 }
-
 extern "C" void kokkosp_allocate_data(const SpaceHandle space, const char* label, const void* const ptr, const uint64_t size) {
     kokkosp_callbacks.kokkosp_allocate_callback(space,label,ptr,size);
 }

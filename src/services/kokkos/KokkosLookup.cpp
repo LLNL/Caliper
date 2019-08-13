@@ -54,7 +54,7 @@
 
 struct NamedPointer {
    std::uintptr_t ptr;
-   const char* name;
+   std::string name;
    std::uint64_t size;
    const SpaceHandle space;
 };
@@ -64,7 +64,7 @@ namespace std {
   struct less<NamedPointer> {
     static std::less<std::uintptr_t> comp;
     bool operator()(const NamedPointer& n1, const NamedPointer& n2) const{
-      return !comp(n1.ptr, n2.ptr);
+      return comp(n1.ptr, n2.ptr);
     }
   };
 
@@ -107,7 +107,7 @@ class KokkosLookup
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         sym_attribs.variable_size_attr = 
             c->create_attribute("kokkos.variable_size#" + attr.name(), 
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_INT, CALI_ATTR_DEFAULT);
         sym_attribs.variable_space_attr = 
             c->create_attribute("kokkos.variable_space#" + attr.name(), 
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
@@ -152,14 +152,16 @@ class KokkosLookup
         
         auto lookup = tracked_pointers.find(NamedPointer{address,"",0,SpaceHandle{}});
         if(lookup != tracked_pointers.end()){
-          attr.push_back(sym_attr.variable_name_attr); 
-          data.emplace_back(Variant(CALI_TYPE_STRING,lookup->name,strnlen(lookup->name,512)));
 
           attr.push_back(sym_attr.variable_size_attr); 
-          data.emplace_back(Variant(lookup->size));
+          data.push_back(lookup->size);
 
           attr.push_back(sym_attr.variable_name_attr); 
-          data.emplace_back(Variant(CALI_TYPE_STRING,lookup->space.name,strnlen(lookup->name,64)));
+          data.push_back(Variant(CALI_TYPE_STRING,lookup->name.c_str(),lookup->name.size()));
+
+
+          attr.push_back(sym_attr.variable_space_attr); 
+          data.push_back(Variant(CALI_TYPE_STRING,lookup->space.name,strnlen(lookup->space.name,64)));
         }
 
     }
@@ -241,12 +243,10 @@ public:
 
         auto* instance = new KokkosLookup(c, chn);
         kokkosp_callbacks.kokkosp_allocate_callback.connect([&](const SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
-            tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), name, size, handle});
+            
+            tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), std::string(name), size, handle});
         });
 
-        kokkosp_callbacks.kokkosp_deallocate_callback.connect([&](const SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
-            tracked_pointers.erase(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr),"",0,SpaceHandle{}});
-        });
         chn->events().pre_flush_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
                 instance->check_attributes(c);
