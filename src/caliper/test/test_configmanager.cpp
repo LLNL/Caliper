@@ -14,7 +14,7 @@ TEST(ConfigManagerTest, ParseErrors) {
 
         EXPECT_FALSE(mgr.add("foo"));
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown config: foo");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown config or parameter: foo");
     }
     
     {
@@ -29,10 +29,10 @@ TEST(ConfigManagerTest, ParseErrors) {
     }
 
     {
-        cali::ConfigManager mgr(" runtime-report(output)");
+        cali::ConfigManager mgr(" runtime-report(output=)");
         
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected '=' after output");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\"");
     }
 
     {
@@ -43,9 +43,9 @@ TEST(ConfigManagerTest, ParseErrors) {
     }
 
     EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(),
-                 "Unknown config: foo");
+                 "Unknown config or parameter: foo");
     EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(),
-                 "Unknown config: ");
+                 "Unknown config or parameter: ");
 }
 
 TEST(ConfigManagerTest, ParseConfig) {
