@@ -212,7 +212,7 @@ public:
           m_use_mpi(use_mpi)
         {
 #ifdef CALIPER_HAVE_ADIAK
-            if (output != "adiak")
+            if (m_output != "adiak")
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
             if (profilecfg & MemHighWaterMark) {

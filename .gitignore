@@ -5,3 +5,4 @@ TAGS
 .emacs*
 *.swp
 build/
+.vscode
