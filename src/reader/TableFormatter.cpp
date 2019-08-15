@@ -164,7 +164,7 @@ struct TableFormatter::TableImpl
 
         Attribute attr = db.get_attribute(attr_id);
 
-        if (attr == Attribute::invalid)
+        if (attr == Attribute::invalid || attr.is_hidden() || attr.is_global())
             return;
 
         std::string name  = attr.name();

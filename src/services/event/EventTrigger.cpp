@@ -323,13 +323,13 @@ class EventTrigger
 
             trigger_begin_attr =
                 c->create_attribute("cali.event.begin",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             trigger_set_attr =
                 c->create_attribute("cali.event.set",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             trigger_end_attr =
                 c->create_attribute("cali.event.end",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             trigger_level_attr =
                 c->create_attribute("cali.event.attr.level",
                                     CALI_TYPE_UINT,

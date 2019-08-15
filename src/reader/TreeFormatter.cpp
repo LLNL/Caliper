@@ -245,11 +245,9 @@ struct TreeFormatter::TreeFormatterImpl
 
         switch (m_attribute_columns.selection) {
         case QuerySpec::AttributeSelection::Default:
-            // auto-attributes: skip hidden and "cali." attributes
+            // auto-attributes: skip hidden and global attributes
             for (auto &p : m_column_info) {
-                if (p.first.is_hidden())
-                    continue;
-                if (p.first.name().compare(0, 5, "cali.") == 0)
+                if (p.first.is_hidden() || p.first.is_global())
                     continue;
 
                 attributes.push_back(p.first);
