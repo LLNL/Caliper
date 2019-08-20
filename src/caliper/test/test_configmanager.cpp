@@ -63,8 +63,9 @@ TEST(ConfigManagerTest, ParseConfig) {
 
     {
         cali::ConfigManager mgr;
+        cali::ConfigManager::argmap_t extra_kv_pairs;
 
-        EXPECT_TRUE(mgr.add(" event-trace, runtime-report "));
+        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, foo=bar ", extra_kv_pairs));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -73,6 +74,9 @@ TEST(ConfigManagerTest, ParseConfig) {
 
         EXPECT_EQ(std::string("event-trace"), list[0]->name());
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
+
+        ASSERT_EQ(extra_kv_pairs.size(), 1);
+        EXPECT_EQ(extra_kv_pairs["foo"], std::string("bar"));
     }
 
     {
@@ -90,6 +94,7 @@ TEST(ConfigManagerTest, ParseConfig) {
     }
 
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace,foo=bar", true).empty());
 }
 
 TEST(ConfigManagerTest, ParseEmptyConfig) {

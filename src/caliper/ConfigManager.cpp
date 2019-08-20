@@ -259,6 +259,16 @@ ConfigManager::add(const char* config_str)
 }
 
 bool
+ConfigManager::add(const char* config_string, argmap_t& extra_kv_pairs)
+{
+    mP->add(config_string);
+
+    extra_kv_pairs.insert(mP->m_extra_vars.begin(), mP->m_extra_vars.end());
+
+    return !mP->m_error;
+}
+
+bool
 ConfigManager::error() const
 {
     return mP->m_error;
@@ -324,12 +334,12 @@ ConfigManager::get_config_docstrings()
 }
 
 std::string
-ConfigManager::check_config_string(const char* config_string)
+ConfigManager::check_config_string(const char* config_string, bool allow_extra_kv_pairs)
 {
     ConfigManagerImpl tmp;
     tmp.parse_configstring(config_string);
 
-    if (!tmp.m_extra_vars.empty())
+    if (!allow_extra_kv_pairs && !tmp.m_extra_vars.empty())
         tmp.set_error("Unknown config or parameter: " + tmp.m_extra_vars.begin()->first);
 
     return tmp.m_error_msg;
