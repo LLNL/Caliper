@@ -42,6 +42,11 @@
 
 #include "common/cali_types.h"
 #include <map>
+
+#if __cplusplus >= 201103L
+#define CALI_FORWARDING_ENABLED
+#endif
+
 namespace cali
 {
     
@@ -202,6 +207,39 @@ public:
     /// \copydoc cali::Annotation::begin(int)
     Annotation& begin(const Variant& data);
 
+#ifdef CALI_FORWARDING_ENABLED
+    template<typename Arg, typename... Args>
+    struct head{
+        using type = Arg;
+    };
+
+    template<typename... Args>
+    auto begin(Args&&... args) -> typename std::enable_if<!std::is_same<typename head<Args...>::type,cali::Variant>::value,Annotation&>::type {
+        return begin(Variant(std::forward<Args>(args)...));
+    }
+    template<typename... Args>
+    auto set(Args&&... args) -> typename std::enable_if<!std::is_same<typename head<Args...>::type,cali::Variant>::value,Annotation&>::type {
+        return set(Variant(std::forward<Args>(args)...));
+    }
+#else
+    template<typename Arg>
+    Annotation& begin(const Arg& arg){
+        return begin(Variant(arg));
+    }
+    template<typename Arg>
+    Annotation& set(const Arg& arg){
+        return set(Variant(arg));
+    }
+    template<typename Arg>
+    Annotation& begin(Arg& arg){
+        return begin(Variant(arg));
+    }
+    template<typename Arg>
+    Annotation& set(Arg& arg){
+        return set(Variant(arg));
+    }
+#endif
+
     /// \}
     /// \name set() overloads
     /// \{
@@ -232,5 +270,8 @@ public:
 /// \} // AnnotationAPI group
     
 } // namespace cali
+
+#undef CALI_FORWARDING_ENABLED
+
 
 #endif

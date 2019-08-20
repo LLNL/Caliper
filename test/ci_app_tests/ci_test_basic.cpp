@@ -20,7 +20,7 @@ int main()
     copy_ann.begin("loop");
 
     cali::Annotation iter_ann("iteration", CALI_ATTR_ASVALUE);
-
+    iter_ann.begin(uint64_t(5));
     for (int i = 0; i < count; ++i) {
         cali::Annotation::Guard
             g_iter_ann(iter_ann.begin(i));
