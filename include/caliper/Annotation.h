@@ -224,19 +224,19 @@ public:
 #else
     template<typename Arg>
     Annotation& begin(const Arg& arg){
-        return begin(arg);
+        return begin(Variant(arg));
     }
     template<typename Arg>
     Annotation& set(const Arg& arg){
-        return set(arg);
+        return set(Variant(arg));
     }
     template<typename Arg>
     Annotation& begin(Arg& arg){
-        return begin(arg);
+        return begin(Variant(arg));
     }
     template<typename Arg>
     Annotation& set(Arg& arg){
-        return set(arg);
+        return set(Variant(arg));
     }
 #endif
 
