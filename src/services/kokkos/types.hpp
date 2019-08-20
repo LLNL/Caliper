@@ -4,13 +4,13 @@
 #include <cstdint>
 #include <caliper/common/util/callback.hpp>
 
-struct SpaceHandle {
-    char name[64];
-};
 
-namespace caliper {
+namespace cali {
 
 namespace kokkos {
+        struct SpaceHandle {
+            char name[64];
+        };
 
         using init_callback = util::callback<void(const int, const uint64_t, const uint32_t, void *)>;
         using finalize_callback = util::callback<void()>;
@@ -59,6 +59,6 @@ namespace kokkos {
 
 } // end namespace caliper
 
-extern caliper::kokkos::callbacks kokkosp_callbacks;
+extern cali::kokkos::callbacks kokkosp_callbacks;
 
 #endif

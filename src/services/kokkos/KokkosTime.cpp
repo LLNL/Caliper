@@ -68,8 +68,8 @@ namespace {
         }
 
         void popRegion() {
-            kernel_type_annot.end();
             kernel_name_annot.end();
+            kernel_type_annot.end();
         }
 
         static void kokkostime_register(Caliper *c, Channel *chn) {

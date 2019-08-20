@@ -52,12 +52,16 @@
 
 #include "types.hpp"
 
+namespace {
 struct NamedPointer {
    std::uintptr_t ptr;
    std::string name;
    std::uint64_t size;
-   const SpaceHandle space;
+   const cali::kokkos::SpaceHandle space;
 };
+
+
+} // end namespace [anonymous]
 
 namespace std {
   template<>
@@ -70,14 +74,16 @@ namespace std {
 
   std::less<std::uintptr_t> std::less<NamedPointer>::comp;
 
-};
+} //end namespace std
 
-std::set<NamedPointer> tracked_pointers;
 
-using namespace cali;
 
 namespace
 {
+
+using namespace cali;
+
+std::set<NamedPointer> tracked_pointers;
 
 class KokkosLookup
 {
@@ -150,7 +156,7 @@ class KokkosLookup
 
         uint64_t address  = e.value().to_uint();
         
-        auto lookup = tracked_pointers.find(NamedPointer{address,"",0,SpaceHandle{}});
+        auto lookup = tracked_pointers.find(NamedPointer{address,"",0,cali::kokkos::SpaceHandle{}});
         if(lookup != tracked_pointers.end()){
 
           attr.push_back(sym_attr.variable_size_attr); 
@@ -242,7 +248,7 @@ public:
     static void kokkoslookup_register(Caliper* c, Channel* chn) {
 
         auto* instance = new KokkosLookup(c, chn);
-        kokkosp_callbacks.kokkosp_allocate_callback.connect([&](const SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
+        kokkosp_callbacks.kokkosp_allocate_callback.connect([&](const cali::kokkos::SpaceHandle handle, const char* name, const void* const ptr, const uint64_t size){
             
             tracked_pointers.insert(NamedPointer{reinterpret_cast<std::uintptr_t>(ptr), std::string(name), size, handle});
         });

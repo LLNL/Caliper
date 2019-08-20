@@ -3,7 +3,9 @@
 #include "caliper/Annotation.h"
 #include "caliper/cali.h"
 
-caliper::kokkos::callbacks kokkosp_callbacks;
+cali::kokkos::callbacks kokkosp_callbacks;
+
+using cali::kokkos::SpaceHandle;
 
 extern "C" void kokkosp_init_library(const int loadSeq,
   const uint64_t interfaceVer,
