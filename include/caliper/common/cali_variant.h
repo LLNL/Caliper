@@ -42,6 +42,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -146,6 +147,11 @@ cali_make_variant_from_double(double value)
     v.type_and_size = CALI_TYPE_DOUBLE;
     v.value.v_double = value;
     return v;
+}
+
+inline cali_variant_t
+cali_make_variant_from_string(const char* value){
+    return cali_make_variant(CALI_TYPE_STRING,value,strlen(value));
 }
 
 inline cali_variant_t

@@ -75,6 +75,10 @@ public:
         : m_v(cali_make_variant_from_double(val)) { }
     Variant(uint64_t val)
         : m_v(cali_make_variant_from_uint(val))   { }
+    Variant(size_t val)
+            : m_v(cali_make_variant_from_uint(uint64_t(val)))   { }
+    Variant(const char* val)
+            : m_v(cali_make_variant_from_string(val))   { }
     Variant(cali_attr_type val)
         : m_v(cali_make_variant_from_type(val))   { }
 
