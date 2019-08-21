@@ -93,7 +93,9 @@ TEST(ConfigManagerTest, ParseConfig) {
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
     }
 
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cuda),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,mem.highwatermark,event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile.cuda,profile=mpi),event-trace").empty());
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace,foo=bar", true).empty());
 }
 
