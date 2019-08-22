@@ -96,7 +96,22 @@ public:
     /// ChannelController::start().
     ///
     /// add() can be invoked multiple times.
+    ///
+    /// In this add() version, key-value pairs in the config string that 
+    /// neither represent a valid configuration or configuration parameter
+    /// will be marked as a parse error.
+    /// 
+    /// \return false if there was a parse error, true otherwise
     bool add(const char* config_string);
+
+    /// \brief Parse the \a config_string configuration string and add the
+    ///   specified configuration channels.
+    ///
+    /// Works similar to ConfigManager::add(const char*), but does not mark
+    /// extra key-value pairs in the config string that do not represent a 
+    /// configuration name or parameter as errors, and instead returns them in 
+    /// \a extra_kv_pairs.
+    bool add(const char* config_string, argmap_t& extra_kv_pairs);
 
     /// \brief Pre-set parameter \a key to \a value for all configurations
     void set_default_parameter(const char* key, const char* value);
@@ -137,9 +152,14 @@ public:
     get_config_docstrings();
 
     /// \brief Check if given config string is valid.
-    ///   Return error message, or empty string if input is valid.
+    /// 
+    /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
+    /// in the config string that do not represent configurations or parameters
+    /// will be marked as errors.
+    ///
+    /// \return error message, or empty string if input is valid.
     static std::string
-    check_config_string(const char* config_string);
+    check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
 };
 
 } // namespace cali

@@ -61,9 +61,9 @@ public:
                 config()["CALI_SERVICES_ENABLE"   ].append(",mallinfo");
             }
             if (profile & MemHighWaterMark) {
-                select += 
+                select +=
                     ",max(max#alloc.region.highwatermark) as \"Max Alloc'd Mem\"";
-                
+
                 config()["CALI_SERVICES_ENABLE"   ].append(",alloc,sysalloc");
                 config()["CALI_ALLOC_RECORD_HIGHWATERMARK"] = "true";
                 config()["CALI_ALLOC_TRACK_ALLOCATIONS"   ] = "false";
@@ -81,18 +81,17 @@ public:
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
-                config()["CALI_MPIREPORT_CONFIG"  ] = 
+                config()["CALI_MPIREPORT_CONFIG"  ] =
                     std::string("select ") + select + " group by " + groupby + " format tree";
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
-                config()["CALI_REPORT_CONFIG"     ] = 
+                config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ") + select + " group by " + groupby + " format tree";
             }
         }
 };
 
-const char* runtime_report_args[] = { "output", "mpi", "profile", nullptr };
 
 // Parse the "mpi=" argument
 bool
@@ -104,11 +103,18 @@ use_mpi(const cali::ConfigManager::argmap_t& args)
         std::find(services.begin(), services.end(), "mpireport") != services.end();
 
     bool use_mpi = have_mpireport;
-    
-    auto it = args.find("mpi");
-    
-    if (it != args.end())
-        use_mpi = StringConverter(it->second).to_bool();
+
+    {
+        auto it = args.find("mpi");
+
+        if (it != args.end())
+            use_mpi = StringConverter(it->second).to_bool();
+
+        it = args.find("aggregate_across_ranks");
+
+        if (it != args.end())
+            use_mpi = StringConverter(it->second).to_bool();
+    }
 
     if (use_mpi && !have_mpireport) {
         use_mpi = false;
@@ -123,10 +129,17 @@ use_mpi(const cali::ConfigManager::argmap_t& args)
 int
 get_profile_cfg(const cali::ConfigManager::argmap_t& args)
 {
-    auto argit = args.find("profile");
+    //   Parse the "profile" argument. This is deprecated, should eventually
+    // be replaced with the individual profiling opts ("profile.mpi" etc.)
 
-    if (argit == args.end())
-        return 0;
+    std::vector<std::string> profile_opts;
+
+    {
+        auto argit = args.find("profile");
+
+        if (argit != args.end())
+            profile_opts = StringConverter(argit->second).to_stringlist(",:");
+    }
 
     // make sure default services are loaded
     Services::add_default_services();
@@ -140,8 +153,25 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     };
 
     int profile = 0;
-    
-    for (const std::string& s : StringConverter(argit->second).to_stringlist(",:")) {
+
+    {
+        const struct optmap_t {
+            const char* newname; const char* oldname;
+        } optmap[] = {
+            { "profile.mpi",  "mpi"  },
+            { "profile.cuda", "cuda" },
+            { "mem.highwatermark", "mem.highwatermark" }
+        };
+
+        for (const auto &entry : optmap) {
+            auto it = args.find(entry.newname);
+            if (it != args.end())
+                if (StringConverter(it->second).to_bool())
+                    profile_opts.push_back(entry.oldname);
+        }
+    }
+
+    for (const std::string& s : profile_opts) {
         auto it = std::find_if(profinfo.begin(), profinfo.end(), [s](decltype(profinfo.front()) tpl){
                 return s == std::get<0>(tpl);
             });
@@ -171,6 +201,17 @@ make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
     return new RuntimeReportController(use_mpi(args), output.c_str(), get_profile_cfg(args));
 }
 
+const char* runtime_report_args[] = {
+    "output",
+    "mpi",
+    "aggregate_across_ranks",
+    "profile",
+    "mem.highwatermark",
+    "profile.mpi",
+    "profile.cuda",
+    nullptr
+};
+
 } // namespace [anonymous]
 
 namespace cali
@@ -178,7 +219,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", "runtime-report(output=<filename>,mpi=true|false,profile=[mpi:cupti:memory]): Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", "runtime-report: Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }

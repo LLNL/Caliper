@@ -26,6 +26,19 @@ extern ConfigManager::ConfigInfo builtin_controllers_table[];
 namespace
 {
 
+template<typename K, typename V>
+std::map<K, V>
+merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
+    for (auto &p : from) {
+        auto it = to.lower_bound(p.first);
+
+        if (it == to.end() || it->first != p.first)
+            to.emplace_hint(it, p.first, p.second);
+    }
+    
+    return to;
+}
+
 struct ConfigInfoList {
     const ConfigManager::ConfigInfo* configs;
     ConfigInfoList* next;
@@ -44,16 +57,37 @@ struct ConfigManager::ConfigManagerImpl
     std::string m_error_msg = "";
 
     argmap_t    m_default_parameters;
+    argmap_t    m_extra_vars;
 
     void
     set_error(const std::string& msg) {
         m_error = true;
         m_error_msg = msg;
     }
+
+    //   Parse "=value"
+    // Returns "true" if there is no '=', otherwise the string after '='. 
+    // Sets error if there is a '=' but no word afterwards.
+    std::string
+    read_value(std::istream& is, const std::string& key) {
+        std::string val = "true";
+        char c = util::read_char(is);
+
+        if (c == '=') {
+            val = util::read_word(is, ",=()\n");
+
+            if (val.empty())
+                set_error("Expected value after \"" + key + "=\"");
+        }
+        else 
+            is.unget();
+
+        return val;
+    }
     
     argmap_t
     parse_arglist(std::istream& is, const char* argtbl[]) {
-        argmap_t args = m_default_parameters;
+        argmap_t args;
 
         char c = util::read_char(is);
 
@@ -78,15 +112,13 @@ struct ConfigManager::ConfigManagerImpl
                 return args;
             }
             
-            c = util::read_char(is);
+            args[key] = read_value(is, key);
 
-            if (c != '=') {
-                set_error("Expected '=' after " + key);
+            if (m_error) {
                 args.clear();
                 return args;
             }
-            
-            args[key] = util::read_word(is, ",=()\n");
+
             c = util::read_char(is);
         } while (is.good() && c == ',');
 
@@ -99,6 +131,44 @@ struct ConfigManager::ConfigManagerImpl
         return args;
     }
 
+    // Return config info object with given name, or null if not found
+    const ConfigInfo* 
+    find_config(const std::string& name) {
+        const ::ConfigInfoList* lst_p = ::s_config_list;
+        const ConfigInfo* cfg_p = nullptr;
+        
+        while (lst_p) {
+            cfg_p = lst_p->configs;
+        
+            while (cfg_p && cfg_p->name && name != std::string(cfg_p->name))
+                ++cfg_p;
+
+            if (cfg_p && cfg_p->name)
+                break;
+
+            lst_p = lst_p->next;
+        }
+
+        if (cfg_p && !cfg_p->name)
+            cfg_p = nullptr;
+
+        return cfg_p;
+    }
+
+    // Return true if key is an option in any config
+    bool
+    is_option(const std::string& key) {
+        for (const ::ConfigInfoList* lst_p = ::s_config_list; lst_p; lst_p = lst_p->next)
+            for (const ConfigInfo* cfg_p = lst_p->configs; cfg_p && cfg_p->name; ++cfg_p)
+                for (const char** opt = cfg_p->args; opt && *opt; ++opt)
+                    if (key == *opt)
+                        return true;
+
+        return false;
+    }
+
+    //   Returns found configs with their args. Also updates the default parameters list
+    // and extra variables list.
     std::vector< std::pair<const ConfigInfo*, argmap_t> >
     parse_configstring(const char* config_string) {
         std::vector< std::pair<const ConfigInfo*, argmap_t> > ret;
@@ -106,6 +176,8 @@ struct ConfigManager::ConfigManagerImpl
         std::istringstream is(config_string);
         char c = 0;
 
+        //   Return if string is only whitespace.
+        // Prevents empty strings being marked as errors.
         do {
             c = util::read_char(is);
         } while (is.good() && isspace(c));
@@ -116,34 +188,28 @@ struct ConfigManager::ConfigManagerImpl
             return ret;
 
         do {
-            std::string name = util::read_word(is, ",=()\n");
+            std::string key = util::read_word(is, ",=()\n");
 
-            const ::ConfigInfoList* lst_p = ::s_config_list;
-            const ConfigInfo* cfg_p = nullptr;
-            
-            while (lst_p) {
-                cfg_p = lst_p->configs;
-            
-                while (cfg_p && cfg_p->name && name != std::string(cfg_p->name))
-                    ++cfg_p;
+            const ConfigInfo* cfg_p = find_config(key);
 
-                if (cfg_p && cfg_p->name)
-                    break;
+            if (cfg_p) {
+                auto args = parse_arglist(is, cfg_p->args);
 
-                lst_p = lst_p->next;
+                if (m_error) 
+                    return ret;
+
+                ret.push_back(std::make_pair(cfg_p, std::move(args)));
+            } else {
+                std::string val = read_value(is, key);
+
+                if (m_error)
+                    return ret;
+
+                if (is_option(key))
+                    m_default_parameters[key] = val;
+                else
+                    m_extra_vars[key] = val;
             }
-            
-            if (!cfg_p || !cfg_p->name) {
-                set_error("Unknown config: " + name);
-                return ret;
-            }
-
-            auto args = parse_arglist(is, cfg_p->args);
-
-            if (m_error)
-                return ret;
-
-            ret.push_back(std::make_pair(cfg_p, std::move(args)));
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
@@ -156,7 +222,7 @@ struct ConfigManager::ConfigManagerImpl
 
         if (!m_error)
             for (auto cfg : configs)
-                m_channels.emplace_back( (cfg.first->create)(cfg.second) );
+                m_channels.emplace_back( (cfg.first->create)(merge_new_elements(cfg.second, m_default_parameters)) );
 
         return !m_error;
     }
@@ -184,7 +250,22 @@ ConfigManager::~ConfigManager()
 bool
 ConfigManager::add(const char* config_str)
 {
-    return mP->add(config_str);
+    mP->add(config_str);
+
+    if (!mP->m_extra_vars.empty())
+        mP->set_error("Unknown config or parameter: " + mP->m_extra_vars.begin()->first);
+
+    return !mP->m_error;
+}
+
+bool
+ConfigManager::add(const char* config_string, argmap_t& extra_kv_pairs)
+{
+    mP->add(config_string);
+
+    extra_kv_pairs.insert(mP->m_extra_vars.begin(), mP->m_extra_vars.end());
+
+    return !mP->m_error;
 }
 
 bool
@@ -253,10 +334,13 @@ ConfigManager::get_config_docstrings()
 }
 
 std::string
-ConfigManager::check_config_string(const char* config_string)
+ConfigManager::check_config_string(const char* config_string, bool allow_extra_kv_pairs)
 {
     ConfigManagerImpl tmp;
     tmp.parse_configstring(config_string);
+
+    if (!allow_extra_kv_pairs && !tmp.m_extra_vars.empty())
+        tmp.set_error("Unknown config or parameter: " + tmp.m_extra_vars.begin()->first);
 
     return tmp.m_error_msg;
 }

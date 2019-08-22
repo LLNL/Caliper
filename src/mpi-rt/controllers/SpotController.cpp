@@ -93,7 +93,7 @@ public:
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator
-        std::string select = 
+        std::string select =
             " *"
             ",min(inclusive#sum#time.duration)"
             ",max(inclusive#sum#time.duration)"
@@ -118,7 +118,7 @@ public:
             if (m_profilecfg & MemHighWaterMark)
                 aggcfg.append(",max(max#alloc.region.highwatermark)");
 
-            QuerySpec  inclusive_spec = 
+            QuerySpec  inclusive_spec =
                 CalQLParser(std::string("aggregate " + aggcfg + " group by prop:nested").c_str()).spec();
 
             Aggregator inclusive_agg(inclusive_spec);
@@ -170,7 +170,7 @@ public:
             if (m_profilecfg & MemHighWaterMark)
                 spot_metrics.append(",max#max#max#alloc.region.highwatermark");
 
-            // set the spot.metrics value                
+            // set the spot.metrics value
             db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
                           Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
 
@@ -227,7 +227,13 @@ public:
         { }
 };
 
-const char* spot_args[] = { "output", "profile", nullptr };
+const char* spot_args[] = {
+    "output",
+    "aggregate_across_ranks",
+    "profile",
+    "mem.highwatermark",
+    nullptr
+};
 
 cali::ChannelController*
 make_spot_controller(const cali::ConfigManager::argmap_t& args) {
@@ -238,8 +244,8 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
 #ifdef CALIPER_HAVE_MPI
     use_mpi = true;
 #endif
-    
-    it = args.find("mpi");
+
+    it = args.find("aggregate_across_ranks");
     if (it != args.end())
         use_mpi = StringConverter(it->second).to_bool();
 
@@ -247,6 +253,10 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
 
     it = args.find("profile");
     if (it != args.end() && it->second == "mem.highwatermark")
+        profilecfg |= MemHighWaterMark;
+
+    it = args.find("mem.highwatermark");
+    if (it != args.end() && StringConverter(it->second).to_bool())
         profilecfg |= MemHighWaterMark;
 
     return new SpotController(use_mpi, profilecfg, output.c_str());

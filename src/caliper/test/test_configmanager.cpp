@@ -14,7 +14,7 @@ TEST(ConfigManagerTest, ParseErrors) {
 
         EXPECT_FALSE(mgr.add("foo"));
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown config: foo");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown config or parameter: foo");
     }
     
     {
@@ -29,10 +29,10 @@ TEST(ConfigManagerTest, ParseErrors) {
     }
 
     {
-        cali::ConfigManager mgr(" runtime-report(output)");
+        cali::ConfigManager mgr(" runtime-report(output=)");
         
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected '=' after output");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\"");
     }
 
     {
@@ -43,9 +43,9 @@ TEST(ConfigManagerTest, ParseErrors) {
     }
 
     EXPECT_STREQ(cali::ConfigManager::check_config_string("foo").c_str(),
-                 "Unknown config: foo");
+                 "Unknown config or parameter: foo");
     EXPECT_STREQ(cali::ConfigManager::check_config_string("event-trace,").c_str(),
-                 "Unknown config: ");
+                 "Unknown config or parameter: ");
 }
 
 TEST(ConfigManagerTest, ParseConfig) {
@@ -63,8 +63,9 @@ TEST(ConfigManagerTest, ParseConfig) {
 
     {
         cali::ConfigManager mgr;
+        cali::ConfigManager::argmap_t extra_kv_pairs;
 
-        EXPECT_TRUE(mgr.add(" event-trace, runtime-report "));
+        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, foo=bar ", extra_kv_pairs));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -73,6 +74,9 @@ TEST(ConfigManagerTest, ParseConfig) {
 
         EXPECT_EQ(std::string("event-trace"), list[0]->name());
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
+
+        ASSERT_EQ(extra_kv_pairs.size(), 1);
+        EXPECT_EQ(extra_kv_pairs["foo"], std::string("bar"));
     }
 
     {
@@ -89,7 +93,10 @@ TEST(ConfigManagerTest, ParseConfig) {
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
     }
 
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cuda),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,mem.highwatermark,event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile.cuda,profile=mpi),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace,foo=bar", true).empty());
 }
 
 TEST(ConfigManagerTest, ParseEmptyConfig) {
