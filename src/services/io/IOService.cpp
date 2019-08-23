@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include <curious/curious.h>
@@ -15,7 +15,7 @@
 
 using namespace cali;
 
-namespace 
+namespace
 {
   std::unordered_map<Channel *, curious_t> curious_insts;
 
@@ -39,7 +39,7 @@ namespace
     [GET_CATEGORY(CURIOUS_WRITE_CALLBACK)] = Variant(CALI_TYPE_STRING, "write", 6),
     [GET_CATEGORY(CURIOUS_METADATA_CALLBACK)] = Variant(CALI_TYPE_STRING, "metadata", 9),
   };
-        
+
   // We need to record different info for different I/O regions/records:
 
   // For read regions...
@@ -91,12 +91,12 @@ namespace
     Caliper c = Caliper::sigsafe_instance();
 
     // If we got a Caliper instance successfully...
-    if (c) {
+    if (c && channel->is_active()) {
       // ...mark the end...
       if (type & CURIOUS_POST_CALLBACK) {
         handle_unique_record_data(c, channel, record);
-        
-        c.end(channel, io_region_attr);        
+
+        c.end(channel, io_region_attr);
         c.end(channel, io_filesystem_attr);
         c.end(channel, io_mount_point_attr);
 
@@ -109,7 +109,7 @@ namespace
         c.begin(channel, io_filesystem_attr, filesystem_var);
         c.begin(channel, io_region_attr, categories[GET_CATEGORY(type)]);
       }
-    
+
     // ...otherwise note our failure (probably already inside Caliper)
     } else {
       ++num_failed_io_callbacks;
@@ -123,37 +123,37 @@ namespace
     curious_register_callback(
       curious_inst,
       CURIOUS_READ_CALLBACK,
-      (curious_callback_f) handle_io<curious_read_record_t>, 
+      (curious_callback_f) handle_io<curious_read_record_t>,
       (void *) channel
-    ); 
+    );
     curious_register_callback(
       curious_inst,
-      CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, 
-      (curious_callback_f) handle_io<curious_read_record_t>, 
+      CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK,
+      (curious_callback_f) handle_io<curious_read_record_t>,
       (void *) channel
-    ); 
+    );
     curious_register_callback(
       curious_inst,
       CURIOUS_WRITE_CALLBACK,
-      (curious_callback_f) handle_io<curious_write_record_t>, 
+      (curious_callback_f) handle_io<curious_write_record_t>,
       (void *) channel
-    ); 
+    );
     curious_register_callback(
       curious_inst,
-      CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, 
-      (curious_callback_f) handle_io<curious_write_record_t>, 
+      CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK,
+      (curious_callback_f) handle_io<curious_write_record_t>,
       (void *) channel
-    ); 
+    );
     curious_register_callback(
       curious_inst,
       CURIOUS_METADATA_CALLBACK,
-      (curious_callback_f) handle_io<curious_metadata_record_t>, 
+      (curious_callback_f) handle_io<curious_metadata_record_t>,
       (void *) channel
-    ); 
+    );
     curious_register_callback(
       curious_inst,
-      CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, 
-      (curious_callback_f) handle_io<curious_metadata_record_t>, 
+      CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK,
+      (curious_callback_f) handle_io<curious_metadata_record_t>,
       (void *) channel
     );
 
@@ -164,28 +164,33 @@ namespace
     curious_finalize(curious_insts[channel]);
 
     if (Log::verbosity() >= 2)
-      Log(2).stream() << channel->name() << ": Processed " 
-                      << num_io_callbacks << " I/O callbacks, " 
+      Log(2).stream() << channel->name() << ": Processed "
+                      << num_io_callbacks << " I/O callbacks, "
                       << num_failed_io_callbacks << " failed." << std::endl;
   }
 
   void init_curious_service(Caliper* c, Channel* channel) {
     // create I/O attributes
-    io_region_attr = 
-      c->create_attribute("io.region",        CALI_TYPE_STRING);
-    io_filesystem_attr = 
-      c->create_attribute("io.filesystem",    CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-    io_mount_point_attr = 
-      c->create_attribute("io.mount.point",   CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+    io_region_attr =
+      c->create_attribute("io.region",        CALI_TYPE_STRING,
+                          CALI_ATTR_SCOPE_THREAD);
+    io_filesystem_attr =
+      c->create_attribute("io.filesystem",    CALI_TYPE_STRING,
+                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+    io_mount_point_attr =
+      c->create_attribute("io.mount.point",   CALI_TYPE_STRING,
+                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
     Attribute aggr_attr = c->get_attribute("class.aggregatable");
     Variant v_true(true);
-    
-    io_bytes_read_attr = 
-      c->create_attribute("io.bytes.read",    CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+
+    io_bytes_read_attr =
+      c->create_attribute("io.bytes.read",    CALI_TYPE_UINT,
+                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                           1, &aggr_attr, &v_true);
-    io_bytes_written_attr = 
-      c->create_attribute("io.bytes.written", CALI_TYPE_UINT,   CALI_ATTR_ASVALUE,
+    io_bytes_written_attr =
+      c->create_attribute("io.bytes.written", CALI_TYPE_UINT,
+                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
                           1, &aggr_attr, &v_true);
 
     // register Caliper post_init_evt and finish_evt callbacks
@@ -193,12 +198,12 @@ namespace
 
     // finish_evt: unregister channel from curious (??)
     channel->events().finish_evt.connect(finalize_curious_in_channel);
-    
+
     Log(1).stream() << channel->name() << ": Registered CURIOUS service" << std::endl;
   }
 } // namespace [anonymous]
 
-namespace cali 
+namespace cali
 {
 
 CaliperService io_service { "io", ::init_curious_service };

@@ -17,10 +17,12 @@ namespace
 {
 
 enum ProfileConfig {
-    WrapMpi    = 1,
-    WrapCuda   = 2,
-    MallocInfo = 4,
-    MemHighWaterMark = 8
+    WrapMpi     = 1,
+    WrapCuda    = 2,
+    MallocInfo  = 4,
+    MemHighWaterMark = 8,
+    IoBytes     = 16,
+    IoBandwidth = 32
 };
 
 class RuntimeReportController : public cali::ChannelController
@@ -75,6 +77,27 @@ public:
             }
             if (profile & WrapCuda) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",cupti");
+            }
+            if (profile & IoBytes || profile & IoBandwidth) {
+                config()["CALI_SERVICES_ENABLE"   ].append(",io");
+            }
+            if (profile & IoBytes) {
+                select +=
+                    ",sum(sum#io.bytes.written) as \"Total written\""
+                    ",sum(sum#io.bytes.read) as \"Total read\"";
+
+                if (use_mpi)
+                    select +=
+                        ",avg(sum#io.bytes.written) as \"Avg written\""
+                        ",avg(sum#io.bytes.read) as \"Avg read\"";
+            }
+            if (profile & IoBandwidth) {
+                groupby += ",io.region";
+
+                select +=
+                    ",io.region as I/O"
+                    ",ratio(sum#io.bytes.written,sum#time.duration,8e-6) as \"Write Mbit/s\""
+                    ",ratio(sum#io.bytes.read,sum#time.duration,8e-6) as \"Read Mbit/s\"";
             }
 
             if (use_mpi) {
@@ -146,10 +169,12 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     auto srvcs = Services::get_available_services();
 
     const std::vector< std::tuple<const char*, ProfileConfig, const char*> > profinfo {
-        { std::make_tuple( "mpi",    WrapMpi,    "mpi")      },
-        { std::make_tuple( "cuda",   WrapCuda,   "cupti")    },
-        { std::make_tuple( "malloc", MallocInfo, "memusage") },
-        { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" )}
+        { std::make_tuple( "mpi",          WrapMpi,     "mpi")      },
+        { std::make_tuple( "cuda",         WrapCuda,    "cupti")    },
+        { std::make_tuple( "malloc",       MallocInfo,  "memusage") },
+        { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" )},
+        { std::make_tuple( "io.bytes",     IoBytes,     "io" )},
+        { std::make_tuple( "io.bandwidth", IoBandwidth, "io" )}
     };
 
     int profile = 0;
@@ -160,7 +185,9 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
         } optmap[] = {
             { "profile.mpi",  "mpi"  },
             { "profile.cuda", "cuda" },
-            { "mem.highwatermark", "mem.highwatermark" }
+            { "mem.highwatermark", "mem.highwatermark" },
+            { "io.bytes",     "io.bytes" },
+            { "io.bandwidth", "io.bandwidth" }
         };
 
         for (const auto &entry : optmap) {
@@ -209,6 +236,8 @@ const char* runtime_report_args[] = {
     "mem.highwatermark",
     "profile.mpi",
     "profile.cuda",
+    "io.bytes",
+    "io.bandwidth",
     nullptr
 };
 
