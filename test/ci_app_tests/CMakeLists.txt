@@ -47,7 +47,6 @@ set(PYTHON_SCRIPTS
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
-  test_ioservice.py
   test_json.py
   test_log.py
   test_multichannel.py
@@ -67,6 +66,7 @@ endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS 
     test_alloc_hooks.py
+    test_ioservice.py
     test_pthread.py)
 endif()
 if (CALIPER_HAVE_PAPI)
