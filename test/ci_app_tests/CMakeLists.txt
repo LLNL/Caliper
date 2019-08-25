@@ -7,6 +7,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_basic
   ci_test_binding
   ci_test_esc
+  ci_test_io
   ci_test_loop
   ci_test_macros
   ci_test_multichannel
@@ -46,6 +47,7 @@ set(PYTHON_SCRIPTS
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
+  test_ioservice.py
   test_json.py
   test_log.py
   test_multichannel.py
