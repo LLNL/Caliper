@@ -199,7 +199,7 @@ namespace
     // finish_evt: unregister channel from curious (??)
     channel->events().finish_evt.connect(finalize_curious_in_channel);
 
-    Log(1).stream() << channel->name() << ": Registered CURIOUS service" << std::endl;
+    Log(1).stream() << channel->name() << ": Registered io service" << std::endl;
   }
 } // namespace [anonymous]
 

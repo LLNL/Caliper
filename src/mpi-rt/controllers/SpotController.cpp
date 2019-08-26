@@ -33,7 +33,9 @@ namespace
 {
 
 enum ProfileConfig {
-    MemHighWaterMark = 1
+    MemHighWaterMark = 1,
+    IoBytes = 2,
+    IoBandwidth = 4
 };
 
 std::string
@@ -86,6 +88,22 @@ class SpotController : public cali::ChannelController
     int  m_profilecfg;
     bool m_use_mpi;
 
+    /// \brief Perform an intermediate aggregation step on the channel data into \a output_agg
+    void aggregate(const std::string& aggcfg, const std::string& groupby, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
+        QuerySpec spec =
+            CalQLParser(std::string("aggregate " + aggcfg + " group by " + groupby).c_str()).spec();
+
+        Aggregator agg(spec);
+
+        c.flush(channel(), nullptr, [&db,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                   EntryList mrec = db.merge_snapshot(in_db, rec);
+                   agg.add(db, mrec);
+                });
+
+        // write intermediate results into output aggregator
+        agg.flush(db, output_agg);
+    }
+
 public:
 
     void
@@ -101,8 +119,21 @@ public:
 
         if (m_profilecfg & MemHighWaterMark)
             select.append(",max(max#max#alloc.region.highwatermark)");
+        if (m_profilecfg & IoBytes) {
+            select.append(",avg(sum#io.bytes.written)");
+            select.append(",avg(sum#io.bytes.read)");
+            select.append(",sum(sum#io.bytes.written)");
+            select.append(",sum(sum#io.bytes.read)");
+        }
+        if (m_profilecfg & IoBandwidth) {
+            select.append(",avg(sum#io.bytes.written/sum#time.duration)");
+            select.append(",avg(sum#io.bytes.read/sum#time.duration)");
+            select.append(",max(sum#io.bytes.written/sum#time.duration)");
+            select.append(",max(sum#io.bytes.read/sum#time.duration)");
+        }
 
-        QuerySpec output_spec = CalQLParser((std::string(" select ") + select + " format cali").c_str()).spec();
+        QuerySpec output_spec =
+            CalQLParser(std::string("select " + select + " group by prop:nested format cali").c_str()).spec();
 
         Aggregator output_agg(output_spec);
 
@@ -113,24 +144,24 @@ public:
         //     inclusive times
 
         {
-            std::string aggcfg = "inclusive_sum(sum#time.duration)";
+            std::string agg = "inclusive_sum(sum#time.duration)";
 
             if (m_profilecfg & MemHighWaterMark)
-                aggcfg.append(",max(max#alloc.region.highwatermark)");
+                agg.append(",max(max#alloc.region.highwatermark)");
+            if (m_profilecfg & IoBytes)
+                agg.append(",sum(sum#io.bytes.read),sum(sum#io.bytes.written)");
 
-            QuerySpec  inclusive_spec =
-                CalQLParser(std::string("aggregate " + aggcfg + " group by prop:nested").c_str()).spec();
+            aggregate(agg, "prop:nested", c, db, output_agg);
+        }
 
-            Aggregator inclusive_agg(inclusive_spec);
+        // --- Calculate per-rank bandwidths in I/O regions. This needs a separate
+        //   step because we need to group by io.region, too (it's complicated ...)
+        if (m_profilecfg & IoBandwidth) {
+            std::string agg =
+                " ratio(sum#io.bytes.written,sum#time.duration,8e-6)"
+                ",ratio(sum#io.bytes.read,   sum#time.duration,8e-6)";
 
-            c.flush(channel(), nullptr, [&db,&inclusive_agg](CaliperMetadataAccessInterface& in_db,
-                                                             const std::vector<Entry>& rec){
-                        EntryList mrec = db.merge_snapshot(in_db, rec);
-                        inclusive_agg.add(db, mrec);
-                    });
-
-            // write intermediate results into output aggregator
-            inclusive_agg.flush(db, output_agg);
+            aggregate(agg, "prop:nested,io.region", c, db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -169,6 +200,18 @@ public:
 
             if (m_profilecfg & MemHighWaterMark)
                 spot_metrics.append(",max#max#max#alloc.region.highwatermark");
+            if (m_profilecfg & IoBytes) {
+                spot_metrics.append(",avg#sum#io.bytes.written");
+                spot_metrics.append(",avg#sum#io.bytes.read");
+                spot_metrics.append(",sum#io.bytes.written");
+                spot_metrics.append(",sum#io.bytes.read");
+            }
+            if (m_profilecfg & IoBandwidth) {
+                spot_metrics.append(",avg#sum#io.bytes.written/sum#time.duration");
+                spot_metrics.append(",avg#sum#io.bytes.read/sum#time.duration");
+                spot_metrics.append(",max#sum#io.bytes.written/sum#time.duration");
+                spot_metrics.append(",max#sum#io.bytes.read/sum#time.duration");
+            }
 
             // set the spot.metrics value
             db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
@@ -221,6 +264,9 @@ public:
                 config()["CALI_ALLOC_TRACK_ALLOCATIONS"   ] = "false";
                 config()["CALI_ALLOC_RECORD_HIGHWATERMARK"] = "true";
             }
+
+            if (profilecfg & IoBytes || profilecfg & IoBandwidth)
+                config()["CALI_SERVICES_ENABLE"].append(",io");
         }
 
     ~SpotController()
@@ -232,6 +278,8 @@ const char* spot_args[] = {
     "aggregate_across_ranks",
     "profile",
     "mem.highwatermark",
+    "io.bytes",
+    "io.bandwidth",
     nullptr
 };
 
@@ -255,9 +303,19 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
     if (it != args.end() && it->second == "mem.highwatermark")
         profilecfg |= MemHighWaterMark;
 
-    it = args.find("mem.highwatermark");
-    if (it != args.end() && StringConverter(it->second).to_bool())
-        profilecfg |= MemHighWaterMark;
+    const struct profile_cfg_info_t {
+        const char* name; ProfileConfig flag;
+    } profile_cfg_info[] = {
+        { "mem.highwatermark", MemHighWaterMark },
+        { "io.bytes",          IoBytes          },
+        { "io.bandwidth",      IoBandwidth      }
+    };
+
+    for (const profile_cfg_info_t& pinfo : profile_cfg_info) {
+        auto it = args.find(pinfo.name);
+        if (it != args.end() && StringConverter(it->second).to_bool())
+            profilecfg |= pinfo.flag;
+    }
 
     return new SpotController(use_mpi, profilecfg, output.c_str());
 }

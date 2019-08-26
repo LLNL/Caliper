@@ -1,4 +1,5 @@
 #include "caliper/cali.h"
+#include "caliper/cali-manager.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -8,16 +9,36 @@
 
 int main(int argc, char* argv[])
 {
-    CALI_CXX_MARK_FUNCTION;
+    const char* cfg = argc > 1 ? argv[1] : "";
+
+    cali::ConfigManager mgr;
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
+
+    if (!mgr.add(cfg)) {
+        std::cerr << "ci_test_io: error: " << mgr.error_msg() << std::endl;
+        return 1;
+    }
+
+    auto channels = mgr.get_all_channels();
+
+    for (auto &chn : channels)
+        chn->start();
+
+    CALI_MARK_FUNCTION_BEGIN;
 
     int fd = open(argv[0], O_RDONLY);
 
     if (fd == -1)
-        return -1;
-    
+        return 2;
+
     char buf[16];
     if (read(fd, buf, 16) != 16)
-        return -2;
-    
+        return 3;
+
     close(fd);
+
+    CALI_MARK_FUNCTION_END;
+
+    for (auto &chn : channels)
+        chn->flush();
 }
