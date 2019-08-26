@@ -683,7 +683,7 @@ public:
     };
 
     ScaledRatioKernel(Config* config)
-        : m_sum1(0), m_sum2(0), m_config(config)
+        : m_sum1(0), m_sum2(0), m_count(0), m_config(config)
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
@@ -700,6 +700,7 @@ public:
 
             if        (attr == tattrs.first.id()  || attr == sattrs.first.id())  {
                 m_sum1 += e.value().to_double();
+                ++m_count;
             } else if (attr == tattrs.second.id() || attr == sattrs.second.id()) {
                 m_sum2 += e.value().to_double();
             }
@@ -709,14 +710,14 @@ public:
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         auto sum_attrs = m_config->get_sum_attributes(db);
 
-        if (m_sum1 > 0)
+        if (m_count > 0 && m_sum1 > 0)
             list.push_back(Entry(sum_attrs.first,  Variant(m_sum1)));
         if (m_sum2 > 0) {
             list.push_back(Entry(sum_attrs.second, Variant(m_sum2)));
 
-            Attribute ratio_attr = m_config->get_ratio_attribute(db);
-
-            list.push_back(Entry(ratio_attr, Variant(m_config->get_scale() * m_sum1 / m_sum2)));
+            if (m_count > 0)
+                list.push_back(Entry(m_config->get_ratio_attribute(db),
+                                     Variant(m_config->get_scale() * m_sum1 / m_sum2)));
         }
     }
 
@@ -724,6 +725,7 @@ private:
 
     double  m_sum1;
     double  m_sum2;
+    int     m_count;
 
     std::mutex m_lock;
 
