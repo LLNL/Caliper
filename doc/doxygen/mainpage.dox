@@ -1,7 +1,17 @@
-/// \mainpage The Caliper API reference.
-///
-/// \section main_cxx C++ API
-/// See namespace \ref cali
-///
-/// \section main_c C API
-/// See cali.h
+/**
+\mainpage The Caliper API reference.
+
+\section main_annot Annotation API
+For documentation on macro, C++, and C annotation APIs, see \ref AnnotationAPI.
+
+\section main_config Configuration management API
+The configuration management API provides means to configure and control 
+built-in %Caliper configurations from within a target program.
+See \ref ConfigManagerAPI.
+
+\section main_cxx C++ API reference
+See namespace \ref cali
+
+\section main_c C API reference
+See cali.h
+*/

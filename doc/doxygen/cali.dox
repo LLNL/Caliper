@@ -8,6 +8,9 @@
 \defgroup AnnotationAPI Annotation API
 \brief The user-facing source-code annotation API
 
+\defgroup ConfigManagerAPI Config Management API
+\brief An API for controlling %Caliper built-in performance measurement configurations
+
 \defgroup ReaderAPI Reader API
-\brief Facilities for post-processing and exporting Caliper output
+\brief Facilities for post-processing and exporting %Caliper output
 */

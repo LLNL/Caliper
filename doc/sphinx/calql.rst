@@ -169,7 +169,8 @@ available in some formatters (e.g., table).
 The following example prints a iteration/function profile ordered by
 time and iteration number: ::
 
-  SELECT *, sum(time.duration) FORMAT table ORDER BY time.inclusive.duration DESC, iteration#mainloop
+  SELECT *, sum(time.duration) FORMAT table \
+    ORDER BY time.inclusive.duration DESC, iteration#mainloop
 
   function loop     iteration#mainloop time.inclusive.duration
   main                                                  100000

@@ -16,10 +16,16 @@ namespace cali
 
 class ChannelController;
 
+/// \class ConfigManager
+/// \ingroup ConfigManagerAPI
 /// \brief Configure, enable, and manage built-in %Caliper configurations
 ///
-///   ConfigManager creates channel control objects for built-in %Caliper
-/// configurations based on given configuration strings. Example:
+///   ConfigManager is the principal component for managing and built-in 
+/// %Caliper measurement configurations. It parses a configuration 
+/// string and creates a set of control channels for the requested 
+/// measurement configurations. The control channel objects can then be
+/// used to start, stop, and flush the measurements channels. 
+/// Example:
 ///
 /// \code
 /// cali::ConfigManager mgr;

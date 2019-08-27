@@ -21,6 +21,7 @@ class Channel;
 typedef std::map<std::string, std::string> config_map_t;
 
 /// \class ChannelController
+/// \ingroup ConfigManagerAPI
 /// \brief Base class for %Caliper channel controllers
 ///
 /// A channel controller wraps a %Caliper configuration and channel.
