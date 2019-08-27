@@ -88,7 +88,7 @@ class SpotController : public cali::ChannelController
     int  m_profilecfg;
     bool m_use_mpi;
 
-    /// \brief Perform an intermediate aggregation step on the channel data into \a output_agg
+    /// \brief Perform intermediate aggregation of channel data into \a output_agg
     void aggregate(const std::string& aggcfg, const std::string& groupby, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
         QuerySpec spec =
             CalQLParser(std::string("aggregate " + aggcfg + " group by " + groupby).c_str()).spec();
@@ -120,10 +120,10 @@ public:
         if (m_profilecfg & MemHighWaterMark)
             select.append(",max(max#max#alloc.region.highwatermark)");
         if (m_profilecfg & IoBytes) {
-            select.append(",avg(sum#io.bytes.written)");
-            select.append(",avg(sum#io.bytes.read)");
-            select.append(",sum(sum#io.bytes.written)");
-            select.append(",sum(sum#io.bytes.read)");
+            select.append(",avg(sum#sum#io.bytes.written)");
+            select.append(",avg(sum#sum#io.bytes.read)");
+            select.append(",sum(sum#sum#io.bytes.written)");
+            select.append(",sum(sum#sum#io.bytes.read)");
         }
         if (m_profilecfg & IoBandwidth) {
             select.append(",avg(sum#io.bytes.written/sum#time.duration)");
@@ -201,10 +201,10 @@ public:
             if (m_profilecfg & MemHighWaterMark)
                 spot_metrics.append(",max#max#max#alloc.region.highwatermark");
             if (m_profilecfg & IoBytes) {
-                spot_metrics.append(",avg#sum#io.bytes.written");
-                spot_metrics.append(",avg#sum#io.bytes.read");
-                spot_metrics.append(",sum#io.bytes.written");
-                spot_metrics.append(",sum#io.bytes.read");
+                spot_metrics.append(",avg#sum#sum#io.bytes.written");
+                spot_metrics.append(",avg#sum#sum#io.bytes.read");
+                spot_metrics.append(",sum#sum#sum#io.bytes.written");
+                spot_metrics.append(",sum#sum#sum#io.bytes.read");
             }
             if (m_profilecfg & IoBandwidth) {
                 spot_metrics.append(",avg#sum#io.bytes.written/sum#time.duration");
