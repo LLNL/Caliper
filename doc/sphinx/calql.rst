@@ -10,11 +10,55 @@ profile for an application's main loop and printing results in a
 table, sorted by time, is accomplished with the following statement:
 ::
 
-  SELECT *, count(), sum(time.duration) 
-  WHERE loop=mainloop 
-  GROUP BY function 
-  FORMAT table 
+  SELECT *, count(), sum(time.duration)
+  WHERE loop=mainloop
+  GROUP BY function
+  FORMAT table
   ORDER BY time.duration
+
+Quick reference
+--------------------------------
+
+This table contains a quick reference of all CalQL statements:
+
+::
+
+  SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
+    *                          # select all attributes
+    <attribute>                # select <attribute>
+    count()                    # number of input records in grouping
+    sum(<attribute>)           # compute sum of <attribute> for grouping
+    min(<attribute>)           # compute min of <attribute> for grouping
+    max(<attribute>)           # compute max of <attribute> for grouping
+    avg(<attribute>)           # compute average of <attribute> for grouping
+    percent_total(<attribute>) # compute percent of total sum for <attribute> in grouping
+    ratio(<a>,<b>,<S>)         # compute sum(<a>)/sum(<b>)*S for grouping
+    ... AS <name>              # use <name> as column header in tree or table formatter
+
+  GROUP BY <list>              # Define aggregation grouping (what to aggregate over, e.g. "function,mpi.rank")
+    <attribute>                # include <attribute> in grouping
+    prop:nested                # include all attributes with NESTED flag in grouping
+
+  WHERE <list>                 # define filter (i.e., select records/rows)
+    <attribute>                # records where <attribute> exists
+    <attribute>=<value>        # records where <attribute>=<value>
+    NOT <attribute>            # records where <attribute> does not exist
+    NOT <attribute>=<value>    # records where <attribute>!=<value>
+
+  FORMAT <formatter>           # Define output format
+    cali                       # .cali format
+    expand                     # “<attribute1>=<value1>,<attibute2>=<value2>,...”
+    json                       # write json records { “attribute1”: “value1”, “attribute2”: “value2” }
+      (pretty)                 #   ... in a more human-readable format
+      (object)                 #   ... in a json object that includes attribute info and globals
+    json-split                 # json format w/ separate node hierarchy for hatchet library
+    table                      # human-readable text table
+    tree                       # human-readable text tree output
+
+  ORDER BY <list>              # Sort records in output (table formatter only)
+    <attribute>                # order by <attribute>
+    ... ASC                    # sort in ascending order
+    ... DESC                   # sort in descending order
 
 SELECT
 --------------------------------
@@ -87,7 +131,7 @@ Consider the following table of input records::
   bar      mainloop         1
   foo      mainloop         2
   bar      mainloop         2
-  
+
 
 With this input, the following GROUP BY statement will create a
 function profile::
@@ -108,10 +152,10 @@ human-readable output (text tables or a tree representation).
 Currently available formatters are
 
 * csv (Caliper's default machine-readable format)
-* json 
+* json
 * expand (expanded attr1=value1,attr2=value2,... records)
 * table (human-readable text table)
-* tree (print records in a tree based on the hierarchy of selected path attributes)
+* tree (print records in a tree hierarchy)
 
 ORDER BY
 --------------------------------
