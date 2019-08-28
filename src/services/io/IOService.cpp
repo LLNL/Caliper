@@ -35,9 +35,9 @@ namespace
 
   // A lookup table for the Variant corresponding to each callback category
   Variant categories[] = {
-    [GET_CATEGORY(CURIOUS_READ_CALLBACK)] = Variant(CALI_TYPE_STRING, "read", 5),
-    [GET_CATEGORY(CURIOUS_WRITE_CALLBACK)] = Variant(CALI_TYPE_STRING, "write", 6),
-    [GET_CATEGORY(CURIOUS_METADATA_CALLBACK)] = Variant(CALI_TYPE_STRING, "metadata", 9),
+     Variant(CALI_TYPE_STRING, "read",     5),
+     Variant(CALI_TYPE_STRING, "write",    6),
+     Variant(CALI_TYPE_STRING, "metadata", 9),
   };
 
   // We need to record different info for different I/O regions/records:

@@ -107,7 +107,7 @@ gotcha_binding_t bindings[CURIOUS_FUNCTION_COUNT] = {
 };
 
 // Just a boolean to control whether or not wrappers do anything or not
-_Thread_local volatile sig_atomic_t wrappers_enabled;
+static volatile sig_atomic_t wrappers_enabled;
 
 void apply_wrappers(curious_apis_t apis) {
   if (apis & CURIOUS_POSIX) {
@@ -126,7 +126,11 @@ void disable_wrappers(void) {
 
 // Keeps track of how many wrapper calls deep each thread is;
 // Allows us to avoid calling wrappers on functions called in the wrappers
-_Thread_local volatile sig_atomic_t wrapper_call_depth;
+#ifdef _Thread_local
+static _Thread_local volatile sig_atomic_t wrapper_call_depth;
+#else
+static __thread volatile sig_atomic_t wrapper_call_depth;
+#endif
 
 #define WRAPPER_ENTER(wrapper) \
   wrapper_call_depth++; \
