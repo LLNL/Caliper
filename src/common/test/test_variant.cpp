@@ -54,6 +54,20 @@ TEST(Variant_Test, FromString) {
     }
 }
 
+TEST(Variant_Test, UintOverloads) {
+    EXPECT_EQ( Variant( static_cast<std::size_t   >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<std::ptrdiff_t>(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<unsigned      >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<unsigned char >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<uint64_t      >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<uint8_t       >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<int32_t       >(42)  ).type(), CALI_TYPE_INT    );
+    EXPECT_EQ( Variant( static_cast<int8_t        >(42)  ).type(), CALI_TYPE_INT    );
+    EXPECT_EQ( Variant( static_cast<float         >(4.2) ).type(), CALI_TYPE_DOUBLE );
+    EXPECT_EQ( Variant( static_cast<bool          >(0)   ).type(), CALI_TYPE_BOOL   );
+    EXPECT_EQ( Variant( CALI_TYPE_STRING                 ).type(), CALI_TYPE_TYPE   );
+}
+
 // --- Test Variant pack/unpack
 
 TEST(Variant_Test, PackUnpack) {
