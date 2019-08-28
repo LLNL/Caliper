@@ -60,50 +60,50 @@ io_function_data_t io_fns[CURIOUS_FUNCTION_COUNT] = {
   { #lower, (void *) wrapped_##lower, &io_fns[CURIOUS_##upper##_ID].handle }
 
 gotcha_binding_t bindings[CURIOUS_FUNCTION_COUNT] = {
-  [CURIOUS_READ_ID]       = GET_BINDING(read,READ), 
+  [CURIOUS_READ_ID]       = GET_BINDING(read,READ),
 // GET_BINDING(read,READ), expands to { "read", read_wrapper, &io_fns[CURIOUS_READ_ID].handle }
-  [CURIOUS_WRITE_ID]      = GET_BINDING(write,WRITE), 
-  [CURIOUS_OPEN_ID]       = GET_BINDING(open,OPEN), 
-  [CURIOUS_CLOSE_ID]      = GET_BINDING(close,CLOSE), 
-  [CURIOUS_STAT_ID]       = GET_BINDING(stat,STAT), 
+  [CURIOUS_WRITE_ID]      = GET_BINDING(write,WRITE),
+  [CURIOUS_OPEN_ID]       = GET_BINDING(open,OPEN),
+  [CURIOUS_CLOSE_ID]      = GET_BINDING(close,CLOSE),
+  [CURIOUS_STAT_ID]       = GET_BINDING(stat,STAT),
   [CURIOUS__STAT_ID]      = { "__stat", (void *) wrapped_stat, &io_fns[CURIOUS_STAT_ID].handle },
-  [CURIOUS_LSTAT_ID]      = GET_BINDING(lstat,LSTAT), 
+  [CURIOUS_LSTAT_ID]      = GET_BINDING(lstat,LSTAT),
   [CURIOUS__LSTAT_ID]     = { "__lstat", (void *) wrapped_lstat, &io_fns[CURIOUS_LSTAT_ID].handle },
-  [CURIOUS_XSTAT_ID]      = GET_BINDING(xstat,XSTAT), 
+  [CURIOUS_XSTAT_ID]      = GET_BINDING(xstat,XSTAT),
   [CURIOUS__XSTAT_ID]     = { "__xstat", (void *) wrapped_xstat, &io_fns[CURIOUS_XSTAT_ID].handle },
-  [CURIOUS_XSTAT64_ID]    = GET_BINDING(xstat64,XSTAT64), 
+  [CURIOUS_XSTAT64_ID]    = GET_BINDING(xstat64,XSTAT64),
   [CURIOUS__XSTAT64_ID]   = { "__xstat64", (void *) wrapped_xstat64, &io_fns[CURIOUS_XSTAT64_ID].handle },
-  [CURIOUS_LXSTAT_ID]     = GET_BINDING(lxstat,LXSTAT), 
+  [CURIOUS_LXSTAT_ID]     = GET_BINDING(lxstat,LXSTAT),
   [CURIOUS__LXSTAT_ID]    = { "__lxstat", (void *) wrapped_lxstat, &io_fns[CURIOUS_LXSTAT_ID].handle },
   [CURIOUS_LXSTAT64_ID]   = GET_BINDING(lxstat64,LXSTAT64),
   [CURIOUS__LXSTAT64_ID]  = { "__lxstat64", (void *) wrapped_lxstat64, &io_fns[CURIOUS_LXSTAT64_ID].handle },
-  [CURIOUS_FSTAT_ID]      = GET_BINDING(fstat,FSTAT), 
+  [CURIOUS_FSTAT_ID]      = GET_BINDING(fstat,FSTAT),
   [CURIOUS__FSTAT_ID]     = { "__fstat", (void *) wrapped_fstat, &io_fns[CURIOUS_FSTAT_ID].handle },
-  [CURIOUS_FXSTAT_ID]     = GET_BINDING(fxstat,FXSTAT), 
+  [CURIOUS_FXSTAT_ID]     = GET_BINDING(fxstat,FXSTAT),
   [CURIOUS__FXSTAT_ID]    = { "__fxstat", (void *) wrapped_fxstat, &io_fns[CURIOUS_FXSTAT_ID].handle },
   [CURIOUS_FXSTAT64_ID]   = GET_BINDING(fxstat64,FXSTAT64),
   [CURIOUS__FXSTAT64_ID]  = { "__fxstat64", (void *) wrapped_fxstat64, &io_fns[CURIOUS_FXSTAT64_ID].handle },
-  [CURIOUS_FOPEN_ID]      = GET_BINDING(fopen,FOPEN), 
+  [CURIOUS_FOPEN_ID]      = GET_BINDING(fopen,FOPEN),
   [CURIOUS_FOPEN64_ID]    = { "fopen64", (void *) wrapped_fopen, &io_fns[CURIOUS_FOPEN64_ID].handle },
-  [CURIOUS_FDOPEN_ID]     = GET_BINDING(fdopen,FDOPEN), 
-  [CURIOUS_FREOPEN_ID]    = GET_BINDING(freopen,FREOPEN), 
-  [CURIOUS_FCLOSE_ID]     = GET_BINDING(fclose,FCLOSE), 
-  [CURIOUS_PRINTF_ID]     = GET_BINDING(printf,PRINTF), 
-  [CURIOUS_FPRINTF_ID]    = GET_BINDING(fprintf,FPRINTF), 
-  [CURIOUS_VPRINTF_ID]    = GET_BINDING(vprintf,VPRINTF), 
+  [CURIOUS_FDOPEN_ID]     = GET_BINDING(fdopen,FDOPEN),
+  [CURIOUS_FREOPEN_ID]    = GET_BINDING(freopen,FREOPEN),
+  [CURIOUS_FCLOSE_ID]     = GET_BINDING(fclose,FCLOSE),
+  [CURIOUS_PRINTF_ID]     = GET_BINDING(printf,PRINTF),
+  [CURIOUS_FPRINTF_ID]    = GET_BINDING(fprintf,FPRINTF),
+  [CURIOUS_VPRINTF_ID]    = GET_BINDING(vprintf,VPRINTF),
   [CURIOUS_VFPRINTF_ID]   = GET_BINDING(vfprintf,VFPRINTF),
   /*
-  [CURIOUS_SCANF_ID]      = GET_BINDING(scanf,SCANF), 
-  [CURIOUS_FSCANF_ID]     = GET_BINDING(fscanf,FSCANF), 
-  [CURIOUS_VSCANF_ID]     = GET_BINDING(vscanf,VSCANF), 
-  [CURIOUS_VFSCANF_ID]    = GET_BINDING(vfscanf,VFSCANF), 
+  [CURIOUS_SCANF_ID]      = GET_BINDING(scanf,SCANF),
+  [CURIOUS_FSCANF_ID]     = GET_BINDING(fscanf,FSCANF),
+  [CURIOUS_VSCANF_ID]     = GET_BINDING(vscanf,VSCANF),
+  [CURIOUS_VFSCANF_ID]    = GET_BINDING(vfscanf,VFSCANF),
   */
-  [CURIOUS_FGETC_ID]      = GET_BINDING(fgetc,FGETC), 
-  [CURIOUS_FGETS_ID]      = GET_BINDING(fgets,FGETS), 
-  [CURIOUS_GETCHAR_ID]    = GET_BINDING(getchar,GETCHAR), 
-//[CURIOUS_GETS_ID]       = GET_BINDING(gets,GETS), 
-  [CURIOUS_FREAD_ID]      = GET_BINDING(fread,FREAD), 
-  [CURIOUS_FWRITE_ID]     = GET_BINDING(fwrite,FWRITE), 
+  [CURIOUS_FGETC_ID]      = GET_BINDING(fgetc,FGETC),
+  [CURIOUS_FGETS_ID]      = GET_BINDING(fgets,FGETS),
+  [CURIOUS_GETCHAR_ID]    = GET_BINDING(getchar,GETCHAR),
+//[CURIOUS_GETS_ID]       = GET_BINDING(gets,GETS),
+  [CURIOUS_FREAD_ID]      = GET_BINDING(fread,FREAD),
+  [CURIOUS_FWRITE_ID]     = GET_BINDING(fwrite,FWRITE),
 };
 
 // Just a boolean to control whether or not wrappers do anything or not
@@ -144,9 +144,9 @@ static __thread volatile sig_atomic_t wrapper_call_depth;
 
 ssize_t wrapped_read(int fd, void *buf, size_t count) {
   WRAPPER_ENTER(read);
-  
+
   // Get the handle for the original function
-  read_f orig_read = (read_f) gotcha_get_wrappee(io_fns[CURIOUS_READ_ID].handle); 
+  read_f orig_read = (read_f) gotcha_get_wrappee(io_fns[CURIOUS_READ_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -160,23 +160,23 @@ ssize_t wrapped_read(int fd, void *buf, size_t count) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
+
     curious_read_record_t io_args = {
-      .bytes_read = 0, 
+      .bytes_read = 0,
       .call_count = 0,
-      .filesystem = filesystem, 
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_READ_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     io_args.bytes_read = orig_read(fd, buf, count);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(io_args.bytes_read, read);
 
   // and just call the original function every other time
@@ -187,9 +187,9 @@ ssize_t wrapped_read(int fd, void *buf, size_t count) {
 
 ssize_t wrapped_write(int fd, const void *buf, size_t count) {
   WRAPPER_ENTER(write);
-  
+
   // Get the handle for the original function
-  write_f orig_write = (write_f) gotcha_get_wrappee(io_fns[CURIOUS_WRITE_ID].handle); 
+  write_f orig_write = (write_f) gotcha_get_wrappee(io_fns[CURIOUS_WRITE_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -203,23 +203,23 @@ ssize_t wrapped_write(int fd, const void *buf, size_t count) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_write_record_t io_args = { 
-      .bytes_written = 0, 
-      .call_count = 0, 
+
+    curious_write_record_t io_args = {
+      .bytes_written = 0,
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_WRITE_ID,
-    }; 
+    };
     call_callbacks(CURIOUS_WRITE_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     io_args.bytes_written = orig_write(fd, buf, count);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(io_args.bytes_written, write);
 
   // and just call the original function every other time
@@ -230,33 +230,30 @@ ssize_t wrapped_write(int fd, const void *buf, size_t count) {
 
 int wrapped_open(const char *pathname, int flags, mode_t mode) {
   WRAPPER_ENTER(open);
-  
-  // Get the handle for the original function
-  open_f orig_open = (open_f) gotcha_get_wrappee(io_fns[CURIOUS_OPEN_ID].handle); 
 
-  // NOTE: calling realpath on pathname before passing it to get_filesystem
-  //       might be necessary in order to handle relative paths_
-
-  curious_metadata_record_t io_args = { 
-    .call_count = 0, 
+  curious_metadata_record_t io_args = {
+    .call_count = 0,
     .function_id = CURIOUS_OPEN_ID,
   };
-  
-  get_filesystem(pathname, &io_args.filesystem, &io_args.mount_point); 
-  
-  // Only call callbacks the first time around
+
   if (1 == wrapper_call_depth && wrappers_enabled) {
+    // NOTE: calling realpath on pathname before passing it to get_filesystem
+    //       might be necessary in order to handle relative paths_
+
+    get_filesystem(pathname, &io_args.filesystem, &io_args.mount_point);
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
   }
+
+  // Get the handle for the original function
+  open_f orig_open = (open_f) gotcha_get_wrappee(io_fns[CURIOUS_OPEN_ID].handle);
 
   // Call the original, saving the result...
   int fd = orig_open(pathname, flags, mode);
 
-  register_file_by_fd(fd);
-  
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    register_file_by_fd(fd);
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
   }
 
   WRAPPER_RETURN(fd, open);
@@ -264,9 +261,9 @@ int wrapped_open(const char *pathname, int flags, mode_t mode) {
 
 int wrapped_close(int fd) {
   WRAPPER_ENTER(close);
-  
+
   // Get the handle for the original function
-  close_f orig_close = (close_f) gotcha_get_wrappee(io_fns[CURIOUS_CLOSE_ID].handle); 
+  close_f orig_close = (close_f) gotcha_get_wrappee(io_fns[CURIOUS_CLOSE_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -280,22 +277,22 @@ int wrapped_close(int fd) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_CLOSE_ID,
-    }; 
+    };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_close(fd);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
- 
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
 
     WRAPPER_RETURN(return_val, close);
 
@@ -307,28 +304,28 @@ int wrapped_close(int fd) {
 
 int wrapped_stat(const char *path, struct stat *buf) {
   WRAPPER_ENTER(stat);
-  
+
   // Get the handle for the original function
-  stat_f orig_stat = (stat_f) gotcha_get_wrappee(io_fns[CURIOUS_STAT_ID].handle); 
+  stat_f orig_stat = (stat_f) gotcha_get_wrappee(io_fns[CURIOUS_STAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
       .function_id = CURIOUS_STAT_ID,
     };
 
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
 
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_stat(path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, stat);
 
   // and just call the original function every other time
@@ -339,28 +336,28 @@ int wrapped_stat(const char *path, struct stat *buf) {
 
 int wrapped_lstat(const char *path, struct stat *buf) {
   WRAPPER_ENTER(lstat);
-  
+
   // Get the handle for the original function
-  stat_f orig_lstat = (stat_f) gotcha_get_wrappee(io_fns[CURIOUS_LSTAT_ID].handle); 
+  stat_f orig_lstat = (stat_f) gotcha_get_wrappee(io_fns[CURIOUS_LSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
       .function_id = CURIOUS_LSTAT_ID,
     };
-    
+
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-    
+
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_lstat(path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, lstat);
 
   // and just call the original function every other time
@@ -371,9 +368,9 @@ int wrapped_lstat(const char *path, struct stat *buf) {
 
 int wrapped_xstat(int vers, const char *path, struct stat *buf) {
   WRAPPER_ENTER(xstat);
-  
+
   // Get the handle for the original function
-  xstat_f orig_xstat = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT_ID].handle); 
+  xstat_f orig_xstat = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -381,18 +378,18 @@ int wrapped_xstat(int vers, const char *path, struct stat *buf) {
       .call_count = 0,
       .function_id = CURIOUS_XSTAT_ID,
     };
-    
+
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-    
+
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_xstat(vers, path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, xstat);
 
   // and just call the original function every other time
@@ -403,28 +400,28 @@ int wrapped_xstat(int vers, const char *path, struct stat *buf) {
 
 int wrapped_xstat64(int vers, const char *path, struct stat *buf) {
   WRAPPER_ENTER(xstat64);
-  
+
   // Get the handle for the original function
-  xstat_f orig_xstat64 = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT64_ID].handle); 
+  xstat_f orig_xstat64 = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT64_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
       .function_id = CURIOUS_XSTAT64_ID,
     };
-    
+
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-    
+
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_xstat64(vers, path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, xstat64);
 
   // and just call the original function every other time
@@ -435,28 +432,28 @@ int wrapped_xstat64(int vers, const char *path, struct stat *buf) {
 
 int wrapped_lxstat(int vers, const char *path, struct stat *buf) {
   WRAPPER_ENTER(lxstat);
-  
+
   // Get the handle for the original function
-  xstat_f orig_lxstat = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_LXSTAT_ID].handle); 
+  xstat_f orig_lxstat = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_LXSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .function_id = CURIOUS_LXSTAT_ID, 
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .function_id = CURIOUS_LXSTAT_ID,
     };
-    
+
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-    
+
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_lxstat(vers, path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, lxstat);
 
   // and just call the original function every other time
@@ -467,28 +464,28 @@ int wrapped_lxstat(int vers, const char *path, struct stat *buf) {
 
 int wrapped_lxstat64(int vers, const char *path, struct stat *buf) {
   WRAPPER_ENTER(xstat);
-  
+
   // Get the handle for the original function
-  xstat_f orig_lxstat64 = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT_ID].handle); 
+  xstat_f orig_lxstat64 = (xstat_f) gotcha_get_wrappee(io_fns[CURIOUS_XSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .function_id = CURIOUS_LXSTAT64_ID, 
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .function_id = CURIOUS_LXSTAT64_ID,
     };
-    
+
     get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-    
+
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_lxstat64(vers, path, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, lxstat64);
 
   // and just call the original function every other time
@@ -499,9 +496,9 @@ int wrapped_lxstat64(int vers, const char *path, struct stat *buf) {
 
 int wrapped_fstat(int fd, struct stat *buf) {
   WRAPPER_ENTER(fstat);
-  
+
   // Get the handle for the original function
-  fstat_f orig_fstat = (fstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FSTAT_ID].handle); 
+  fstat_f orig_fstat = (fstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -515,22 +512,22 @@ int wrapped_fstat(int fd, struct stat *buf) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FSTAT_ID,
-    }; 
+    };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_fstat(fd, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, fstat);
 
   // and just call the original function every other time
@@ -541,9 +538,9 @@ int wrapped_fstat(int fd, struct stat *buf) {
 
 int wrapped_fxstat(int vers, int fd, struct stat *buf) {
   WRAPPER_ENTER(fxstat);
-  
+
   // Get the handle for the original function
-  fxstat_f orig_fxstat = (fxstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FXSTAT_ID].handle); 
+  fxstat_f orig_fxstat = (fxstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FXSTAT_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -557,22 +554,22 @@ int wrapped_fxstat(int vers, int fd, struct stat *buf) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FXSTAT_ID,
     };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_fxstat(vers, fd, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, fxstat);
 
   // and just call the original function every other time
@@ -583,9 +580,9 @@ int wrapped_fxstat(int vers, int fd, struct stat *buf) {
 
 int wrapped_fxstat64(int vers, int fd, struct stat *buf) {
   WRAPPER_ENTER(fxstat64);
-  
+
   // Get the handle for the original function
-  fxstat_f orig_fxstat64 = (fxstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FXSTAT64_ID].handle); 
+  fxstat_f orig_fxstat64 = (fxstat_f) gotcha_get_wrappee(io_fns[CURIOUS_FXSTAT64_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -599,22 +596,22 @@ int wrapped_fxstat64(int vers, int fd, struct stat *buf) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FXSTAT64_ID,
     };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_fxstat64(vers, fd, buf);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, fxstat64);
 
   // and just call the original function every other time
@@ -625,20 +622,20 @@ int wrapped_fxstat64(int vers, int fd, struct stat *buf) {
 
 FILE * wrapped_fopen(const char *path, const char *mode) {
   WRAPPER_ENTER(fopen);
-  
+
   // Get the handle for the original function
-  fopen_f orig_fopen = (fopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FOPEN_ID].handle); 
+  fopen_f orig_fopen = (fopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FOPEN_ID].handle);
 
   // NOTE: calling realpath on pathname before passing it to get_filesystem
   //       might be necessary in order to handle relative paths_
 
-  curious_metadata_record_t io_args = { 
+  curious_metadata_record_t io_args = {
     .call_count = 0,
     .function_id = CURIOUS_FOPEN_ID,
   };
 
   get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-  
+
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
@@ -653,7 +650,7 @@ FILE * wrapped_fopen(const char *path, const char *mode) {
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
   }
 
   WRAPPER_RETURN(file, fopen);
@@ -661,9 +658,9 @@ FILE * wrapped_fopen(const char *path, const char *mode) {
 
 FILE * wrapped_fdopen(int fd, const char *mode) {
   WRAPPER_ENTER(fdopen);
-  
+
   // Get the handle for the original function
-  fdopen_f orig_fdopen = (fdopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FDOPEN_ID].handle); 
+  fdopen_f orig_fdopen = (fdopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FDOPEN_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -677,22 +674,22 @@ FILE * wrapped_fdopen(int fd, const char *mode) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FDOPEN_ID,
     };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     FILE *file = orig_fdopen(fd, mode);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(file, fdopen);
 
   // and just call the original function every other time
@@ -703,20 +700,20 @@ FILE * wrapped_fdopen(int fd, const char *mode) {
 
 FILE * wrapped_freopen(const char *path, const char *mode, FILE *stream) {
   WRAPPER_ENTER(freopen);
-  
+
   // Get the handle for the original function
-  freopen_f orig_freopen = (freopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FREOPEN_ID].handle); 
+  freopen_f orig_freopen = (freopen_f) gotcha_get_wrappee(io_fns[CURIOUS_FREOPEN_ID].handle);
 
   // NOTE: calling realpath on pathname before passing it to get_filesystem
   //       might be necessary in order to handle relative paths_
 
-  curious_metadata_record_t io_args = { 
-    .call_count = 0, 
+  curious_metadata_record_t io_args = {
+    .call_count = 0,
     .function_id = CURIOUS_FREOPEN_ID,
   };
 
   get_filesystem(path, &io_args.filesystem, &io_args.mount_point);
-  
+
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
@@ -730,7 +727,7 @@ FILE * wrapped_freopen(const char *path, const char *mode, FILE *stream) {
   }
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
   }
 
   WRAPPER_RETURN(file, freopen);
@@ -738,9 +735,9 @@ FILE * wrapped_freopen(const char *path, const char *mode, FILE *stream) {
 
 int wrapped_fclose(FILE *fp) {
   WRAPPER_ENTER(fclose);
-  
+
   // Get the handle for the original function
-  fclose_f orig_fclose = (fclose_f) gotcha_get_wrappee(io_fns[CURIOUS_FCLOSE_ID].handle); 
+  fclose_f orig_fclose = (fclose_f) gotcha_get_wrappee(io_fns[CURIOUS_FCLOSE_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -754,24 +751,24 @@ int wrapped_fclose(FILE *fp) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    deregister_file(fileno(fp)); 
-    
-    curious_metadata_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+
+    deregister_file(fileno(fp));
+
+    curious_metadata_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FCLOSE_ID,
     };
     call_callbacks(CURIOUS_METADATA_CALLBACK, &io_args);
-     
+
     // Call the original, saving the result...
     int return_val = orig_fclose(fp);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
- 
+    call_callbacks(CURIOUS_METADATA_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
 
     WRAPPER_RETURN(return_val, fclose);
 
@@ -783,9 +780,9 @@ int wrapped_fclose(FILE *fp) {
 
 int wrapped_printf(const char *format, ...) {
   WRAPPER_ENTER(printf);
-  
+
   // Get the handle for the original function
-  vprintf_f orig_vprintf = (vprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VPRINTF_ID].handle); 
+  vprintf_f orig_vprintf = (vprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VPRINTF_ID].handle);
 
   // Get the variable-length argument list set up
   va_list args;
@@ -803,16 +800,16 @@ int wrapped_printf(const char *format, ...) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_write_record_t io_args = { 
+
+    curious_write_record_t io_args = {
       .bytes_written = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_PRINTF_ID,
     };
     call_callbacks(CURIOUS_WRITE_CALLBACK, &io_args);
-   
+
     // Call the original, saving the result...
     int return_val = orig_vprintf(format, args);
     io_args.call_count = 1;
@@ -821,8 +818,8 @@ int wrapped_printf(const char *format, ...) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, printf);
 
   // and just call the original function every other time
@@ -833,9 +830,9 @@ int wrapped_printf(const char *format, ...) {
 
 int wrapped_fprintf(FILE *stream, const char *format, ...) {
   WRAPPER_ENTER(fprintf);
-  
+
   // Get the handle for the original function
-  vfprintf_f orig_vfprintf = (vfprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFPRINTF_ID].handle); 
+  vfprintf_f orig_vfprintf = (vfprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFPRINTF_ID].handle);
 
   // Get the variable-length argument list set up
   va_list args;
@@ -853,16 +850,16 @@ int wrapped_fprintf(FILE *stream, const char *format, ...) {
       filesystem = record->filesystem;
       mount_point = record->mount_point;
     }
-    
-    curious_write_record_t io_args = { 
+
+    curious_write_record_t io_args = {
       .bytes_written = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FPRINTF_ID,
     };
     call_callbacks(CURIOUS_WRITE_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_vfprintf(stream, format, args);
     io_args.call_count = 1;
@@ -871,8 +868,8 @@ int wrapped_fprintf(FILE *stream, const char *format, ...) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, fprintf);
 
   // and just call the original function every other time
@@ -885,7 +882,7 @@ int wrapped_vprintf(const char *format, va_list ap) {
   WRAPPER_ENTER(vprintf);
 
   // Get the handle for the original function
-  vprintf_f orig_vprintf = (vprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VPRINTF_ID].handle); 
+  vprintf_f orig_vprintf = (vprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VPRINTF_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -900,10 +897,10 @@ int wrapped_vprintf(const char *format, va_list ap) {
       mount_point = record->mount_point;
     }
 
-    curious_write_record_t io_args = { 
+    curious_write_record_t io_args = {
       .bytes_written = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_VPRINTF_ID,
     };
@@ -917,7 +914,7 @@ int wrapped_vprintf(const char *format, va_list ap) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, vprintf);
 
@@ -931,7 +928,7 @@ int wrapped_vfprintf(FILE *stream, const char *format, va_list ap) {
   WRAPPER_ENTER(vfprintf);
 
   // Get the handle for the original function
-  vfprintf_f orig_vfprintf = (vfprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFPRINTF_ID].handle); 
+  vfprintf_f orig_vfprintf = (vfprintf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFPRINTF_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -946,10 +943,10 @@ int wrapped_vfprintf(FILE *stream, const char *format, va_list ap) {
       mount_point = record->mount_point;
     }
 
-    curious_write_record_t io_args = { 
+    curious_write_record_t io_args = {
       .bytes_written = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_VFPRINTF_ID,
     };
@@ -963,7 +960,7 @@ int wrapped_vfprintf(FILE *stream, const char *format, va_list ap) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, vfprintf);
 
@@ -976,9 +973,9 @@ int wrapped_vfprintf(FILE *stream, const char *format, va_list ap) {
 /*
 int wrapped_scanf(const char *format, ...) {
   WRAPPER_ENTER(scanf);
-  
+
   // Get the handle for the original function
-  vscanf_f orig_vscanf = (vscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VSCANF_ID].handle); 
+  vscanf_f orig_vscanf = (vscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VSCANF_ID].handle);
 
   // Get the variable-length argument list set up
   va_list args;
@@ -993,15 +990,15 @@ int wrapped_scanf(const char *format, ...) {
     } else {
       filesystem = record->filesystem;
     }
-    
-    curious_read_record_t io_args = { 
+
+    curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .function_id = CURIOUS_SCANF_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
-   
+
     // Call the original, saving the result...
     int return_val = orig_vscanf(format, args);
     io_args.call_count = 1;
@@ -1011,8 +1008,8 @@ int wrapped_scanf(const char *format, ...) {
     //       to the va_list passed to orig_vscanf
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, scanf);
 
   // and just call the original function every other time
@@ -1023,9 +1020,9 @@ int wrapped_scanf(const char *format, ...) {
 
 int wrapped_fscanf(FILE *stream, const char *format, ...) {
   WRAPPER_ENTER(fscanf);
-  
+
   // Get the handle for the original function
-  vfscanf_f orig_vfscanf = (vfscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFSCANF_ID].handle); 
+  vfscanf_f orig_vfscanf = (vfscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFSCANF_ID].handle);
 
   // Get the variable-length argument list set up
   va_list args;
@@ -1040,21 +1037,21 @@ int wrapped_fscanf(FILE *stream, const char *format, ...) {
     } else {
       filesystem = record->filesystem;
     }
-    
-    curious_read_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+
+    curious_read_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .function_id = CURIOUS_FSCANF_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
-    
+
     // Call the original, saving the result...
     int return_val = orig_vfscanf(stream, format, args);
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
-  
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
+
     WRAPPER_RETURN(return_val, fscanf);
 
   // and just call the original function every other time
@@ -1067,7 +1064,7 @@ int wrapped_vscanf(const char *format, va_list ap) {
   WRAPPER_ENTER(vscanf);
 
   // Get the handle for the original function
-  vscanf_f orig_vscanf = (vscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VSCANF_ID].handle); 
+  vscanf_f orig_vscanf = (vscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VSCANF_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1079,9 +1076,9 @@ int wrapped_vscanf(const char *format, va_list ap) {
       filesystem = record->filesystem;
     }
 
-    curious_read_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+    curious_read_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .function_id = CURIOUS_VSCANF_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
@@ -1091,7 +1088,7 @@ int wrapped_vscanf(const char *format, va_list ap) {
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, vscanf);
 
@@ -1105,7 +1102,7 @@ int wrapped_vfscanf(FILE *stream, const char *format, va_list ap) {
   WRAPPER_ENTER(vfscanf);
 
   // Get the handle for the original function
-  vfscanf_f orig_vfscanf = (vfscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFSCANF_ID].handle); 
+  vfscanf_f orig_vfscanf = (vfscanf_f) gotcha_get_wrappee(io_fns[CURIOUS_VFSCANF_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1117,9 +1114,9 @@ int wrapped_vfscanf(FILE *stream, const char *format, va_list ap) {
       filesystem = record->filesystem;
     }
 
-    curious_read_record_t io_args = { 
-      .call_count = 0, 
-      .filesystem = filesystem, 
+    curious_read_record_t io_args = {
+      .call_count = 0,
+      .filesystem = filesystem,
       .function_id = CURIOUS_VFSCANF_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
@@ -1129,7 +1126,7 @@ int wrapped_vfscanf(FILE *stream, const char *format, va_list ap) {
     io_args.call_count = 1;
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, vfscanf);
 
@@ -1144,7 +1141,7 @@ int wrapped_fgetc(FILE *stream) {
   WRAPPER_ENTER(fgetc);
 
   // Get the handle for the original function
-  fgetc_f orig_fgetc = (fgetc_f) gotcha_get_wrappee(io_fns[CURIOUS_FGETC_ID].handle); 
+  fgetc_f orig_fgetc = (fgetc_f) gotcha_get_wrappee(io_fns[CURIOUS_FGETC_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1161,8 +1158,8 @@ int wrapped_fgetc(FILE *stream) {
 
     curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FGETC_ID,
     };
@@ -1176,7 +1173,7 @@ int wrapped_fgetc(FILE *stream) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, fgetc);
 
@@ -1190,7 +1187,7 @@ char * wrapped_fgets(char *s, int size, FILE *stream) {
   WRAPPER_ENTER(fgets);
 
   // Get the handle for the original function
-  fgets_f orig_fgets = (fgets_f) gotcha_get_wrappee(io_fns[CURIOUS_FGETS_ID].handle); 
+  fgets_f orig_fgets = (fgets_f) gotcha_get_wrappee(io_fns[CURIOUS_FGETS_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1205,9 +1202,9 @@ char * wrapped_fgets(char *s, int size, FILE *stream) {
       mount_point = record->mount_point;
     }
 
-    curious_read_record_t io_args = { 
+    curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FGETS_ID,
@@ -1222,7 +1219,7 @@ char * wrapped_fgets(char *s, int size, FILE *stream) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, fgets);
 
@@ -1236,7 +1233,7 @@ int wrapped_getchar(void) {
   WRAPPER_ENTER(getchar);
 
   // Get the handle for the original function
-  getchar_f orig_getchar = (getchar_f) gotcha_get_wrappee(io_fns[CURIOUS_GETCHAR_ID].handle); 
+  getchar_f orig_getchar = (getchar_f) gotcha_get_wrappee(io_fns[CURIOUS_GETCHAR_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1251,10 +1248,10 @@ int wrapped_getchar(void) {
       mount_point = record->mount_point;
     }
 
-    curious_read_record_t io_args = { 
+    curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_GETCHAR_ID,
     };
@@ -1268,7 +1265,7 @@ int wrapped_getchar(void) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, getchar);
 
@@ -1283,7 +1280,7 @@ char * wrapped_gets(char *s) {
   WRAPPER_ENTER(gets);
 
   // Get the handle for the original function
-  gets_f orig_gets = (gets_f) gotcha_get_wrappee(io_fns[CURIOUS_GETS_ID].handle); 
+  gets_f orig_gets = (gets_f) gotcha_get_wrappee(io_fns[CURIOUS_GETS_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1297,8 +1294,8 @@ char * wrapped_gets(char *s) {
 
     curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
-      .filesystem = filesystem, 
+      .call_count = 0,
+      .filesystem = filesystem,
       .function_id = CURIOUS_GETS_ID,
     };
     call_callbacks(CURIOUS_READ_CALLBACK, &io_args);
@@ -1311,7 +1308,7 @@ char * wrapped_gets(char *s) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, gets);
 
@@ -1330,7 +1327,7 @@ size_t wrapped_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
   WRAPPER_ENTER(fread);
 
   // Get the handle for the original function
-  fread_f orig_fread = (fread_f) gotcha_get_wrappee(io_fns[CURIOUS_FREAD_ID].handle); 
+  fread_f orig_fread = (fread_f) gotcha_get_wrappee(io_fns[CURIOUS_FREAD_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1347,7 +1344,7 @@ size_t wrapped_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 
     curious_read_record_t io_args = {
       .bytes_read = 0,
-      .call_count = 0, 
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FREAD_ID,
@@ -1362,7 +1359,7 @@ size_t wrapped_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_READ_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, fread);
 
@@ -1376,7 +1373,7 @@ size_t wrapped_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream) {
   WRAPPER_ENTER(fwrite);
 
   // Get the handle for the original function
-  fwrite_f orig_fwrite = (fwrite_f) gotcha_get_wrappee(io_fns[CURIOUS_FWRITE_ID].handle); 
+  fwrite_f orig_fwrite = (fwrite_f) gotcha_get_wrappee(io_fns[CURIOUS_FWRITE_ID].handle);
 
   // Only call callbacks the first time around
   if (1 == wrapper_call_depth && wrappers_enabled) {
@@ -1393,7 +1390,7 @@ size_t wrapped_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 
     curious_write_record_t io_args = {
       .bytes_written = 0,
-      .call_count = 0, 
+      .call_count = 0,
       .filesystem = filesystem,
       .mount_point = mount_point,
       .function_id = CURIOUS_FWRITE_ID,
@@ -1408,7 +1405,7 @@ size_t wrapped_fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream) {
     }
 
     //...for the pot callbacks to use
-    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args); 
+    call_callbacks(CURIOUS_WRITE_CALLBACK | CURIOUS_POST_CALLBACK, &io_args);
 
     WRAPPER_RETURN(return_val, fwrite);
 
