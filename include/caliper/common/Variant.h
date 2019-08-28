@@ -103,8 +103,8 @@ public:
     template<typename T=unsigned long,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
     Variant(uint64_t val)
             : m_v(cali_make_variant_from_uint(val))   { }
-            
-    template<typename T=size_t,typename sfinae=typename enable_if<typename is_same<T,uint64_t>::type,void>::type>
+
+    template<typename T=size_t,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
     Variant(size_t val)
             : m_v(cali_make_variant_from_uint(uint64_t(val)))   { }
     Variant(const char* val)
