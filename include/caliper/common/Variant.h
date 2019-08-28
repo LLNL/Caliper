@@ -74,8 +74,7 @@ public:
     Variant(double val)
         : m_v(cali_make_variant_from_double(val)) { }
     Variant(unsigned long val) : m_v(cali_make_variant_from_uint(val)) {}
-    Variant(uint64_t val)
-        : m_v(cali_make_variant_from_uint(val))   { }
+
     struct internal_true_type{};
     struct internal_false_type{};
     template<typename V, typename U>
@@ -86,6 +85,14 @@ public:
     struct is_same<T,T> {
         using type = internal_true_type;
     };
+    template<typename V, typename U>
+    struct is_different {
+        using type = internal_true_type;
+    };
+    template<typename T>
+    struct is_different<T,T> {
+        using type = internal_false_type;
+    };
 
     template<typename B, class T=void>
     struct enable_if{};
@@ -93,7 +100,10 @@ public:
     template<class T>
     struct enable_if<internal_true_type,T> { using type = T;};
 
-
+    template<typename T=unsigned long,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
+    Variant(uint64_t val)
+            : m_v(cali_make_variant_from_uint(val))   { }
+            
     template<typename T=size_t,typename sfinae=typename enable_if<typename is_same<T,uint64_t>::type,void>::type>
     Variant(size_t val)
             : m_v(cali_make_variant_from_uint(uint64_t(val)))   { }
