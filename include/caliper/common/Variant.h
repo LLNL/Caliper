@@ -73,7 +73,7 @@ public:
         : m_v(cali_make_variant_from_int(val))    { }
     Variant(double val)
         : m_v(cali_make_variant_from_double(val)) { }
-    Variant(unsigned long val) : m_v(cali_make_variant_from_uint(val)) {}
+    //Variant(unsigned long val) : m_v(cali_make_variant_from_uint(val)) {}
 
     struct internal_true_type{};
     struct internal_false_type{};
@@ -100,9 +100,12 @@ public:
     template<class T>
     struct enable_if<internal_true_type,T> { using type = T;};
 
-    template<typename T=unsigned long,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
-    Variant(uint64_t val)
-            : m_v(cali_make_variant_from_uint(val))   { }
+    //template<typename T=unsigned long,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
+    //Variant(uint64_t val)
+    //        : m_v(cali_make_variant_from_uint(val))   { }
+
+    template<typename T, typename sfinae=typename enable_if<typename is_same<cali_variant_t,decltype(cali_make_variant_from_uint(T()))>::type,void>::type>
+    Variant(T val) : m_v(cali_make_variant_from_uint(val)) {}
 
     Variant(const char* val)
             : m_v(cali_make_variant_from_string(val))   { }
