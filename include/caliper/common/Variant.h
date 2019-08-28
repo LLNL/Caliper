@@ -104,9 +104,9 @@ public:
     Variant(uint64_t val)
             : m_v(cali_make_variant_from_uint(val))   { }
 
-    template<typename T=size_t,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
-    Variant(size_t val)
-            : m_v(cali_make_variant_from_uint(uint64_t(val)))   { }
+    //template<typename T=size_t,typename sfinae=typename enable_if<typename is_different<T,uint64_t>::type,void>::type>
+    //Variant(size_t val)
+    //        : m_v(cali_make_variant_from_uint(uint64_t(val)))   { }
     Variant(const char* val)
             : m_v(cali_make_variant_from_string(val))   { }
     Variant(cali_attr_type val)
