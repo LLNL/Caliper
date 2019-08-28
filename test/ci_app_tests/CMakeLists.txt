@@ -7,6 +7,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_basic
   ci_test_binding
   ci_test_esc
+  ci_test_io
   ci_test_loop
   ci_test_macros
   ci_test_multichannel
@@ -65,6 +66,7 @@ endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS 
     test_alloc_hooks.py
+    test_ioservice.py
     test_pthread.py)
 endif()
 if (CALIPER_HAVE_PAPI)

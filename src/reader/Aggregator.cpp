@@ -86,7 +86,6 @@ public:
     virtual AggregateKernel* make_kernel() = 0;
 };
 
-
 //
 // --- CountKernel
 //
@@ -160,24 +159,37 @@ class SumKernel : public AggregateKernel {
 public:
 
     class Config : public AggregateKernelConfig {
-        std::string m_aggr_attr_name;
-        Attribute   m_aggr_attr;
+        std::string m_target_attr_name;
+
+        Attribute   m_target_attr;
+        Attribute   m_sum_attr;
 
     public:
 
-        Attribute get_aggr_attr(CaliperMetadataAccessInterface& db) {
-            if (m_aggr_attr == Attribute::invalid) {
-                m_aggr_attr = db.get_attribute(m_aggr_attr_name);
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid) {
+                m_target_attr = db.get_attribute(m_target_attr_name);
 
-                if (m_aggr_attr != Attribute::invalid)
-                    if (!m_aggr_attr.store_as_value())
-                        Log(0).stream() << "sum(" << m_aggr_attr_name << "): Attribute "
-                                        << m_aggr_attr_name
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "sum(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
                                         << " does not have CALI_ATTR_ASVALUE property!"
                                         << std::endl;
             }
 
-            return m_aggr_attr;
+            return m_target_attr;
+        }
+
+        Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                return Attribute::invalid;
+
+            if (m_sum_attr == Attribute::invalid)
+                m_sum_attr = db.create_attribute("sum#" + m_target_attr_name, m_target_attr.type(),
+                                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            return m_sum_attr;
         }
 
         AggregateKernel* make_kernel() {
@@ -185,8 +197,9 @@ public:
         }
 
         Config(const std::string& name)
-            : m_aggr_attr_name(name),
-              m_aggr_attr(Attribute::invalid)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid),
+              m_sum_attr(Attribute::invalid)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
@@ -200,18 +213,23 @@ public:
 
     const AggregateKernelConfig* config() { return m_config; }
 
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) {
         std::lock_guard<std::mutex>
             g(m_lock);
 
-        Attribute aggr_attr = m_config->get_aggr_attr(db);
+        Attribute target_attr = m_config->get_target_attr(db);
 
-        if (aggr_attr == Attribute::invalid)
+        if (target_attr == Attribute::invalid)
             return;
 
-        for (const Entry& e : list) {
-            if (e.attribute() == aggr_attr.id()) {
-                switch (aggr_attr.type()) {
+        Attribute sum_attr = m_config->get_sum_attr(db);
+
+        cali_id_t tgt_id = target_attr.id();
+        cali_id_t sum_id = sum_attr.id();
+
+        for (const Entry& e : rec) {
+            if (e.attribute() == tgt_id || e.attribute() == sum_id) {
+                switch (target_attr.type()) {
                 case CALI_TYPE_DOUBLE:
                     m_sum = Variant(m_sum.to_double() + e.value().to_double());
                     break;
@@ -232,9 +250,9 @@ public:
         }
     }
 
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) {
         if (m_count > 0)
-            list.push_back(Entry(m_config->get_aggr_attr(db), m_sum));
+            rec.push_back(Entry(m_config->get_sum_attr(db), m_sum));
     }
 
 private:
@@ -683,7 +701,7 @@ public:
     };
 
     ScaledRatioKernel(Config* config)
-        : m_sum1(0), m_sum2(0), m_config(config)
+        : m_sum1(0), m_sum2(0), m_count(0), m_config(config)
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
@@ -700,6 +718,7 @@ public:
 
             if        (attr == tattrs.first.id()  || attr == sattrs.first.id())  {
                 m_sum1 += e.value().to_double();
+                ++m_count;
             } else if (attr == tattrs.second.id() || attr == sattrs.second.id()) {
                 m_sum2 += e.value().to_double();
             }
@@ -709,14 +728,14 @@ public:
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
         auto sum_attrs = m_config->get_sum_attributes(db);
 
-        if (m_sum1 > 0)
+        if (m_count > 0 && m_sum1 > 0)
             list.push_back(Entry(sum_attrs.first,  Variant(m_sum1)));
         if (m_sum2 > 0) {
             list.push_back(Entry(sum_attrs.second, Variant(m_sum2)));
 
-            Attribute ratio_attr = m_config->get_ratio_attribute(db);
-
-            list.push_back(Entry(ratio_attr, Variant(m_config->get_scale() * m_sum1 / m_sum2)));
+            if (m_count > 0)
+                list.push_back(Entry(m_config->get_ratio_attribute(db),
+                                     Variant(m_config->get_scale() * m_sum1 / m_sum2)));
         }
     }
 
@@ -724,6 +743,7 @@ private:
 
     double  m_sum1;
     double  m_sum2;
+    int     m_count;
 
     std::mutex m_lock;
 
@@ -1448,7 +1468,7 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
     case KernelID::Count:
         return "count";
     case KernelID::Sum:
-        return op.args[0];
+        return std::string("sum#") + op.args[0];
     case KernelID::ScaledRatio:
         return op.args[0] + std::string("/") + op.args[1];
     case KernelID::PercentTotal:

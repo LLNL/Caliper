@@ -63,7 +63,7 @@ TEST(CalQLParserTest, SelectClauseWithAggregation) {
     ASSERT_EQ(q1.attribute_selection.list.size(), 3);
     EXPECT_EQ(q1.attribute_selection.list[0], "aa");
     EXPECT_EQ(q1.attribute_selection.list[1], "count");
-    EXPECT_EQ(q1.attribute_selection.list[2], "bb");
+    EXPECT_EQ(q1.attribute_selection.list[2], "sum#bb");
     
     EXPECT_EQ(q1.aggregation_ops.selection,     QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q1.aggregation_ops.list.size(), 2);

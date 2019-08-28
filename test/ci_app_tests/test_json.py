@@ -77,7 +77,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         columns = obj['columns']
 
-        self.assertEqual( { 'path', 'iteration#mainloop', 'count', 'time.inclusive.duration' }, set(columns) )
+        self.assertEqual( { 'path', 'iteration#mainloop', 'count', 'sum#time.inclusive.duration' }, set(columns) )
 
         data = obj['data']
 

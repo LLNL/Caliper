@@ -226,8 +226,10 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_NE(sum_attr, Attribute::invalid);
 
     // check results
 
@@ -239,7 +241,7 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
             auto dict = make_dict_from_entrylist(list);
 
             int  aggr = dict[count_attr.id()].value().to_int();
-            int  val  = dict[val_attr.id()  ].value().to_int();
+            int  val  = dict[sum_attr.id()  ].value().to_int();
 
             if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
                 EXPECT_EQ(aggr,  3);
@@ -340,6 +342,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -353,7 +356,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
             auto dict = make_dict_from_entrylist(list);
 
             int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[val_attr.id()  ].value().to_int();
+            int  val   = dict[sum_attr.id()  ].value().to_int();
 
             if (dict[ctx2.id()].value() == Variant(42)) {
                 EXPECT_EQ(count,  5);
@@ -419,6 +422,7 @@ TEST(AggregatorTest, InclusiveSumOp) {
 
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregation_ops.list[2].op.name, "inclusive_sum");
 
     Aggregator a(spec);
 
@@ -445,9 +449,11 @@ TEST(AggregatorTest, InclusiveSumOp) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
     Attribute isum_attr  = db.get_attribute("inclusive#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_NE(sum_attr,   Attribute::invalid);
     ASSERT_NE(isum_attr,  Attribute::invalid);
 
     // check results
@@ -460,7 +466,7 @@ TEST(AggregatorTest, InclusiveSumOp) {
             auto dict = make_dict_from_entrylist(list);
 
             int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[val_attr.id()  ].value().to_int();
+            int  val   = dict[sum_attr.id()  ].value().to_int();
             int  ival  = dict[isum_attr.id() ].value().to_int();
 
             if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
@@ -556,8 +562,10 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_NE(sum_attr, Attribute::invalid);
 
     // check results
 
@@ -566,7 +574,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     auto dict  = make_dict_from_entrylist(resdb.front());
 
     int  count = dict[count_attr.id()].value().to_int();
-    int  val   = dict[val_attr.id()  ].value().to_int();
+    int  val   = dict[sum_attr.id()  ].value().to_int();
 
     EXPECT_EQ(count,  9);
     EXPECT_EQ(val,   35);

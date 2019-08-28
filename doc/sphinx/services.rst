@@ -586,6 +586,30 @@ Example:
                 == CALIPER: Event: finish
                 == CALIPER: Finished
 
+.. _io_service:
+
+IO 
+--------------------------------
+
+The io service wraps POSIX IO calls (open,close,read,write) and 
+collects information about the amount of bytes read and written
+through these IO calls, as well as filesystems and mount points 
+read from or written to. IO operations trigger `io.region` begin 
+and end events. It provides the following attributes: 
+
++----------------------+--------------------------------------------------+
+| `io.region`          | An I/O region. Either "metadata", "read" or      |
+|                      | "write".                                         |
++----------------------+--------------------------------------------------+
+| `io.filesystem`      | The filesystem type targeted by the IO operation.|
++----------------------+--------------------------------------------------+
+| `io.mount.point`     | The mount point targeted by the IO operation.    |
++----------------------+--------------------------------------------------+
+| `io.bytes.read`      | Bytes read in the IO operation.                  |
++----------------------+--------------------------------------------------+
+| `io.bytes.written`   | Bytes written in the IO operation.               |
++----------------------+--------------------------------------------------+
+
 .. _libpfm-service:
 
 Libpfm
