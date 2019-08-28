@@ -5,9 +5,33 @@
 
 #include "mount_tree.h"
 
-mount_tree_t root;
+#include "dynamic_array.h"
 
-void init_mount_tree(void) {
+#define ROOT_PATH "/"
+
+/*********
+ * Types *
+ *********/
+
+typedef struct mount_tree {
+  char *name;
+  char *full_path;
+  char *filesystem;
+  curious_dynamic_array_t children;
+} mount_tree_t;
+
+/**********************
+ * Internal Functions *
+ **********************/
+static void create_mount_tree(mount_tree_t *self, char *name, char *full_path, char *filesystem);
+static void destroy_mount_tree(mount_tree_t *self);
+static mount_tree_t * get_mount(char *full_path, char **name); 
+static void add_mount(char *full_path, char *filesystem);
+static int compare_mount_tree_by_name(char *name, mount_tree_t *tree);
+
+static mount_tree_t root;
+
+void curious_init_mount_tree(void) {
   create_mount_tree(&root, ROOT_PATH, ROOT_PATH, "");
   
   FILE *mount_file = fopen("/proc/mounts", "r");
@@ -35,7 +59,7 @@ void init_mount_tree(void) {
   fclose(mount_file);
 }
 
-void finalize_mount_tree(void) {
+void curious_finalize_mount_tree(void) {
   destroy_mount_tree(&root);
 }
 
@@ -45,14 +69,14 @@ void create_mount_tree(mount_tree_t *self, char *name, char *full_path, char *fi
   self->name = strdup(name);
   self->full_path = strdup(full_path);
   self->filesystem = strdup(filesystem);
-  create_dynamic_array(&self->children, 0, sizeof(mount_tree_t));
+  create_curious_dynamic_array(&self->children, 0, sizeof(mount_tree_t));
 }
 
 void destroy_mount_tree(mount_tree_t *self) {
   free(self->name);
   free(self->full_path);
   free(self->filesystem);
-  destroy_dynamic_array(&self->children, (free_f) destroy_mount_tree);
+  destroy_curious_dynamic_array(&self->children, (free_f) destroy_mount_tree);
 }
 
 mount_tree_t * get_mount(char *full_path, char **name) {
@@ -71,7 +95,7 @@ mount_tree_t * get_mount(char *full_path, char **name) {
     }
 
     // ...see if there's a mount one level down which matches the current path element
-    next_mount = find_in_dynamic_array(&cur_mount->children,
+    next_mount = find_in_curious_dynamic_array(&cur_mount->children,
                                        path_el,
                                        (compare_f) compare_mount_tree_by_name);
     // ...if we couldn't find a match, we've found the deepest relevant node,
@@ -112,7 +136,7 @@ void add_mount(char *full_path, char *filesystem) {
     // Make a new child mount of the parent we found
     mount_tree_t mount;
     create_mount_tree(&mount, name, full_path, filesystem);
-    append_to_dynamic_array(&parent_mount->children, &mount);
+    append_to_curious_dynamic_array(&parent_mount->children, &mount);
   }
  
   // wait until after the mount tree nodehas been created to free this copy,
@@ -120,7 +144,7 @@ void add_mount(char *full_path, char *filesystem) {
   free(path_copy);
 }
 
-void get_filesystem(const char *path, char **filesystem, char **mount_point) {
+void curious_get_filesystem(const char *path, char **filesystem, char **mount_point) {
   // get_mount uses strtok, which mangeles its input string,
   // so we only want to pass in a copy
   char *path_copy;

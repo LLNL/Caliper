@@ -25,14 +25,14 @@
    * Internal Functions *
    **********************/
 
-  void call_callbacks(curious_callback_type_t type, void *io_args);
-  void destroy_curious_callback_data(curious_callback_data_t *self);
-  void init_callback_registry(void);
-  void finalize_callback_registry(void);
+  void curious_call_callbacks(curious_callback_type_t type, void *io_args);
+  void curious_destroy_curious_callback_data(curious_callback_data_t *self);
+  void curious_init_callback_registry(void);
+  void curious_finalize_callback_registry(void);
 
   // Prefix is just for consistency with curious_register_callback, not an indication
   // that this function is a part of the external API
-  int curious_deregister_callbacks(curious_t curious_inst);
+  void curious_deregister_callbacks(curious_t curious_inst);
 
   /*****************
    * API Functions *

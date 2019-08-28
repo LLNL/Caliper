@@ -4,17 +4,17 @@
 #include "callbacks.h"
 #include "dynamic_array.h"
 
-dynamic_array_t callback_registry[CURIOUS_CALLBACK_TYPE_COUNT];
+static curious_dynamic_array_t callback_registry[CURIOUS_CALLBACK_TYPE_COUNT];
 
-void init_callback_registry(void) {
+void curious_init_callback_registry(void) {
   for (int i = 0; i < CURIOUS_CALLBACK_TYPE_COUNT; ++i) {
-    create_dynamic_array(callback_registry + i, 0, sizeof(curious_callback_data_t));
+    create_curious_dynamic_array(callback_registry + i, 0, sizeof(curious_callback_data_t));
   }
 }
 
-void finalize_callback_registry(void) {
+void curious_finalize_callback_registry(void) {
   for (int i = 0; i < CURIOUS_CALLBACK_TYPE_COUNT; ++i) {
-    destroy_dynamic_array(callback_registry + i, NULL);
+    destroy_curious_dynamic_array(callback_registry + i, NULL);
   }
 }
 
@@ -34,7 +34,7 @@ int curious_register_callback(
     data.curious_inst = curious_inst;
 
     //add record to the part of the registry corresponding to its type
-    append_to_dynamic_array(callback_registry + type, (void *) &data);
+    append_to_curious_dynamic_array(callback_registry + type, (void *) &data);
 
     return 0;
   } else {
@@ -42,12 +42,12 @@ int curious_register_callback(
   }
 }
 
-int curious_deregister_callbacks(curious_t curious_inst) {
+void curious_deregister_callbacks(curious_t curious_inst) {
   for (int i = 0; i < CURIOUS_CALLBACK_TYPE_COUNT; ++i) {
-    dynamic_array_t *callbacks = callback_registry + i;
+    curious_dynamic_array_t *callbacks = callback_registry + i;
     int block_size = 0;
     for (int j = 0; j <= callbacks->last_el; ++j) {
-      curious_callback_data_t *data = (curious_callback_data_t *) (get_from_dynamic_array(callbacks, j));
+      curious_callback_data_t *data = (curious_callback_data_t *) (get_from_curious_dynamic_array(callbacks, j));
      
       // We want to deal with contiguous blocks of functions from this CURIOUS instance
       // all at once, for effeciency reasons, so when we find a callback that comes
@@ -57,7 +57,7 @@ int curious_deregister_callbacks(curious_t curious_inst) {
       // ...when we reach the end of such a block, that's when we actually remove
       // all of the call backs...
       } else if (block_size) {
-        remove_from_dynamic_array(callbacks, j - block_size, block_size, NULL);
+        remove_from_curious_dynamic_array(callbacks, j - block_size, block_size, NULL);
         // ...and then start looking for a new block
         block_size = 0;
       }
@@ -65,18 +65,18 @@ int curious_deregister_callbacks(curious_t curious_inst) {
     
     // We might have a block go to the end of the array, but we still need to remove those
     if (block_size) {
-      remove_from_dynamic_array(callbacks, callbacks->last_el + 1 - block_size, block_size, NULL);
+      remove_from_curious_dynamic_array(callbacks, callbacks->last_el + 1 - block_size, block_size, NULL);
     }
   }
 }
 
-void call_callbacks(curious_callback_type_t type, void *io_args) {
+void curious_call_callbacks(curious_callback_type_t type, void *io_args) {
   //lookup the list of registred functions of the specified type...
-  dynamic_array_t callbacks = callback_registry[type];
+  curious_dynamic_array_t callbacks = callback_registry[type];
 
   //...and run every one
   for (int i = 0; i <= callbacks.last_el; ++i) {
-    curious_callback_data_t *data = (curious_callback_data_t *) (get_from_dynamic_array(&callbacks, i));
+    curious_callback_data_t *data = (curious_callback_data_t *) (get_from_curious_dynamic_array(&callbacks, i));
     
     //usr_data was registered with the function earlier,
     //io_args was just passed to the IO function in the main code
