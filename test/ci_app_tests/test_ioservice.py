@@ -7,13 +7,11 @@ import calipertest as calitest
 class CaliperIoServiceTest(unittest.TestCase):
     """ Caliper I/O service test case """
 
-    def test_memusage(self):
-        target_cmd = [ './ci_test_io' ]
+    def test_ioservice(self):
+        target_cmd = [ './ci_test_io', 'event-trace(trace.io=true),output=stdout' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_SERVICES_ENABLE'   : 'event,io,trace,recorder',
-            'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
