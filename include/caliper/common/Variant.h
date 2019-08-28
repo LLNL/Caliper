@@ -38,8 +38,10 @@
 #include "cali_types.h"
 #include "cali_variant.h"
 #include "caliper/caliper-config.h"
-#include <string>
+
 #include <iostream>
+#include <string>
+#include <type_traits>
 
 namespace cali
 {
@@ -104,8 +106,12 @@ public:
     //Variant(uint64_t val)
     //        : m_v(cali_make_variant_from_uint(val))   { }
 
-    template<typename T, typename sfinae=typename enable_if<typename is_same<cali_variant_t,decltype(cali_make_variant_from_uint(T()))>::type,void>::type>
-    Variant(T val) : m_v(cali_make_variant_from_uint(val)) {}
+    // template<typename T, typename sfinae=typename enable_if<typename is_same<cali_variant_t,decltype(cali_make_variant_from_uint(T()))>::type,void>::type>
+    // Variant(T val) : m_v(cali_make_variant_from_uint(val)) {}
+
+    template<typename U, typename std::enable_if< std::is_unsigned<U>::value, int >::type = 0>
+    Variant(U val)
+        : m_v(cali_make_variant_from_uint(val)) { }
 
     Variant(const char* val)
             : m_v(cali_make_variant_from_string(val))   { }

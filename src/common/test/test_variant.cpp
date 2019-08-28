@@ -56,7 +56,6 @@ TEST(Variant_Test, FromString) {
 
 TEST(Variant_Test, UintOverloads) {
     EXPECT_EQ( Variant( static_cast<std::size_t   >(42)  ).type(), CALI_TYPE_UINT   );
-    EXPECT_EQ( Variant( static_cast<std::ptrdiff_t>(42)  ).type(), CALI_TYPE_UINT   );
     EXPECT_EQ( Variant( static_cast<unsigned      >(42)  ).type(), CALI_TYPE_UINT   );
     EXPECT_EQ( Variant( static_cast<unsigned char >(42)  ).type(), CALI_TYPE_UINT   );
     EXPECT_EQ( Variant( static_cast<uint64_t      >(42)  ).type(), CALI_TYPE_UINT   );
