@@ -62,7 +62,7 @@ class Variant
 public:
     
     CONSTEXPR_UNLESS_PGI Variant()
-        : m_v { CALI_TYPE_INV, { .v_uint = 0 } }  { }
+        : m_v { CALI_TYPE_INV, { 0 } } { }
     
     Variant(const cali_variant_t& v)
         : m_v(v) { }
