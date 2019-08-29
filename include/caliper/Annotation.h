@@ -40,7 +40,8 @@
 #ifndef CALI_ANNOTATION_H
 #define CALI_ANNOTATION_H
 
-#include "common/cali_types.h"
+#include "caliper/common/Variant.h"
+
 #include <map>
 
 #if __cplusplus >= 201103L
@@ -49,8 +50,6 @@
 
 namespace cali
 {
-    
-class Variant;
 
 /// \addtogroup AnnotationAPI
 /// \{
