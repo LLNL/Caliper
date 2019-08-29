@@ -150,8 +150,9 @@ cali_make_variant_from_double(double value)
 }
 
 inline cali_variant_t
-cali_make_variant_from_string(const char* value){
-    return cali_make_variant(CALI_TYPE_STRING,value,strlen(value));
+cali_make_variant_from_string(const char* value)
+{
+    return cali_make_variant(CALI_TYPE_STRING, value, strlen(value));
 }
 
 inline cali_variant_t

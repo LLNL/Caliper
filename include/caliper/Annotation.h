@@ -33,10 +33,6 @@
 /// \file Annotation.h
 /// %Caliper C++ annotation interface
 
-//
-// --- NOTE: This interface must be C++98 only!
-//
-
 #ifndef CALI_ANNOTATION_H
 #define CALI_ANNOTATION_H
 
