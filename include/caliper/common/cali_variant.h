@@ -60,10 +60,10 @@ typedef struct {
     /** Value in various type representations
      */
     union {
+        uint64_t       v_uint; // let largest member be the first
         bool           v_bool;
         double         v_double;
         int            v_int;
-        uint64_t       v_uint;
         cali_attr_type v_type;
         void*          unmanaged_ptr;
         const void*    unmanaged_const_ptr;
