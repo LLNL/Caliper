@@ -25,6 +25,7 @@ TEST(Variant_Test, FromString) {
         { CALI_TYPE_INT,    "bla",   false, Variant() },
         
         { CALI_TYPE_STRING, teststr, true,  Variant(CALI_TYPE_STRING, teststr, strlen(teststr)) },
+        { CALI_TYPE_STRING, teststr, true,  Variant(teststr) },
         { CALI_TYPE_STRING, "",      true,  Variant(CALI_TYPE_STRING, "", 0)  },
 
         { CALI_TYPE_UINT,   "0",     true,  Variant(static_cast<uint64_t>(0)) },
@@ -52,6 +53,19 @@ TEST(Variant_Test, FromString) {
         EXPECT_EQ(ok, t->ok) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
         EXPECT_EQ(v, t->expected) << "for \"" << t->str << "\" (" << cali_type2string(t->type) << ")";
     }
+}
+
+TEST(Variant_Test, UintOverloads) {
+    EXPECT_EQ( Variant( static_cast<std::size_t   >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<unsigned      >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<unsigned char >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<uint64_t      >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<uint8_t       >(42)  ).type(), CALI_TYPE_UINT   );
+    EXPECT_EQ( Variant( static_cast<int32_t       >(42)  ).type(), CALI_TYPE_INT    );
+    EXPECT_EQ( Variant( static_cast<int8_t        >(42)  ).type(), CALI_TYPE_INT    );
+    EXPECT_EQ( Variant( static_cast<float         >(4.2) ).type(), CALI_TYPE_DOUBLE );
+    EXPECT_EQ( Variant( static_cast<bool          >(0)   ).type(), CALI_TYPE_BOOL   );
+    EXPECT_EQ( Variant( CALI_TYPE_STRING                 ).type(), CALI_TYPE_TYPE   );
 }
 
 // --- Test Variant pack/unpack

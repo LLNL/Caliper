@@ -170,6 +170,9 @@ extern inline cali_variant_t
 cali_make_variant_from_double(double value);
 
 extern inline cali_variant_t
+cali_make_variant_from_string(const char* str);
+
+extern inline cali_variant_t
 cali_make_variant_from_type(cali_attr_type value);
 
 extern inline cali_variant_t
