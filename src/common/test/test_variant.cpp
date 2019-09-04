@@ -25,6 +25,7 @@ TEST(Variant_Test, FromString) {
         { CALI_TYPE_INT,    "bla",   false, Variant() },
         
         { CALI_TYPE_STRING, teststr, true,  Variant(CALI_TYPE_STRING, teststr, strlen(teststr)) },
+        { CALI_TYPE_STRING, teststr, true,  Variant(teststr) },
         { CALI_TYPE_STRING, "",      true,  Variant(CALI_TYPE_STRING, "", 0)  },
 
         { CALI_TYPE_UINT,   "0",     true,  Variant(static_cast<uint64_t>(0)) },
