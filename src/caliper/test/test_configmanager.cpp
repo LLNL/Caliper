@@ -65,7 +65,7 @@ TEST(ConfigManagerTest, ParseConfig) {
         cali::ConfigManager mgr;
         cali::ConfigManager::argmap_t extra_kv_pairs;
 
-        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, foo=bar ", extra_kv_pairs));
+        EXPECT_TRUE(mgr.add(" event-trace, runtime-report, aggregate_across_ranks=false, foo=bar , blagarbl ", extra_kv_pairs));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -75,8 +75,9 @@ TEST(ConfigManagerTest, ParseConfig) {
         EXPECT_EQ(std::string("event-trace"), list[0]->name());
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
 
-        ASSERT_EQ(extra_kv_pairs.size(), 1);
+        ASSERT_EQ(extra_kv_pairs.size(), 2);
         EXPECT_EQ(extra_kv_pairs["foo"], std::string("bar"));
+        EXPECT_EQ(extra_kv_pairs["blagarbl"], std::string());
     }
 
     {

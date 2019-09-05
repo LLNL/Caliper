@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/caliper-config.h"
@@ -35,7 +35,7 @@ merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
         if (it == to.end() || it->first != p.first)
             to.emplace_hint(it, p.first, p.second);
     }
-    
+
     return to;
 }
 
@@ -66,11 +66,11 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     //   Parse "=value"
-    // Returns "true" if there is no '=', otherwise the string after '='. 
+    // Returns an empty string if there is no '=', otherwise the string after '='.
     // Sets error if there is a '=' but no word afterwards.
     std::string
     read_value(std::istream& is, const std::string& key) {
-        std::string val = "true";
+        std::string val;
         char c = util::read_char(is);
 
         if (c == '=') {
@@ -79,12 +79,12 @@ struct ConfigManager::ConfigManagerImpl
             if (val.empty())
                 set_error("Expected value after \"" + key + "=\"");
         }
-        else 
+        else
             is.unget();
 
         return val;
     }
-    
+
     argmap_t
     parse_arglist(std::istream& is, const char* argtbl[]) {
         argmap_t args;
@@ -111,13 +111,18 @@ struct ConfigManager::ConfigManagerImpl
                 args.clear();
                 return args;
             }
-            
-            args[key] = read_value(is, key);
+
+            std::string val = read_value(is, key);
 
             if (m_error) {
                 args.clear();
                 return args;
             }
+
+            if (val.empty())
+                val = "true";
+
+            args[key] = val;
 
             c = util::read_char(is);
         } while (is.good() && c == ',');
@@ -132,14 +137,14 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     // Return config info object with given name, or null if not found
-    const ConfigInfo* 
+    const ConfigInfo*
     find_config(const std::string& name) {
         const ::ConfigInfoList* lst_p = ::s_config_list;
         const ConfigInfo* cfg_p = nullptr;
-        
+
         while (lst_p) {
             cfg_p = lst_p->configs;
-        
+
             while (cfg_p && cfg_p->name && name != std::string(cfg_p->name))
                 ++cfg_p;
 
@@ -172,7 +177,7 @@ struct ConfigManager::ConfigManagerImpl
     std::vector< std::pair<const ConfigInfo*, argmap_t> >
     parse_configstring(const char* config_string) {
         std::vector< std::pair<const ConfigInfo*, argmap_t> > ret;
-        
+
         std::istringstream is(config_string);
         char c = 0;
 
@@ -195,7 +200,7 @@ struct ConfigManager::ConfigManagerImpl
             if (cfg_p) {
                 auto args = parse_arglist(is, cfg_p->args);
 
-                if (m_error) 
+                if (m_error)
                     return ret;
 
                 ret.push_back(std::make_pair(cfg_p, std::move(args)));
@@ -205,15 +210,19 @@ struct ConfigManager::ConfigManagerImpl
                 if (m_error)
                     return ret;
 
-                if (is_option(key))
+                if (is_option(key)) {
+                    if (val.empty())
+                        val = "true";
+
                     m_default_parameters[key] = val;
+                }
                 else
                     m_extra_vars[key] = val;
             }
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
-        
+
         return ret;
     }
 
@@ -298,7 +307,7 @@ ConfigManager::get_channel(const char* name)
     for (ChannelPtr& chn : mP->m_channels)
         if (chn->name() == name)
             return chn;
-    
+
     return ChannelPtr();
 }
 
@@ -313,7 +322,7 @@ std::vector<std::string>
 ConfigManager::available_configs()
 {
     std::vector<std::string> ret;
-    
+
     for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
         for (const ConfigInfo* cp = lp->configs; cp && cp->name; ++cp)
             ret.push_back(cp->name);
