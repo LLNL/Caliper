@@ -312,6 +312,20 @@ ConfigManager::get_channel(const char* name)
 }
 
 void
+ConfigManager::start()
+{
+    for (ChannelPtr& chn : mP->m_channels)
+        chn->start();
+}
+
+void
+ConfigManager::flush()
+{
+    for (ChannelPtr& chn : mP->m_channels)
+        chn->flush();
+}
+
+void
 ConfigManager::add_controllers(const ConfigManager::ConfigInfo* ctrlrs)
 {
     ::ConfigInfoList* elem = new ConfigInfoList { ctrlrs, ::s_config_list };
