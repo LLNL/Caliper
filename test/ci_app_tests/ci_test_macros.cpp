@@ -1,12 +1,13 @@
 // --- Caliper continuous integration test app for basic trace test
 
 #include "caliper/cali.h"
+#include "caliper/cali-manager.h"
 
-// test C macros
+// test C and C++ macros
 
 void foo()
 {
-    CALI_MARK_FUNCTION_BEGIN;
+    CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("pre-loop");
     CALI_WRAP_STATEMENT("foo.init", int count = 4);
@@ -19,14 +20,21 @@ void foo()
         CALI_MARK_ITERATION_END(fooloop);
     }
     CALI_MARK_LOOP_END(fooloop);
-
-    CALI_MARK_FUNCTION_END;
 }
 
-int main() 
+int main(int argc, char* argv[])
 {
-    CALI_CXX_MARK_FUNCTION;
-    
+    cali::ConfigManager mgr;
+
+    if (argc > 1)
+        mgr.add(argv[1]);
+    if (mgr.error())
+        return -1;
+
+    mgr.start();
+
+    CALI_MARK_FUNCTION_BEGIN;
+
     const int count = 4;
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
@@ -36,6 +44,9 @@ int main()
 
         foo();
     }
-    
+
     CALI_CXX_MARK_LOOP_END(mainloop);
+    CALI_MARK_FUNCTION_END;
+
+    mgr.flush();
 }

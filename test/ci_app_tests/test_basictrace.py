@@ -175,12 +175,11 @@ class CaliperBasicTraceTest(unittest.TestCase):
         
 
     def test_macros(self):
-        target_cmd = [ './ci_test_macros' ]
+        # Use ConfigManager API here
+        target_cmd = [ './ci_test_macros', 'event-trace,output=stdout' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 

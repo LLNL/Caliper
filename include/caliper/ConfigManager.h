@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 /// \file ConfigManager.h
@@ -20,11 +20,11 @@ class ChannelController;
 /// \ingroup ConfigManagerAPI
 /// \brief Configure, enable, and manage built-in %Caliper configurations
 ///
-///   ConfigManager is the principal component for managing and built-in 
-/// %Caliper measurement configurations. It parses a configuration 
-/// string and creates a set of control channels for the requested 
+///   ConfigManager is the principal component for managing and built-in
+/// %Caliper measurement configurations. It parses a configuration
+/// string and creates a set of control channels for the requested
 /// measurement configurations. The control channel objects can then be
-/// used to start, stop, and flush the measurements channels. 
+/// used to start, stop, and flush the measurements channels.
 /// Example:
 ///
 /// \code
@@ -39,27 +39,23 @@ class ChannelController;
 ///     std::cerr << "ConfigManager: " << mgr.error_msg() << std::endl;
 /// }
 ///
-/// //   Get channel controller objects for the requested configurations
-/// // and activate them
-/// auto channels = mgr.get_all_channels();
-/// for (auto &c : channels)
-///     c->start();
+/// // Activate all requested configuration channels
+/// mgr.start();
 ///
 /// // ...
 ///
-/// //   Trigger output on the configured channel controllers.
+/// //   Trigger output on all configured channel controllers.
 /// // Must be done explicitly, the built-in Caliper configurations do not
 /// // not flush results automatically.
-/// for (auto &c : channels)
-///     c->flush();
+/// mgr.flush();
 /// \endcode
 class ConfigManager
 {
     struct ConfigManagerImpl;
     std::shared_ptr<ConfigManagerImpl> mP;
-    
+
 public:
-    
+
     typedef std::map<std::string, std::string> argmap_t;
 
     typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&);
@@ -71,7 +67,7 @@ public:
         CreateConfigFn create;
     };
 
-    /// \brief Add a list of pre-defined configurations. Internal use. 
+    /// \brief Add a list of pre-defined configurations. Internal use.
     static void
     add_controllers(const ConfigInfo*);
 
@@ -86,7 +82,7 @@ public:
     ///   specified configuration channels.
     ///
     /// Parses configuration strings of the following form:
-    /// 
+    ///
     ///   <config> ( <argument> = value, ... ), ...
     ///
     /// e.g., "runtime-report,event-trace(output=trace.cali)"
@@ -103,10 +99,10 @@ public:
     ///
     /// add() can be invoked multiple times.
     ///
-    /// In this add() version, key-value pairs in the config string that 
+    /// In this add() version, key-value pairs in the config string that
     /// neither represent a valid configuration or configuration parameter
     /// will be marked as a parse error.
-    /// 
+    ///
     /// \return false if there was a parse error, true otherwise
     bool add(const char* config_string);
 
@@ -114,8 +110,8 @@ public:
     ///   specified configuration channels.
     ///
     /// Works similar to ConfigManager::add(const char*), but does not mark
-    /// extra key-value pairs in the config string that do not represent a 
-    /// configuration name or parameter as errors, and instead returns them in 
+    /// extra key-value pairs in the config string that do not represent a
+    /// configuration name or parameter as errors, and instead returns them in
     /// \a extra_kv_pairs.
     bool add(const char* config_string, argmap_t& extra_kv_pairs);
 
@@ -123,13 +119,13 @@ public:
     void set_default_parameter(const char* key, const char* value);
 
     /// \brief Returns \a true if there was an error parsing configuration
-    ///   strings 
+    ///   strings
     bool error() const;
 
     /// \brief Returns an error message if there was an error parsing
     ///   configuration strings
     std::string error_msg() const;
-    
+
     typedef std::shared_ptr<cali::ChannelController> ChannelPtr;
     typedef std::vector<ChannelPtr> ChannelList;
 
@@ -149,6 +145,32 @@ public:
     ChannelPtr
     get_channel(const char* name);
 
+    /// \brief Start all configured measurement channels
+    ///
+    /// Invokes the ChannelController::start() method on all configuration
+    /// channel controllers created by the ConfigManager. Equivalent to
+    /// \code
+    /// ConfigManager mgr;
+    /// // ...
+    /// auto channels = mgr.get_all_channels();
+    /// for (auto& channel : channels)
+    ///     channel->start();
+    /// \endcode
+    void
+    start();
+
+    /// \brief Flush all configured measurement channels
+    ///
+    /// Invokes the ChannelController::flush() method on all configuration
+    /// channel controllers created by the ConfigManager. Equivalent to
+    /// \code
+    /// auto channels = mgr.get_all_channels();
+    /// for (auto& channel : channels)
+    ///     channel->flush();
+    /// \endcode
+    void
+    flush();
+
     /// \brief Return names of available configs
     static std::vector<std::string>
     available_configs();
@@ -158,7 +180,7 @@ public:
     get_config_docstrings();
 
     /// \brief Check if given config string is valid.
-    /// 
+    ///
     /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
     /// in the config string that do not represent configurations or parameters
     /// will be marked as errors.
