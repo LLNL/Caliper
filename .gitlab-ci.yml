@@ -8,7 +8,7 @@ build-quartz-intel:
     - mkdir build-quartz-intel && cd build-quartz-intel
     - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
     - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - ctest --output-on-failure
 
 build-quartz-pgi:
   stage: build
@@ -20,7 +20,7 @@ build-quartz-pgi:
     - mkdir build-quartz-pgi && cd build-quartz-pgi
     - cmake -C ../cmake/hostconfig/gitlab-quartz-pgi.cmake ..
     - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - ctest --output-on-failure
 
 build-butte-xlc:
   stage: build
@@ -33,4 +33,4 @@ build-butte-xlc:
     - mkdir build-butte-xlc && cd build-butte-xlc
     - cmake -C ../cmake/hostconfig/gitlab-butte-xlc.cmake ..
     - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - ctest --output-on-failure
