@@ -1,8 +1,8 @@
-set(CMAKE_C_COMPILER   "/usr/tce/packages/intel/intel-18.0.1/bin/icc" CACHE PATH "")
-set(CMAKE_CXX_COMPILER "/usr/tce/packages/intel/intel-18.0.1/bin/icpc" CACHE PATH "")
+set(CMAKE_C_COMPILER   "/usr/tce/packages/intel/intel-19.0.4/bin/icc" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "/usr/tce/packages/intel/intel-19.0.4/bin/icpc" CACHE PATH "")
 
-set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-18.0.1/bin/mpicc" CACHE PATH "")
-set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-18.0.1/bin/mpicxx" CACHE PATH "")
+set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicc" CACHE PATH "")
+set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicxx" CACHE PATH "")
 
 set(PAPI_PREFIX "/usr/tce/packages/papi/papi-5.5.1" CACHE PATH "")
 set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")

@@ -1,10 +1,10 @@
-set(CMAKE_C_COMPILER   "/usr/tce/packages/pgi/pgi-19.1/bin/pgcc" CACHE PATH "")
-set(CMAKE_CXX_COMPILER "/usr/tce/packages/pgi/pgi-19.1/bin/pgc++" CACHE PATH "")
+set(CMAKE_C_COMPILER   "/usr/tce/packages/pgi/pgi-19.7/bin/pgcc" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "/usr/tce/packages/pgi/pgi-19.7/bin/pgc++" CACHE PATH "")
 
 set(CMAKE_CXX_FLAGS    "-std=c++11" CACHE STRING "")
 
-set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-pgi-19.1/bin/mpicc" CACHE PATH "")
-set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-pgi-19.1/bin/mpicxx" CACHE PATH "")
+set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-pgi-19.7/bin/mpicc" CACHE PATH "")
+set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-pgi-19.7/bin/mpicxx" CACHE PATH "")
 
 set(PAPI_PREFIX "/usr/tce/packages/papi/papi-5.5.1" CACHE PATH "")
 set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
