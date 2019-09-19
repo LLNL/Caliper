@@ -23,7 +23,7 @@ if (${BUILD_SHARED_LIBS})
 endif()
 
 set(CALIPER_SERIAL_OBJS
-  $<TARGET_OBJECTS:util>
+  $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
 
   $<TARGET_OBJECTS:caliper-reader>
