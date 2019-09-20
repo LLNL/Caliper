@@ -40,6 +40,8 @@
 
 #include "caliper/tools-util/Args.h"
 
+#include "../../services/Services.h"
+
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
@@ -256,6 +258,32 @@ void setup_caliper_config(const Args& args)
     }
 }
 
+void print_help(const Args& args)
+{
+    std::string helpopt = args.get("help");
+
+    if (helpopt == "configs") {
+        for (const auto &s : ConfigManager::get_config_docstrings())
+            std::cerr << s << std::endl;
+    } else if (helpopt == "services") {
+        Services::add_default_services();
+        auto srvcs = Services::get_available_services();
+
+        int i = 0;
+        for (const auto& s : Services::get_available_services())
+            std::cerr << (i++ > 0 ? "," : "") << s;
+        std::cerr << std::endl;
+    } else if (!helpopt.empty()) {
+        std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
+                    << "\n  [none]:   Describe cali-query usage (default)"
+                    << "\n  configs:  Describe Caliper profiling configurations"
+                    << "\n  services: List available services"
+                    << std::endl;
+    } else {
+        std::cerr << usage << "\n\n";
+        args.print_available_options(std::cerr);
+    }
+}
 
 //
 // --- main()
@@ -284,21 +312,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            std::string helpopt = args.get("help");
-            
-            if (helpopt == "configs") {
-                for (const auto &s : ConfigManager::get_config_docstrings())
-                    std::cerr << s << std::endl;
-            } else if (!helpopt.empty()) {
-                std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                          << "\n  [none]:  Describe cali-query usage (default)"
-                          << "\n  configs: Describe Caliper profiling configurations"
-                          << std::endl;
-            } else {
-                std::cerr << usage << "\n\n";
-                args.print_available_options(std::cerr);
-            }
-            
+            print_help(args);
             return 0;
         }
 
@@ -321,14 +335,12 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    auto channels = mgr.get_all_channels();
-    for (auto &chn : channels)
-        chn->start();
+    mgr.start();
 
-    cali::Annotation("cali-query.build.date", CALI_ATTR_GLOBAL).set(__DATE__);
-    cali::Annotation("cali-query.build.time", CALI_ATTR_GLOBAL).set(__TIME__);
+    cali_set_global_string_byname("cali-query.build.date", __DATE__);
+    cali_set_global_string_byname("cali-query.build.time", __TIME__);
 #ifdef __GNUC__
-    cali::Annotation("cali-query.build.compiler", CALI_ATTR_GLOBAL).set("gnu-" __VERSION__);
+    cali_set_global_string_byname("cali-query.build.compiler", "gnu-" __VERSION__);
 #endif
 
     CALI_MARK_BEGIN("Initialization");
@@ -482,7 +494,6 @@ int main(int argc, const char* argv[])
     }
 
     CALI_MARK_END("Writing");
-
-    for (auto &chn : channels)
-        chn->flush();
+    
+    mgr.flush();
 }
