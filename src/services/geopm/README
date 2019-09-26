@@ -1,0 +1,20 @@
+
+To build the GEOPM service, use the following cmake command instead 
+of the command described in the main README of Caliper:
+
+cmake -DCMAKE_INSTALL_PREFIX=<install path> \
+    -DCMAKE_C_COMPILER=`which mpicc` \
+    -DCMAKE_CXX_COMPILER=`which mpicxx` \
+    -DCMAKE_EXE_LINKER_FLAGS=-fopenmp -L<path to libgeopm.so> -lgeopm \
+    -DCMAKE_EXE_LINKER_FLAGS_DEBUG=-fopenmp -L<path to libgeopm.so> -lgeopm \
+    -DCMAKE_EXE_LINKER_FLAGS_RELEASE=-fopenmp -L<path to libgeopm.so> -lgeopm \
+    .
+
+For example:
+cmake -DCMAKE_INSTALL_PREFIX=/g/g92/marathe1/work/caliper/install \
+    -DCMAKE_C_COMPILER=`which mpicc` \
+    -DCMAKE_CXX_COMPILER=`which mpicxx` \
+    -DCMAKE_EXE_LINKER_FLAGS="-fopenmp -L/g/g92/marathe1/geopm/install-dev/lib -lgeopm" \
+    -DCMAKE_EXE_LINKER_FLAGS_DEBUG="-fopenmp -L/g/g92/marathe1/geopm/install-dev/lib -lgeopm" \
+    -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-fopenmp -L/g/g92/marathe1/geopm/install-dev/lib -lgeopm" \
+    .
