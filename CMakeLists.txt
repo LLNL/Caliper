@@ -116,7 +116,6 @@ if (WITH_PAPI)
   if (PAPI_FOUND)
     set(CALIPER_HAVE_PAPI TRUE)
     set(CALIPER_PAPI_CMAKE_MSG "Yes, using ${PAPI_LIBRARIES}")
-    message(STATUS " " ${CALIPER_PAPI_CMAKE_MSG})
     list(APPEND CALIPER_EXTERNAL_LIBS ${PAPI_LIBRARIES})
   else()
     message(WARNING "PAPI support was requested but PAPI was not found!\n"
