@@ -42,6 +42,7 @@ option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
+option(WITH_GEOPM     "Enable GEOPM service" TRUE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -280,6 +281,22 @@ if (WITH_SAMPLER)
     list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
   else()
     message(WARNING "Sampler is not supported on ${CMAKE_SYSTEM_NAME}")
+  endif()
+endif()
+
+# Find GEOPM 
+if (WITH_GEOPM)
+  include(FindGeopm)
+  if(GEOPM_FOUND)
+    message(STATUS "Found geopm.h in " ${GEOPM_INCLUDE_DIR})
+    message(STATUS "Found libgeopm.so in " ${GEOPM_LIBRARY})
+    set(CALIPER_HAVE_GEOPM TRUE)
+    set(CALIPER_GEOPM_CMAKE_MSG "Yes, using ${GEOPM_LIBRARY}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${GEOPM_LIBRARY})
+  else()
+    message(WARNING "GEOPM support was requested but libgeopm.so was not found!\n"
+      "Set -DGEOPM_INSTALL=<path to GEOPM build directory>"
+      "and re-run cmake")
   endif()
 endif()
 

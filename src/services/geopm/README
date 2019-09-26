@@ -1,0 +1,16 @@
+
+To build the GEOPM service, use the following cmake command instead 
+of the command described in the main README of Caliper:
+
+cmake -DCMAKE_INSTALL_PREFIX=<install path> \
+    -DCMAKE_C_COMPILER=`which mpicc` \
+    -DCMAKE_CXX_COMPILER=`which mpicxx` \
+    -DGEOPM_INSTALL=<GEOPM install path> \
+    ..
+
+For example:
+cmake -DCMAKE_INSTALL_PREFIX=/home/user/caliper/install \
+    -DCMAKE_C_COMPILER=`which mpicc` \
+    -DCMAKE_CXX_COMPILER=`which mpicxx` \
+    -DGEOPM_INSTALL=/home/user/geopm/install
+    ..

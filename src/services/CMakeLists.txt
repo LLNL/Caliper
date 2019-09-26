@@ -88,6 +88,10 @@ if (CALIPER_HAVE_VTUNE)
   add_subdirectory(vtune)
 endif()
 
+if (CALIPER_HAVE_GEOPM)
+    add_subdirectory(geopm)
+endif()
+
 add_service_sources(Services.cpp)
 
 configure_file(
