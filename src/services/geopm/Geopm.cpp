@@ -68,7 +68,7 @@ std::map<std::string, uint64_t> geopm_loop_list;
 void geopm_init_region(Caliper* c, const Attribute& attr, const Variant& value) {
    uint64_t sumatoms_rid;
    int err;
-   Log(1).stream() << "Init GEOPM " << endl;
+   Log(1).stream() << "GEOPM service initialized" << endl;
 }
 
 void geopm_set_iteration(Caliper* c, Channel* chn, const Attribute& attr, const Variant& val) {
@@ -76,14 +76,10 @@ void geopm_set_iteration(Caliper* c, Channel* chn, const Attribute& attr, const 
     std::string sAttrName(attr.name());
     /* Check if the attribute is an iteration */
     if(sAttrName.find(".loopcount") != std::string::npos) { 
+        /* Safe-guarding condition for never-before-seen loop region */
         std::string sLoopName = sAttrName.substr(0, sAttrName.find(".")); 
          geopm_loop_list.insert(std::pair<std::string, uint64_t>(sLoopName, val.to_uint()));
-        /* Safe-guarding condition for never-before-seen loop region */
     } 
-    if(omp_get_max_threads() > 1) {
-    } else {
-        
-    }
 }
 
 void geopm_begin_region(Caliper* c, Channel* chn, const Attribute& attr, const Variant& regionname) {
@@ -119,7 +115,9 @@ void geopm_begin_region(Caliper* c, Channel* chn, const Attribute& attr, const V
         }
 
     } else if(attr.name() == "statement") {
+        /* Do not handle this case */
     } else if(attr.name() == "function") {
+        /* Do not handle this case */
     }
 }
 
@@ -168,7 +166,7 @@ void geopm_end_region(Caliper* c, Channel* chn, const Attribute& attr, const Var
                 /* Missing phase begin, throw error */
                 uint64_t phase_rid = GEOPM_NULL_VAL; 
                 geopm_phase_map[sRegionName] = phase_rid;
-                Log(1).stream() << "---GEOPM: missing phase found. Please add the missing 'begin' mark-up for " << sRegionName << endl; 
+                Log(1).stream() << "GEOPM service: missing phase found. Please add the missing 'begin' mark-up for " << sRegionName << endl; 
             }
         }
         /* Check if the attribute is of type 'annotation' */
@@ -192,20 +190,12 @@ void geopm_end_region(Caliper* c, Channel* chn, const Attribute& attr, const Var
     }
 }
 
-void geopm_post_init(Caliper* c, Channel* chn) {
-    int rank;
-    int size;
-
-    Log(1).stream() << "Registered GEOPM service" << endl;
-}
-
 /// Initialization handler
 void geopm_service_register(Caliper* c, Channel* chn)
 {
     chn->events().pre_begin_evt.connect(::geopm_begin_region);
     chn->events().pre_end_evt.connect(::geopm_end_region);
     chn->events().pre_set_evt.connect(::geopm_set_iteration);
-    chn->events().post_init_evt.connect(::geopm_post_init);
     Log(1).stream() << chn->name() << ": Registered GEOPM service" << std::endl;
 }
 
