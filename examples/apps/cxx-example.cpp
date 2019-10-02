@@ -1,10 +1,10 @@
-// Copyright (c) 2015-2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2015-2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 // A C++ Caliper instrumentation and ConfigManager example
 
 //   Usage: $ cali-basic-annotations <configuration-string>
-// For example, "$ cali-basic-annotations runtime-report" will print a 
+// For example, "$ cali-basic-annotations runtime-report" will print a
 // hierarchical runtime summary for all annotated regions.
 
 #include <caliper/cali.h>
@@ -19,7 +19,7 @@ void print_help()
     std::cerr << "Usage: cxx-example [caliper-config(arg=...,),...]."
               << "\nRuns \"runtime-report\" configuration by default."
               << "\nUse \"none\" to run without a ConfigManager configuration."
-              << "\nAvailable configurations: ";            
+              << "\nAvailable configurations: ";
 
     // Print info on all available ConfigManager configurations.
     for (auto str : cali::ConfigManager::get_config_docstrings())
@@ -30,7 +30,7 @@ void print_help()
 
 double foo(int i)
 {
-    //   A function annotation. Opens region "function=foo" in Caliper, 
+    //   A function annotation. Opens region "function=foo" in Caliper,
     // and automatically closes it at the end of the function.
     CALI_CXX_MARK_FUNCTION;
 
@@ -39,7 +39,7 @@ double foo(int i)
 
 int main(int argc, char* argv[])
 {
-    //   A Caliper ConfigManager object manages built-in Caliper measurement 
+    //   A Caliper ConfigManager object manages built-in Caliper measurement
     // configurations. It parses a configuration string and creates a set of
     // control channels for the requested measurement configurations.
     cali::ConfigManager mgr;
@@ -48,12 +48,12 @@ int main(int argc, char* argv[])
     // These can be overridden in the user-provided configuration string.
     mgr.set_default_parameter("aggregate_across_ranks", "false");
 
-    //   The runtime-report configuration will print a hierarchical 
+    //   The "runtime-report" configuration will print a hierarchical
     // runtime summary for all annotated regions.
     std::string configstr = "runtime-report";
 
     //   Let users overwrite the default configuration with their own
-    // using a command-line argument.
+    // on the command line.
     if (argc > 1) {
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
             print_help();
@@ -66,8 +66,8 @@ int main(int argc, char* argv[])
     if (configstr == "none")
         configstr.clear();
 
-    //   Configure Caliper performance measurement channels based on 
-    // the user-provided configuration string. 
+    //   Configure Caliper performance measurement channels based on
+    // the configuration string.
     mgr.add(configstr.c_str());
 
     //   Check if the configuration string was parsed successfully.
@@ -108,6 +108,7 @@ int main(int argc, char* argv[])
     // Mark the end of the "function=main" region.
     CALI_MARK_FUNCTION_END;
 
-    // Trigger output in all Caliper control channels.
+    //   Trigger output in all Caliper control channels.
+    // This should be done after all measurement regions have been closed.
     mgr.flush();
 }

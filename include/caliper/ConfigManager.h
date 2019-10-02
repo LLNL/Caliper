@@ -17,7 +17,7 @@ namespace cali
 class ChannelController;
 
 /// \class ConfigManager
-/// \ingroup ConfigManagerAPI
+/// \ingroup ControlChannelAPI
 /// \brief Configure, enable, and manage built-in %Caliper configurations
 ///
 ///   ConfigManager is the principal component for managing and built-in
@@ -49,6 +49,11 @@ class ChannelController;
 /// // not flush results automatically.
 /// mgr.flush();
 /// \endcode
+///
+/// \example cxx-example.cpp
+/// This example demonstrates the C++ annotation macros as well as the 
+/// control channel API. 
+
 class ConfigManager
 {
     struct ConfigManagerImpl;
