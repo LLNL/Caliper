@@ -23,7 +23,7 @@ void print_help()
 
     // Print info on all available ConfigManager configurations.
     for (auto str : cali::ConfigManager::get_config_docstrings())
-        std::cerr << "\n  " << str;
+        std::cerr << '\n' << str;
 
     std::cerr << std::endl;
 }

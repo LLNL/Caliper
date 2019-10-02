@@ -90,6 +90,15 @@ make_event_trace_controller(const cali::ConfigManager::argmap_t& args)
     return new EventTraceController(output, traceopts);
 }
 
+const char* docstr = 
+    "event-trace"
+    "\n Record a trace of region enter/exit events in .cali format."
+    "\n  Parameters:"
+    "\n   output=filename|stdout|stderr:     Output location. Default: auto-generated filename."
+    "\n   trace.mpi=true|false:              Trace MPI functions"
+    "\n   trace.cuda=true|false:             Trace CUDA API functions"
+    "\n   trace.io=true|false:               Trace I/O events";
+
 } // namespace [anonymous]
 
 namespace cali
@@ -97,7 +106,7 @@ namespace cali
 
 ConfigManager::ConfigInfo event_trace_controller_info
 {
-    "event-trace", "event-trace(output=<filename>): Record event trace", ::event_trace_args, ::make_event_trace_controller
+    "event-trace", ::docstr, ::event_trace_args, ::make_event_trace_controller
 };
 
 }

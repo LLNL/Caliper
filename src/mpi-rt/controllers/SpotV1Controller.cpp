@@ -49,6 +49,14 @@ public:
 
 const char* spot_v1_args[] = { "config", "code_version", "title", nullptr };
 
+const char* docstr = 
+    "spot-v1"
+    "\n Write Spot v1 JSON output."
+    "\n  Parameters:"
+    "\n   config:                            Attribute:Filename pairs in which to dump Spot data"
+    "\n   code_version:                      Version number (or git hash) to represent this run of the code"
+    "\n   title:                             Title for this test";
+
 cali::ChannelController*
 make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
 {
@@ -60,6 +68,6 @@ make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
 namespace cali
 {
 
-cali::ConfigManager::ConfigInfo spot_v1_controller_info { "spot-v1", "spot-v1(config=...,code_version=...,title=...): Write Spot v1 json output", ::spot_v1_args, ::make_spot_v1_controller };
+cali::ConfigManager::ConfigInfo spot_v1_controller_info { "spot-v1", ::docstr, ::spot_v1_args, ::make_spot_v1_controller };
 
 }

@@ -241,6 +241,18 @@ const char* runtime_report_args[] = {
     nullptr
 };
 
+const char* docstr = 
+    "runtime-report"
+    "\n Print a time profile for annotated regions."
+    "\n  Parameters:"
+    "\n   output=filename|stdout|stderr:     Output location. Default: stderr"
+    "\n   aggregate_across_ranks=true|false: Aggregate results across MPI ranks"
+    "\n   profile.mpi=true|false:            Profile MPI functions"
+    "\n   profile.cuda=true|false:           Profile CUDA API functions (e.g., cudaMalloc)"
+    "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
+    "\n   io.bytes=true|false:               Record I/O bytes written and read"
+    "\n   io.bandwidth=true|false:           Record I/O bandwidth";
+
 } // namespace [anonymous]
 
 namespace cali
@@ -248,7 +260,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", "runtime-report: Print region time profile", ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", ::docstr, ::runtime_report_args, ::make_runtime_report_controller
 };
 
 }

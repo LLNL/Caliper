@@ -320,11 +320,21 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
     return new SpotController(use_mpi, profilecfg, output.c_str());
 }
 
+const char* docstr = 
+    "spot"
+    "\n Record a time profile for the Spot visualization framework."
+    "\n  Parameters:"
+    "\n   output=filename|stdout|stderr:     Output location. Default: stderr"
+    "\n   aggregate_across_ranks=true|false: Aggregate results across MPI ranks"
+    "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
+    "\n   io.bytes=true|false:               Record I/O bytes written and read"
+    "\n   io.bandwidth=true|false:           Record I/O bandwidth";
+
 } // namespace [anonymous]
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info { "spot", "spot(output=<filename>,mpi=true|false): Write Spot output", ::spot_args, ::make_spot_controller };
+ConfigManager::ConfigInfo spot_controller_info { "spot", ::docstr, ::spot_args, ::make_spot_controller };
 
 }
