@@ -119,7 +119,7 @@ const char*            LogImpl::s_prefix   { "== CALIPER: " };
 
 const ConfigSet::Entry LogImpl::s_configdata[] = {
     // key, type, value, short description, long description
-    { "verbosity", CALI_TYPE_UINT,   "1",
+    { "verbosity", CALI_TYPE_UINT,   "0",
       "Verbosity level",
       "Verbosity level.\n"
       "  0: no output\n"
