@@ -1,4 +1,4 @@
-# Caliper Configuration Reference
+# The Caliper ConfigManager API
 
 Caliper provides several built-in performance measurement and reporting configurations. These can be activated from within a program with the `ConfigManager` API using a short configuration string. Configuration strings can be hard-coded in the program or provided by the user in some form, e.g. as a command-line parameter or in the programs's configuration file.
 
@@ -6,7 +6,7 @@ To access and control the built-in configurations, create a `cali::ConfigManager
 
 ```C++
 #include <caliper/cali-manager.h>
-// ...
+
 int main(int argc, char* argv[])
 {
   cali::ConfigManager mgr;
@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-A complete example is [here](../examples/apps/cxx-example.cpp).
+A complete code example is [here](../examples/apps/cxx-example.cpp).
 
 ## ConfigManager Configuration String Syntax
 
@@ -33,6 +33,12 @@ A *config* is the name of one of Caliper's built-in measurement configurations, 
 Most configs have optional parameters, e.g. `output` to name an output file. Parameters can be specified as a list of key-value pairs in parantheses after the config name, e.g. `runtime-report(output=report.txt,io.bytes=true)`. For boolean parameters, only the key needs to be added to enable it; for example, `io.bytes` is equal to `io.bytes=true`.
 
 Parameters can also be listed separately in the config string, outside of parentheses. In that case, the parameter applies to *all* configs, whereas parameters inside parentheses only apply to the  config where they are listed. For example, in `runtime-report(io.bytes),spot,mem.highwatermark`, the `mem.highwatermark` option will be active in both the runtime-report and spot config, whereas `io.bytes` will only be active for runtime-report. Configs and parameters can be listed in any order.
+
+Here is a more complex example:
+
+    runtime-report(output=stdout),profile.cuda,mem.highwatermark,event-trace(output=trace.cali,trace.io)
+
+This will print a runtime profile to stdout, including CUDA API calls and memory high-water marks in the profile, and write an event trace with region begin/end and I/O operations into the trace.cali file.
 
 # Built-in Configs
 
