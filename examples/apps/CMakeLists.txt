@@ -13,7 +13,7 @@ else()
 endif()
 
 set(CALIPER_CXX_EXAMPLE_APPS
-  cali-basic-annotations
+  cxx-example
   cali-memtracking
   cali-memtracking-macros
   cali-perfproblem-branch-mispred
@@ -25,7 +25,7 @@ set(CALIPER_C_EXAMPLE_APPS
 
 foreach(app ${CALIPER_CXX_EXAMPLE_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper-serial)
+  target_link_libraries(${app} caliper)
 endforeach()
 
 foreach(app ${CALIPER_C_EXAMPLE_APPS})

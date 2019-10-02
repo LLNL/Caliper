@@ -1,0 +1,104 @@
+# Caliper Configuration Reference
+
+Caliper provides several built-in performance measurement and reporting configurations. These can be activated from within a program with the `ConfigManager` API using a short configuration string. Configuration strings can be hard-coded in the program or provided by the user in some form, e.g. as a command-line parameter or in the programs's configuration file.
+
+To access and control the built-in configurations, create a `cali::ConfigManager` object. Add a configuration string with `add()`, start the requested configuration channels with `start()`, and trigger output with `flush()`:
+
+```C++
+#include <caliper/cali-manager.h>
+// ...
+int main(int argc, char* argv[])
+{
+  cali::ConfigManager mgr;
+
+  if (argc > 1)
+    mgr.add(argv[1]);
+  if (mgr.error())
+    std::cerr << "Config error: " << mgr.error_msg() << std::endl;
+  // ...
+  mgr.start(); // start requested performance measurement channels
+  // ... (program execution)
+  mgr.flush(); // write performance results
+}
+```
+
+A complete example is [here](../examples/apps/cxx-example.cpp).
+
+## ConfigManager Configuration String Syntax
+
+A configuration string for the `ConfigManager` class is a comma-separated list of *configs* and *parameters*.
+
+A *config* is the name of one of Caliper's built-in measurement configurations, e.g. `runtime-report` or `event-trace`. Multiple configs can be specified, separated by comma.
+
+Most configs have optional parameters, e.g. `output` to name an output file. Parameters can be specified as a list of key-value pairs in parantheses after the config name, e.g. `runtime-report(output=report.txt,io.bytes=true)`. For boolean parameters, only the key needs to be added to enable it; for example, `io.bytes` is equal to `io.bytes=true`.
+
+Parameters can also be listed separately in the config string, outside of parentheses. In that case, the parameter applies to *all* configs, whereas parameters inside parentheses only apply to the  config where they are listed. For example, in `runtime-report(io.bytes),spot,mem.highwatermark`, the `mem.highwatermark` option will be active in both the runtime-report and spot config, whereas `io.bytes` will only be active for runtime-report. Configs and parameters can be listed in any order.
+
+# Built-in Configs
+
+The following sections describe the ConfigManager's built-in configs and their parameters.
+
+## runtime-report
+
+The runtime-report config prints a time profile for Caliper-annotated regions:
+
+    Path                                         Inclusive time Exclusive time Time %
+    main                                               0.149681       0.008896  5.830346
+      lulesh.cycle                                     0.140785       0.000053  0.034736
+        LagrangeLeapFrog                               0.140667       0.000050  0.032769
+          CalcTimeConstraintsForElems                  0.004589       0.004589  3.007583
+          LagrangeElements                             0.086606       0.000201  0.131733
+            ApplyMaterialPropertiesForElems            0.078804       0.000377  0.247082
+              EvalEOSForElems                          0.078427       0.014422  9.452029
+                CalcEnergyForElems                     0.064005       0.064005 41.948211
+            CalcQForElems                              0.004483       0.002415  1.582766
+              CalcMonotonicQForElems                   0.002068       0.002068  1.355346
+            CalcLagrangeElements                       0.003118       0.000460  0.301479
+              CalcKinematicsForElems                   0.002658       0.002658  1.742026
+          LagrangeNodal                                0.049422       0.011016  7.219772
+            CalcForceForNodes                          0.038406       0.002194  1.437925
+              CalcVolumeForceForElems                  0.036212       0.000691  0.452874
+                CalcHourglassControlForElems           0.023037       0.010822  7.092626
+                  CalcFBHourglassForceForElems         0.012215       0.012215  8.005584
+                IntegrateStressForElems                0.012484       0.012484  8.181884
+        TimeIncrement                                  0.000065       0.000065  0.042600
+
+By default, runtime-report collects a time profile and writes it to stderr on `flush()`. For MPI programs, it aggregates results across ranks and prints statistics.
+
+| Parameter name         | Description                                     |
+|------------------------|-------------------------------------------------|
+| aggregate_across_ranks | Enable/disable aggregation across ranks in MPI programs |
+| output                 | Output file name, or stderr/stdout |
+| mem.highwatermark      | Record and print memory high-water mark in annotated regions |
+| io.bytes               | Record and print I/O bytes written and read in annotated regions |
+| io.bandwidth           | Record and print I/O bandwidth in annotated regions |
+| profile.mpi            | Profile MPI functions |
+| profile.cuda           | Profile host-side CUDA API functions (e.g, cudaMalloc) |
+
+## event-trace
+
+The event-trace config records a trace of region enter/exit events and writes it out in Caliper's .cali format, using a generated unique output file name by default.
+
+| Parameter name         | Description                                     |
+|------------------------|-------------------------------------------------|
+| event.timestamps       | Add time since program start in the event records |
+| output                 | Output file name, or stderr/stdout |
+| trace.mpi              | Trace MPI functions |
+| trace.cuda             | Trace host-side CUDA API functions (e.g, cudaMalloc) |
+| trace.io               | Trace I/O |
+
+## nvprof
+
+The nvprof config forwards Caliper annotations to NVidia's NVProf profiler. It generates no output on its own.
+
+## spot
+
+The spot config records a time profile and writes a .cali file to be processed by the Spot web visualization framework.
+
+| Parameter name         | Description                                     |
+|------------------------|-------------------------------------------------|
+| aggregate_across_ranks | Enable/disable aggregation across ranks in MPI programs |
+| output                 | Output file name, or stderr/stdout |
+| mem.highwatermark      | Record and print memory high-water mark in annotated regions |
+| io.bytes               | Record and print I/O bytes written and read in annotated regions |
+| io.bandwidth           | Record and print I/O bandwidth in annotated regions |

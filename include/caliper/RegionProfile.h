@@ -16,6 +16,7 @@ namespace cali
 {
 
 /// \class RegionProfile
+/// \ingroup ControlChannelAPI
 /// \brief Collect and return time profiles for annotated %Caliper regions
 ///   in a C++ map
 ///
@@ -75,6 +76,7 @@ public:
     ///
     /// \code
     /// RegionProfile rp;
+    /// rp.start();
     ///
     /// // ...
     ///
