@@ -263,6 +263,106 @@ private:
     Config*    m_config;
 };
 
+class ScaledSumKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_target_attr_name;
+        Attribute   m_target_attr;
+        Attribute   m_sum_attr;
+
+        Attribute   m_res_attr;
+
+        double      m_scale;
+
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+            return m_target_attr;
+        }
+
+        Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
+            if (m_sum_attr == Attribute::invalid)
+                m_sum_attr = 
+                    db.create_attribute(std::string("scsum#")+m_target_attr_name, CALI_TYPE_DOUBLE, 
+                                        CALI_ATTR_ASVALUE | 
+                                        CALI_ATTR_HIDDEN);
+            
+            return m_sum_attr;
+        }
+
+        Attribute get_result_attr(CaliperMetadataAccessInterface& db) {
+            if (m_res_attr == Attribute::invalid)
+                m_res_attr = 
+                    db.create_attribute(std::string("scale#")+m_target_attr_name, CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_ASVALUE);
+            
+            return m_res_attr;
+        }
+
+        double get_scale() const { return m_scale; }
+
+        AggregateKernel* make_kernel() {
+            return new ScaledSumKernel(this);
+        }
+
+        Config(const std::vector<std::string>& cfg)
+            : m_target_attr_name(cfg[0]),
+              m_target_attr(Attribute::invalid),
+              m_sum_attr(Attribute::invalid),
+              m_res_attr(Attribute::invalid),
+              m_scale(0.0)
+            { 
+                if (cfg.size() > 1)
+                    m_scale = std::stod(cfg[1]);
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg);
+        }
+    };
+
+    ScaledSumKernel(Config* config)
+        : m_count(0), m_sum(0.0), m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        Attribute target_attr = m_config->get_target_attr(db);
+        Attribute sum_attr = m_config->get_sum_attr(db);
+
+        for (const Entry& e : list) {
+            if (e.attribute() == target_attr.id() || e.attribute() == sum_attr.id()) {
+                m_sum += e.value().to_double();
+                ++m_count;
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (m_count > 0) {
+            list.push_back(Entry(m_config->get_sum_attr(db),    Variant(m_sum)));
+            list.push_back(Entry(m_config->get_result_attr(db), Variant(m_config->get_scale() * m_sum)));
+        }
+    }
+
+private:
+
+    unsigned   m_count;
+    double     m_sum;
+
+    std::mutex m_lock;
+
+    Config*    m_config;
+};
+
 class MinKernel : public AggregateKernel {
 public:
 
@@ -1010,13 +1110,15 @@ enum KernelID {
     InclusiveSum = 4,
     Min          = 5,
     Max          = 6,
-    Avg          = 7
+    Avg          = 7,
+    ScaledSum    = 8       
 };
 
-#define MAX_KERNEL_ID 7
+#define MAX_KERNEL_ID 8
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
+const char* scale_args[]   = { "attribute", "scale" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,        "count",         0, 0, nullptr      },
@@ -1027,6 +1129,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Min,          "min",           1, 1, kernel_args  },
     { KernelID::Max,          "max",           1, 1, kernel_args  },
     { KernelID::Avg,          "avg",           1, 1, kernel_args  },
+    { KernelID::ScaledSum,    "scale",         2, 2, scale_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1043,6 +1146,7 @@ const struct KernelInfo {
     { "min",           MinKernel::Config::create          },
     { "max",           MaxKernel::Config::create          },
     { "avg",           AvgKernel::Config::create          },
+    { "scale",         ScaledSumKernel::Config::create    },
     { 0, 0 }
 };
 
@@ -1481,6 +1585,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("max#") + op.args[0];
     case KernelID::Avg:
         return std::string("avg#") + op.args[0];
+    case KernelID::ScaledSum:
+        return std::string("scale#") + op.args[0];
     }
 
     return std::string();
