@@ -1,4 +1,4 @@
-// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2017, Lawrence Livermore National Security, LLC.
 // Produced at the Lawrence Livermore National Laboratory.
 //
 // This file is part of Caliper.
@@ -34,6 +34,7 @@
 
 #include "caliper/reader/JsonSplitFormatter.h"
 
+#include "caliper/reader/Aggregator.h"
 #include "caliper/reader/QuerySpec.h"
 
 #include "caliper/common/Attribute.h"
@@ -93,7 +94,7 @@ class Hierarchy
     };
 
     HierarchyNode*              m_root;
-    
+
     std::mutex                  m_nodes_lock;
     std::vector<HierarchyNode*> m_nodes;
 
@@ -105,7 +106,7 @@ class Hierarchy
             recursive_delete(child);
             child = tmp;
         }
-        
+
         delete node;
     }
 
@@ -144,17 +145,17 @@ public:
         for (const Entry& e : vec) {
             HierarchyNode* parent = node;
             std::string    label  = e.value().to_string();
-            
+
             for (node = parent->first_child(); node && (label != node->label()); node = node->next_sibling())
                 ;
 
             if (!node) {
                 std::lock_guard<std::mutex>
                     g(m_nodes_lock);
-                
+
                 node = new HierarchyNode(m_nodes.size(), label, column);
                 m_nodes.push_back(node);
-                
+
                 parent->append(node);
             }
         }
@@ -175,13 +176,13 @@ public:
     std::ostream& write_nodes(std::ostream& os) {
         std::lock_guard<std::mutex>
             g(m_nodes_lock);
-        
+
         os << "\"nodes\": [";
 
         int count = 0;
         for (const HierarchyNode* node : m_nodes)
             node->write_json(os << (count++ > 0 ? ", " : " "));
-                    
+
         os << " ]";
 
         return os;
@@ -192,12 +193,12 @@ public:
 
 
 struct JsonSplitFormatter::JsonSplitFormatterImpl
-{ 
+{
     bool                     m_select_all;
     std::vector<std::string> m_attr_names;
 
     std::map<std::string, std::string> m_aliases;
-    
+
     std::mutex               m_init_lock;
     bool                     m_initialized;
 
@@ -210,7 +211,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         static Column make_column(const std::string& title, const Attribute& a) {
             Column c;
             c.title        = title;
-            c.attributes.push_back(a);
+                c.attributes.push_back(a);
             c.is_hierarchy = !(a.store_as_value());
             return c;
         }
@@ -221,11 +222,11 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     Hierarchy                m_hierarchy;
 
     int                      m_row_count; // protected by m_os_lock
-    
+
     OutputStream             m_os;
     std::mutex               m_os_lock;
 
-    
+
     JsonSplitFormatterImpl(OutputStream& os)
         : m_select_all(false),
           m_initialized(false),
@@ -235,16 +236,29 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
     void configure(const QuerySpec& spec) {
         m_select_all = false;
+        m_attr_names.clear();
 
         switch (spec.attribute_selection.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
-            m_select_all = true;
+            // Explicitly use aggregation key and ops if there is a GROUPBY
+            if (spec.aggregation_key.selection == QuerySpec::AttributeSelection::List) {
+                m_attr_names.insert(m_attr_names.end(),
+                                    spec.aggregation_key.list.begin(),
+                                    spec.aggregation_key.list.end());
+
+                for (auto op : spec.aggregation_ops.list)
+                    m_attr_names.push_back(Aggregator::get_aggregation_attribute_name(op));
+            } else {
+                m_select_all = true;
+            }
             break;
         case QuerySpec::AttributeSelection::None:
             break;
         case QuerySpec::AttributeSelection::List:
-            m_attr_names = spec.attribute_selection.list;
+            m_attr_names.insert(m_attr_names.end(),
+                                spec.attribute_selection.list.begin(),
+                                spec.attribute_selection.list.end());
             break;
         }
 
@@ -254,20 +268,32 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     void init_columns(const CaliperMetadataAccessInterface& db) {
         m_columns.clear();
 
-        std::vector<Attribute> attrs;
+        std::vector<Attribute> attrs = db.get_all_attributes();
+        auto attrs_rem = attrs.end();
 
-        if (m_select_all)
-            attrs = db.get_all_attributes();
-        else {
-            std::vector<Attribute> tmp_attrs = db.get_all_attributes();
+        if (m_select_all) {
+            // filter out hidden and global attributes
+            attrs_rem =
+                std::remove_if(attrs.begin(), attrs.end(), [](const Attribute& a) {
+                        return (a.is_hidden() || a.is_global());
+                    });
+        } else {
+            bool select_nested =
+                std::find(m_attr_names.begin(), m_attr_names.end(),
+                          "prop:nested") != m_attr_names.end();
 
-            std::copy_if(tmp_attrs.begin(), tmp_attrs.end(),
-                         std::back_inserter(attrs),
-                         [this](const Attribute& a) {
-                             return std::find(m_attr_names.begin(), m_attr_names.end(),
-                                              a.name()) != m_attr_names.end();
-                         });
+            // only include selected attributes
+            attrs_rem =
+                std::remove_if(attrs.begin(), attrs.end(), [this,select_nested](const Attribute& a) {
+                        bool select =
+                            (select_nested && a.is_nested()) ||
+                                std::find(m_attr_names.begin(), m_attr_names.end(),
+                                          a.name()) != m_attr_names.end();
+                        return !select;
+                    });
         }
+
+        attrs.erase(attrs_rem, attrs.end());
 
         // Create the "path" column for all attributes with NESTED flag
         Column path;
@@ -283,7 +309,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                 auto aliasit = m_aliases.find(name);
                 if (aliasit != m_aliases.end())
                     name = aliasit->second;
-                
+
                 m_columns.push_back(Column::make_column(name, a));
             }
         }
@@ -315,22 +341,22 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     void write_immediate_entry(std::ostream& os, const EntryList& list, const Attribute& attr) {
         cali_attr_type type = attr.type();
         bool quote = !(type == CALI_TYPE_INT || type == CALI_TYPE_UINT || type == CALI_TYPE_DOUBLE);
-        
+
         for (const Entry& e : list)
             if (e.attribute() == attr.id()) {
                 if (quote)
                     util::write_esc_string(os << "\"", e.value().to_string()) << "\"";
                 else
                     os << e.value().to_string();
-                
+
                 return;
             }
 
         os << "null";
     }
-    
+
     void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list) {
-        // initialize the columns on first call  
+        // initialize the columns on first call
         {
             std::lock_guard<std::mutex>
                 g(m_init_lock);
@@ -352,7 +378,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
             if (c.is_hierarchy)
                 write_hierarchy_entry(os, list, c.attributes, c.title);
-            else 
+            else
                 write_immediate_entry(os, list, c.attributes.front());
         }
 
@@ -376,26 +402,26 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             if (e.is_reference())
                 for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent()) {
                     std::string s = node->data().to_string();
-                    
+
                     if (global_vals[node->attribute()].size() > 0)
                         s.append("/").append(global_vals[node->attribute()]);
 
-                    global_vals[node->attribute()] = s;                        
+                    global_vals[node->attribute()] = s;
                 }
             else
                 global_vals[e.attribute()] = e.value().to_string();
-        
+
         for (auto &p : global_vals)
             os << ",\n  \"" << db.get_attribute(p.first).name() << "\": "
                << '\"' << p.second << '\"';
 
         return os;
     }
-    
+
     void write_metadata(CaliperMetadataAccessInterface& db) {
         std::ostream* real_os = m_os.stream();
-        
-        // close "data" field, start "columns" 
+
+        // close "data" field, start "columns"
         *real_os << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
 
         {
@@ -403,21 +429,21 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             for (const Column& c : m_columns)
                 util::write_esc_string(*real_os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
         }
-        
+
         // close "columns", start "column_metadata"
         *real_os << " ],\n  \"column_metadata\": [";
-        
+
         {
             int count = 0;
-            
-            for (const Column& c : m_columns) 
+
+            for (const Column& c : m_columns)
                 *real_os << (count++ > 0 ? " }, { " : " { ")
                               << "\"is_value\": " << (c.is_hierarchy ? "false" : "true");
-            
+
             if (count > 0)
                 *real_os << " } ";
         }
-        
+
         // close "column_metadata", write "nodes"
         m_hierarchy.write_nodes( *real_os << " ],\n  " );
 
@@ -438,7 +464,7 @@ JsonSplitFormatter::~JsonSplitFormatter()
     mP.reset();
 }
 
-void 
+void
 JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->process_record(db, list);
