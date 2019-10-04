@@ -89,4 +89,7 @@ struct SnapshotFilterStep {
     }
 };
 
+/// \brief Process --help for cali-query and mpi-caliquery
+void print_caliquery_help(const util::Args& args, const char* usage);
+
 }

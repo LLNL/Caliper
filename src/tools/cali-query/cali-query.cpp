@@ -40,8 +40,6 @@
 
 #include "caliper/tools-util/Args.h"
 
-#include "../../services/Services.h"
-
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
@@ -143,7 +141,7 @@ namespace
           "KEY=VALUE,..."
         },
         { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
-        { "version", "version",  0,  false, "Print version number",     nullptr },
+        { "version", "version", 'V', false, "Print version number",     nullptr },
         { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
         { "help",    "help",    'h', true,  "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
@@ -258,33 +256,6 @@ void setup_caliper_config(const Args& args)
     }
 }
 
-void print_help(const Args& args)
-{
-    std::string helpopt = args.get("help");
-
-    if (helpopt == "configs") {
-        for (const auto &s : ConfigManager::get_config_docstrings())
-            std::cerr << s << std::endl;
-    } else if (helpopt == "services") {
-        Services::add_default_services();
-        auto srvcs = Services::get_available_services();
-
-        int i = 0;
-        for (const auto& s : Services::get_available_services())
-            std::cerr << (i++ > 0 ? "," : "") << s;
-        std::cerr << std::endl;
-    } else if (!helpopt.empty()) {
-        std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                    << "\n  [none]:   Describe cali-query usage (default)"
-                    << "\n  configs:  Describe Caliper profiling configurations"
-                    << "\n  services: List available services"
-                    << std::endl;
-    } else {
-        std::cerr << usage << "\n\n";
-        args.print_available_options(std::cerr);
-    }
-}
-
 //
 // --- main()
 //
@@ -312,7 +283,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            print_help(args);
+            print_caliquery_help(args, usage);
             return 0;
         }
 

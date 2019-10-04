@@ -42,6 +42,10 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/util/split.hpp"
 
+#include "../../services/Services.h"
+
+#include "caliper/ConfigManager.h"
+
 #include <cctype>
 #include <iterator>
 #include <sstream>
@@ -294,6 +298,33 @@ QueryArgsParser::parse_args(const Args& args)
     }
         
     return true;
+}
+
+void print_caliquery_help(const Args& args, const char* usage)
+{
+    std::string helpopt = args.get("help");
+
+    if (helpopt == "configs") {
+        for (const auto &s : ConfigManager::get_config_docstrings())
+            std::cerr << s << std::endl;
+    } else if (helpopt == "services") {
+        Services::add_default_services();
+        auto srvcs = Services::get_available_services();
+
+        int i = 0;
+        for (const auto& s : Services::get_available_services())
+            std::cerr << (i++ > 0 ? "," : "") << s;
+        std::cerr << std::endl;
+    } else if (!helpopt.empty()) {
+        std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
+                    << "\n  [none]:   Describe cali-query usage (default)"
+                    << "\n  configs:  Describe Caliper profiling configurations"
+                    << "\n  services: List available services"
+                    << std::endl;
+    } else {
+        std::cerr << usage << "\n\n";
+        args.print_available_options(std::cerr);
+    }
 }
 
 }

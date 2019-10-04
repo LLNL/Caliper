@@ -238,22 +238,8 @@ int main(int argc, char* argv[])
     }
 
     if (args.is_set("help")) {
-        if (rank == 0) {
-            std::string helpopt = args.get("help");
-
-            if (helpopt == "configs") {
-                for (const auto &s : ConfigManager::get_config_docstrings())
-                    std::cerr << s << std::endl;
-            } else if (!helpopt.empty()) {
-                std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                          << "\n  [none]:  Describe cali-query usage (default)"
-                          << "\n  configs: Describe Caliper profiling configurations"
-                          << std::endl;
-            } else {
-                std::cerr << usage << "\n\n";
-                args.print_available_options(std::cerr);
-            }
-        }
+        if (rank == 0)
+            print_caliquery_help(args, usage);
 
         MPI_Finalize();
         return 0;
