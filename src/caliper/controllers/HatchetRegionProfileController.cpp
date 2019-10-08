@@ -40,7 +40,7 @@ public:
                 { "CALI_TIMER_UNIT", "sec" }
             })
         {
-            std::string select  = "*,sum(sum#time.duration)";
+            std::string select  = "*,sum(sum#time.duration) as time";
             std::string groupby = "prop:nested";
 
             if (profile & WrapMpi) {
