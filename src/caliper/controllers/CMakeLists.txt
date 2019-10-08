@@ -1,6 +1,7 @@
 set(CALIPER_CONTROLLERS_SOURCES
   EventTraceController.cpp
   HatchetRegionProfileController.cpp
+  HatchetSampleProfileController.cpp
   NvProfController.cpp
   RuntimeReportController.cpp
   controllers.cpp)
