@@ -44,11 +44,10 @@ CaliperService cali_mpi_services[] = {
 extern ConfigManager::ConfigInfo spot_controller_info;
 extern ConfigManager::ConfigInfo spot_v1_controller_info;
 
-ConfigManager::ConfigInfo mpi_controllers[] = {
-    spot_controller_info,
-    spot_v1_controller_info,
-
-    { nullptr, nullptr, nullptr }
+const ConfigManager::ConfigInfo *mpi_controllers[] = {
+    &spot_controller_info,
+    &spot_v1_controller_info,
+    nullptr
 };
 
 bool is_initialized = false;
