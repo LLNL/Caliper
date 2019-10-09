@@ -9,6 +9,7 @@
 #include "../../services/Services.h"
 
 #include <algorithm>
+#include <set>
 #include <tuple>
 
 using namespace cali;
@@ -127,8 +128,63 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     return profile;
 }
 
+std::string
+check_args(const cali::ConfigManager::argmap_t& args) {
+    //
+    //   Check if the required services for all requested profiling options
+    // are there
+    //
+
+    const struct opt_info_t {
+        const char* option;
+        const char* service;
+    } opt_info_list[] = {
+        { "io.bytes",               "io"        },
+        { "profile.cuda",           "cupti"     },
+        { "profile.mpi",            "mpi"       }
+    };
+
+    Services::add_default_services();
+    auto svcs = Services::get_available_services();
+
+    for (const opt_info_t o : opt_info_list) {
+        auto it = args.find(o.option);
+
+        if (it != args.end()) {
+            bool ok = false;
+
+            if (StringConverter(it->second).to_bool(&ok) == true) 
+                if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
+                    return std::string("hatchet-region-profile: ") 
+                        + o.service
+                        + std::string(" service required for ")
+                        + o.option
+                        + std::string(" option is not available");
+
+            if (!ok) // parse error
+                return std::string("hatchet-region-profile: Invalid value \"") 
+                    + it->second + "\" for " 
+                    + it->first;
+        }
+    }
+
+    {
+        // Check if output.format is valid
+
+        auto it = args.find("output.format");
+        std::string format = (it == args.end() ? "json-split" : it->second);
+
+        std::set<std::string> allowed_formats = { "cali", "json", "json-split" };
+
+        if (allowed_formats.find(format) == allowed_formats.end())
+            return std::string("hatchet-region-profile: Invalid output format \"") + format + "\"";
+    }
+
+    return "";
+}
+
 cali::ChannelController*
-make_hatchet_region_profile_controller(const cali::ConfigManager::argmap_t& args)
+make_controller(const cali::ConfigManager::argmap_t& args)
 {
     auto it = args.find("output");
     std::string output = (it == args.end() ? "region_profile" : it->second);
@@ -175,7 +231,7 @@ namespace cali
 
 ConfigManager::ConfigInfo hatchet_region_profile_controller_info
 {
-    "hatchet-region-profile", ::docstr, ::controller_args, ::make_hatchet_region_profile_controller
+    "hatchet-region-profile", ::docstr, ::controller_args, ::make_controller, ::check_args
 };
 
 }

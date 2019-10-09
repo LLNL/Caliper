@@ -19,7 +19,7 @@ namespace cali
 {
 
 // defined in controllers/controllers.cpp
-extern ConfigManager::ConfigInfo builtin_controllers_table[];
+extern const ConfigManager::ConfigInfo* builtin_controllers_table[];
 
 }
 
@@ -40,7 +40,7 @@ merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
 }
 
 struct ConfigInfoList {
-    const ConfigManager::ConfigInfo* configs;
+    const ConfigManager::ConfigInfo** configs;
     ConfigInfoList* next;
 };
 
@@ -139,36 +139,25 @@ struct ConfigManager::ConfigManagerImpl
     // Return config info object with given name, or null if not found
     const ConfigInfo*
     find_config(const std::string& name) {
-        const ::ConfigInfoList* lst_p = ::s_config_list;
-        const ConfigInfo* cfg_p = nullptr;
-
-        while (lst_p) {
-            cfg_p = lst_p->configs;
-
-            while (cfg_p && cfg_p->name && name != std::string(cfg_p->name))
-                ++cfg_p;
-
-            if (cfg_p && cfg_p->name)
-                break;
-
-            lst_p = lst_p->next;
-        }
-
-        if (cfg_p && !cfg_p->name)
-            cfg_p = nullptr;
-
-        return cfg_p;
+        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
+           for (const ConfigInfo **j = i->configs; *j; j++) {
+               const ConfigInfo *cfg_p = *j;
+               if (cfg_p->name && cfg_p->name == name)
+                  return cfg_p;
+           }
+        return nullptr;
     }
 
     // Return true if key is an option in any config
     bool
     is_option(const std::string& key) {
-        for (const ::ConfigInfoList* lst_p = ::s_config_list; lst_p; lst_p = lst_p->next)
-            for (const ConfigInfo* cfg_p = lst_p->configs; cfg_p && cfg_p->name; ++cfg_p)
-                for (const char** opt = cfg_p->args; opt && *opt; ++opt)
-                    if (key == *opt)
-                        return true;
-
+        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
+           for (const ConfigInfo **j = i->configs; *j; j++) {
+              const ConfigInfo *cfg_p = *j;
+              for (const char **opt = cfg_p->args; opt && *opt; opt++)
+                 if (key == std::string(*opt))
+                    return true;
+           }
         return false;
     }
 
@@ -229,9 +218,24 @@ struct ConfigManager::ConfigManagerImpl
     bool add(const char* config_string) {
         auto configs = parse_configstring(config_string);
 
-        if (!m_error)
-            for (auto cfg : configs)
-                m_channels.emplace_back( (cfg.first->create)(merge_new_elements(cfg.second, m_default_parameters)) );
+        if (m_error)
+            return false;
+
+        for (auto cfg : configs) {
+            argmap_t args = merge_new_elements(cfg.second, m_default_parameters);
+
+            if (cfg.first->check_args) {
+                std::string err = (cfg.first->check_args)(args);
+
+                if (!err.empty())
+                    set_error(err);
+            }
+
+            if (m_error)
+                return false;
+            else
+                m_channels.emplace_back( (cfg.first->create)(args) );
+        }
 
         return !m_error;
     }
@@ -326,7 +330,7 @@ ConfigManager::flush()
 }
 
 void
-ConfigManager::add_controllers(const ConfigManager::ConfigInfo* ctrlrs)
+ConfigManager::add_controllers(const ConfigManager::ConfigInfo** ctrlrs)
 {
     ::ConfigInfoList* elem = new ConfigInfoList { ctrlrs, ::s_config_list };
     s_config_list = elem;
@@ -338,8 +342,8 @@ ConfigManager::available_configs()
     std::vector<std::string> ret;
 
     for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
-        for (const ConfigInfo* cp = lp->configs; cp && cp->name; ++cp)
-            ret.push_back(cp->name);
+        for (const ConfigInfo** cp = lp->configs; *cp && (*cp)->name; ++cp)
+            ret.push_back((*cp)->name);
 
     return ret;
 }
@@ -350,8 +354,8 @@ ConfigManager::get_config_docstrings()
     std::vector<std::string> ret;
 
     for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
-        for (const ConfigInfo* cp = lp->configs; cp && cp->name; ++cp)
-            ret.push_back(cp->description);
+        for (const ConfigInfo** cp = lp->configs; *cp && (*cp)->name; ++cp)
+            ret.push_back((*cp)->description);
 
     return ret;
 }
@@ -359,11 +363,22 @@ ConfigManager::get_config_docstrings()
 std::string
 ConfigManager::check_config_string(const char* config_string, bool allow_extra_kv_pairs)
 {
-    ConfigManagerImpl tmp;
-    tmp.parse_configstring(config_string);
+    ConfigManagerImpl mgr;
+    auto configs = mgr.parse_configstring(config_string);
 
-    if (!allow_extra_kv_pairs && !tmp.m_extra_vars.empty())
-        tmp.set_error("Unknown config or parameter: " + tmp.m_extra_vars.begin()->first);
+    for (auto cfg : configs) {
+        argmap_t args = merge_new_elements(cfg.second, mgr.m_default_parameters);
 
-    return tmp.m_error_msg;
+        if (cfg.first->check_args) {
+            std::string err = (cfg.first->check_args)(args);
+
+            if (!err.empty())
+                mgr.set_error(err);
+        }
+    }
+
+    if (!allow_extra_kv_pairs && !mgr.m_extra_vars.empty())
+        mgr.set_error("Unknown config or parameter: " + mgr.m_extra_vars.begin()->first);
+
+    return mgr.m_error_msg;
 }

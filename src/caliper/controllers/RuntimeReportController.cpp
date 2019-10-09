@@ -228,6 +228,83 @@ make_runtime_report_controller(const cali::ConfigManager::argmap_t& args)
     return new RuntimeReportController(use_mpi(args), output.c_str(), get_profile_cfg(args));
 }
 
+std::string
+check_args(const cali::ConfigManager::argmap_t& orig_args) {
+    auto args = orig_args;
+
+    {
+        // Check the deprecated "profile=" argument
+        auto it = args.find("profile");
+
+        if (it != args.end()) {
+            const struct profile_info_t {
+                const char* oldopt; const char* newopt;
+            } profile_info_list[] = {
+                { "mem.highwatermark", "mem.highwatermark" },
+                { "io.bytes",          "io.bytes"          },
+                { "io.bandwidth",      "io.bandwidth"      },
+                { "mpi",               "profile.mpi"       },
+                { "cuda",              "profile.cuda"      }
+            };
+
+            for (const std::string& opt : StringConverter(it->second).to_stringlist(",:")) {
+                auto p = std::find_if(std::begin(profile_info_list), std::end(profile_info_list), 
+                            [opt](const profile_info_t& pp){
+                                return opt == pp.oldopt;
+                            });
+
+                if (p == std::end(profile_info_list))
+                    return std::string("runtime-report: unknown \"profile=\" option \"") + opt + "\"";
+                else
+                    args[p->newopt] = "true";
+            }
+        }
+    }
+
+    //
+    //   Check if the required services for all requested profiling options
+    // are there
+    //
+
+    const struct opt_info_t {
+        const char* option;
+        const char* service;
+    } opt_info_list[] = {
+        { "mem.highwatermark",      "sysalloc"  },
+        { "io.bytes",               "io"        },
+        { "io.bandwidth",           "io"        },
+        { "profile.cuda",           "cupti"     },
+        { "profile.mpi",            "mpi"       },
+        { "aggregate_across_ranks", "mpireport" }
+    };
+
+    Services::add_default_services();
+    auto svcs = Services::get_available_services();
+
+    for (const opt_info_t o : opt_info_list) {
+        auto it = args.find(o.option);
+
+        if (it != args.end()) {
+            bool ok = false;
+
+            if (StringConverter(it->second).to_bool(&ok) == true) 
+                if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
+                    return std::string("runtime-report: ") 
+                        + o.service
+                        + std::string(" service required for ")
+                        + o.option
+                        + std::string(" option is not available");
+
+            if (!ok) // parse error
+                return std::string("runtime-report: Invalid value \"") 
+                    + it->second + "\" for " 
+                    + it->first;
+        }
+    }
+
+    return "";
+}
+
 const char* runtime_report_args[] = {
     "output",
     "mpi",
@@ -260,7 +337,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report", ::docstr, ::runtime_report_args, ::make_runtime_report_controller
+    "runtime-report", ::docstr, ::runtime_report_args, ::make_runtime_report_controller, ::check_args
 };
 
 }

@@ -64,17 +64,19 @@ public:
     typedef std::map<std::string, std::string> argmap_t;
 
     typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&);
+    typedef std::string              (*CheckArgsFn)(const argmap_t&);
 
     struct ConfigInfo {
         const char*    name;
         const char*    description;
         const char**   args;
         CreateConfigFn create;
+        CheckArgsFn    check_args;
     };
 
     /// \brief Add a list of pre-defined configurations. Internal use.
     static void
-    add_controllers(const ConfigInfo*);
+    add_controllers(const ConfigInfo**);
 
     ConfigManager();
 

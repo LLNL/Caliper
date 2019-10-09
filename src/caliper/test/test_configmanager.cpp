@@ -83,7 +83,7 @@ TEST(ConfigManagerTest, ParseConfig) {
     {
         cali::ConfigManager mgr;
 
-        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,mpi=false, profile=mpi:cuda ) "));
+        EXPECT_TRUE(mgr.add(" event-trace  ( output = test.cali ),   runtime-report(output=stdout,aggregate_across_ranks=false ) "));
         EXPECT_FALSE(mgr.error());
 
         auto list = mgr.get_all_channels();
@@ -94,10 +94,12 @@ TEST(ConfigManagerTest, ParseConfig) {
         EXPECT_EQ(std::string("runtime-report"), list[1]->name());
     }
 
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cuda),event-trace").empty());
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,mem.highwatermark,event-trace").empty());
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile.cuda,profile=mpi),event-trace").empty());
-    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile=cupti),event-trace,foo=bar", true).empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile.cuda=false,io.bytes=false),event-trace").empty());
+    EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,event-trace,foo=bar", true).empty());
+
+    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,profile.mpi=bla"), std::string("runtime-report: Invalid value \"bla\" for profile.mpi"));
+    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,event-trace(trace.mpi=bla)"), std::string("event-trace: Invalid value \"bla\" for trace.mpi"));
 }
 
 TEST(ConfigManagerTest, ParseEmptyConfig) {

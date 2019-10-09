@@ -181,7 +181,7 @@ namespace cali
 
 ConfigManager::ConfigInfo hatchet_sample_profile_controller_info
 {
-    "hatchet-sample-profile", ::docstr, ::controller_args, ::make_hatchet_sample_profile_controller
+    "hatchet-sample-profile", ::docstr, ::controller_args, ::make_hatchet_sample_profile_controller, nullptr
 };
 
 }
