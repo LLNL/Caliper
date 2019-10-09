@@ -229,9 +229,24 @@ struct ConfigManager::ConfigManagerImpl
     bool add(const char* config_string) {
         auto configs = parse_configstring(config_string);
 
-        if (!m_error)
-            for (auto cfg : configs)
-                m_channels.emplace_back( (cfg.first->create)(merge_new_elements(cfg.second, m_default_parameters)) );
+        if (m_error)
+            return false;
+
+        for (auto cfg : configs) {
+            argmap_t args = merge_new_elements(cfg.second, m_default_parameters);
+
+            if (cfg.first->check_args) {
+                std::string err = (cfg.first->check_args)(args);
+
+                if (!err.empty())
+                    set_error(err);
+            }
+
+            if (m_error)
+                return false;
+            else
+                m_channels.emplace_back( (cfg.first->create)(args) );
+        }
 
         return !m_error;
     }

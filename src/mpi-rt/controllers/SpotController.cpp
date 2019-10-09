@@ -14,6 +14,8 @@
 #include <caliper/common/OutputStream.h>
 #include <caliper/common/StringConverter.h>
 
+#include "../../services/Services.h"
+
 #include <unistd.h>
 
 #include <algorithm>
@@ -320,6 +322,63 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
     return new SpotController(use_mpi, profilecfg, output.c_str());
 }
 
+std::string
+check_args(const cali::ConfigManager::argmap_t& orig_args) {
+    auto args = orig_args;
+
+    {
+        // Check the deprecated "profile=" argument
+        auto it = args.find("profile");
+
+        if (it != args.end()) {
+            if (it->second == "mem.highwatermark")
+                args["mem.highwatermark"] = "true";
+            else
+                return std::string("spot: Unknown \"profile=\" option \"") + it->second + "\"";
+        }
+    }
+
+    //
+    //   Check if the required services for all requested profiling options
+    // are there
+    //
+
+    const struct opt_info_t {
+        const char* option;
+        const char* service;
+    } opt_info_list[] = {
+        { "mem.highwatermark", "sysalloc" },
+        { "io.bytes",          "io"       },
+        { "io.bandwidth",      "io"       },
+    };
+
+    Services::add_default_services();
+    auto svcs = Services::get_available_services();
+
+    for (const opt_info_t o : opt_info_list) {
+        auto it = args.find(o.option);
+
+        if (it != args.end()) {
+            bool ok = false;
+
+            if (StringConverter(it->second).to_bool(&ok) == true) 
+                if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
+                    return std::string("spot: ") 
+                        + o.service
+                        + std::string(" service required for ")
+                        + o.option
+                        + std::string(" is not available");
+
+            if (!ok) // parse error
+                return std::string("spot: Invalid value \"") 
+                    + it->second + "\" for " 
+                    + it->first;
+        }
+    }
+
+    return "";
+}
+
 const char* docstr = 
     "spot"
     "\n Record a time profile for the Spot visualization framework."
@@ -335,6 +394,6 @@ const char* docstr =
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info { "spot", ::docstr, ::spot_args, ::make_spot_controller };
+ConfigManager::ConfigInfo spot_controller_info { "spot", ::docstr, ::spot_args, ::make_spot_controller, ::check_args };
 
 }

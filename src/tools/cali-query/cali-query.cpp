@@ -222,8 +222,8 @@ public:
 };
 
 const ConfigManager::ConfigInfo caliquery_cfglist[] = {
-    { "progress", "progress\n Print cali-query progress (when processing multiple files).", nullptr, ProgressController::create },
-    { nullptr, nullptr, nullptr, nullptr }
+    { "progress", "progress\n Print cali-query progress (when processing multiple files).", nullptr, ProgressController::create, nullptr },
+    { nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 void setup_caliper_config(const Args& args)
