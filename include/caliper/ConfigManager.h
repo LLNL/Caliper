@@ -74,7 +74,7 @@ public:
 
     /// \brief Add a list of pre-defined configurations. Internal use.
     static void
-    add_controllers(const ConfigInfo*);
+    add_controllers(const ConfigInfo**);
 
     ConfigManager();
 
