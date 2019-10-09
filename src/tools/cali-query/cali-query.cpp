@@ -221,7 +221,13 @@ public:
     }
 };
 
-ConfigManager::ConfigInfo ProgressInfo = { "progress", "progress\n Print cali-query progress (when processing multiple files).", nullptr, ProgressController::create };
+ConfigManager::ConfigInfo ProgressInfo = { 
+    "progress", 
+    "progress\n Print cali-query progress (when processing multiple files).", 
+    nullptr, 
+    ProgressController::create, 
+    nullptr 
+};
 
 const ConfigManager::ConfigInfo* caliquery_cfglist[] = {
    &ProgressInfo,

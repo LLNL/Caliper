@@ -24,7 +24,7 @@ namespace cali
 
 ConfigManager::ConfigInfo nvprof_controller_info 
 {
-    "nvprof", "nvprof\n Export Caliper annotations to NVidia nvprof.", nullptr, ::make_nvprof_controller
+    "nvprof", "nvprof\n Export Caliper annotations to NVidia nvprof.", nullptr, ::make_nvprof_controller, nullptr
 };
 
 }
