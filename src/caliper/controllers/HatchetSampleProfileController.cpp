@@ -9,6 +9,7 @@
 #include "../../services/Services.h"
 
 #include <algorithm>
+#include <set>
 #include <tuple>
 
 using namespace cali;
@@ -30,13 +31,15 @@ public:
     HatchetSampleProfileController(const std::string& output_, const std::string& format, const std::string& freq, int profile)
         : ChannelController("hatchet-sample-profile", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                { "CALI_SERVICES_ENABLE",       "sampler,symbollookup,trace" },
+                { "CALI_SERVICES_ENABLE",       "sampler,trace" },
             })
         {
             config()["CALI_SAMPLER_FREQUENCY"] = freq;
 
             std::string select  = "*,count()";
             std::string groupby = "prop:nested";
+
+            bool use_symbollookup = false;
 
             if (profile & Threads)
                 config()["CALI_SERVICES_ENABLE"     ].append(",pthread");
@@ -46,19 +49,25 @@ public:
                 config()["CALI_CALLPATH_SKIP_FRAMES"] = "4";
 
                 groupby += ",source.function#callpath.address";
+                use_symbollookup = true;
             }
 
             if (profile & Module) {
                 config()["CALI_SYMBOLLOOKUP_LOOKUP_MODULE"] = "true";
                 groupby += ",module#cali.sampler.pc";
+                use_symbollookup = true;
             }
 
             if (profile & SourceLoc) {
                 config()["CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC"] = "true";
                 groupby += ",sourceloc#cali.sampler.pc";
+                use_symbollookup = true;
             } else {
                 config()["CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC"] = "false";
             }
+
+            if (use_symbollookup)
+                config()["CALI_SERVICES_ENABLE"].append(",symbollookup");
 
             std::string output(output_);
 
@@ -126,8 +135,74 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     return profile;
 }
 
+std::string
+check_args(const cali::ConfigManager::argmap_t& args) {
+    Services::add_default_services();
+    auto svcs = Services::get_available_services();
+
+    //
+    // Check if the sampler service is there
+    //
+
+    if (std::find(svcs.begin(), svcs.end(), "sampler") == svcs.end())
+        return "hatchet-sample-profile: sampler service is not available";
+
+    //
+    //   Check if the required services for all requested profiling options
+    // are there
+    //
+
+    const struct opt_info_t {
+        const char* option; const char* service; bool default_setting;
+    } opt_info_list[] = {
+        { "sample.threads"   , "pthread"      , true  },
+        { "sample.callpath"  , "callpath"     , true  },
+        { "sample.callpath"  , "symbollookup" , true  },
+        { "lookup.module"    , "symbollookup" , true  },
+        { "lookup.sourceloc" , "symbollookup" , false }
+    };
+
+    for (const opt_info_t o : opt_info_list) {
+        bool is_on = o.default_setting;
+        auto it = args.find(o.option);
+
+        if (it != args.end()) {
+            bool ok = false;
+            is_on = (StringConverter(it->second).to_bool(&ok) == true);
+
+            if (!ok) // parse error
+                return std::string("hatchet-sample-profile: Invalid value \"")
+                    + it->second + "\" for "
+                    + it->first;
+        }
+
+        if (is_on && std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
+            return std::string("hatchet-sample-profile: ")
+                + o.service
+                + std::string(" service required for ")
+                + o.option
+                + std::string(" option is not available");
+    }
+
+    //
+    // Check if output.format is valid
+    //
+
+    {
+        auto it = args.find("output.format");
+        std::string format = (it == args.end() ? "json-split" : it->second);
+
+        std::set<std::string> allowed_formats = { "cali", "json", "json-split" };
+
+        if (allowed_formats.find(format) == allowed_formats.end())
+            return std::string("hatchet-sample-profile: Invalid output format \"") + format + "\"";
+    }
+
+    return "";
+}
+
 cali::ChannelController*
-make_hatchet_sample_profile_controller(const cali::ConfigManager::argmap_t& args)
+make_controller(const cali::ConfigManager::argmap_t& args)
 {
     auto it = args.find("output");
     std::string output = (it == args.end() ? "sample_profile" : it->second);
@@ -181,7 +256,7 @@ namespace cali
 
 ConfigManager::ConfigInfo hatchet_sample_profile_controller_info
 {
-    "hatchet-sample-profile", ::docstr, ::controller_args, ::make_hatchet_sample_profile_controller, nullptr
+    "hatchet-sample-profile", ::docstr, ::controller_args, ::make_controller, ::check_args
 };
 
 }

@@ -136,12 +136,11 @@ check_args(const cali::ConfigManager::argmap_t& args) {
     //
 
     const struct opt_info_t {
-        const char* option;
-        const char* service;
+        const char* option; const char* service;
     } opt_info_list[] = {
-        { "io.bytes",               "io"        },
-        { "profile.cuda",           "cupti"     },
-        { "profile.mpi",            "mpi"       }
+        { "io.bytes"     , "io"    },
+        { "profile.cuda" , "cupti" },
+        { "profile.mpi"  , "mpi"   }
     };
 
     Services::add_default_services();
