@@ -1,4 +1,4 @@
-# report / C config test
+# JSON output test cases
 
 import json
 import unittest
@@ -107,7 +107,7 @@ class CaliperJSONTest(unittest.TestCase):
     def test_hatchetcontroller(self):
         """ Test hatchet-region-profile controller """
 
-        target_cmd = [ './ci_test_macros', 'hatchet-region-profile,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,output=stdout' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

@@ -1,11 +1,16 @@
 // --- Caliper continuous integration test app for basic trace test
 
+#define _XOPEN_SOURCE
+#include <unistd.h> /* usleep */
+
 #include "caliper/cali.h"
 #include "caliper/cali-manager.h"
 
+#include <string>
+
 // test C and C++ macros
 
-void foo()
+void foo(int sleep_usec)
 {
     CALI_CXX_MARK_FUNCTION;
 
@@ -17,6 +22,9 @@ void foo()
     for (int i = 0; i < count; ++i) {
         CALI_MARK_ITERATION_BEGIN(fooloop, i);
 
+        if (sleep_usec > 0)
+            usleep(sleep_usec);
+
         CALI_MARK_ITERATION_END(fooloop);
     }
     CALI_MARK_LOOP_END(fooloop);
@@ -24,12 +32,19 @@ void foo()
 
 int main(int argc, char* argv[])
 {
-    cali::ConfigManager mgr;
+    int sleep_usec = 0;
 
     if (argc > 1)
-        mgr.add(argv[1]);
-    if (mgr.error())
+        sleep_usec = std::stoi(argv[1]);
+
+    cali::ConfigManager mgr;
+
+    if (argc > 2)
+        mgr.add(argv[2]);
+    if (mgr.error()) {
+        std::cerr << mgr.error_msg() << std::endl;
         return -1;
+    }
 
     mgr.start();
 
@@ -42,7 +57,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < count; ++i) {
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
-        foo();
+        foo(sleep_usec);
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);
