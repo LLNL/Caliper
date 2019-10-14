@@ -105,7 +105,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         
     def test_hatchetcontroller(self):
-        """ Test basic json-tree formatter """
+        """ Test hatchet-region-profile controller """
 
         target_cmd = [ './ci_test_macros', 'hatchet-region-profile,output=stdout' ]
 

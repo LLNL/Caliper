@@ -83,7 +83,7 @@ By default, runtime-report collects a time profile and writes it to stderr on `f
 
 ## event-trace
 
-The event-trace config records a trace of region enter/exit events and writes it out in Caliper's .cali format, using a generated unique output file name by default.
+The event-trace config records a trace of region enter/exit events and writes it out in Caliper's .cali format for processing with Caliper's cali-query tool. It generates a unique output file name by default. Every process writes a separate file.
 
 | Parameter name         | Description                                     |
 |------------------------|-------------------------------------------------|
@@ -108,3 +108,31 @@ The spot config records a time profile and writes a .cali file to be processed b
 | mem.highwatermark      | Record and print memory high-water mark in annotated regions |
 | io.bytes               | Record and print I/O bytes written and read in annotated regions |
 | io.bandwidth           | Record and print I/O bandwidth in annotated regions |
+
+## hatchet-region-profile
+
+The hatchet-region-profile config collects per-process region time profiles meant for processing with the (hatchet)[https://github.com/LLNL/hatchet] library. By default, it will write a json file that hatchet can read. It can also write Caliper .cali files for processing with Caliper's `cali-query` tool.
+
+| Parameter name         | Description                                     |
+|------------------------|-------------------------------------------------|
+| output                 | Output file name, or stderr/stdout |
+| output.format          | Output format. 'json-split', 'json', or 'cali'. Default: 'json-split'. |
+| io.bytes               | Record and print I/O bytes written and read in annotated regions |
+| profile.mpi            | Profile MPI functions |
+| profile.cuda           | Profile host-side CUDA API functions (e.g, cudaMalloc) |
+
+## hatchet-sample-profile
+
+The hatchet-sample-profile config performs call-path sampling to collect per-thread call-path and region sample profiles. By default, it writes json files for processing with the (hatchet)[https://github.com/LLNL/hatchet] library. Profiles contain the sample count per region/call path.
+
+Most options for the hatchet-sample-profile config require that Caliper is built with dyninst support.
+
+| Parameter name         | Description                                     |
+|------------------------|-------------------------------------------------|
+| output                 | Output file name, or stderr/stdout |
+| output.format          | Output format. 'json-split', 'json', or 'cali'. Default: 'json-split'. |
+| sample.frequency       | Sampling frequency in Hz. Default: 200. |
+| sample.threads         | Sample each thread. Default: true. |
+| sample.callpath        | Perform call-stack lookup at each sample. Default: true. |
+| lookup.module          | Lookup the module names (.so/exe) where samples were taken. |
+| lookup.sourceloc       | Lookup the source file/line number where samples were taken. |

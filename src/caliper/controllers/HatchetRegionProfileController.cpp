@@ -94,7 +94,6 @@ public:
         }
 };
 
-// Parse the "profile=" argument
 int
 get_profile_cfg(const cali::ConfigManager::argmap_t& args)
 {
