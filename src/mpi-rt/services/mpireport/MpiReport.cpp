@@ -99,7 +99,7 @@ class MpiReport
         //   create a formatter and print it out
         if (rank == 0) {
             // import globals from runtime Caliper object
-            db.import_globals(*c);
+            db.import_globals(*c, c->get_globals(chn));
 
             // set default formatter to table if it hasn't been set
             if (m_spec.format.opt == QuerySpec::FormatSpec::Default)

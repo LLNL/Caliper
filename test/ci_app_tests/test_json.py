@@ -1,4 +1,4 @@
-# report / C config test
+# JSON output test cases
 
 import json
 import unittest
@@ -104,6 +104,35 @@ class CaliperJSONTest(unittest.TestCase):
         self.assertEqual(data[9][iterindex], 3)
 
         
+    def test_hatchetcontroller(self):
+        """ Test hatchet-region-profile controller """
+
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,output=stdout' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test(target_cmd, caliper_config) )
+
+        self.assertTrue( { 'data', 'columns', 'column_metadata', 'nodes' }.issubset(set(obj.keys())) )
+
+        columns = obj['columns']
+
+        self.assertEqual( { 'path', 'time' }, set(columns) )
+
+        data = obj['data']
+
+        self.assertEqual(len(data), 6)
+        self.assertEqual(len(data[0]), 2)
+
+        meta = obj['column_metadata']
+
+        self.assertEqual(len(meta), 2)
+        self.assertTrue(meta[columns.index('time')]['is_value'])
+        self.assertFalse(meta[columns.index('path')]['is_value'])
+
+
     def test_esc(self):
         target_cmd = [ './ci_test_esc' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
