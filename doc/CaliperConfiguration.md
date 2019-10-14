@@ -111,7 +111,7 @@ The spot config records a time profile and writes a .cali file to be processed b
 
 ## hatchet-region-profile
 
-The hatchet-region-profile config collects per-process region time profiles meant for processing with the [https://github.com/LLNL/hatchet](hatchet) library. By default, it will write a json file that hatchet can read. It can also write Caliper .cali files for processing with Caliper's `cali-query` tool.
+The hatchet-region-profile config collects per-process region time profiles meant for processing with the [hatchet](https://github.com/LLNL/hatchet) library. By default, it will write a json file that hatchet can read. It can also write Caliper .cali files for processing with Caliper's `cali-query` tool.
 
 | Parameter name         | Description                                     |
 |------------------------|-------------------------------------------------|
@@ -123,7 +123,7 @@ The hatchet-region-profile config collects per-process region time profiles mean
 
 ## hatchet-sample-profile
 
-The hatchet-sample-profile config performs call-path sampling to collect per-thread call-path and region sample profiles. By default, it writes json files for processing with the [https://github.com/LLNL/hatchet](hatchet) library. Profiles contain the sample count per region/call path.
+The hatchet-sample-profile config performs call-path sampling to collect per-thread call-path and region sample profiles. By default, it writes json files for processing with the [hatchet](https://github.com/LLNL/hatchet) library. Profiles contain the sample count per region/call path.
 
 Most options for the hatchet-sample-profile config require that Caliper is built with dyninst support.
 
