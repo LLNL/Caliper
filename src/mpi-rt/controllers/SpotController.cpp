@@ -34,6 +34,8 @@ using namespace cali;
 namespace
 {
 
+constexpr int spot_format_version = 1;
+
 enum ProfileConfig {
     MemHighWaterMark = 1,
     IoBytes = 2,
@@ -215,9 +217,14 @@ public:
                 spot_metrics.append(",max#sum#io.bytes.read/sum#time.duration");
             }
 
+            Attribute mtr_attr =
+                db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            Attribute fmt_attr =
+                db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
+
             // set the spot.metrics value
-            db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
-                          Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
+            db.set_global(mtr_attr, Variant(spot_metrics.c_str()));
+            db.set_global(fmt_attr, Variant(spot_format_version));
 
             std::string output = m_output;
 
@@ -361,17 +368,17 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
         if (it != args.end()) {
             bool ok = false;
 
-            if (StringConverter(it->second).to_bool(&ok) == true) 
+            if (StringConverter(it->second).to_bool(&ok) == true)
                 if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
-                    return std::string("spot: ") 
+                    return std::string("spot: ")
                         + o.service
                         + std::string(" service required for ")
                         + o.option
                         + std::string(" is not available");
 
             if (!ok) // parse error
-                return std::string("spot: Invalid value \"") 
-                    + it->second + "\" for " 
+                return std::string("spot: Invalid value \"")
+                    + it->second + "\" for "
                     + it->first;
         }
     }
@@ -379,7 +386,7 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
     return "";
 }
 
-const char* docstr = 
+const char* docstr =
     "spot"
     "\n Record a time profile for the Spot visualization framework."
     "\n  Parameters:"
