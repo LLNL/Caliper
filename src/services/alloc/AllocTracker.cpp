@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 #include "caliper/Caliper.h"
 #include "caliper/AllocTracker.h"
 #include "caliper/SnapshotRecord.h"

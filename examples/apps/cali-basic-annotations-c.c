@@ -1,3 +1,7 @@
+/* Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+ * See top-level LICENSE file for details.
+ */
+
 /*
  * cali-basic-c
  * Caliper C interface example

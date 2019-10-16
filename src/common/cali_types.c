@@ -1,3 +1,7 @@
+/* Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+ * See top-level LICENSE file for details.
+ */
+
 /**
  * @file cali_types.c
  * Context annotation library type conversion functions

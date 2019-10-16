@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 #include "caliper/caliper-config.h"
 
 #include "caliper/ConfigManager.h"

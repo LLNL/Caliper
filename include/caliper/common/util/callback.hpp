@@ -1,5 +1,8 @@
-/// @file callback.hpp
-/// @brief Callback manager template class
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
+/// \file callback.hpp
+/// \brief Callback manager template class
 
 #ifndef UTIL_CALLBACK_HPP
 #define UTIL_CALLBACK_HPP

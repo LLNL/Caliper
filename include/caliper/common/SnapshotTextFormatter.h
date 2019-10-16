@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 /// \file  SnapshotTextFormatter.h
 /// \brief Interface for Snapshot text formatter
 

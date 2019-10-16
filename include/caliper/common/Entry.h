@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 #ifndef CALI_ENTRY_H
 #define CALI_ENTRY_H
 
