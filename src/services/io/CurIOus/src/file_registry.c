@@ -51,8 +51,11 @@ int curious_register_file_by_fd(int fd) {
   char buf[BUF_SIZE];
   
   // append fd to fd_path
-  snprintf(fd_path + len, DIGITS, "%d", fd);
-
+  int trunc_ret = snprintf(fd_path + len, DIGITS, "%d", fd);
+  if(trunc_ret < 0 || trunc_ret >= DIGITS)
+    fprintf(stderr, "Warning! err code: %i. fd (%i) may be truncated in fd_path (%s)\n",
+	    trunc_ret, fd, fd_path);
+  
   // see where the link stored at fd_path goes
   size_t bytes_written = readlink(fd_path, buf, BUF_SIZE);
   
