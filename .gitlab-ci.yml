@@ -1,26 +1,29 @@
-build-quartz-intel:
+.build-quartz:
   stage: build
-  tags:
+  tags: 
     - quartz
     - shell
   script:
-    - echo "==== Build quartz/intel ===="
-    - mkdir build-quartz-intel && cd build-quartz-intel
-    - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
+    - echo "==== ${build_config} ===="
+    - mkdir build-${build_config} && cd build-${build_config}
+    - cmake -C ../cmake/hostconfig/gitlab-${build_config}.cmake ..
     - make
     - ctest --output-on-failure
 
+build-quartz-gcc:
+  variables:
+    build_config: "quartz-gcc"
+  extends: .build-quartz
+
+build-quartz-intel:
+  variables:
+    build_config: "quartz-intel"
+  extends: .build-quartz
+
 build-quartz-pgi:
-  stage: build
-  tags:
-    - quartz
-    - shell
-  script:
-    - echo "==== Build quartz/pgi ===="
-    - mkdir build-quartz-pgi && cd build-quartz-pgi
-    - cmake -C ../cmake/hostconfig/gitlab-quartz-pgi.cmake ..
-    - make
-    - ctest --output-on-failure
+  variables:
+    build_config: "quartz-pgi"
+  extends: .build-quartz
 
 build-butte-xlc:
   stage: build
