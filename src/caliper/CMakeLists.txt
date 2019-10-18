@@ -18,6 +18,9 @@ add_subdirectory(controllers)
 
 add_library(caliper-serial-obj OBJECT ${CALIPER_SOURCES})
 
+target_compile_options(caliper-serial-obj PRIVATE
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-serial-obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
