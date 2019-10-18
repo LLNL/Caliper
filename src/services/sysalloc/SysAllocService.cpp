@@ -145,6 +145,7 @@ void init_alloc_hooks() {
     bindings_are_active = true;
 }
 
+#if 0
 void clear_alloc_hooks()
 {
     if (!bindings_are_active)
@@ -167,6 +168,7 @@ void clear_alloc_hooks()
 
     bindings_are_active = false;
 }
+#endif
 
 void sysalloc_initialize(Caliper* c, Channel* chn) {
     chn->events().post_init_evt.connect(

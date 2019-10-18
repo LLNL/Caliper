@@ -469,7 +469,7 @@ class LibpfmService
         Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
         Variant   v_true(true);
 
-        for (int i=0; i<events_listed; i++) {
+        for (size_t i=0; i<events_listed; i++) {
             if (enable_sampling) {
                 try {
                     sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
@@ -555,10 +555,9 @@ class LibpfmService
         Variant data[MAX_EVENTS] = { Variant() };
 
         for (int i=0; i<sT.num_events; i++) {
-            int ret = 0;
             struct read_format counter_reads = { 0, 0, 0 };
 
-            ret = read(sT.fds[i].fd, &counter_reads, sizeof(struct read_format));
+            size_t ret = read(sT.fds[i].fd, &counter_reads, sizeof(struct read_format));
 
             if (ret < sizeof(struct read_format))
                 ++event_read_fail;
@@ -573,9 +572,9 @@ class LibpfmService
                 data[i] = Variant(counter_reads.value);
             }
 
-            ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
+            int iret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
-            if (ret)
+            if (iret)
                 ++event_reset_fail;
         }
 

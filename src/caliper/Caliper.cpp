@@ -477,13 +477,10 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     
     Attribute name_attr =
         Attribute::make_attribute(sT->tree.node( 8));
-    Attribute type_attr =
-        Attribute::make_attribute(sT->tree.node( 9));
     Attribute prop_attr =
         Attribute::make_attribute(sT->tree.node(10));
 
     assert(name_attr != Attribute::invalid);
-    assert(type_attr != Attribute::invalid);
     assert(prop_attr != Attribute::invalid);
 
     Node* node        = nullptr;

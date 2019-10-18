@@ -94,7 +94,7 @@ namespace
                 auto &query = m_queries[i];
 
                 c->flush(chn, flush_info, 
-                    [this,&query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                    [&query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
                         if (query.selector.pass(db, rec)) {
                             query.aggregator.add(db, rec);
                         }
@@ -143,22 +143,18 @@ namespace
              commit_value.SetString(code_version.c_str(),doc.GetAllocator());
              if(str.size() > 0){
                doc.Parse(str.c_str());
-               auto& json_series_values = doc["series"];
                auto& json_commits = doc["commits"];
                auto& json_times = doc["XTics"];
                json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
                json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
                for(auto datum : json){
-                  bool found = false;
                   std::string series_name = datum.first;
-                       found = true;
                        auto series_data = doc[series_name.c_str()].GetArray();
                        cali_rapidjson::Value arrarr;
                        arrarr.SetArray();
                        arrarr.PushBack(0,doc.GetAllocator());
                        arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
                        series_data.PushBack(arrarr,doc.GetAllocator());
-                  TimeType value = datum.second;
                } 
              }
              else {
