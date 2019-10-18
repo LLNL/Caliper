@@ -230,7 +230,8 @@ struct RecordSelector::RecordSelectorImpl
                     return false;
             }
             break;
-
+            case QuerySpec::Condition::Op::None:
+                break;
             }   
         }
 
