@@ -40,13 +40,12 @@ Extensive documentation is available here:
 https://llnl.github.io/Caliper/
 
 Usage examples of the C++ and C annotation interfaces are provided in
-the `examples/apps` directory.
+the [examples](examples/apps) directory.
 
 See the "Getting started" section below for a brief tutorial.
 
 Example applications, configuration files, and a more extensive
-tutorial can be found here:
-https://github.com/LLNL/caliper-examples
+tutorial can be found [here](https://github.com/LLNL/caliper-examples).
 
 Building and installing
 ------------------------------------------
@@ -266,6 +265,6 @@ To reference Caliper in a publication, please cite the following paper:
 Release
 ------------------------------------------
 
-Caliper is released under a BSD license. See the `LICENSE` file for details.
+Caliper is released under a BSD 3-clause license. See [LICENSE](LICENSE) for details.
 
 ``LLNL-CODE-678900``
