@@ -174,6 +174,63 @@ struct RecordSelector::RecordSelectorImpl
                             }))
                         return false;
                 break;
+            case QuerySpec::Condition::Op::LessThan:
+            {
+                bool m = false;
+
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                return attr_id == clause.attr.id() && val < clause.value;
+                            }))
+                        m = true;
+
+                if (!m)
+                    return false;
+            }
+            break;
+            case QuerySpec::Condition::Op::GreaterThan:
+            {
+                bool m = false;
+
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                return attr_id == clause.attr.id() && val > clause.value;
+                            }))
+                        m = true;
+
+                if (!m)
+                    return false;
+            }
+            break;
+            case QuerySpec::Condition::Op::LessOrEqual:
+            {
+                bool m = false;
+
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                return attr_id == clause.attr.id() && (val < clause.value || val == clause.value);
+                            }))
+                        m = true;
+
+                if (!m)
+                    return false;
+            }
+            break;
+            case QuerySpec::Condition::Op::GreaterOrEqual:
+            {
+                bool m = false;
+
+                for (const Entry& e : list)
+                    if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
+                                return attr_id == clause.attr.id() && (val > clause.value || val == clause.value);
+                            }))
+                        m = true;
+
+                if (!m)
+                    return false;
+            }
+            break;
+
             }   
         }
 
