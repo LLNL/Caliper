@@ -179,7 +179,8 @@ class Timestamp
 
         if (record_timestamp && (scope & CALI_SCOPE_PROCESS))
             sbuf->append(timestamp_attr.id(),
-                         Variant(cali_make_variant_from_uint(chrono::system_clock::to_time_t(chrono::system_clock::now()))));
+                         Variant(cali_make_variant_from_uint(
+                                 chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count())));
     }
 
     void post_init_cb(Caliper* c, Channel* chn) {
