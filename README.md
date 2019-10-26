@@ -79,12 +79,11 @@ provided by the source-code annotations.
 
 ### Source-code annotations
 
-Caliper's source-code annotation API fulfills two purposes: First, it
-lets us associate performance measurements with user-defined,
-high-level context information. Second, we can trigger user-defined
-actions at the instrumentation points, e.g. to measure the time spent
-in individual regions. Measurement actions can be defined at runtime
-and are disabled by default; generally, the source-code annotations
+Caliper source-code annotations lets us associate performance measurements 
+with user-defined, high-level context information. We can also
+trigger user-defined actions at the instrumentation points, e.g. to measure 
+the time spent in annotated regions. Measurement actions can be defined at 
+runtime and are disabled by default; generally, the source-code annotations
 are lightweight enough to be left in production code.
 
 The annotation APIs are available for C, C++, and Fortran. There are
@@ -146,13 +145,45 @@ provided by the annotation API calls (allowing third-party tools to
 access program context information), but won't run any performance
 measurement or data recording on its own.
 
+#### ConfigManager API
+
+With the C++ ConfigManager API, built-in performance measurement and
+reporting configurations can be activated within a program using a short
+configuration string. This configuration string can be hard-coded in the
+program or provided by the user in some form, e.g. as a command-line
+parameter or in the programs's configuration file.
+
+To use the ConfigManager API, create a `cali::ConfigManager` object, add a
+configuration string with `add()`, start the requested configuration
+channels with `start()`, and trigger output with `flush()`:
+
+```C++
+#include <caliper/cali-manager.h>
+// ...
+cali::ConfigManager mgr;
+mgr.add("runtime-report");
+// ...
+mgr.start(); // start requested performance measurement channels
+// ... (program execution)
+mgr.flush(); // write performance results
+```
+
+A complete code example where users can provide a configuration string
+on the command line is [here](examples/apps/cxx-example.cpp). Built-in
+configs include
+
+* runtime-report: Prints a time profile for annotated code regions.
+* event-trace: Records a trace of region begin/end events.
+
+Complete documentation on the ConfigManager configurations can be found
+[here](doc/CaliperConfiguration.md).
+
 #### Configuring through environment variables
 
-Generally, collecting performance data with Caliper requires selecting
-a combination of Caliper *services* that implement specific
-functionality and configuring them for the task at hand. However, for
-some common scenarios, Caliper provides a set of pre-defined
-configuration profiles. These profiles can be activated with the
+The ConfigManager API is not required to run Caliper - performance 
+measurements can also be configured with environment variables or a config
+file. For starters, there are a set of pre-defined configuration
+profiles that can be activated with the
 `CALI_CONFIG_PROFILE` environment variable. For example, the
 `runtime-report` configuration profile prints the total time (in
 microseconds) spent in each code path based on the nesting of
@@ -204,40 +235,10 @@ print the recorded trace data in a human-readable json format:
     },
     ...
 
+It is possible to create entirely custom configurations. This requires
+selecting a combination of Caliper *services* that implement specific
+functionality and configuring them for the task at hand. 
 More information can be found in the [Caliper documentation](https://llnl.github.io/Caliper/).
-
-#### ConfigManager API
-
-With the C++ ConfigManager API, built-in performance measurement and
-reporting configurations can be activated within a program using a short
-configuration string. This configuration string can be hard-coded in the
-program or provided by the user in some form, e.g. as a command-line
-parameter or in the programs's configuration file.
-
-To use the ConfigManager API, create a `cali::ConfigManager` object, add a
-configuration string with `add()`, start the requested configuration
-channels with `start()`, and trigger output with `flush()`:
-
-```C++
-#include <caliper/cali-manager.h>
-// ...
-cali::ConfigManager mgr;
-mgr.add("runtime-report");
-// ...
-mgr.start(); // start requested performance measurement channels
-// ... (program execution)
-mgr.flush(); // write performance results
-```
-
-A complete code example where users can provide a configuration string
-on the command line is [here](examples/apps/cxx-example.cpp). Built-in
-configs include
-
-* runtime-report: Prints a time profile for annotated code regions.
-* event-trace: Records a trace of region begin/end events.
-
-Complete documentation on the ConfigManager configurations can be found
-[here](doc/CaliperConfiguration.md).
 
 Authors
 ------------------------------------------
