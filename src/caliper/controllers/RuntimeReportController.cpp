@@ -25,7 +25,8 @@ enum ProfileConfig {
     MallocInfo  = 4,
     MemHighWaterMark = 8,
     IoBytes     = 16,
-    IoBandwidth = 32
+    IoBandwidth = 32,
+    WallTime    = 64
 };
 
 class RuntimeReportController : public cali::ChannelController
@@ -50,7 +51,11 @@ public:
                     " min(sum#time.duration) as \"Min time/rank\""
                     ",max(sum#time.duration) as \"Max time/rank\""
                     ",avg(sum#time.duration) as \"Avg time/rank\""
-                    ",percent_total(sum#time.duration) as \"Time % (total)\"";
+                    ",percent_total(sum#time.duration) as \"Time %\"";
+
+                if (profile & WallTime)
+                    select +=
+                        ",inclusive_sum(sum#time.duration) as \"Wall time\"";
             } else {
                 select =
                     " inclusive_sum(sum#time.duration) as \"Inclusive time\""
@@ -177,7 +182,8 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
         { std::make_tuple( "malloc",       MallocInfo,  "memusage") },
         { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" )},
         { std::make_tuple( "io.bytes",     IoBytes,     "io" )},
-        { std::make_tuple( "io.bandwidth", IoBandwidth, "io" )}
+        { std::make_tuple( "io.bandwidth", IoBandwidth, "io" )},
+        { std::make_tuple( "wall_time",    WallTime,    "event" )}
     };
 
     int profile = 0;
@@ -190,7 +196,8 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
             { "profile.cuda", "cuda" },
             { "mem.highwatermark", "mem.highwatermark" },
             { "io.bytes",     "io.bytes" },
-            { "io.bandwidth", "io.bandwidth" }
+            { "io.bandwidth", "io.bandwidth" },
+            { "wall_time",   "wall_time" }
         };
 
         for (const auto &entry : optmap) {
@@ -251,7 +258,7 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
             };
 
             for (const std::string& opt : StringConverter(it->second).to_stringlist(",:")) {
-                auto p = std::find_if(std::begin(profile_info_list), std::end(profile_info_list), 
+                auto p = std::find_if(std::begin(profile_info_list), std::end(profile_info_list),
                             [opt](const profile_info_t& pp){
                                 return opt == pp.oldopt;
                             });
@@ -290,17 +297,17 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
         if (it != args.end()) {
             bool ok = false;
 
-            if (StringConverter(it->second).to_bool(&ok) == true) 
+            if (StringConverter(it->second).to_bool(&ok) == true)
                 if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
-                    return std::string("runtime-report: ") 
+                    return std::string("runtime-report: ")
                         + o.service
                         + std::string(" service required for ")
                         + o.option
                         + std::string(" option is not available");
 
             if (!ok) // parse error
-                return std::string("runtime-report: Invalid value \"") 
-                    + it->second + "\" for " 
+                return std::string("runtime-report: Invalid value \"")
+                    + it->second + "\" for "
                     + it->first;
         }
     }
@@ -318,10 +325,11 @@ const char* runtime_report_args[] = {
     "profile.cuda",
     "io.bytes",
     "io.bandwidth",
+    "wall_time",
     nullptr
 };
 
-const char* docstr = 
+const char* docstr =
     "runtime-report"
     "\n Print a time profile for annotated regions."
     "\n  Parameters:"
@@ -331,7 +339,8 @@ const char* docstr =
     "\n   profile.cuda=true|false:           Profile CUDA API functions (e.g., cudaMalloc)"
     "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
     "\n   io.bytes=true|false:               Record I/O bytes written and read"
-    "\n   io.bandwidth=true|false:           Record I/O bandwidth";
+    "\n   io.bandwidth=true|false:           Record I/O bandwidth"
+    "\n   wall_time=true|false:              Print inclusive wall-clock time on rank 0";
 
 } // namespace [anonymous]
 
