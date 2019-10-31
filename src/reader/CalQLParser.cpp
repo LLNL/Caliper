@@ -539,7 +539,7 @@ CalQLParser::error() const
 }
 
 std::string
-CalQLParser::error_msg()
+CalQLParser::error_msg() const
 {
     return mP->error_msg;
 }
