@@ -20,13 +20,12 @@ namespace
 {
 
 enum ProfileConfig {
-    WrapMpi     = 1,
-    WrapCuda    = 2,
-    MallocInfo  = 4,
-    MemHighWaterMark = 8,
-    IoBytes     = 16,
-    IoBandwidth = 32,
-    WallTime    = 64
+    WrapMpi       = 1,
+    WrapCuda      = 2,
+    MemHighWaterMark = 4,
+    IoBytes       = 8,
+    IoBandwidth   = 16,
+    CalcInclusive = 32
 };
 
 class RuntimeReportController : public cali::ChannelController
@@ -43,35 +42,36 @@ public:
                 { "CALI_TIMER_UNIT", "sec" }
             })
         {
-            std::string select;
             std::string groupby = "prop:nested";
 
-            if (use_mpi) {
-                select =
-                    " min(sum#time.duration) as \"Min time/rank\""
-                    ",max(sum#time.duration) as \"Max time/rank\""
-                    ",avg(sum#time.duration) as \"Avg time/rank\""
-                    ",percent_total(sum#time.duration) as \"Time %\"";
+            // Config for first aggregation step in MPI mode (process-local aggregation)
+            std::string local_select =
+                " sum(sum#time.duration)";
+            // Config for serial-mode aggregation
+            std::string serial_select =
+                " inclusive_sum(sum#time.duration) as \"Inclusive time\""
+                ",sum(sum#time.duration) as \"Exclusive time\""
+                ",percent_total(sum#time.duration) as \"Time %\"";
 
-                if (profile & WallTime)
-                    select +=
-                        ",inclusive_sum(sum#time.duration) as \"Wall time\"";
-            } else {
-                select =
-                    " inclusive_sum(sum#time.duration) as \"Inclusive time\""
-                    ",sum(sum#time.duration) as \"Exclusive time\""
-                    ",percent_total(sum#time.duration) as \"Time %\"";
+            std::string tmetric = "sum#sum#time.duration";
+
+            if (profile & CalcInclusive) {
+                local_select += ",inclusive_sum(sum#time.duration)";
+                tmetric = "inclusive#sum#time.duration";
             }
 
-            if (profile & MallocInfo) {
-                select +=
-                    ",sum(sum#malloc.bytes) as \"Heap Allocations\""
-                    ",max(max#malloc.total.bytes) as \"Max Total Bytes on Heap\"";
+            // Config for second aggregation step in MPI mode (cross-process aggregation)
+            std::string cross_select =
+                  std::string(" min(") + tmetric + ") as \"Min time/rank\""
+                + std::string(",max(") + tmetric + ") as \"Max time/rank\""
+                + std::string(",avg(") + tmetric + ") as \"Avg time/rank\""
+                + std::string(",percent_total(sum#sum#time.duration) as \"Time %\"");
 
-                config()["CALI_SERVICES_ENABLE"   ].append(",mallinfo");
-            }
             if (profile & MemHighWaterMark) {
-                select +=
+                local_select += ",max(max#alloc.region.highwatermark)";
+                cross_select +=
+                    ",max(max#max#alloc.region.highwatermark) as \"Max Alloc'd Mem\"";
+                serial_select +=
                     ",max(max#alloc.region.highwatermark) as \"Max Alloc'd Mem\"";
 
                 config()["CALI_SERVICES_ENABLE"   ].append(",alloc,sysalloc");
@@ -88,37 +88,45 @@ public:
             }
             if (profile & IoBytes || profile & IoBandwidth) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",io");
+                local_select +=
+                    ",sum(sum#io.bytes.written),sum(sum#io.bytes.read)";
             }
             if (profile & IoBytes) {
-                select +=
+                cross_select +=
+                    ",avg(sum#sum#io.bytes.written) as \"Avg written\""
+                    ",avg(sum#sum#io.bytes.read) as \"Avg read\""
+                    ",sum(sum#sum#io.bytes.written) as \"Total written\""
+                    ",sum(sum#sum#io.bytes.read) as \"Total read\"";
+                serial_select +=
                     ",sum(sum#io.bytes.written) as \"Total written\""
                     ",sum(sum#io.bytes.read) as \"Total read\"";
-
-                if (use_mpi)
-                    select +=
-                        ",avg(sum#io.bytes.written) as \"Avg written\""
-                        ",avg(sum#io.bytes.read) as \"Avg read\"";
             }
             if (profile & IoBandwidth) {
                 groupby += ",io.region";
 
-                select +=
+                serial_select +=
                     ",io.region as I/O"
                     ",ratio(sum#io.bytes.written,sum#time.duration,8e-6) as \"Write Mbit/s\""
                     ",ratio(sum#io.bytes.read,sum#time.duration,8e-6) as \"Read Mbit/s\"";
+                cross_select +=
+                    ",io.region as I/O"
+                    ",ratio(sum#sum#io.bytes.written,sum#sum#time.duration,8e-6) as \"Write Mbit/s\""
+                    ",ratio(sum#sum#io.bytes.read,sum#sum#time.duration,8e-6) as \"Read Mbit/s\"";
             }
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
+                config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
+                    std::string("select ") + local_select  + " group by " + groupby;
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    std::string("select ") + select + " group by " + groupby + " format tree";
+                    std::string("select ") + cross_select  + " group by " + groupby + " format tree";
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
-                    std::string("select ") + select + " group by " + groupby + " format tree";
+                    std::string("select ") + serial_select + " group by " + groupby + " format tree";
             }
         }
 };
@@ -177,13 +185,12 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
     auto srvcs = Services::get_available_services();
 
     const std::vector< std::tuple<const char*, ProfileConfig, const char*> > profinfo {
-        { std::make_tuple( "mpi",          WrapMpi,     "mpi")      },
-        { std::make_tuple( "cuda",         WrapCuda,    "cupti")    },
-        { std::make_tuple( "malloc",       MallocInfo,  "memusage") },
-        { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" )},
-        { std::make_tuple( "io.bytes",     IoBytes,     "io" )},
-        { std::make_tuple( "io.bandwidth", IoBandwidth, "io" )},
-        { std::make_tuple( "wall_time",    WallTime,    "event" )}
+        { std::make_tuple( "mpi",            WrapMpi,       "mpi")       },
+        { std::make_tuple( "cuda",           WrapCuda,      "cupti" )    },
+        { std::make_tuple( "mem.highwatermark", MemHighWaterMark, "sysalloc" ) },
+        { std::make_tuple( "io.bytes",       IoBytes,       "io" ) },
+        { std::make_tuple( "io.bandwidth",   IoBandwidth,   "io" ) },
+        { std::make_tuple( "calc.inclusive", CalcInclusive, "mpireport" ) }
     };
 
     int profile = 0;
@@ -197,7 +204,7 @@ get_profile_cfg(const cali::ConfigManager::argmap_t& args)
             { "mem.highwatermark", "mem.highwatermark" },
             { "io.bytes",     "io.bytes" },
             { "io.bandwidth", "io.bandwidth" },
-            { "wall_time",   "wall_time" }
+            { "calc.inclusive", "calc.inclusive" }
         };
 
         for (const auto &entry : optmap) {
@@ -325,7 +332,7 @@ const char* runtime_report_args[] = {
     "profile.cuda",
     "io.bytes",
     "io.bandwidth",
-    "wall_time",
+    "calc.inclusive",
     nullptr
 };
 
@@ -340,7 +347,7 @@ const char* docstr =
     "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
     "\n   io.bytes=true|false:               Record I/O bytes written and read"
     "\n   io.bandwidth=true|false:           Record I/O bandwidth"
-    "\n   wall_time=true|false:              Print inclusive wall-clock time on rank 0";
+    "\n   calc.inclusive=true|false:         Report inclusive instead of exclusive times";
 
 } // namespace [anonymous]
 

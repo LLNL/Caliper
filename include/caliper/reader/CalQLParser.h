@@ -42,7 +42,7 @@ public:
 
     /// \brief A descriptive error message in case of a parse error.
     std::string
-    error_msg();
+    error_msg() const;
 
     /// \brief Returns the query specification object for the given %CalQL expression.
     QuerySpec
