@@ -10,6 +10,9 @@
 #include <memory>
 #include <vector>
 
+#define CALI_AGG_HISTOGRAM_START     1
+#define CALI_AGG_HISTOGRAM_BINS      16
+
 namespace aggregate
 {
 
@@ -19,6 +22,7 @@ struct StatisticsAttributes
     cali::Attribute max_attr;
     cali::Attribute sum_attr;
     cali::Attribute avg_attr;
+    cali::Attribute histogram_attr[CALI_AGG_HISTOGRAM_BINS];
 };
 
 struct AggregateAttributeInfo

@@ -29,6 +29,15 @@ struct AggregateKernel {
     double   sum;
     double   avg;
     int      count;
+    int histogram[CALI_AGG_HISTOGRAM_BINS] = {0};
+
+    // Quick way to get expoent out of a double.
+    struct getExponent {
+       union {
+          double val;
+          std::uint16_t sh[4];
+       };
+    };
 
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
@@ -42,6 +51,20 @@ struct AggregateKernel {
         sum += val;
         avg = ((count*avg) + val)/ (count + 1.0);
         ++count;
+
+        getExponent GE;
+        GE.val = val;
+        GE.sh[0] &= 0x7FF0;
+        GE.sh[0] >>= 4;
+        int index;
+        if (GE.sh[0] < 1023+CALI_AGG_HISTOGRAM_START) {
+            index = 0;
+        } else if (GE.sh[0] < 1023+CALI_AGG_HISTOGRAM_START+CALI_AGG_HISTOGRAM_BINS-2) {
+            index = GE.sh[0]-1023-CALI_AGG_HISTOGRAM_START + 1;
+        } else {
+            index = CALI_AGG_HISTOGRAM_BINS-1;
+        }
+        histogram[index]++;
     }
 };
 
@@ -193,6 +216,9 @@ struct AggregationDB::AggregationDBImpl
             rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
             rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
             rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
+            for (int ii=0; ii<MAX_HISTOGRAM-MIN_HISTOGRAM+2; ii++) {
+                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+            }
         }
 
         uint64_t count = entry->count;
