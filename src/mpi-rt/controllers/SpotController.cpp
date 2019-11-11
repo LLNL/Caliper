@@ -42,7 +42,9 @@ constexpr int spot_format_version = 1;
 enum ProfileConfig {
     MemHighWaterMark = 1,
     IoBytes = 2,
-    IoBandwidth = 4
+    IoBandwidth = 4,
+    WrapMpi = 8,
+    WrapCuda = 16
 };
 
 std::string
@@ -117,7 +119,7 @@ public:
     flush() {
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
-        // --- Setup output reduction aggregator
+        // --- Setup output reduction aggregator (final cross-process aggregation)
         std::string select =
             " *"
             ",min(inclusive#sum#time.duration)"
@@ -279,6 +281,13 @@ public:
 
             if (profilecfg & IoBytes || profilecfg & IoBandwidth)
                 config()["CALI_SERVICES_ENABLE"].append(",io");
+            if (profilecfg & WrapMpi) {
+                config()["CALI_SERVICES_ENABLE"].append(",mpi");
+                config()["CALI_MPI_BLACKLIST"     ] =
+                    "MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime";
+            }
+            if (profilecfg & WrapCuda)
+                config()["CALI_SERVICES_ENABLE"].append(",cupti");
         }
 
     ~SpotController()
@@ -292,6 +301,8 @@ const char* spot_args[] = {
     "mem.highwatermark",
     "io.bytes",
     "io.bandwidth",
+    "profile.mpi",
+    "profile.cuda",
     nullptr
 };
 
@@ -311,21 +322,29 @@ make_spot_controller(const cali::ConfigManager::argmap_t& args) {
 
     int profilecfg = 0;
 
+    std::vector<std::string> deprecatedargs;
+
     it = args.find("profile");
-    if (it != args.end() && it->second == "mem.highwatermark")
-        profilecfg |= MemHighWaterMark;
+    if (it != args.end())
+        deprecatedargs = StringConverter(it->second).to_stringlist();
 
     const struct profile_cfg_info_t {
-        const char* name; ProfileConfig flag;
+        const char* name; const char* oldname; ProfileConfig flag;
     } profile_cfg_info[] = {
-        { "mem.highwatermark", MemHighWaterMark },
-        { "io.bytes",          IoBytes          },
-        { "io.bandwidth",      IoBandwidth      }
+        { "mem.highwatermark", "mem.highwatermark", MemHighWaterMark },
+        { "io.bytes",          "io.bytes",          IoBytes          },
+        { "io.bandwidth",      "io.bandwidth",      IoBandwidth      },
+        { "profile.mpi",       "mpi",               WrapMpi          },
+        { "profile.cuda",      "cuda",              WrapCuda         }
     };
 
     for (const profile_cfg_info_t& pinfo : profile_cfg_info) {
-        auto it = args.find(pinfo.name);
-        if (it != args.end() && StringConverter(it->second).to_bool())
+        auto it =
+            args.find(pinfo.name);
+        auto dit =
+            std::find(deprecatedargs.begin(), deprecatedargs.end(), std::string(pinfo.oldname));
+
+        if ((it != args.end() && StringConverter(it->second).to_bool()) || dit != deprecatedargs.end())
             profilecfg |= pinfo.flag;
     }
 
@@ -341,10 +360,15 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
         auto it = args.find("profile");
 
         if (it != args.end()) {
-            if (it->second == "mem.highwatermark")
-                args["mem.highwatermark"] = "true";
-            else
-                return std::string("spot: Unknown \"profile=\" option \"") + it->second + "\"";
+            for (std::string& s : StringConverter(it->second).to_stringlist())
+                if (s == "mem.highwatermark")
+                    args["mem.highwatermark"] = "true";
+                else if (s == "mpi")
+                    args["profile.mpi"] = "true";
+                else if (s == "cuda")
+                    args["profile.cuda"] = "true";
+                else
+                    return std::string("spot: Unknown \"profile=\" option \"") + it->second + "\"";
         }
     }
 
@@ -360,6 +384,8 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
         { "mem.highwatermark", "sysalloc" },
         { "io.bytes",          "io"       },
         { "io.bandwidth",      "io"       },
+        { "profile.mpi",       "mpi"      },
+        { "profile.cuda",      "cupti"    }
     };
 
     Services::add_default_services();
@@ -377,7 +403,7 @@ check_args(const cali::ConfigManager::argmap_t& orig_args) {
                         + o.service
                         + std::string(" service required for ")
                         + o.option
-                        + std::string(" is not available");
+                        + std::string(" option is not available");
 
             if (!ok) // parse error
                 return std::string("spot: Invalid value \"")
@@ -393,9 +419,11 @@ const char* docstr =
     "spot"
     "\n Record a time profile for the Spot visualization framework."
     "\n  Parameters:"
-    "\n   output=filename|stdout|stderr:     Output location. Default: stderr"
+    "\n   output=filename|stdout|stderr:     Output location. Default: an auto-generated .cali file"
     "\n   aggregate_across_ranks=true|false: Aggregate results across MPI ranks"
     "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
+    "\n   profile.mpi=true|false:            Profile MPI functions"
+    "\n   profile.cuda=true|false:           Profile CUDA API functions (e.g., cudaMalloc)"
     "\n   io.bytes=true|false:               Record I/O bytes written and read"
     "\n   io.bandwidth=true|false:           Record I/O bandwidth";
 
