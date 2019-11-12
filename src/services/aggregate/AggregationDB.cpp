@@ -53,11 +53,19 @@ struct AggregateKernel {
         avg = ((count*avg) + val)/ (count + 1.0);
         ++count;
 
+        //grab the shifted exponent from double, cast as in.
         getExponent GE;
         GE.val = val;
         GE.sh[0] &= 0x7FF0;
         GE.sh[0] >>= 4;
         int exponent = GE.sh[0];
+        //The bias for double is 1023, which means histogram
+        //boundaries at 4x would lie at -0.5, 2.  To make things even
+        //powers of 4 for ease of documentation, we need the bias to
+        //be 1024.
+        exponent++;
+        //making bins of size 4x, which means dividing exponent by 2.        
+        exponent >>= 1;
         if (exponent > histogram_max) {
             //shift down values as necessary.
             int shift = std::max(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);

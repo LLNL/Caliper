@@ -165,21 +165,13 @@ class Aggregate
             aI.stats_attributes[i].avg_attr =
                 c->create_attribute(std::string("avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-            aI.stats_attributes[i].histogram_attr[0] =
-                c->create_attribute(std::string("histogram#") + name
-                                    + "#lt_" + to_string(1 << CALI_AGG_HISTOGRAM_START),
-                                    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-            for (int jj = 1; jj < CALI_AGG_HISTOGRAM_BINS-1; jj++) {
+            for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
+                std::stringstream ss;
+                ss << "histogram#bin" << jj < "#" << name;
                 aI.stats_attributes[i].histogram_attr[jj] =
-                   c->create_attribute(std::string("histogram#") + name
-                                       + "#lt_" + to_string(1 << (CALI_AGG_HISTOGRAM_START+jj-1))
-                                       + "#gt_" + to_string(1 << (CALI_AGG_HISTOGRAM_START+jj)),
+                   c->create_attribute(ss.str(),
                                        CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             }
-            aI.stats_attributes[i].histogram_attr[CALI_AGG_HISTOGRAM_BINS-1] =
-                c->create_attribute(std::string("histogram#") + name
-                                    + "#gt_" + to_string(1 << (CALI_AGG_HISTOGRAM_START+CALI_AGG_HISTOGRAM_BINS-2)),
-                                    CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
         }
 
         aI.count_attribute =

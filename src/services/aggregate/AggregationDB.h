@@ -10,8 +10,7 @@
 #include <memory>
 #include <vector>
 
-#define CALI_AGG_HISTOGRAM_START     1
-#define CALI_AGG_HISTOGRAM_BINS      16
+#define CALI_AGG_HISTOGRAM_BINS      10
 
 namespace aggregate
 {
