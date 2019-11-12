@@ -176,7 +176,7 @@ configs include
 * event-trace: Records a trace of region begin/end events.
 
 Complete documentation on the ConfigManager configurations can be found
-[here](doc/CaliperConfiguration.md).
+[here](doc/ConfigManagerAPI.md).
 
 #### Configuring through environment variables
 
