@@ -29,6 +29,7 @@ struct AggregateKernel {
     double   sum;
     double   avg;
     int      count;
+    int histogram_max;
     int histogram[CALI_AGG_HISTOGRAM_BINS] = {0};
 
     // Quick way to get expoent out of a double.
@@ -42,7 +43,7 @@ struct AggregateKernel {
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
           max(std::numeric_limits<double>::min()),
-          sum(0), avg(0), count(0)
+          sum(0), avg(0), count(0), histogram_max(0)
         { }
 
     void add(double val) {
@@ -56,14 +57,23 @@ struct AggregateKernel {
         GE.val = val;
         GE.sh[0] &= 0x7FF0;
         GE.sh[0] >>= 4;
-        int index;
-        if (GE.sh[0] < 1023+CALI_AGG_HISTOGRAM_START) {
-            index = 0;
-        } else if (GE.sh[0] < 1023+CALI_AGG_HISTOGRAM_START+CALI_AGG_HISTOGRAM_BINS-2) {
-            index = GE.sh[0]-1023-CALI_AGG_HISTOGRAM_START + 1;
-        } else {
-            index = CALI_AGG_HISTOGRAM_BINS-1;
+        int exponent = GE.sh[0];
+        if (exponent > histogram_max) {
+            //shift down values as necessary.
+            int shift = std::max(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
+            for (int ii=1; ii<shift+1; ii++) {
+                histogram[0] += histogram[ii];
+            }
+            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BIN; ii++) {
+                int jj = ii-shift;
+                histogram[jj] = histogram[ii];
+            }
+            for (int jj=CALI_AGG_HISTOGRAM_BIN-shift; jj<CALI_AGG_HISTOGRAM_BIN; jj++) {
+               histogram[jj] = 0;
+            }
+            histogram_max = exponent;
         }
+        int index = std::min(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0)
         histogram[index]++;
     }
 };
