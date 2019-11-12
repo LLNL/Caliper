@@ -50,7 +50,7 @@ struct AggregateKernel {
         min  = std::min(min, val);
         max  = std::max(max, val);
         sum += val;
-        avg = ((count*avg) + val)/ (count + 1.0);
+        avg  = ((count*avg) + val) / (count + 1.0);
         ++count;
 
         //grab the shifted exponent from double, cast as in.
@@ -72,16 +72,16 @@ struct AggregateKernel {
             for (int ii=1; ii<shift+1; ii++) {
                 histogram[0] += histogram[ii];
             }
-            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BIN; ii++) {
+            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
                 int jj = ii-shift;
                 histogram[jj] = histogram[ii];
             }
-            for (int jj=CALI_AGG_HISTOGRAM_BIN-shift; jj<CALI_AGG_HISTOGRAM_BIN; jj++) {
+            for (int jj=CALI_AGG_HISTOGRAM_BINS-shift; jj<CALI_AGG_HISTOGRAM_BINS; jj++) {
                histogram[jj] = 0;
             }
             histogram_max = exponent;
         }
-        int index = std::min(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0)
+        int index = std::min(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
         histogram[index]++;
     }
 };
@@ -234,7 +234,7 @@ struct AggregationDB::AggregationDBImpl
             rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
             rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
             rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
-            for (int ii=0; ii<MAX_HISTOGRAM-MIN_HISTOGRAM+2; ii++) {
+            for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
                 rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
             }
         }
