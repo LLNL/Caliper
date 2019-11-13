@@ -11,7 +11,6 @@ add_subdirectory(common)
 add_subdirectory(reader)
 add_subdirectory(services)
 add_subdirectory(caliper)
-add_subdirectory(caliper-stub)
 
 if (CALIPER_HAVE_MPI)
   add_subdirectory(mpi-common)

@@ -39,7 +39,7 @@ option(WITH_LIBDW     "Enable libdw support (for module detection in callpath se
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" FALSE)
 option(WITH_MPI       "Enable MPI" FALSE)
 # option(WITH_MPIT      "Enable MPI-T" FALSE)
-option(WITH_OMPT      "Enable OMPT" FALSE)
+# option(WITH_OMPT      "Enable OMPT" FALSE)
 option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
@@ -210,17 +210,6 @@ if (WITH_GOTCHA)
 endif()
 
 if (WITH_ADIAK)
-  # find_library(adiak_LIBRARIES
-  #   NAMES adiak
-  #   HINTS ${adiak_DIR}/lib)
-  # find_path(adiak_INCLUDE_DIRS
-  #   NAMES adiak.h
-  #   HINTS ${adiak_DIR}/include)
-  # include(FindPackageHandleStandardArgs)
-  # find_package_handle_standard_args(adiak DEFAULT_MSG
-  #   adiak_LIBRARIES
-  #   adiak_INCLUDE_DIRS)
-  # mark_as_advanced(adiak_LIBRARIES adiak_INCLUDE_DIRS)  
   find_package(adiak)
   if (adiak_FOUND)
     get_target_property(_adiak_location adiak LOCATION)

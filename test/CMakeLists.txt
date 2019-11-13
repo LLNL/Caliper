@@ -7,8 +7,7 @@ set(CMAKE_C_STANDARD   99)
 set(CALIPER_TEST_APPS
   cali-annotation-perftest
   cali-flush-perftest
-  cali-test
-  cali-throughput-pthread)
+  cali-test)
 
 find_package(OpenMP)
 
@@ -34,8 +33,5 @@ target_link_libraries(cali-annotation-perftest
   caliper-tools-util)
 target_link_libraries(cali-flush-perftest
   caliper-tools-util)
-target_link_libraries(cali-throughput-pthread
-  caliper-tools-util
-  Threads::Threads)
 
 add_subdirectory(ci_app_tests)
