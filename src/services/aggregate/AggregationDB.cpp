@@ -68,7 +68,7 @@ struct AggregateKernel {
         exponent >>= 1;
         if (exponent > histogram_max) {
             //shift down values as necessary.
-            int shift = std::max(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
+            int shift = std::min(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
             for (int ii=1; ii<shift+1; ii++) {
                 histogram[0] += histogram[ii];
             }
@@ -81,7 +81,7 @@ struct AggregateKernel {
             }
             histogram_max = exponent;
         }
-        int index = std::min(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
+        int index = std::max(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
         histogram[index]++;
     }
 };
