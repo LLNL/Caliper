@@ -50,6 +50,8 @@ option(WITH_ADIAK     "Enable adiak support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
+option(ENABLE_HISTOGRAMS "Enable histogram aggregation (experimental)" FALSE)
+
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
 option(BUILD_DOCS     "Build Caliper documentation" FALSE)
@@ -78,6 +80,11 @@ if (${CALIPER_HAVE_LINUX})
   set(CALIPER_HAVE_MEMUSAGE TRUE)
   set(CALIPER_cpuinfo_CMAKE_MSG "Yes")
   set(CALIPER_memusage_CMAKE_MSG "Yes")
+endif()
+
+if (ENABLE_HISTOGRAMS)
+  set(CALIPER_ENABLE_HISTOGRAMS TRUE)
+  set(CALIPER_histogram_CMAKE_MSG "Yes")
 endif()
 
 if(WITH_VTUNE)
@@ -413,7 +420,8 @@ set(CALIPER_MODULES
   NVProf
   CUpti
   TAU
-  VTune)
+  VTune
+  histogram)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
