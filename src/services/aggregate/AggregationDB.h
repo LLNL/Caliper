@@ -3,12 +3,16 @@
 
 #pragma once
 
+#include "caliper/caliper-config.h"
+
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Attribute.h"
 
 #include <memory>
 #include <vector>
+
+#define CALI_AGG_HISTOGRAM_BINS      10
 
 namespace aggregate
 {
@@ -19,6 +23,9 @@ struct StatisticsAttributes
     cali::Attribute max_attr;
     cali::Attribute sum_attr;
     cali::Attribute avg_attr;
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+    cali::Attribute histogram_attr[CALI_AGG_HISTOGRAM_BINS];
+#endif
 };
 
 struct AggregateAttributeInfo

@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstring>
 #include <mutex>
+#include <sstream>
 
 using namespace aggregate;
 using namespace cali;
@@ -165,6 +166,13 @@ class Aggregate
             aI.stats_attributes[i].avg_attr =
                 c->create_attribute(std::string("avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+            for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
+                aI.stats_attributes[i].histogram_attr[jj] =
+                   c->create_attribute(std::string("histogram.bin.") + std::to_string(jj) + std::string("#") + name,
+                                       CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+            }
+#endif
         }
 
         aI.count_attribute =

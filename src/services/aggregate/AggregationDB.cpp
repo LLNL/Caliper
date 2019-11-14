@@ -30,18 +30,65 @@ struct AggregateKernel {
     double   avg;
     int      count;
 
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+    int histogram_max;
+    int histogram[CALI_AGG_HISTOGRAM_BINS] = {0};
+
+    // Quick way to get expoent out of a double.
+    struct getExponent {
+       union {
+          double val;
+          std::uint16_t sh[4];
+       };
+    };
+#endif
+
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
           max(std::numeric_limits<double>::min()),
           sum(0), avg(0), count(0)
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+          , histogram_max(0)
+#endif
         { }
 
     void add(double val) {
         min  = std::min(min, val);
         max  = std::max(max, val);
         sum += val;
-        avg = ((count*avg) + val)/ (count + 1.0);
+        avg  = ((count*avg) + val) / (count + 1.0);
         ++count;
+
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+        //grab the shifted exponent from double, cast as int.
+        std::uint64_t val_uint;
+        std::memcpy(&val_uint, &val, 8);
+        val_uint >>= 52;
+        val_uint &= 0x7FF;
+        //The bias for double is 1023, which means histogram
+        //boundaries at 4x would lie at -0.5, 2.  To make things even
+        //powers of 4 for ease of documentation, we need the bias to
+        //be 1024.
+        //making bins of size 4x, which means dividing exponent by 2.
+        int exponent = (val_uint+1)/2;
+        if (exponent > histogram_max) {
+            //shift down values as necessary.
+            int shift = std::min(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
+            for (int ii=1; ii<shift+1; ii++) {
+                histogram[0] += histogram[ii];
+            }
+            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
+                int jj = ii-shift;
+                histogram[jj] = histogram[ii];
+            }
+            for (int jj=CALI_AGG_HISTOGRAM_BINS-shift; jj<CALI_AGG_HISTOGRAM_BINS; jj++) {
+               histogram[jj] = 0;
+            }
+            histogram_max = exponent;
+        }
+        int index = std::max(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
+        histogram[index]++;
+#endif
     }
 };
 
@@ -193,6 +240,11 @@ struct AggregationDB::AggregationDBImpl
             rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
             rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
             rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+            for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
+                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+            }
+#endif
         }
 
         uint64_t count = entry->count;
