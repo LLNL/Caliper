@@ -20,16 +20,10 @@ struct SnapshotTree::SnapshotTreeImpl
 
     void recursive_delete(SnapshotTreeNode* node) {
         if (node) {
-            node = node->first_child();
+            recursive_delete(node->first_child());
+            recursive_delete(node->next_sibling());
 
-            while (node) {
-                ::SnapshotTreeNode* tmp = node->next_sibling();
-
-                recursive_delete(node);
-
-                delete node;
-                node = tmp;
-            }
+            delete node;
         }
     }
 
