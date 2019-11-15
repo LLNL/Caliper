@@ -237,10 +237,12 @@ struct Caliper::ThreadData
         }
 
     ~ThreadData() {
-        {
-            Caliper c;
+        Caliper c;
+
+        if (c)
             c.release_thread();
-        }
+        else
+            return;
         
         if (is_initial_thread)
             Caliper::release();
