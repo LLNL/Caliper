@@ -323,6 +323,13 @@ ConfigManager::start()
 }
 
 void
+ConfigManager::stop()
+{
+    for (ChannelPtr& chn : mP->m_channels)
+        chn->stop();
+}
+
+void
 ConfigManager::flush()
 {
     for (ChannelPtr& chn : mP->m_channels)

@@ -51,8 +51,8 @@ class ChannelController;
 /// \endcode
 ///
 /// \example cxx-example.cpp
-/// This example demonstrates the C++ annotation macros as well as the 
-/// control channel API. 
+/// This example demonstrates the C++ annotation macros as well as the
+/// control channel API.
 
 class ConfigManager
 {
@@ -152,7 +152,8 @@ public:
     ChannelPtr
     get_channel(const char* name);
 
-    /// \brief Start all configured measurement channels
+    /// \brief Start all configured measurement channels, or re-start
+    ///   paused ones
     ///
     /// Invokes the ChannelController::start() method on all configuration
     /// channel controllers created by the ConfigManager. Equivalent to
@@ -165,6 +166,13 @@ public:
     /// \endcode
     void
     start();
+
+    /// \brief Pause all configured measurement channels
+    ///
+    /// Invokes the ChannelController::stop() method on all configuration
+    /// channel controllers created by the ConfigManager.
+    void
+    stop();
 
     /// \brief Flush all configured measurement channels
     ///

@@ -22,6 +22,8 @@
 // between threads using OpenMP.
 
 #include <caliper/Caliper.h>
+#include <caliper/ChannelController.h>
+#include <caliper/ConfigManager.h>
 
 #include <caliper/common/RuntimeConfig.h>
 
@@ -69,25 +71,27 @@ int run(const Config& cfg)
     for (int i = 0; i < cfg.iter; ++i) {
         n_updates += foo(cfg.tree_depth, i % cfg.tree_width, cfg);
     }
-    
+
     return n_updates;
 }
 
 void make_strings(const Config& cfg)
 {
+    CALI_CXX_MARK_FUNCTION;
+
     int depth = cfg.tree_depth + 1;
     int width = std::max(1, cfg.tree_width);
-    
+
     annotation_strings.resize(depth * width);
 
     for (int d = 0; d < depth; ++d)
         for (int w = 0; w < width; ++w) {
             std::string str("foo.");
-            
+
             str.append(std::to_string(d));
             str.append(".");
             str.append(std::to_string(w));
-            
+
             annotation_strings[d*width+w] = std::move(str);
         }
 }
@@ -95,7 +99,7 @@ void make_strings(const Config& cfg)
 int main(int argc, char* argv[])
 {
     cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=nested:process_scope");
-    
+
     const util::Args::Table option_table[] = {
         { "width",       "tree-width",  'w', true,
           "Context tree width", "WIDTH"
@@ -114,14 +118,18 @@ int main(int argc, char* argv[])
           "Number of replicated channel instances",
           "CHANNELS"
         },
+        { "profile",       "profile",   'P', true,
+          "Caliper profiling config (for profiling cali-annotation-perftest)",
+          "CONFIGSTRING"
+        },
 
         { "help", "help", 'h', false, "Print help", nullptr },
 
         util::Args::Table::Terminator
     };
-    
+
     // --- initialization
-    
+
     util::Args args(option_table);
 
     int lastarg = args.parse(argc, argv);
@@ -140,27 +148,35 @@ int main(int argc, char* argv[])
         return 2;
     }
 
+    cali::ConfigManager mgr;
+    mgr.add(args.get("profile", "").c_str());
+
+    if (mgr.error())
+        std::cerr << "Profiling config error: " << mgr.error_msg() << std::endl;
+
+    mgr.start();
+
     int threads = 1;
 #ifdef _OPENMP
     threads = omp_get_max_threads();
 #endif
-        
+
     Config cfg;
 
     cfg.tree_width  = std::stoi(args.get("width", "20"));
     cfg.tree_depth  = std::stoi(args.get("depth", "10"));
     cfg.iter        = std::stoi(args.get("iterations", "100000"));
-    cfg.channels = std::max(std::stoi(args.get("channels", "1")), 1);
-    
+    cfg.channels    = std::max(std::stoi(args.get("channels", "1")), 1);
+
     // set global attributes before other Caliper initialization
 
-    cali::Annotation("perftest.tree_width",  CALI_ATTR_GLOBAL).set(cfg.tree_width);
-    cali::Annotation("perftest.tree_depth",  CALI_ATTR_GLOBAL).set(cfg.tree_depth);
-    cali::Annotation("perftest.iterations",  CALI_ATTR_GLOBAL).set(cfg.iter);
+    cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
+    cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);
+    cali_set_global_int_byname("perftest.iterations", cfg.iter);
 #ifdef _OPENMP
-    cali::Annotation("perftest.threads",     CALI_ATTR_GLOBAL).set(threads);
+    cali_set_global_int_byname("perftest.threads",    threads);
 #endif
-    cali::Annotation("perftest.channels", CALI_ATTR_GLOBAL).set(cfg.channels);
+    cali_set_global_int_byname("perftest.channels",   cfg.channels);
 
     make_strings(cfg);
 
@@ -186,10 +202,10 @@ int main(int argc, char* argv[])
     for (int x = 1; x < cfg.channels; ++x) {
         std::string s("chn.");
         s.append(std::to_string(x));
-        
+
         c.create_channel(s.c_str(), cali::RuntimeConfig::get_default_config());
     }
-    
+
     // --- pre-timing loop. initializes OpenMP subsystem
 
     CALI_MARK_BEGIN("perftest.pre-timing");
@@ -200,7 +216,9 @@ int main(int argc, char* argv[])
     pre_cfg.tree_depth = 0;
     pre_cfg.iter       = 100 * threads;
 
+    mgr.stop();
     run(pre_cfg);
+    mgr.start();
 
     CALI_MARK_END("perftest.pre-timing");
 
@@ -208,11 +226,17 @@ int main(int argc, char* argv[])
 
     CALI_MARK_BEGIN("perftest.timing");
 
+    // stop the annotation profiling channels for the measurement loop
+    mgr.stop();
+
     auto stime = std::chrono::system_clock::now();
-    
+
     int updates = run(cfg);
-    
+
     auto etime = std::chrono::system_clock::now();
+
+    // re-start the annotation profiling channels
+    mgr.start();
 
     CALI_MARK_END("perftest.timing");
 
@@ -233,6 +257,8 @@ int main(int argc, char* argv[])
                   << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
                   << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
                   << std::endl;
+
+    mgr.flush();
 
     return 0;
 }
