@@ -34,11 +34,6 @@ program testf03
      ! after the loop will still contain the last iteration value)
      call cali_end(iter_attr, cali_ret)
      
-     ! Checking return value (not required, but good style)
-     if (cali_ret .ne. CALI_SUCCESS) then
-        print *, "cali_end returned with", cali_ret
-     end if
-
      ! End "loop" phase
      call cali_end_byname('loop')
   end if
