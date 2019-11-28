@@ -37,6 +37,9 @@
 #include <omp.h>
 #endif
 
+#ifdef CALIPER_HAVE_ADIAK
+#include <adiak.hpp>
+#endif
 
 cali::Annotation         test_annotation("test.attr", CALI_ATTR_SCOPE_THREAD);
 std::vector<std::string> annotation_strings;
@@ -96,9 +99,36 @@ void make_strings(const Config& cfg)
         }
 }
 
+void record_globals(const Config& cfg, int threads)
+{
+#ifdef CALIPER_HAVE_ADIAK
+    adiak::value("perftest.tree_width", cfg.tree_width);
+    adiak::value("perftest.tree_depth", cfg.tree_depth);
+    adiak::value("perftest.iterations", cfg.iter);
+    adiak::value("perftest.threads",    threads);
+    adiak::value("perftest.channels",   cfg.channels);
+
+    adiak::value("perftest.services",
+                 cali::RuntimeConfig::get_default_config().get("services", "enable").to_string());
+
+    adiak::user();
+    adiak::launchdate();
+    adiak::executablepath();
+    adiak::libraries();
+    adiak::cmdline();
+    adiak::clustername();
+#else
+    cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
+    cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);
+    cali_set_global_int_byname("perftest.iterations", cfg.iter);
+    cali_set_global_int_byname("perftest.threads",    threads);
+    cali_set_global_int_byname("perftest.channels",   cfg.channels);
+#endif
+}
+
 int main(int argc, char* argv[])
 {
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=nested:process_scope");
+    cali_config_preset("CALI_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
     const util::Args::Table option_table[] = {
         { "width",       "tree-width",  'w', true,
@@ -123,7 +153,8 @@ int main(int argc, char* argv[])
           "CONFIGSTRING"
         },
 
-        { "help", "help", 'h', false, "Print help", nullptr },
+        { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
+        { "help",  "help",  'h', false, "Print help",         nullptr },
 
         util::Args::Table::Terminator
     };
@@ -149,12 +180,15 @@ int main(int argc, char* argv[])
     }
 
     cali::ConfigManager mgr;
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
     mgr.add(args.get("profile", "").c_str());
 
     if (mgr.error())
         std::cerr << "Profiling config error: " << mgr.error_msg() << std::endl;
 
     mgr.start();
+
+    CALI_MARK_FUNCTION_BEGIN;
 
     int threads = 1;
 #ifdef _OPENMP
@@ -169,22 +203,16 @@ int main(int argc, char* argv[])
     cfg.channels    = std::max(std::stoi(args.get("channels", "1")), 1);
 
     // set global attributes before other Caliper initialization
-
-    cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
-    cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);
-    cali_set_global_int_byname("perftest.iterations", cfg.iter);
-#ifdef _OPENMP
-    cali_set_global_int_byname("perftest.threads",    threads);
-#endif
-    cali_set_global_int_byname("perftest.channels",   cfg.channels);
+    record_globals(cfg, threads);
 
     make_strings(cfg);
 
     // --- print info
 
     bool print_csv = args.is_set("csv");
+    bool quiet     = args.is_set("quiet");
 
-    if (!print_csv)
+    if (!quiet && !print_csv)
         std::cout << "cali-annotation-perftest:"
                   << "\n    Channels:   " << cfg.channels
                   << "\n    Tree width: " << cfg.tree_width
@@ -242,21 +270,34 @@ int main(int argc, char* argv[])
 
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
-    if (print_csv)
-        std::cout << cfg.channels
-                  << "," << cfg.tree_depth
-                  << "," << cfg.tree_width
-                  << "," << updates
-                  << "," << threads
-                  << "," << msec/1000.0
-                  << std::endl;
-    else
-        std::cout << "  " << updates << " annotation updates in "
-                  << msec/1000.0     << " sec ("
-                  << updates/threads << " per thread), "
-                  << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
-                  << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
-                  << std::endl;
+    double usec_per_update = (updates > 0 ? (1000.0*msec*threads)/updates : 0.0);
+    double updates_per_sec = (msec    > 0 ?  1000.0*updates/msec          : 0.0);
+
+#ifdef CALIPER_HAVE_ADIAK
+    adiak::value("perftest.usec_per_update", usec_per_update);
+    adiak::value("perftest.updates_per_sec", updates_per_sec);
+    adiak::value("perftest.time", msec / 1000.0);
+#endif
+
+    if (!quiet) {
+        if (print_csv)
+            std::cout << cfg.channels
+                    << "," << cfg.tree_depth
+                    << "," << cfg.tree_width
+                    << "," << updates
+                    << "," << threads
+                    << "," << msec/1000.0
+                    << std::endl;
+        else
+            std::cout << "  " << updates << " annotation updates in "
+                    << msec/1000.0     << " sec ("
+                    << updates/threads << " per thread), "
+                    << updates_per_sec << " updates/sec, "
+                    << usec_per_update << " usec/update"
+                    << std::endl;
+    }
+
+    CALI_MARK_FUNCTION_END;
 
     mgr.flush();
 

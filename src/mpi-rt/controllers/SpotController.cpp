@@ -24,9 +24,10 @@
 #include <algorithm>
 #include <ctime>
 
+#ifdef CALIPER_HAVE_MPI
 #include "caliper/cali-mpi.h"
-
 #include <mpi.h>
+#endif
 
 #ifdef CALIPER_HAVE_ADIAK
 #include <adiak.hpp>
@@ -178,7 +179,10 @@ public:
         int rank = 0;
 
 #ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi) {
+        int initialized = 0;
+        MPI_Initialized(&initialized);
+
+        if (initialized != 0 && m_use_mpi) {
             Log(2).stream() << "[spot controller]: Performing cross-process aggregation" << std::endl;
 
             MPI_Comm comm;

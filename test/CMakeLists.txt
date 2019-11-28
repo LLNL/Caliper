@@ -13,8 +13,13 @@ find_package(OpenMP)
 
 foreach(app ${CALIPER_TEST_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper-serial)
+  target_link_libraries(${app} caliper)
 endforeach()
+
+if (CALIPER_HAVE_ADIAK)
+  target_include_directories(cali-annotation-perftest PRIVATE ${adiak_INCLUDE_DIRS})
+  target_link_libraries(cali-annotation-perftest adiak)
+endif()
 
 set(CALIPER_TEST_OMP_APPS
   cali-annotation-perftest
