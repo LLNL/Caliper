@@ -14,6 +14,9 @@ build-quartz-gcc:
   variables:
     build_config: "quartz-gcc"
   extends: .build-quartz
+  artifacts:
+    paths:
+      - build-quartz-gcc/
 
 build-quartz-intel:
   variables:
@@ -24,6 +27,17 @@ build-quartz-pgi:
   variables:
     build_config: "quartz-pgi"
   extends: .build-quartz
+
+perftest-quartz:
+  stage: test
+  tags:
+    - quartz
+    - shell
+  script:
+    - cd build-quartz-gcc
+    - ../scripts/run-annotation-perftest.sh
+  dependencies:
+    - build-quartz-gcc
 
 build-butte-xlc:
   stage: build

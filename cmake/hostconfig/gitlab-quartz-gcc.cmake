@@ -1,6 +1,8 @@
 set(CMAKE_C_COMPILER   "/usr/tce/packages/gcc/gcc-8.1.0/bin/gcc" CACHE PATH "")
 set(CMAKE_CXX_COMPILER "/usr/tce/packages/gcc/gcc-8.1.0/bin/g++" CACHE PATH "")
 
+set(CMAKE_BUILD_TYPE   "RelWithDebInfo" CACHE STRING "")
+
 set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-8.1.0/bin/mpicc" CACHE PATH "")
 set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-gcc-8.1.0/bin/mpicxx" CACHE PATH "")
 
