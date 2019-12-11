@@ -78,22 +78,24 @@ class AnnotationBinding
     std::vector<std::string> m_trigger_attr_names;
 
     static const ConfigSet::Entry s_configdata[];
-    
+
+    void mark_attribute(Caliper*, Channel*, const Attribute&);
     void check_attribute(Caliper*, Channel*, const Attribute&);
 
     void base_pre_initialize(Caliper*, Channel*);
     void base_post_initialize(Caliper*, Channel*);
 
-    /// These three callbacks are internal Caliper mechanisms
+    /// These callbacks are internal Caliper mechanisms
     /// not meant to be touched by the code of services
     /// implementing an AnnotationBinding.
     /// 
-    /// User code should instead use on_create_attribute,
-    /// on_begin, and on_end.
-    void create_attr_cb(Caliper*, Channel*, const Attribute&);
+    /// User code should instead use on_mark_attribute(),
+    /// on_begin(), and on_end().
 
     void begin_cb(Caliper*, Channel*, const Attribute&, const Variant&);
     void end_cb(Caliper*, Channel*, const Attribute&, const Variant&);
+
+    static bool is_subscription_attribute(const Attribute& attr);
 
 protected:
 
@@ -160,7 +162,12 @@ public:
 
         chn->events().create_attr_evt.connect(
             [binding](Caliper* c, Channel* chn, const Attribute& attr){
-                binding->create_attr_cb(c, chn, attr);
+                if (!is_subscription_attribute(attr))
+                    binding->check_attribute(c, chn, attr);
+            });
+        chn->events().subscribe_attribute.connect(
+            [binding](Caliper* c, Channel* chn, const Attribute& attr){
+                binding->check_attribute(c, chn, attr);
             });
         chn->events().pre_begin_evt.connect(
             [binding](Caliper* c, Channel* chn,const Attribute& attr,const Variant& value){
