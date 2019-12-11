@@ -29,178 +29,143 @@ namespace
 
 class Timestamp
 {
+    //   This keeps per-thread per-channel timer data, which we can look up 
+    // on the thread-local blackboard
+    struct TimerInfo {
+        // The timestamp of the last snapshot on this channel+thread
+        uint64_t prev_snapshot_timestamp;
+
+        // A per-attribute stack of timestamps for computing inclusive times
+        std::map< cali_id_t, std::vector<uint64_t> > inclusive_timer_stack;
+
+        TimerInfo()
+            : prev_snapshot_timestamp(0)
+        { }
+    };
+
     chrono::time_point<chrono::high_resolution_clock> tstart;
 
     Attribute timestamp_attr { Attribute::invalid } ;
     Attribute timeoffs_attr  { Attribute::invalid } ;
-    cali_id_t snapshot_duration_attr_id { CALI_INV_ID };
-    cali_id_t phase_duration_attr_id    { CALI_INV_ID };
+
+    Attribute timerinfo_attr { Attribute::invalid } ;
+
+    cali_id_t snapshot_duration_attr_id  { CALI_INV_ID };
+    cali_id_t inclusive_duration_attr_id { CALI_INV_ID };
+    cali_id_t offset_attr_id             { CALI_INV_ID };
+
+    // Keeps all created timer info objects so we can delete them later
+    std::vector<TimerInfo*>  info_obj_list;
+    std::mutex               info_obj_mutex;
 
     bool      record_timestamp;
     bool      record_offset;
-    bool      record_duration;
-    bool      record_phases;
+    bool      record_snapshot_duration;
+    bool      record_inclusive_duration;
 
     double    scale_factor   { 1.0 };
 
     Attribute begin_evt_attr { Attribute::invalid };
-    Attribute set_evt_attr   { Attribute::invalid };
     Attribute end_evt_attr   { Attribute::invalid };
-    Attribute lvl_attr       { Attribute::invalid };
 
-    typedef std::map<uint64_t, Attribute> OffsetAttributeMap;
-
-    std::mutex         offset_attributes_mutex;
-    OffsetAttributeMap offset_attributes;
+    int       n_stack_errors { 0 };
 
     static const ConfigSet::Entry s_configdata[];
 
-    uint64_t make_offset_attribute_key(cali_id_t attr_id, unsigned level) {
-        // assert((level   & 0xFFFF)         == 0);
-        // assert((attr_id & 0xFFFFFFFFFFFF) == 0);
 
-        uint64_t lvl_k = static_cast<uint64_t>(level) << 48;
+    TimerInfo* acquire_timerinfo(Caliper* c) {
+        TimerInfo* ti = 
+            static_cast<TimerInfo*>(c->get(timerinfo_attr).value().get_ptr());
 
-        return lvl_k | attr_id;
-    }
+        if (!ti && !c->is_signal()) {
+            ti = new TimerInfo;
 
-    // Get or create a hidden offset attribute for the given attribute and its
-    // current hierarchy level
+            c->set(timerinfo_attr, Variant(cali_make_variant_from_ptr(ti)));
 
-    Attribute make_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level) {
-        uint64_t key = make_offset_attribute_key(attr_id, level);
-
-        {
-            std::lock_guard<std::mutex>  lock(offset_attributes_mutex);
-            OffsetAttributeMap::iterator it = offset_attributes.find(key);
-
-            if (it != offset_attributes.end())
-                return it->second;
+            std::lock_guard<std::mutex>
+                g(info_obj_mutex);
+            
+            info_obj_list.push_back(ti);
         }
 
-        // Not found -> create new entry
-
-        std::string name = "offs.";
-        name.append(std::to_string(attr_id));
-        name.append(".");
-        name.append(std::to_string(level));
-
-        Attribute offs_attr =
-            c->create_attribute(name, CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE     |
-                                CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_HIDDEN      |
-                                CALI_ATTR_SCOPE_THREAD); // FIXME: needs to be original attribute's scope
-
-        std::lock_guard<std::mutex> lock(offset_attributes_mutex);
-        offset_attributes.insert(std::make_pair(key, offs_attr));
-
-        return offs_attr;
+        return ti;
     }
 
-    // Get existing hidden offset attribute for the given attribute and its
-    // current hierarchy level
-
-    Attribute find_offset_attribute(Caliper* c, cali_id_t attr_id, unsigned level) {
-        uint64_t key = make_offset_attribute_key(attr_id, level);
-
-        {
-            std::lock_guard<std::mutex>  lock(offset_attributes_mutex);
-            OffsetAttributeMap::iterator it = offset_attributes.find(key);
-
-            if (it != offset_attributes.end())
-                return it->second;
-        }
-
-        return Attribute::invalid;
-    }
-
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* sbuf) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec) {
         auto now = chrono::high_resolution_clock::now();
+        uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
-        if ((record_duration || record_phases || record_offset) && scope & CALI_SCOPE_THREAD) {
-            uint64_t  usec = chrono::duration_cast<std::chrono::microseconds>(now - tstart).count();
-            Variant v_usec(usec);
-            Variant v_offs(c->exchange(chn, timeoffs_attr, v_usec));
-
-            if (record_duration && !v_offs.empty())
-                sbuf->append(snapshot_duration_attr_id, Variant(scale_factor * (usec - v_offs.to_uint())));
-
-            if (record_phases && info) {
-                Entry event = info->get(begin_evt_attr);
-
-                cali_id_t evt_attr_id;
-                Variant   v_level;
-
-                if (event.is_empty())
-                    event = info->get(set_evt_attr);
-                if (event.is_empty())
-                    event = info->get(end_evt_attr);
-                if (event.is_empty())
-                    goto record_phases_exit;
-
-                evt_attr_id = event.value().to_id();
-                v_level     = info->get(lvl_attr).value();
-
-                if (evt_attr_id == CALI_INV_ID || v_level.empty())
-                    goto record_phases_exit;
-
-                if (event.attribute() == begin_evt_attr.id()) {
-                    // begin/set event: save time for current entry
-
-                    c->set(chn, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
-                } else if (event.attribute() == set_evt_attr.id())   {
-                    // set event: get saved time for current entry and calculate duration
-
-                    Variant v_p_usec    =
-                        c->exchange(chn, make_offset_attribute(c, evt_attr_id, v_level.to_uint()), v_usec);
-
-                    if (!v_p_usec.empty())
-                        sbuf->append(phase_duration_attr_id, Variant(scale_factor * (usec - v_p_usec.to_uint())));
-                } else if (event.attribute() == end_evt_attr.id())   {
-                    // end event: get saved time for current entry and calculate duration
-
-                    Attribute offs_attr =
-                        find_offset_attribute(c, evt_attr_id, v_level.to_uint());
-
-                    if (offs_attr == Attribute::invalid)
-                        goto record_phases_exit;
-
-                    Variant v_p_usec    =
-                        c->exchange(chn, offs_attr, Variant());
-
-                    if (!v_p_usec.empty())
-                        sbuf->append(phase_duration_attr_id, Variant(scale_factor * (usec - v_p_usec.to_uint())));
-                }
-            record_phases_exit:
-                ;
-            }
-        }
+        if (record_offset)
+            rec->append(offset_attr_id, Variant(usec));
 
         if (record_timestamp && (scope & CALI_SCOPE_PROCESS))
-            sbuf->append(timestamp_attr.id(),
-                         Variant(cali_make_variant_from_uint(
-                                 chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count())));
+            rec->append(timestamp_attr.id(),
+                        Variant(cali_make_variant_from_uint(
+                                chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count())));
+
+        if ((!record_snapshot_duration && !record_inclusive_duration) || !(scope & CALI_SCOPE_THREAD))
+            return;
+
+        // Get timer info object for this thread and channel
+        TimerInfo* ti = acquire_timerinfo(c);
+
+        if (!ti)
+            return;
+
+        if (record_snapshot_duration)
+            rec->append(snapshot_duration_attr_id, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
+
+        ti->prev_snapshot_timestamp = usec;
+
+        if (record_inclusive_duration && info && !c->is_signal()) {
+            Entry event = info->get(begin_evt_attr);
+
+            if (event.is_empty())
+                event = info->get(end_evt_attr);
+            if (event.is_empty())
+                return;
+            
+            cali_id_t evt_attr_id = event.value().to_id();
+
+            if (event.attribute() == begin_evt_attr.id()) {
+                // begin event: push current timestamp onto the inclusive timer stack
+                ti->inclusive_timer_stack[evt_attr_id].push_back(usec);
+            } else if (event.attribute() == end_evt_attr.id()) {
+                // end event: fetch begin timestamp from inclusive timer stack
+                auto stack_it = ti->inclusive_timer_stack.find(evt_attr_id);
+
+                if (stack_it == ti->inclusive_timer_stack.end() || stack_it->second.empty()) {
+                    ++n_stack_errors;
+                    return;
+                }
+
+                rec->append(inclusive_duration_attr_id, Variant(scale_factor * (usec - stack_it->second.back())));
+                stack_it->second.pop_back();
+            }
+        }
     }
 
     void post_init_cb(Caliper* c, Channel* chn) {
         // Find begin/end event snapshot event info attributes
 
         begin_evt_attr = c->get_attribute("cali.event.begin");
-        set_evt_attr   = c->get_attribute("cali.event.set");
         end_evt_attr   = c->get_attribute("cali.event.end");
-        lvl_attr       = c->get_attribute("cali.event.attr.level");
 
-        if (begin_evt_attr == Attribute::invalid ||
-            set_evt_attr   == Attribute::invalid ||
-            end_evt_attr   == Attribute::invalid ||
-            lvl_attr       == Attribute::invalid) {
-            if (record_phases)
+        if (begin_evt_attr == Attribute::invalid || end_evt_attr == Attribute::invalid) {
+            if (record_inclusive_duration)
                 Log(1).stream() << chn->name() << ": Timestamp: Note: event trigger attributes not registered,\n"
                     "    disabling phase timers." << std::endl;
 
-            record_phases = false;
+            record_inclusive_duration = false;
         }
+    }
+
+    void finish_cb(Caliper*, Channel* chn) {
+        if (n_stack_errors > 0)
+            Log(1).stream() << chn->name() << ": timestamp: Encountered " 
+                            << n_stack_errors
+                            << " inclusive time stack errors!"
+                            << std::endl;
     }
 
     Timestamp(Caliper* c, Channel* chn)
@@ -208,22 +173,23 @@ class Timestamp
         {
             ConfigSet config = chn->config().init("timer", s_configdata);
 
-            record_duration  = config.get("snapshot_duration").to_bool();
-            record_offset    = config.get("offset").to_bool();
-            record_timestamp = config.get("timestamp").to_bool();
-            record_phases    = config.get("inclusive_duration").to_bool();
+            record_snapshot_duration = 
+                config.get("snapshot_duration").to_bool();
+            record_offset    = 
+                config.get("offset").to_bool();
+            record_timestamp = 
+                config.get("timestamp").to_bool();
+            record_inclusive_duration
+                = config.get("inclusive_duration").to_bool();
 
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
             Attribute aggr_class_attr =
                 c->get_attribute("class.aggregatable");
 
-            Variant   usec_val  = Variant(CALI_TYPE_STRING, "usec", 5);
-            Variant   sec_val   = Variant(CALI_TYPE_STRING, "sec",  4);
+            Variant   usec_val  = Variant("usec");
+            Variant   sec_val   = Variant("sec");
             Variant   true_val  = Variant(true);
-
-            int hide_offset =
-                ((record_duration || record_phases) && !record_offset ? CALI_ATTR_HIDDEN : 0);
 
             Variant   unit_val  = usec_val;
 
@@ -245,26 +211,38 @@ class Timestamp
                                     CALI_ATTR_SCOPE_PROCESS |
                                     CALI_ATTR_SKIP_EVENTS,
                                     1, &unit_attr, &sec_val);
-            timeoffs_attr =
+            offset_attr_id =
                 c->create_attribute("time.offset",    CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS | hide_offset,
-                                    1, &unit_attr, &usec_val);
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    1, &unit_attr, &usec_val).id();
             snapshot_duration_attr_id =
                 c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
                                     2, meta_attr, meta_vals).id();
-            phase_duration_attr_id =
+            inclusive_duration_attr_id =
                 c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
                                     2, meta_attr, meta_vals).id();
+            timerinfo_attr = 
+                c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
+                                    CALI_ATTR_ASVALUE       |
+                                    CALI_ATTR_SCOPE_THREAD  |
+                                    CALI_ATTR_SKIP_EVENTS   |
+                                    CALI_ATTR_HIDDEN);
+        }
 
-            c->set(chn, timeoffs_attr, Variant(cali_make_variant_from_uint(0)));
+        ~Timestamp() {
+            std::lock_guard<std::mutex>
+                g(info_obj_mutex);
+
+            for (TimerInfo* ti : info_obj_list)
+                delete ti;
         }
 
 public:
@@ -276,12 +254,17 @@ public:
             [instance](Caliper* c, Channel* chn){
                 instance->post_init_cb(c, chn);
             });
+        chn->events().create_thread_evt.connect(
+            [instance](Caliper* c, Channel*){
+                instance->acquire_timerinfo(c);
+            });
         chn->events().snapshot.connect(
             [instance](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* snapshot){
                 instance->snapshot_cb(c, chn, scopes, info, snapshot);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
+                instance->finish_cb(c, chn);
                 delete instance;
             });
 

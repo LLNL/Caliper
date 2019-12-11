@@ -88,12 +88,12 @@ class Aggregate
         // on the thread's blackboard
 
         ThreadDB* tdb =
-            static_cast<ThreadDB*>(c->get(chn, tdb_attr).value().get_ptr());
+            static_cast<ThreadDB*>(c->get(tdb_attr).value().get_ptr());
 
         if (!tdb && can_alloc) {
             tdb = new ThreadDB;
 
-            c->set(chn, tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
+            c->set(tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
             
             std::lock_guard<util::spinlock>
                 g(tdb_lock);

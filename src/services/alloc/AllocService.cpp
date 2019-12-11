@@ -315,11 +315,11 @@ class AllocService
         struct alloc_attrs attrs = {
             attr,
             c->create_attribute("alloc.label#" + attr.name(), CALI_TYPE_STRING,
-                                CALI_ATTR_SCOPE_THREAD),
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS),
             c->create_attribute("alloc.uid#"   + attr.name(), CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE),
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS),
             c->create_attribute("alloc.index#" + attr.name(), CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE)
+                                CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS)
         };
 
         // We currently support only one active memory address attribute
@@ -415,7 +415,7 @@ class AllocService
             };
 
             for (attr_info_t *p = attr_info; p->name; ++p)
-                *(p->attr) = c->create_attribute(p->name, p->type, p->prop, p->meta_count, p->meta_attr, p->meta_vals);
+                *(p->attr) = c->create_attribute(p->name, p->type, p->prop | CALI_ATTR_SKIP_EVENTS, p->meta_count, p->meta_attr, p->meta_vals);
 
             ConfigSet config = chn->config().init("alloc", s_configdata);
 

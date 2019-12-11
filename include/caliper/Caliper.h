@@ -38,7 +38,6 @@ typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cal
 
 class Channel : public IdType
 {
-    struct ThreadData;
     struct ChannelImpl;
 
     std::shared_ptr<ChannelImpl> mP;
@@ -53,7 +52,7 @@ public:
 
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
-            create_attr_cbvec;
+            attribute_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*,Channel*)>
@@ -76,7 +75,7 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
 
-        create_attr_cbvec      create_attr_evt;
+        attribute_cbvec        create_attr_evt;
 
         update_cbvec           pre_begin_evt;
         update_cbvec           post_begin_evt;
@@ -106,6 +105,8 @@ public:
         untrack_mem_cbvec      untrack_mem_evt;
 
         caliper_cbvec          clear_evt;
+
+        attribute_cbvec        subscribe_attribute;
     };
 
     Events&        events();
@@ -150,9 +151,9 @@ public:
     /// \name Annotations (across channels)
     /// \{
 
-    void      begin(const Attribute& attr, const Variant& data);
-    void      end(const Attribute& attr);
-    void      set(const Attribute& attr, const Variant& data);
+    cali_err  begin(const Attribute& attr, const Variant& data);
+    cali_err  end(const Attribute& attr);
+    cali_err  set(const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (across channels)
@@ -185,12 +186,12 @@ public:
     // --- Annotation API
 
     /// \}
-    /// \name Annotation API (single channel)
+    /// \name Annotation (single channel)
     /// \{
 
-    cali_err  begin(Channel* chn, const Attribute& attr, const Variant& data);
-    cali_err  end(Channel* chn, const Attribute& attr);
-    cali_err  set(Channel* chn, const Attribute& attr, const Variant& data);
+    cali_err  begin(Channel* channel, const Attribute& attr, const Variant& data);
+    cali_err  end(Channel* channel, const Attribute& attr);
+    cali_err  set(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (single channel)
@@ -203,20 +204,10 @@ public:
     /// \name Blackboard access
     /// \{
 
-    Variant   exchange(Channel* chn, const Attribute& attr, const Variant& data);
-    Entry     get(Channel* chn, const Attribute& attr);
+    Variant   exchange(const Attribute& attr, const Variant& data);
+    Entry     get(const Attribute& attr);
 
-    /// \}
-    /// \name Metadata access (single channel)
-    /// \{
-
-    std::vector<Entry> get_globals(Channel* chn);
-
-    /// \}
-
-    //
-    // --- Direct metadata / data access API
-    //
+    Entry     get(Channel* channel, const Attribute& attr);
 
     std::vector<Entry> get_globals();
 
@@ -263,7 +254,7 @@ public:
 
     /// \brief Get or create tree branch with given attribute and values
     Node*     make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
-                              
+
     /// \}
     /// \name Channel API
     /// \{

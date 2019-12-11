@@ -96,18 +96,18 @@ namespace
       if (type & CURIOUS_POST_CALLBACK) {
         handle_unique_record_data(c, channel, record);
 
-        c.end(channel, io_region_attr);
-        c.end(channel, io_filesystem_attr);
-        c.end(channel, io_mount_point_attr);
+        c.end(io_region_attr);
+        c.end(io_filesystem_attr);
+        c.end(io_mount_point_attr);
 
       // ...or begining of the I/O region, as appropriate
       } else {
         Variant filesystem_var = make_variant(record->filesystem);
         Variant mount_point_var = make_variant(record->mount_point);
 
-        c.begin(channel, io_mount_point_attr, mount_point_var);
-        c.begin(channel, io_filesystem_attr, filesystem_var);
-        c.begin(channel, io_region_attr, categories[GET_CATEGORY(type)]);
+        c.begin(io_mount_point_attr, mount_point_var);
+        c.begin(io_filesystem_attr, filesystem_var);
+        c.begin(io_region_attr, categories[GET_CATEGORY(type)]);
       }
 
     // ...otherwise note our failure (probably already inside Caliper)
@@ -118,6 +118,8 @@ namespace
 
 
   void init_curious_in_channel(Caliper* c, Channel* channel) {
+    channel->events().subscribe_attribute(c, channel, io_region_attr);
+
     curious_t curious_inst = curious_init(CURIOUS_ALL_APIS);
 
     curious_register_callback(
@@ -170,10 +172,14 @@ namespace
   }
 
   void init_curious_service(Caliper* c, Channel* channel) {
+    Attribute subscribe_attr = c->get_attribute("subscription_event");
+    Variant v_true(true);
+
     // create I/O attributes
     io_region_attr =
       c->create_attribute("io.region",        CALI_TYPE_STRING,
-                          CALI_ATTR_SCOPE_THREAD);
+                          CALI_ATTR_SCOPE_THREAD,
+                          1, &subscribe_attr, &v_true);
     io_filesystem_attr =
       c->create_attribute("io.filesystem",    CALI_TYPE_STRING,
                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
@@ -182,7 +188,6 @@ namespace
                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
     Attribute aggr_attr = c->get_attribute("class.aggregatable");
-    Variant v_true(true);
 
     io_bytes_read_attr =
       c->create_attribute("io.bytes.read",    CALI_TYPE_UINT,

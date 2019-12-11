@@ -320,19 +320,24 @@ cali_find_all_in_snapshot(const unsigned char* buf,
 cali_variant_t
 cali_get(cali_id_t attr_id)
 {
-    return cali_channel_get(0, attr_id);
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return cali_make_empty_variant();
+
+    return c.get(c.get_attribute(attr_id)).value().c_variant();
 }
 
 cali_variant_t
 cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
 {
-    Caliper       c = Caliper::sigsafe_instance();
-    Channel* chn = c.get_channel(chn_id);
+    Caliper c = Caliper::sigsafe_instance();
+    Channel* channel = c.get_channel(chn_id);
 
     if (!c)
         return cali_make_empty_variant();
 
-    return c.get(chn, c.get_attribute(attr_id)).value().c_variant();
+    return c.get(channel, c.get_attribute(attr_id)).value().c_variant();
 }
 
 //
@@ -425,30 +430,21 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
 {
     Caliper   c;
     Attribute attr = c.get_attribute(attr_id);
+    Variant   v    = c.get(attr).value();
 
-    // manually go over all channels
+    if (v.type() != CALI_TYPE_STRING)
+        Log(1).stream() << ": Trying to end "
+                        << attr.name() << " which is not a string" << std::endl;
 
-    std::vector<Channel*> channels = c.get_all_channels();
+    if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size()))
+        // FIXME: Replace log output with smart error tracker
+        Log(1).stream() << "begin/end marker mismatch: Trying to end "
+                        << attr.name() << "=" << val
+                        << " but current value for "
+                        << attr.name() << " is \"" << v.to_string() << "\""
+                        << std::endl;
 
-    for (Channel* chn : channels) {
-        Variant v = c.get(chn, attr).value();
-
-        if (v.type() != CALI_TYPE_STRING) {
-            Log(1).stream() << chn->name() << ": Trying to end "
-                            << attr.name() << " which is not a string" << std::endl;
-        }
-
-        if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size())) {
-            // FIXME: Replace log output with smart error tracker
-            Log(1).stream() << chn->name() << ": begin/end marker mismatch: Trying to end "
-                            << attr.name() << "=" << val
-                            << " but current value for "
-                            << attr.name() << " is \"" << v.to_string() << "\""
-                            << std::endl;
-        }
-
-        c.end(chn, attr);
-    }
+    c.end(attr);
 }
 
 //

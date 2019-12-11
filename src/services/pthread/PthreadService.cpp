@@ -31,8 +31,6 @@ gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 Attribute id_attr = Attribute::invalid;
 Attribute master_attr = Attribute::invalid;
 
-ChannelList* pthread_channels = nullptr;
-
 bool is_wrapped = false;
 
 struct wrapper_args {
@@ -49,11 +47,8 @@ thread_wrapper(void *arg)
     uint64_t id = static_cast<uint64_t>(pthread_self());
     Caliper  c;
 
-    for (ChannelList* p = pthread_channels; p; p = p->next)
-        if (p->channel->is_active()) {
-            c.set(master_attr, Variant(false));
-            c.set(p->channel, id_attr, Variant(cali_make_variant_from_uint(id)));
-        }
+    c.set(master_attr, Variant(false));
+    c.set(id_attr,     Variant(cali_make_variant_from_uint(id)));
 
     wrapper_args* wrap = static_cast<wrapper_args*>(arg);
     void* ret = (*(wrap->fn))(wrap->arg);
@@ -74,25 +69,9 @@ cali_pthread_create_wrapper(pthread_t *thread, const pthread_attr_t *attr,
 }
 
 void
-post_init_cb(Caliper* c, Channel* chn)
+post_init_cb(Caliper* c, Channel* channel)
 {
-    uint64_t id = static_cast<uint64_t>(pthread_self());
-    
-    c->set(chn, master_attr, Variant(true));
-    c->set(chn, id_attr, Variant(cali_make_variant_from_uint(id)));
-}
-
-// Initialization routine.
-void 
-pthreadservice_initialize(Caliper* c, Channel* chn)
-{
-    id_attr =
-        c->create_attribute("pthread.id", CALI_TYPE_UINT,
-                            CALI_ATTR_SCOPE_THREAD);
-    master_attr =
-        c->create_attribute("pthread.is_master", CALI_TYPE_BOOL,
-                            CALI_ATTR_SCOPE_THREAD |
-                            CALI_ATTR_SKIP_EVENTS);
+    channel->events().subscribe_attribute(c, channel, id_attr);
 
     if (!is_wrapped) {
         struct gotcha_binding_t pthread_binding[] = { 
@@ -103,17 +82,33 @@ pthreadservice_initialize(Caliper* c, Channel* chn)
                     "caliper/pthread");
 
         is_wrapped = true;
+        
+        uint64_t id = static_cast<uint64_t>(pthread_self());
+        
+        c->set(master_attr, Variant(true));
+        c->set(id_attr,     Variant(cali_make_variant_from_uint(id)));
     }
+}
 
-    ChannelList::add(&pthread_channels, chn);
+// Initialization routine.
+void 
+pthreadservice_initialize(Caliper* c, Channel* chn)
+{
+    Attribute subscription_attr = c->get_attribute("subscription_event");
+    Variant v_true(true);
+
+    id_attr =
+        c->create_attribute("pthread.id", CALI_TYPE_UINT,
+                            CALI_ATTR_SCOPE_THREAD,
+                            1, &subscription_attr, &v_true);
+    master_attr =
+        c->create_attribute("pthread.is_master", CALI_TYPE_BOOL,
+                            CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_SKIP_EVENTS);
 
     chn->events().post_init_evt.connect(
         [](Caliper* c, Channel* chn){
             post_init_cb(c, chn);
-        });
-    chn->events().finish_evt.connect(
-        [](Caliper* c, Channel* chn){
-            ChannelList::remove(&pthread_channels, chn);
         });
 
     Log(1).stream() << chn->name() << ": Registered pthread service" << std::endl;
