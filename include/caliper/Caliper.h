@@ -205,11 +205,12 @@ public:
     /// \{
 
     Variant   exchange(const Attribute& attr, const Variant& data);
-    Entry     get(const Attribute& attr);
 
+    Entry     get(const Attribute& attr);
     Entry     get(Channel* channel, const Attribute& attr);
 
     std::vector<Entry> get_globals();
+    std::vector<Entry> get_globals(Channel* channel);
 
     /// \}
     /// \name Explicit snapshot record manipulation

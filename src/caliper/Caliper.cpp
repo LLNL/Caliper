@@ -87,6 +87,42 @@ print_available_services(std::ostream& os)
     return os;
 }
 
+std::vector<Entry>
+get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
+{
+    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
+    SnapshotRecord rec(rec_data);
+
+    // All global attributes are process scope, so just grab the process blackboard
+    blackboard.snapshot(&rec);
+
+    std::vector<const Node*> nodes;
+
+    SnapshotRecord::Data  data = rec.data();
+    SnapshotRecord::Sizes size = rec.size();
+
+    // Go through all process nodes and filter out the global entries
+    for (size_t i = 0; i < size.n_nodes; ++i)
+        for (const Node* node = data.node_entries[i]; node; node = node->parent())
+            if (c->get_attribute(node->attribute()).properties() & CALI_ATTR_GLOBAL)
+                nodes.push_back(node);
+
+    // Restore original order
+    std::reverse(nodes.begin(), nodes.end());
+
+    std::vector<Entry> ret;
+
+    if (!nodes.empty())
+        ret.push_back(Entry(c->make_tree_entry(nodes.size(), nodes.data(), nullptr)));
+
+    // Add potential AS_VALUE global entries
+    for (size_t i = 0; i < size.n_immediate; ++i)
+        if (c->get_attribute(data.immediate_attr[i]).properties() & CALI_ATTR_GLOBAL)
+            ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
+
+    return ret;
+}
+
 } // namespace [anonymous]
 
 //
@@ -640,44 +676,31 @@ Caliper::memory_region_end(const void* ptr)
             memory_region_end(chn.get(), ptr);
 }
 
-///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
+///   Returns all entries with CALI_ATTR_GLOBAL set from the process
 /// blackboard.
-
 std::vector<Entry>
 Caliper::get_globals()
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
-    SnapshotRecord rec(rec_data);
+    return get_globals_from_blackboard(this, sG->process_blackboard);
+}
 
-    // All global attributes are process scope, so just grab the process blackboard
-    sG->process_blackboard.snapshot(&rec);
+///   Returns all entries with CALI_ATTR_GLOBAL set from the given channel's
+/// and the process blackboard.
+std::vector<Entry>
+Caliper::get_globals(Channel* channel)
+{
+    std::lock_guard<::siglock>
+        g(sT->lock);
 
-    std::vector<const Node*> nodes;
+    std::vector<Entry> ret =
+        get_globals_from_blackboard(this, sG->process_blackboard);
+    std::vector<Entry> tmp =
+        get_globals_from_blackboard(this, channel->mP->channel_blackboard);
 
-    SnapshotRecord::Data  data = rec.data();
-    SnapshotRecord::Sizes size = rec.size();
-
-    // Go through all process nodes and filter out the global entries
-    for (size_t i = 0; i < size.n_nodes; ++i)
-        for (const Node* node = data.node_entries[i]; node; node = node->parent())
-            if (get_attribute(node->attribute()).properties() & CALI_ATTR_GLOBAL)
-                nodes.push_back(node);
-
-    // Restore original order
-    std::reverse(nodes.begin(), nodes.end());
-
-    std::vector<Entry> ret;
-
-    if (!nodes.empty())
-        ret.push_back(Entry(make_tree_entry(nodes.size(), nodes.data(), nullptr)));
-
-    // Add potential AS_VALUE global entries
-    for (size_t i = 0; i < size.n_immediate; ++i)
-        if (get_attribute(data.immediate_attr[i]).properties() & CALI_ATTR_GLOBAL)
-            ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
+    ret.insert(ret.end(), tmp.begin(), tmp.end());
 
     return ret;
 }
@@ -746,6 +769,10 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
             sT->process_bb_count = process_bb_count_now;
         }
 
+        sbuf->append(sT->process_snapshot);
+    }
+
+    if (scopes & CALI_SCOPE_CHANNEL) {
         int channel_bb_count_now = channel->mP->channel_blackboard.count();
         if (sT->channel_bb_id   != static_cast<int>(channel->id()) ||
             channel_bb_count_now > sT->channel_bb_count) {
@@ -756,7 +783,6 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
             sT->channel_bb_id    = static_cast<int>(channel->id());
         }
 
-        sbuf->append(sT->process_snapshot);
         sbuf->append(sT->channel_snapshot);
     }
 }
@@ -834,7 +860,7 @@ Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn p
 /// \param input_flush_info User-provided flush context information. Currently unused.
 
 void
-Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Channel* channel, const SnapshotRecord* input_flush_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -845,12 +871,13 @@ Caliper::flush_and_write(Channel* chn, const SnapshotRecord* input_flush_info)
     if (input_flush_info)
         flush_info.append(*input_flush_info);
 
+    channel->mP->channel_blackboard.snapshot(&flush_info);
     sG->process_blackboard.snapshot(&flush_info);
     sT->thread_blackboard.snapshot(&flush_info);
 
-    Log(1).stream() << chn->name() << ": Flushing Caliper data" << std::endl;
+    Log(1).stream() << channel->name() << ": Flushing Caliper data" << std::endl;
 
-    chn->mP->events.write_output_evt(this, chn, &flush_info);
+    channel->mP->events.write_output_evt(this, channel, &flush_info);
 }
 
 
