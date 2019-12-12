@@ -19,10 +19,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    auto channels = mgr.get_all_channels();
-
-    for (auto &chn : channels)
-        chn->start();
+    mgr.start();
 
     CALI_MARK_FUNCTION_BEGIN;
 
@@ -39,6 +36,5 @@ int main(int argc, char* argv[])
 
     CALI_MARK_FUNCTION_END;
 
-    for (auto &chn : channels)
-        chn->flush();
+    mgr.flush();
 }
