@@ -38,23 +38,25 @@ class EventTrigger
     // --- Static data
     //
 
-    static const ConfigSet::Entry s_configdata[];    
+    static const ConfigSet::Entry s_configdata[];
 
     //
     // --- Per-channel instance data
     //
-    
+
     Attribute                trigger_begin_attr { Attribute::invalid };
     Attribute                trigger_end_attr   { Attribute::invalid };
     Attribute                trigger_set_attr   { Attribute::invalid };
-    
-    Attribute                exp_marker_attr    { Attribute::invalid }; 
-    
+
+    Attribute                exp_marker_attr    { Attribute::invalid };
+
     std::vector<std::string> trigger_attr_names;
 
     bool                     enable_snapshot_info;
 
     Node                     event_root_node;
+
+    int                      scopes;
 
     //
     // --- Helpers / misc
@@ -80,7 +82,7 @@ class EventTrigger
             s.append(attr.name());
 
             int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
-            
+
             evt_attr_ids[setup.index] =
                 c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
         }
@@ -106,7 +108,7 @@ class EventTrigger
 
     const Node* find_exp_marker(const Attribute& attr) {
         cali_id_t marker_id = exp_marker_attr.id();
-        
+
         for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
             if (node->attribute() == marker_id)
                 return node;
@@ -121,13 +123,13 @@ class EventTrigger
     //
     // --- Callbacks
     //
-    
+
     void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -149,9 +151,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, scopes, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, scopes, nullptr);
         }
     }
 
@@ -160,7 +162,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -172,7 +174,7 @@ class EventTrigger
             Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
 
             assert(set_attr != Attribute::invalid);
-            
+
             // Construct the trigger info entry
 
             Attribute attrs[2] = { trigger_set_attr,   set_attr };
@@ -182,9 +184,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, scopes, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, scopes, nullptr);
         }
     }
 
@@ -193,7 +195,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -213,11 +215,11 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->push_snapshot(chn, scopes, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, scopes, nullptr);
         }
-    } 
+    }
 
     //
     // --- Constructor
@@ -256,6 +258,8 @@ class EventTrigger
                                     CALI_TYPE_USR,
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
+
+            scopes = CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS | CALI_SCOPE_CHANNEL;
 
             check_existing_attributes(c, chn);
         }
