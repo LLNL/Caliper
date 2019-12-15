@@ -424,9 +424,14 @@ struct Caliper::GlobalData
         return t;
     }
 
-    //   The TLS (thread-local storage) object provides access to the
-    // current thread's data, and notifies us of thread destruction
+    //   S_TLSObject uses C++ thread-local storage to hold a pointer to the
+    // thread-local data. This is for lookup only, GlobalData owns all
+    // ThreadData objects. The object also notifies us of thread destruction
     // via its destructor.
+    //   In addition, the destructor for the initial thread object serves as
+    // finalization trigger on program exit, together with S_GObject below.
+    // The destruction order for thread-local and regular static objects is
+    // undefined, so whoever is destroyed first triggers finalization.
     struct S_TLSObject {
         ThreadData* t_ptr;
 
@@ -451,6 +456,8 @@ struct Caliper::GlobalData
         }
     };
 
+    //   S_GObject holds a pointer to our global data. Also, its destructor
+    // serves as finalization trigger, together with S_TLSObject above.
     struct S_GObject {
         GlobalData* g_ptr;
 
@@ -1684,7 +1691,7 @@ Caliper::Caliper()
 /// Internally, Caliper maintains a variety of thread-local data structures.
 /// The instance object caches access to these structures. As a result,
 /// one cannot share Caliper instance objects between threads.
-/// We recommend to use Caliper instance objects only within a function context
+/// Use Caliper instance objects only within a function context
 /// (i.e., on the stack).
 ///
 /// For use within signal handlers, use `sigsafe_instance()`.
