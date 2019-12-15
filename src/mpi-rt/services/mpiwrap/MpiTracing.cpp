@@ -15,11 +15,9 @@ using namespace cali;
 
 
 struct MpiTracing::MpiTracingImpl
-{        
+{
     // --- The attributes
     //
-    
-    Attribute call_id_attr;
 
     Attribute msg_src_attr;
     Attribute msg_dst_attr;
@@ -33,7 +31,7 @@ struct MpiTracing::MpiTracingImpl
     Attribute comm_is_world_attr;
     Attribute comm_list_attr;
     Attribute comm_size_attr;
-    
+
     // --- MPI object mappings
     //
 
@@ -41,7 +39,7 @@ struct MpiTracing::MpiTracingImpl
         enum {
             Unknown, Send, Recv
         }            op              { Unknown };
-        
+
         bool         is_persistent   { false   };
 
         int          target;
@@ -60,27 +58,17 @@ struct MpiTracing::MpiTracingImpl
 
     std::unordered_map<MPI_Comm,    cali::Node*> comm_map; ///< Communicator map
     std::mutex                                   comm_map_lock;
-    
+
     std::unordered_map<MPI_Request, RequestInfo> req_map;
     std::mutex                                   req_map_lock;
 
-    
-    // --- Other global
-    //
-
-    std::atomic<uint64_t>                     call_id;
-
-    
     // --- initialization
     //
-    
+
     void init_attributes(Caliper* c) {
         const struct attr_info_t {
             const char* name; cali_attr_type type; int prop; Attribute* ptr;
         } attr_info_tbl[] = {
-            { "mpi.call.id",       CALI_TYPE_UINT,  CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-              &call_id_attr },
-            
             { "mpi.msg.src",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
               &msg_src_attr    },
             { "mpi.msg.dst",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
@@ -103,7 +91,7 @@ struct MpiTracing::MpiTracingImpl
               &comm_is_world_attr },
             { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT,
               &comm_list_attr  },
-            
+
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
 
@@ -114,7 +102,7 @@ struct MpiTracing::MpiTracingImpl
     void init_mpi(Caliper* c, Channel* chn) {
         req_map.reserve(100);
         comm_map.reserve(100);
-        
+
         make_comm_entry(c, MPI_COMM_WORLD);
         make_comm_entry(c, MPI_COMM_SELF);
     }
@@ -173,7 +161,7 @@ struct MpiTracing::MpiTracingImpl
         return node;
     }
 
-    
+
     // --- point-to-point
     //
 
@@ -184,11 +172,11 @@ struct MpiTracing::MpiTracingImpl
         Variant   data[3] = {
             Variant(dest),     Variant(tag),      Variant(size)
         };
-        
+
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
         c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
     }
-    
+
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
         RequestInfo info;
 
@@ -199,14 +187,14 @@ struct MpiTracing::MpiTracingImpl
         info.count         = count;
         info.type          = type;
         info.comm_node     = lookup_comm(c, comm);
-        
+
         PMPI_Type_size(type, &info.size);
         info.size *= count;
 
         std::lock_guard<std::mutex>
             g(req_map_lock);
 
-        req_map[*req] = info;            
+        req_map[*req] = info;
     }
 
     void push_recv_event(Caliper* c, Channel* chn, int src, int size, int tag, Node* comm_node) {
@@ -216,9 +204,9 @@ struct MpiTracing::MpiTracingImpl
         Variant   data[3] = {
             Variant(src),      Variant(tag),      Variant(size)
         };
-        
+
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);        
+        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
     }
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
@@ -226,7 +214,7 @@ struct MpiTracing::MpiTracingImpl
         PMPI_Type_size(type, &size);
         int count = 0;
         PMPI_Get_count(status, type, &count);
-        
+
         push_recv_event(c, chn, status->MPI_SOURCE, size*count, status->MPI_TAG, lookup_comm(c, comm));
     }
 
@@ -240,7 +228,7 @@ struct MpiTracing::MpiTracingImpl
         info.type          = type;
         info.count         = count;
         info.comm_node     = lookup_comm(c, comm);
-        
+
         std::lock_guard<std::mutex>
             g(req_map_lock);
 
@@ -258,7 +246,7 @@ struct MpiTracing::MpiTracingImpl
         info.count         = count;
         info.comm_node     = lookup_comm(c, comm);
         info.size          = 0;
-        
+
         std::lock_guard<std::mutex>
             g(req_map_lock);
 
@@ -281,12 +269,12 @@ struct MpiTracing::MpiTracingImpl
                 push_send_event(c, chn, info.size, info.target, info.tag, info.comm_node);
         }
     }
-    
+
     void handle_completion(Caliper* c, Channel* chn, int nreq, MPI_Request* reqs, MPI_Status* statuses) {
         for (int i = 0; i < nreq; ++i) {
             std::lock_guard<std::mutex>
                 g(req_map_lock);
-            
+
             auto it = req_map.find(reqs[i]);
 
             if (it == req_map.end())
@@ -302,7 +290,7 @@ struct MpiTracing::MpiTracingImpl
 
                 push_recv_event(c, chn, statuses[i].MPI_SOURCE, size*count, statuses[i].MPI_TAG, info.comm_node);
             }
-            
+
             if (!info.is_persistent)
                 req_map.erase(it);
         }
@@ -334,13 +322,12 @@ struct MpiTracing::MpiTracingImpl
         SnapshotRecord rec(1, &node, ne, attr, data);
         c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
     }
-    
+
     // --- constructor
     //
-    
+
     MpiTracingImpl()
-        : comm_id(0),
-          call_id(0)
+        : comm_id(0)
     { }
 };
 
@@ -465,16 +452,4 @@ void
 MpiTracing::handle_finalize(Caliper* c, Channel* chn)
 {
     mP->push_coll_event(c, chn, Coll_Finalize, 0, 0, mP->lookup_comm(c, MPI_COMM_WORLD));
-}
-
-void
-MpiTracing::push_call_id(Caliper* c, Channel* chn)
-{
-    c->begin(chn, mP->call_id_attr, ++(mP->call_id));
-}
-
-void
-MpiTracing::pop_call_id(Caliper* c, Channel* chn)
-{
-    c->end(chn, mP->call_id_attr);
 }

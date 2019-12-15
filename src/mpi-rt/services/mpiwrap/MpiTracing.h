@@ -34,9 +34,6 @@ public:
     void init(Caliper* c, Channel* chn);
     void init_mpi(Caliper* c, Channel* chn);
 
-    void push_call_id(Caliper* c, Channel* chn);
-    void pop_call_id(Caliper* c, Channel* chn);
-
     // --- point-to-point
 
     void handle_send(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm);
@@ -55,7 +52,7 @@ public:
 
     void handle_12n(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
     void handle_n21(Caliper* c, Channel* chn, int count, MPI_Datatype type, int root, MPI_Comm comm);
-    void handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm);    
+    void handle_n2n(Caliper* c, Channel* chn, int count, MPI_Datatype type, MPI_Comm comm);
     void handle_barrier(Caliper* c, Channel* chn, MPI_Comm comm);
     void handle_init(Caliper* c, Channel* chn);
     void handle_finalize(Caliper* c, Channel* chn);
