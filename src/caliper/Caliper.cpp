@@ -1764,6 +1764,8 @@ Caliper::operator bool() const
     return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
+/// \brief Release %Caliper. Note that %Caliper cannot be re-initialized
+///   after it has been released.
 void
 Caliper::release()
 {
