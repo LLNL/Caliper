@@ -31,7 +31,7 @@ Attribute::make_attribute(const Node* node)
 std::string
 Attribute::name() const 
 {
-    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+    for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == s_keys.name_attr_id)
             return node->data().to_string();
 
@@ -41,7 +41,7 @@ Attribute::name() const
 const char*
 Attribute::name_c_str() const
 {
-    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+    for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == s_keys.name_attr_id)
             return static_cast<const char*>(node->data().data());
 
@@ -51,7 +51,7 @@ Attribute::name_c_str() const
 cali_attr_type
 Attribute::type() const 
 {
-    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+    for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == s_keys.type_attr_id)
             return node->data().to_attr_type();
 
@@ -61,7 +61,7 @@ Attribute::type() const
 int
 Attribute::properties() const 
 {
-    for (const Node* node = m_node; node && node->attribute() != CALI_INV_ID; node = node->parent())
+    for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == s_keys.prop_attr_id)
             return node->data().to_int();
 

@@ -583,6 +583,11 @@ MetadataTree::~MetadataTree()
     mP.reset();
 }
 
+void MetadataTree::release()
+{
+    MetadataTreeImpl::GlobalData* g = MetadataTreeImpl::mG.exchange(nullptr);
+    delete g;
+}
 
 //
 // --- Modifying tree ops

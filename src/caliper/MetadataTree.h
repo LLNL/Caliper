@@ -28,6 +28,8 @@ namespace cali
 
         MetadataTree(const MetadataTree&) = delete;
         MetadataTree& operator = (const MetadataTree&) = delete;
+
+        static void release();
         
         // --- Modifying tree operations ---
 

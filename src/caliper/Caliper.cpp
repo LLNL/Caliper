@@ -136,8 +136,6 @@ struct Channel::ChannelImpl
     std::string                     name;
     bool                            active;
 
-    // TODO: call events.create_scope_evt when creating new thread
-
     RuntimeConfig                   config;
     Events                          events;          ///< callbacks
 
@@ -155,9 +153,7 @@ struct Channel::ChannelImpl
         }
 
     ~ChannelImpl()
-        {
-            Log(1).stream() << "Releasing channel " << name << std::endl;
-        }
+        { }
 };
 
 const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
@@ -244,16 +240,6 @@ struct Caliper::ThreadData
         { }
 
     ~ThreadData() {
-        Caliper c;
-
-        if (c)
-            c.release_thread();
-        else
-            return;
-
-        if (is_initial_thread)
-            Caliper::release();
-
         if (Log::verbosity() >= 2)
             print_detailed_stats( Log(2).stream() );
     }
@@ -315,14 +301,15 @@ struct Caliper::GlobalData
 
     vector< std::unique_ptr<Channel> > channels;
 
+    vector< ThreadData*              > thread_data;
+    std::mutex                         thread_data_lock;
+
     // --- constructor
 
-    GlobalData()
+    GlobalData(ThreadData* sT)
         : key_attr { Attribute::invalid },
           attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {
-        channels.reserve(16);
-
         // put the attribute [name,type,prop] attributes in the map
 
         Attribute name_attr =
@@ -341,10 +328,25 @@ struct Caliper::GlobalData
     }
 
     ~GlobalData() {
-        Log(1).stream() << "Finished" << std::endl;
-
         // prevent re-initialization
         s_init_lock = 2;
+
+        {
+            std::lock_guard<std::mutex>
+                g(thread_data_lock);
+
+            std::for_each(thread_data.begin(), thread_data.end(), [](ThreadData* d){
+                    delete d;
+                });
+
+            thread_data.clear();
+        }
+
+        gObj.g_ptr = nullptr;
+
+        MetadataTree::release();
+
+        Log(1).stream() << "Finished" << std::endl;
     }
 
     void parse_attribute_config(const ConfigSet& config) {
@@ -385,7 +387,7 @@ struct Caliper::GlobalData
         if (Log::verbosity() >= 2)
             print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
 
-        Caliper c(false);
+        Caliper c(this, tObj.t_ptr, false);
 
         key_attr =
             c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
@@ -411,6 +413,66 @@ struct Caliper::GlobalData
 
         return key_attr;
     }
+
+    ThreadData* add_thread_data(ThreadData* t) {
+        tObj.t_ptr = t;
+
+        std::lock_guard<std::mutex>
+            g(thread_data_lock);
+
+        thread_data.push_back(t);
+        return t;
+    }
+
+    //   The TLS (thread-local storage) object provides access to the
+    // current thread's data, and notifies us of thread destruction
+    // via its destructor.
+    struct S_TLSObject {
+        ThreadData* t_ptr;
+
+        S_TLSObject()
+            : t_ptr(nullptr)
+            { }
+
+        ~S_TLSObject() {
+            // Only use if we're still active
+            if (t_ptr && s_init_lock == 0) {
+                Caliper c(gObj.g_ptr, t_ptr, false);
+
+                if (t_ptr->is_initial_thread) {
+                    c.finalize();
+                    delete gObj.g_ptr;
+                } else {
+                    c.release_thread();
+                }
+            }
+
+            t_ptr = nullptr;
+        }
+    };
+
+    struct S_GObject {
+        GlobalData* g_ptr;
+
+        S_GObject()
+            : g_ptr(nullptr)
+            { }
+
+        ~S_GObject() {
+            // Only use if we're still active
+            if (g_ptr && s_init_lock == 0) {
+                Caliper c(g_ptr, tObj.t_ptr, false);
+
+                c.finalize();
+                delete g_ptr;
+            }
+
+            g_ptr = nullptr;
+        }
+    };
+
+    static S_GObject                gObj;
+    static thread_local S_TLSObject tObj;
 };
 
 // --- static member initialization
@@ -418,8 +480,8 @@ struct Caliper::GlobalData
 volatile sig_atomic_t  Caliper::GlobalData::s_init_lock = 1;
 mutex                  Caliper::GlobalData::s_init_mutex;
 
-std::unique_ptr<Caliper::GlobalData> Caliper::sG;
-thread_local std::unique_ptr<Caliper::ThreadData> Caliper::sT;
+Caliper::GlobalData::S_GObject Caliper::GlobalData::gObj;
+thread_local Caliper::GlobalData::S_TLSObject Caliper::GlobalData::tObj;
 
 Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
 
@@ -1546,7 +1608,7 @@ Caliper::delete_channel(Channel* chn)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Log(1).stream() << "Deleting channel " << chn->name() << std::endl;
+    Log(1).stream() << "Releasing channel " << chn->name() << std::endl;
 
     chn->mP->events.finish_evt(this, chn);
     sG->channels[chn->id()].reset();
@@ -1574,10 +1636,34 @@ Caliper::deactivate_channel(Channel* chn)
 void
 Caliper::release_thread()
 {
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
     for (auto &chn : sG->channels)
         if (chn)
             chn->mP->events.release_thread_evt(this, chn.get());
 }
+
+/// \brief Flush and delete all channels
+void
+Caliper::finalize()
+{
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    Log(1).stream() << "Finalizing ... " << std::endl;
+
+    for (auto &chnI : sG->channels)
+        if (chnI) {
+            Channel* channel = chnI.get();
+
+            if (channel->is_active() && channel->mP->flush_on_exit)
+                flush_and_write(channel, nullptr);
+
+            delete_channel(channel);
+        }
+}
+
 
 //
 // --- Caliper constructor & singleton API
@@ -1612,38 +1698,43 @@ Caliper::Caliper()
 Caliper
 Caliper::instance()
 {
-    if (GlobalData::s_init_lock != 0) {
+    GlobalData* gPtr = nullptr;
+    ThreadData* tPtr = nullptr;
+
+    if (GlobalData::s_init_lock == 0) {
+        gPtr = GlobalData::gObj.g_ptr;
+        tPtr = GlobalData::tObj.t_ptr;
+    } else {
         if (GlobalData::s_init_lock == 2)
             // Caliper had been initialized previously; we're past the static destructor
-            return Caliper(true);
+            return Caliper(nullptr, nullptr, true);
 
-        lock_guard<mutex> lock(GlobalData::s_init_mutex);
+        std::lock_guard<std::mutex>
+            g(GlobalData::s_init_mutex);
 
-        if (!sG) {
-            sT.reset(new ThreadData(true /* is_initial_thread */));
-            sG.reset(new GlobalData);
+        if (!GlobalData::gObj.g_ptr) {
+            tPtr = new ThreadData(true /* is_initial_thread */);
+            gPtr = new GlobalData(tPtr);
 
-            sG->init();
+            GlobalData::gObj.g_ptr = gPtr;
 
-            // NOTE: We handle Caliper exit in ThreadData destructor now
-            // if (atexit(&Caliper::release) != 0)
-            //     Log(0).stream() << "Unable to register exit handler";
+            gPtr->add_thread_data(tPtr);
+            gPtr->init();
 
             GlobalData::s_init_lock = 0;
         }
     }
 
-    if (!sT) {
-        sT.reset(new ThreadData(false /* is_initial_thread */ ));
+    if (!tPtr) {
+        tPtr = gPtr->add_thread_data(new ThreadData(false /* is_initial_thread */));
+        Caliper c(gPtr, tPtr, false);
 
-        Caliper c(false);
-
-        for (auto& chn : sG->channels)
+        for (auto& chn : gPtr->channels)
             if (chn)
                 chn->mP->events.create_thread_evt(&c, chn.get());
     }
 
-    return Caliper(false);
+    return Caliper(gPtr, tPtr, false);
 }
 
 /// \brief Construct a signal-safe Caliper instance object.
@@ -1658,7 +1749,7 @@ Caliper::instance()
 Caliper
 Caliper::sigsafe_instance()
 {
-    return Caliper(true);
+    return Caliper(GlobalData::gObj.g_ptr, GlobalData::tObj.t_ptr, true);
 }
 
 Caliper::operator bool() const
@@ -1672,18 +1763,9 @@ Caliper::release()
     Caliper c;
 
     if (c) {
-        Log(1).stream() << "Finishing ..." << std::endl;
-
-        for (auto &chn : sG->channels)
-            if (chn) {
-                if (chn->is_active() && chn->mP->flush_on_exit)
-                    c.flush_and_write(chn.get(), nullptr);
-
-                c.clear(chn.get());
-                chn->mP->events.finish_evt(&c, chn.get());
-            }
-
-        sG.reset();
+        c.finalize();
+        delete GlobalData::gObj.g_ptr;
+        GlobalData::tObj.t_ptr = nullptr;
     }
 }
 
@@ -1692,7 +1774,7 @@ Caliper::release()
 bool
 Caliper::is_initialized()
 {
-    return sG && sT;
+    return GlobalData::s_init_lock == 0;
 }
 
 /// \brief Add a list of available caliper services.
@@ -1731,5 +1813,5 @@ Caliper::add_init_hook(void (*hook)())
     if (is_initialized())
         Log(0).stream() << "add_init_hook(): Caliper is already initialized - cannot add init hook" << std::endl;
     else
-        sG->add_init_hook(hook);
+        GlobalData::add_init_hook(hook);
 }

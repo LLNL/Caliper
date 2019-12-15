@@ -131,13 +131,13 @@ class Caliper : public CaliperMetadataAccessInterface
     struct GlobalData;
     struct ThreadData;
 
-    static              std::unique_ptr<GlobalData> sG;
-    static thread_local std::unique_ptr<ThreadData> sT;
+    GlobalData* sG;
+    ThreadData* sT;
 
     bool m_is_signal; // are we in a signal handler?
 
-    explicit Caliper(bool sig)
-        : m_is_signal(sig)
+    Caliper(GlobalData* g, ThreadData* t, bool sig)
+        : sG(g), sT(t), m_is_signal(sig)
         { }
 
     void release_thread();
@@ -271,6 +271,8 @@ public:
 
     void     activate_channel(Channel* chn);
     void     deactivate_channel(Channel* chn);
+
+    void     finalize();
 
     /// \}
 
