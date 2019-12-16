@@ -1551,27 +1551,28 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    Channel* chn = new Channel(sG->channels.size(), name, cfg);
-    sG->channels.emplace_back(chn);
+    Channel* channel = new Channel(sG->channels.size(), name, cfg);
+    sG->channels.emplace_back(channel);
 
     // Create and set key & version attributes
 
-    begin(create_attribute("cali.channels", CALI_TYPE_STRING,
-                            CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
+    begin(channel, create_attribute("cali.channel", CALI_TYPE_STRING,
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_GLOBAL),
           Variant(name));
 
-    Services::register_services(this, chn);
+    Services::register_services(this, channel);
 
     Log(1).stream() << "Creating channel " << name << std::endl;
 
-    if (chn->config().get("channel", "config_check").to_bool())
-        config_sanity_check(chn->config());
+    if (channel->config().get("channel", "config_check").to_bool())
+        config_sanity_check(channel->config());
     if (Log::verbosity() >= 3)
-        chn->config().print( Log(3).stream() << "Configuration:\n" );
+        channel->config().print( Log(3).stream() << "Configuration:\n" );
 
-    chn->mP->events.post_init_evt(this, chn);
+    channel->mP->events.post_init_evt(this, channel);
 
-    return chn;
+    return channel;
 }
 
 /// \brief Return pointer to channel object with the given ID.

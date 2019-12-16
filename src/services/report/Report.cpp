@@ -10,6 +10,7 @@
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
+#include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/QueryProcessor.h"
 
@@ -32,12 +33,12 @@ class Report {
     // --- callback functions
     //
 
-    void write_output(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
-        ConfigSet   config(chn->config().init("report", s_configdata));
+    void write_output(Caliper* c, Channel* channel, const SnapshotRecord* flush_info) {
+        ConfigSet   config(channel->config().init("report", s_configdata));
         CalQLParser parser(config.get("config").to_string().c_str());
 
         if (parser.error()) {
-            Log(0).stream() << chn->name() << ": Report: config parse error: "
+            Log(0).stream() << channel->name() << ": Report: config parse error: "
                             << parser.error_msg() << std::endl;
             return;
         }
@@ -57,13 +58,16 @@ class Report {
         if (!filename.empty())
             stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
 
+        CaliperMetadataDB db;
         QueryProcessor queryP(spec, stream);
 
-        c->flush(chn, flush_info, [&queryP](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                queryP.process_record(db, rec);
+        db.import_globals(*c, c->get_globals(channel));
+
+        c->flush(channel, flush_info, [&queryP,&db](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                queryP.process_record(db, db.merge_snapshot(in_db, rec));
             } );
 
-        queryP.flush(*c);
+        queryP.flush(db);
     }
 
 public:
@@ -71,19 +75,19 @@ public:
     ~Report()
         { }
 
-    static void create(Caliper* c, Channel* chn) {
+    static void create(Caliper* c, Channel* channel) {
         Report* instance = new Report;
 
-        chn->events().write_output_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
-                instance->write_output(c, chn, info);
+        channel->events().write_output_evt.connect(
+            [instance](Caliper* c, Channel* channel, const SnapshotRecord* info){
+                instance->write_output(c, channel, info);
             });
-        chn->events().finish_evt.connect(
+        channel->events().finish_evt.connect(
             [instance](Caliper*, Channel*){
                 delete instance;
             });
 
-        Log(1).stream() << chn->name() << ": Registered report service" << std::endl;
+        Log(1).stream() << channel->name() << ": Registered report service" << std::endl;
     }
 };
 
