@@ -73,6 +73,14 @@ public:
 
 // --- helper functions
 
+void
+log_invalid_cfg_value(const char* var, const char* value, const char* prefix = nullptr)
+{
+    Log(0).stream() << (prefix ? std::string(prefix)+": " : std::string(""))
+                    << "Invalid value \"" << value << "\" for " << var
+                    << std::endl;
+}
+
 int
 parse_snapshot_scopes(const char* channel_name, const StringConverter& cfg)
 {
@@ -98,9 +106,7 @@ parse_snapshot_scopes(const char* channel_name, const StringConverter& cfg)
     }
 
     for (const auto &s : list)
-        Log(0).stream() << channel_name
-                        << ": CALI_CHANNEL_SNAPSHOT_SCOPES: Unknown value \""
-                        << s << "\"" << std::endl;
+        log_invalid_cfg_value("CALI_CHANNEL_SNAPSHOT_SCOPES", s.c_str(), channel_name);
 
     if (Log::verbosity() > 1) {
         std::string selected_scopes;
@@ -436,9 +442,7 @@ struct Caliper::GlobalData
         else if (scope_str == "thread")
             attribute_default_scope = CALI_ATTR_SCOPE_THREAD;
         else
-            Log(0).stream() << "Invalid value \"" << scope_str
-                            << "\" for CALI_ATTRIBUTE_DEFAULT_SCOPE"
-                            << std::endl;
+            log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
 
         automerge = config.get("automerge").to_bool();
     }
