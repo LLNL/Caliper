@@ -81,12 +81,12 @@ class Trace
         // on the thread's blackboard
 
         TraceBuffer* tbuf =
-            static_cast<TraceBuffer*>(c->get(chn, tbuf_attr).value().get_ptr());
+            static_cast<TraceBuffer*>(c->get(tbuf_attr).value().get_ptr());
 
         if (!tbuf && can_alloc) {
             tbuf = new TraceBuffer(buffersize);
 
-            c->set(chn, tbuf_attr, Variant(cali_make_variant_from_ptr(tbuf)));
+            c->set(tbuf_attr, Variant(cali_make_variant_from_ptr(tbuf)));
 
             std::lock_guard<util::spinlock>
                 g(tbuf_lock);

@@ -104,6 +104,19 @@ void Services::add_services(const CaliperService* services)
     ::s_services_list = elem;
 }
 
+void Services::cleanup()
+{
+    ::ServicesList* ptr = ::s_services_list;
+
+    while (ptr) {
+        ::ServicesList* tmp = ptr->next;
+        delete ptr;
+        ptr = tmp;
+    }
+
+    ::s_services_list = nullptr;
+}
+
 void Services::add_default_services()
 {
     for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)

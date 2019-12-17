@@ -26,7 +26,7 @@ void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotRecord*, Sn
 
         int      total = mi.arena + mi.hblkhd;
         Variant v_prev =
-            c->exchange(chn, malloc_total_bytes_attr, Variant(total));
+            c->exchange(malloc_total_bytes_attr, Variant(total));
 
         rec->append(malloc_bytes_attr.id(), Variant(total - v_prev.to_int()));
     }
@@ -37,7 +37,7 @@ void post_init_cb(Caliper* c, Channel* chn)
     // set the initial malloc value on the blackboard
 
     struct mallinfo mi = mallinfo();
-    c->set(chn, malloc_total_bytes_attr, Variant(mi.arena + mi.hblkhd));
+    c->set(malloc_total_bytes_attr, Variant(mi.arena + mi.hblkhd));
 }
 
 void memusage_register(Caliper* c, Channel* chn)

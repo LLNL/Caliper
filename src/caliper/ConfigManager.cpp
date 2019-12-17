@@ -343,6 +343,20 @@ ConfigManager::add_controllers(const ConfigManager::ConfigInfo** ctrlrs)
     s_config_list = elem;
 }
 
+void
+ConfigManager::cleanup()
+{
+    ::ConfigInfoList* ptr = s_config_list;
+
+    while (ptr && ptr != &s_default_configs) {
+        ::ConfigInfoList* tmp = ptr->next;
+        delete ptr;
+        ptr = tmp;
+    }
+
+    s_config_list = &s_default_configs;
+}
+
 std::vector<std::string>
 ConfigManager::available_configs()
 {

@@ -73,9 +73,9 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -132,7 +132,7 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
             auto dict = make_dict_from_entrylist(list);
             int  aggr = dict[count_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
+            if (dict[ctx1.id()].value() == Variant("inner")) {
                 EXPECT_EQ(aggr, 3);
                 EXPECT_EQ(static_cast<int>(list.size()), 2);
                 ++rescount;
@@ -174,9 +174,9 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -243,7 +243,7 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
             int  aggr = dict[count_attr.id()].value().to_int();
             int  val  = dict[sum_attr.id()  ].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
+            if (dict[ctx1.id()].value() == Variant("inner")) {
                 EXPECT_EQ(aggr,  3);
                 EXPECT_EQ(val,  14);
                 EXPECT_EQ(static_cast<int>(list.size()), 3);
@@ -288,9 +288,9 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -398,8 +398,8 @@ TEST(AggregatorTest, InclusiveSumOp) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx1.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx1.id(), 100,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -469,12 +469,12 @@ TEST(AggregatorTest, InclusiveSumOp) {
             int  val   = dict[sum_attr.id()  ].value().to_int();
             int  ival  = dict[isum_attr.id() ].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
+            if (dict[ctx1.id()].value() == Variant("inner")) {
                 EXPECT_EQ(val,   14);
                 EXPECT_EQ(ival,  14);
                 EXPECT_EQ(static_cast<int>(list.size()), 4);
                 ++rescount;
-            } else if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "outer", 6)) {
+            } else if (dict[ctx1.id()].value() == Variant("outer")) {
                 EXPECT_EQ(val,    7);
                 EXPECT_EQ(ival,  21);
                 ++rescount;
@@ -509,9 +509,9 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx2.id(), 100,         Variant(42)      },
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -599,8 +599,8 @@ TEST(AggregatorTest, StatisticsKernels) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx.id(), 100,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )

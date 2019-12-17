@@ -48,7 +48,7 @@ void read_cmdline(Caliper* c, Channel* chn, ConfigSet& config)
     std::vector<Variant> args;
 
     for (std::string arg; std::getline(fs, arg, static_cast<char>(0)); )
-        c->begin(chn, cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
+        c->begin(cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
 }
     
 void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
@@ -70,7 +70,7 @@ void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
             Attribute attr = 
                 c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
-            c->set(chn, attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
+            c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
         }
     }
 }
@@ -89,7 +89,7 @@ void read_time(Caliper* c, Channel* chn, ConfigSet& config)
     char   buf[64];
     size_t len = strftime(buf, sizeof(buf)-1, "%a %d %b %Y %H:%M:%S %z", tmp);
 
-    c->set(chn, starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
+    c->set(starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
 }
 
 void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
@@ -100,7 +100,7 @@ void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
     char buf[256];
 
     if (gethostname(buf, sizeof(buf)-1) == 0)
-        c->set(chn, hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
+        c->set(hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
 }
 
 void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
@@ -117,7 +117,7 @@ void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
         char* val = getenv(env.c_str());
 
         if (val)
-            c->set(chn, attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+            c->set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
     }
 }
   

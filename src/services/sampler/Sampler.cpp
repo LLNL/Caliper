@@ -103,6 +103,11 @@ void clear_signal()
     signal(SIGPROF, SIG_IGN);
 }
 
+struct TimerWrap
+{
+    timer_t timer;
+};
+
 void setup_settimer(Caliper* c)
 {
     struct sigevent sev;
@@ -113,9 +118,9 @@ void setup_settimer(Caliper* c)
     sev._sigev_un._tid = syscall(SYS_gettid);
     sev.sigev_signo    = SIGPROF;
 
-    timer_t timer;
+    TimerWrap* twrap = new TimerWrap;
 
-    if (timer_create(CLOCK_MONOTONIC, &sev, &timer) == -1) {
+    if (timer_create(CLOCK_MONOTONIC, &sev, &twrap->timer) == -1) {
         Log(0).stream() << "sampler: timer_create() failed" << std::endl;
         return;
     }
@@ -127,38 +132,34 @@ void setup_settimer(Caliper* c)
     spec.it_value.tv_sec     = 0;
     spec.it_value.tv_nsec    = nsec_interval;
 
-    if (timer_settime(timer, 0, &spec, NULL) == -1) {
+    if (timer_settime(twrap->timer, 0, &spec, NULL) == -1) {
         Log(0).stream() << "Sampler: timer_settime() failed" << std::endl;
         return;
     }
 
-    // FIXME: We make the assumption that timer_t is a 8-byte value
-    Variant v_timer(CALI_TYPE_ADDR, &timer, sizeof(void*));
-
+    Variant v_timer(cali_make_variant_from_ptr(twrap));
     c->set(timer_attr, v_timer);
 
     Log(2).stream() << "Sampler: Registered timer " << v_timer << endl;
 }
 
 void clear_timer(Caliper* c, Channel* chn) {
-    Entry e = c->get(chn, timer_attr);
+    Entry e = c->get(timer_attr);
 
     if (e.is_empty()) {
         Log(0).stream() << chn->name() << ": Sampler: Timer attribute not found " << endl;
         return;
     }
 
-    Variant v_timer = e.value();
+    TimerWrap* twrap = static_cast<TimerWrap*>(e.value().get_ptr());
 
-    if (v_timer.empty())
+    if (!twrap)
         return;
 
-    timer_t timer;
-    memcpy(&timer, v_timer.data(), sizeof(void*));
+    Log(2).stream() << chn->name() << ": Sampler: Deleting timer " << e.value() << endl;
 
-    Log(2).stream() << chn->name() << ": Sampler: Deleting timer " << v_timer << endl;
-
-    timer_delete(timer);
+    timer_delete(twrap->timer);
+    delete twrap;
 }
 
 void create_thread_cb(Caliper* c, Channel* chn) {
@@ -200,7 +201,7 @@ void sampler_register(Caliper* c, Channel* chn)
     Variant v_true(true);
 
     timer_attr =
-        c->create_attribute("cali.sampler.timer", CALI_TYPE_ADDR,
+        c->create_attribute(std::string("cali.sampler.timer")+std::to_string(chn->id()), CALI_TYPE_PTR,
                             CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_SKIP_EVENTS  |
                             CALI_ATTR_ASVALUE      |

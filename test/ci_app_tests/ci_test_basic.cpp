@@ -12,7 +12,6 @@ int main()
 
     cali::Annotation phase_ann("phase", metadata);
     std::size_t size = 8;
-    const char* name = "dogs";
     cali::Annotation size_annot("dgs");
     size_annot.begin(size);
     phase_ann.begin("initialization");

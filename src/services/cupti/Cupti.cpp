@@ -74,7 +74,7 @@ class CuptiService
     Cupti::EventSampling   event_sampling;
 
     Channel*            channel;
-    
+
     //
     // --- Helper functions
     //
@@ -162,7 +162,7 @@ class CuptiService
         case CUPTI_CBID_RESOURCE_CONTEXT_CREATED:
             if (event_sampling.is_enabled())
                 event_sampling.enable_sampling_for_context(cbInfo->context);
-            
+
             handle_context_event(cbInfo->context,
                                  cupti_info.resource_attr,
                                  Variant(CALI_TYPE_STRING, "create_context", 15));
@@ -232,16 +232,16 @@ class CuptiService
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
             if (cupti_info.record_symbol && cbInfo->symbolName) {
                 Variant v_sname(CALI_TYPE_STRING, cbInfo->symbolName, strlen(cbInfo->symbolName));
-                c.set(channel, cupti_info.symbol_attr, v_sname);
+                c.begin(cupti_info.symbol_attr, v_sname);
             }
 
             Variant v_fname(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName));
-            c.begin(channel, attr, v_fname);
+            c.begin(attr, v_fname);
         } else if (cbInfo->callbackSite == CUPTI_API_EXIT) {
-            c.end(channel, attr);
+            c.end(attr);
 
             if (cupti_info.record_symbol && cbInfo->symbolName)
-                c.end(channel, cupti_info.symbol_attr);
+                c.end(cupti_info.symbol_attr);
         }
     }
 
@@ -252,15 +252,15 @@ class CuptiService
 
         const void* p = cbInfo->functionParams;
 
+        Caliper c;
+
         switch (cbid) {
         case CUPTI_CBID_NVTX_nvtxRangePushA:
         {
             const char* msg =
                 static_cast<const nvtxRangePushA_params*>(p)->message;
 
-            Caliper().begin(channel,
-                            cupti_info.nvtx_range_attr,
-                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+            c.begin(cupti_info.nvtx_range_attr, Variant(msg));
         }
         break;
         case CUPTI_CBID_NVTX_nvtxRangePushEx:
@@ -268,13 +268,11 @@ class CuptiService
             const char* msg =
                 static_cast<const nvtxRangePushEx_params*>(p)->eventAttrib->message.ascii;
 
-            Caliper().begin(channel,
-                            cupti_info.nvtx_range_attr,
-                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+            c.begin(cupti_info.nvtx_range_attr, Variant(msg));
         }
         break;
         case CUPTI_CBID_NVTX_nvtxRangePop:
-            Caliper().end(channel, cupti_info.nvtx_range_attr);
+            c.end(channel, cupti_info.nvtx_range_attr);
             break;
         case CUPTI_CBID_NVTX_nvtxDomainRangePushEx:
         {
@@ -283,14 +281,12 @@ class CuptiService
             const char* msg =
                 static_cast<const nvtxDomainRangePushEx_params*>(p)->core.eventAttrib->message.ascii;
 
-            Caliper().begin(channel,
-                            cupti_info.nvtx_range_attr,
-                            Variant(CALI_TYPE_STRING, msg, strlen(msg)+1));
+            c.begin(cupti_info.nvtx_range_attr, Variant(msg));
         }
         break;
         case CUPTI_CBID_NVTX_nvtxDomainRangePop:
             // TODO: Use domain-specific attribute
-            Caliper().end(channel, cupti_info.nvtx_range_attr);
+            c.end(cupti_info.nvtx_range_attr);
             break;
         default:
             ;
@@ -339,7 +335,7 @@ class CuptiService
     {
         event_sampling.snapshot(c, trigger_info, snapshot);
     }
-    
+
     void
     finish_cb(Caliper* c, Channel* chn)
     {
@@ -355,26 +351,43 @@ class CuptiService
             if (event_sampling.is_enabled())
                 event_sampling.print_statistics(Log(2).stream());
         }
-        
+
         event_sampling.stop_all();
-        
+
         cuptiUnsubscribe(subscriber);
         cuptiFinalize();
     }
 
     void
+    subscribe_attributes(Caliper* c, Channel* channel)
+    {
+        channel->events().subscribe_attribute(c, channel, cupti_info.runtime_attr);
+        channel->events().subscribe_attribute(c, channel, cupti_info.driver_attr);
+        channel->events().subscribe_attribute(c, channel, cupti_info.nvtx_range_attr);
+    }
+
+    void
     create_attributes(Caliper* c)
     {
+        Attribute subs_attr = c->get_attribute("subscription_event");
+        Variant v_true(true);
+
         cupti_info.runtime_attr =
-            c->create_attribute("cupti.runtimeAPI", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+            c->create_attribute("cupti.runtimeAPI", CALI_TYPE_STRING,
+                                CALI_ATTR_NESTED,
+                                1, &subs_attr, &v_true);
         cupti_info.driver_attr =
-            c->create_attribute("cupti.driverAPI",  CALI_TYPE_STRING, CALI_ATTR_NESTED);
+            c->create_attribute("cupti.driverAPI",  CALI_TYPE_STRING,
+                                CALI_ATTR_NESTED,
+                                1, &subs_attr, &v_true);
         cupti_info.resource_attr =
-            c->create_attribute("cupti.resource",   CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("cupti.resource",   CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         cupti_info.sync_attr =
-            c->create_attribute("cupti.sync",       CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("cupti.sync",       CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         cupti_info.nvtx_range_attr =
-            c->create_attribute("nvtx.range",       CALI_TYPE_STRING, CALI_ATTR_NESTED);
+            c->create_attribute("nvtx.range",       CALI_TYPE_STRING,
+                                CALI_ATTR_NESTED,
+                                1, &subs_attr, &v_true);
 
         cupti_info.context_attr =
             c->create_attribute("cupti.contextID",  CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
@@ -402,7 +415,7 @@ class CuptiService
         std::vector<std::string> cb_domain_names =
             config.get("callback_domains").to_stringlist(",:");
 
-        // add "resource" domain when event sampling is enabled 
+        // add "resource" domain when event sampling is enabled
         if (event_sampling.is_enabled() &&
             std::find(cb_domain_names.begin(), cb_domain_names.end(),
                       "resource") == cb_domain_names.end()) {
@@ -460,17 +473,17 @@ class CuptiService
                 event_sampling.setup(c, static_cast<CUpti_EventID>(sample_event_id));
 
             create_attributes(c);
-        }        
+        }
 
 public:
-    
+
     static void
     cuptiservice_initialize(Caliper* c, Channel* chn)
     {
         CuptiService* instance = new CuptiService(c, chn);
-        
+
         if (!instance->register_callback_domains())
-            return;        
+            return;
 
         if (instance->event_sampling.is_enabled())
             chn->events().snapshot.connect(
@@ -478,6 +491,10 @@ public:
                     instance->snapshot_cb(c, chn, scope, info, rec);
                 });
 
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* channel){
+                instance->subscribe_attributes(c, channel);
+            });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
                 instance->finish_cb(c, chn);
@@ -486,7 +503,7 @@ public:
 
         Log(1).stream() << chn->name() << ": Registered cupti service" << std::endl;
     }
-    
+
 }; // CuptiService
 
 const ConfigSet::Entry CuptiService::s_configdata[] = {

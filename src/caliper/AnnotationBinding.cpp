@@ -26,12 +26,13 @@ const cali::ConfigSet::Entry AnnotationBinding::s_configdata[] = {
       "List of attributes that trigger the annotation binding",
       "List of attributes that trigger the annotation binding"
     },
-    { "", CALI_TYPE_BOOL, "true",
-      "Whether the condition of the filter says what to include or what to exclude",
-      "Whether the condition of the filter says what to include or what to exclude"
-    },
     cali::ConfigSet::Terminator
 };
+
+namespace cali
+{
+    extern Attribute subscription_event_attr;
+}
 
 namespace
 {
@@ -53,26 +54,20 @@ bool has_marker(const Attribute& attr, const Attribute& marker_attr)
 // --- Implementation
 //
 
+bool
+AnnotationBinding::is_subscription_attribute(const Attribute& attr)
+{
+    return attr.get(subscription_event_attr).to_bool();
+}
+
 AnnotationBinding::~AnnotationBinding()
 {
     delete m_filter;
 }
 
 void
-AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
+AnnotationBinding::mark_attribute(Caliper *c, Channel* chn, const Attribute& attr)
 {
-    int prop = attr.properties();
-
-    if (m_trigger_attr_names.empty()) {
-        // By default, enable binding only for class.nested attributes
-        if (!(prop & CALI_ATTR_NESTED))
-            return;
-    } else {
-        if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(),
-                      attr.name()) == m_trigger_attr_names.end())
-            return;
-    }
-
     // Add the binding marker for this attribute
 
     Variant v_true(true);
@@ -88,18 +83,29 @@ AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& at
 }
 
 void
-AnnotationBinding::create_attr_cb(Caliper*         c,
-                                  Channel*      chn,
-                                  const Attribute& attr)
+AnnotationBinding::check_attribute(Caliper* c, Channel* chn, const Attribute& attr)
 {
-    check_attribute(c, chn, attr);
+    int prop = attr.properties();
+
+    if (prop & CALI_ATTR_SKIP_EVENTS)
+        return;
+
+    if (m_trigger_attr_names.empty()) {
+        // By default, enable binding only for class.nested attributes
+        if (!(prop & CALI_ATTR_NESTED))
+            return;
+    } else {
+        if (std::find(m_trigger_attr_names.begin(), m_trigger_attr_names.end(),
+                      attr.name()) == m_trigger_attr_names.end())
+            return;
+    }
+
+    mark_attribute(c, chn, attr);
 }
 
 void
 AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
-    if (attr.skip_events())
-        return;
     if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->filter(attr, value))
@@ -111,8 +117,6 @@ AnnotationBinding::begin_cb(Caliper* c, Channel* chn, const Attribute& attr, con
 void
 AnnotationBinding::end_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value)
 {
-    if (attr.skip_events())
-        return;
     if (!::has_marker(attr, m_marker_attr))
         return;
     if (m_filter && !m_filter->filter(attr, value))
@@ -153,5 +157,6 @@ AnnotationBinding::base_post_initialize(Caliper* c, Channel* chn)
     std::vector<Attribute> attributes = c->get_all_attributes();
 
     for (const Attribute& attr : attributes)
-        check_attribute(c, chn, attr);
+        if (!attr.skip_events() && !is_subscription_attribute(attr))
+            check_attribute(c, chn, attr);
 }

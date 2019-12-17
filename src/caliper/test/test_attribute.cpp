@@ -123,9 +123,7 @@ TEST(AttributeAPITest, NestedAttribute) {
     c.begin(nomerge,  Variant(25));
     c.begin(nested_b, Variant(36));
 
-    Channel* chn = c.get_channel(0);
-
-    const Node* node = c.get(chn, nested_b).node();
+    const Node* node = c.get(nested_b).node();
 
     ASSERT_NE(node, nullptr);
     EXPECT_EQ(node->attribute(), nested_b.id());
@@ -135,7 +133,7 @@ TEST(AttributeAPITest, NestedAttribute) {
     EXPECT_EQ(node->attribute(), nested_a.id());
     EXPECT_EQ(node->data().to_int(), 16);
 
-    node = c.get(chn, nomerge).node();
+    node = c.get(nomerge).node();
 
     ASSERT_NE(node, nullptr);
     EXPECT_EQ(node->attribute(), nomerge.id());
