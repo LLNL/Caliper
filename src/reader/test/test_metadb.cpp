@@ -17,9 +17,9 @@ TEST(MetaDBTest, MergeSnapshotFromDB) {
     IdMap idmap;
 
     const Node* a_in = 
-        db1.merge_node(200, str_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 1), idmap);
+        db1.merge_node(200, str_attr.id(), CALI_INV_ID, Variant("a"), idmap);
     const Node* b_in = 
-        db1.merge_node(201, str_attr.id(), 200,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
+        db1.merge_node(201, str_attr.id(), 200,         Variant("b"), idmap);
 
     EntryList list_in { Entry(b_in), Entry(int_attr, Variant(42)) };
 
@@ -88,8 +88,8 @@ TEST(MetaDBTest, SetGlobal) {
     Attribute no_g_attr  =
         db.create_attribute("noglobal",   CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
 
-    Variant v_str_a(CALI_TYPE_STRING, "a", 2);
-    Variant v_str_b(CALI_TYPE_STRING, "b", 2);
+    Variant v_str_a(CALI_TYPE_STRING, "a", 1);
+    Variant v_str_b(CALI_TYPE_STRING, "b", 1);
     Variant v_int(42);
     Variant v_val(1337);
     Variant v_no(-42);
@@ -127,4 +127,36 @@ TEST(MetaDBTest, SetGlobal) {
     EXPECT_EQ(count_in_record(imp_globals, g_imp_str_attr, v_str_b), 1);
     EXPECT_EQ(count_in_record(imp_globals, g_imp_int_attr, v_int  ), 1);
     EXPECT_EQ(count_in_record(imp_globals, g_imp_val_attr, v_val  ), 1);
+}
+
+TEST(MetadataDBTest, StringDB) {
+    CaliperMetadataDB db;
+
+    Attribute attr = 
+        db.create_attribute("string.attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+
+    IdMap idmap;
+    
+    const Node* n0 =
+        db.merge_node(100, attr.id(), CALI_INV_ID, Variant("a.b"  ), idmap);
+    const Node* n1 =
+        db.merge_node(101, attr.id(), 100,         Variant("a"    ), idmap);
+    const Node* n2 =
+        db.merge_node(102, attr.id(), 101,         Variant("a.b.c"), idmap);
+    const Node* n3 = 
+        db.merge_node(103, attr.id(), 102,         Variant("a.b"  ), idmap);
+
+    EXPECT_EQ(n0->data().to_string(), std::string("a.b"));
+    EXPECT_EQ(n1->data().to_string(), std::string("a"));
+    EXPECT_EQ(n2->data().to_string(), std::string("a.b.c"));
+    EXPECT_EQ(n3->data().to_string(), std::string("a.b"));
+
+    EXPECT_EQ(n3->data().data(), n0->data().data());
+
+    std::ostringstream os;
+    db.print_statistics(os);
+
+    // 18 nodes: 12 default nodes + 2 attribute nodes + 4 test nodes
+    // 4 strings: 1 attribute name + 3 different test node strings
+    EXPECT_EQ(os.str(), std::string("CaliperMetadataDB: stored 18 nodes, 4 strings.\n"));
 }

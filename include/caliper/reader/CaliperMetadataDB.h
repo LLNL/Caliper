@@ -118,6 +118,10 @@ public:
     /// \brief Import globals in record \a rec from metadata DB \a db into this
     ///   metadata DB
     std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals);
+
+    /// \brief print usage statistics
+    std::ostream&
+    print_statistics(std::ostream& os);
 };
 
 }

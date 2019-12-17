@@ -119,7 +119,7 @@ struct MpiWrapperConfig
     //
 
     MpiWrapperConfig(Channel* chn)
-        : channel(chn)
+        : channel(chn), next(nullptr), prev(nullptr)
         {
             ConfigSet cfg = chn->config().init("mpi", s_configdata);
 

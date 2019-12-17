@@ -8,6 +8,7 @@
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/ConfigManager.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "Blackboard.h"
@@ -281,8 +282,14 @@ struct Caliper::GlobalData
     }
 
     static void run_init_hooks() {
-        for (InitHookList* lp = s_init_hooks; lp; lp = lp->next)
-            (*(lp->hook))();
+        InitHookList* ptr = s_init_hooks;
+
+        while (ptr) {
+            (*(ptr->hook))();
+            InitHookList* tmp = ptr->next;
+            delete ptr;
+            ptr = tmp;
+        }
     }
 
     // --- data
@@ -345,6 +352,8 @@ struct Caliper::GlobalData
         gObj.g_ptr = nullptr;
 
         MetadataTree::release();
+        Services::cleanup();
+        ConfigManager::cleanup();
 
         Log(1).stream() << "Finished" << std::endl;
     }

@@ -26,6 +26,7 @@ class Services
 public:
 
     static void add_services(const CaliperService* services);
+    static void cleanup();
 
     static void add_default_services();
 
