@@ -168,17 +168,17 @@ class LibpfmService
     static void sigio_handler(int sig, siginfo_t *info, void *extra) {
         perf_event_desc_t *fdx = 0;
         struct perf_event_header ehdr;
-        int fd, i, ret;
 
-        fd = info->si_fd;
+        int fd = info->si_fd;
 
-        ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+        int ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
         if (ret)
             Log(0).stream() << "libpfm: cannot stop sampling for handling" << std::endl;
 
         sI->signals_received++;
 
-        for (i=0; i<sT.num_events; i++) {
+        int i = 0;
+        for (i = 0; i<sT.num_events; i++) {
             if (fd == sT.fds[i].fd) {
                 fdx = &sT.fds[i];
                 break;
@@ -351,7 +351,7 @@ class LibpfmService
     }
 
     int end_thread_sampling() {
-        int ret;
+        int ret = 0;
         size_t pgsz = sysconf(_SC_PAGESIZE);
 
         for (int i=0; i<sT.num_events; i++) {

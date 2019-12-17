@@ -353,6 +353,8 @@ struct Caliper::GlobalData
             delete ptr;
             ptr = tmp;
         }
+
+        s_init_hooks = nullptr;
     }
 
     // --- data
