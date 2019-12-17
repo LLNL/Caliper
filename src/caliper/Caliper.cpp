@@ -73,6 +73,59 @@ public:
 
 // --- helper functions
 
+void
+log_invalid_cfg_value(const char* var, const char* value, const char* prefix = nullptr)
+{
+    Log(0).stream() << (prefix ? std::string(prefix)+": " : std::string(""))
+                    << "Invalid value \"" << value << "\" for " << var
+                    << std::endl;
+}
+
+int
+parse_snapshot_scopes(const char* channel_name, const StringConverter& cfg)
+{
+    const struct {
+        const char* name; cali_context_scope_t scope;
+    } scopemap[] = {
+        { "process", CALI_SCOPE_PROCESS },
+        { "thread",  CALI_SCOPE_THREAD  },
+        { "channel", CALI_SCOPE_CHANNEL }
+    };
+
+    int scopes = 0;
+    auto list = cfg.to_stringlist(",.");
+
+    for (const auto &e : scopemap) {
+        auto it = std::find(list.begin(), list.end(),
+                            std::string(e.name));
+
+        if (it != list.end()) {
+            scopes |= e.scope;
+            list.erase(it);
+        }
+    }
+
+    for (const auto &s : list)
+        log_invalid_cfg_value("CALI_CHANNEL_SNAPSHOT_SCOPES", s.c_str(), channel_name);
+
+    if (Log::verbosity() > 1) {
+        std::string selected_scopes;
+
+        for (const auto &e : scopemap)
+            if (scopes & e.scope)
+                selected_scopes.append(std::string(" ") + e.name);
+
+        if (selected_scopes.empty())
+            selected_scopes = " none";
+
+        Log(2).stream() << channel_name
+                        << ": snapshot scopes:" << selected_scopes
+                        << std::endl;
+    }
+
+    return scopes;
+}
+
 std::ostream&
 print_available_services(std::ostream& os)
 {
@@ -144,13 +197,18 @@ struct Channel::ChannelImpl
 
     Blackboard                      channel_blackboard;
 
+    int                             snapshot_scopes;
+
     ChannelImpl(const char* _name, const RuntimeConfig& cfg)
-        : name(_name), active(true), config(cfg)
+        : name(_name), active(true), config(cfg), snapshot_scopes(0)
         {
             ConfigSet cali_cfg =
                 config.init("channel", s_configdata);
 
-            flush_on_exit = cali_cfg.get("flush_on_exit").to_bool();
+            flush_on_exit =
+                cali_cfg.get("flush_on_exit").to_bool();
+            snapshot_scopes =
+                ::parse_snapshot_scopes(_name, cali_cfg.get("snapshot_scopes"));
         }
 
     ~ChannelImpl()
@@ -166,6 +224,11 @@ const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
     { "flush_on_exit", CALI_TYPE_BOOL, "true",
       "Flush Caliper buffers at program exit",
       "Flush Caliper buffers at program exit"
+    },
+    { "snapshot_scopes", CALI_TYPE_STRING, "process,thread",
+      "List of blackboard scopes to include in snapshots",
+      "List of blackboard scopes to include in snapshots"
+      " (process, thread, and channel)."
     },
     ConfigSet::Terminator
 };
@@ -379,9 +442,7 @@ struct Caliper::GlobalData
         else if (scope_str == "thread")
             attribute_default_scope = CALI_ATTR_SCOPE_THREAD;
         else
-            Log(0).stream() << "Invalid value \"" << scope_str
-                            << "\" for CALI_ATTRIBUTE_DEFAULT_SCOPE"
-                            << std::endl;
+            log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
 
         automerge = config.get("automerge").to_bool();
     }
@@ -882,13 +943,11 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
 ///
 /// \note This function is signal safe.
 ///
-/// \param scopes       Specifies which blackboard(s) contents to put into the snapshot buffer.
-///                     Bitfield of cali_scope_t values combined with bitwise OR.
 /// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
 ///                     and process_snapshot callbacks, and added to the returned snapshot record.
 
 void
-Caliper::push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Channel* channel, const SnapshotRecord* trigger_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -896,9 +955,9 @@ Caliper::push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_i
     SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
     SnapshotRecord sbuf(snapshot_data);
 
-    pull_snapshot(chn, scopes, trigger_info, &sbuf);
+    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, &sbuf);
 
-    chn->mP->events.process_snapshot(this, chn, trigger_info, &sbuf);
+    channel->mP->events.process_snapshot(this, channel, trigger_info, &sbuf);
 }
 
 

@@ -13,6 +13,7 @@ class CaliperMultiChannelTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
+            'CALI_CHANNEL_SNAPSHOT_SCOPES' : 'process,thread,channel',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -38,6 +39,7 @@ class CaliperMultiChannelTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'aggregate,event,recorder',
+            'CALI_CHANNEL_SNAPSHOT_SCOPES' : 'process,thread,channel',
             'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }

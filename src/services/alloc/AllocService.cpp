@@ -164,7 +164,7 @@ class AllocService
         };
 
         SnapshotRecord trigger_info(1, &label_node, 2, attr, data);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+        c->push_snapshot(chn, &trigger_info);
     }
 
     void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims) {

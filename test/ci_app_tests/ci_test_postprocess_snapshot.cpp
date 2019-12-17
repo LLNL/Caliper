@@ -36,5 +36,5 @@ int main()
     Variant   snapshot_val(49);
 
     SnapshotRecord trigger_info(1, &snapshot_attr_id, &snapshot_val);
-    c.push_snapshot(chn, 0, &trigger_info);
+    c.push_snapshot(chn, &trigger_info);
 }

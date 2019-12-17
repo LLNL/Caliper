@@ -123,7 +123,7 @@ class CuptiService
         Caliper c;
 
         c.make_record(4, attr, vals, trigger_info);
-        c.push_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(channel, &trigger_info);
     }
 
     void
@@ -150,7 +150,7 @@ class CuptiService
         Caliper c;
 
         c.make_record(3, attr, vals, trigger_info);
-        c.push_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &trigger_info);
+        c.push_snapshot(channel, &trigger_info);
     }
 
     void

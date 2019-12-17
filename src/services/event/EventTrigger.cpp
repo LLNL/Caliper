@@ -56,8 +56,6 @@ class EventTrigger
 
     Node                     event_root_node;
 
-    int                      scopes;
-
     //
     // --- Helpers / misc
     //
@@ -151,9 +149,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, scopes, &trigger_info);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, scopes, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
     }
 
@@ -184,9 +182,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, scopes, &trigger_info);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, scopes, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
     }
 
@@ -215,9 +213,9 @@ class EventTrigger
             SnapshotRecord trigger_info(trigger_info_data);
 
             c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, scopes, &trigger_info);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, scopes, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
     }
 
@@ -258,8 +256,6 @@ class EventTrigger
                                     CALI_TYPE_USR,
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
-
-            scopes = CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS | CALI_SCOPE_CHANNEL;
 
             check_existing_attributes(c, chn);
         }
