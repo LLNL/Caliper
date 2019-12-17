@@ -165,7 +165,7 @@ struct MpiTracing::MpiTracingImpl
     // --- point-to-point
     //
 
-    void push_send_event(Caliper* c, Channel* chn, int size, int dest, int tag, cali::Node* comm_node) {
+    void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
         cali_id_t attr[3] = {
             msg_dst_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
         };
@@ -174,7 +174,7 @@ struct MpiTracing::MpiTracingImpl
         };
 
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+        c->push_snapshot(channel, &rec);
     }
 
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
@@ -197,7 +197,7 @@ struct MpiTracing::MpiTracingImpl
         req_map[*req] = info;
     }
 
-    void push_recv_event(Caliper* c, Channel* chn, int src, int size, int tag, Node* comm_node) {
+    void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
         cali_id_t attr[3] = {
             msg_src_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
         };
@@ -206,7 +206,7 @@ struct MpiTracing::MpiTracingImpl
         };
 
         SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+        c->push_snapshot(channel, &rec);
     }
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
@@ -306,7 +306,7 @@ struct MpiTracing::MpiTracingImpl
     // --- collectives
     //
 
-    void push_coll_event(Caliper* c, Channel* chn, CollectiveType coll_type, int size, int root, Node* comm_node) {
+    void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root, Node* comm_node) {
         cali_id_t attr[2] = { msg_size_attr.id(), coll_root_attr.id() };
         Variant   data[2] = { Variant(size),      Variant(root)       };
 
@@ -320,7 +320,7 @@ struct MpiTracing::MpiTracingImpl
             ne = 1;
 
         SnapshotRecord rec(1, &node, ne, attr, data);
-        c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+        c->push_snapshot(channel, &rec);
     }
 
     // --- constructor

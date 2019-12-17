@@ -103,7 +103,7 @@ cali_attribute_name(cali_id_t attr_id)
 //
 
 void
-cali_push_snapshot(int scope, int n,
+cali_push_snapshot(int /*scope*/, int n,
                    const cali_id_t trigger_info_attr_list[],
                    const cali_variant_t trigger_info_val_list[])
 {
@@ -126,11 +126,11 @@ cali_push_snapshot(int scope, int n,
 
     for (auto chn : c.get_all_channels())
         if (chn->is_active())
-            c.push_snapshot(chn, scope, &trigger_info);
+            c.push_snapshot(chn, &trigger_info);
 }
 
 void
-cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
+cali_channel_push_snapshot(cali_id_t chn_id, int /*scope*/, int n,
                            const cali_id_t trigger_info_attr_list[],
                            const cali_variant_t trigger_info_val_list[])
 {
@@ -154,7 +154,7 @@ cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
     Channel* chn = c.get_channel(chn_id);
 
     if (chn && chn->is_active())
-        c.push_snapshot(chn, scope, &trigger_info);
+        c.push_snapshot(chn, &trigger_info);
 }
 
 size_t

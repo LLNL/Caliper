@@ -36,9 +36,7 @@ Attribute   timer_attr   { Attribute::invalid };
 Attribute   sampler_attr { Attribute::invalid };
 
 cali_id_t   sampler_attr_id     = CALI_INV_ID;
-
 int         nsec_interval       = 0;
-int         sample_contexts     = 0;
 
 int         n_samples           = 0;
 int         n_processed_samples = 0;
@@ -49,10 +47,6 @@ static const ConfigSet::Entry s_configdata[] = {
     { "frequency", CALI_TYPE_INT, "50",
       "Sampling frequency (in Hz)",
       "Sampling frequency (in Hz)"
-    },
-    { "add_shared_context", CALI_TYPE_BOOL, "true",
-      "Capture process-wide context information",
-      "Capture process-wide context information in addition to thread-local context"
     },
     ConfigSet::Terminator
 };
@@ -75,7 +69,7 @@ void on_prof(int sig, siginfo_t *info, void *context)
     SnapshotRecord trigger_info;
 #endif
 
-    c.push_snapshot(channel, sample_contexts, &trigger_info);
+    c.push_snapshot(channel, &trigger_info);
 
     ++n_processed_samples;
 }
@@ -201,7 +195,7 @@ void sampler_register(Caliper* c, Channel* chn)
     Variant v_true(true);
 
     timer_attr =
-        c->create_attribute(std::string("cali.sampler.timer")+std::to_string(chn->id()), CALI_TYPE_PTR,
+        c->create_attribute(std::string("cali.sampler.timer.")+std::to_string(chn->id()), CALI_TYPE_PTR,
                             CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_SKIP_EVENTS  |
                             CALI_ATTR_ASVALUE      |
@@ -220,11 +214,6 @@ void sampler_register(Caliper* c, Channel* chn)
     // some sanity checking
     frequency     = std::min(std::max(frequency, 1), 10000);
     nsec_interval = 1000000000 / frequency;
-
-    sample_contexts = CALI_SCOPE_THREAD;
-
-    if (config.get("add_shared_context").to_bool() == true)
-        sample_contexts |= CALI_SCOPE_PROCESS;
 
     c->set(chn, c->create_attribute("sample.frequency", CALI_TYPE_INT, CALI_ATTR_GLOBAL),
            Variant(frequency));

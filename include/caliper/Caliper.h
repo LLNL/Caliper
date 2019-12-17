@@ -169,7 +169,7 @@ public:
     /// \name Snapshot API
     /// \{
 
-    void      push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info);
+    void      push_snapshot(Channel* chn, const SnapshotRecord* trigger_info);
     void      pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
     // --- Flush and I/O API

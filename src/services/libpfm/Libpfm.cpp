@@ -160,7 +160,7 @@ class LibpfmService
 
         SnapshotRecord info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
 
-        c.push_snapshot(sC, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &info);
+        c.push_snapshot(sC, &info);
 
         sI->samples_produced++;
     }

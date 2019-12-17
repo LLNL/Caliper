@@ -45,7 +45,7 @@ public:
         std::string s(attr.name());
         s.append("=").append(value.to_string());
         
-        c->begin(chn, m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
+        c->begin(m_my_attr, Variant(CALI_TYPE_STRING, s.c_str(), s.size()));
 
         if (s_verbose)
             std::cout << "begin " << s << std::endl;
@@ -55,7 +55,7 @@ public:
         if (attr == m_my_attr)
             return;
 
-        c->end(chn, m_my_attr);
+        c->end(m_my_attr);
 
         if (s_verbose)
             std::cout << "end   " << attr.name() << "=" << value.to_string() << std::endl;

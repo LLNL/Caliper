@@ -20,6 +20,7 @@ class CaliperLogTest(unittest.TestCase):
 
         log_targets = [
             'CALI_LOG_VERBOSITY=3',
+            '== CALIPER: default: snapshot scopes: process thread',
             '== CALIPER: Releasing channel default',
             '== CALIPER: Releasing Caliper thread data',
             'Blackboard',

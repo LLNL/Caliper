@@ -50,7 +50,7 @@ namespace
       cali_id_t bytes_id(io_bytes_read_attr.id());
 
       SnapshotRecord rec(1, &bytes_id, &v_bytes);
-      c.push_snapshot(channel, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+      c.push_snapshot(channel, &rec);
     }
   }
 
@@ -62,7 +62,7 @@ namespace
       cali_id_t bytes_id(io_bytes_written_attr.id());
 
       SnapshotRecord rec(1, &bytes_id, &v_bytes);
-      c.push_snapshot(channel, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &rec);
+      c.push_snapshot(channel, &rec);
     }
   }
 
