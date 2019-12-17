@@ -81,22 +81,6 @@ class Hierarchy
         delete node;
     }
 
-    void write_recursive(std::ostream& os, HierarchyNode* node) {
-        os << "{ \"id\": "      << node->id()
-           << ", \"label\": \"" << node->label() << "\"";
-
-        if (node->first_child()) {
-            os << ", \"children\": [";
-            int count = 0;
-            for (HierarchyNode* child = node->first_child(); child; child = child->next_sibling())
-                write_recursive(os << ((count++ > 0) ? ", " : " "), child);
-            os << " ]";
-        }
-
-        os << " }";
-    }
-
-
 public:
 
     Hierarchy()
@@ -132,16 +116,6 @@ public:
         }
 
         return node->id();
-    }
-
-    std::ostream& write_recursive(std::ostream& os) {
-        os << "\"hierarchy\": [";
-
-        int count = 0;
-        for (HierarchyNode* node = m_root->first_child(); node; node = node->next_sibling())
-            write_recursive(os << (count++ > 0 ? ", " : " "), node);
-
-        return os << " ]";
     }
 
     std::ostream& write_nodes(std::ostream& os) {
