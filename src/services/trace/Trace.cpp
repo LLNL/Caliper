@@ -353,6 +353,7 @@ public:
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
                 // sT.deactivate_chn(chn);
+                instance->clear_cb(c, chn);
                 instance->finish_cb(c, chn);
                 delete instance;
             });

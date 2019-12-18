@@ -10,12 +10,12 @@
 
 // test C and C++ macros
 
-void foo(int sleep_usec)
+void foo(int count, int sleep_usec)
 {
     CALI_CXX_MARK_FUNCTION;
 
     CALI_MARK_BEGIN("pre-loop");
-    CALI_WRAP_STATEMENT("foo.init", int count = 4);
+    CALI_WRAP_STATEMENT("foo.init", count = std::max(1, count));
     CALI_MARK_END("pre-loop");
 
     CALI_MARK_LOOP_BEGIN(fooloop, "fooloop");
@@ -40,7 +40,9 @@ int main(int argc, char* argv[])
     cali::ConfigManager mgr;
 
     if (argc > 2)
-        mgr.add(argv[2]);
+        if (std::string(argv[2]) != "none")
+            mgr.add(argv[2]);
+
     if (mgr.error()) {
         std::cerr << mgr.error_msg() << std::endl;
         return -1;
@@ -50,14 +52,17 @@ int main(int argc, char* argv[])
 
     CALI_MARK_FUNCTION_BEGIN;
 
-    const int count = 4;
+    int count = 4;
+
+    if (argc > 3)
+        count = std::max(1, std::stoi(argv[3]));
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
 
     for (int i = 0; i < count; ++i) {
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
 
-        foo(sleep_usec);
+        foo(count, sleep_usec);
     }
 
     CALI_CXX_MARK_LOOP_END(mainloop);

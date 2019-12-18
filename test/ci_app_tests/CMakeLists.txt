@@ -6,9 +6,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
   ci_test_binding
-  ci_test_esc
   ci_test_io
-  ci_test_loop
   ci_test_macros
   ci_test_multichannel
   ci_test_nesting
@@ -16,7 +14,6 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_report
   ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
-  ci_dgemm_memtrack
   ci_test_alloc
   ci_test_alloc_hooks
   ci_test_c_ann
