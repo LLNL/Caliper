@@ -122,14 +122,14 @@ class CaliperBasicTraceTest(unittest.TestCase):
             }))
 
     def test_largetrace(self):
-        target_cmd = [ './ci_test_loop', '80000' ]
+        target_cmd = [ './ci_test_macros', '0', 'none', '400' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
             # 'CALI_EVENT_ENABLE_SNAPSHOT_INFO' : 'false',
             'CALI_REPORT_FILENAME'   : 'stdout',
-            'CALI_REPORT_CONFIG'     : 'select function,count() group by function format cali',
+            'CALI_REPORT_CONFIG'     : 'select function,event.end#loop,count() group by function,event.end#loop format cali',
             'CALI_TRACE_BUFFER_SIZE' : '1',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -138,7 +138,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'function' : 'main/foo', 'count' : '80000'}))
+            snapshots, { 'function' : 'main/foo', 'event.end#loop': 'fooloop', 'count' : '400' }))
         
 
     def test_globals(self):
@@ -160,8 +160,8 @@ class CaliperBasicTraceTest(unittest.TestCase):
             snapshots, { 'cali.caliper.version' } ) )
         
     def test_esc(self):
-        target_cmd = [ './ci_test_esc' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j' ]
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j', '-s', 'cali.event.set' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',

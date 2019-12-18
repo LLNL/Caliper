@@ -134,7 +134,7 @@ class CaliperJSONTest(unittest.TestCase):
 
 
     def test_esc(self):
-        target_cmd = [ './ci_test_esc' ]
+        target_cmd = [ './ci_test_basic' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
                        '-q', 'select *,count() format json-split' ]
 

@@ -1,14 +1,15 @@
 // --- Caliper continuous integration test app for C++ annotation class
 
-#include "caliper/Annotation.h"
-
-#include "caliper/common/Variant.h"
+#include "caliper/cali.h"
 
 int main()
 {
     std::map<const char*, cali::Variant> metadata = {
         { "meta.int", cali::Variant(42) }
     };
+
+    // Test proper escaping
+    cali_set_string_byname(" =\\weird \"\"attribute\"=  ", "  \\\\ weird,\" name\",");
 
     cali::Annotation phase_ann("phase", metadata);
     std::size_t size = 8;

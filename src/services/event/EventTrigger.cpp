@@ -93,7 +93,7 @@ class EventTrigger
     }
 
     void check_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
-        if (attr.skip_events())
+        if (attr.id() < 12 /* skip fixed metadata attributes */ || attr.skip_events())
             return;
 
         auto it = std::find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
