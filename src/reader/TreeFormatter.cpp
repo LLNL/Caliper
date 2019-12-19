@@ -174,10 +174,12 @@ struct TreeFormatter::TreeFormatterImpl
         for (const Attribute& a : attributes) {
             std::string str;
 
+            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+
             {
                 auto it = node->attributes().find(a);
                 if (it != node->attributes().end())
-                    str = it->second.to_string();
+                    str = util::clamp_string(it->second.to_string(), width);
             }
 
             cali_attr_type t = a.type();
@@ -187,9 +189,9 @@ struct TreeFormatter::TreeFormatterImpl
                                 t == CALI_TYPE_ADDR);
 
             if (align_right)
-                util::pad_left (os, str, m_column_info[a].width);
+                util::pad_left (os, str, width);
             else
-                util::pad_right(os, str, m_column_info[a].width);
+                util::pad_right(os, str, width);
         }
 
         os << std::endl;
@@ -250,8 +252,10 @@ struct TreeFormatter::TreeFormatterImpl
 
         util::pad_right(os, "Path", m_path_column_width);
 
-        for (const Attribute& a : attributes)
-            util::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
+        for (const Attribute& a : attributes) {
+            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+            util::pad_right(os, util::clamp_string(m_column_info[a].display_name, width), width);
+        }
 
         os << std::endl;
 
@@ -268,7 +272,7 @@ struct TreeFormatter::TreeFormatterImpl
 
     TreeFormatterImpl()
         : m_path_column_width(0),
-          m_max_column_width(100)
+          m_max_column_width(48)
     { }
 };
 

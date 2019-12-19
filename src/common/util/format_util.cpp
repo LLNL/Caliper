@@ -51,7 +51,7 @@ util::pad_left (std::ostream& os, const std::string& str, std::size_t width)
 std::string
 util::clamp_string(const std::string& str, std::size_t max_width)
 {
-    if (str.length() < max_width)
+    if (str.length() <= max_width)
         return str;
     if (max_width < 4)
         return str.substr(0, max_width);
