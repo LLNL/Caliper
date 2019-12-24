@@ -12,6 +12,7 @@
 #include <cctype>
 #include <sstream>
 
+
 cali_id_t
 cali::StringConverter::to_id() const
 {
@@ -147,8 +148,8 @@ std::vector<cali::StringConverter>
 cali::StringConverter::rec_list(bool* okptr) const
 {
     std::vector<StringConverter> ret;
-    char c;
     bool error = false;
+    char c;
 
     std::istringstream is(m_str);
 
@@ -165,24 +166,29 @@ cali::StringConverter::rec_list(bool* okptr) const
         std::string str;
 
         if (c == '{') {
-            str = util::read_nested_text(is, '{', '}');
+            str = "{";
+            str.append(util::read_nested_text(is, '{', '}'));
 
             c = util::read_char(is);
             if (c != '}') {
                 error = true;
                 break;
             }
+
+            str.append("}");
         } else if (c == '[') {
-            str = util::read_nested_text(is, '[', ']');
+            str = "[";
+            str.append(util::read_nested_text(is, '[', ']'));
 
             c = util::read_char(is);
             if (c != ']') {
                 error = true;
                 break;
             }
+            str.append("]");
         } else {
             is.unget();
-            str = util::read_word_keep_esc(is, ",");
+            str = util::read_word(is, ",]");
         }
 
         if (!str.empty())
@@ -198,7 +204,7 @@ cali::StringConverter::rec_list(bool* okptr) const
         is.unget();
 
     if (okptr)
-        *okptr = error;
+        *okptr = !error;
 
     return ret;
 }
@@ -222,7 +228,7 @@ cali::StringConverter::rec_dict(bool *okptr) const
 
     do {
         std::string key = util::read_word(is, ":");
-        c = is.get();
+        c = util::read_char(is);
 
         if (c != ':') {
             if (okptr)
@@ -234,24 +240,28 @@ cali::StringConverter::rec_dict(bool *okptr) const
         c = util::read_char(is);
 
         if (c == '{') {
-            val = util::read_nested_text(is, '{', '}');
+            val = "{";
+            val.append(util::read_nested_text(is, '{', '}'));
 
             c = util::read_char(is);
             if (c != '}') {
                 error = true;
                 break;
             }
+            val.append("}");
         } else if (c == '[') {
-            val = util::read_nested_text(is, '[', ']');
+            val = "[";
+            val.append(util::read_nested_text(is, '[', ']'));
 
             c = util::read_char(is);
             if (c != ']') {
                 error = true;
                 break;
             }
+            val.append("]");
         } else {
             is.unget();
-            val = util::read_word_keep_esc(is, ",");
+            val = util::read_word(is, ",}");
         }
 
         if (!key.empty())
@@ -267,7 +277,7 @@ cali::StringConverter::rec_dict(bool *okptr) const
         is.unget();
 
     if (okptr)
-        *okptr = error;
+        *okptr = !error;
 
     return ret;
 }
