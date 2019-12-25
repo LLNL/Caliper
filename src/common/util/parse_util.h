@@ -28,11 +28,6 @@ is_one_of(char c, const char* characters)
 std::string
 read_word(std::istream& is, const char* separators = ",");
 
-/// \brief Read from stream \a is until whitespace or one of the characters in
-///   \a separators is found, keeping escape characters ('"', '\') intact.
-std::string
-read_word_keep_esc(std::istream& is, const char* separators = ",");
-
 /// \brief Reads text within (start_char, end_char) region, skipping
 ///   over any such regions nested within.
 std::string
