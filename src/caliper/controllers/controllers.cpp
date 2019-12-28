@@ -8,23 +8,62 @@
 namespace cali
 {
 
-extern ConfigManager::ConfigInfo event_trace_controller_info;
-extern ConfigManager::ConfigInfo nvprof_controller_info;
+// extern ConfigManager::ConfigInfo event_trace_controller_info;
+// extern ConfigManager::ConfigInfo nvprof_controller_info;
+// extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
+// #ifdef CALIPER_HAVE_SAMPLER
+// extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
+// #endif
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
-extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
-#ifdef CALIPER_HAVE_SAMPLER
-extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
-#endif
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
-    &event_trace_controller_info,
-    &nvprof_controller_info,
+//     &event_trace_controller_info,
+//     &nvprof_controller_info,
+//     &hatchet_region_profile_controller_info,
+// #ifdef CALIPER_HAVE_SAMPLER
+//     &hatchet_sample_profile_controller_info,
+// #endif
     &runtime_report_controller_info,
-    &hatchet_region_profile_controller_info,
-#ifdef CALIPER_HAVE_SAMPLER
-    &hatchet_sample_profile_controller_info,
-#endif
     nullptr
 };
+
+const char* builtin_option_specs =
+    "["
+    "{"
+    " \"name\"        : \"profile.mpi\","
+    " \"type\"        : \"bool\","
+    " \"categories\"  : [ \"region\" ],"
+    " \"services\"    :   [ \"mpi\" ],"
+    " \"extra_config_flags\": [ { \"CALI_MPI_BLACKLIST\": \"MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\" } ]"
+    "},"
+    "{"
+    " \"name\"        : \"io.bytes.written\","
+    " \"description\" : \"Report I/O bytes written\","
+    " \"type\"        : \"bool\","
+    " \"categories\"  : [ \"metric.serial\", \"metric.crossprocess\" ],"
+    " \"services\"    : [ \"io\" ],"
+    " \"query args\"  : "
+    " ["
+    "   { \"level\": \"serial\", \"select\": [ { \"expr\": \"sum(sum#io.bytes.written)\", \"as\": \"Bytes written\" } ] }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"io.bytes.read\","
+    " \"description\" : \"Report I/O bytes read\","
+    " \"type\"        : \"bool\","
+    " \"categories\"  : [ \"metric.serial\", \"metric.crossprocess\" ],"
+    " \"services\"    : [ \"io\" ],"
+    " \"query args\"  : "
+    " ["
+    "   { \"level\": \"serial\", \"select\": [ { \"expr\": \"sum(sum#io.bytes.read)\", \"as\": \"Bytes read\" } ] }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"output\","
+    " \"description\" : \"Output location (stdout, stderr, or filename)\","
+    " \"type\"        : \"string\","
+    " \"categories\"  : [ \"output\" ],"
+    "}"
+    "]";
 
 }

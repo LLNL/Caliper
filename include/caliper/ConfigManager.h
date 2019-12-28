@@ -11,10 +11,12 @@
 #include <string>
 #include <vector>
 
+#include "ChannelController.h"
+
+#include "common/StringConverter.h"
+
 namespace cali
 {
-
-class ChannelController;
 
 /// \class ConfigManager
 /// \ingroup ControlChannelAPI
@@ -59,17 +61,50 @@ class ConfigManager
     struct ConfigManagerImpl;
     std::shared_ptr<ConfigManagerImpl> mP;
 
+    class OptionSpec;
+
 public:
 
     typedef std::map<std::string, std::string> argmap_t;
 
-    typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&);
-    typedef std::string              (*CheckArgsFn)(const argmap_t&);
+    class Options {
+        struct OptionsImpl;
+        std::shared_ptr<OptionsImpl> mP;
+
+        Options(const OptionSpec& specs, const argmap_t& args);
+
+    public:
+
+        ~Options();
+
+        bool is_set(const char* option) const;
+        bool is_enabled(const char* option) const;
+
+        StringConverter get(const char* option, const char* default_value = "") const;
+
+        std::string check() const;
+
+        void append_extra_config_flags(config_map_t&) const;
+
+        std::string
+        services(const std::string& in) const;
+
+        std::string
+        query_select(const std::string& level, const std::string& in) const;
+        std::string
+        query_groupby(const std::string& level, const std::string& in) const;
+
+        friend class ConfigManager;
+    };
+
+    typedef cali::ChannelController* (*CreateConfigFn)(const Options&);
+    typedef std::string              (*CheckArgsFn)(const Options&);
 
     struct ConfigInfo {
         const char*    name;
         const char*    description;
-        const char**   args;
+        const char*    options;
+        const char**   categories;
         CreateConfigFn create;
         CheckArgsFn    check_args;
     };

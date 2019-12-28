@@ -5,12 +5,13 @@
 
 #include "caliper/ConfigManager.h"
 
-#include "caliper/ChannelController.h"
-
 #include "caliper/common/Log.h"
 
 #include "../src/common/util/parse_util.h"
 
+#include "../services/Services.h"
+
+#include <algorithm>
 #include <sstream>
 
 using namespace cali;
@@ -20,6 +21,7 @@ namespace cali
 
 // defined in controllers/controllers.cpp
 extern const ConfigManager::ConfigInfo* builtin_controllers_table[];
+extern const char* builtin_option_specs;
 
 }
 
@@ -39,6 +41,33 @@ merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
     return to;
 }
 
+std::vector<std::string>
+to_stringlist(const std::vector<StringConverter>& list)
+{
+    std::vector<std::string> ret;
+    ret.reserve(list.size());
+
+    for (const StringConverter& sc : list)
+        ret.push_back(sc.to_string());
+
+    return ret;
+}
+
+std::string
+join_stringlist(const std::vector<std::string>& list)
+{
+    std::string ret;
+    int c = 0;
+
+    for (const std::string& s : list) {
+        if (c++ > 0)
+            ret.append(",");
+        ret.append(s);
+    }
+
+    return ret;
+}
+
 struct ConfigInfoList {
     const ConfigManager::ConfigInfo** configs;
     ConfigInfoList* next;
@@ -47,7 +76,358 @@ struct ConfigInfoList {
 ConfigInfoList  s_default_configs { cali::builtin_controllers_table, nullptr };
 ConfigInfoList* s_config_list     { &s_default_configs };
 
+} // namespace [anonymous]
+
+
+//
+// --- OptionSpec
+//
+
+class ConfigManager::OptionSpec
+{
+    struct query_arg_t {
+        std::vector< std::pair<std::string, std::string> > select;
+        std::vector< std::string> groupby;
+    };
+
+    struct option_desc_t {
+        std::string type;
+        std::string description;
+
+        std::vector<std::string> categories;
+        std::vector<std::string> services;
+
+        std::map<std::string, query_arg_t> query_args;
+        std::map<std::string, std::string> extra_config_flags;
+    };
+
+    std::map<std::string, option_desc_t> data;
+
+
+    void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
+        for (const StringConverter& sc : list) {
+            std::map<std::string, StringConverter> dict = sc.rec_dict();
+            qarg.select.push_back(std::make_pair(dict["expr"].to_string(), dict["as"].to_string()));
+        }
+    }
+
+    void parse_query_args(const std::vector<StringConverter>& list, option_desc_t& opt) {
+        for (const StringConverter& sc : list) {
+            std::map<std::string, StringConverter> dict = sc.rec_dict();
+            query_arg_t qarg;
+
+            auto it = dict.find("group by");
+            if (it != dict.end())
+                qarg.groupby = ::to_stringlist(it->second.rec_list());
+
+            it = dict.find("select");
+            if (it != dict.end())
+                parse_select(it->second.rec_list(), qarg);
+
+            it = dict.find("level");
+            if (it == dict.end()) {
+                Log(0).stream() << "OptionSpec: query args: missing \"level\"" << std::endl;
+                continue;
+            }
+
+            opt.query_args[it->first] = qarg;
+        }
+    }
+
+    void parse_config(const std::vector<StringConverter>& list, option_desc_t& opt) {
+        for (const StringConverter& sc : list) {
+            bool ok = false;
+            auto kv = sc.rec_dict(&ok);
+
+            if (!ok)
+                Log(0).stream() << "OptionSpec: config keyval parse error" << std::endl;
+
+            for (auto p : kv)
+                opt.extra_config_flags[p.first] = p.second.to_string();
+        }
+    }
+
+    void parse_spec(const std::map<std::string, StringConverter>& dict) {
+        option_desc_t opt;
+        bool ok = false;
+
+        auto it = dict.find("categories");
+        if (it != dict.end())
+            opt.categories = ::to_stringlist(it->second.rec_list(&ok));
+        it = dict.find("services");
+        if (it != dict.end())
+            opt.services = ::to_stringlist(it->second.rec_list(&ok));
+        it = dict.find("extra_config_flags");
+        if (it != dict.end())
+            parse_config(it->second.rec_list(&ok), opt);
+        it = dict.find("query args");
+        if (it != dict.end())
+            parse_query_args(it->second.rec_list(&ok), opt);
+        it = dict.find("type");
+        if (it != dict.end())
+            opt.type = it->second.to_string();
+        it = dict.find("description");
+        if (it != dict.end())
+            opt.description = it->second.to_string();
+
+        it = dict.find("name");
+        if (it == dict.end()) {
+            Log(0).stream() << "ConfigOptionManager: option description needs a name" << std::endl;
+            return;
+        }
+
+        std::string name = it->second.to_string();
+    }
+
+public:
+
+    OptionSpec()
+    { }
+
+    OptionSpec(const OptionSpec&) = default;
+    OptionSpec(OptionSpec&&) = default;
+
+    OptionSpec& operator = (const OptionSpec&) = default;
+    OptionSpec& operator = (OptionSpec&&) = default;
+
+    ~OptionSpec()
+    { }
+
+    void add(const OptionSpec& other) {
+        data.insert(other.data.begin(), other.data.end());
+    }
+
+    void add(const char* txt) {
+        bool ok = false;
+        auto descriptions = StringConverter(std::string(txt)).rec_list(&ok);
+
+        for (auto &p : descriptions) {
+            if (!ok)
+                break;
+
+            parse_spec(p.rec_dict(&ok));
+        }
+
+        if (!ok)
+            Log(0).stream() << "ConfigManager::OptionSpec::add_description(): parse error" << std::endl;
+    }
+
+    bool contains(const std::string& name) const {
+        return data.find(name) != data.end();
+    }
+
+    friend class ConfigManager::Options;
+};
+
+
+//
+// --- Options
+//
+
+struct ConfigManager::Options::OptionsImpl
+{
+    OptionSpec spec;
+    argmap_t   args;
+
+    std::vector<std::string> enabled_options;
+
+
+    std::string
+    check_services() const {
+        //
+        //   Check if the required services for all requested profiling options
+        // are there
+        //
+
+        Services::add_default_services();
+        std::vector<std::string> services = Services::get_available_services();
+
+        for (const std::string &opt : enabled_options) {
+            auto o_it = spec.data.find(opt);
+            if (o_it == spec.data.end())
+                continue;
+
+            for (const std::string& required_service : o_it->second.services)
+                if (std::find(services.begin(), services.end(), required_service) == services.end())
+                    return required_service
+                        + std::string(" required for ")
+                        + o_it->first
+                        + std::string(" option is not available");
+        }
+
+        return "";
+    }
+
+    void
+    append_extra_config_flags(config_map_t& config) {
+        for (const std::string &opt : enabled_options) {
+            auto o_it = spec.data.find(opt);
+            if (o_it == spec.data.end())
+                continue;
+
+            config.insert(o_it->second.extra_config_flags.begin(), o_it->second.extra_config_flags.end());
+        }
+    }
+
+    std::string
+    query_select(const std::string& level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const std::string& opt : enabled_options) {
+            auto s_it = spec.data.find(opt); // find option description
+            if (s_it == spec.data.end())
+                continue;
+
+            auto l_it = s_it->second.query_args.find(level); // find query level
+            if (l_it == s_it->second.query_args.end())
+                continue;
+
+            for (const auto &p : l_it->second.select) {
+                if (p.first.empty())
+                    break;
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(p.first);
+                if (!p.second.empty())
+                    ret.append(" as \"").append(p.second).append("\"");
+            }
+        }
+
+        return ret;
+    }
+
+    std::string
+    query_groupby(const std::string& level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const std::string& opt : enabled_options) {
+            auto s_it = spec.data.find(opt); // find option description
+            if (s_it == spec.data.end())
+                continue;
+
+            auto l_it = s_it->second.query_args.find(level); // find query level
+            if (l_it == s_it->second.query_args.end())
+                continue;
+
+            for (const auto &s : l_it->second.groupby) {
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(s);
+            }
+        }
+
+        return ret;
+    }
+
+    void
+    find_enabled_options() {
+        for (const auto &argp : args) {
+            auto s_it = spec.data.find(argp.first);
+
+            if (s_it == spec.data.end())
+                continue;
+
+            //   Non-boolean options are enabled if they are present in args.
+            // For boolean options, check if they are set to false or true.
+            bool enabled = true;
+
+            if (s_it->second.type == "bool")
+                enabled = StringConverter(argp.second).to_bool();
+            if (enabled)
+                enabled_options.push_back(argp.first);
+        }
+    }
+
+    OptionsImpl(const OptionSpec& s, const argmap_t& a)
+        : spec(s), args(a)
+        {
+            find_enabled_options();
+        }
+};
+
+ConfigManager::Options::Options(const OptionSpec& spec, const argmap_t& args)
+    : mP(new OptionsImpl(spec, args))
+{ }
+
+ConfigManager::Options::~Options()
+{
+    mP.reset();
 }
+
+bool
+ConfigManager::Options::is_set(const char* option) const
+{
+    return mP->args.find(option) != mP->args.end();
+}
+
+bool
+ConfigManager::Options::is_enabled(const char* option) const
+{
+    return std::find(mP->enabled_options.begin(), mP->enabled_options.end(),
+                     std::string(option)) != mP->enabled_options.end();
+}
+
+StringConverter
+ConfigManager::Options::get(const char* option, const char* default_val) const
+{
+    auto it = mP->args.find(option);
+
+    if (it != mP->args.end())
+        return StringConverter(it->second);
+
+    return StringConverter(default_val);
+}
+
+std::string
+ConfigManager::Options::check() const
+{
+    return mP->check_services();
+}
+
+std::string
+ConfigManager::Options::services(const std::string& in) const
+{
+    std::vector<std::string> vec = StringConverter(in).to_stringlist();
+
+    for (const std::string& opt : mP->enabled_options) {
+        auto it = mP->spec.data.find(opt);
+
+        if (it == mP->spec.data.end())
+            continue;
+
+        vec.insert(vec.end(), it->second.services.begin(), it->second.services.end());
+    }
+
+    // remove potential duplicates
+    std::sort(vec.begin(), vec.end());
+    auto last = std::unique(vec.begin(), vec.end());
+    vec.erase(last, vec.end());
+
+    return ::join_stringlist(vec);
+}
+
+void
+ConfigManager::Options::append_extra_config_flags(config_map_t& config) const
+{
+    mP->append_extra_config_flags(config);
+}
+
+std::string
+ConfigManager::Options::query_select(const std::string& level, const std::string& in) const
+{
+    return mP->query_select(level, in);
+}
+
+std::string
+ConfigManager::Options::query_groupby(const std::string& level, const std::string& in) const
+{
+    return mP->query_groupby(level, in);
+}
+
+
+//
+// --- ConfigManager
+//
 
 struct ConfigManager::ConfigManagerImpl
 {
@@ -59,10 +439,35 @@ struct ConfigManager::ConfigManagerImpl
     argmap_t    m_default_parameters;
     argmap_t    m_extra_vars;
 
+    struct ConfigSpec {
+        const ConfigInfo* info;
+        OptionSpec opts;
+    };
+
+    std::map< std::string, std::shared_ptr<ConfigSpec> >
+        m_spec;
+
     void
     set_error(const std::string& msg) {
         m_error = true;
         m_error_msg = msg;
+    }
+
+    void
+    update_spec() {
+        OptionSpec bopts;
+        bopts.add(builtin_option_specs);
+
+        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
+            for (const ConfigInfo **j = i->configs; *j; j++) {
+               ConfigSpec spec;
+
+               spec.info = *j;
+               spec.opts.add(spec.info->options);
+               spec.opts.add(bopts);
+
+               m_spec.emplace(spec.info->name, std::make_shared<ConfigSpec>(spec));
+            }
     }
 
     //   Parse "=value"
@@ -86,7 +491,7 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     argmap_t
-    parse_arglist(std::istream& is, const char* argtbl[]) {
+    parse_arglist(std::istream& is, const OptionSpec& opts) {
         argmap_t args;
 
         char c = util::read_char(is);
@@ -102,11 +507,7 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            const char** argptr = argtbl;
-            while (*argptr && key != std::string(*argptr))
-                ++argptr;
-
-            if (*argptr == nullptr) {
+            if (!opts.contains(key)) {
                 set_error("Unknown argument: " + key);
                 args.clear();
                 return args;
@@ -136,36 +537,21 @@ struct ConfigManager::ConfigManagerImpl
         return args;
     }
 
-    // Return config info object with given name, or null if not found
-    const ConfigInfo*
-    find_config(const std::string& name) {
-        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
-           for (const ConfigInfo **j = i->configs; *j; j++) {
-               const ConfigInfo *cfg_p = *j;
-               if (cfg_p->name && cfg_p->name == name)
-                  return cfg_p;
-           }
-        return nullptr;
-    }
-
     // Return true if key is an option in any config
     bool
     is_option(const std::string& key) {
-        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
-           for (const ConfigInfo **j = i->configs; *j; j++) {
-              const ConfigInfo *cfg_p = *j;
-              for (const char **opt = cfg_p->args; opt && *opt; opt++)
-                 if (key == std::string(*opt))
-                    return true;
-           }
+        for (const auto& p : m_spec)
+            if (p.second->opts.contains(key))
+                return true;
+
         return false;
     }
 
     //   Returns found configs with their args. Also updates the default parameters list
     // and extra variables list.
-    std::vector< std::pair<const ConfigInfo*, argmap_t> >
+    std::vector< std::pair<const std::shared_ptr<ConfigSpec>, argmap_t> >
     parse_configstring(const char* config_string) {
-        std::vector< std::pair<const ConfigInfo*, argmap_t> > ret;
+        std::vector< std::pair<const std::shared_ptr<ConfigSpec>, argmap_t> > ret;
 
         std::istringstream is(config_string);
         char c = 0;
@@ -184,15 +570,14 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            const ConfigInfo* cfg_p = find_config(key);
-
-            if (cfg_p) {
-                auto args = parse_arglist(is, cfg_p->args);
+            auto spec_p = m_spec.find(key);
+            if (spec_p != m_spec.end() && spec_p->second) {
+                auto args = parse_arglist(is, spec_p->second->opts);
 
                 if (m_error)
                     return ret;
 
-                ret.push_back(std::make_pair(cfg_p, std::move(args)));
+                ret.push_back(std::make_pair(spec_p->second, std::move(args)));
             } else {
                 std::string val = read_value(is, key);
 
@@ -222,10 +607,10 @@ struct ConfigManager::ConfigManagerImpl
             return false;
 
         for (auto cfg : configs) {
-            argmap_t args = merge_new_elements(cfg.second, m_default_parameters);
+            Options opts(cfg.first->opts, merge_new_elements(cfg.second, m_default_parameters));
 
-            if (cfg.first->check_args) {
-                std::string err = (cfg.first->check_args)(args);
+            if (cfg.first->info->check_args) {
+                std::string err = (cfg.first->info->check_args)(opts);
 
                 if (!err.empty())
                     set_error(err);
@@ -234,14 +619,16 @@ struct ConfigManager::ConfigManagerImpl
             if (m_error)
                 return false;
             else
-                m_channels.emplace_back( (cfg.first->create)(args) );
+                m_channels.emplace_back( (cfg.first->info->create)(opts) );
         }
 
         return !m_error;
     }
 
     ConfigManagerImpl()
-        { }
+        {
+            update_spec();
+        }
 };
 
 
@@ -388,10 +775,10 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
     auto configs = mgr.parse_configstring(config_string);
 
     for (auto cfg : configs) {
-        argmap_t args = merge_new_elements(cfg.second, mgr.m_default_parameters);
+        Options opts(cfg.first->opts, merge_new_elements(cfg.second, mgr.m_default_parameters));
 
-        if (cfg.first->check_args) {
-            std::string err = (cfg.first->check_args)(args);
+        if (cfg.first->info->check_args) {
+            std::string err = (cfg.first->info->check_args)(opts);
 
             if (!err.empty())
                 mgr.set_error(err);

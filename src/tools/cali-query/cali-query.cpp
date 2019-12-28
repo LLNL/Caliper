@@ -186,7 +186,7 @@ public:
             })
     {}
 
-    static ChannelController* create(const ConfigManager::argmap_t&) {
+    static ChannelController* create(const ConfigManager::Options&) {
         return new ProgressController;
     }
 };
@@ -195,6 +195,7 @@ ConfigManager::ConfigInfo ProgressInfo = {
     "progress", 
     "progress\n Print cali-query progress (when processing multiple files).", 
     nullptr, 
+    nullptr,
     ProgressController::create, 
     nullptr 
 };
