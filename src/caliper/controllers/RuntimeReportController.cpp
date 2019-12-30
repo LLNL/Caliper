@@ -326,11 +326,9 @@ const char* runtime_report_categories[] = {
 };
 
 const char* runtime_report_options =
-    "["
-    " { \"name\": \"calc.inclusive\", \"type\": \"bool\"   },"
-    " { \"name\": \"aggregate_across_ranks\", \"type\": \"bool\" },"
-    " { \"name\": \"profile\", \"type\": \"string\" },"
-    "]";
+    "{ \"name\": \"calc.inclusive\", \"type\": \"bool\" },"
+    "{ \"name\": \"aggregate_across_ranks\", \"type\": \"bool\" },"
+    "{ \"name\": \"profile\", \"type\": \"string\" }";
 
 const char* docstr =
     "Print a time profile for annotated regions";

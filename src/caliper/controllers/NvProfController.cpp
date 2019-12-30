@@ -12,7 +12,7 @@ namespace
 {
 
 cali::ChannelController*
-make_nvprof_controller(const cali::ConfigManager::argmap_t&)
+make_nvprof_controller(const cali::ConfigManager::Options&)
 {
     return new ChannelController("nvprof", 0 , {
             { "CALI_SERVICES_ENABLE",       "nvprof" },
@@ -27,7 +27,7 @@ namespace cali
 
 ConfigManager::ConfigInfo nvprof_controller_info 
 {
-    "nvprof", "nvprof\n Export Caliper annotations to NVidia nvprof.", nullptr, ::make_nvprof_controller, nullptr
+    "nvprof", "nvprof\n Export Caliper annotations to NVidia nvprof.", nullptr, nullptr, ::make_nvprof_controller, nullptr
 };
 
 }

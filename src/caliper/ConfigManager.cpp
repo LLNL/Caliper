@@ -8,6 +8,7 @@
 #include "caliper/common/Log.h"
 
 #include "../src/common/util/parse_util.h"
+#include "../src/common/util/format_util.h"
 
 #include "../services/Services.h"
 
@@ -130,7 +131,7 @@ class ConfigManager::OptionSpec
                 continue;
             }
 
-            opt.query_args[it->first] = qarg;
+            opt.query_args[it->second.to_string()] = qarg;
         }
     }
 
@@ -176,7 +177,7 @@ class ConfigManager::OptionSpec
             return;
         }
 
-        std::string name = it->second.to_string();
+        data[it->second.to_string()] = opt;
     }
 
 public:
@@ -198,6 +199,9 @@ public:
     }
 
     void add(const char* txt) {
+        if (!txt)
+            return;
+
         bool ok = false;
         auto descriptions = StringConverter(std::string(txt)).rec_list(&ok);
 
@@ -209,11 +213,23 @@ public:
         }
 
         if (!ok)
-            Log(0).stream() << "ConfigManager::OptionSpec::add_description(): parse error" << std::endl;
+            Log(0).stream() << "ConfigManager::OptionSpec::add(): parse error on "  
+                            << util::clamp_string(txt, 32) 
+                            << std::endl;
     }
 
     bool contains(const std::string& name) const {
         return data.find(name) != data.end();
+    }
+
+    std::map< std::string, std::string >
+    get_option_descriptions() {
+        std::map< std::string, std::string > ret;
+
+        for (auto &p : data)
+            ret.insert(std::make_pair(p.first, p.second.description));
+        
+        return ret;
     }
 
     friend class ConfigManager::Options;
@@ -233,7 +249,27 @@ struct ConfigManager::Options::OptionsImpl
 
 
     std::string
-    check_services() const {
+    check() const {
+        // 
+        // Check if option values have the correct datatype
+        //
+        for (const auto &arg : args) {
+            auto it = spec.data.find(arg.first);
+
+            if (it == spec.data.end())
+                continue;
+            
+            if (it->second.type == "bool") {
+                bool ok = false;
+                StringConverter(arg.second).to_bool(&ok);
+                if (!ok)
+                    return std::string("Invalid value \"") 
+                        + arg.second 
+                        + std::string("\" for ")
+                        + arg.first;
+            }
+        }
+
         //
         //   Check if the required services for all requested profiling options
         // are there
@@ -381,7 +417,7 @@ ConfigManager::Options::get(const char* option, const char* default_val) const
 std::string
 ConfigManager::Options::check() const
 {
-    return mP->check_services();
+    return mP->check();
 }
 
 std::string
@@ -455,18 +491,18 @@ struct ConfigManager::ConfigManagerImpl
 
     void
     update_spec() {
-        OptionSpec bopts;
-        bopts.add(builtin_option_specs);
+        OptionSpec builtin_opts;
+        builtin_opts.add(builtin_option_specs);
 
         for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
             for (const ConfigInfo **j = i->configs; *j; j++) {
-               ConfigSpec spec;
+                ConfigSpec spec;
 
-               spec.info = *j;
-               spec.opts.add(spec.info->options);
-               spec.opts.add(bopts);
+                spec.info = *j;
+                spec.opts.add(spec.info->options);
+                spec.opts.add(builtin_opts);
 
-               m_spec.emplace(spec.info->name, std::make_shared<ConfigSpec>(spec));
+                m_spec.emplace(spec.info->name, std::make_shared<ConfigSpec>(spec));
             }
     }
 
@@ -780,8 +816,17 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
         if (cfg.first->info->check_args) {
             std::string err = (cfg.first->info->check_args)(opts);
 
-            if (!err.empty())
+            if (!err.empty()) {
                 mgr.set_error(err);
+                break;
+            }
+        }
+
+        std::string err = opts.check();
+
+        if (!err.empty()) {
+            mgr.set_error(std::string(cfg.first->info->name) + ": " + err);
+            break;
         }
     }
 
