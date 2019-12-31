@@ -135,17 +135,9 @@ class ConfigManager::OptionSpec
         }
     }
 
-    void parse_config(const std::vector<StringConverter>& list, option_desc_t& opt) {
-        for (const StringConverter& sc : list) {
-            bool ok = false;
-            auto kv = sc.rec_dict(&ok);
-
-            if (!ok)
-                Log(0).stream() << "OptionSpec: config keyval parse error" << std::endl;
-
-            for (auto p : kv)
-                opt.extra_config_flags[p.first] = p.second.to_string();
-        }
+    void parse_config(const std::map<std::string, StringConverter>& dict, option_desc_t& opt) {
+        for (auto p : dict)
+            opt.extra_config_flags[p.first] = p.second.to_string();
     }
 
     void parse_spec(const std::map<std::string, StringConverter>& dict) {
@@ -160,7 +152,7 @@ class ConfigManager::OptionSpec
             opt.services = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("extra_config_flags");
         if (it != dict.end())
-            parse_config(it->second.rec_list(&ok), opt);
+            parse_config(it->second.rec_dict(&ok), opt);
         it = dict.find("query args");
         if (it != dict.end())
             parse_query_args(it->second.rec_list(&ok), opt);

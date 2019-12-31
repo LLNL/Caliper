@@ -117,7 +117,7 @@ const char* options =
     "   \"description\" : \"Trace I/O events\","
     "   \"type\"        : \"bool\","
     "   \"services\"    : [ \"mpi\" ],"
-    "   \"extra_config_flags\": [ { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_comm_rank\" } ]"
+    "   \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_comm_rank\" }"
     " },"
     " { \"name\"        : \"trace.cuda\","
     "   \"description\" : \"Trace CUDA API events\","
@@ -132,7 +132,7 @@ const char* options =
     " { \"name\"        : \"event.timestamps\","
     "   \"description\" : \"Record event timestamps\","
     "   \"type\"        : \"bool\","
-    "   \"extra_config_flags\": [ { \"CALI_TIMER_OFFSET\": \"true\" } ]"
+    "   \"extra_config_flags\": { \"CALI_TIMER_OFFSET\": \"true\" }"
     " }";
 
 const char* docstr = 
