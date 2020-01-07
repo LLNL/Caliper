@@ -174,10 +174,14 @@ public:
             // import globals from Caliper runtime object
             db.import_globals(c, c.get_globals(channel()));
 
-            std::string spot_metrics = m_opts.query_select("cross",
-                "avg#inclusive#sum#time.duration"
-                ",min#inclusive#sum#time.duration"
-                ",max#inclusive#sum#time.duration", false);
+            std::string spot_metrics;
+
+            for (const auto &op : output_spec.aggregation_ops.list) {
+                if (!spot_metrics.empty())
+                    spot_metrics.append(",");
+
+                spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
+            }
 
             Attribute mtr_attr =
                 db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
