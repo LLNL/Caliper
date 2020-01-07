@@ -40,14 +40,6 @@ namespace
 
 constexpr int spot_format_version = 1;
 
-enum ProfileConfig {
-    MemHighWaterMark = 1,
-    IoBytes = 2,
-    IoBandwidth = 4,
-    WrapMpi = 8,
-    WrapCuda = 16
-};
-
 std::string
 make_filename()
 {
@@ -94,8 +86,7 @@ write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
 
 class SpotController : public cali::ChannelController
 {
-    std::string m_output;
-    int  m_profilecfg;
+    cali::ConfigManager::Options m_opts;
     bool m_use_mpi;
 
     /// \brief Perform intermediate aggregation of channel data into \a output_agg
@@ -121,30 +112,19 @@ public:
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         // --- Setup output reduction aggregator (final cross-process aggregation)
-        std::string select =
+        const char* cross_select =
             " *"
             ",min(inclusive#sum#time.duration)"
             ",max(inclusive#sum#time.duration)"
             ",avg(inclusive#sum#time.duration)";
+        std::string cross_query = 
+            std::string("select ")
+            + m_opts.query_select("cross", cross_select, false)
+            + " group by "
+            + m_opts.query_groupby("cross", "prop:nested")
+            + " format cali";
 
-        if (m_profilecfg & MemHighWaterMark)
-            select.append(",max(max#max#alloc.region.highwatermark)");
-        if (m_profilecfg & IoBytes) {
-            select.append(",avg(sum#sum#io.bytes.written)");
-            select.append(",avg(sum#sum#io.bytes.read)");
-            select.append(",sum(sum#sum#io.bytes.written)");
-            select.append(",sum(sum#sum#io.bytes.read)");
-        }
-        if (m_profilecfg & IoBandwidth) {
-            select.append(",avg(sum#io.bytes.written/sum#time.duration)");
-            select.append(",avg(sum#io.bytes.read/sum#time.duration)");
-            select.append(",max(sum#io.bytes.written/sum#time.duration)");
-            select.append(",max(sum#io.bytes.read/sum#time.duration)");
-        }
-
-        QuerySpec output_spec =
-            CalQLParser(std::string("select " + select + " group by prop:nested format cali").c_str()).spec();
-
+        QuerySpec output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
 
         CaliperMetadataDB db;
@@ -154,24 +134,12 @@ public:
         //     inclusive times
 
         {
-            std::string agg = "inclusive_sum(sum#time.duration)";
+            std::string local_select  = 
+                m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false);
+            std::string local_groupby = 
+                m_opts.query_groupby("local", "prop:nested");
 
-            if (m_profilecfg & MemHighWaterMark)
-                agg.append(",max(max#alloc.region.highwatermark)");
-            if (m_profilecfg & IoBytes)
-                agg.append(",sum(sum#io.bytes.read),sum(sum#io.bytes.written)");
-
-            aggregate(agg, "prop:nested", c, db, output_agg);
-        }
-
-        // --- Calculate per-rank bandwidths in I/O regions. This needs a separate
-        //   step because we need to group by io.region, too (it's complicated ...)
-        if (m_profilecfg & IoBandwidth) {
-            std::string agg =
-                " ratio(sum#io.bytes.written,sum#time.duration,8e-6)"
-                ",ratio(sum#io.bytes.read,   sum#time.duration,8e-6)";
-
-            aggregate(agg, "prop:nested,io.region", c, db, output_agg);
+            aggregate(local_select, local_groupby, c, db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -206,25 +174,10 @@ public:
             // import globals from Caliper runtime object
             db.import_globals(c, c.get_globals(channel()));
 
-            std::string spot_metrics =
+            std::string spot_metrics = m_opts.query_select("cross",
                 "avg#inclusive#sum#time.duration"
                 ",min#inclusive#sum#time.duration"
-                ",max#inclusive#sum#time.duration";
-
-            if (m_profilecfg & MemHighWaterMark)
-                spot_metrics.append(",max#max#max#alloc.region.highwatermark");
-            if (m_profilecfg & IoBytes) {
-                spot_metrics.append(",avg#sum#sum#io.bytes.written");
-                spot_metrics.append(",avg#sum#sum#io.bytes.read");
-                spot_metrics.append(",sum#sum#sum#io.bytes.written");
-                spot_metrics.append(",sum#sum#sum#io.bytes.read");
-            }
-            if (m_profilecfg & IoBandwidth) {
-                spot_metrics.append(",avg#sum#io.bytes.written/sum#time.duration");
-                spot_metrics.append(",avg#sum#io.bytes.read/sum#time.duration");
-                spot_metrics.append(",max#sum#io.bytes.written/sum#time.duration");
-                spot_metrics.append(",max#sum#io.bytes.read/sum#time.duration");
-            }
+                ",max#inclusive#sum#time.duration", false);
 
             Attribute mtr_attr =
                 db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
@@ -235,7 +188,7 @@ public:
             db.set_global(mtr_attr, Variant(spot_metrics.c_str()));
             db.set_global(fmt_attr, Variant(spot_format_version));
 
-            std::string output = m_output;
+            std::string output = m_opts.get("output", "").to_string();
 
             if (output == "adiak") {
 #ifdef CALIPER_HAVE_ADIAK
@@ -244,7 +197,7 @@ public:
                 Log(0).stream() << "[spot controller]: cannot use adiak output: adiak is not enabled!" << std::endl;
 #endif
             } else {
-                if (m_output.empty())
+                if (output.empty())
                     output = ::make_filename();
 
                 OutputStream    stream;
@@ -258,9 +211,8 @@ public:
         }
     }
 
-    SpotController(bool use_mpi, int profilecfg, const char* output)
+    SpotController(bool use_mpi, const cali::ConfigManager::Options& opts)
         : ChannelController("spot", 0, {
-                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },
@@ -268,174 +220,75 @@ public:
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
                 { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
             }),
-          m_output(output),
-          m_profilecfg(profilecfg),
+          m_opts(opts),
           m_use_mpi(use_mpi)
         {
+            std::string services = "aggregate,event,timestamp";
+
 #ifdef CALIPER_HAVE_ADIAK
-            if (m_output != "adiak")
-                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+            if (opts.get("output", "").to_string() != "adiak")
+                services.append(",adiak_import");
 #endif
-            if (profilecfg & MemHighWaterMark) {
-                config()["CALI_SERVICES_ENABLE"].append(",alloc,sysalloc");
+            config()["CALI_SERVICES_ENABLE"] = m_opts.services(services);
 
-                config()["CALI_ALLOC_TRACK_ALLOCATIONS"   ] = "false";
-                config()["CALI_ALLOC_RECORD_HIGHWATERMARK"] = "true";
-            }
-
-            if (profilecfg & IoBytes || profilecfg & IoBandwidth)
-                config()["CALI_SERVICES_ENABLE"].append(",io");
-            if (profilecfg & WrapMpi) {
-                config()["CALI_SERVICES_ENABLE"].append(",mpi");
-                config()["CALI_MPI_BLACKLIST"     ] =
-                    "MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime";
-            }
-            if (profilecfg & WrapCuda)
-                config()["CALI_SERVICES_ENABLE"].append(",cupti");
+            m_opts.append_extra_config_flags(config());
         }
 
     ~SpotController()
         { }
 };
 
-const char* spot_args[] = {
-    "output",
-    "aggregate_across_ranks",
-    "profile",
-    "mem.highwatermark",
-    "io.bytes",
-    "io.bandwidth",
-    "profile.mpi",
-    "profile.cuda",
-    nullptr
-};
 
 cali::ChannelController*
-make_spot_controller(const cali::ConfigManager::argmap_t& args) {
-    auto it = args.find("output");
-    std::string output = (it == args.end() ? "" : it->second);
-
+make_spot_controller(const cali::ConfigManager::Options& opts) {
     bool use_mpi = false;
 #ifdef CALIPER_HAVE_MPI
     use_mpi = true;
 #endif
 
-    it = args.find("aggregate_across_ranks");
-    if (it != args.end())
-        use_mpi = StringConverter(it->second).to_bool();
+    if (opts.is_set("aggregate_across_ranks"))
+        use_mpi = opts.get("aggregate_across_ranks").to_bool();
 
-    int profilecfg = 0;
-
-    std::vector<std::string> deprecatedargs;
-
-    it = args.find("profile");
-    if (it != args.end())
-        deprecatedargs = StringConverter(it->second).to_stringlist();
-
-    const struct profile_cfg_info_t {
-        const char* name; const char* oldname; ProfileConfig flag;
-    } profile_cfg_info[] = {
-        { "mem.highwatermark", "mem.highwatermark", MemHighWaterMark },
-        { "io.bytes",          "io.bytes",          IoBytes          },
-        { "io.bandwidth",      "io.bandwidth",      IoBandwidth      },
-        { "profile.mpi",       "mpi",               WrapMpi          },
-        { "profile.cuda",      "cuda",              WrapCuda         }
-    };
-
-    for (const profile_cfg_info_t& pinfo : profile_cfg_info) {
-        auto it =
-            args.find(pinfo.name);
-        auto dit =
-            std::find(deprecatedargs.begin(), deprecatedargs.end(), std::string(pinfo.oldname));
-
-        if ((it != args.end() && StringConverter(it->second).to_bool()) || dit != deprecatedargs.end())
-            profilecfg |= pinfo.flag;
-    }
-
-    return new SpotController(use_mpi, profilecfg, output.c_str());
-}
-
-std::string
-check_args(const cali::ConfigManager::argmap_t& orig_args) {
-    auto args = orig_args;
-
-    {
-        // Check the deprecated "profile=" argument
-        auto it = args.find("profile");
-
-        if (it != args.end()) {
-            for (std::string& s : StringConverter(it->second).to_stringlist())
-                if (s == "mem.highwatermark")
-                    args["mem.highwatermark"] = "true";
-                else if (s == "mpi")
-                    args["profile.mpi"] = "true";
-                else if (s == "cuda")
-                    args["profile.cuda"] = "true";
-                else
-                    return std::string("spot: Unknown \"profile=\" option \"") + it->second + "\"";
-        }
-    }
-
-    //
-    //   Check if the required services for all requested profiling options
-    // are there
-    //
-
-    const struct opt_info_t {
-        const char* option;
-        const char* service;
-    } opt_info_list[] = {
-        { "mem.highwatermark", "sysalloc" },
-        { "io.bytes",          "io"       },
-        { "io.bandwidth",      "io"       },
-        { "profile.mpi",       "mpi"      },
-        { "profile.cuda",      "cupti"    }
-    };
-
-    Services::add_default_services();
-    auto svcs = Services::get_available_services();
-
-    for (const opt_info_t o : opt_info_list) {
-        auto it = args.find(o.option);
-
-        if (it != args.end()) {
-            bool ok = false;
-
-            if (StringConverter(it->second).to_bool(&ok) == true)
-                if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
-                    return std::string("spot: ")
-                        + o.service
-                        + std::string(" service required for ")
-                        + o.option
-                        + std::string(" option is not available");
-
-            if (!ok) // parse error
-                return std::string("spot: Invalid value \"")
-                    + it->second + "\" for "
-                    + it->first;
-        }
-    }
-
-    return "";
+    return new SpotController(use_mpi, opts);
 }
 
 const char* docstr =
-    "spot"
-    "\n Record a time profile for the Spot visualization framework."
-    "\n  Parameters:"
-    "\n   output=filename|stdout|stderr:     Output location. Default: an auto-generated .cali file"
-    "\n   aggregate_across_ranks=true|false: Aggregate results across MPI ranks"
-    "\n   mem.highwatermark=true|false:      Record memory high-watermark for regions"
-    "\n   profile.mpi=true|false:            Profile MPI functions"
-    "\n   profile.cuda=true|false:           Profile CUDA API functions (e.g., cudaMalloc)"
-    "\n   io.bytes=true|false:               Record I/O bytes written and read"
-    "\n   io.bandwidth=true|false:           Record I/O bandwidth";
+    "Record a time profile for the Spot visualization framework.";
+
+const char* controller_categories[] = {
+    "metric.serial",
+    "metric.crossprocess",
+    "output",
+    "region",
+    nullptr
+};
+
+const char* controller_options =
+    "{"
+    " \"name\": \"calc.inclusive\","
+    " \"type\": \"bool\","
+    " \"description\": \"Report inclusive instead of exclusive times\""
+    "},"
+    "{"
+    " \"name\": \"aggregate_across_ranks\","
+    " \"type\": \"bool\","
+    " \"description\": \"Aggregate results across MPI ranks\""
+    "}";
 
 } // namespace [anonymous]
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info { "spot", ::docstr, ::spot_args, ::make_spot_controller, ::check_args };
+
+ConfigManager::ConfigInfo spot_controller_info
+{
+    "spot",
+    ::docstr,
+    ::controller_options,
+    ::controller_categories,
+    ::make_spot_controller,
+    nullptr
+};
 
 }

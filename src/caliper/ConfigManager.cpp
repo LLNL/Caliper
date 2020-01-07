@@ -298,7 +298,7 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    query_select(const std::string& level, const std::string& in) const {
+    query_select(const std::string& level, const std::string& in, bool use_alias) const {
         std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
@@ -316,7 +316,7 @@ struct ConfigManager::Options::OptionsImpl
                 if (!ret.empty())
                     ret.append(",");
                 ret.append(p.first);
-                if (!p.second.empty())
+                if (use_alias && !p.second.empty())
                     ret.append(" as \"").append(p.second).append("\"");
             }
         }
@@ -441,9 +441,9 @@ ConfigManager::Options::append_extra_config_flags(config_map_t& config) const
 }
 
 std::string
-ConfigManager::Options::query_select(const std::string& level, const std::string& in) const
+ConfigManager::Options::query_select(const std::string& level, const std::string& in, bool use_alias) const
 {
-    return mP->query_select(level, in);
+    return mP->query_select(level, in, use_alias);
 }
 
 std::string

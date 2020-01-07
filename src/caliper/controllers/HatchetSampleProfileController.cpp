@@ -71,7 +71,7 @@ public:
             } else {
                 services.append(",report");
 
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services("sampler,trace,report");
+                config()["CALI_SERVICES_ENABLE"   ] = opts.services(services);
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ") 
@@ -80,6 +80,8 @@ public:
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;
             }
+
+            opts.append_extra_config_flags(config());
         }
 };
 

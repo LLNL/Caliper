@@ -90,7 +90,7 @@ public:
         services(const std::string& in) const;
 
         std::string
-        query_select(const std::string& level, const std::string& in) const;
+        query_select(const std::string& level, const std::string& in, bool use_alias = true) const;
         std::string
         query_groupby(const std::string& level, const std::string& in) const;
 
