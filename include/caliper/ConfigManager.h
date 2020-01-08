@@ -101,10 +101,7 @@ public:
     typedef std::string              (*CheckArgsFn)(const Options&);
 
     struct ConfigInfo {
-        const char*    name;
-        const char*    description;
-        const char*    options;
-        const char**   categories;
+        const char*    spec;
         CreateConfigFn create;
         CheckArgsFn    check_args;
     };

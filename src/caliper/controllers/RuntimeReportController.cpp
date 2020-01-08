@@ -317,27 +317,25 @@ make_runtime_report_controller(const cali::ConfigManager::Options& opts)
 //     return "";
 // }
 
-const char* runtime_report_categories[] = {
-    "metric",
-    "output",
-    "region",
-    nullptr
-};
-
-const char* runtime_report_options =
+const char* runtime_report_spec =
     "{"
-    " \"name\": \"calc.inclusive\","
-    " \"type\": \"bool\","
-    " \"description\": \"Report inclusive instead of exclusive times\""
-    "},"
-    "{"
-    " \"name\": \"aggregate_across_ranks\","
-    " \"type\": \"bool\","
-    " \"description\": \"Aggregate results across MPI ranks\""
+    " \"name\"        : \"runtime-report\","
+    " \"description\" : \"Print a time profile for annotated regions\","
+    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"options\": "
+    " ["
+    "  {"
+    "   \"name\": \"calc.inclusive\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Report inclusive instead of exclusive times\""
+    "  },"
+    "  {"
+    "   \"name\": \"aggregate_across_ranks\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Aggregate results across MPI ranks\""
+    "  }"
+    " ]"
     "}";
-
-const char* docstr =
-    "Print a time profile for annotated regions";
 
 // const char* runtime_report_args[] = {
 //     "output",
@@ -373,12 +371,7 @@ namespace cali
 
 ConfigManager::ConfigInfo runtime_report_controller_info
 {
-    "runtime-report",
-    ::docstr,
-    ::runtime_report_options,
-    ::runtime_report_categories,
-    ::make_runtime_report_controller,
-    nullptr
+    ::runtime_report_spec, ::make_runtime_report_controller, nullptr
 };
 
 }

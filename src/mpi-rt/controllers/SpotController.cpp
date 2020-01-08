@@ -256,26 +256,24 @@ make_spot_controller(const cali::ConfigManager::Options& opts) {
     return new SpotController(use_mpi, opts);
 }
 
-const char* docstr =
-    "Record a time profile for the Spot visualization framework.";
-
-const char* controller_categories[] = {
-    "metric",
-    "output",
-    "region",
-    nullptr
-};
-
-const char* controller_options =
+const char* controller_spec =
     "{"
-    " \"name\": \"calc.inclusive\","
-    " \"type\": \"bool\","
-    " \"description\": \"Report inclusive instead of exclusive times\""
-    "},"
-    "{"
-    " \"name\": \"aggregate_across_ranks\","
-    " \"type\": \"bool\","
-    " \"description\": \"Aggregate results across MPI ranks\""
+    " \"name\"        : \"spot\","
+    " \"description\" : \"Record a time profile for the Spot web visualization framework\","
+    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"options\": "
+    " ["
+    "  {"
+    "   \"name\": \"calc.inclusive\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Report inclusive instead of exclusive times\""
+    "  },"
+    "  {"
+    "   \"name\": \"aggregate_across_ranks\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Aggregate results across MPI ranks\""
+    "  }"
+    " ]"
     "}";
 
 } // namespace [anonymous]
@@ -283,15 +281,9 @@ const char* controller_options =
 namespace cali
 {
 
-
 ConfigManager::ConfigInfo spot_controller_info
 {
-    "spot",
-    ::docstr,
-    ::controller_options,
-    ::controller_categories,
-    ::make_spot_controller,
-    nullptr
+    ::controller_spec, ::make_spot_controller, nullptr
 };
 
 }

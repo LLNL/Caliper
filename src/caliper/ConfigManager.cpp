@@ -69,15 +69,6 @@ join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
-bool is_in_strlist(const std::string& s, const char** list)
-{
-    for (const char** p = list; p && *p; ++p)
-        if (s == *p)
-            return true;
-
-    return false;
-}
-
 struct ConfigInfoList {
     const ConfigManager::ConfigInfo** configs;
     ConfigInfoList* next;
@@ -100,7 +91,7 @@ class ConfigManager::OptionSpec
         std::vector< std::string> groupby;
     };
 
-    struct option_desc_t {
+    struct option_spec_t {
         std::string type;
         std::string description;
         std::string category;
@@ -112,7 +103,7 @@ class ConfigManager::OptionSpec
         std::map<std::string, std::string> extra_config_flags;
     };
 
-    std::map<std::string, option_desc_t> data;
+    std::map<std::string, option_spec_t> data;
 
 
     void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
@@ -122,7 +113,7 @@ class ConfigManager::OptionSpec
         }
     }
 
-    void parse_query_args(const std::vector<StringConverter>& list, option_desc_t& opt) {
+    void parse_query_args(const std::vector<StringConverter>& list, option_spec_t& opt) {
         for (const StringConverter& sc : list) {
             std::map<std::string, StringConverter> dict = sc.rec_dict();
             query_arg_t qarg;
@@ -145,13 +136,13 @@ class ConfigManager::OptionSpec
         }
     }
 
-    void parse_config(const std::map<std::string, StringConverter>& dict, option_desc_t& opt) {
+    void parse_config(const std::map<std::string, StringConverter>& dict, option_spec_t& opt) {
         for (auto p : dict)
             opt.extra_config_flags[p.first] = p.second.to_string();
     }
 
     void parse_spec(const std::map<std::string, StringConverter>& dict) {
-        option_desc_t opt;
+        option_spec_t opt;
         bool ok = false;
 
         auto it = dict.find("category");
@@ -199,30 +190,15 @@ public:
     ~OptionSpec()
     { }
 
-    void add(const OptionSpec& other, const char** categories) {
+    void add(const OptionSpec& other, const std::vector<std::string>& categories) {
         for (const auto &p : other.data)
-            if (::is_in_strlist(p.second.category, categories))
+            if (std::find(categories.begin(), categories.end(), p.second.category) != categories.end())
                 data.insert(p);
     }
 
-    void add(const char* txt) {
-        if (!txt)
-            return;
-
-        bool ok = false;
-        auto descriptions = StringConverter(std::string(txt)).rec_list(&ok);
-
-        for (auto &p : descriptions) {
-            if (!ok)
-                break;
-
-            parse_spec(p.rec_dict(&ok));
-        }
-
-        if (!ok)
-            Log(0).stream() << "ConfigManager::OptionSpec::add(): parse error on "
-                            << util::clamp_string(txt, 32)
-                            << std::endl;
+    void add(const std::vector<StringConverter>& list) {
+        for (auto &p : list)
+            parse_spec(p.rec_dict());
     }
 
     bool contains(const std::string& name) const {
@@ -532,12 +508,15 @@ struct ConfigManager::ConfigManagerImpl
     argmap_t    m_default_parameters;
     argmap_t    m_extra_vars;
 
-    struct ConfigSpec {
+    struct config_spec_t {
         const ConfigInfo* info;
-        OptionSpec opts;
+        std::string name;
+        std::vector<std::string> categories;
+        std::string description;
+        OptionSpec  opts;
     };
 
-    std::map< std::string, std::shared_ptr<ConfigSpec> >
+    std::map< std::string, std::shared_ptr<config_spec_t> >
         m_spec;
 
     void
@@ -547,21 +526,60 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     void
+    parse_config_spec(const ConfigInfo* info, const OptionSpec& base_options) {
+        config_spec_t spec;
+        bool ok;
+
+        spec.info = info;
+
+        auto dict = StringConverter(info->spec).rec_dict(&ok);
+
+        if (!ok) {
+            Log(0).stream() << "ConfigManager: parse error: "
+                            << util::clamp_string(info->spec, 40)
+                            << std::endl;
+            return;
+        }
+
+        auto it = dict.find("categories");
+        if (it != dict.end())
+            spec.categories = ::to_stringlist(it->second.rec_list(&ok));
+        it = dict.find("description");
+        if (it != dict.end())
+            spec.description = it->second.to_string();
+        it = dict.find("options");
+        if (it != dict.end())
+            spec.opts.add(it->second.rec_list(&ok));
+
+        spec.opts.add(base_options, spec.categories);
+
+        it = dict.find("name");
+        if (it == dict.end()) {
+            Log(0).stream() << "ConfigManager: 'name' missing in spec: "
+                            << util::clamp_string(info->spec, 32)
+                            << std::endl;
+            return;
+        }
+
+        spec.name = it->second.to_string();
+        m_spec.emplace(spec.name, std::make_shared<config_spec_t>(spec));
+    }
+
+    void
     update_spec() {
-        OptionSpec builtin_opts;
-        builtin_opts.add(builtin_option_specs);
+        bool ok = false;
+
+        OptionSpec base_opts;
+        base_opts.add(StringConverter(builtin_option_specs).rec_list(&ok));
+
+        if (!ok)
+            Log(0).stream() << "ConfigManager: parse error: "
+                            << util::clamp_string(builtin_option_specs, 32)
+                            << std::endl;
 
         for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
-            for (const ConfigInfo **j = i->configs; *j; j++) {
-                ConfigSpec spec;
-
-                spec.info = *j;
-
-                spec.opts.add(spec.info->options);
-                spec.opts.add(builtin_opts, spec.info->categories);
-
-                m_spec.emplace(spec.info->name, std::make_shared<ConfigSpec>(spec));
-            }
+            for (const ConfigInfo **j = i->configs; *j; j++)
+                parse_config_spec(*j, base_opts);
     }
 
     //   Parse "=value"
@@ -646,9 +664,9 @@ struct ConfigManager::ConfigManagerImpl
 
     //   Returns found configs with their args. Also updates the default parameters list
     // and extra variables list.
-    std::vector< std::pair<const std::shared_ptr<ConfigSpec>, argmap_t> >
+    std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> >
     parse_configstring(const char* config_string) {
-        std::vector< std::pair<const std::shared_ptr<ConfigSpec>, argmap_t> > ret;
+        std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> > ret;
 
         std::istringstream is(config_string);
         char c = 0;
@@ -729,7 +747,7 @@ struct ConfigManager::ConfigManagerImpl
         for (const auto &p : m_spec) {
             std::string doc = p.first;
 
-            doc.append("\n ").append(p.second->info->description).append("\n  Options:");
+            doc.append("\n ").append(p.second->description).append("\n  Options:");
 
             auto optdescrmap = p.second->opts.get_option_descriptions();
 
@@ -865,10 +883,10 @@ std::vector<std::string>
 ConfigManager::available_configs()
 {
     std::vector<std::string> ret;
+    ConfigManagerImpl mgr;
 
-    for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
-        for (const ConfigInfo** cp = lp->configs; *cp && (*cp)->name; ++cp)
-            ret.push_back((*cp)->name);
+    for (const auto &p : mgr.m_spec)
+        ret.push_back(p.first);
 
     return ret;
 }
@@ -901,7 +919,7 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
         std::string err = opts.check();
 
         if (!err.empty()) {
-            mgr.set_error(std::string(cfg.first->info->name) + ": " + err);
+            mgr.set_error(std::string(cfg.first->name) + ": " + err);
             break;
         }
     }

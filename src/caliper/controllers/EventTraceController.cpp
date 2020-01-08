@@ -101,42 +101,41 @@ make_event_trace_controller(const cali::ConfigManager::Options& opts)
     return new EventTraceController(opts);
 }
 
-const char* categories[] = {
-    "region",
-    "output",
-    nullptr
-};
-
-const char* options = 
-    " { \"name\"        : \"trace.io\","
-    "   \"description\" : \"Trace I/O events\","
-    "   \"type\"        : \"bool\","
-    "   \"services\"    : [ \"io\" ] "
-    " },"
-    " { \"name\"        : \"trace.mpi\","
-    "   \"description\" : \"Trace I/O events\","
-    "   \"type\"        : \"bool\","
-    "   \"services\"    : [ \"mpi\" ],"
-    "   \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_comm_rank\" }"
-    " },"
-    " { \"name\"        : \"trace.cuda\","
-    "   \"description\" : \"Trace CUDA API events\","
-    "   \"type\"        : \"bool\","
-    "   \"services\"    : [ \"cupti\" ]"
-    " },"
-    " { \"name\"        : \"trace.io\","
-    "   \"description\" : \"Trace I/O events\","
-    "   \"type\"        : \"bool\","
-    "   \"services\"    : [ \"io\" ] "
-    " },"
-    " { \"name\"        : \"event.timestamps\","
-    "   \"description\" : \"Record event timestamps\","
-    "   \"type\"        : \"bool\","
-    "   \"extra_config_flags\": { \"CALI_TIMER_OFFSET\": \"true\" }"
-    " }";
-
-const char* docstr = 
-    "Record a trace of region enter/exit events in .cali format.";
+const char* event_trace_spec = 
+    "{"
+    " \"name\"        : \"event-trace\","
+    " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
+    " \"categories\"  : [ \"output\" ],"
+    " \"options\": "
+    " ["
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"trace.mpi\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"mpi\" ],"
+    "    \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_comm_rank\" }"
+    "  },"
+    "  { \"name\"        : \"trace.cuda\","
+    "    \"description\" : \"Trace CUDA API events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"cupti\" ]"
+    "  },"
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"event.timestamps\","
+    "    \"description\" : \"Record event timestamps\","
+    "    \"type\"        : \"bool\","
+    "    \"extra_config_flags\": { \"CALI_TIMER_OFFSET\": \"true\" }"
+    "  }"
+    " ]"
+    "}";
 
 } // namespace [anonymous]
 
@@ -145,7 +144,7 @@ namespace cali
 
 ConfigManager::ConfigInfo event_trace_controller_info
 {
-    "event-trace", ::docstr, ::options, ::categories, ::make_event_trace_controller, nullptr
+    ::event_trace_spec, ::make_event_trace_controller, nullptr
 };
 
 }

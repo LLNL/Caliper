@@ -128,55 +128,56 @@ make_controller(const cali::ConfigManager::Options& opts)
     return new HatchetSampleProfileController(opts, format);
 }
 
-const char* controller_categories[] = {
-    "output",
-    nullptr
-};
-
-const char* controller_options =
-    "{ "
-    "  \"name\": \"output.format\","
-    "  \"type\": \"string\","
-    "  \"description\": \"Output format ('hatchet', 'cali', 'json')\""
-    "},"
-    "{ "
-    "  \"name\": \"sample.frequency\","
-    "  \"type\": \"int\","
-    "  \"description\": \"Sampling frequency in Hz. Default: 200\""
-    "},"
-    "{ "
-    "  \"name\": \"sample.threads\","
-    "  \"type\": \"bool\","
-    "  \"description\": \"Profile all threads.\","
-    "  \"services\": [ \"pthread\" ]"
-    "},"
-    "{ "
-    "  \"name\": \"sample.callpath\","
-    "  \"type\": \"bool\","
-    "  \"description\": \"Perform call-stack unwinding\","
-    "  \"services\": [ \"callpath\", \"symbollookup\" ],"
-    "  \"extra_config_flags\": { \"CALI_CALLPATH_SKIP_FRAMES\": \"4\" },"
-    "  \"query args\": [ { \"level\": \"local\", \"group by\": source.function#callpath.address } ]"
-    "},"
-    "{ "
-    "  \"name\": \"lookup.module\","
-    "  \"type\": \"bool\","
-    "  \"description\": \"Lookup source module (.so/.exe)\","
-    "  \"services\": [ \"symbollookup\" ],"
-    "  \"extra_config_flags\": { \"CALI_SYMBOLLOOKUP_LOOKUP_MODULE\": \"true\" },"
-    "  \"query args\": [ { \"level\": \"local\", \"group by\": \"module#cali.sampler.pc\" } ]"
-    "},"
-    "{ "
-    "  \"name\": \"lookup.sourceloc\","
-    "  \"type\": \"bool\","
-    "  \"description\": \"Lookup source location (file+line)\","
-    "  \"services\": [ \"symbollookup\" ],"
-    "  \"extra_config_flags\": { \"CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC\": \"true\" },"
-    "  \"query args\": [ { \"level\": \"local\", \"group by\": \"sourceloc#cali.sampler.pc\" } ]"
+const char* controller_spec =
+    "{"
+    " \"name\"        : \"hatchet-sample-profile\","
+    " \"description\" : \"Record a sampling profile for processing with hatchet\","
+    " \"services\"    : [ \"sampler\" ],"
+    " \"categories\"  : [ \"output\"  ],"
+    " \"options\": "
+    " ["
+    "  { "
+    "    \"name\": \"output.format\","
+    "    \"type\": \"string\","
+    "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
+    "  },"
+    "  { "
+    "    \"name\": \"sample.frequency\","
+    "    \"type\": \"int\","
+    "    \"description\": \"Sampling frequency in Hz. Default: 200\""
+    "  },"
+    "  { "
+    "    \"name\": \"sample.threads\","
+    "    \"type\": \"bool\","
+    "    \"description\": \"Profile all threads.\","
+    "    \"services\": [ \"pthread\" ]"
+    "  },"
+    "  { "
+    "    \"name\": \"sample.callpath\","
+    "    \"type\": \"bool\","
+    "    \"description\": \"Perform call-stack unwinding\","
+    "    \"services\": [ \"callpath\", \"symbollookup\" ],"
+    "    \"extra_config_flags\": { \"CALI_CALLPATH_SKIP_FRAMES\": \"4\" },"
+    "    \"query args\": [ { \"level\": \"local\", \"group by\": source.function#callpath.address } ]"
+    "  },"
+    "  { "
+    "    \"name\": \"lookup.module\","
+    "    \"type\": \"bool\","
+    "    \"description\": \"Lookup source module (.so/.exe)\","
+    "    \"services\": [ \"symbollookup\" ],"
+    "    \"extra_config_flags\": { \"CALI_SYMBOLLOOKUP_LOOKUP_MODULE\": \"true\" },"
+    "    \"query args\": [ { \"level\": \"local\", \"group by\": \"module#cali.sampler.pc\" } ]"
+    "  },"
+    "  { "
+    "    \"name\": \"lookup.sourceloc\","
+    "    \"type\": \"bool\","
+    "    \"description\": \"Lookup source location (file+line)\","
+    "    \"services\": [ \"symbollookup\" ],"
+    "    \"extra_config_flags\": { \"CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC\": \"true\" },"
+    "    \"query args\": [ { \"level\": \"local\", \"group by\": \"sourceloc#cali.sampler.pc\" } ]"
+    "  }"
+    " ]"
     "}";
-
-const char* docstr =
-    "Record a sampling profile for processing with hatchet";
 
 } // namespace [anonymous]
 
@@ -185,12 +186,7 @@ namespace cali
 
 ConfigManager::ConfigInfo hatchet_sample_profile_controller_info
 {
-    "hatchet-sample-profile", 
-    ::docstr, 
-    ::controller_options,
-    ::controller_categories,
-    ::make_controller, 
-    ::check_args
+    ::controller_spec, ::make_controller, ::check_args
 };
 
 }

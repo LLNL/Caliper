@@ -116,23 +116,20 @@ make_controller(const cali::ConfigManager::Options& opts)
     return new HatchetRegionProfileController(opts, format);
 }
 
-
-const char* controller_categories[] = {
-    "metric",
-    "output",
-    "region",
-    nullptr
-};
-
-const char* controller_options =
-    "{ "
-    "  \"name\": \"output.format\","
-    "  \"type\": \"string\","
-    "  \"description\": \"Output format ('hatchet', 'cali', 'json')\""
+const char* controller_spec =
+    "{"
+    " \"name\"        : \"hatchet-region-profile\","
+    " \"description\" : \"Record a region time profile for processing with hatchet\","
+    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"options\": "
+    " ["
+    "  { "
+    "    \"name\": \"output.format\","
+    "    \"type\": \"string\","
+    "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
+    "  }"
+    " ]"
     "}";
-
-const char* docstr =
-    "Record a region time profile for processing with hatchet";
 
 } // namespace [anonymous]
 
@@ -141,12 +138,7 @@ namespace cali
 
 ConfigManager::ConfigInfo hatchet_region_profile_controller_info
 {
-    "hatchet-region-profile", 
-    ::docstr, 
-    ::controller_options,
-    ::controller_categories,
-    ::make_controller, 
-    ::check_args
+    ::controller_spec, ::make_controller, ::check_args
 };
 
 }
