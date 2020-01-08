@@ -217,6 +217,7 @@ public:
 
     SpotController(bool use_mpi, const cali::ConfigManager::Options& opts)
         : ChannelController("spot", 0, {
+                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },
@@ -227,15 +228,11 @@ public:
           m_opts(opts),
           m_use_mpi(use_mpi)
         {
-            std::string services = "aggregate,event,timestamp";
-
 #ifdef CALIPER_HAVE_ADIAK
             if (opts.get("output", "").to_string() != "adiak")
-                services.append(",adiak_import");
+                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
-            config()["CALI_SERVICES_ENABLE"] = m_opts.services(services);
-
-            m_opts.append_extra_config_flags(config());
+            m_opts.update_channel_config(config());
         }
 
     ~SpotController()

@@ -84,10 +84,7 @@ public:
 
         std::string check() const;
 
-        void append_extra_config_flags(config_map_t&) const;
-
-        std::string
-        services(const std::string& in) const;
+        void update_channel_config(config_map_t&) const;
 
         std::string
         query_select(const std::string& level, const std::string& in, bool use_alias = true) const;

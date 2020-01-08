@@ -27,6 +27,7 @@ public:
     HatchetSampleProfileController(const cali::ConfigManager::Options& opts, const std::string& format)
         : ChannelController("hatchet-sample-profile", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
+                { "CALI_SERVICES_ENABLE", "sampler,trace" }
             })
         {
             config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sampler.frequency", "200").to_string();
@@ -50,16 +51,13 @@ public:
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
 
-            std::string services = "sampler,trace";
-
             if (have_adiak)
-                services.append(",adiak_import");
+                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 
             if (have_mpi) {
                 groupby += ",mpi.rank";
-                services.append("mpi,mpireport");
 
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services(services);
+                config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
@@ -69,9 +67,7 @@ public:
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
             } else {
-                services.append(",report");
-
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services(services);
+                config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ") 
@@ -81,7 +77,7 @@ public:
                     + " format " + format;
             }
 
-            opts.append_extra_config_flags(config());
+            opts.update_channel_config(config());
         }
 };
 

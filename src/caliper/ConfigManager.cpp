@@ -277,6 +277,26 @@ struct ConfigManager::Options::OptionsImpl
         return "";
     }
 
+    std::string
+    services(const std::string& in) {
+        std::vector<std::string> vec = StringConverter(in).to_stringlist();
+
+        for (const std::string& opt : enabled_options) {
+            auto it = spec.data.find(opt);
+            if (it == spec.data.end())
+                continue;
+
+            vec.insert(vec.end(), it->second.services.begin(), it->second.services.end());
+        }
+
+        // remove duplicates
+        std::sort(vec.begin(), vec.end());
+        auto last = std::unique(vec.begin(), vec.end());
+        vec.erase(last, vec.end());
+
+        return ::join_stringlist(vec);
+    }
+
     void
     append_extra_config_flags(config_map_t& config) {
         for (const std::string &opt : enabled_options) {
@@ -286,6 +306,12 @@ struct ConfigManager::Options::OptionsImpl
 
             config.insert(o_it->second.extra_config_flags.begin(), o_it->second.extra_config_flags.end());
         }
+    }
+
+    void
+    update_channel_config(config_map_t& config) {
+        config["CALI_SERVICES_ENABLE"] = services(config["CALI_SERVICES_ENABLE"]);
+        append_extra_config_flags(config);
     }
 
     std::string
@@ -453,32 +479,10 @@ ConfigManager::Options::check() const
     return mP->check();
 }
 
-std::string
-ConfigManager::Options::services(const std::string& in) const
-{
-    std::vector<std::string> vec = StringConverter(in).to_stringlist();
-
-    for (const std::string& opt : mP->enabled_options) {
-        auto it = mP->spec.data.find(opt);
-
-        if (it == mP->spec.data.end())
-            continue;
-
-        vec.insert(vec.end(), it->second.services.begin(), it->second.services.end());
-    }
-
-    // remove potential duplicates
-    std::sort(vec.begin(), vec.end());
-    auto last = std::unique(vec.begin(), vec.end());
-    vec.erase(last, vec.end());
-
-    return ::join_stringlist(vec);
-}
-
 void
-ConfigManager::Options::append_extra_config_flags(config_map_t& config) const
+ConfigManager::Options::update_channel_config(config_map_t& config) const
 {
-    mP->append_extra_config_flags(config);
+    mP->update_channel_config(config);
 }
 
 std::string

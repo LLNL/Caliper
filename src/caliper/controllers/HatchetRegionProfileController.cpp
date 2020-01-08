@@ -27,6 +27,7 @@ public:
     HatchetRegionProfileController(const ConfigManager::Options& opts, const std::string& format)
         : ChannelController("hatchet-region-profile", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
+                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
                 { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
@@ -49,15 +50,11 @@ public:
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
 
-            std::string services = "aggregate,event,timestamp";
-
             if (have_adiak)
-                services.append(",adiak_import");
+                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 
             if (have_mpi) {
-                services.append(",mpi,mpireport");
-
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services(services);
+                config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "annotation,function,loop,mpi.rank");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
@@ -68,9 +65,7 @@ public:
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
             } else {
-                services.append(",report");
-
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services(services);
+                config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "annotation,function,loop");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
@@ -81,7 +76,7 @@ public:
                     + " format " + format;
             }
 
-            opts.append_extra_config_flags(config());
+            opts.update_channel_config(config());
         }
 };
 

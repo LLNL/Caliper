@@ -29,6 +29,7 @@ public:
     EventTraceController(const ConfigManager::Options& opts)
         : ChannelController("event-trace", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
+                { "CALI_SERVICES_ENABLE", "event,recorder,timestamp,trace" },
                 { "CALI_TIMER_UNIT", "sec" },
                 { "CALI_TIMER_SNAPSHOT_DURATION", "true" }
             })
@@ -46,9 +47,7 @@ public:
                 config()["CALI_RECORDER_FILENAME"] = tmp;
             }
 
-            config()["CALI_SERVICES_ENABLE"] = opts.services("event,recorder,trace,timestamp");
-
-            opts.append_extra_config_flags(config());
+            opts.update_channel_config(config());
         }
 };
 

@@ -35,6 +35,7 @@ public:
     RuntimeReportController(bool use_mpi, const ConfigManager::Options& opts)
         : ChannelController("runtime-report", 0, {
                 { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
+                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
                 { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
@@ -112,7 +113,7 @@ public:
             // }
 
             if (use_mpi) {
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services("aggregate,event,mpireport,timestamp");
+                config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
@@ -127,7 +128,7 @@ public:
                     + opts.query_groupby("cross", "prop:nested")
                     + " format tree";
             } else {
-                config()["CALI_SERVICES_ENABLE"   ] = opts.services("aggregate,event,report,timestamp");
+                config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ")
@@ -137,7 +138,7 @@ public:
                     + " format tree";
             }
 
-            opts.append_extra_config_flags(config());
+            opts.update_channel_config(config());
         }
 };
 
