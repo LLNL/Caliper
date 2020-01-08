@@ -69,6 +69,15 @@ join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
+bool is_in_strlist(const std::string& s, const char** list)
+{
+    for (const char** p = list; p && *p; ++p)
+        if (s == *p)
+            return true;
+
+    return false;
+}
+
 struct ConfigInfoList {
     const ConfigManager::ConfigInfo** configs;
     ConfigInfoList* next;
@@ -94,9 +103,10 @@ class ConfigManager::OptionSpec
     struct option_desc_t {
         std::string type;
         std::string description;
+        std::string category;
 
-        std::vector<std::string> categories;
         std::vector<std::string> services;
+        std::vector<std::string> inherited_specs;
 
         std::map<std::string, query_arg_t> query_args;
         std::map<std::string, std::string> extra_config_flags;
@@ -144,12 +154,15 @@ class ConfigManager::OptionSpec
         option_desc_t opt;
         bool ok = false;
 
-        auto it = dict.find("categories");
+        auto it = dict.find("category");
         if (it != dict.end())
-            opt.categories = ::to_stringlist(it->second.rec_list(&ok));
+            opt.category = it->second.to_string();
         it = dict.find("services");
         if (it != dict.end())
             opt.services = ::to_stringlist(it->second.rec_list(&ok));
+        it = dict.find("inherit");
+        if (it != dict.end())
+            opt.inherited_specs = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("extra_config_flags");
         if (it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
@@ -186,8 +199,10 @@ public:
     ~OptionSpec()
     { }
 
-    void add(const OptionSpec& other) {
-        data.insert(other.data.begin(), other.data.end());
+    void add(const OptionSpec& other, const char** categories) {
+        for (const auto &p : other.data)
+            if (::is_in_strlist(p.second.category, categories))
+                data.insert(p);
     }
 
     void add(const char* txt) {
@@ -205,8 +220,8 @@ public:
         }
 
         if (!ok)
-            Log(0).stream() << "ConfigManager::OptionSpec::add(): parse error on "  
-                            << util::clamp_string(txt, 32) 
+            Log(0).stream() << "ConfigManager::OptionSpec::add(): parse error on "
+                            << util::clamp_string(txt, 32)
                             << std::endl;
     }
 
@@ -220,7 +235,7 @@ public:
 
         for (auto &p : data)
             ret.insert(std::make_pair(p.first, p.second.description));
-        
+
         return ret;
     }
 
@@ -242,7 +257,7 @@ struct ConfigManager::Options::OptionsImpl
 
     std::string
     check() const {
-        // 
+        //
         // Check if option values have the correct datatype
         //
         for (const auto &arg : args) {
@@ -250,13 +265,13 @@ struct ConfigManager::Options::OptionsImpl
 
             if (it == spec.data.end())
                 continue;
-            
+
             if (it->second.type == "bool") {
                 bool ok = false;
                 StringConverter(arg.second).to_bool(&ok);
                 if (!ok)
-                    return std::string("Invalid value \"") 
-                        + arg.second 
+                    return std::string("Invalid value \"")
+                        + arg.second
                         + std::string("\" for ")
                         + arg.first;
             }
@@ -347,8 +362,27 @@ struct ConfigManager::Options::OptionsImpl
         return ret;
     }
 
+    std::vector<std::string>
+    get_inherited_specs(const std::string& name) {
+        std::vector<std::string> ret;
+
+        auto it = spec.data.find(name);
+        if (it == spec.data.end())
+            return ret;
+
+        for (const std::string& inh : it->second.inherited_specs) {
+            auto tmp = get_inherited_specs(inh);
+            ret.insert(ret.end(), tmp.begin(), tmp.end());
+            ret.push_back(inh);
+        }
+
+        return ret;
+    }
+
     void
     find_enabled_options() {
+        std::vector<std::string> vec;
+
         for (const auto &argp : args) {
             auto s_it = spec.data.find(argp.first);
 
@@ -361,9 +395,18 @@ struct ConfigManager::Options::OptionsImpl
 
             if (s_it->second.type == "bool")
                 enabled = StringConverter(argp.second).to_bool();
-            if (enabled)
-                enabled_options.push_back(argp.first);
+            if (enabled) {
+                vec.push_back(argp.first);
+
+                auto tmp = get_inherited_specs(argp.first);
+                vec.insert(vec.end(), tmp.begin(), tmp.end());
+            }
         }
+
+        std::sort(vec.begin(), vec.end());
+        vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+
+        enabled_options = std::move(vec);
     }
 
     OptionsImpl(const OptionSpec& s, const argmap_t& a)
@@ -491,8 +534,9 @@ struct ConfigManager::ConfigManagerImpl
                 ConfigSpec spec;
 
                 spec.info = *j;
+
                 spec.opts.add(spec.info->options);
-                spec.opts.add(builtin_opts);
+                spec.opts.add(builtin_opts, spec.info->categories);
 
                 m_spec.emplace(spec.info->name, std::make_shared<ConfigSpec>(spec));
             }
@@ -653,6 +697,26 @@ struct ConfigManager::ConfigManagerImpl
         return !m_error;
     }
 
+    std::vector<std::string>
+    get_docstrings() {
+        std::vector<std::string> ret;
+
+        for (const auto &p : m_spec) {
+            std::string doc = p.first;
+
+            doc.append("\n ").append(p.second->info->description).append("\n  Options:");
+
+            auto optdescrmap = p.second->opts.get_option_descriptions();
+
+            for (const auto &op : optdescrmap)
+                doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+
+            ret.push_back(doc);
+        }
+
+        return ret;
+    }
+
     ConfigManagerImpl()
         {
             update_spec();
@@ -787,13 +851,8 @@ ConfigManager::available_configs()
 std::vector<std::string>
 ConfigManager::get_config_docstrings()
 {
-    std::vector<std::string> ret;
-
-    for (const ConfigInfoList* lp = s_config_list; lp; lp = lp->next)
-        for (const ConfigInfo** cp = lp->configs; *cp && (*cp)->name; ++cp)
-            ret.push_back((*cp)->description);
-
-    return ret;
+    ConfigManagerImpl mgr;
+    return mgr.get_docstrings();
 }
 
 std::string

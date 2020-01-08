@@ -191,13 +191,13 @@ public:
     }
 };
 
-ConfigManager::ConfigInfo ProgressInfo = { 
-    "progress", 
-    "progress\n Print cali-query progress (when processing multiple files).", 
-    nullptr, 
+ConfigManager::ConfigInfo ProgressInfo = {
+    "progress",
+    "Print cali-query progress (when processing multiple files).",
     nullptr,
-    ProgressController::create, 
-    nullptr 
+    nullptr,
+    ProgressController::create,
+    nullptr
 };
 
 const ConfigManager::ConfigInfo* caliquery_cfglist[] = {
@@ -242,7 +242,7 @@ void setup_caliper_config(const Args& args)
 int main(int argc, const char* argv[])
 {
     ConfigManager::add_controllers(caliquery_cfglist);
-    
+
     Args args(::option_table);
 
     //
@@ -444,6 +444,6 @@ int main(int argc, const char* argv[])
     }
 
     CALI_MARK_END("Writing");
-    
+
     mgr.flush();
 }

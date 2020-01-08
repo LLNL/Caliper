@@ -117,7 +117,7 @@ public:
             ",min(inclusive#sum#time.duration)"
             ",max(inclusive#sum#time.duration)"
             ",avg(inclusive#sum#time.duration)";
-        std::string cross_query = 
+        std::string cross_query =
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
             + " group by "
@@ -134,9 +134,9 @@ public:
         //     inclusive times
 
         {
-            std::string local_select  = 
+            std::string local_select  =
                 m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false);
-            std::string local_groupby = 
+            std::string local_groupby =
                 m_opts.query_groupby("local", "prop:nested");
 
             aggregate(local_select, local_groupby, c, db, output_agg);
@@ -260,8 +260,7 @@ const char* docstr =
     "Record a time profile for the Spot visualization framework.";
 
 const char* controller_categories[] = {
-    "metric.serial",
-    "metric.crossprocess",
+    "metric",
     "output",
     "region",
     nullptr

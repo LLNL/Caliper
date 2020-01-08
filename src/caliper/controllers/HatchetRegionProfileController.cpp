@@ -118,8 +118,7 @@ make_controller(const cali::ConfigManager::Options& opts)
 
 
 const char* controller_categories[] = {
-    "metric.serial",
-    "metric.crossprocess",
+    "metric",
     "output",
     "region",
     nullptr

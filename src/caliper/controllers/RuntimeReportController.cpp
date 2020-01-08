@@ -318,8 +318,7 @@ make_runtime_report_controller(const cali::ConfigManager::Options& opts)
 // }
 
 const char* runtime_report_categories[] = {
-    "metric.serial",
-    "metric.crossprocess",
+    "metric",
     "output",
     "region",
     nullptr
