@@ -383,6 +383,28 @@ struct ConfigManager::Options::OptionsImpl
     find_enabled_options() {
         std::vector<std::string> vec;
 
+        {
+            // hack: explicitly add options for deprecated "profile" argument
+
+            auto it = args.find("profile");
+
+            if (it != args.end()) {
+                const struct profile_map_t {
+                    const char* oldarg; const char* newarg;
+                } profile_map[] = {
+                    { "mpi",  "profile.mpi"  },
+                    { "cuda", "profile.cuda" },
+                    { "mem.highwatermark", "mem.highwatermark" }
+                };
+
+                auto pl = StringConverter(it->second).to_stringlist();
+
+                for (const auto &p : profile_map)
+                    if (std::find(pl.begin(), pl.end(), std::string(p.oldarg)) != pl.end())
+                        vec.push_back(p.newarg);
+            }
+        }
+
         for (const auto &argp : args) {
             auto s_it = spec.data.find(argp.first);
 
@@ -579,7 +601,7 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            if (!opts.contains(key)) {
+            if (!(key == "profile" || opts.contains(key))) {
                 set_error("Unknown argument: " + key);
                 args.clear();
                 return args;
@@ -612,6 +634,9 @@ struct ConfigManager::ConfigManagerImpl
     // Return true if key is an option in any config
     bool
     is_option(const std::string& key) {
+        if (key == "profile") // special-case for deprecated "profile=" argument
+            return true;
+
         for (const auto& p : m_spec)
             if (p.second->opts.contains(key))
                 return true;
