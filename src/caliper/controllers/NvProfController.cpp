@@ -25,9 +25,14 @@ make_nvprof_controller(const cali::ConfigManager::Options&)
 namespace cali
 {
 
-ConfigManager::ConfigInfo nvprof_controller_info 
+ConfigManager::ConfigInfo nvprof_controller_info
 {
-    "{ \"name\": \"nvprof\", \"services\": [ \"nvprof\" ] }", ::make_nvprof_controller, nullptr
+    "{"
+    " \"name\"        : \"nvprof\","
+    " \"services\"    : [ \"nvprof\" ],"
+    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\""
+    "}",
+    ::make_nvprof_controller, nullptr
 };
 
 }

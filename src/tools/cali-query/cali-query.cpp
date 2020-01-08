@@ -192,7 +192,7 @@ public:
 };
 
 ConfigManager::ConfigInfo ProgressInfo = {
-    "{ \"name\": \"caliquery-progress\", \"description\": \"Print cali-query progress (when processing multiple files\" }",
+    "{ \"name\": \"caliquery-progress\", \"description\": \"Print cali-query progress (when processing multiple files)\" }",
     ProgressController::create,
     nullptr
 };
