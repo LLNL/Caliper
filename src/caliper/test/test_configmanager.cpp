@@ -98,8 +98,8 @@ TEST(ConfigManagerTest, ParseConfig) {
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report(profile.cuda=false,io.bytes=false),event-trace").empty());
     EXPECT_TRUE(cali::ConfigManager::check_config_string("runtime-report,event-trace,foo=bar", true).empty());
 
-    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,profile.mpi=bla"), std::string("runtime-report: Invalid value \"bla\" for profile.mpi"));
-    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,event-trace(trace.mpi=bla)"), std::string("event-trace: Invalid value \"bla\" for trace.mpi"));
+    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,profile.mpi=bla"), std::string("Invalid value \"bla\" for profile.mpi"));
+    EXPECT_EQ(cali::ConfigManager::check_config_string("runtime-report,event-trace(trace.mpi=bla)"), std::string("Invalid value \"bla\" for trace.mpi"));
 }
 
 TEST(ConfigManagerTest, ParseEmptyConfig) {
