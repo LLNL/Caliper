@@ -269,7 +269,7 @@ struct ConfigManager::Options::OptionsImpl
             for (const std::string& required_service : o_it->second.services)
                 if (std::find(services.begin(), services.end(), required_service) == services.end())
                     return required_service
-                        + std::string(" required for ")
+                        + std::string(" service required for ")
                         + o_it->first
                         + std::string(" option is not available");
         }
@@ -529,6 +529,15 @@ struct ConfigManager::ConfigManagerImpl
         m_error_msg = msg;
     }
 
+    // sets error if err is set
+    void
+    check_error(const std::string& err) {
+        if (err.empty())
+            return;
+
+        set_error(err);
+    }
+
     void
     parse_config_spec(const ConfigInfo* info, const OptionSpec& base_options) {
         config_spec_t spec;
@@ -728,12 +737,10 @@ struct ConfigManager::ConfigManagerImpl
         for (auto cfg : configs) {
             Options opts(cfg.first->opts, merge_new_elements(cfg.second, m_default_parameters));
 
-            if (cfg.first->info->check_args) {
-                std::string err = (cfg.first->info->check_args)(opts);
+            check_error(opts.check());
 
-                if (!err.empty())
-                    set_error(err);
-            }
+            if (cfg.first->info->check_args)
+                check_error((cfg.first->info->check_args)(opts));
 
             if (m_error)
                 return false;
@@ -911,21 +918,13 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
     for (auto cfg : configs) {
         Options opts(cfg.first->opts, merge_new_elements(cfg.second, mgr.m_default_parameters));
 
-        if (cfg.first->info->check_args) {
-            std::string err = (cfg.first->info->check_args)(opts);
+        if (cfg.first->info->check_args)
+            mgr.check_error((cfg.first->info->check_args)(opts));
 
-            if (!err.empty()) {
-                mgr.set_error(err);
-                break;
-            }
-        }
+        mgr.check_error(opts.check());
 
-        std::string err = opts.check();
-
-        if (!err.empty()) {
-            mgr.set_error(std::string(cfg.first->name) + ": " + err);
+        if (mgr.m_error)
             break;
-        }
     }
 
     if (!allow_extra_kv_pairs && !mgr.m_extra_vars.empty())
