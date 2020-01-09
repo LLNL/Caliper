@@ -60,7 +60,7 @@ const char* event_trace_spec =
     "    \"description\" : \"Trace I/O events\","
     "    \"type\"        : \"bool\","
     "    \"services\"    : [ \"mpi\" ],"
-    "    \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_comm_rank\" }"
+    "    \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_Comm_rank\" }"
     "  },"
     "  { \"name\"        : \"trace.cuda\","
     "    \"description\" : \"Trace CUDA API events\","

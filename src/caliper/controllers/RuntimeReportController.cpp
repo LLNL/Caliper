@@ -94,7 +94,10 @@ use_mpi(const cali::ConfigManager::Options& opts)
     bool have_mpireport =
         std::find(services.begin(), services.end(), "mpireport") != services.end();
 
-    bool use_mpi = opts.is_enabled("aggregate_across_ranks");
+    bool use_mpi = have_mpireport;
+
+    if (opts.is_set("aggregate_across_ranks"))
+        use_mpi = opts.get("aggregate_across_ranks").to_bool();
 
     if (use_mpi && !have_mpireport) {
         use_mpi = false;
