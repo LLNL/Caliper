@@ -356,9 +356,10 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             else
                 global_vals[e.attribute()] = e.value().to_string();
 
-        for (auto &p : global_vals)
-            os << ",\n  \"" << db.get_attribute(p.first).name() << "\": "
-               << '\"' << p.second << '\"';
+        for (auto &p : global_vals) {
+            util::write_esc_string(os << ",\n  \"", db.get_attribute(p.first).name()) << "\": ";
+            util::write_esc_string(os << '"', p.second) << '\"';
+        }
 
         return os;
     }

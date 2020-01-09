@@ -156,6 +156,7 @@ class CaliperJSONTest(unittest.TestCase):
         index = columns.index('event.set# =\\weird ""attribute"=  ')
 
         self.assertEqual(nodes[data[0][index]]['label'], '  \\\\ weird," name",' )
+        self.assertEqual(obj[' =\\weird "" global attribute"=  '], '  \\\\ weird," name",')
 
         
 if __name__ == "__main__":

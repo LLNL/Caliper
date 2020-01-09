@@ -10,6 +10,7 @@ int main()
 
     // Test proper escaping
     cali_set_string_byname(" =\\weird \"\"attribute\"=  ", "  \\\\ weird,\" name\",");
+    cali_set_global_string_byname(" =\\weird \"\" global attribute\"=  ", "  \\\\ weird,\" name\",");
 
     cali::Annotation phase_ann("phase", metadata);
     std::size_t size = 8;
