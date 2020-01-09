@@ -4,8 +4,6 @@
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
-#include <algorithm>
-
 using namespace cali;
 
 namespace

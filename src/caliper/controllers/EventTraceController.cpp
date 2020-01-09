@@ -4,23 +4,10 @@
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
-#include "caliper/common/StringConverter.h"
-
-#include "../../services/Services.h"
-
-#include <algorithm>
-
 using namespace cali;
 
 namespace
 {
-
-// enum TraceOpts {
-//     Timestamps = 1,
-//     TraceMpi   = 2,
-//     TraceCuda  = 4,
-//     TraceIo    = 8
-// };
 
 class EventTraceController : public cali::ChannelController
 {
@@ -50,49 +37,6 @@ public:
             opts.update_channel_config(config());
         }
 };
-
-std::string
-check_args(const cali::ConfigManager::Options& opts) {
-    //
-    //   Check if the required services for all requested profiling options
-    // are there
-    //
-
-    // const struct opt_info_t {
-    //     const char* option;
-    //     const char* service;
-    // } opt_info_list[] = {
-    //     { "trace.io",     "io"    },
-    //     { "trace.mpi",    "mpi"   },
-    //     { "trace.cuda",   "cupti" }
-    // };
-
-    // Services::add_default_services();
-    // auto svcs = Services::get_available_services();
-
-    // for (const opt_info_t o : opt_info_list) {
-    //     auto it = args.find(o.option);
-
-    //     if (it != args.end()) {
-    //         bool ok = false;
-
-    //         if (StringConverter(it->second).to_bool(&ok) == true) 
-    //             if (std::find(svcs.begin(), svcs.end(), o.service) == svcs.end())
-    //                 return std::string("event-trace: ") 
-    //                     + o.service
-    //                     + std::string(" service required for ")
-    //                     + o.option
-    //                     + std::string(" option is not available");
-
-    //         if (!ok) // parse error
-    //             return std::string("event-trace: Invalid value \"") 
-    //                 + it->second + "\" for " 
-    //                 + it->first;
-    //     }
-    // }
-
-    return "";
-}
 
 static cali::ChannelController*
 make_event_trace_controller(const cali::ConfigManager::Options& opts)

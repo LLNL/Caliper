@@ -486,13 +486,13 @@ ConfigManager::Options::update_channel_config(config_map_t& config) const
 }
 
 std::string
-ConfigManager::Options::query_select(const std::string& level, const std::string& in, bool use_alias) const
+ConfigManager::Options::query_select(const char* level, const std::string& in, bool use_alias) const
 {
     return mP->query_select(level, in, use_alias);
 }
 
 std::string
-ConfigManager::Options::query_groupby(const std::string& level, const std::string& in) const
+ConfigManager::Options::query_groupby(const char* level, const std::string& in) const
 {
     return mP->query_groupby(level, in);
 }
