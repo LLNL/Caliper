@@ -5,11 +5,12 @@
 /// A class to convert strings into various other data types.
 /// This is primarily a convenience class to transparently replace
 /// cali::Variant's former string conversion capabilities.
- 
+
 #pragma once
 
 #include "cali_types.h"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -30,7 +31,7 @@ public:
     { }
 
     cali_id_t     to_id() const;
-    
+
     bool          to_bool(bool* okptr = nullptr) const;
 
     int           to_int(bool* okptr = nullptr)  const;
@@ -46,6 +47,12 @@ public:
 
     std::vector<std::string>
     to_stringlist(const char* separators = ",", bool* okptr = nullptr) const;
+
+    std::vector<StringConverter>
+    rec_list(bool* okptr = nullptr) const;
+
+    std::map<std::string, StringConverter>
+    rec_dict(bool* okptr = nullptr) const;
 };
-    
+
 } // namespace cali

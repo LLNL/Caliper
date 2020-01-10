@@ -47,6 +47,45 @@ util::read_word(std::istream& is, const char* separators)
     return ret;
 }
 
+std::string
+util::read_nested_text(std::istream& is, char start_char, char end_char)
+{
+    std::string ret;
+    bool esc = false;
+    int  depth = 1;
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (c == '\\') {
+            c = is.get();
+            if (is.good()) {
+                ret.push_back('\\');
+                ret.push_back(c);
+            }
+            continue;
+        } else if (c == '"') {
+            esc = !esc;
+        } else if (!esc && c == start_char) {
+            ++depth;
+        } else if (!esc && c == end_char) {
+            --depth;
+        }
+
+        if (!is.good())
+            break;
+
+        if (depth == 0) {
+            is.unget();
+            break;
+        }
+
+        ret.push_back(c);
+    }
+
+    return ret;
+}
+
 char
 util::read_char(std::istream& is)
 {

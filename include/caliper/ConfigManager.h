@@ -11,10 +11,12 @@
 #include <string>
 #include <vector>
 
+#include "ChannelController.h"
+
+#include "common/StringConverter.h"
+
 namespace cali
 {
-
-class ChannelController;
 
 /// \class ConfigManager
 /// \ingroup ControlChannelAPI
@@ -59,17 +61,75 @@ class ConfigManager
     struct ConfigManagerImpl;
     std::shared_ptr<ConfigManagerImpl> mP;
 
+    class OptionSpec;
+
 public:
 
     typedef std::map<std::string, std::string> argmap_t;
 
-    typedef cali::ChannelController* (*CreateConfigFn)(const argmap_t&);
-    typedef std::string              (*CheckArgsFn)(const argmap_t&);
+    /// \brief Manages the list of options given to a ConfigManager config controller.
+    ///   Internal use.
+    class Options {
+        struct OptionsImpl;
+        std::shared_ptr<OptionsImpl> mP;
+
+        Options(const OptionSpec& specs, const argmap_t& args);
+
+    public:
+
+        ~Options();
+
+        /// \brief Indicates if \a option is in the options list.
+        bool is_set(const char* option) const;
+
+        /// \brief Indicates if \a option is enabled
+        ///
+        /// An option is enabled if it is present in the options list, and,
+        /// for boolean options, set to \a true.
+        bool is_enabled(const char* option) const;
+
+        /// \brief Return the value for \a option, or \a default_value
+        ///   if it is not set in the options list.
+        StringConverter get(const char* option, const char* default_value = "") const;
+
+        /// \brief Perform a validity check.
+        std::string check() const;
+
+        /// \brief Update the config controller's %Caliper configuration
+        ///   according to the requirements of the selected options.
+        ///
+        /// Updates CALI_SERVICES_ENABLE and adds any additional
+        /// configuration flags that may be required.
+        void update_channel_config(config_map_t& config) const;
+
+        /// \brief Returns a CalQL SELECT expression to compute metrics
+        ///   in the option list.
+        /// \param level The aggregation level ('serial', 'local', or 'cross')
+        /// \param in Base SELECT expression as required by the controller
+        /// \param use_alias Wether to add aliases to the expression
+        ///   (as in SELECT x AS y)
+        /// \return The SELECT list (comma-separated string), but without the
+        ///   'SELECT' keyword
+        std::string
+        query_select(const char* level, const std::string& in, bool use_alias = true) const;
+
+        /// \brief Returns a CalQL GROUP BY list for metrics in the option
+        ///   list.
+        /// \param level The aggregation level ('serial', 'local', or 'cross')
+        /// \param in Base GROUP BY list as required by the controller
+        /// \return The GROUP BY list (comma-separated string), but without the
+        ///   'GROUP BY' keyword
+        std::string
+        query_groupby(const char* level, const std::string& in) const;
+
+        friend class ConfigManager;
+    };
+
+    typedef cali::ChannelController* (*CreateConfigFn)(const Options&);
+    typedef std::string              (*CheckArgsFn)(const Options&);
 
     struct ConfigInfo {
-        const char*    name;
-        const char*    description;
-        const char**   args;
+        const char*    spec;
         CreateConfigFn create;
         CheckArgsFn    check_args;
     };

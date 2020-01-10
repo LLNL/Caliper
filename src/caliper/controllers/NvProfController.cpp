@@ -4,15 +4,13 @@
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
-#include <algorithm>
-
 using namespace cali;
 
 namespace
 {
 
 cali::ChannelController*
-make_nvprof_controller(const cali::ConfigManager::argmap_t&)
+make_nvprof_controller(const cali::ConfigManager::Options&)
 {
     return new ChannelController("nvprof", 0 , {
             { "CALI_SERVICES_ENABLE",       "nvprof" },
@@ -25,9 +23,14 @@ make_nvprof_controller(const cali::ConfigManager::argmap_t&)
 namespace cali
 {
 
-ConfigManager::ConfigInfo nvprof_controller_info 
+ConfigManager::ConfigInfo nvprof_controller_info
 {
-    "nvprof", "nvprof\n Export Caliper annotations to NVidia nvprof.", nullptr, ::make_nvprof_controller, nullptr
+    "{"
+    " \"name\"        : \"nvprof\","
+    " \"services\"    : [ \"nvprof\" ],"
+    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\""
+    "}",
+    ::make_nvprof_controller, nullptr
 };
 
 }

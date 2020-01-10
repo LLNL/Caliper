@@ -16,7 +16,7 @@ class SpotV1Controller : public cali::ChannelController
 {
 public:
 
-    SpotV1Controller(const cali::ConfigManager::argmap_t& args)
+    SpotV1Controller(const cali::ConfigManager::Options& opts)
         : cali::ChannelController("spot-v1", 0, {
                 { "CALI_SERVICES_ENABLE", "event,aggregate,spot,timestamp" },
                 { "CALI_CHANNEL_FLUSH_ON_EXIT",   "false"        },
@@ -25,17 +25,12 @@ public:
                 { "CALI_SPOT_Y_AXES",             "Milliseconds" }
             })
         {
-            auto it = args.find("config");
-            if (it != args.end())
-                config()["CALI_SPOT_CONFIG"] = it->second;
-
-            it = args.find("code_version");
-            if (it != args.end())
-                config()["CALI_SPOT_CODE_VERSION"] = it->second;
-
-            it = args.find("title");
-            if (it != args.end())
-                config()["CALI_SPOT_TITLE"] = it->second;
+            if (opts.is_set("config"))
+                config()["CALI_SPOT_CONFIG"] = opts.get("config", "").to_string();
+            if (opts.is_set("code_version"))
+                config()["CALI_SPOT_CODE_VERSION"] = opts.get("code_version", "").to_string();
+            if (opts.is_set("title"))
+                config()["CALI_SPOT_TITLE"] = opts.get("title", "").to_string();
         }
 
     void flush() {
@@ -47,20 +42,31 @@ public:
     }
 };
 
-const char* spot_v1_args[] = { "config", "code_version", "title", nullptr };
-
-const char* docstr = 
-    "spot-v1"
-    "\n Write Spot v1 JSON output."
-    "\n  Parameters:"
-    "\n   config:                            Attribute:Filename pairs in which to dump Spot data"
-    "\n   code_version:                      Version number (or git hash) to represent this run of the code"
-    "\n   title:                             Title for this test";
+const char* controller_spec = 
+    "{"
+    " \"name\"        : \"spot-v1\","
+    " \"description\" : \"Write Spot v1 JSON output\","
+    " \"options\": "
+    " ["
+    "  {"
+    "   \"name\": \"config\","
+    "   \"description\": \"Attribute:Filename pairs in which to dump Spot data\""
+    "  },"
+    "  {"
+    "   \"name\": \"code_version\","
+    "   \"description\": \"Version number (or git hash) to represent this run of the code\""
+    "  },"
+    "  {"
+    "   \"name\": \"title\","
+    "   \"description\": \"Title for this test\""
+    "  }"
+    " ]"
+    "}";
 
 cali::ChannelController*
-make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
+make_spot_v1_controller(const cali::ConfigManager::Options& opts)
 {
-    return new SpotV1Controller(args);
+    return new SpotV1Controller(opts);
 }
 
 } // namespace [anonymous]
@@ -68,6 +74,9 @@ make_spot_v1_controller(const cali::ConfigManager::argmap_t& args)
 namespace cali
 {
 
-cali::ConfigManager::ConfigInfo spot_v1_controller_info { "spot-v1", ::docstr, ::spot_v1_args, ::make_spot_v1_controller, nullptr };
+cali::ConfigManager::ConfigInfo spot_v1_controller_info 
+{ 
+    ::controller_spec, ::make_spot_v1_controller, nullptr
+};
 
 }

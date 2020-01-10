@@ -28,6 +28,11 @@ is_one_of(char c, const char* characters)
 std::string
 read_word(std::istream& is, const char* separators = ",");
 
+/// \brief Reads text within (start_char, end_char) region, skipping
+///   over any such regions nested within.
+std::string
+read_nested_text(std::istream& is, char start_char, char end_char);
+
 /// \brief Read character from stream \a is, skipping whitespace.
 char
 read_char(std::istream& is);

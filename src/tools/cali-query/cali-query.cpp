@@ -186,17 +186,15 @@ public:
             })
     {}
 
-    static ChannelController* create(const ConfigManager::argmap_t&) {
+    static ChannelController* create(const ConfigManager::Options&) {
         return new ProgressController;
     }
 };
 
-ConfigManager::ConfigInfo ProgressInfo = { 
-    "progress", 
-    "progress\n Print cali-query progress (when processing multiple files).", 
-    nullptr, 
-    ProgressController::create, 
-    nullptr 
+ConfigManager::ConfigInfo ProgressInfo = {
+    "{ \"name\": \"caliquery-progress\", \"description\": \"Print cali-query progress (when processing multiple files)\" }",
+    ProgressController::create,
+    nullptr
 };
 
 const ConfigManager::ConfigInfo* caliquery_cfglist[] = {
@@ -241,7 +239,7 @@ void setup_caliper_config(const Args& args)
 int main(int argc, const char* argv[])
 {
     ConfigManager::add_controllers(caliquery_cfglist);
-    
+
     Args args(::option_table);
 
     //
@@ -443,6 +441,6 @@ int main(int argc, const char* argv[])
     }
 
     CALI_MARK_END("Writing");
-    
+
     mgr.flush();
 }
