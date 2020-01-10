@@ -66,13 +66,12 @@ public:
                     + " format " + format;
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
-                config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "annotation,function,loop");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ") 
-                    + opts.query_select("local", "*,sum(sum#time.duration) as time")
+                    + opts.query_select("serial", "*,sum(sum#time.duration) as time")
                     + " group by " 
-                    + opts.query_groupby("local", "prop:nested")
+                    + opts.query_groupby("serial", "prop:nested")
                     + " format " + format;
             }
 
@@ -96,7 +95,7 @@ check_args(const cali::ConfigManager::Options& opts) {
 cali::ChannelController*
 make_controller(const cali::ConfigManager::Options& opts)
 {
-    std::string format = opts.get("format", "json-split").to_string();
+    std::string format = opts.get("output.format", "json-split").to_string();
 
     if (format == "hatchet")
         format = "json-split";

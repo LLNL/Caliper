@@ -123,7 +123,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         data = obj['data']
 
-        self.assertEqual(len(data), 6)
+        self.assertEqual(len(data), 7)
         self.assertEqual(len(data[0]), 2)
 
         meta = obj['column_metadata']
