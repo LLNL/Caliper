@@ -1,4 +1,5 @@
 set(CALIPER_CONTROLLERS_SOURCES
+  CudaActivityController.cpp
   EventTraceController.cpp
   HatchetRegionProfileController.cpp
   HatchetSampleProfileController.cpp
