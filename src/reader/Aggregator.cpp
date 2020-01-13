@@ -245,6 +245,7 @@ public:
         Attribute   m_res_attr;
 
         double      m_scale;
+        bool        m_inclusive;
 
     public:
 
@@ -257,42 +258,48 @@ public:
 
         Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
             if (m_sum_attr == Attribute::invalid)
-                m_sum_attr = 
-                    db.create_attribute(std::string("scsum#")+m_target_attr_name, CALI_TYPE_DOUBLE, 
-                                        CALI_ATTR_ASVALUE | 
+                m_sum_attr =
+                    db.create_attribute(std::string(m_inclusive ? "iscsum#" : "scsum#")+m_target_attr_name, CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_ASVALUE |
                                         CALI_ATTR_HIDDEN);
-            
+
             return m_sum_attr;
         }
 
         Attribute get_result_attr(CaliperMetadataAccessInterface& db) {
             if (m_res_attr == Attribute::invalid)
-                m_res_attr = 
-                    db.create_attribute(std::string("scale#")+m_target_attr_name, CALI_TYPE_DOUBLE,
+                m_res_attr =
+                    db.create_attribute(std::string(m_inclusive ? "iscale#" : "scale#")+m_target_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_ASVALUE);
-            
+
             return m_res_attr;
         }
 
-        double get_scale() const { return m_scale; }
+        double get_scale()    const { return m_scale;     }
+        bool   is_inclusive() const { return m_inclusive; }
 
         AggregateKernel* make_kernel() {
             return new ScaledSumKernel(this);
         }
 
-        Config(const std::vector<std::string>& cfg)
+        Config(const std::vector<std::string>& cfg, bool inclusive)
             : m_target_attr_name(cfg[0]),
               m_target_attr(Attribute::invalid),
               m_sum_attr(Attribute::invalid),
               m_res_attr(Attribute::invalid),
-              m_scale(0.0)
-            { 
+              m_scale(0.0),
+              m_inclusive(inclusive)
+            {
                 if (cfg.size() > 1)
                     m_scale = std::stod(cfg[1]);
             }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg);
+            return new Config(cfg, false);
+        }
+
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg, true);
         }
     };
 
@@ -1082,10 +1089,11 @@ enum KernelID {
     Min          = 5,
     Max          = 6,
     Avg          = 7,
-    ScaledSum    = 8       
+    ScaledSum    = 8,
+    IScaledSum   = 9
 };
 
-#define MAX_KERNEL_ID 8
+#define MAX_KERNEL_ID 9
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -1101,6 +1109,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Max,          "max",           1, 1, kernel_args  },
     { KernelID::Avg,          "avg",           1, 1, kernel_args  },
     { KernelID::ScaledSum,    "scale",         2, 2, scale_args   },
+    { KernelID::IScaledSum,   "iscale",        2, 2, scale_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1118,6 +1127,7 @@ const struct KernelInfo {
     { "max",           MaxKernel::Config::create          },
     { "avg",           AvgKernel::Config::create          },
     { "scale",         ScaledSumKernel::Config::create    },
+    { "iscale",        ScaledSumKernel::Config::create_inclusive },
     { 0, 0 }
 };
 
@@ -1558,6 +1568,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("avg#") + op.args[0];
     case KernelID::ScaledSum:
         return std::string("scale#") + op.args[0];
+    case KernelID::IScaledSum:
+        return std::string("iscale#") + op.args[0];
     }
 
     return std::string();

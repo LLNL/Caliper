@@ -417,12 +417,14 @@ TEST(AggregatorTest, InclusiveSumOp) {
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
     spec.aggregation_ops.list.push_back(::make_op("inclusive_sum", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("iscale", "val", "2.0"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 3);
+    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 4);
 
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
     ASSERT_STREQ(spec.aggregation_ops.list[2].op.name, "inclusive_sum");
+    ASSERT_STREQ(spec.aggregation_ops.list[3].op.name, "iscale");
 
     Aggregator a(spec);
 
@@ -448,13 +450,15 @@ TEST(AggregatorTest, InclusiveSumOp) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("count");
-    Attribute sum_attr   = db.get_attribute("sum#val");
-    Attribute isum_attr  = db.get_attribute("inclusive#val");
+    Attribute count_attr  = db.get_attribute("count");
+    Attribute sum_attr    = db.get_attribute("sum#val");
+    Attribute isum_attr   = db.get_attribute("inclusive#val");
+    Attribute iscale_attr = db.get_attribute("iscale#val");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
-    ASSERT_NE(sum_attr,   Attribute::invalid);
-    ASSERT_NE(isum_attr,  Attribute::invalid);
+    ASSERT_NE(count_attr,  Attribute::invalid);
+    ASSERT_NE(sum_attr,    Attribute::invalid);
+    ASSERT_NE(isum_attr,   Attribute::invalid);
+    ASSERT_NE(iscale_attr, Attribute::invalid);
 
     // check results
 
@@ -465,18 +469,21 @@ TEST(AggregatorTest, InclusiveSumOp) {
     std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
             auto dict = make_dict_from_entrylist(list);
 
-            int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[sum_attr.id()  ].value().to_int();
-            int  ival  = dict[isum_attr.id() ].value().to_int();
+            int  count  = dict[count_attr.id() ].value().to_int();
+            int  val    = dict[sum_attr.id()   ].value().to_int();
+            int  ival   = dict[isum_attr.id()  ].value().to_int();
+            int  iscval = dict[iscale_attr.id()].value().to_int();
 
             if (dict[ctx1.id()].value() == Variant("inner")) {
-                EXPECT_EQ(val,   14);
-                EXPECT_EQ(ival,  14);
-                EXPECT_EQ(static_cast<int>(list.size()), 4);
+                EXPECT_EQ(val,    14);
+                EXPECT_EQ(ival,   14);
+                EXPECT_EQ(iscval, 28);
+                EXPECT_EQ(static_cast<int>(list.size()), 6);
                 ++rescount;
             } else if (dict[ctx1.id()].value() == Variant("outer")) {
-                EXPECT_EQ(val,    7);
-                EXPECT_EQ(ival,  21);
+                EXPECT_EQ(val,     7);
+                EXPECT_EQ(ival,   21);
+                EXPECT_EQ(iscval, 42);
                 ++rescount;
             }
         });
