@@ -141,16 +141,16 @@ Most options for the hatchet-sample-profile config require that Caliper is built
 
 The cuda-activity config records CUDA activities (kernel execution, memory copies, etc.), and prints a region profile of time spent on the GPU as well as on the host. GPU activity time is assigned to the Caliper-annotated regions on the host where the activity was launched. Requires CUPTI support. The config performs tracing to record GPU activities, it is therefore not recommended for long-running executions.  Example output:
 
-  Path                              Avg Host Time Max Host Time Avg GPU Time Max GPU Time GPU %
-  main                                   1.614494      1.615764     0.693623     0.836652 42.962240
-    qs.mainloop                          1.614295      1.615514     0.693623     0.836652 42.967531
-      cycleFinalize                      0.001150      0.001530
-      cycleTracking                      1.312167      1.380361     0.693623     0.836652 52.860857
-        cycleTracking_Test_Done          0.000161      0.000162
-        cycleTracking_MPI                0.285434      0.313542
-          cycleTracking_Test_Done        0.019785      0.036499
-        cycleTracking_Kernel             0.841515      0.917650     0.693623     0.836652 82.425458
-      cycleInit                          0.296091      0.384112
+    Path                              Avg Host Time Max Host Time Avg GPU Time Max GPU Time GPU %
+    main                                   1.614494      1.615764     0.693623     0.836652 42.962240
+      qs.mainloop                          1.614295      1.615514     0.693623     0.836652 42.967531
+        cycleFinalize                      0.001150      0.001530
+        cycleTracking                      1.312167      1.380361     0.693623     0.836652 52.860857
+          cycleTracking_Test_Done          0.000161      0.000162
+          cycleTracking_MPI                0.285434      0.313542
+            cycleTracking_Test_Done        0.019785      0.036499
+          cycleTracking_Kernel             0.841515      0.917650     0.693623     0.836652 82.425458
+        cycleInit                          0.296091      0.384112
 
 Avg/Max Host and GPU time are average and maximum inclusive runtime for host and GPU activities, respectively, over all MPI ranks. "GPU %" is the ratio of GPU time to Host runtime in percent.
 
