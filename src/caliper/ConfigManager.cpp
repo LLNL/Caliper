@@ -795,13 +795,15 @@ struct ConfigManager::ConfigManagerImpl
 
         for (const auto &p : m_spec) {
             std::string doc = p.first;
-
-            doc.append("\n ").append(p.second->description).append("\n  Options:");
+            doc.append("\n ").append(p.second->description);
 
             auto optdescrmap = p.second->opts.get_option_descriptions();
 
-            for (const auto &op : optdescrmap)
-                doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+            if (!optdescrmap.empty()) {
+                doc.append("\n  Options:");
+                for (const auto &op : optdescrmap)
+                    doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+            }
 
             ret.push_back(doc);
         }
