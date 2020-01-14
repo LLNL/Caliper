@@ -215,6 +215,26 @@ public:
         return ret;
     }
 
+    // throw out options requiring unavailable services
+    void filter_unavailable_options(const std::vector<std::string>& services) {
+        auto it = data.begin();
+
+        while (it != data.end()) {
+            bool has_all_services = true;
+
+            for (const std::string& s : it->second.services)
+                if (std::find(services.begin(), services.end(), s) == services.end()) {
+                    has_all_services = false;
+                    break;
+                }
+
+            if (has_all_services)
+                ++it;
+            else
+                it = data.erase(it);
+        }
+    }
+
     friend class ConfigManager::Options;
 };
 
@@ -554,7 +574,24 @@ struct ConfigManager::ConfigManagerImpl
             return;
         }
 
-        auto it = dict.find("categories");
+        std::vector<std::string> cfg_srvcs;
+
+        auto it = dict.find("services");
+        if (it != dict.end())
+            cfg_srvcs = ::to_stringlist(it->second.rec_list(&ok));
+
+        Services::add_default_services();
+        std::vector<std::string> avl_srvcs = Services::get_available_services();
+
+        bool has_all_services = true;
+        for (const auto& s : cfg_srvcs)
+            if (std::find(avl_srvcs.begin(), avl_srvcs.end(), s) == avl_srvcs.end())
+                has_all_services = false;
+
+        if (!has_all_services)
+            return;
+
+        it = dict.find("categories");
         if (it != dict.end())
             spec.categories = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("description");
@@ -565,6 +602,7 @@ struct ConfigManager::ConfigManagerImpl
             spec.opts.add(it->second.rec_list(&ok));
 
         spec.opts.add(base_options, spec.categories);
+        spec.opts.filter_unavailable_options(avl_srvcs);
 
         it = dict.find("name");
         if (it == dict.end()) {
@@ -757,13 +795,15 @@ struct ConfigManager::ConfigManagerImpl
 
         for (const auto &p : m_spec) {
             std::string doc = p.first;
-
-            doc.append("\n ").append(p.second->description).append("\n  Options:");
+            doc.append("\n ").append(p.second->description);
 
             auto optdescrmap = p.second->opts.get_option_descriptions();
 
-            for (const auto &op : optdescrmap)
-                doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+            if (!optdescrmap.empty()) {
+                doc.append("\n  Options:");
+                for (const auto &op : optdescrmap)
+                    doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
+            }
 
             ret.push_back(doc);
         }

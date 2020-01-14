@@ -8,7 +8,7 @@ class CaliperSamplerTest(unittest.TestCase):
     """ Caliper sampler test case """
 
     def test_hatchet_sample_profile(self):
-        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(sample.callpath=false,sample.threads=false,lookup.module=false,lookup.sourceloc=false,output=stdout,output.format=cali)' ]
+        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(output=stdout,output.format=cali)' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
