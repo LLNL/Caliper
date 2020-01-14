@@ -135,6 +135,8 @@ public:
         Attribute   m_target_attr;
         Attribute   m_sum_attr;
 
+        bool        m_is_inclusive;
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -157,24 +159,31 @@ public:
                 return Attribute::invalid;
 
             if (m_sum_attr == Attribute::invalid)
-                m_sum_attr = db.create_attribute("sum#" + m_target_attr_name, m_target_attr.type(),
+                m_sum_attr = db.create_attribute(std::string(m_is_inclusive ? "inclusive#" : "sum#") + m_target_attr_name, m_target_attr.type(),
                                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
             return m_sum_attr;
         }
 
+        bool is_inclusive() const { return m_is_inclusive; }
+
         AggregateKernel* make_kernel() {
             return new SumKernel(this);
         }
 
-        Config(const std::string& name)
+        Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
               m_target_attr(Attribute::invalid),
-              m_sum_attr(Attribute::invalid)
+              m_sum_attr(Attribute::invalid),
+              m_is_inclusive(inclusive)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg.front());
+            return new Config(cfg.front(), false);
+        }
+
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front(), true);
         }
     };
 
@@ -967,118 +976,6 @@ private:
     Config*    m_config;
 };
 
-//
-// --- InclusiveSumKernel
-//
-
-class InclusiveSumKernel : public AggregateKernel {
-public:
-
-    class Config : public AggregateKernelConfig {
-        std::string m_target_attr_name;
-        Attribute   m_target_attr;
-        Attribute   m_sum_attr;
-
-    public:
-
-        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid) {
-                m_target_attr = db.get_attribute(m_target_attr_name);
-
-                if (m_target_attr != Attribute::invalid)
-                    if (!m_target_attr.store_as_value())
-                        Log(0).stream() << "inclusive_sum(" << m_target_attr_name << "): Attribute "
-                                        << m_target_attr_name
-                                        << " does not have CALI_ATTR_ASVALUE property!"
-                                        << std::endl;
-            }
-
-            return m_target_attr;
-        }
-
-        Attribute get_sum_attr(CaliperMetadataAccessInterface& db) {
-            if (m_target_attr == Attribute::invalid)
-                return Attribute::invalid;
-
-            if (m_sum_attr == Attribute::invalid)
-                m_sum_attr = db.create_attribute("inclusive#" + m_target_attr_name,
-                                                 CALI_TYPE_DOUBLE,
-                                                 CALI_ATTR_SKIP_EVENTS |
-                                                 CALI_ATTR_ASVALUE);
-
-            return m_sum_attr;
-        }
-
-        AggregateKernel* make_kernel() {
-            return new InclusiveSumKernel(this);
-        }
-
-        bool is_inclusive() const { return true; }
-
-        Config(const std::string& name)
-            : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid)
-            {
-                Log(2).stream() << "creating inclusive sum kernel for " << m_target_attr_name << std::endl;
-            }
-
-        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg.front());
-        }
-    };
-
-    InclusiveSumKernel(Config* config)
-        : m_count(0), m_config(config)
-        {
-        }
-
-    const AggregateKernelConfig* config() { return m_config; }
-
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
-        std::lock_guard<std::mutex>
-            g(m_lock);
-
-        Attribute aggr_attr = m_config->get_target_attr(db);
-
-        if (aggr_attr == Attribute::invalid)
-            return;
-
-        for (const Entry& e : list) {
-            if (e.attribute() == aggr_attr.id()) {
-                switch (aggr_attr.type()) {
-                case CALI_TYPE_DOUBLE:
-                    m_sum = Variant(m_sum.to_double() + e.value().to_double());
-                    break;
-                case CALI_TYPE_INT:
-                    m_sum = Variant(m_sum.to_int()    + e.value().to_int()   );
-                    break;
-                case CALI_TYPE_UINT:
-                    m_sum = Variant(m_sum.to_uint()   + e.value().to_uint()  );
-                    break;
-                default:
-                    ;
-                    // Some error?!
-                }
-
-                ++m_count;
-                break;
-            }
-        }
-    }
-
-    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
-        if (m_count > 0)
-            list.push_back(Entry(m_config->get_sum_attr(db), m_sum));
-    }
-
-private:
-
-    unsigned   m_count;
-    Variant    m_sum;
-    std::mutex m_lock;
-    Config*    m_config;
-};
-
 
 enum KernelID {
     Count        = 0,
@@ -1118,15 +1015,15 @@ const struct KernelInfo {
     const char* name;
     AggregateKernelConfig* (*create)(const std::vector<std::string>& cfg);
 } kernel_list[] = {
-    { "count",         CountKernel::Config::create        },
-    { "sum",           SumKernel::Config::create          },
-    { "ratio",         ScaledRatioKernel::Config::create  },
-    { "percent_total", PercentTotalKernel::Config::create },
-    { "inclusive_sum", InclusiveSumKernel::Config::create },
-    { "min",           MinKernel::Config::create          },
-    { "max",           MaxKernel::Config::create          },
-    { "avg",           AvgKernel::Config::create          },
-    { "scale",         ScaledSumKernel::Config::create    },
+    { "count",         CountKernel::Config::create         },
+    { "sum",           SumKernel::Config::create           },
+    { "ratio",         ScaledRatioKernel::Config::create   },
+    { "percent_total", PercentTotalKernel::Config::create  },
+    { "inclusive_sum", SumKernel::Config::create_inclusive },
+    { "min",           MinKernel::Config::create           },
+    { "max",           MaxKernel::Config::create           },
+    { "avg",           AvgKernel::Config::create           },
+    { "scale",         ScaledSumKernel::Config::create     },
     { "iscale",        ScaledSumKernel::Config::create_inclusive },
     { 0, 0 }
 };
