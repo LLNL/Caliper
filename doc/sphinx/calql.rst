@@ -33,11 +33,15 @@ This table contains a quick reference of all CalQL statements:
     avg(<attribute>)           # compute average of <attribute> for grouping
     percent_total(<attribute>) # compute percent of total sum for <attribute> in grouping
     ratio(<a>,<b>,<S>)         # compute sum(<a>)/sum(<b>)*S for grouping
+    inclusive_sum(<a>)         # computes inclusive sum of <a> in a nested hierarchy
+    scale(<a>,<S>)             # computes sum of <a> multiplied by scaling factor S
+    inclusive_scale(<a>,<S>)   # computes inclusive scaled sum of <a> in a nested hierarchy
+    inclusive_percent_total(<a>) # computes inclusive percent-of-total of <a> in a nested hierarchy
     ... AS <name>              # use <name> as column header in tree or table formatter
 
   GROUP BY <list>              # Define aggregation grouping (what to aggregate over, e.g. "function,mpi.rank")
     <attribute>                # include <attribute> in grouping
-    prop:nested                # include all attributes with NESTED flag in grouping
+    prop:nested                # include default annotation attributes ('function', 'annotation', ...) in grouping
 
   WHERE <list>                 # define filter (i.e., select records/rows)
     <attribute>                # records where <attribute> exists
@@ -69,25 +73,52 @@ attributes. ``SELECT op(arg)`` enables aggregation operation `op` with
 argument `arg`. Generally, attributes will be printed in the order
 given in the SELECT statement.
 
-Example::
+An example to print all attributes and enable visit count aggregation::
 
   SELECT *, count()
 
-Print all attributes and enable visit count aggregation.
+Aggregation operations create a new output attribute. The name is typically
+derived from the input attribute(s). For example, the result of ``sum(attr)``
+is stored in ``sum#attr``. All selection attributes and aggregation
+arguments must come from the input data; recursive
+aggregations (e.g., ``min(count())``) within a query are not supported.
 
-::
+The ``AS`` keyword assigns a user-defined name to a selected attribute
+or aggregation result. Example::
 
-  SELECT function, annotation, sum(time.duration)
+  SELECT sum(time.duration) AS "Time (usec)" FORMAT table
 
-Aggregate `time.duration` using `sum` and print `function` and
-`annotation` attributes from snapshot records.
+Here, the `table` formatter uses "Time (usec)" instead of "sum#time.duration" as
+column name for the ``sum(time.duration)`` column. Only some
+formatters (table, tree, json, and json-split) support ``AS``.
+
+Inclusive aggregation operations (`inclusive_sum`, `inclusive_scale`, and
+`inclusive_percent_total`) compute inclusive values (value for a tree node
+plus all of its children) for datasets with hierarchical regions. This
+applies to the hierarchy defined by attributes with the
+``CALI_ATTR_NESTED`` property, including the default `function`,
+`annotation`, and `loop` attributes from Caliper's high-level annotation macros.
+
+A more complex example::
+
+  SELECT *, scale(time.duration,1e-6) AS Time, inclusive_percent_total(time.duration) AS "Time %" GROUP BY prop:nested FORMAT tree
+
+The computes the (exclusive) sum of `time.duration` divided by 100000 and the inclusive
+percent-of-total for `time.duration`. Example output::
+
+  Path      Time  Time %
+  main         5     100
+    foo       35      90
+      bar     10      20
 
 WHERE
 --------------------------------
 
 The WHERE statement can be used to filter the records to aggregate/print.
 The statement takes a comma-separated list of clauses. Records that don't
-match all of the clauses are filtered out.
+match all of the clauses are filtered out. Filters can only be defined on
+input attributes, i.e. it is not possible to filter on aggregation
+results.
 
 Currently, there are clauses to test for existance of an attribute
 label in a record, and to filter for specific attribute
@@ -138,9 +169,9 @@ function profile::
 
   SELECT *, count() GROUP BY function
 
-  function aggregate.count
-  foo                    3
-  bar                    3
+  function count
+  foo          3
+  bar          3
 
 FORMAT
 --------------------------------
@@ -149,13 +180,7 @@ The FORMAT statement selects the output format option. Caliper can
 produce machine-readable (e.g., json or Caliper's own csv-style) or
 human-readable output (text tables or a tree representation).
 
-Currently available formatters are
-
-* csv (Caliper's default machine-readable format)
-* json
-* expand (expanded attr1=value1,attr2=value2,... records)
-* table (human-readable text table)
-* tree (print records in a tree hierarchy)
+See :doc:`OutputFormats` for a list of available formatters.
 
 ORDER BY
 --------------------------------
@@ -167,18 +192,19 @@ that the sorting is performed by the output formatter and only
 available in some formatters (e.g., table).
 
 The following example prints a iteration/function profile ordered by
-time and iteration number: ::
+time and iteration number. Note that one must use the original
+attribute name and not an alias assigned with ``AS``: ::
 
-  SELECT *, sum(time.duration) FORMAT table \
-    ORDER BY time.inclusive.duration DESC, iteration#mainloop
+  SELECT *, sum(time.inclusive.duration) AS Time FORMAT table \
+    ORDER BY sum#time.inclusive.duration DESC, iteration#mainloop
 
-  function loop     iteration#mainloop time.inclusive.duration
-  main                                                  100000
-  main     mainloop                                      80000
-  main/foo mainloop                  0                    2500
-  main     mainloop                  0                    1500
-  main/foo mainloop                  1                    3500
-  main     mainloop                  1                    2000
-  main     mainloop                  2                    1000
-  main/foo mainloop                  2                     600
+  function loop     iteration#mainloop     Time
+  main                                   100000
+  main     mainloop                       80000
+  main/foo mainloop                  0     2500
+  main     mainloop                  0     1500
+  main/foo mainloop                  1     3500
+  main     mainloop                  1     2000
+  main     mainloop                  2     1000
+  main/foo mainloop                  2      600
   ...

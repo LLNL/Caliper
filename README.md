@@ -79,10 +79,10 @@ provided by the source-code annotations.
 
 ### Source-code annotations
 
-Caliper source-code annotations lets us associate performance measurements 
+Caliper source-code annotations let us associate performance measurements
 with user-defined, high-level context information. We can also
-trigger user-defined actions at the instrumentation points, e.g. to measure 
-the time spent in annotated regions. Measurement actions can be defined at 
+trigger user-defined actions at the instrumentation points, e.g. to measure
+the time spent in annotated regions. Measurement actions can be defined at
 runtime and are disabled by default; generally, the source-code annotations
 are lightweight enough to be left in production code.
 
@@ -180,7 +180,7 @@ Complete documentation on the ConfigManager configurations can be found
 
 #### Configuring through environment variables
 
-The ConfigManager API is not required to run Caliper - performance 
+The ConfigManager API is not required to run Caliper - performance
 measurements can also be configured with environment variables or a config
 file. For starters, there are a set of pre-defined configuration
 profiles that can be activated with the
@@ -237,7 +237,7 @@ print the recorded trace data in a human-readable json format:
 
 It is possible to create entirely custom configurations. This requires
 selecting a combination of Caliper *services* that implement specific
-functionality and configuring them for the task at hand. 
+functionality and configuring them for the task at hand.
 More information can be found in the [Caliper documentation](https://llnl.github.io/Caliper/).
 
 Authors
