@@ -36,9 +36,10 @@ public:
                 " sum(sum#time.duration)";
             // Config for serial-mode aggregation
             std::string serial_select =
-                " inclusive_sum(sum#time.duration) as \"Inclusive time\""
-                ",sum(sum#time.duration) as \"Exclusive time\""
-                ",percent_total(sum#time.duration) as \"Time %\"";
+                " sum(sum#time.duration) as \"Time (E)\""
+                ",inclusive_sum(sum#time.duration) as \"Time (I)\""
+                ",percent_total(sum#time.duration) as \"Time % (E)\""
+                ",inclusive_percent_total(sum#time.duration) as \"Time % (I)\"";
 
             std::string tmetric = "sum#sum#time.duration";
             std::string pmetric = "percent_total(sum#sum#time.duration)";
