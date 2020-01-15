@@ -41,10 +41,12 @@ public:
                 ",percent_total(sum#time.duration) as \"Time %\"";
 
             std::string tmetric = "sum#sum#time.duration";
+            std::string pmetric = "percent_total(sum#sum#time.duration)";
 
             if (opts.is_enabled("calc.inclusive")) {
                 local_select += ",inclusive_sum(sum#time.duration)";
                 tmetric = "inclusive#sum#time.duration";
+                pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
@@ -52,7 +54,7 @@ public:
                   std::string(" min(") + tmetric + ") as \"Min time/rank\""
                 + std::string(",max(") + tmetric + ") as \"Max time/rank\""
                 + std::string(",avg(") + tmetric + ") as \"Avg time/rank\""
-                + std::string(",percent_total(sum#sum#time.duration) as \"Time %\"");
+                + std::string(","    ) + pmetric + "  as \"Time %\"";
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
