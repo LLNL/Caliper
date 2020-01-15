@@ -755,7 +755,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
      // create some context attributes
 
     Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_NESTED);
     Attribute val_attr =
         db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
@@ -769,7 +769,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
     } test_nodes[] = {
         { 100, ctx.id(), CALI_INV_ID, Variant(-1) },
         { 101, ctx.id(), 100,         Variant(42) },
-        { 102, ctx.id(), 100,         Variant(24) }
+        { 102, ctx.id(), 101,         Variant(24) }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -785,6 +785,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("inclusive_percent_total", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -804,9 +805,11 @@ TEST(AggregatorTest, PercentTotalKernel) {
     // merge b into a
     b.flush(db, a);
 
-    Attribute attr_pct = db.get_attribute("percent_total#val");
+    Attribute attr_pct  = db.get_attribute("percent_total#val");
+    Attribute attr_ipct = db.get_attribute("ipercent_total#val");
 
-    ASSERT_NE(attr_pct, Attribute::invalid);
+    ASSERT_NE(attr_pct , Attribute::invalid);
+    ASSERT_NE(attr_ipct, Attribute::invalid);
 
     std::vector<EntryList> resdb;
 
@@ -816,7 +819,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     // check results
 
-    EXPECT_EQ(resdb.size(), 2); // two entries
+    EXPECT_EQ(resdb.size(), 3); // three entries
 
     auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
             for (const Entry& e : list)
@@ -830,6 +833,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
     auto dict  = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 25.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);
 
     it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
             for (const Entry& e : list)
@@ -843,4 +847,19 @@ TEST(AggregatorTest, PercentTotalKernel) {
     dict  = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 75.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 75.0);
+
+    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
+            for (const Entry& e : list)
+                if (e.value(ctx).to_int() == -1)
+                    return true;
+            return false;
+        });
+
+    ASSERT_NE(it, resdb.end());
+
+    dict  = make_dict_from_entrylist(*it);
+
+    EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 0.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);
 }

@@ -41,6 +41,11 @@ public:
 
     virtual const AggregateKernelConfig* config() = 0;
 
+    // For inclusive metrics, parent_aggregate is invoked for parent nodes
+    virtual void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        aggregate(db, list);
+    }
+
     virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) = 0;
     virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) = 0;
 };
@@ -854,6 +859,8 @@ public:
         std::mutex  m_total_lock;
         double      m_total;
 
+        bool        m_is_inclusive;
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -883,12 +890,12 @@ public:
             }
 
             m_percentage_attr =
-                db.create_attribute("percent_total#" + m_target_attr_name,
+                db.create_attribute(std::string(m_is_inclusive ? "ipercent_total#" : "percent_total#") + m_target_attr_name,
                                     CALI_TYPE_DOUBLE,
                                     CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
             m_sum_attr =
-                db.create_attribute("pct.sum#" + m_target_attr_name,
+                db.create_attribute(std::string(m_is_inclusive ? "ipct.sum#" : "pct.sum#") + m_target_attr_name,
                                     CALI_TYPE_DOUBLE,
                                     CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE | CALI_ATTR_HIDDEN);
 
@@ -913,27 +920,36 @@ public:
             return m_total;
         }
 
-        Config(const std::vector<std::string>& names)
+        bool is_inclusive() const {
+            return m_is_inclusive;
+        }
+
+        Config(const std::vector<std::string>& names, bool inclusive)
             : m_target_attr_name(names.front()),
               m_target_attr(Attribute::invalid),
-              m_total(0)
+              m_total(0),
+              m_is_inclusive(inclusive)
         {
             Log(2).stream() << "aggregate: creating percent_total kernel for attribute "
                             << m_target_attr_name << std::endl;
         }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg);
+            return new Config(cfg, false);
+        }
+
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg, true);
         }
     };
 
     PercentTotalKernel(Config* config)
-        : m_sum(0), m_config(config)
+        : m_sum(0), m_isum(0), m_config(config)
         { }
 
     const AggregateKernelConfig* config() { return m_config; }
 
-    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+    void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
         Attribute target_attr = m_config->get_target_attr(db);
         Attribute percentage_attr, sum_attr;
 
@@ -948,9 +964,28 @@ public:
 
             if (id == target_id || id == sum_id) {
                 double val = e.value().to_double();
-                m_sum += val;
+                m_sum  += val;
+                m_isum += val;
                 m_config->add(val);
             }
+        }
+    }
+
+    void parent_aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        Attribute target_attr = m_config->get_target_attr(db);
+        Attribute percentage_attr, sum_attr;
+
+        if (!m_config->get_percentage_attribute(db, percentage_attr, sum_attr))
+            return;
+
+        cali_id_t target_id = target_attr.id();
+        cali_id_t sum_id    = sum_attr.id();
+
+        for (const Entry& e : list) {
+            cali_id_t id = e.attribute();
+
+            if (id == target_id || id == sum_id)
+                m_isum += e.value().to_double();
         }
     }
 
@@ -964,13 +999,14 @@ public:
                 return;
 
             list.push_back(Entry(sum_attr, Variant(m_sum)));
-            list.push_back(Entry(percentage_attr, Variant(100.0 * m_sum / total)));
+            list.push_back(Entry(percentage_attr, Variant(100.0 * m_isum / total)));
         }
     }
 
 private:
 
     double     m_sum;
+    double     m_isum; // inclusive sum
 
     std::mutex m_lock;
     Config*    m_config;
@@ -978,35 +1014,37 @@ private:
 
 
 enum KernelID {
-    Count        = 0,
-    Sum          = 1,
-    ScaledRatio  = 2,
-    PercentTotal = 3,
-    InclusiveSum = 4,
-    Min          = 5,
-    Max          = 6,
-    Avg          = 7,
-    ScaledSum    = 8,
-    IScaledSum   = 9
+    Count         = 0,
+    Sum           = 1,
+    ScaledRatio   = 2,
+    PercentTotal  = 3,
+    InclusiveSum  = 4,
+    Min           = 5,
+    Max           = 6,
+    Avg           = 7,
+    ScaledSum     = 8,
+    IScaledSum    = 9,
+    IPercentTotal = 10
 };
 
-#define MAX_KERNEL_ID 9
+#define MAX_KERNEL_ID 10
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
 const char* scale_args[]   = { "attribute", "scale" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
-    { KernelID::Count,        "count",         0, 0, nullptr      },
-    { KernelID::Sum,          "sum",           1, 1, kernel_args  },
-    { KernelID::ScaledRatio,  "ratio",         2, 3, sratio_args  },
-    { KernelID::PercentTotal, "percent_total", 1, 1, kernel_args  },
-    { KernelID::InclusiveSum, "inclusive_sum", 1, 1, kernel_args  },
-    { KernelID::Min,          "min",           1, 1, kernel_args  },
-    { KernelID::Max,          "max",           1, 1, kernel_args  },
-    { KernelID::Avg,          "avg",           1, 1, kernel_args  },
-    { KernelID::ScaledSum,    "scale",         2, 2, scale_args   },
-    { KernelID::IScaledSum,   "iscale",        2, 2, scale_args   },
+    { KernelID::Count,         "count",         0, 0, nullptr      },
+    { KernelID::Sum,           "sum",           1, 1, kernel_args  },
+    { KernelID::ScaledRatio,   "ratio",         2, 3, sratio_args  },
+    { KernelID::PercentTotal,  "percent_total", 1, 1, kernel_args  },
+    { KernelID::InclusiveSum,  "inclusive_sum", 1, 1, kernel_args  },
+    { KernelID::Min,           "min",           1, 1, kernel_args  },
+    { KernelID::Max,           "max",           1, 1, kernel_args  },
+    { KernelID::Avg,           "avg",           1, 1, kernel_args  },
+    { KernelID::ScaledSum,     "scale",         2, 2, scale_args   },
+    { KernelID::IScaledSum,    "iscale",        2, 2, scale_args   },
+    { KernelID::IPercentTotal, "inclusive_percent_total", 1, 1, kernel_args },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1025,6 +1063,7 @@ const struct KernelInfo {
     { "avg",           AvgKernel::Config::create           },
     { "scale",         ScaledSumKernel::Config::create     },
     { "iscale",        ScaledSumKernel::Config::create_inclusive },
+    { "inclusive_percent_total", PercentTotalKernel::Config::create_inclusive },
     { 0, 0 }
 };
 
@@ -1312,7 +1351,7 @@ struct Aggregator::AggregatorImpl
                     if (!p_trie)
                         break;
 
-                    p_trie->kernels[k]->aggregate(db, list);
+                    p_trie->kernels[k]->parent_aggregate(db, list);
                 }
             }
         }
@@ -1467,6 +1506,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("scale#") + op.args[0];
     case KernelID::IScaledSum:
         return std::string("iscale#") + op.args[0];
+    case KernelID::IPercentTotal:
+        return std::string("ipercent_total#") + op.args[0];
     }
 
     return std::string();
