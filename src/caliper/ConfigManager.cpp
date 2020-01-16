@@ -176,6 +176,27 @@ class ConfigManager::OptionSpec
         data[it->second.to_string()] = opt;
     }
 
+    std::vector<std::string> recursive_get_services_list(const std::string& cfg) {
+        std::vector<std::string> ret;
+
+        auto it = data.find(cfg);
+
+        if (it == data.end())
+            return ret;
+
+        ret = it->second.services;
+
+        for (const std::string& s : it->second.inherited_specs) {
+            auto tmp = recursive_get_services_list(s);
+            ret.insert(ret.end(), tmp.begin(), tmp.end());
+        }
+
+        std::sort(ret.begin(), ret.end());
+        ret.erase(std::unique(ret.begin(), ret.end()), ret.end());
+
+        return ret;
+    }
+
 public:
 
     OptionSpec()
@@ -216,19 +237,17 @@ public:
     }
 
     // throw out options requiring unavailable services
-    void filter_unavailable_options(const std::vector<std::string>& services) {
+    void filter_unavailable_options(const std::vector<std::string>& in) {
+        std::vector<std::string> available(in);
+        std::sort(available.begin(), available.end());
+        available.erase(std::unique(available.begin(), available.end()), available.end());
+
         auto it = data.begin();
 
         while (it != data.end()) {
-            bool has_all_services = true;
+            auto required = recursive_get_services_list(it->first);
 
-            for (const std::string& s : it->second.services)
-                if (std::find(services.begin(), services.end(), s) == services.end()) {
-                    has_all_services = false;
-                    break;
-                }
-
-            if (has_all_services)
+            if (std::includes(available.begin(), available.end(), required.begin(), required.end()))
                 ++it;
             else
                 it = data.erase(it);
