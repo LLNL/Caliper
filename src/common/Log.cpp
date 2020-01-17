@@ -7,6 +7,7 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include <cstring>
 #include <memory>
 #include <map>
 
@@ -38,7 +39,7 @@ struct LogImpl
     void init_stream() {
         string name = m_config.get("logfile").to_string();
 
-        const map<string, Stream> strmap { 
+        const map<string, Stream> strmap {
             { "none",   Stream::None   },
             { "stdout", Stream::StdOut },
             { "stderr", Stream::StdErr } };
@@ -58,7 +59,7 @@ struct LogImpl
 
     // --- interface
 
-    LogImpl() 
+    LogImpl()
         : m_config { RuntimeConfig::get_default_config().init("log", s_configdata) },
           m_prefix { s_prefix }
     {
@@ -95,7 +96,7 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
       "Verbosity level.\n"
       "  0: no output\n"
       "  1: basic informational runtime output\n"
-      "  2: debug output" 
+      "  2: debug output"
     },
     { "logfile",   CALI_TYPE_STRING, "stderr",
       "Log file name",
@@ -105,7 +106,7 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
       "   none:   No output,\n"
       " or a log file name."
     },
-    ConfigSet::Terminator 
+    ConfigSet::Terminator
 };
 
 
@@ -113,25 +114,39 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
 // --- Log public interface
 //
 
-ostream& 
+ostream&
 Log::get_stream()
 {
     return (LogImpl::instance()->get_stream() << LogImpl::instance()->m_prefix);
 }
 
-unsigned 
+ostream&
+Log::perror(int errnum, const char* msg)
+{
+    if (verbosity() < m_level)
+        return m_nullstream;
+
+#ifdef _GLIBCXX_HAVE_STRERROR_R
+    char buf[120];
+    return get_stream() << msg << strerror_r(errnum, buf, sizeof(buf));
+#else
+    return get_stream() << msg << strerror(errnum);
+#endif
+}
+
+unsigned
 Log::verbosity()
 {
     return LogImpl::instance()->m_verbosity;
 }
 
-void 
+void
 Log::set_verbosity(unsigned v)
 {
     LogImpl::instance()->m_verbosity = v;
 }
 
-void 
+void
 Log::add_prefix(const std::string& prefix)
 {
     LogImpl::instance()->m_prefix += prefix;
