@@ -417,14 +417,14 @@ TEST(AggregatorTest, InclusiveSumOp) {
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
     spec.aggregation_ops.list.push_back(::make_op("inclusive_sum", "val"));
-    spec.aggregation_ops.list.push_back(::make_op("iscale", "val", "2.0"));
+    spec.aggregation_ops.list.push_back(::make_op("inclusive_scale", "val", "2.0"));
 
     ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 4);
 
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
     ASSERT_STREQ(spec.aggregation_ops.list[2].op.name, "inclusive_sum");
-    ASSERT_STREQ(spec.aggregation_ops.list[3].op.name, "iscale");
+    ASSERT_STREQ(spec.aggregation_ops.list[3].op.name, "inclusive_scale");
 
     Aggregator a(spec);
 

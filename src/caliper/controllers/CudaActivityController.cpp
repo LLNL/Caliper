@@ -31,12 +31,12 @@ public:
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
-                " iscale(sum#cupti.host.duration,1e-9)"
-                ",iscale(cupti.activity.duration,1e-9)";
+                " inclusive_scale(sum#cupti.host.duration,1e-9)"
+                ",inclusive_scale(cupti.activity.duration,1e-9)";
             // Config for serial-mode aggregation
             std::string serial_select =
-                " iscale(sum#cupti.host.duration,1e-9) as \"Host Time\""
-                ",iscale(cupti.activity.duration,1e-9) as \"GPU Time\""
+                " inclusive_scale(sum#cupti.host.duration,1e-9) as \"Host Time\""
+                ",inclusive_scale(cupti.activity.duration,1e-9) as \"GPU Time\""
                 ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)

@@ -1043,7 +1043,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Max,           "max",           1, 1, kernel_args  },
     { KernelID::Avg,           "avg",           1, 1, kernel_args  },
     { KernelID::ScaledSum,     "scale",         2, 2, scale_args   },
-    { KernelID::IScaledSum,    "iscale",        2, 2, scale_args   },
+    { KernelID::IScaledSum,    "inclusive_scale", 2, 2, scale_args   },
     { KernelID::IPercentTotal, "inclusive_percent_total", 1, 1, kernel_args },
 
     QuerySpec::FunctionSignatureTerminator
@@ -1062,7 +1062,7 @@ const struct KernelInfo {
     { "max",           MaxKernel::Config::create           },
     { "avg",           AvgKernel::Config::create           },
     { "scale",         ScaledSumKernel::Config::create     },
-    { "iscale",        ScaledSumKernel::Config::create_inclusive },
+    { "inclusive_scale", ScaledSumKernel::Config::create_inclusive },
     { "inclusive_percent_total", PercentTotalKernel::Config::create_inclusive },
     { 0, 0 }
 };
