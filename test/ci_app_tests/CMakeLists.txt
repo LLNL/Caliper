@@ -50,6 +50,7 @@ set(PYTHON_SCRIPTS
   test_multichannel.py
   test_report.py
   test_thread.py
+  test_validator.py
   calipertest.py)
 
 if (CALIPER_HAVE_CPUINFO)
