@@ -20,7 +20,7 @@ class CaliperValidatorTest(unittest.TestCase):
             'validator: Annotation nesting errors found'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -44,7 +44,7 @@ class CaliperValidatorTest(unittest.TestCase):
             'validator: Annotation nesting errors found'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -67,7 +67,7 @@ class CaliperValidatorTest(unittest.TestCase):
             'validator: No annotation nesting errors found'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -90,7 +90,7 @@ class CaliperValidatorTest(unittest.TestCase):
             'validator: No annotation nesting errors found'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
