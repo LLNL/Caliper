@@ -73,13 +73,13 @@ def run_test_with_query(target_cmd, query_cmd, env):
 def run_test(target_cmd, env):
     """ Execute a command, and return its output """
 
-    target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE)
+    target_proc = subprocess.Popen(target_cmd, env=env, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     proc_out, proc_err = target_proc.communicate()
 
     if (target_proc.returncode != 0):
         raise CaliperExecError('Command ' + str(target_cmd) + ' exited with ' + str(target_proc.returncode))
 
-    return proc_out
+    return (proc_out,proc_err)
 
 
 def get_snapshots_from_text(query_output):

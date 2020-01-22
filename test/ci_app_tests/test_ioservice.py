@@ -62,7 +62,7 @@ class CaliperIoServiceTest(unittest.TestCase):
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
-        obj = json.loads( cat.run_test(target_cmd, caliper_config) )
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
         self.assertEqual(obj[1]['path'], 'main')
         self.assertEqual(int(obj[1]['Bytes read']), 16)

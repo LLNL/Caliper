@@ -25,7 +25,7 @@ class CaliperLogTest(unittest.TestCase):
             'Metadata memory pool'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -50,7 +50,7 @@ class CaliperLogTest(unittest.TestCase):
             'Invalid value "bar" for CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE'
         ]
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         for target in log_targets:
@@ -60,7 +60,6 @@ class CaliperLogTest(unittest.TestCase):
             else:
                 self.fail('%s not found in log' % target)
 
-
     def test_log_silent(self):
         target_cmd = [ './ci_test_basic' ]
 
@@ -68,7 +67,7 @@ class CaliperLogTest(unittest.TestCase):
                 'CALI_LOG_LOGFILE'   : 'stdout'
         }
 
-        report_out = cat.run_test(target_cmd, env)
+        report_out,_ = cat.run_test(target_cmd, env)
         lines = report_out.decode().splitlines()
 
         self.assertTrue(len(lines) == 0)

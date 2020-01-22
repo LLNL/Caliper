@@ -1,4 +1,4 @@
-# Basic smoke tests: create and read a simple trace 
+# Basic smoke tests: create and read a simple trace, test various options
 
 import json
 import unittest
@@ -72,7 +72,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
             snapshots, { 'cali.attribute.name': 'iteration',
                          'cali.attribute.prop': '13' # CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE
             }))
-        
+
     def test_sec_unit_selection(self):
         target_cmd = [ './ci_test_basic' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,time.unit' ]
@@ -139,7 +139,6 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function' : 'main/foo', 'event.end#loop': 'fooloop', 'count' : '400' }))
-        
 
     def test_globals(self):
         target_cmd = [ './ci_test_basic' ]
@@ -158,7 +157,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'cali.caliper.version' } ) )
-        
+
     def test_esc(self):
         target_cmd = [ './ci_test_basic' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-j', '-s', 'cali.event.set' ]
@@ -172,7 +171,6 @@ class CaliperBasicTraceTest(unittest.TestCase):
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
         self.assertEqual(obj[0]['event.set# =\\weird ""attribute"=  '], '  \\\\ weird," name",' )
-        
 
     def test_macros(self):
         # Use ConfigManager API here
@@ -203,7 +201,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
                 'function'   : 'main/foo',
                 'loop'       : 'mainloop/fooloop',
                 'iteration#fooloop' : '3' }))
-        
+
     def test_property_override(self):
         target_cmd = [ './ci_test_macros' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', '--list-attributes' ]
@@ -263,7 +261,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'testbinding' : 'binding.nested=outer/binding.nested=inner' }))            
+            snapshots, { 'testbinding' : 'binding.nested=outer/binding.nested=inner' }))
 
 if __name__ == "__main__":
     unittest.main()
