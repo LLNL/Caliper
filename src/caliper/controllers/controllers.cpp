@@ -13,6 +13,7 @@ extern ConfigManager::ConfigInfo event_trace_controller_info;
 extern ConfigManager::ConfigInfo nvprof_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
+extern ConfigManager::ConfigInfo intel_topdown_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
@@ -21,6 +22,7 @@ ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &nvprof_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
+    &intel_topdown_controller_info,
     &runtime_report_controller_info,
     nullptr
 };
@@ -148,6 +150,32 @@ const char* builtin_option_specs =
     "   { \"level\": \"serial\", \"select\": [ { \"expr\": \"max(max#alloc.region.highwatermark)\", \"as\": \"Max Alloc'd Mem\" } ] },"
     "   { \"level\": \"local\",  \"select\": [ { \"expr\": \"max(max#alloc.region.highwatermark)\" } ] },"
     "   { \"level\": \"cross\",  \"select\": [ { \"expr\": \"max(max#max#alloc.region.highwatermark)\", \"as\": \"Max Alloc'd Mem\" } ] }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"topdown-counters.toplevel\","
+    " \"description\" : \"Intel Top-Down Analysis top-level counters\","
+    " \"type\"        : \"bool\","
+    " \"category\"    : \"metric\","
+    " \"services\"    : [ \"libpfm\" ],"
+    " \"extra_config_flags\" : "
+    " {"
+    "   \"CALI_LIBPFM_ENABLE_SAMPLING\": \"false\","
+    "   \"CALI_LIBPFM_RECORD_COUNTERS\": \"true\","
+    "   \"CALI_LIBPFM_EVENTS\": "
+    "     \"CPU_CLK_UNHALTED.THREAD_P,UOPS_RETIRED.RETIRE_SLOTS,UOPS_ISSUED.ANY,INT_MISC.RECOVERY_CYCLES,IDQ_UOPS_NOT_DELIVERED.CORE\""
+    " },"
+    " \"query args\"  : "
+    " ["
+    "  { \"level\": \"serial\", \"select\": "
+    "   ["
+    "    { \"expr\": \"sum(sum#libpfm.counter.CPU_CLK_UNHALTED.THREAD_P)\"   },"
+    "    { \"expr\": \"sum(sum#libpfm.counter.UOPS_RETIRED.RETIRE_SLOTS)\"   },"
+    "    { \"expr\": \"sum(sum#libpfm.counter.UOPS_ISSUED.ANY)\"             },"
+    "    { \"expr\": \"sum(sum#libpfm.counter.INT_MISC.RECOVERY_CYCLES)\"    },"
+    "    { \"expr\": \"sum(sum#libpfm.counter.IDQ_UOPS_NOT_DELIVERED.CORE)\" }"
+    "   ]"
+    "  }"
     " ]"
     "},"
     "{"
