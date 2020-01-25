@@ -105,13 +105,13 @@ class LibpfmService
     std::vector <std::string> sample_attributes_strvec;
     uint64_t sample_attributes = 0;
 
-    uint64_t signals_received;
-    uint64_t samples_produced;
-    uint64_t bad_samples;
-    uint64_t null_events;
-    uint64_t null_cali_instances;
-    unsigned event_read_fail;
-    unsigned event_reset_fail;
+    uint64_t signals_received = 0;
+    uint64_t samples_produced = 0;
+    uint64_t bad_samples  = 0;
+    uint64_t null_events  = 0;
+    uint64_t null_cali_instances = 0;
+    unsigned event_read_fail  = 0;
+    unsigned event_reset_fail = 0;
 
     /*
      * libpfm sampling variables
@@ -674,19 +674,19 @@ class LibpfmService
 
             data_src_attrs.mem_lvl_attr   =
                 c->create_attribute("libpfm.memory_level",
-                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             data_src_attrs.mem_hit_attr   =
                 c->create_attribute("libpfm.hit_type",
-                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             data_src_attrs.mem_op_attr    =
                 c->create_attribute("libpfm.operation",
-                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             data_src_attrs.mem_snoop_attr =
                 c->create_attribute("libpfm.snoop",
-                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             data_src_attrs.mem_tlb_attr   =
                 c->create_attribute("libpfm.tlb",
-                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_STRING, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
         }
 
 public:
