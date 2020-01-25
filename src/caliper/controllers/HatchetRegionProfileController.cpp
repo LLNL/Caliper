@@ -50,10 +50,15 @@ public:
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
 
+            bool use_mpi = have_mpi;
+
+            if (opts.is_set("use.mpi"))
+                use_mpi = have_mpi && opts.is_enabled("use.mpi");
+
             if (have_adiak)
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 
-            if (have_mpi) {
+            if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "annotation,function,loop,mpi.rank");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
@@ -121,6 +126,12 @@ const char* controller_spec =
     "    \"name\": \"output.format\","
     "    \"type\": \"string\","
     "    \"description\": \"Output format ('hatchet', 'cali', 'json')\""
+    "  },"
+    "  { "
+    "    \"name\": \"use.mpi\","
+    "    \"services\": [ \"mpi\", \"mpireport\" ],"
+    "    \"type\": \"bool\","
+    "    \"description\": \"Merge results into a single output stream in MPI programs\""
     "  }"
     " ]"
     "}";

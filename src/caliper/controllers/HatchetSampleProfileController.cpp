@@ -30,7 +30,7 @@ public:
                 { "CALI_SERVICES_ENABLE", "sampler,trace" }
             })
         {
-            config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sampler.frequency", "200").to_string();
+            config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sample.frequency", "200").to_string();
 
             std::string select  = "*,count()";
             std::string groupby = "prop:nested";
@@ -51,10 +51,15 @@ public:
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
 
+            bool use_mpi = have_mpi;
+
+            if (opts.is_set("use.mpi"))
+                use_mpi = have_mpi && opts.is_enabled("use.mpi");
+
             if (have_adiak)
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 
-            if (have_mpi) {
+            if (use_mpi) {
                 groupby += ",mpi.rank";
 
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
@@ -171,6 +176,12 @@ const char* controller_spec =
     "    \"services\": [ \"symbollookup\" ],"
     "    \"extra_config_flags\": { \"CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC\": \"true\" },"
     "    \"query args\": [ { \"level\": \"local\", \"group by\": \"sourceloc#cali.sampler.pc\" } ]"
+    "  },"
+    "  { "
+    "    \"name\": \"use.mpi\","
+    "    \"type\": \"bool\","
+    "    \"services\": [ \"mpi\", \"mpireport\" ],"
+    "    \"description\": \"Merge results into a single output stream in MPI programs\""
     "  }"
     " ]"
     "}";
