@@ -166,7 +166,8 @@ class AllocService
         c->push_snapshot(chn, &trigger_info);
     }
 
-    void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims) {
+    void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims,
+                      size_t nextra, const Attribute* extra_attrs, const Variant* extra_vals) {
         size_t total_size =
             std::accumulate(dims, dims+ndims, elem_size, std::multiplies<size_t>());
 
@@ -178,18 +179,23 @@ class AllocService
         info.elem_size  = elem_size;
         info.num_elems  = total_size / elem_size;
 
-        Variant v_label(CALI_TYPE_STRING, label, strlen(label));
+        Variant v_label(label);
+
+        Node* root_node = &g_alloc_root_node;
+
+        for (size_t i = 0; i < nextra; ++i)
+            root_node = c->make_tree_entry(extra_attrs[i], extra_vals[i], root_node);
 
         info.alloc_label_node =
-            c->make_tree_entry(mem_alloc_attr, v_label, &g_alloc_root_node);
+            c->make_tree_entry(mem_alloc_attr, v_label, root_node);
         info.free_label_node  =
-            c->make_tree_entry(mem_free_attr,  v_label, &g_alloc_root_node);
+            c->make_tree_entry(mem_free_attr,  v_label, root_node);
 
         std::fill_n(info.addr_label_nodes, MAX_ADDRESS_ATTRIBUTES, nullptr);
 
         for (int i = 0; i < std::min<int>(g_memoryaddress_attrs.size(), MAX_ADDRESS_ATTRIBUTES); ++i) {
             info.addr_label_nodes[i] =
-                c->make_tree_entry(g_memoryaddress_attrs[i].alloc_label_attr, v_label, &g_alloc_root_node);
+                c->make_tree_entry(g_memoryaddress_attrs[i].alloc_label_attr, v_label, root_node);
         }
 
         if (g_track_allocations)
@@ -431,8 +437,8 @@ public:
         AllocService* instance = new AllocService(c, chn);
 
         chn->events().track_mem_evt.connect(
-            [instance](Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims){
-                instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims);
+            [instance](Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims, size_t n, const Attribute* attrs, const Variant* vals){
+                instance->track_mem_cb(c, chn, ptr, label, elem_size, ndims, dims, n, attrs, vals);
             });
         chn->events().untrack_mem_evt.connect(
             [instance](Caliper* c, Channel* chn, const void* ptr){
