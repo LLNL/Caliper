@@ -801,11 +801,12 @@ Caliper::get_all_attributes() const
 
 /// Dispatch memory region annotation across all active channels
 void
-Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[])
+Caliper::memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
+    size_t nextra, const Attribute* extra_attrs, const Variant* extra_vals)
 {
     for (auto& chn : sG->channels)
         if (chn && chn->is_active())
-            memory_region_begin(chn.get(), ptr, label, elem_size, ndim, dims);
+            memory_region_begin(chn.get(), ptr, label, elem_size, ndim, dims, nextra, extra_attrs, extra_vals);
 }
 
 /// Dispatch memory region annotation end across all active channels
@@ -1437,12 +1438,13 @@ Caliper::get(Channel* channel, const Attribute& attr)
 // --- Memory region tracking
 
 void
-Caliper::memory_region_begin(Channel* channel, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[])
+Caliper::memory_region_begin(Channel* channel, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t dims[],
+    size_t n, const Attribute* extra_attrs, const Variant* extra_vals)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    channel->mP->events.track_mem_evt(this, channel, ptr, label, elem_size, ndims, dims);
+    channel->mP->events.track_mem_evt(this, channel, ptr, label, elem_size, ndims, dims, n, extra_attrs, extra_vals);
 }
 
 void
