@@ -4,7 +4,6 @@ set(CALIPER_KOKKOS_SOURCES
   KokkosTime.cpp
 )
 
-
 add_library(caliper-kokkos OBJECT ${CALIPER_KOKKOS_SOURCES})
 
 add_service_objlib("caliper-kokkos")
