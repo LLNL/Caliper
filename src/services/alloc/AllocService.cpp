@@ -309,7 +309,7 @@ class AllocService
         if (g_record_active_mem)
             snapshot->append(active_mem_attr.id(), Variant(cali_make_variant_from_uint(g_active_mem)));
 
-        if (g_resolve_addresses)
+        if (g_resolve_addresses && trigger_info != nullptr)
             resolve_addresses(c, trigger_info, snapshot);
 
         if (g_record_highwatermark)
