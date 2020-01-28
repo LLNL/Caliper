@@ -1,8 +1,6 @@
 // --- Caliper continuous integration test app for C++ annotation class
 
-#include "caliper/Annotation.h"
-
-#include "caliper/common/Variant.h"
+#include "caliper/cali.h"
 
 int main()
 {
@@ -10,8 +8,14 @@ int main()
         { "meta.int", cali::Variant(42) }
     };
 
-    cali::Annotation phase_ann("phase", metadata);
+    // Test proper escaping
+    cali_set_string_byname(" =\\weird \"\"attribute\"=  ", "  \\\\ weird,\" name\",");
+    cali_set_global_string_byname(" =\\weird \"\" global attribute\"=  ", "  \\\\ weird,\" name\",");
 
+    cali::Annotation phase_ann("phase", metadata);
+    std::size_t size = 8;
+    cali::Annotation size_annot("dgs");
+    size_annot.begin(size);
     phase_ann.begin("initialization");
     const int count = 4;
     phase_ann.end();
@@ -20,7 +24,7 @@ int main()
     copy_ann.begin("loop");
 
     cali::Annotation iter_ann("iteration", CALI_ATTR_ASVALUE);
-
+    iter_ann.begin(uint64_t(5));
     for (int i = 0; i < count; ++i) {
         cali::Annotation::Guard
             g_iter_ann(iter_ann.begin(i));

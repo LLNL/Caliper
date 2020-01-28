@@ -1,43 +1,5 @@
-// Copyright (c) 2018, Lawrence Livermore National Security, LLC.  
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
-//
-//  * Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the disclaimer below.
-//
-//  * Redistributions in binary form must reproduce the above
-//    copyright notice, this list of conditions and the disclaimer (as
-//    noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//
-//  * Neither the name of the LLNS/LLNL nor the names of its
-//    contributors may be used to endorse or promote products derived
-//    from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-// FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL LAWRENCE
-// LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-// OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-// SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // -- cali-annotation-perftest
 //
@@ -60,6 +22,8 @@
 // between threads using OpenMP.
 
 #include <caliper/Caliper.h>
+#include <caliper/ChannelController.h>
+#include <caliper/ConfigManager.h>
 
 #include <caliper/common/RuntimeConfig.h>
 
@@ -73,6 +37,9 @@
 #include <omp.h>
 #endif
 
+#ifdef CALIPER_HAVE_ADIAK
+#include <adiak.hpp>
+#endif
 
 cali::Annotation         test_annotation("test.attr", CALI_ATTR_SCOPE_THREAD);
 std::vector<std::string> annotation_strings;
@@ -107,33 +74,66 @@ int run(const Config& cfg)
     for (int i = 0; i < cfg.iter; ++i) {
         n_updates += foo(cfg.tree_depth, i % cfg.tree_width, cfg);
     }
-    
+
     return n_updates;
 }
 
 void make_strings(const Config& cfg)
 {
+    CALI_CXX_MARK_FUNCTION;
+
     int depth = cfg.tree_depth + 1;
     int width = std::max(1, cfg.tree_width);
-    
+
     annotation_strings.resize(depth * width);
 
     for (int d = 0; d < depth; ++d)
         for (int w = 0; w < width; ++w) {
             std::string str("foo.");
-            
+
             str.append(std::to_string(d));
             str.append(".");
             str.append(std::to_string(w));
-            
+
             annotation_strings[d*width+w] = std::move(str);
         }
 }
 
+void record_globals(const Config& cfg, int threads, const cali::ConfigManager::argmap_t& extra_kv)
+{
+#ifdef CALIPER_HAVE_ADIAK
+    adiak::value("perftest.tree_width", cfg.tree_width);
+    adiak::value("perftest.tree_depth", cfg.tree_depth);
+    adiak::value("perftest.iterations", cfg.iter);
+    adiak::value("perftest.threads",    threads);
+    adiak::value("perftest.channels",   cfg.channels);
+
+    adiak::value("perftest.services",
+                 cali::RuntimeConfig::get_default_config().get("services", "enable").to_string());
+
+    adiak::user();
+    adiak::launchdate();
+    // adiak::executablepath();
+    // adiak::libraries();
+    adiak::cmdline();
+    adiak::clustername();
+    adiak::hostname();
+
+    for (auto &p : extra_kv)
+        adiak::value(p.first, p.second);
+#else
+    cali_set_global_int_byname("perftest.tree_width", cfg.tree_width);
+    cali_set_global_int_byname("perftest.tree_depth", cfg.tree_depth);
+    cali_set_global_int_byname("perftest.iterations", cfg.iter);
+    cali_set_global_int_byname("perftest.threads",    threads);
+    cali_set_global_int_byname("perftest.channels",   cfg.channels);
+#endif
+}
+
 int main(int argc, char* argv[])
 {
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=nested:process_scope");
-    
+    cali_config_preset("CALI_ATTRIBUTE_DEFAULT_SCOPE", "process");
+
     const util::Args::Table option_table[] = {
         { "width",       "tree-width",  'w', true,
           "Context tree width", "WIDTH"
@@ -152,14 +152,19 @@ int main(int argc, char* argv[])
           "Number of replicated channel instances",
           "CHANNELS"
         },
+        { "profile",       "profile",   'P', true,
+          "Caliper profiling config (for profiling cali-annotation-perftest)",
+          "CONFIGSTRING"
+        },
 
-        { "help", "help", 'h', false, "Print help", nullptr },
+        { "quiet", "quiet", 'q', false, "Don't print output", nullptr },
+        { "help",  "help",  'h', false, "Print help",         nullptr },
 
         util::Args::Table::Terminator
     };
-    
+
     // --- initialization
-    
+
     util::Args args(option_table);
 
     int lastarg = args.parse(argc, argv);
@@ -178,35 +183,42 @@ int main(int argc, char* argv[])
         return 2;
     }
 
+    cali::ConfigManager::argmap_t extra_kv;
+
+    cali::ConfigManager mgr;
+    mgr.set_default_parameter("aggregate_across_ranks", "false");
+    mgr.add(args.get("profile", "").c_str(), extra_kv);
+
+    if (mgr.error())
+        std::cerr << "Profiling config error: " << mgr.error_msg() << std::endl;
+
+    mgr.start();
+
+    CALI_MARK_FUNCTION_BEGIN;
+
     int threads = 1;
 #ifdef _OPENMP
     threads = omp_get_max_threads();
 #endif
-        
+
     Config cfg;
 
     cfg.tree_width  = std::stoi(args.get("width", "20"));
     cfg.tree_depth  = std::stoi(args.get("depth", "10"));
     cfg.iter        = std::stoi(args.get("iterations", "100000"));
-    cfg.channels = std::max(std::stoi(args.get("channels", "1")), 1);
-    
-    // set global attributes before other Caliper initialization
+    cfg.channels    = std::max(std::stoi(args.get("channels", "1")), 1);
 
-    cali::Annotation("perftest.tree_width",  CALI_ATTR_GLOBAL).set(cfg.tree_width);
-    cali::Annotation("perftest.tree_depth",  CALI_ATTR_GLOBAL).set(cfg.tree_depth);
-    cali::Annotation("perftest.iterations",  CALI_ATTR_GLOBAL).set(cfg.iter);
-#ifdef _OPENMP
-    cali::Annotation("perftest.threads",     CALI_ATTR_GLOBAL).set(threads);
-#endif
-    cali::Annotation("perftest.channels", CALI_ATTR_GLOBAL).set(cfg.channels);
+    // set global attributes before other Caliper initialization
+    record_globals(cfg, threads, extra_kv);
 
     make_strings(cfg);
 
     // --- print info
 
     bool print_csv = args.is_set("csv");
+    bool quiet     = args.is_set("quiet");
 
-    if (!print_csv)
+    if (!quiet && !print_csv)
         std::cout << "cali-annotation-perftest:"
                   << "\n    Channels:   " << cfg.channels
                   << "\n    Tree width: " << cfg.tree_width
@@ -224,10 +236,10 @@ int main(int argc, char* argv[])
     for (int x = 1; x < cfg.channels; ++x) {
         std::string s("chn.");
         s.append(std::to_string(x));
-        
+
         c.create_channel(s.c_str(), cali::RuntimeConfig::get_default_config());
     }
-    
+
     // --- pre-timing loop. initializes OpenMP subsystem
 
     CALI_MARK_BEGIN("perftest.pre-timing");
@@ -238,7 +250,9 @@ int main(int argc, char* argv[])
     pre_cfg.tree_depth = 0;
     pre_cfg.iter       = 100 * threads;
 
+    mgr.stop();
     run(pre_cfg);
+    mgr.start();
 
     CALI_MARK_END("perftest.pre-timing");
 
@@ -246,31 +260,52 @@ int main(int argc, char* argv[])
 
     CALI_MARK_BEGIN("perftest.timing");
 
+    // stop the annotation profiling channels for the measurement loop
+    mgr.stop();
+
     auto stime = std::chrono::system_clock::now();
-    
+
     int updates = run(cfg);
-    
+
     auto etime = std::chrono::system_clock::now();
+
+    // re-start the annotation profiling channels
+    mgr.start();
 
     CALI_MARK_END("perftest.timing");
 
     auto msec  = std::chrono::duration_cast<std::chrono::milliseconds>(etime-stime).count();
 
-    if (print_csv)
-        std::cout << cfg.channels
-                  << "," << cfg.tree_depth
-                  << "," << cfg.tree_width
-                  << "," << updates
-                  << "," << threads
-                  << "," << msec/1000.0
-                  << std::endl;
-    else
-        std::cout << "  " << updates << " annotation updates in "
-                  << msec/1000.0     << " sec ("
-                  << updates/threads << " per thread), "
-                  << (msec    > 0 ? 1000.0*updates/msec           : 0.0) << " updates/sec, "
-                  << (updates > 0 ? (1000.0*msec*threads)/updates : 0.0) << " usec/update"
-                  << std::endl;
+    double usec_per_update = (updates > 0 ? (1000.0*msec*threads)/updates : 0.0);
+    double updates_per_sec = (msec    > 0 ?  1000.0*updates/msec          : 0.0);
+
+#ifdef CALIPER_HAVE_ADIAK
+    adiak::value("perftest.usec_per_update", usec_per_update);
+    adiak::value("perftest.updates_per_sec", updates_per_sec);
+    adiak::value("perftest.time", msec / 1000.0);
+#endif
+
+    if (!quiet) {
+        if (print_csv)
+            std::cout << cfg.channels
+                    << "," << cfg.tree_depth
+                    << "," << cfg.tree_width
+                    << "," << updates
+                    << "," << threads
+                    << "," << msec/1000.0
+                    << std::endl;
+        else
+            std::cout << "  " << updates << " annotation updates in "
+                    << msec/1000.0     << " sec ("
+                    << updates/threads << " per thread), "
+                    << updates_per_sec << " updates/sec, "
+                    << usec_per_update << " usec/update"
+                    << std::endl;
+    }
+
+    CALI_MARK_FUNCTION_END;
+
+    mgr.flush();
 
     return 0;
 }

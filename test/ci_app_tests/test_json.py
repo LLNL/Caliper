@@ -1,4 +1,4 @@
-# report / C config test
+# JSON output test cases
 
 import json
 import unittest
@@ -77,7 +77,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         columns = obj['columns']
 
-        self.assertEqual( { 'path', 'iteration#mainloop', 'count', 'time.inclusive.duration' }, set(columns) )
+        self.assertEqual( { 'path', 'iteration#mainloop', 'count', 'sum#time.inclusive.duration' }, set(columns) )
 
         data = obj['data']
 
@@ -104,8 +104,37 @@ class CaliperJSONTest(unittest.TestCase):
         self.assertEqual(data[9][iterindex], 3)
 
         
+    def test_hatchetcontroller(self):
+        """ Test hatchet-region-profile controller """
+
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,output=stdout' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
+
+        self.assertTrue( { 'data', 'columns', 'column_metadata', 'nodes' }.issubset(set(obj.keys())) )
+
+        columns = obj['columns']
+
+        self.assertEqual( { 'path', 'time' }, set(columns) )
+
+        data = obj['data']
+
+        self.assertEqual(len(data), 7)
+        self.assertEqual(len(data[0]), 2)
+
+        meta = obj['column_metadata']
+
+        self.assertEqual(len(meta), 2)
+        self.assertTrue(meta[columns.index('time')]['is_value'])
+        self.assertFalse(meta[columns.index('path')]['is_value'])
+
+
     def test_esc(self):
-        target_cmd = [ './ci_test_esc' ]
+        target_cmd = [ './ci_test_basic' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
                        '-q', 'select *,count() format json-split' ]
 
@@ -127,6 +156,7 @@ class CaliperJSONTest(unittest.TestCase):
         index = columns.index('event.set# =\\weird ""attribute"=  ')
 
         self.assertEqual(nodes[data[0][index]]['label'], '  \\\\ weird," name",' )
+        self.assertEqual(obj[' =\\weird "" global attribute"=  '], '  \\\\ weird," name",')
 
         
 if __name__ == "__main__":

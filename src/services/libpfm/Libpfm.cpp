@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by Alfredo Gimenez, gimenez1@llnl.gov
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // Libpfm.cpp
 // libpfm sampling provider for caliper records
@@ -189,7 +160,7 @@ class LibpfmService
 
         SnapshotRecord info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
 
-        c.push_snapshot(sC, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, &info);
+        c.push_snapshot(sC, &info);
 
         sI->samples_produced++;
     }
@@ -197,17 +168,17 @@ class LibpfmService
     static void sigio_handler(int sig, siginfo_t *info, void *extra) {
         perf_event_desc_t *fdx = 0;
         struct perf_event_header ehdr;
-        int fd, i, ret;
 
-        fd = info->si_fd;
+        int fd = info->si_fd;
 
-        ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+        int ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
         if (ret)
             Log(0).stream() << "libpfm: cannot stop sampling for handling" << std::endl;
 
         sI->signals_received++;
 
-        for (i=0; i<sT.num_events; i++) {
+        int i = 0;
+        for (i = 0; i<sT.num_events; i++) {
             if (fd == sT.fds[i].fd) {
                 fdx = &sT.fds[i];
                 break;
@@ -380,7 +351,7 @@ class LibpfmService
     }
 
     int end_thread_sampling() {
-        int ret;
+        int ret = 0;
         size_t pgsz = sysconf(_SC_PAGESIZE);
 
         for (int i=0; i<sT.num_events; i++) {
@@ -498,7 +469,7 @@ class LibpfmService
         Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
         Variant   v_true(true);
 
-        for (int i=0; i<events_listed; i++) {
+        for (size_t i=0; i<events_listed; i++) {
             if (enable_sampling) {
                 try {
                     sampling_period_list.push_back(std::stoull(sampling_period_strvec[i]));
@@ -584,10 +555,9 @@ class LibpfmService
         Variant data[MAX_EVENTS] = { Variant() };
 
         for (int i=0; i<sT.num_events; i++) {
-            int ret = 0;
             struct read_format counter_reads = { 0, 0, 0 };
 
-            ret = read(sT.fds[i].fd, &counter_reads, sizeof(struct read_format));
+            size_t ret = read(sT.fds[i].fd, &counter_reads, sizeof(struct read_format));
 
             if (ret < sizeof(struct read_format))
                 ++event_read_fail;
@@ -602,9 +572,9 @@ class LibpfmService
                 data[i] = Variant(counter_reads.value);
             }
 
-            ret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
+            int iret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
 
-            if (ret)
+            if (iret)
                 ++event_reset_fail;
         }
 

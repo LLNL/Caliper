@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.  
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // EnvironmentInfo.cpp
 // A Caliper service that collects various environment information
@@ -77,7 +48,7 @@ void read_cmdline(Caliper* c, Channel* chn, ConfigSet& config)
     std::vector<Variant> args;
 
     for (std::string arg; std::getline(fs, arg, static_cast<char>(0)); )
-        c->begin(chn, cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
+        c->begin(cmdline_attr, Variant(CALI_TYPE_STRING, arg.data(), arg.size()));
 }
     
 void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
@@ -99,7 +70,7 @@ void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
             Attribute attr = 
                 c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
-            c->set(chn, attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
+            c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
         }
     }
 }
@@ -118,7 +89,7 @@ void read_time(Caliper* c, Channel* chn, ConfigSet& config)
     char   buf[64];
     size_t len = strftime(buf, sizeof(buf)-1, "%a %d %b %Y %H:%M:%S %z", tmp);
 
-    c->set(chn, starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
+    c->set(starttime_attr, Variant(CALI_TYPE_STRING, buf, len));
 }
 
 void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
@@ -129,7 +100,7 @@ void read_hostname(Caliper* c, Channel* chn, ConfigSet& config)
     char buf[256];
 
     if (gethostname(buf, sizeof(buf)-1) == 0)
-        c->set(chn, hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
+        c->set(hostname_attr, Variant(CALI_TYPE_STRING, buf, strlen(buf)));
 }
 
 void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
@@ -146,7 +117,7 @@ void read_extra(Caliper* c, Channel* chn, ConfigSet& config)
         char* val = getenv(env.c_str());
 
         if (val)
-            c->set(chn, attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
+            c->set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
     }
 }
   

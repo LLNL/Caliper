@@ -180,13 +180,13 @@ Alloc
 The `alloc` service adds data tracking information to Caliper.
 It records snapshots of allocation calls with their arguments and
 return values, and resolves the containing allocations of any memory
-addresses produced by other Caliper services, such as the `libpfm` 
+addresses produced by other Caliper services, such as the `libpfm`
 service.
 By default, it will only use data tracking information provided via
 the Caliper data tracking API, but in conjunction with the
 `sysalloc` service it records and/or tracks any allocations by
 hooking system allocation calls.
-This service may potentially incur significant amounts of overhead when 
+This service may potentially incur significant amounts of overhead when
 recording/tracking frequent allocations/deallocations.
 
 .. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
@@ -292,7 +292,7 @@ interpret NVTX source-code annotations as Caliper annotations.
 
    Boolean. Record the kernel symbol name for callbacks (typically
    when launching kernels). Default: `true`.
-   
+
 .. envvar:: CALI_CUPTI_RECORD_CONTEXT
 
    Boolean. Record CUDA context ID. Default: `true`.
@@ -328,7 +328,7 @@ The `cupti` service adds the following attributes:
 +----------------------+--------------------------------------------------+
 
 CUpti event sampling (EXPERIMENTAL)
-................................
+...................................
 
 The CUpti service can read hardware "events" from CUDA devices at
 every snapshot using CUpti's continuous event collection. However,
@@ -364,21 +364,21 @@ Results::
 
   cali-query -q "select sum(time.duration),sum(cupti.event.inst_executed) group by function,cupti.runtimeAPI format tree"
 
-  Path                                     time.duration cupti.event.inst_executed 
-  main                                             42123                         0 
-    LagrangeLeapFrog                              192340                         0 
-      CalcTimeConstraintsForElems                  13768                         0 
-        cudaStreamSynchronize                      65776                         0 
-        cudaPeekAtLastError                        66714                         0 
-        cudaLaunch                                 76372                    214944 
-        cudaSetupArgument                         190416                         0 
-        cudaConfigureCall                          60859                         0 
-      CalcEnergyForElems                          695449                         0 
-        cudaStreamSynchronize                     532691                         0 
-        cudaPeekAtLastError                      1138736                         0 
-        cudaLaunch                               1223774                   1766400 
-        cudaSetupArgument                        1510537                         0 
-        cudaConfigureCall                         310107                         0 
+  Path                                     time.duration cupti.event.inst_executed
+  main                                             42123                         0
+    LagrangeLeapFrog                              192340                         0
+      CalcTimeConstraintsForElems                  13768                         0
+        cudaStreamSynchronize                      65776                         0
+        cudaPeekAtLastError                        66714                         0
+        cudaLaunch                                 76372                    214944
+        cudaSetupArgument                         190416                         0
+        cudaConfigureCall                          60859                         0
+      CalcEnergyForElems                          695449                         0
+        cudaStreamSynchronize                     532691                         0
+        cudaPeekAtLastError                      1138736                         0
+        cudaLaunch                               1223774                   1766400
+        cudaSetupArgument                        1510537                         0
+        cudaConfigureCall                         310107                         0
   ...
 
 
@@ -395,7 +395,7 @@ CUpti, not by Caliper's timestamp service. The
 ``CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS`` option collects CUpti
 timestamps for all Caliper snapshots, allowing one to compare
 timestamps between the CUDA activity records and host-side Caliper
-events. With ``CALI_CUPTITRACE_SNAPSHOT_DURATION``, cuptitrace will  
+events. With ``CALI_CUPTITRACE_SNAPSHOT_DURATION``, cuptitrace will
 also calculate the time duration of host-side events based on CUpti
 timestamps.
 
@@ -403,7 +403,7 @@ timestamps.
 
     The CUpti activity kinds to record. Comma-separated list.
     Possible values:
-      
+
        device:       Device info
        correlation:  Correlation records
        driver:       Driver API
@@ -412,7 +412,7 @@ timestamps.
        memcpy:       CUDA memory copies
 
     Default: correlation,device,kernel,memcpy,runtime
-       
+
 .. envvar:: CALI_CUPTITRACE_CORRELATE_CONTEXT
 
     Add the Caliper context (annotations) from the point where a CUDA
@@ -586,6 +586,30 @@ Example:
                 == CALIPER: Event: finish
                 == CALIPER: Finished
 
+.. _io_service:
+
+IO 
+--------------------------------
+
+The io service wraps POSIX IO calls (open,close,read,write) and 
+collects information about the amount of bytes read and written
+through these IO calls, as well as filesystems and mount points 
+read from or written to. IO operations trigger `io.region` begin 
+and end events. It provides the following attributes: 
+
++----------------------+--------------------------------------------------+
+| `io.region`          | An I/O region. Either "metadata", "read" or      |
+|                      | "write".                                         |
++----------------------+--------------------------------------------------+
+| `io.filesystem`      | The filesystem type targeted by the IO operation.|
++----------------------+--------------------------------------------------+
+| `io.mount.point`     | The mount point targeted by the IO operation.    |
++----------------------+--------------------------------------------------+
+| `io.bytes.read`      | Bytes read in the IO operation.                  |
++----------------------+--------------------------------------------------+
+| `io.bytes.written`   | Bytes written in the IO operation.               |
++----------------------+--------------------------------------------------+
+
 .. _libpfm-service:
 
 Libpfm
@@ -608,8 +632,8 @@ each sample, and the sampling period.
 .. envvar:: CALI_LIBPFM_ENABLE_SAMPLING
 
    Whether to record event samples. If set, will trigger a snapshot
-   containing all sampled attributes listed in 
-   CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have 
+   containing all sampled attributes listed in
+   CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have
    occurred.
 
    Default: true
@@ -645,11 +669,11 @@ each sample, and the sampling period.
 
 .. envvar:: CALI_LIBPFM_PERIOD
 
-   Sampling period for each event (valid when sampling is enabled). 
-   When set to a value N, a sample will  be recorded after every N 
+   Sampling period for each event (valid when sampling is enabled).
+   When set to a value N, a sample will  be recorded after every N
    number of events has occurred.
 
-   For multiple events, this should be a comma-separated list for the 
+   For multiple events, this should be a comma-separated list for the
    periods of respective events.
 
    Default: 20000000
@@ -662,7 +686,7 @@ each sample, and the sampling period.
    https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
    to determine when it is available or required).
 
-   For multiple events, this should be a comma-separated list for the 
+   For multiple events, this should be a comma-separated list for the
    precise_ip values of respective events.
 
    May be set to either 0, 1, or 2.
@@ -677,7 +701,7 @@ each sample, and the sampling period.
    https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/
    to determine when it is available or required).
 
-   For multiple events, this should be a comma-separated list for the 
+   For multiple events, this should be a comma-separated list for the
    config1 values of respective events.
 
    Default: 0
@@ -726,7 +750,7 @@ information.
    blacklist will be applied to the whitelisted functions.
 
 MPI message tracing (EXPERIMENTAL)
-................................
+..................................
 
 The MPI service can record communication information about
 point-to-point messages being sent and received, as well as collective
@@ -741,22 +765,22 @@ and for collective operations a process participates in.
 Notes:
 
 * Communication records will only be created for MPI functions
-  that are instrumented (i.e., they must be listed in 
-  `CALI_MPI_WHITELIST`, and must not be listed 
+  that are instrumented (i.e., they must be listed in
+  `CALI_MPI_WHITELIST`, and must not be listed
   in `CALI_MPI_BLACKLIST`).
 * This feature is experimental. Many implementation aspects such as
   attribute names and the information being recorded can change
   in future versions.
-* Caliper does not synchronize timestamps between MPI ranks, i.e. 
+* Caliper does not synchronize timestamps between MPI ranks, i.e.
   timestamps taken on different ranks may not be directly comparable
 
-Message tracing creates three types of records: 
+Message tracing creates three types of records:
 
-* Point-to-point message sent. Contains message destination, size, tag 
+* Point-to-point message sent. Contains message destination, size, tag
   and communicator info.
 * Point-to-point message received. Contains message source, size, tag,
   and communicator info.
-* Collective communication. Contains collective type, amount of bytes 
+* Collective communication. Contains collective type, amount of bytes
   sent, and communicator info.
 
 Specifically, this information is encoded in the following attributes:
@@ -779,7 +803,7 @@ Specifically, this information is encoded in the following attributes:
 |                      | communicator, of a message being sent. Indicates |
 |                      | a message sent event.                            |
 +----------------------+--------------------------------------------------+
-| `mpi.msg.tag`        | Integer. Tag of a message sent or received.      | 
+| `mpi.msg.tag`        | Integer. Tag of a message sent or received.      |
 +----------------------+--------------------------------------------------+
 | `mpi.msg.size`       | Integer. Size of message being sent or received  |
 |                      | in a point-to-point message, or the amount of    |
@@ -795,7 +819,7 @@ Specifically, this information is encoded in the following attributes:
 | `mpi.coll.root`      | Integer. Root rank, in the local communicator,   |
 |                      | of a 1-to-N or N-to-1 collective communication.  |
 +----------------------+--------------------------------------------------+
-| `mpi.comm.comm`      | Integer. Unique ID for the communicator on which | 
+| `mpi.comm.comm`      | Integer. Unique ID for the communicator on which |
 |                      | this communication occurs.                       |
 +----------------------+--------------------------------------------------+
 | `mpi.comm.is_world`  | Boolean. Present and set to `true` if the        |
@@ -815,7 +839,7 @@ Specifically, this information is encoded in the following attributes:
 |                      | array.                                           |
 +----------------------+--------------------------------------------------+
 
-Currently, we record communication information for the 
+Currently, we record communication information for the
 following MPI functions:
 
 +--------------------------------+----------------------------------------+
@@ -1065,7 +1089,7 @@ The sampler service implements time-based sampling. It triggers
 snapshots at regular intervals. Sampling allows for low-overhead
 performance data collection, and can provide insights into code
 regions that are not or only sparsely covered with source-code
-annotations. 
+annotations.
 
 Caliper must be initialized on each thread that should be
 sampled. This can be done explicitly via the annotation API, or via
@@ -1126,19 +1150,19 @@ was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
    Perform source file lookup, and writes the file name in the
    ``source.file#address`` attribute. `TRUE` or `FALSE`,
-   default `FALSE`. 
+   default `FALSE`.
 
 .. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_LINE
 
    Perform source line lookup, and writes the line number in the
    ``source.line#address`` attribute. `TRUE` or `FALSE`,
-   default `FALSE`. 
+   default `FALSE`.
 
 .. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_MODULE
 
    Perform module name lookup, and writes the module number in the
    ``module#address`` attribute. `TRUE` or `FALSE`,
-   default `FALSE`. 
+   default `FALSE`.
 
 Sysalloc
 --------------------------------

@@ -103,6 +103,33 @@ TEST(C_Variant_Test, CreateDoubleVariant) {
 TEST(C_Variant_Test, CreateStringVariant) {
     const char* mystring = "My test string";
 
+    cali_variant_t v = cali_make_variant_from_string(mystring);
+
+    EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_STRING);
+    EXPECT_EQ(cali_variant_get_size(v), strlen(mystring));
+    EXPECT_EQ(cali_variant_get_data(&v), mystring);
+    EXPECT_STREQ(static_cast<const char*>(cali_variant_get_data(&v)), mystring);
+
+    bool ok = true;
+    cali_variant_to_int(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_uint(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_double(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    cali_variant_to_bool(v, &ok);
+    EXPECT_FALSE(ok);
+    ok = true;
+    EXPECT_EQ(cali_variant_to_type(v, &ok), CALI_TYPE_INV);
+    EXPECT_FALSE(ok);
+}
+
+TEST(C_Variant_Test, CreateExplicitStringVariant) {
+    const char* mystring = "My test string";
+
     cali_variant_t v = cali_make_variant(CALI_TYPE_STRING, mystring, strlen(mystring)+1);
 
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_STRING);

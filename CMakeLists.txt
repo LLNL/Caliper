@@ -7,7 +7,7 @@ project (caliper C CXX)
 
 # Version information
 set(CALIPER_MAJOR_VERSION 2)
-set(CALIPER_MINOR_VERSION 2)
+set(CALIPER_MINOR_VERSION 3)
 set(CALIPER_PATCH_VERSION 0)
 set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER_PATCH_VERSION}-dev")
 
@@ -15,6 +15,10 @@ set(CALIPER_VERSION "${CALIPER_MAJOR_VERSION}.${CALIPER_MINOR_VERSION}.${CALIPER
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 include(GNUInstallDirs)
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+  set(CALIPER_HAVE_LINUX TRUE)
+endif()
 
 # Optional Fortran
 option(WITH_FORTRAN "Install Fortran interface and build test programs")
@@ -35,16 +39,18 @@ option(WITH_LIBDW     "Enable libdw support (for module detection in callpath se
 option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" FALSE)
 option(WITH_MPI       "Enable MPI" FALSE)
 # option(WITH_MPIT      "Enable MPI-T" FALSE)
-option(WITH_OMPT      "Enable OMPT" FALSE)
+# option(WITH_OMPT      "Enable OMPT" FALSE)
 option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
-option(WITH_GOTCHA    "Enable GOTCHA wrapping" TRUE)
+option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(WITH_ADIAK     "Enable adiak support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
+
+option(ENABLE_HISTOGRAMS "Enable histogram aggregation (experimental)" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
 option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
@@ -69,9 +75,16 @@ else()
   set(CMAKE_SKIP_RPATH TRUE)
 endif(BUILD_SHARED_LIBS)
 
-if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+if (${CALIPER_HAVE_LINUX})
   set(CALIPER_HAVE_CPUINFO TRUE)
+  set(CALIPER_HAVE_MEMUSAGE TRUE)
   set(CALIPER_cpuinfo_CMAKE_MSG "Yes")
+  set(CALIPER_memusage_CMAKE_MSG "Yes")
+endif()
+
+if (ENABLE_HISTOGRAMS)
+  set(CALIPER_ENABLE_HISTOGRAMS TRUE)
+  set(CALIPER_histogram_CMAKE_MSG "Yes")
 endif()
 
 if(WITH_VTUNE)
@@ -179,45 +192,38 @@ if (WITH_CALLPATH)
   endif()
 endif()
 
+# Find Gotcha
 if (WITH_GOTCHA)
-  if (USE_EXTERNAL_GOTCHA)
-    find_package(gotcha 1.0)
-    if (gotcha_FOUND)
-      get_target_property(_gotcha_location gotcha LOCATION)
-      set(CALIPER_GOTCHA_CMAKE_MSG "Yes, using ${_gotcha_location}")
-      set(CALIPER_HAVE_GOTCHA TRUE)
-      list(APPEND CALIPER_EXTERNAL_LIBS ${gotcha_LIBRARIES})
+  if (CALIPER_HAVE_LINUX)
+    if (USE_EXTERNAL_GOTCHA)
+      find_package(gotcha 1.0)
+      if (gotcha_FOUND)
+        get_target_property(_gotcha_location gotcha LOCATION)
+        set(CALIPER_GOTCHA_CMAKE_MSG "Yes, using ${_gotcha_location}")
+        set(CALIPER_HAVE_GOTCHA TRUE)
+        list(APPEND CALIPER_EXTERNAL_LIBS ${gotcha_LIBRARIES})
+      else()
+        message(WARNING "External gotcha was requested but gotcha was not found!")
+      endif()
     else()
-      message(WARNING "External gotcha was requested but gotcha was not found!")
+      set(CALIPER_GOTCHA_CMAKE_MSG "Yes, using internal")
+      set(gotcha_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/gotcha/include)
+      set(CALIPER_HAVE_GOTCHA TRUE)
+      list(APPEND CALIPER_EXTERNAL_SOURCES $<TARGET_OBJECTS:caliper-gotcha>)
     endif()
   else()
-    set(CALIPER_GOTCHA_CMAKE_MSG "Yes, using internal")
-    set(gotcha_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/gotcha/include)
-    set(gotcha_LIBRARIES $<TARGET_OBJECTS:gotcha>)
-    set(CALIPER_HAVE_GOTCHA TRUE)
-    list(APPEND CALIPER_EXTERNAL_SOURCES ${gotcha_LIBRARIES})
+    message(WARNING "Gotcha support requested but Gotcha requires Linux, this is ${CMAKE_SYSTEM_NAME}")
   endif()
 endif()
 
 if (WITH_ADIAK)
-  # find_library(adiak_LIBRARIES
-  #   NAMES adiak
-  #   HINTS ${adiak_DIR}/lib)
-  # find_path(adiak_INCLUDE_DIRS
-  #   NAMES adiak.h
-  #   HINTS ${adiak_DIR}/include)
-  # include(FindPackageHandleStandardArgs)
-  # find_package_handle_standard_args(adiak DEFAULT_MSG
-  #   adiak_LIBRARIES
-  #   adiak_INCLUDE_DIRS)
-  # mark_as_advanced(adiak_LIBRARIES adiak_INCLUDE_DIRS)  
   find_package(adiak)
   if (adiak_FOUND)
     get_target_property(_adiak_location adiak LOCATION)
     set(CALIPER_adiak_CMAKE_MSG "Yes, using ${_adiak_location}")
     set(CALIPER_HAVE_ADIAK TRUE)
     list(APPEND CALIPER_EXTERNAL_LIBS ${adiak_LIBRARIES})
-    if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Linux")
+    if (CALIPER_HAVE_LINUX)
       list(APPEND CALIPER_EXTERNAL_LIBS "-ldl")
     endif()
   else()
@@ -383,9 +389,11 @@ message(STATUS "System                    : ${CMAKE_SYSTEM} (${CMAKE_SYSTEM_PROC
 message(STATUS "Install dir               : ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Build shared libs         : ${BUILD_SHARED_LIBS}")
 message(STATUS "Build Caliper tools       : ${WITH_TOOLS}")
+message(STATUS "Build tests               : ${BUILD_TESTING}")
 
 set(CALIPER_MODULES
   cpuinfo
+  memusage
   adiak
   GOTCHA
   PAPI
@@ -401,7 +409,8 @@ set(CALIPER_MODULES
   NVProf
   CUpti
   TAU
-  VTune)
+  VTune
+  histogram)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)

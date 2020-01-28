@@ -18,7 +18,7 @@ void extract_cb(const char* name, adiak_category_t cat, const char* subcategory,
 
     switch (t->dtype) {
     case adiak_int:
-        (*res)[name] = std::to_string(val->v_long);
+        (*res)[name] = std::to_string(val->v_int);
         break;
     case adiak_string:
         (*res)[name] = std::string(static_cast<const char*>(val->v_ptr));

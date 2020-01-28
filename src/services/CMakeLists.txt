@@ -31,6 +31,8 @@ macro(add_service_objlib)
   if(${BUILD_SHARED_LIBS})
     set_property(TARGET "${ARGN}" PROPERTY POSITION_INDEPENDENT_CODE TRUE)
   endif()
+  target_compile_options("${ARGN}" PRIVATE
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
   list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
@@ -47,6 +49,9 @@ if (CALIPER_HAVE_LIBUNWIND)
 endif()
 if (CALIPER_HAVE_CPUINFO)
   add_subdirectory(cpuinfo)
+endif()
+if (CALIPER_HAVE_MEMUSAGE)
+  add_subdirectory(memusage)
 endif()
 if (CALIPER_HAVE_PAPI)
   add_subdirectory(papi)
@@ -67,6 +72,7 @@ add_subdirectory(event)
 add_subdirectory(kokkos)
 add_subdirectory(textlog)
 if (CALIPER_HAVE_GOTCHA)
+  add_subdirectory(io)
   add_subdirectory(pthread)
   add_subdirectory(sysalloc)
 endif()
@@ -117,6 +123,9 @@ add_custom_target(
 # Build service management classes
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
+
+target_compile_options(caliper-services PRIVATE
+  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
 
 add_dependencies(caliper-services gen-services)
 

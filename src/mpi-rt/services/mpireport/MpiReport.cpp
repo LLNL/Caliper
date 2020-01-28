@@ -1,30 +1,5 @@
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 #include "MpiEvents.h"
 
@@ -56,8 +31,10 @@ class MpiReport
 {
     static const ConfigSet::Entry s_configdata[];
 
-    QuerySpec   m_spec;
+    QuerySpec   m_cross_spec;
+    QuerySpec   m_local_spec;
     std::string m_filename;
+    bool        m_2step_agg;
 
     void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
         // check if we can use MPI
@@ -73,8 +50,11 @@ class MpiReport
 
         CaliperMetadataDB db;
 
-        Aggregator        agg(m_spec);
-        RecordSelector    filter(m_spec);
+        Aggregator        cross_agg(m_cross_spec);
+        Aggregator        local_agg(m_local_spec);
+
+        RecordSelector    filter(m_2step_agg ? m_local_spec : m_cross_spec);
+        Aggregator        agg = m_2step_agg ? local_agg : cross_agg;
 
         // flush this rank's caliper data into local aggregator
         c->flush(chn, flush_info, [&db,&agg,&filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
@@ -84,6 +64,10 @@ class MpiReport
                     agg.add(db, mrec);
             });
 
+        // with 2-step aggregation, flush local aggregator results into cross-process aggregator
+        if (m_2step_agg)
+            local_agg.flush(db, cross_agg);
+
         MPI_Comm comm;
         MPI_Comm_dup(MPI_COMM_WORLD, &comm);
         int rank;
@@ -91,7 +75,7 @@ class MpiReport
 
         // do the global cross-process aggregation:
         //   aggregate_over_mpi() does all the magic
-        aggregate_over_mpi(db, agg, comm);
+        aggregate_over_mpi(db, cross_agg, comm);
 
         MPI_Comm_free(&comm);
 
@@ -99,11 +83,11 @@ class MpiReport
         //   create a formatter and print it out
         if (rank == 0) {
             // import globals from runtime Caliper object
-            db.import_globals(*c);
+            db.import_globals(*c, c->get_globals(chn));
 
             // set default formatter to table if it hasn't been set
-            if (m_spec.format.opt == QuerySpec::FormatSpec::Default)
-                m_spec.format = CalQLParser("format table").spec().format;
+            if (m_cross_spec.format.opt == QuerySpec::FormatSpec::Default)
+                m_cross_spec.format = CalQLParser("format table").spec().format;
 
             OutputStream    stream;
             stream.set_stream(OutputStream::StdOut);
@@ -111,32 +95,38 @@ class MpiReport
             if (!m_filename.empty())
                 stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
 
-            FormatProcessor formatter(m_spec, stream);
+            FormatProcessor formatter(m_cross_spec, stream);
 
-            agg.flush(db, formatter);
+            cross_agg.flush(db, formatter);
             formatter.flush(db);
         }
     }
 
-    MpiReport(const QuerySpec& spec, const std::string& filename)
-        : m_spec(spec), m_filename(filename)
+    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename, bool two_step_agg)
+        : m_cross_spec(cross_spec), m_local_spec(local_spec), m_filename(filename), m_2step_agg(two_step_agg)
         { }
 
 public:
 
     static void init(Caliper* c, Channel* chn) {
         ConfigSet   config = chn->config().init("mpireport", s_configdata);
-        CalQLParser parser(config.get("config").to_string().c_str());
 
-        if (parser.error()) {
-            Log(0).stream() << chn->name() << ": mpireport: config parse error: "
-                            << parser.error_msg() << std::endl;
+        std::string cross_cfg = config.get("config").to_string();
+        std::string local_cfg = config.get("local_config").to_string();
 
-            return;
-        }
+        CalQLParser cross_parser(cross_cfg.c_str());
+        CalQLParser local_parser(local_cfg.c_str());
+
+        for ( const auto *p : { &cross_parser, &local_parser } )
+            if (p->error()) {
+                Log(0).stream() << chn->name() << ": mpireport: config parse error: "
+                                << p->error_msg() << std::endl;
+
+                return;
+            }
 
         MpiReport* instance =
-            new MpiReport(parser.spec(), config.get("filename").to_string());
+            new MpiReport(cross_parser.spec(), local_parser.spec(), config.get("filename").to_string(), !local_cfg.empty());
 
         chn->events().write_output_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
@@ -168,6 +158,10 @@ const ConfigSet::Entry     MpiReport::s_configdata[] = {
     { "config", CALI_TYPE_STRING, "",
       "Cross-process aggregation and report configuration/query specification in CalQL",
       "Cross-process aggregation and report configuration/query specification in CalQL"
+    },
+    { "local_config", CALI_TYPE_STRING, "",
+      "CalQL config for process-local aggregation step",
+      "CalQL config for a process-local aggregation step applied before cross-process aggregation"
     },
     { "write_on_finalize", CALI_TYPE_BOOL, "true",
       "Flush Caliper buffers on MPI_Finalize",

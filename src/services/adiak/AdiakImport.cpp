@@ -146,8 +146,6 @@ nameval_cb(const char *name, adiak_category_t category, const char *subcategory,
 
     Caliper c;
 
-    cali_attr_type attr_type = CALI_TYPE_INV;
-
     switch (t->dtype) {
     case adiak_type_unset:
     {

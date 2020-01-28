@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // Caliper C interface implementation
 
@@ -132,7 +103,7 @@ cali_attribute_name(cali_id_t attr_id)
 //
 
 void
-cali_push_snapshot(int scope, int n,
+cali_push_snapshot(int /*scope*/, int n,
                    const cali_id_t trigger_info_attr_list[],
                    const cali_variant_t trigger_info_val_list[])
 {
@@ -155,11 +126,11 @@ cali_push_snapshot(int scope, int n,
 
     for (auto chn : c.get_all_channels())
         if (chn->is_active())
-            c.push_snapshot(chn, scope, &trigger_info);
+            c.push_snapshot(chn, &trigger_info);
 }
 
 void
-cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
+cali_channel_push_snapshot(cali_id_t chn_id, int /*scope*/, int n,
                            const cali_id_t trigger_info_attr_list[],
                            const cali_variant_t trigger_info_val_list[])
 {
@@ -183,7 +154,7 @@ cali_channel_push_snapshot(cali_id_t chn_id, int scope, int n,
     Channel* chn = c.get_channel(chn_id);
 
     if (chn && chn->is_active())
-        c.push_snapshot(chn, scope, &trigger_info);
+        c.push_snapshot(chn, &trigger_info);
 }
 
 size_t
@@ -349,19 +320,24 @@ cali_find_all_in_snapshot(const unsigned char* buf,
 cali_variant_t
 cali_get(cali_id_t attr_id)
 {
-    return cali_channel_get(0, attr_id);
+    Caliper c = Caliper::sigsafe_instance();
+
+    if (!c)
+        return cali_make_empty_variant();
+
+    return c.get(c.get_attribute(attr_id)).value().c_variant();
 }
 
 cali_variant_t
 cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
 {
-    Caliper       c = Caliper::sigsafe_instance();
-    Channel* chn = c.get_channel(chn_id);
+    Caliper c = Caliper::sigsafe_instance();
+    Channel* channel = c.get_channel(chn_id);
 
     if (!c)
         return cali_make_empty_variant();
 
-    return c.get(chn, c.get_attribute(attr_id)).value().c_variant();
+    return c.get(channel, c.get_attribute(attr_id)).value().c_variant();
 }
 
 //
@@ -454,30 +430,21 @@ cali_safe_end_string(cali_id_t attr_id, const char* val)
 {
     Caliper   c;
     Attribute attr = c.get_attribute(attr_id);
+    Variant   v    = c.get(attr).value();
 
-    // manually go over all channels
+    if (v.type() != CALI_TYPE_STRING)
+        Log(1).stream() << ": Trying to end "
+                        << attr.name() << " which is not a string" << std::endl;
 
-    std::vector<Channel*> channels = c.get_all_channels();
+    if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size()))
+        // FIXME: Replace log output with smart error tracker
+        Log(1).stream() << "begin/end marker mismatch: Trying to end "
+                        << attr.name() << "=" << val
+                        << " but current value for "
+                        << attr.name() << " is \"" << v.to_string() << "\""
+                        << std::endl;
 
-    for (Channel* chn : channels) {
-        Variant v = c.get(chn, attr).value();
-
-        if (v.type() != CALI_TYPE_STRING) {
-            Log(1).stream() << chn->name() << ": Trying to end "
-                            << attr.name() << " which is not a string" << std::endl;
-        }
-
-        if (0 != strncmp(static_cast<const char*>(v.data()), val, v.size())) {
-            // FIXME: Replace log output with smart error tracker
-            Log(1).stream() << chn->name() << ": begin/end marker mismatch: Trying to end "
-                            << attr.name() << "=" << val
-                            << " but current value for "
-                            << attr.name() << " is \"" << v.to_string() << "\""
-                            << std::endl;
-        }
-
-        c.end(chn, attr);
-    }
+    c.end(attr);
 }
 
 //

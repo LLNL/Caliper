@@ -1,39 +1,11 @@
-// Copyright (c) 2017, Lawrence Livermore National Security, LLC.  
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 #include "query_common.h"
 
 #include "caliper/cali-mpi.h"
 #include "caliper/cali.h"
+#include "caliper/cali-manager.h"
 
 #include "caliper/tools-util/Args.h"
 
@@ -56,12 +28,16 @@ using namespace util;
 
 namespace
 {
-    
-const Args::Table option_table[] = { 
+
+const char* usage = "mpi-caliquery [OPTION]... "
+    "\n  Read, merge, and filter caliper streams in parallel."
+    "\n  Reads data from <rank>.cali on each MPI rank (i.e., 0.cali, 1.cali, ...)";
+
+const Args::Table option_table[] = {
     // name, longopt name, shortopt char, has argument, info, argument info
-    { "select", "select", 's', true,  
-      "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]", 
-      "QUERY_STRING" 
+    { "select", "select", 's', true,
+      "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]",
+      "QUERY_STRING"
     },
     { "aggregate", "aggregate", 'a', true,
       "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
@@ -71,22 +47,22 @@ const Args::Table option_table[] = {
       "List of attributes to aggregate over (collapses all other attributes): attribute[:...]",
       "ATTRIBUTES"
     },
-    { "attributes", "print-attributes", 0, true,  
-      "Select attributes to print (or hide) in expanded output: [-]attribute[:...]", 
-      "ATTRIBUTES" 
+    { "attributes", "print-attributes", 0, true,
+      "Select attributes to print (or hide) in expanded output: [-]attribute[:...]",
+      "ATTRIBUTES"
     },
-    { "sort", "sort-by", 'S', true,  
-      "Sort rows in table format: attribute[:...]", 
-      "SORT_ATTRIBUTES" 
+    { "sort", "sort-by", 'S', true,
+      "Sort rows in table format: attribute[:...]",
+      "SORT_ATTRIBUTES"
     },
     { "format", "format", 'f', true,
       "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
       "FORMAT_STRING"
-    }, 
+    },
     { "title",  "title",  'T', true,
       "Set the title row for formatted output",
       "STRING"
-    }, 
+    },
     { "table", "table", 't', false,
       "Print given attributes in human-readable table form",
       "ATTRIBUTES"
@@ -107,23 +83,21 @@ const Args::Table option_table[] = {
       "Execute a query in CalQL format",
       "QUERY STRING"
     },
-    { "profile", "profile", 'p', false,
-      "Show progress and cali-query performance summary",
-      nullptr
+    { "caliper-config", "caliper-config", 'P', true,
+      "Set Caliper configuration for profiling mpi-caliquery",
+      "CALIPER-CONFIG"
     },
-    { "caliper-config", "caliper-config", 0, true,
+    { "caliper-config-vars", "caliper-config-vars", 0, true,
       "Caliper configuration flags (for cali-query profiling)",
       "KEY=VALUE,..."
     },
-    { "verbose", "verbose", 'v', false,
-      "Be verbose.",
-      nullptr
-    },
-    { "output", "output", 'o', true,  "Set the output file name", "FILE"  },
+    { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
+    { "help",    "help",    'h', true,  "Print help message",       nullptr },
+    { "output", "output",   'o', true,  "Set the output file name", "FILE"  },
     Args::Table::Terminator
 };
 
-    
+
 void format_output(const Args& args, const QuerySpec& spec, CaliperMetadataAccessInterface& db, Aggregator& aggregate)
 {
     CALI_CXX_MARK_FUNCTION;
@@ -134,7 +108,7 @@ void format_output(const Args& args, const QuerySpec& spec, CaliperMetadataAcces
         stream.set_filename(args.get("output").c_str());
     else
         stream.set_stream(OutputStream::StdOut);
-    
+
     FormatProcessor format(spec, stream);
 
     aggregate.flush(db, format);
@@ -166,35 +140,29 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
 void setup_caliper_config(const Args& args)
 {
     cali_config_preset("CALI_LOG_VERBOSITY", "0");
-    cali_config_preset("CALI_CALIPER_ATTRIBUTE_PROPERTIES", "annotation=process_scope:nested");
+    cali_config_preset("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
     cali_config_allow_read_env(false);
 
     cali_config_set("CALI_CONFIG_FILE", "mpi-caliquery_caliper.config");
-    
-    if (args.is_set("verbose"))
-        cali_config_preset("CALI_LOG_VERBOSITY", "1");
 
-    std::vector<std::string> config_list = 
-        StringConverter(args.get("caliper-config")).to_stringlist();
+    if (args.is_set("verbose"))
+        cali_config_preset("CALI_LOG_VERBOSITY", "2");
+
+    std::vector<std::string> config_list =
+        StringConverter(args.get("caliper-config-vars")).to_stringlist();
 
     for (const std::string entry : config_list) {
         auto p = entry.find('=');
 
         if (p == std::string::npos) {
-            std::cerr << "cali-query: error: invalid Caliper configuration flag format \"" 
+            std::cerr << "cali-query: error: invalid Caliper configuration flag format \""
                       << entry << "\" (missing \"=\")" << std::endl;
             continue;
         }
 
         cali_config_set(entry.substr(0, p).c_str(), entry.substr(p+1).c_str());
     }
-
-    if (args.is_set("profile"))
-        cali::create_channel("profile", 0, {
-                { "CALI_CONFIG_PROFILE",     "mpi-runtime-report" },
-                { "CALI_MPIREPORT_FILENAME", "stderr" }
-            });
 }
 
 } // namespace [anonymous]
@@ -210,7 +178,7 @@ int main(int argc, char* argv[])
 
     // must be done before Caliper initialization in MPI_Init wrapper
     ::setup_caliper_config(args);
-    
+
     MPI_Init(&argc, &argv);
 
     int rank;
@@ -218,17 +186,15 @@ int main(int argc, char* argv[])
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &worldsize);
-    
-    CALI_CXX_MARK_FUNCTION;
-    
+
     if (first_unknown_arg < argc) {
         if (rank == 0) {
             std::cerr << "mpi-caliquery: error: unknown option: " << argv[first_unknown_arg] << '\n'
                       << "  Available options: ";
-                
+
             args.print_available_options(std::cerr);
         }
-        
+
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
@@ -236,17 +202,35 @@ int main(int argc, char* argv[])
 
     if (!query_parser.parse_args(args)) {
         if (rank == 0)
-            std::cerr << "cali-query: Invalid query: " << query_parser.error_msg()
+            std::cerr << "mpi-caliquery: Invalid query: " << query_parser.error_msg()
                       << std::endl;
-        
+
         MPI_Abort(MPI_COMM_WORLD, -2);
     }
 
+    if (args.is_set("help")) {
+        if (rank == 0)
+            print_caliquery_help(args, usage);
+
+        MPI_Finalize();
+        return 0;
+    }
+
+    cali::ConfigManager mgr(args.get("caliper-config").c_str());
+
+    if (mgr.error())
+        if (rank == 0)
+            std::cerr << "mpi-caliquery: Caliper config parse error: " << mgr.error_msg() << std::endl;
+
+    mgr.start();
+
+    CALI_MARK_FUNCTION_BEGIN;
+
     QuerySpec  spec = query_parser.spec();
-    
+
     Aggregator aggregate(spec);
     CaliperMetadataDB metadb;
-    
+
     // --- Process our own input
     //
 
@@ -263,7 +247,10 @@ int main(int argc, char* argv[])
     if (rank == 0)
         ::format_output(args, spec, metadb, aggregate);
 
-    
+    CALI_MARK_FUNCTION_END;
+
+    mgr.flush();
+
     MPI_Finalize();
 
     return 0;

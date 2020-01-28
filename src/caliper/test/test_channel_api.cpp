@@ -28,15 +28,15 @@ TEST(ChannelAPITest, MultiChannel) {
     c.begin(chn_a, attr_local, Variant(1144));
     c.begin(chn_b, attr_local, Variant(4411));
 
-    EXPECT_EQ(c.get(chn_a, attr_global).value().to_int(), 42);
-    EXPECT_EQ(c.get(chn_b, attr_global).value().to_int(), 42);
+    EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
+    EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
     EXPECT_EQ(c.get(chn_a, attr_local ).value().to_int(), 1144);
     EXPECT_EQ(c.get(chn_b, attr_local ).value().to_int(), 4411);
 
     Channel* chn_default = c.get_channel(0);
 
     EXPECT_TRUE(c.get(chn_default, attr_local).is_empty());
-    EXPECT_EQ(c.get(chn_default, attr_global).value().to_int(), 42);
+    EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
 
     c.delete_channel(chn_a);
 
@@ -88,72 +88,26 @@ TEST(ChannelAPITest, C_API) {
     cali_begin_int_byname("chn.c_api.not_b", 4477);
 
     cali_id_t attr_a = cali_find_attribute("chn.c_api.all");
-    cali_id_t attr_b = cali_find_attribute("chn.c_api.not_b");
 
     ASSERT_NE(attr_a, CALI_INV_ID);
-    ASSERT_NE(attr_b, CALI_INV_ID);
 
     /* chn_a should have both values */
 
-    {
-        EXPECT_EQ(cali_variant_to_int(cali_channel_get(chn_a_id, attr_a), NULL), 7744);
-        EXPECT_EQ(cali_variant_to_int(cali_channel_get(chn_a_id, attr_b), NULL), 4477);
+    for (cali_id_t channel_id : { chn_a_id, chn_b_id, chn_c_id }) {
+        EXPECT_EQ(cali_variant_to_int(cali_get(attr_a), NULL), 7744);
 
         unsigned char rec[60];
         size_t len =
-            cali_channel_pull_snapshot(chn_a_id, CALI_SCOPE_THREAD, 60, rec);
+            cali_channel_pull_snapshot(channel_id, CALI_SCOPE_THREAD, 60, rec);
 
         ASSERT_NE(len, 0);
         ASSERT_LT(len, 60);
 
         cali_variant_t val_a =
             cali_find_first_in_snapshot(rec, attr_a, nullptr);
-        cali_variant_t val_b =
-            cali_find_first_in_snapshot(rec, attr_b, nullptr);
 
         EXPECT_EQ(cali_variant_to_int(val_a, nullptr), 7744);
-        EXPECT_EQ(cali_variant_to_int(val_b, nullptr), 4477);
     }
-
-    /* chn_b should only have "all" */
-
-    {
-        unsigned char rec[60];
-        size_t len =
-            cali_channel_pull_snapshot(chn_b_id, CALI_SCOPE_THREAD, 60, rec);
-
-        ASSERT_NE(len, 0);
-        ASSERT_LT(len, 60);
-
-        cali_variant_t val_a =
-            cali_find_first_in_snapshot(rec, attr_a, nullptr);
-        cali_variant_t val_b =
-            cali_find_first_in_snapshot(rec, attr_b, nullptr);
-
-        EXPECT_EQ(cali_variant_to_int(val_a, nullptr), 7744);
-        EXPECT_TRUE(cali_variant_is_empty(val_b));
-    }
-
-    /* chn_c should have nothing */
-
-    {
-        unsigned char rec[60];
-        size_t len =
-            cali_channel_pull_snapshot(chn_c_id, CALI_SCOPE_THREAD, 60, rec);
-
-        ASSERT_NE(len, 0);
-        ASSERT_LT(len, 60);
-
-        cali_variant_t val_a =
-            cali_find_first_in_snapshot(rec, attr_a, nullptr);
-        cali_variant_t val_b =
-            cali_find_first_in_snapshot(rec, attr_b, nullptr);
-
-        EXPECT_TRUE(cali_variant_is_empty(val_a));
-        EXPECT_TRUE(cali_variant_is_empty(val_b));
-    }
-
-    cali_end(attr_b);
 
     cali_activate_channel(chn_b_id);
 
@@ -161,7 +115,7 @@ TEST(ChannelAPITest, C_API) {
 
     cali_end(attr_a);
 
-    /* check if "all" is closed on channel b now */
+    /* check if "all" is closed now */
 
     {
         unsigned char rec[60];

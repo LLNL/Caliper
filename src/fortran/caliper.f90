@@ -521,4 +521,20 @@ contains
     end if
   end subroutine cali_end_byname
 
+  ! cali_mpi_init
+  subroutine cali_mpi_init()
+   use, intrinsic :: iso_c_binding, only : C_NULL_CHAR, C_INT64_T
+   implicit none
+
+   ! void cali_mpi_init()
+   interface
+      subroutine cali_mpi_init_c () &
+           bind(C, name='cali_mpi_init')
+        use, intrinsic :: iso_c_binding
+      end subroutine cali_mpi_init_c
+   end interface
+
+   call cali_mpi_init_c()
+ end subroutine cali_mpi_init
+
 end module Caliper

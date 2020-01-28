@@ -1,5 +1,8 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 /// \file CompressedSnapshotRecord.cc
-/// Channelal compressed snapshot record representation
+/// Caliper compressed snapshot record representation
 
 #include "caliper/common/CompressedSnapshotRecord.h"
 

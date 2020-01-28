@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 /// @file  split.hpp
 /// @brief String split operation
 

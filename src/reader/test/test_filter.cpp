@@ -368,3 +368,227 @@ TEST(RecordFilterTest, TestEqual) {
         }
     }
 }
+
+TEST(RecordFilterTest, TestLess) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    // create some context attributes
+    
+    Attribute ctx1 =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2 = 
+        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
+    Attribute val_attr =
+        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+
+    // make some nodes
+    
+    const struct NodeInfo {
+        cali_id_t node_id;
+        cali_id_t attr_id;
+        cali_id_t prnt_id;
+        Variant   data;
+    } test_nodes[] = {
+        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 5) },
+        { 101, ctx2.id(), 100,         Variant(42)                           },
+        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 5) }
+    };
+
+    for ( const NodeInfo& nI : test_nodes )
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+
+    Variant v_val47(47);
+    Variant v_val42(42);
+
+    cali_id_t node_ctx1 = 100;
+    cali_id_t node_ctx2 = 102;
+    cali_id_t attr_id   = val_attr.id();
+
+    std::vector<EntryList> in;
+
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 0, nullptr,  nullptr,  idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx2, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx2, 0, nullptr,  nullptr,  idmap));
+    in.push_back(db.merge_snapshot(0, nullptr,    1, &attr_id, &v_val42, idmap));
+    in.push_back(db.merge_snapshot(0, nullptr,    0, nullptr,  nullptr,  idmap));
+
+    QuerySpec::Condition ls_45  { QuerySpec::Condition::Op::LessThan,    "val",   "45"    };
+    QuerySpec::Condition ls_50  { QuerySpec::Condition::Op::LessThan,    "val",   "50"    };
+    QuerySpec::Condition le_42  { QuerySpec::Condition::Op::LessOrEqual, "val",   "42"    };
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(ls_45);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 1);
+
+        for ( const EntryList& rec : result ) {
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val42));
+            EXPECT_FALSE(::has_entry(rec, val_attr, v_val47));
+        }
+    }
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(ls_50);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 4);
+
+        for ( const EntryList& rec : result )
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val42) || ::has_entry(rec, val_attr, v_val47));
+    }
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(le_42);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 1);
+
+        for ( const EntryList& rec : result ) {
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val42));
+            EXPECT_FALSE(::has_entry(rec, val_attr, v_val47));
+        }
+    }
+}
+
+TEST(RecordFilterTest, TestGreater) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    // create some context attributes
+    
+    Attribute ctx1 =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute ctx2 = 
+        db.create_attribute("ctx.2", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
+    Attribute val_attr =
+        db.create_attribute("val",   CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+
+    // make some nodes
+    
+    const struct NodeInfo {
+        cali_id_t node_id;
+        cali_id_t attr_id;
+        cali_id_t prnt_id;
+        Variant   data;
+    } test_nodes[] = {
+        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 5) },
+        { 101, ctx2.id(), 100,         Variant(42)                           },
+        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 5) }
+    };
+
+    for ( const NodeInfo& nI : test_nodes )
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+
+    Variant v_val47(47);
+    Variant v_val42(42);
+
+    cali_id_t node_ctx1 = 100;
+    cali_id_t node_ctx2 = 102;
+    cali_id_t attr_id   = val_attr.id();
+
+    std::vector<EntryList> in;
+
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 0, nullptr,  nullptr,  idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx1, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx2, 1, &attr_id, &v_val47, idmap));
+    in.push_back(db.merge_snapshot(1, &node_ctx2, 0, nullptr,  nullptr,  idmap));
+    in.push_back(db.merge_snapshot(0, nullptr,    1, &attr_id, &v_val42, idmap));
+    in.push_back(db.merge_snapshot(0, nullptr,    0, nullptr,  nullptr,  idmap));
+
+    QuerySpec::Condition gt_45  { QuerySpec::Condition::Op::GreaterThan,    "val",   "45"    };
+    QuerySpec::Condition gt_40  { QuerySpec::Condition::Op::GreaterThan,    "val",   "40"    };
+    QuerySpec::Condition ge_47  { QuerySpec::Condition::Op::GreaterOrEqual, "val",   "47"    };
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(gt_45);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 3);
+
+        for ( const EntryList& rec : result ) {
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val47));
+            EXPECT_FALSE(::has_entry(rec, val_attr, v_val42));
+        }
+    }
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(gt_40);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 4);
+
+        for ( const EntryList& rec : result )
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val42) || ::has_entry(rec, val_attr, v_val47));
+    }
+
+    {
+        QuerySpec spec;
+
+        spec.filter.selection = QuerySpec::FilterSelection::List;
+        spec.filter.list.push_back(ge_47);
+
+        RecordSelector filter(spec);
+        std::vector<EntryList> result;
+
+        for ( const EntryList& rec : in )
+            if (filter.pass(db, rec))
+                result.push_back(rec);
+
+        EXPECT_EQ(static_cast<int>(result.size()), 3);
+
+        for ( const EntryList& rec : result ) {
+            EXPECT_TRUE (::has_entry(rec, val_attr, v_val47));
+            EXPECT_FALSE(::has_entry(rec, val_attr, v_val42));
+        }
+    }
+}

@@ -11,10 +11,10 @@ set(GOTCHA_SOURCES
   translations.c
 )
 
-add_library(gotcha OBJECT ${GOTCHA_SOURCES})
+add_library(caliper-gotcha OBJECT ${GOTCHA_SOURCES})
 
 if (${BUILD_SHARED_LIBS})
-  set_property(TARGET gotcha PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+  set_property(TARGET caliper-gotcha PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-target_include_directories(gotcha PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")
+target_include_directories(caliper-gotcha PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include")

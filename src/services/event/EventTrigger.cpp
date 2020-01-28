@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // EventTrigger.cpp
 // Caliper event trigger
@@ -44,6 +15,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <string>
@@ -52,6 +24,10 @@
 using namespace cali;
 using namespace std;
 
+namespace cali
+{
+    extern Attribute subscription_event_attr; // From api.cpp
+}
 
 namespace
 {
@@ -62,20 +38,18 @@ class EventTrigger
     // --- Static data
     //
 
-    static const ConfigSet::Entry s_configdata[];    
+    static const ConfigSet::Entry s_configdata[];
 
     //
     // --- Per-channel instance data
     //
-    
+
     Attribute                trigger_begin_attr { Attribute::invalid };
     Attribute                trigger_end_attr   { Attribute::invalid };
     Attribute                trigger_set_attr   { Attribute::invalid };
-    
-    Attribute                trigger_level_attr { Attribute::invalid };
 
-    Attribute                exp_marker_attr    { Attribute::invalid }; 
-    
+    Attribute                exp_marker_attr    { Attribute::invalid };
+
     std::vector<std::string> trigger_attr_names;
 
     bool                     enable_snapshot_info;
@@ -87,7 +61,7 @@ class EventTrigger
     //
 
     void mark_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
-        cali_id_t evt_attr_ids[4] = { CALI_INV_ID };
+        cali_id_t evt_attr_ids[3] = { CALI_INV_ID };
 
         struct evt_attr_setup_t {
             std::string prefix;
@@ -106,28 +80,20 @@ class EventTrigger
             s.append(attr.name());
 
             int delete_flags = CALI_ATTR_NESTED | CALI_ATTR_GLOBAL;
-            
+
             evt_attr_ids[setup.index] =
                 c->create_attribute(s, type, (prop & ~delete_flags) | CALI_ATTR_SKIP_EVENTS).id();
         }
 
-        std::string s = "cali.lvl#";
-        s.append(attr.name());
-
-        evt_attr_ids[3] =
-            c->create_attribute(s, CALI_TYPE_INT,
-                                CALI_ATTR_ASVALUE     |
-                                CALI_ATTR_HIDDEN      |
-                                CALI_ATTR_SKIP_EVENTS |
-                                (prop & CALI_ATTR_SCOPE_MASK)).id();
-        
         c->make_tree_entry(exp_marker_attr,
                            Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)),
                            c->node(attr.node()->id()));
+
+        Log(2).stream() << chn->name() << ": event: Marked attribute " << attr.name() << std::endl;
     }
 
     void check_attribute(Caliper* c, Channel* chn, const Attribute& attr) {
-        if (attr.skip_events())
+        if (attr.id() < 12 /* skip fixed metadata attributes */ || attr.skip_events())
             return;
 
         auto it = std::find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
@@ -140,7 +106,7 @@ class EventTrigger
 
     const Node* find_exp_marker(const Attribute& attr) {
         cali_id_t marker_id = exp_marker_attr.id();
-        
+
         for (const Node* node = attr.node()->first_child(); node; node = node->next_sibling())
             if (node->attribute() == marker_id)
                 return node;
@@ -148,20 +114,20 @@ class EventTrigger
         return nullptr;
     }
 
+    static inline bool is_subscription_attribute(const Attribute& attr) {
+        return attr.get(cali::subscription_event_attr).to_bool();
+    }
+
     //
     // --- Callbacks
     //
 
-    void create_attr_cb(Caliper* c, Channel* chn, const Attribute& attr) {
-        check_attribute(c, chn, attr);
-    }
-    
     void pre_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -171,41 +137,21 @@ class EventTrigger
             assert(evt_info_attr_ids != nullptr);
 
             Attribute begin_attr = c->get_attribute(evt_info_attr_ids[0]);
-            Attribute lvl_attr   = c->get_attribute(evt_info_attr_ids[3]);
 
             assert(begin_attr != Attribute::invalid);
-            assert(lvl_attr   != Attribute::invalid);
-
-            uint64_t  lvl = 1;
-            Variant v_lvl(lvl), v_p_lvl;
-
-            // Use Caliper::exchange() to accelerate common-case of setting new hierarchy level to 1.
-            // If previous level was > 0, we need to increment it further
-
-            // FIXME: There may be a race condition between c->exchange() and c->set()
-            // when two threads update a process-scope attribute.
-            // Can fix that with a more general c->update(update_fn) function
-
-            v_p_lvl = c->exchange(chn, lvl_attr, v_lvl);
-            lvl     = v_p_lvl.to_uint();
-
-            if (lvl > 0) {
-                v_lvl = Variant(++lvl);
-                c->set(chn, lvl_attr, v_lvl);
-            }
 
             // Construct the trigger info entry
 
-            Attribute attrs[3] = { trigger_level_attr, trigger_begin_attr, begin_attr };
-            Variant    vals[3] = { v_lvl, Variant(attr.id()), value };
+            Attribute attrs[2] = { trigger_begin_attr, begin_attr };
+            Variant    vals[2] = { Variant(attr.id()), value };
 
-            SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
     }
 
@@ -214,7 +160,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -224,30 +170,21 @@ class EventTrigger
             assert(evt_info_attr_ids != nullptr);
 
             Attribute set_attr = c->get_attribute(evt_info_attr_ids[1]);
-            Attribute lvl_attr = c->get_attribute(evt_info_attr_ids[3]);
 
             assert(set_attr != Attribute::invalid);
-            assert(lvl_attr != Attribute::invalid);
-            
-            uint64_t  lvl(1);
-            Variant v_lvl(lvl);
-
-            // The level for set() is always 1
-            // FIXME: ... except for set_path()??
-            c->set(chn, lvl_attr, v_lvl);
 
             // Construct the trigger info entry
 
-            Attribute attrs[3] = { trigger_level_attr, trigger_set_attr, set_attr };
-            Variant    vals[3] = { v_lvl, Variant(attr.id()), value };
+            Attribute attrs[2] = { trigger_set_attr,   set_attr };
+            Variant    vals[2] = { Variant(attr.id()), value    };
 
-            SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
     }
 
@@ -256,7 +193,7 @@ class EventTrigger
 
         if (!marker_node)
             return;
-        
+
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
 
@@ -266,38 +203,21 @@ class EventTrigger
             assert(evt_info_attr_ids != nullptr);
 
             Attribute end_attr = c->get_attribute(evt_info_attr_ids[2]);
-            Attribute lvl_attr = c->get_attribute(evt_info_attr_ids[3]);
-
-            uint64_t  lvl = 0;
-            Variant v_lvl(lvl), v_p_lvl;
-
-            // Use Caliper::exchange() to accelerate common-case of setting new level to 0.
-            // If previous level was > 1, we need to update it again
-
-            v_p_lvl = c->exchange(chn, lvl_attr, v_lvl);
-
-            if (v_p_lvl.empty())
-                return;
-
-            lvl     = v_p_lvl.to_uint();
-
-            if (lvl > 1)
-                c->set(chn, lvl_attr, Variant(--lvl));
 
             // Construct the trigger info entry with previous level
 
-            Attribute attrs[3] = { trigger_level_attr, trigger_end_attr, end_attr };
-            Variant    vals[3] = { v_p_lvl, Variant(attr.id()), value };
+            Attribute attrs[2] = { trigger_end_attr, end_attr };
+            Variant    vals[2] = { Variant(attr.id()), value };
 
-            SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
+            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, &trigger_info);
+            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
+            c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr);
+            c->push_snapshot(chn, nullptr);
         }
-    } 
+    }
 
     //
     // --- Constructor
@@ -307,7 +227,8 @@ class EventTrigger
         auto attributes = c->get_all_attributes();
 
         for (const Attribute& attr : attributes)
-            check_attribute(c, chn, attr);
+            if (!is_subscription_attribute(attr))
+                check_attribute(c, chn, attr);
     }
 
     EventTrigger(Caliper* c, Channel* chn)
@@ -323,18 +244,13 @@ class EventTrigger
 
             trigger_begin_attr =
                 c->create_attribute("cali.event.begin",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             trigger_set_attr =
                 c->create_attribute("cali.event.set",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             trigger_end_attr =
                 c->create_attribute("cali.event.end",
-                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-            trigger_level_attr =
-                c->create_attribute("cali.event.attr.level",
-                                    CALI_TYPE_UINT,
-                                    CALI_ATTR_SKIP_EVENTS |
-                                    CALI_ATTR_HIDDEN);
+                                    CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             exp_marker_attr =
                 c->create_attribute(std::string("event.exp#")+std::to_string(chn->id()),
                                     CALI_TYPE_USR,
@@ -351,7 +267,12 @@ public:
 
         chn->events().create_attr_evt.connect(
             [instance](Caliper* c, Channel* chn, const Attribute& attr){
-                instance->create_attr_cb(c, chn, attr);
+                if (!is_subscription_attribute(attr))
+                    instance->check_attribute(c, chn, attr);
+            });
+        chn->events().subscribe_attribute.connect(
+            [instance](Caliper* c, Channel* chn, const Attribute& attr){
+                instance->check_attribute(c, chn, attr);
             });
         chn->events().pre_begin_evt.connect(
             [instance](Caliper* c, Channel* chn, const Attribute& attr, const Variant& value){

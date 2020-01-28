@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 /// \file Caliper.h
 /// Initialization function and global data declaration
@@ -67,7 +38,6 @@ typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cal
 
 class Channel : public IdType
 {
-    struct ThreadData;
     struct ChannelImpl;
 
     std::shared_ptr<ChannelImpl> mP;
@@ -82,7 +52,7 @@ public:
 
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
-            create_attr_cbvec;
+            attribute_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const Attribute&,const Variant&)>
             update_cbvec;
         typedef util::callback<void(Caliper*,Channel*)>
@@ -100,12 +70,13 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*)>
             write_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*)>
+        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*,
+                size_t, const Attribute*, const Variant*)>
             track_mem_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
 
-        create_attr_cbvec      create_attr_evt;
+        attribute_cbvec        create_attr_evt;
 
         update_cbvec           pre_begin_evt;
         update_cbvec           post_begin_evt;
@@ -135,6 +106,8 @@ public:
         untrack_mem_cbvec      untrack_mem_evt;
 
         caliper_cbvec          clear_evt;
+
+        attribute_cbvec        subscribe_attribute;
     };
 
     Events&        events();
@@ -159,13 +132,13 @@ class Caliper : public CaliperMetadataAccessInterface
     struct GlobalData;
     struct ThreadData;
 
-    static              std::unique_ptr<GlobalData> sG;
-    static thread_local std::unique_ptr<ThreadData> sT;
+    GlobalData* sG;
+    ThreadData* sT;
 
     bool m_is_signal; // are we in a signal handler?
 
-    explicit Caliper(bool sig)
-        : m_is_signal(sig)
+    Caliper(GlobalData* g, ThreadData* t, bool sig)
+        : sG(g), sT(t), m_is_signal(sig)
         { }
 
     void release_thread();
@@ -179,15 +152,16 @@ public:
     /// \name Annotations (across channels)
     /// \{
 
-    void      begin(const Attribute& attr, const Variant& data);
-    void      end(const Attribute& attr);
-    void      set(const Attribute& attr, const Variant& data);
+    cali_err  begin(const Attribute& attr, const Variant& data);
+    cali_err  end(const Attribute& attr);
+    cali_err  set(const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (across channels)
     /// \{
 
-    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
+                                  size_t n = 0, const Attribute* extra_attrs = nullptr, const Variant* extra_vals = nullptr);
     void      memory_region_end(const void* ptr);
 
     //
@@ -197,7 +171,7 @@ public:
     /// \name Snapshot API
     /// \{
 
-    void      push_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info);
+    void      push_snapshot(Channel* chn, const SnapshotRecord* trigger_info);
     void      pull_snapshot(Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
 
     // --- Flush and I/O API
@@ -214,40 +188,32 @@ public:
     // --- Annotation API
 
     /// \}
-    /// \name Annotation API (single channel)
+    /// \name Annotation (single channel)
     /// \{
 
-    cali_err  begin(Channel* chn, const Attribute& attr, const Variant& data);
-    cali_err  end(Channel* chn, const Attribute& attr);
-    cali_err  set(Channel* chn, const Attribute& attr, const Variant& data);
+    cali_err  begin(Channel* channel, const Attribute& attr, const Variant& data);
+    cali_err  end(Channel* channel, const Attribute& attr);
+    cali_err  set(Channel* channel, const Attribute& attr, const Variant& data);
 
     /// \}
     /// \name Memory region tracking (single channel)
     /// \{
 
-    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
+                                  size_t n = 0, const Attribute* extra_attr = nullptr, const Variant* extra_val = nullptr);
     void      memory_region_end(Channel* chn, const void* ptr);
 
     /// \}
     /// \name Blackboard access
     /// \{
 
-    Variant   exchange(Channel* chn, const Attribute& attr, const Variant& data);
-    Entry     get(Channel* chn, const Attribute& attr);
+    Variant   exchange(const Attribute& attr, const Variant& data);
 
-    /// \}
-    /// \name Metadata access (single channel)
-    /// \{
-
-    std::vector<Entry> get_globals(Channel* chn);
-
-    /// \}
-
-    //
-    // --- Direct metadata / data access API
-    //
+    Entry     get(const Attribute& attr);
+    Entry     get(Channel* channel, const Attribute& attr);
 
     std::vector<Entry> get_globals();
+    std::vector<Entry> get_globals(Channel* channel);
 
     /// \}
     /// \name Explicit snapshot record manipulation
@@ -292,7 +258,7 @@ public:
 
     /// \brief Get or create tree branch with given attribute and values
     Node*     make_tree_entry(const Attribute& attr, size_t n, const Variant values[], Node* parent = nullptr);
-                              
+
     /// \}
     /// \name Channel API
     /// \{
@@ -308,6 +274,8 @@ public:
 
     void     activate_channel(Channel* chn);
     void     deactivate_channel(Channel* chn);
+
+    void     finalize();
 
     /// \}
 

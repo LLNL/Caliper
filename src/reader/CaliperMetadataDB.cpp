@@ -1,34 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // CaliperMetadataDB class definition
 
@@ -153,15 +124,18 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
     /// \brief Make string variant from string database
     Variant make_string_variant(const char* str, size_t len) {
+        if (len > 0 && str[len-1] == '\0')
+            --len;
+
         std::lock_guard<std::mutex>
             g(m_string_db_lock);
 
         auto it = std::lower_bound(m_string_db.begin(), m_string_db.end(), str,
-                                   [](const char* a, const char* b) {
-                                       return strcmp(a, b) < 0;
+                                   [len](const char* a, const char* b) {
+                                       return strncmp(a, b, len) < 0;
                                    });
 
-        if (it != m_string_db.end() && strcmp(str, *it) == 0)
+        if (it != m_string_db.end() && strncmp(str, *it, len) == 0 && strlen(*it) == len)
             return Variant(CALI_TYPE_STRING, *it, len);
 
         char* ptr = new char[len + 1];
@@ -184,7 +158,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             Log(0).stream() << "CaliperMetadataDB: Can't read USR data at this point" << std::endl;
             break;
         case CALI_TYPE_STRING:
-            ret = make_string_variant(str.c_str(), str.size());
+            ret = make_string_variant(str.data(), str.size());
             break;
         default:
             ret = Variant::from_string(type, str.c_str());
@@ -285,7 +259,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     const Node* recursive_merge_node(const Node* node, const CaliperMetadataAccessInterface& db) {
         if (!node || node->id() == CALI_INV_ID)
             return nullptr;
-        if (node->id() < 11)
+        if (node->id() < 12)
             return m_nodes[node->id()];
 
         const Node* attr_node =
@@ -500,11 +474,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         }
 
     ~CaliperMetadataDBImpl() {
-        if (Log::verbosity() >= 2)
-            Log(2).stream() << "Reader: CaliperMetadaDB: stored "
-                            << m_nodes.size()     << " nodes, "
-                            << m_string_db.size() << " strings." << std::endl;
-
         for (const char* str : m_string_db)
             delete[] str;
         for (Node* n : m_nodes)
@@ -522,7 +491,10 @@ CaliperMetadataDB::CaliperMetadataDB()
 { }
 
 CaliperMetadataDB::~CaliperMetadataDB()
-{ }
+{ 
+    if (Log::verbosity() >= 2)
+        print_statistics( Log(2).stream() );
+}
 
 const Node*
 CaliperMetadataDB::merge_node(cali_id_t node_id, cali_id_t attr_id, cali_id_t prnt_id, const Variant& value, IdMap& idmap)
@@ -647,9 +619,17 @@ CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db)
     return mP->import_globals(db, db.get_globals());
 }
 
-
 std::vector<Entry>
 CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals)
 {
     return mP->import_globals(db, globals);
+}
+
+std::ostream&
+CaliperMetadataDB::print_statistics(std::ostream& os)
+{
+    os << "CaliperMetadataDB: stored " << mP->m_nodes.size() 
+       << " nodes, " << mP->m_string_db.size() << " strings." << std::endl;
+    
+    return os;
 }

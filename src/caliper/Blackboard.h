@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/Variant.h"

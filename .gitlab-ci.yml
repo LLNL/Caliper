@@ -1,26 +1,43 @@
-build-quartz-intel:
+.build-quartz:
   stage: build
-  tags:
+  tags: 
     - quartz
     - shell
   script:
-    - echo "==== Build quartz/intel ===="
-    - mkdir build-quartz-intel && cd build-quartz-intel
-    - cmake -C ../cmake/hostconfig/gitlab-quartz-intel.cmake ..
+    - echo "==== ${build_config} ===="
+    - mkdir build-${build_config} && cd build-${build_config}
+    - cmake -C ../cmake/hostconfig/gitlab-${build_config}.cmake ..
     - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - ctest --output-on-failure
+
+build-quartz-gcc:
+  variables:
+    build_config: "quartz-gcc"
+  extends: .build-quartz
+  artifacts:
+    paths:
+      - build-quartz-gcc/
+
+build-quartz-intel:
+  variables:
+    build_config: "quartz-intel"
+  extends: .build-quartz
 
 build-quartz-pgi:
-  stage: build
+  variables:
+    build_config: "quartz-pgi"
+  extends: .build-quartz
+
+perftest-quartz:
+  stage: test
   tags:
     - quartz
     - shell
   script:
-    - echo "==== Build quartz/pgi ===="
-    - mkdir build-quartz-pgi && cd build-quartz-pgi
-    - cmake -C ../cmake/hostconfig/gitlab-quartz-pgi.cmake ..
-    - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - cd build-quartz-gcc
+    - ../scripts/run-annotation-perftest.sh
+  dependencies:
+    - build-quartz-gcc
 
 build-butte-xlc:
   stage: build
@@ -33,4 +50,4 @@ build-butte-xlc:
     - mkdir build-butte-xlc && cd build-butte-xlc
     - cmake -C ../cmake/hostconfig/gitlab-butte-xlc.cmake ..
     - make
-    - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+    - ctest --output-on-failure

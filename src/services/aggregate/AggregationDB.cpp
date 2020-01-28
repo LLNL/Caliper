@@ -1,34 +1,5 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 #include "AggregationDB.h"
 
@@ -59,18 +30,65 @@ struct AggregateKernel {
     double   avg;
     int      count;
 
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+    int histogram_max;
+    int histogram[CALI_AGG_HISTOGRAM_BINS] = {0};
+
+    // Quick way to get expoent out of a double.
+    struct getExponent {
+       union {
+          double val;
+          std::uint16_t sh[4];
+       };
+    };
+#endif
+
     AggregateKernel()
         : min(std::numeric_limits<double>::max()),
           max(std::numeric_limits<double>::min()),
           sum(0), avg(0), count(0)
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+          , histogram_max(0)
+#endif
         { }
 
     void add(double val) {
         min  = std::min(min, val);
         max  = std::max(max, val);
         sum += val;
-        avg = ((count*avg) + val)/ (count + 1.0);
+        avg  = ((count*avg) + val) / (count + 1.0);
         ++count;
+
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+        //grab the shifted exponent from double, cast as int.
+        std::uint64_t val_uint;
+        std::memcpy(&val_uint, &val, 8);
+        val_uint >>= 52;
+        val_uint &= 0x7FF;
+        //The bias for double is 1023, which means histogram
+        //boundaries at 4x would lie at -0.5, 2.  To make things even
+        //powers of 4 for ease of documentation, we need the bias to
+        //be 1024.
+        //making bins of size 4x, which means dividing exponent by 2.
+        int exponent = (val_uint+1)/2;
+        if (exponent > histogram_max) {
+            //shift down values as necessary.
+            int shift = std::min(exponent - histogram_max,CALI_AGG_HISTOGRAM_BINS-1);
+            for (int ii=1; ii<shift+1; ii++) {
+                histogram[0] += histogram[ii];
+            }
+            for (int ii=shift+1; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
+                int jj = ii-shift;
+                histogram[jj] = histogram[ii];
+            }
+            for (int jj=CALI_AGG_HISTOGRAM_BINS-shift; jj<CALI_AGG_HISTOGRAM_BINS; jj++) {
+               histogram[jj] = 0;
+            }
+            histogram_max = exponent;
+        }
+        int index = std::max(CALI_AGG_HISTOGRAM_BINS-1 - (histogram_max-exponent), 0);
+        histogram[index]++;
+#endif
     }
 };
 
@@ -222,6 +240,11 @@ struct AggregationDB::AggregationDBImpl
             rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
             rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
             rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+            for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
+                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+            }
+#endif
         }
 
         uint64_t count = entry->count;

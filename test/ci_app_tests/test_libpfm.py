@@ -31,7 +31,7 @@ class CaliperLibpfmTest(unittest.TestCase):
             snapshots, { 'libpfm.counter.cycles', 'phase', 'iteration' }))
 
     def test_libpfm_sampling(self):
-        target_cmd = [ './ci_dgemm_memtrack' ]
+        target_cmd = [ './ci_test_macros', '50', 'none', '100' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {

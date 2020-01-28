@@ -73,9 +73,9 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -132,7 +132,7 @@ TEST(AggregatorTest, DefaultKeyCountOpSpec) {
             auto dict = make_dict_from_entrylist(list);
             int  aggr = dict[count_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
+            if (dict[ctx1.id()].value() == Variant("inner")) {
                 EXPECT_EQ(aggr, 3);
                 EXPECT_EQ(static_cast<int>(list.size()), 2);
                 ++rescount;
@@ -174,9 +174,9 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -226,8 +226,10 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_NE(sum_attr, Attribute::invalid);
 
     // check results
 
@@ -239,9 +241,9 @@ TEST(AggregatorTest, DefaultKeySumOpSpec) {
             auto dict = make_dict_from_entrylist(list);
 
             int  aggr = dict[count_attr.id()].value().to_int();
-            int  val  = dict[val_attr.id()  ].value().to_int();
+            int  val  = dict[sum_attr.id()  ].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
+            if (dict[ctx1.id()].value() == Variant("inner")) {
                 EXPECT_EQ(aggr,  3);
                 EXPECT_EQ(val,  14);
                 EXPECT_EQ(static_cast<int>(list.size()), 3);
@@ -286,9 +288,9 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
         { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -340,6 +342,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
 
@@ -353,7 +356,7 @@ TEST(AggregatorTest, SingleKeySumOpSpec) {
             auto dict = make_dict_from_entrylist(list);
 
             int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[val_attr.id()  ].value().to_int();
+            int  val   = dict[sum_attr.id()  ].value().to_int();
 
             if (dict[ctx2.id()].value() == Variant(42)) {
                 EXPECT_EQ(count,  5);
@@ -395,8 +398,8 @@ TEST(AggregatorTest, InclusiveSumOp) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx1.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx1.id(), 100,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -414,11 +417,14 @@ TEST(AggregatorTest, InclusiveSumOp) {
     spec.aggregation_ops.list.push_back(::make_op("count"));
     spec.aggregation_ops.list.push_back(::make_op("sum", "val"));
     spec.aggregation_ops.list.push_back(::make_op("inclusive_sum", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("inclusive_scale", "val", "2.0"));
 
-    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 3);
+    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 4);
 
     ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "count"); // see if kernel lookup went OK
     ASSERT_STREQ(spec.aggregation_ops.list[1].op.name, "sum");
+    ASSERT_STREQ(spec.aggregation_ops.list[2].op.name, "inclusive_sum");
+    ASSERT_STREQ(spec.aggregation_ops.list[3].op.name, "inclusive_scale");
 
     Aggregator a(spec);
 
@@ -444,11 +450,15 @@ TEST(AggregatorTest, InclusiveSumOp) {
             resdb.push_back(list);
         });
 
-    Attribute count_attr = db.get_attribute("count");
-    Attribute isum_attr  = db.get_attribute("inclusive#val");
+    Attribute count_attr  = db.get_attribute("count");
+    Attribute sum_attr    = db.get_attribute("sum#val");
+    Attribute isum_attr   = db.get_attribute("inclusive#val");
+    Attribute iscale_attr = db.get_attribute("iscale#val");
 
-    ASSERT_NE(count_attr, Attribute::invalid);
-    ASSERT_NE(isum_attr,  Attribute::invalid);
+    ASSERT_NE(count_attr,  Attribute::invalid);
+    ASSERT_NE(sum_attr,    Attribute::invalid);
+    ASSERT_NE(isum_attr,   Attribute::invalid);
+    ASSERT_NE(iscale_attr, Attribute::invalid);
 
     // check results
 
@@ -459,18 +469,21 @@ TEST(AggregatorTest, InclusiveSumOp) {
     std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
             auto dict = make_dict_from_entrylist(list);
 
-            int  count = dict[count_attr.id()].value().to_int();
-            int  val   = dict[val_attr.id()  ].value().to_int();
-            int  ival  = dict[isum_attr.id() ].value().to_int();
+            int  count  = dict[count_attr.id() ].value().to_int();
+            int  val    = dict[sum_attr.id()   ].value().to_int();
+            int  ival   = dict[isum_attr.id()  ].value().to_int();
+            int  iscval = dict[iscale_attr.id()].value().to_int();
 
-            if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "inner", 6)) {
-                EXPECT_EQ(val,   14);
-                EXPECT_EQ(ival,  14);
-                EXPECT_EQ(static_cast<int>(list.size()), 4);
+            if (dict[ctx1.id()].value() == Variant("inner")) {
+                EXPECT_EQ(val,    14);
+                EXPECT_EQ(ival,   14);
+                EXPECT_EQ(iscval, 28);
+                EXPECT_EQ(static_cast<int>(list.size()), 6);
                 ++rescount;
-            } else if (dict[ctx1.id()].value() == Variant(CALI_TYPE_STRING, "outer", 6)) {
-                EXPECT_EQ(val,    7);
-                EXPECT_EQ(ival,  21);
+            } else if (dict[ctx1.id()].value() == Variant("outer")) {
+                EXPECT_EQ(val,     7);
+                EXPECT_EQ(ival,   21);
+                EXPECT_EQ(iscval, 42);
                 ++rescount;
             }
         });
@@ -503,9 +516,9 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx1.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx2.id(), 100,         Variant(42)                           },
-        { 102, ctx1.id(), 101,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx1.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx2.id(), 100,         Variant(42)      },
+        { 102, ctx1.id(), 101,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -556,8 +569,10 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
         });
 
     Attribute count_attr = db.get_attribute("count");
+    Attribute sum_attr   = db.get_attribute("sum#val");
 
     ASSERT_NE(count_attr, Attribute::invalid);
+    ASSERT_NE(sum_attr, Attribute::invalid);
 
     // check results
 
@@ -566,7 +581,7 @@ TEST(AggregatorTest, NoneKeySumOpSpec) {
     auto dict  = make_dict_from_entrylist(resdb.front());
 
     int  count = dict[count_attr.id()].value().to_int();
-    int  val   = dict[val_attr.id()  ].value().to_int();
+    int  val   = dict[sum_attr.id()  ].value().to_int();
 
     EXPECT_EQ(count,  9);
     EXPECT_EQ(val,   35);
@@ -591,8 +606,8 @@ TEST(AggregatorTest, StatisticsKernels) {
         cali_id_t prnt_id;
         Variant   data;
     } test_nodes[] = {
-        { 100, ctx.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "outer", 6) },
-        { 101, ctx.id(), 100,         Variant(CALI_TYPE_STRING, "inner", 6) }
+        { 100, ctx.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx.id(), 100,         Variant("inner") }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -694,6 +709,45 @@ TEST(AggregatorTest, ScaledRatioKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_ratio.id()].value().to_double(), 20.0);
 }
 
+TEST(AggregatorTest, ScaledSumKernel) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute x_attr =
+        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("scale", "x", "0.5"));
+
+    Aggregator a(spec);
+
+    Variant    v_ints[2] = { Variant(10), Variant(20) };
+    cali_id_t  attr_id   = x_attr.id();
+
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+1, idmap));
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    ASSERT_EQ(resdb.size(), 1);
+
+    Attribute attr_scale = db.get_attribute("scale#x");
+
+    ASSERT_NE(attr_scale, Attribute::invalid);
+
+    auto dict = make_dict_from_entrylist(resdb.front());
+
+    EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 15.0);
+}
+
 TEST(AggregatorTest, PercentTotalKernel) {
     CaliperMetadataDB db;
     IdMap             idmap;
@@ -701,7 +755,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
      // create some context attributes
 
     Attribute ctx =
-        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+        db.create_attribute("ctx", CALI_TYPE_INT, CALI_ATTR_NESTED);
     Attribute val_attr =
         db.create_attribute("val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
@@ -715,7 +769,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
     } test_nodes[] = {
         { 100, ctx.id(), CALI_INV_ID, Variant(-1) },
         { 101, ctx.id(), 100,         Variant(42) },
-        { 102, ctx.id(), 100,         Variant(24) }
+        { 102, ctx.id(), 101,         Variant(24) }
     };
 
     for ( const NodeInfo& nI : test_nodes )
@@ -731,6 +785,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
     spec.aggregation_ops.list.push_back(::make_op("percent_total", "val"));
+    spec.aggregation_ops.list.push_back(::make_op("inclusive_percent_total", "val"));
 
     // perform recursive aggregation from two aggregators
 
@@ -750,9 +805,11 @@ TEST(AggregatorTest, PercentTotalKernel) {
     // merge b into a
     b.flush(db, a);
 
-    Attribute attr_pct = db.get_attribute("percent_total#val");
+    Attribute attr_pct  = db.get_attribute("percent_total#val");
+    Attribute attr_ipct = db.get_attribute("ipercent_total#val");
 
-    ASSERT_NE(attr_pct, Attribute::invalid);
+    ASSERT_NE(attr_pct , Attribute::invalid);
+    ASSERT_NE(attr_ipct, Attribute::invalid);
 
     std::vector<EntryList> resdb;
 
@@ -762,7 +819,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
 
     // check results
 
-    EXPECT_EQ(resdb.size(), 2); // two entries
+    EXPECT_EQ(resdb.size(), 3); // three entries
 
     auto it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
             for (const Entry& e : list)
@@ -776,6 +833,7 @@ TEST(AggregatorTest, PercentTotalKernel) {
     auto dict  = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 25.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);
 
     it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
             for (const Entry& e : list)
@@ -789,4 +847,19 @@ TEST(AggregatorTest, PercentTotalKernel) {
     dict  = make_dict_from_entrylist(*it);
 
     EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 75.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 75.0);
+
+    it = std::find_if(resdb.begin(), resdb.end(), [ctx](const EntryList& list){
+            for (const Entry& e : list)
+                if (e.value(ctx).to_int() == -1)
+                    return true;
+            return false;
+        });
+
+    ASSERT_NE(it, resdb.end());
+
+    dict  = make_dict_from_entrylist(*it);
+
+    EXPECT_DOUBLE_EQ(dict[attr_pct.id()].value().to_double(), 0.0);
+    EXPECT_DOUBLE_EQ(dict[attr_ipct.id()].value().to_double(), 100.0);
 }

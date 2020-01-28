@@ -14,7 +14,7 @@ void* thread_proc(void* arg)
 
     int thread_id = *(static_cast<int*>(arg));
 
-    cali::Annotation("my_thread_id").set(thread_id);
+    cali::Annotation("my_thread_id", CALI_ATTR_SCOPE_THREAD).set(thread_id);
 
     return NULL;
 }
@@ -26,7 +26,8 @@ int main()
     cali::Caliper c;
     cali::RuntimeConfig exp_nopthread_cfg;
 
-    exp_nopthread_cfg.set("CALI_SERVICES_ENABLE",   "event,trace,recorder");
+    exp_nopthread_cfg.set("CALI_SERVICES_ENABLE", "event,trace,recorder");
+    exp_nopthread_cfg.set("CALI_CHANNEL_SNAPSHOT_SCOPES", "process,thread,channel");
     exp_nopthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
     cali::Channel* exp_nopthread =
@@ -34,7 +35,8 @@ int main()
 
     cali::RuntimeConfig exp_pthread_cfg;
     
-    exp_pthread_cfg.set("CALI_SERVICES_ENABLE",   "event,trace,pthread,recorder");
+    exp_pthread_cfg.set("CALI_SERVICES_ENABLE", "event,trace,pthread,recorder");
+    exp_pthread_cfg.set("CALI_CHANNEL_SNAPSHOT_SCOPES", "process,thread,channel");
     exp_pthread_cfg.set("CALI_RECORDER_FILENAME", "stdout");
 
     cali::Channel* exp_pthread =
@@ -51,7 +53,7 @@ int main()
     int       thread_ids[4] = { 16, 25, 36, 49 };
     pthread_t thread[4];
 
-    cali::Annotation("local", CALI_ATTR_DEFAULT).set(99);
+    cali::Annotation("local",  CALI_ATTR_SCOPE_THREAD).set(99);
     cali::Annotation("global", CALI_ATTR_SCOPE_PROCESS).set(999);
 
     for (int i = 0; i < 4; ++i)

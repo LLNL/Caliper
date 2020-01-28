@@ -1,3 +1,6 @@
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
+
 #include "caliper/caliper-config.h"
 
 #include <caliper/Caliper.h>
@@ -14,14 +17,17 @@
 #include <caliper/common/OutputStream.h>
 #include <caliper/common/StringConverter.h>
 
+#include "../../services/Services.h"
+
 #include <unistd.h>
 
 #include <algorithm>
 #include <ctime>
 
+#ifdef CALIPER_HAVE_MPI
 #include "caliper/cali-mpi.h"
-
 #include <mpi.h>
+#endif
 
 #ifdef CALIPER_HAVE_ADIAK
 #include <adiak.hpp>
@@ -31,6 +37,8 @@ using namespace cali;
 
 namespace
 {
+
+constexpr int spot_format_version = 1;
 
 std::string
 make_filename()
@@ -78,8 +86,24 @@ write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
 
 class SpotController : public cali::ChannelController
 {
-    std::string m_output;
+    cali::ConfigManager::Options m_opts;
     bool m_use_mpi;
+
+    /// \brief Perform intermediate aggregation of channel data into \a output_agg
+    void aggregate(const std::string& aggcfg, const std::string& groupby, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
+        QuerySpec spec =
+            CalQLParser(std::string("aggregate " + aggcfg + " group by " + groupby).c_str()).spec();
+
+        Aggregator agg(spec);
+
+        c.flush(channel(), nullptr, [&db,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                   EntryList mrec = db.merge_snapshot(in_db, rec);
+                   agg.add(db, mrec);
+                });
+
+        // write intermediate results into output aggregator
+        agg.flush(db, output_agg);
+    }
 
 public:
 
@@ -87,15 +111,20 @@ public:
     flush() {
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
-        // --- Setup output reduction aggregator
+        // --- Setup output reduction aggregator (final cross-process aggregation)
+        const char* cross_select =
+            " *"
+            ",min(inclusive#sum#time.duration)"
+            ",max(inclusive#sum#time.duration)"
+            ",avg(inclusive#sum#time.duration)";
+        std::string cross_query =
+            std::string("select ")
+            + m_opts.query_select("cross", cross_select, false)
+            + " group by "
+            + m_opts.query_groupby("cross", "prop:nested")
+            + " format cali";
 
-        QuerySpec  output_spec =
-            CalQLParser("select *,"
-                        " min(inclusive#sum#time.duration)"
-                        ",max(inclusive#sum#time.duration)"
-                        ",avg(inclusive#sum#time.duration)"
-                        " format cali").spec();
-
+        QuerySpec output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
 
         CaliperMetadataDB db;
@@ -105,21 +134,12 @@ public:
         //     inclusive times
 
         {
-            QuerySpec  inclusive_spec =
-                CalQLParser("aggregate"
-                            " inclusive_sum(sum#time.duration)"
-                            " group by prop:nested").spec();
+            std::string local_select  =
+                m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false);
+            std::string local_groupby =
+                m_opts.query_groupby("local", "prop:nested");
 
-            Aggregator inclusive_agg(inclusive_spec);
-
-            c.flush(channel(), nullptr, [&db,&inclusive_agg](CaliperMetadataAccessInterface& in_db,
-                                                             const std::vector<Entry>& rec){
-                        EntryList mrec = db.merge_snapshot(in_db, rec);
-                        inclusive_agg.add(db, mrec);
-                    });
-
-            // write intermediate results into output aggregator
-            inclusive_agg.flush(db, output_agg);
+            aggregate(local_select, local_groupby, c, db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -127,7 +147,10 @@ public:
         int rank = 0;
 
 #ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi) {
+        int initialized = 0;
+        MPI_Initialized(&initialized);
+
+        if (initialized != 0 && m_use_mpi) {
             Log(2).stream() << "[spot controller]: Performing cross-process aggregation" << std::endl;
 
             MPI_Comm comm;
@@ -151,16 +174,25 @@ public:
             // import globals from Caliper runtime object
             db.import_globals(c, c.get_globals(channel()));
 
-            std::string spot_metrics =
-                "avg#inclusive#sum#time.duration"
-                ",min#inclusive#sum#time.duration"
-                ",max#inclusive#sum#time.duration";
+            std::string spot_metrics;
 
-            // set the spot.metrics value                
-            db.set_global(db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL),
-                          Variant(CALI_TYPE_STRING, spot_metrics.data(), spot_metrics.length()));
+            for (const auto &op : output_spec.aggregation_ops.list) {
+                if (!spot_metrics.empty())
+                    spot_metrics.append(",");
 
-            std::string output = m_output;
+                spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
+            }
+
+            Attribute mtr_attr =
+                db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            Attribute fmt_attr =
+                db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
+
+            // set the spot.metrics value
+            db.set_global(mtr_attr, Variant(spot_metrics.c_str()));
+            db.set_global(fmt_attr, Variant(spot_format_version));
+
+            std::string output = m_opts.get("output", "").to_string();
 
             if (output == "adiak") {
 #ifdef CALIPER_HAVE_ADIAK
@@ -169,7 +201,7 @@ public:
                 Log(0).stream() << "[spot controller]: cannot use adiak output: adiak is not enabled!" << std::endl;
 #endif
             } else {
-                if (m_output.empty())
+                if (output.empty())
                     output = ::make_filename();
 
                 OutputStream    stream;
@@ -183,7 +215,7 @@ public:
         }
     }
 
-    SpotController(bool use_mpi, const char* output)
+    SpotController(bool use_mpi, const cali::ConfigManager::Options& opts)
         : ChannelController("spot", 0, {
                 { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
@@ -193,43 +225,57 @@ public:
                 { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
                 { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
             }),
-          m_output(output),
+          m_opts(opts),
           m_use_mpi(use_mpi)
         {
 #ifdef CALIPER_HAVE_ADIAK
-            if (output != "adiak")
+            if (opts.get("output", "").to_string() != "adiak")
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
+            m_opts.update_channel_config(config());
         }
 
     ~SpotController()
         { }
 };
 
-const char* spot_args[] = { "output", nullptr };
 
 cali::ChannelController*
-make_spot_controller(const cali::ConfigManager::argmap_t& args) {
-    auto it = args.find("output");
-    std::string output = (it == args.end() ? "" : it->second);
-
+make_spot_controller(const cali::ConfigManager::Options& opts) {
     bool use_mpi = false;
 #ifdef CALIPER_HAVE_MPI
     use_mpi = true;
 #endif
-    
-    it = args.find("mpi");
-    if (it != args.end())
-        use_mpi = StringConverter(it->second).to_bool();
 
-    return new SpotController(use_mpi, output.c_str());
+    if (opts.is_set("aggregate_across_ranks"))
+        use_mpi = opts.get("aggregate_across_ranks").to_bool();
+
+    return new SpotController(use_mpi, opts);
 }
+
+const char* controller_spec =
+    "{"
+    " \"name\"        : \"spot\","
+    " \"description\" : \"Record a time profile for the Spot web visualization framework\","
+    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"options\": "
+    " ["
+    "  {"
+    "   \"name\": \"aggregate_across_ranks\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Aggregate results across MPI ranks\""
+    "  }"
+    " ]"
+    "}";
 
 } // namespace [anonymous]
 
 namespace cali
 {
 
-ConfigManager::ConfigInfo spot_controller_info { "spot", "spot(output=<filename>,mpi=true|false): Write Spot output", ::spot_args, ::make_spot_controller };
+ConfigManager::ConfigInfo spot_controller_info
+{
+    ::controller_spec, ::make_spot_controller, nullptr
+};
 
 }

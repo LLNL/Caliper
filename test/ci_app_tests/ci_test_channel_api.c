@@ -20,14 +20,16 @@ int main()
 
     CALI_MARK_BEGIN("foo");
 
-    cali_deactivate_channel(chn_b);
-    cali_set_int_byname("a", 2);
-    cali_activate_channel(chn_b);
-    
     cali_set_int_byname("b", 4);
 
+    cali_deactivate_channel(chn_b);
+    cali_set_int_byname("a", 2);
+    cali_end_byname("a");
+    cali_activate_channel(chn_b);
+    
     cali_deactivate_channel(chn_a);
     cali_set_int_byname("c", 8);
+    cali_end_byname("c");
     cali_activate_channel(chn_a);
 
     CALI_MARK_END("foo");

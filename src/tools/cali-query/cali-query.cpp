@@ -1,35 +1,5 @@
-// Copyright (c) 2015, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// Modified by Aimee Sylvia
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // A basic tool for Caliper metadata queries
 
@@ -141,7 +111,7 @@ namespace
           "KEY=VALUE,..."
         },
         { "verbose", "verbose", 'v', false, "Be verbose.",              nullptr },
-        { "version", "version",  0,  false, "Print version number",     nullptr },
+        { "version", "version", 'V', false, "Print version number",     nullptr },
         { "output",  "output",  'o', true,  "Set the output file name", "FILE"  },
         { "help",    "help",    'h', true,  "Print help message",       nullptr },
         { "list-attributes", "list-attributes", 0, false,
@@ -216,14 +186,20 @@ public:
             })
     {}
 
-    static ChannelController* create(const ConfigManager::argmap_t&) {
+    static ChannelController* create(const ConfigManager::Options&) {
         return new ProgressController;
     }
 };
 
-const ConfigManager::ConfigInfo caliquery_cfglist[] = {
-    { "progress", "progress: Print cali-query progress (when processing multiple files)", nullptr, ProgressController::create },
-    { nullptr, nullptr, nullptr, nullptr }
+ConfigManager::ConfigInfo ProgressInfo = {
+    "{ \"name\": \"caliquery-progress\", \"description\": \"Print cali-query progress (when processing multiple files)\" }",
+    ProgressController::create,
+    nullptr
+};
+
+const ConfigManager::ConfigInfo* caliquery_cfglist[] = {
+   &ProgressInfo,
+   nullptr
 };
 
 void setup_caliper_config(const Args& args)
@@ -256,7 +232,6 @@ void setup_caliper_config(const Args& args)
     }
 }
 
-
 //
 // --- main()
 //
@@ -264,7 +239,7 @@ void setup_caliper_config(const Args& args)
 int main(int argc, const char* argv[])
 {
     ConfigManager::add_controllers(caliquery_cfglist);
-    
+
     Args args(::option_table);
 
     //
@@ -284,21 +259,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            std::string helpopt = args.get("help");
-            
-            if (helpopt == "configs") {
-                for (const auto &s : ConfigManager::get_config_docstrings())
-                    std::cerr << s << std::endl;
-            } else if (!helpopt.empty()) {
-                std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                          << "\n  [none]:  Describe cali-query usage (default)"
-                          << "\n  configs: Describe Caliper profiling configurations"
-                          << std::endl;
-            } else {
-                std::cerr << usage << "\n\n";
-                args.print_available_options(std::cerr);
-            }
-            
+            print_caliquery_help(args, usage);
             return 0;
         }
 
@@ -321,14 +282,12 @@ int main(int argc, const char* argv[])
         return -1;
     }
 
-    auto channels = mgr.get_all_channels();
-    for (auto &chn : channels)
-        chn->start();
+    mgr.start();
 
-    cali::Annotation("cali-query.build.date", CALI_ATTR_GLOBAL).set(__DATE__);
-    cali::Annotation("cali-query.build.time", CALI_ATTR_GLOBAL).set(__TIME__);
+    cali_set_global_string_byname("cali-query.build.date", __DATE__);
+    cali_set_global_string_byname("cali-query.build.time", __TIME__);
 #ifdef __GNUC__
-    cali::Annotation("cali-query.build.compiler", CALI_ATTR_GLOBAL).set("gnu-" __VERSION__);
+    cali_set_global_string_byname("cali-query.build.compiler", "gnu-" __VERSION__);
 #endif
 
     CALI_MARK_BEGIN("Initialization");
@@ -483,6 +442,5 @@ int main(int argc, const char* argv[])
 
     CALI_MARK_END("Writing");
 
-    for (auto &chn : channels)
-        chn->flush();
+    mgr.flush();
 }

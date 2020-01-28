@@ -8,6 +8,12 @@
 \defgroup AnnotationAPI Annotation API
 \brief The user-facing source-code annotation API
 
+\defgroup ControlChannelAPI Control Channel API
+\brief An API for controlling %Caliper built-in performance measurement configurations.
+
+The control channel API provides means to access and control built-in %Caliper
+configurations and enable measurements from within a target program.
+
 \defgroup ReaderAPI Reader API
-\brief Facilities for post-processing and exporting Caliper output
+\brief Facilities for post-processing and exporting %Caliper output
 */

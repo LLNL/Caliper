@@ -1,37 +1,7 @@
-// Copyright (c) 2016, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
-/// \file  Aggregate.cpp
-/// \brief Caliper on-line aggregation service
+// Caliper on-line aggregation service
 
 #include "AggregationDB.h"
 
@@ -51,6 +21,7 @@
 #include <algorithm>
 #include <cstring>
 #include <mutex>
+#include <sstream>
 
 using namespace aggregate;
 using namespace cali;
@@ -117,12 +88,12 @@ class Aggregate
         // on the thread's blackboard
 
         ThreadDB* tdb =
-            static_cast<ThreadDB*>(c->get(chn, tdb_attr).value().get_ptr());
+            static_cast<ThreadDB*>(c->get(tdb_attr).value().get_ptr());
 
         if (!tdb && can_alloc) {
             tdb = new ThreadDB;
 
-            c->set(chn, tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
+            c->set(tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
             
             std::lock_guard<util::spinlock>
                 g(tdb_lock);
@@ -195,6 +166,13 @@ class Aggregate
             aI.stats_attributes[i].avg_attr =
                 c->create_attribute(std::string("avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+#ifdef CALIPER_ENABLE_HISTOGRAMS
+            for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
+                aI.stats_attributes[i].histogram_attr[jj] =
+                   c->create_attribute(std::string("histogram.bin.") + std::to_string(jj) + std::string("#") + name,
+                                       CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+            }
+#endif
         }
 
         aI.count_attribute =

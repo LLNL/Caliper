@@ -28,7 +28,7 @@ functions in the `function` attribute.
 C++ example:
 
 .. code-block:: c++
-   
+
    #include <caliper/cali.h>
 
    int foo(int r)
@@ -53,7 +53,7 @@ C example:
      CALI_MARK_FUNCTION;       /* Exports "function=foo"          */
 
      if (r > 0) {
-       CALI_MARK_FUNCTION_END; /* ALL exit points must be marked! */ 
+       CALI_MARK_FUNCTION_END; /* ALL exit points must be marked! */
        return r-1;
      }
 
@@ -135,7 +135,7 @@ have to be enclosed completely within each other; they cannot
 partially overlap. Example:
 
 .. code-block:: c++
- 
+
    #include <caliper/cali.h>
 
    int foo()
@@ -173,7 +173,7 @@ model. The high-level annotation API uses pre-defined attribute keys,
 but users can create their own. Attribute keys have a unique name, and
 store the attribute's data type as well as optional property flags.
 Property flags control how the Caliper runtime system handles the
-associated attributes. 
+associated attributes.
 
 .. doxygenenum:: cali_attr_properties
    :project: caliper
@@ -194,9 +194,9 @@ follows:
 ``begin``
   Marks the begin of a region with the given attribute/value. The new
   value will be nested under already open regions of the same
-  attribute. 
+  attribute.
 
-``set`` 
+``set``
   Sets or overwrites the top-most value for the given attribute.
 
 ``end``
@@ -217,7 +217,7 @@ Example:
    cali_begin_string_byname("CustomAttribute", "My great example")
 
    /* Creates attribute key "myvar" with ASVALUE storage property */
-   cali_id_t myvar_attr = 
+   cali_id_t myvar_attr =
      cali_create_attribute("myvar", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
    /* Exports myvar=42 */
@@ -278,7 +278,7 @@ Fortran API signatures::
        character(len=*), intent(in) :: attr_name
        character(len=*), intent(in) :: val
        integer(kind(CALI_SUCCESS)), intent(out), optional :: err
-       
+
      subroutine cali_begin_int_byname
        character(len=*), intent(in) :: attr_name
        integer,          intent(in) :: val
@@ -293,7 +293,7 @@ Fortran API signatures::
        character(len=*), intent(in) :: attr_name
        character(len=*), intent(in) :: val
        integer(kind(CALI_SUCCESS)), intent(out), optional :: err
-       
+
      subroutine cali_set_int_byname
        character(len=*), intent(in) :: attr_name
        integer,          intent(in) :: val
@@ -340,7 +340,7 @@ Fortran API example
           call cali_set_int(iter_attr, i)
 
           ! A Caliper snapshot taken at this point will contain
-          ! { "loop", "iteration"=<i> } 
+          ! { "loop", "iteration"=<i> }
 
           ! perform calculation
        end do
@@ -363,12 +363,13 @@ Fortran API example
 C++ annotation API
 ................................
 
-The C++ annotation API is implemented in the class :cpp:class:`cali::Annotation`.
+The C++ annotation API is implemented in the class
+:cpp:class:`cali::Annotation`.
 
 .. doxygenclass:: cali::Annotation
    :project: caliper
 
-Data tracking API      
+Data tracking API
 --------------------------------
 
 Caliper also supports tracking allocated data. Doing so provides

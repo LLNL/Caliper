@@ -6,8 +6,7 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_aggregate
   ci_test_basic
   ci_test_binding
-  ci_test_esc
-  ci_test_loop
+  ci_test_io
   ci_test_macros
   ci_test_multichannel
   ci_test_nesting
@@ -15,7 +14,6 @@ set(CALIPER_CI_CXX_TEST_APPS
   ci_test_report
   ci_test_thread)
 set(CALIPER_CI_C_TEST_APPS
-  ci_dgemm_memtrack
   ci_test_alloc
   ci_test_alloc_hooks
   ci_test_c_ann
@@ -46,15 +44,22 @@ set(PYTHON_SCRIPTS
   test_aggregate.py
   test_basictrace.py
   test_c_api.py
+  test_caliquery.py
+  test_file_io.py
   test_json.py
   test_log.py
   test_multichannel.py
   test_report.py
+  test_textlog.py
   test_thread.py
+  test_validator.py
   calipertest.py)
 
 if (CALIPER_HAVE_CPUINFO)
   list(APPEND PYTHON_SCRIPTS test_cpuinfo.py)
+endif()
+if (CALIPER_HAVE_MEMUSAGE)
+  list(APPEND PYTHON_SCRIPTS test_memusageservice.py)
 endif()
 if (CALIPER_HAVE_LIBUNWIND)
   list(APPEND PYTHON_SCRIPTS test_callpath.py)
@@ -62,6 +67,7 @@ endif()
 if (CALIPER_HAVE_GOTCHA)
   list(APPEND PYTHON_SCRIPTS 
     test_alloc_hooks.py
+    test_ioservice.py
     test_pthread.py)
 endif()
 if (CALIPER_HAVE_PAPI)
@@ -70,8 +76,11 @@ endif()
 if (CALIPER_HAVE_LIBPFM)
   list(APPEND PYTHON_SCRIPTS test_libpfm.py)
 endif()
-if (CALIPER_HAVE_SAMPLER AND CALIPER_HAVE_DYNINST)
+if (CALIPER_HAVE_SAMPLER)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
+  if (CALIPER_HAVE_DYNINST)
+    list(APPEND PYTHON_SCRIPTS test_symbollookup.py)
+  endif()
 endif()
 
 if (CALIPER_HAVE_MPI)

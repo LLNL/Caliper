@@ -8,16 +8,17 @@ Caliper is a program instrumentation and performance measurement
 framework. It is designed as a performance analysis toolbox in a
 library, allowing one to bake performance analysis capabilities
 directly into applications and activate them at runtime.
-Caliper is primarily aimed at HPC applications, but works for
-any C/C++/Fortran program on Unix/Linux.
 
-Caliper's data collection mechanisms and source-code annotation API
-support a variety of performance engineering use cases, such as
-performance profiling, tracing, monitoring, and auto-tuning.
+Caliper can be used for lightweight always-on profiling or advanced
+performance engineering use cases, such as tracing, monitoring,
+and auto-tuning. It is primarily aimed at HPC applications, but works
+for any C/C++/Fortran program on Unix/Linux.
 
 Features include:
 
 * Low-overhead source-code annotation API
+* Configuration API to control performance measurements from
+  within an application
 * Flexible key:value data model: capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
@@ -39,13 +40,12 @@ Extensive documentation is available here:
 https://llnl.github.io/Caliper/
 
 Usage examples of the C++ and C annotation interfaces are provided in
-the `examples/apps` directory.
+the [examples](examples/apps) directory.
 
 See the "Getting started" section below for a brief tutorial.
 
-Example applications, configuration files, and a more extensive 
-tutorial can be found here:
-https://github.com/LLNL/caliper-examples
+Example applications, configuration files, and a more extensive
+tutorial can be found [here](https://github.com/LLNL/caliper-examples).
 
 Building and installing
 ------------------------------------------
@@ -79,12 +79,11 @@ provided by the source-code annotations.
 
 ### Source-code annotations
 
-Caliper's source-code annotation API fulfills two purposes: First, it
-lets us associate performance measurements with user-defined,
-high-level context information. Second, we can trigger user-defined
-actions at the instrumentation points, e.g. to measure the time spent
-in individual regions. Measurement actions can be defined at runtime
-and are disabled by default; generally, the source-code annotations
+Caliper source-code annotations let us associate performance measurements
+with user-defined, high-level context information. We can also
+trigger user-defined actions at the instrumentation points, e.g. to measure
+the time spent in annotated regions. Measurement actions can be defined at
+runtime and are disabled by default; generally, the source-code annotations
 are lightweight enough to be left in production code.
 
 The annotation APIs are available for C, C++, and Fortran. There are
@@ -146,11 +145,45 @@ provided by the annotation API calls (allowing third-party tools to
 access program context information), but won't run any performance
 measurement or data recording on its own.
 
-Generally, collecting performance data with Caliper requires selecting
-a combination of Caliper *services* that implement specific
-functionality and configuring them for the task at hand. However, for
-some common scenarios, Caliper provides a set of pre-defined
-configuration profiles. These profiles can be activated with the
+#### ConfigManager API
+
+With the C++ ConfigManager API, built-in performance measurement and
+reporting configurations can be activated within a program using a short
+configuration string. This configuration string can be hard-coded in the
+program or provided by the user in some form, e.g. as a command-line
+parameter or in the programs's configuration file.
+
+To use the ConfigManager API, create a `cali::ConfigManager` object, add a
+configuration string with `add()`, start the requested configuration
+channels with `start()`, and trigger output with `flush()`:
+
+```C++
+#include <caliper/cali-manager.h>
+// ...
+cali::ConfigManager mgr;
+mgr.add("runtime-report");
+// ...
+mgr.start(); // start requested performance measurement channels
+// ... (program execution)
+mgr.flush(); // write performance results
+```
+
+A complete code example where users can provide a configuration string
+on the command line is [here](examples/apps/cxx-example.cpp). Built-in
+configs include
+
+* runtime-report: Prints a time profile for annotated code regions.
+* event-trace: Records a trace of region begin/end events.
+
+Complete documentation on the ConfigManager configurations can be found
+[here](doc/ConfigManagerAPI.md).
+
+#### Configuring through environment variables
+
+The ConfigManager API is not required to run Caliper - performance
+measurements can also be configured with environment variables or a config
+file. For starters, there are a set of pre-defined configuration
+profiles that can be activated with the
 `CALI_CONFIG_PROFILE` environment variable. For example, the
 `runtime-report` configuration profile prints the total time (in
 microseconds) spent in each code path based on the nesting of
@@ -159,7 +192,7 @@ annotated code regions:
     $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
     Path         Inclusive time (usec) Exclusive time (usec) Time %
     main                     38.000000             20.000000   52.6
-      main loop               8.000000              8.000000   21.1    
+      main loop               8.000000              8.000000   21.1
       init                   10.000000             10.000000   26.3
 
 The example shows Caliper output for the `runtime-report`
@@ -200,24 +233,12 @@ print the recorded trace data in a human-readable json format:
             "function":"main",
             "time.inclusive.duration":14
     },
-    {
-            "event.begin#loop":"main loop",
-            "function":"main"
-    },
-    {
-            "loop":"main loop",
-            "function":"main",
-            "event.begin#iteration#main loop":0
-    },
     ...
 
-Caliper's performance measurement and data collection functionality is
-provided by independent building blocks called *services*, each
-implementing specific functionality (e.g., tracing, I/O, timing,
-report formatting, sampling, etc.). Services can be enabled at
-runtime in any combination. This makes Caliper highly flexible, but
-the runtime configuration can be complex. Refer to the [Caliper
-documentation](https://llnl.github.io/Caliper/) to learn more.
+It is possible to create entirely custom configurations. This requires
+selecting a combination of Caliper *services* that implement specific
+functionality and configuring them for the task at hand.
+More information can be found in the [Caliper documentation](https://llnl.github.io/Caliper/).
 
 Authors
 ------------------------------------------
@@ -245,6 +266,6 @@ To reference Caliper in a publication, please cite the following paper:
 Release
 ------------------------------------------
 
-Caliper is released under a BSD license. See the `LICENSE` file for details.
+Caliper is released under a BSD 3-clause license. See [LICENSE](LICENSE) for details.
 
 ``LLNL-CODE-678900``

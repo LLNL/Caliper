@@ -1,34 +1,5 @@
-// Copyright (c) 2017, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // Pretty-print tree-organized snapshots 
 
@@ -203,10 +174,12 @@ struct TreeFormatter::TreeFormatterImpl
         for (const Attribute& a : attributes) {
             std::string str;
 
+            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+
             {
                 auto it = node->attributes().find(a);
                 if (it != node->attributes().end())
-                    str = it->second.to_string();
+                    str = util::clamp_string(it->second.to_string(), width);
             }
 
             cali_attr_type t = a.type();
@@ -216,9 +189,9 @@ struct TreeFormatter::TreeFormatterImpl
                                 t == CALI_TYPE_ADDR);
 
             if (align_right)
-                util::pad_left (os, str, m_column_info[a].width);
+                util::pad_left (os, str, width);
             else
-                util::pad_right(os, str, m_column_info[a].width);
+                util::pad_right(os, str, width);
         }
 
         os << std::endl;
@@ -245,11 +218,9 @@ struct TreeFormatter::TreeFormatterImpl
 
         switch (m_attribute_columns.selection) {
         case QuerySpec::AttributeSelection::Default:
-            // auto-attributes: skip hidden and "cali." attributes
+            // auto-attributes: skip hidden and global attributes
             for (auto &p : m_column_info) {
-                if (p.first.is_hidden())
-                    continue;
-                if (p.first.name().compare(0, 5, "cali.") == 0)
+                if (p.first.is_hidden() || p.first.is_global())
                     continue;
 
                 attributes.push_back(p.first);
@@ -281,8 +252,10 @@ struct TreeFormatter::TreeFormatterImpl
 
         util::pad_right(os, "Path", m_path_column_width);
 
-        for (const Attribute& a : attributes)
-            util::pad_right(os, m_column_info[a].display_name, m_column_info[a].width);
+        for (const Attribute& a : attributes) {
+            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+            util::pad_right(os, util::clamp_string(m_column_info[a].display_name, width), width);
+        }
 
         os << std::endl;
 
@@ -299,7 +272,7 @@ struct TreeFormatter::TreeFormatterImpl
 
     TreeFormatterImpl()
         : m_path_column_width(0),
-          m_max_column_width(100)
+          m_max_column_width(48)
     { }
 };
 

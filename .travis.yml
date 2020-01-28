@@ -52,12 +52,12 @@ script:
   - cd build-${CALI_TRAVIS_TESTNAME}
   - CMAKE_OPTS="-DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=On"
   - CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_COMPILER=${CALI_CC} -DCMAKE_CXX_COMPILER=${CALI_CXX}"
-  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_MPI=${WITH_MPI} -DWITH_MPIT=Off"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_MPI=${WITH_MPI}"
   - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_GOTCHA=${WITH_GOTCHA} -DWITH_SAMPLER=On"
   - if [[ -n "${COVERAGE}" ]] ; then CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"; fi
   - cmake ${CMAKE_OPTS} ..
   - make -j4
-  - make test || (cat Testing/Temporary/LastTest.log; exit 1)
+  - ctest --output-on-failure
 
 after_success:
   - if [[ -n "${COVERAGE}" ]] ; then bash <(curl -s https://codecov.io/bash) ; fi

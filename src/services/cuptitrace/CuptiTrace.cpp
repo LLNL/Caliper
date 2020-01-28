@@ -1,34 +1,5 @@
-// Copyright (c) 2018, Lawrence Livermore National Security, LLC.
-// Produced at the Lawrence Livermore National Laboratory.
-//
-// This file is part of Caliper.
-// Written by David Boehme, boehme3@llnl.gov.
-// LLNL-CODE-678900
-// All rights reserved.
-//
-// For details, see https://github.com/scalability-llnl/Caliper.
-// Please also see the LICENSE file for our additional BSD notice.
-//
-// Redistribution and use in source and binary forms, with or without modification, are
-// permitted provided that the following conditions are met:
-//
-//  * Redistributions of source code must retain the above copyright notice, this list of
-//    conditions and the disclaimer below.
-//  * Redistributions in binary form must reproduce the above copyright notice, this list of
-//    conditions and the disclaimer (as noted below) in the documentation and/or other materials
-//    provided with the distribution.
-//  * Neither the name of the LLNS/LLNL nor the names of its contributors may be used to endorse
-//    or promote products derived from this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
-// LAWRENCE LIVERMORE NATIONAL SECURITY, LLC, THE U.S. DEPARTMENT OF ENERGY OR CONTRIBUTORS BE
-// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// See top-level LICENSE file for details.
 
 // CuptiTrace.cpp
 // Implementation of the CUpti trace service
@@ -514,7 +485,7 @@ class CuptiTraceService
 
     void post_begin_cb(Caliper* c, Channel* chn, const Attribute& attr, const Variant& value) {
         if (attr.is_nested()) {
-            Entry e = c->get(chn, attr);
+            Entry e = c->get(attr);
 
             if (e.is_reference()) {
                 CUptiResult res =
@@ -628,7 +599,7 @@ class CuptiTraceService
         cuptiGetTimestamp(&timestamp);
 
         Variant  v_now(cali_make_variant_from_uint(timestamp));
-        Variant  v_prev = c->exchange(chn, timestamp_attr, v_now);
+        Variant  v_prev = c->exchange(timestamp_attr, v_now);
 
         if (record_host_duration)
             snapshot->append(duration_attr.id(),
@@ -651,7 +622,7 @@ class CuptiTraceService
         uint64_t starttime = 0;
         cuptiGetTimestamp(&starttime);
 
-        c->set(chn, starttime_attr, cali_make_variant_from_uint(starttime));
+        c->set(starttime_attr, cali_make_variant_from_uint(starttime));
 
         if (config.get("correlate_context").to_bool()) {
             chn->events().post_begin_evt.connect(
@@ -665,7 +636,7 @@ class CuptiTraceService
         }
 
         if (record_host_timestamp || record_host_duration) {
-            c->set(chn, timestamp_attr, cali_make_variant_from_uint(starttime));
+            c->set(timestamp_attr, cali_make_variant_from_uint(starttime));
 
             chn->events().snapshot.connect(
                 [](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
@@ -706,26 +677,26 @@ class CuptiTraceService
 
             activity_start_attr =
                 c->create_attribute("cupti.activity.start",    CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE);
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
             activity_end_attr =
                 c->create_attribute("cupti.activity.end",      CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE);
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
             activity_duration_attr =
                 c->create_attribute("cupti.activity.duration", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                     2, meta_attr, meta_vals);
             activity_kind_attr =
                 c->create_attribute("cupti.activity.kind",     CALI_TYPE_STRING,
-                                    CALI_ATTR_DEFAULT);
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
             kernel_name_attr =
                 c->create_attribute("cupti.kernel.name",       CALI_TYPE_STRING,
-                                    CALI_ATTR_DEFAULT);
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
             memcpy_kind_attr =
                 c->create_attribute("cupti.memcpy.kind",       CALI_TYPE_STRING,
-                                    CALI_ATTR_DEFAULT);
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
             memcpy_bytes_attr =
                 c->create_attribute("cupti.memcpy.bytes",      CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                     1, &aggr_class_attr, &true_val);
             starttime_attr =
                 c->create_attribute("cupti.starttime",         CALI_TYPE_UINT,
@@ -733,7 +704,7 @@ class CuptiTraceService
                                     CALI_ATTR_SKIP_EVENTS);
             device_uuid_attr =
                 c->create_attribute("cupti.device.uuid",       CALI_TYPE_STRING,
-                                    CALI_ATTR_DEFAULT);
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
             ConfigSet config = chn->config().init("cuptitrace", s_configdata);
 
