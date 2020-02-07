@@ -55,6 +55,7 @@
 
 using namespace cali;
 
+#if 0
 namespace {
 
 struct NamedPointer {
@@ -79,15 +80,14 @@ namespace std {
   std::less<std::uintptr_t> std::less<NamedPointer>::comp;
 
 } //end namespace std
-
-
+#endif
 
 namespace
 {
 
 using namespace cali;
 
-std::set<NamedPointer> tracked_pointers;
+// std::set<NamedPointer> tracked_pointers;
 
 class KokkosLookup
 {

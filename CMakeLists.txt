@@ -47,6 +47,7 @@ option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(WITH_ADIAK     "Enable adiak support" FALSE)
+option(WITH_KOKKOS_PROFILING "Enable Kokkos profiling support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -241,6 +242,11 @@ if (WITH_SOS)
   endif()
 endif()
 
+if (WITH_KOKKOS_PROFILING)
+  set(CALIPER_HAVE_KOKKOS TRUE)
+  set(CALIPER_Kokkos_CMAKE_MSG "Yes")
+endif()
+
 # pthread handling
 set(THREADS_PREFER_PTHREAD_FLAG On)
 find_package(Threads REQUIRED)
@@ -408,6 +414,7 @@ set(CALIPER_MODULES
   OMPT
   NVProf
   CUpti
+  Kokkos
   TAU
   VTune
   histogram)

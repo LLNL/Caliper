@@ -56,8 +56,9 @@ namespace {
         cali::Annotation kernel_name_annot;
         cali::Annotation kernel_type_annot;
 
-        KokkosTime(Caliper *c, Channel *chn) : kernel_name_annot("function"),
-                                               kernel_type_annot("kernel_type", CALI_ATTR_SKIP_EVENTS) {
+        KokkosTime(Caliper *c, Channel *chn)
+            : kernel_name_annot("function"),
+              kernel_type_annot("kernel_type", CALI_ATTR_SKIP_EVENTS) {
         }
 
     public:
@@ -102,6 +103,10 @@ namespace {
                             instance->popRegion();
                         });
                     });
+            chn->events().finish_evt.connect(
+                [instance](Caliper*, Channel*){
+                    delete instance;
+                });
 
             Log(1).stream() << chn->name() << ": Registered kokkostime service" << std::endl;
         }
