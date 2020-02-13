@@ -70,7 +70,8 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*)>
             write_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*)>
+        typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*,
+                size_t, const Attribute*, const Variant*)>
             track_mem_cbvec;
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
@@ -159,7 +160,8 @@ public:
     /// \name Memory region tracking (across channels)
     /// \{
 
-    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_begin(const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
+                                  size_t n = 0, const Attribute* extra_attrs = nullptr, const Variant* extra_vals = nullptr);
     void      memory_region_end(const void* ptr);
 
     //
@@ -197,7 +199,8 @@ public:
     /// \name Memory region tracking (single channel)
     /// \{
 
-    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[]);
+    void      memory_region_begin(Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndim, const size_t dims[],
+                                  size_t n = 0, const Attribute* extra_attr = nullptr, const Variant* extra_val = nullptr);
     void      memory_region_end(Channel* chn, const void* ptr);
 
     /// \}
