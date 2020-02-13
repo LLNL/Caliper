@@ -14,6 +14,8 @@
 
 #include "caliper/common/util/spinlock.hpp"
 
+#include <map>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -35,8 +37,9 @@ namespace
 
 void print_papi_error(const char* function, int code)
 {
-    Log(0).stream() << "papi: error: " << function << ": " << PAPI_strerror(code) << std::endl;
+    Log(0).stream() << "papi: Error: " << function << ": " << PAPI_strerror(code) << std::endl;
 }
+
 
 class PapiService
 {
@@ -381,7 +384,7 @@ class PapiService
                             << m_num_event_mismatch << " event count mismatches."
                             << std::endl;
 
-        Log(1).stream() << channel->name() << ": papi: created "
+        Log(1).stream() << channel->name() << ": papi: Created "
                         << m_num_eventsets << " PAPI event set(s) on "
                         << m_num_threads   << " thread(s)."
                         << std::endl;
