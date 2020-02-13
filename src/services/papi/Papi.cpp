@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 // Papi.cpp
@@ -31,11 +31,9 @@ namespace
 
 #define MAX_COUNTERS 32
 
-std::ostream&
-print_papi_error(std::ostream& os, int code)
+void print_papi_error(const char* function, int code)
 {
-    os << "papi error: " << PAPI_strerror(code);
-    return os;
+    Log(0).stream() << "papi: error: " << function << ": " << PAPI_strerror(code) << std::endl;
 }
 
 class PapiService
@@ -94,8 +92,7 @@ class PapiService
             int code = PAPI_NULL;
             int ret  = PAPI_event_name_to_code(namebuf, &code);
             if (ret != PAPI_OK) {
-                print_papi_error(Log(0).stream() << "PAPI_event_name_to_code():", ret)
-                    << std::endl;
+                print_papi_error("PAPI_event_name_to_code()", ret);
                 continue;
             }
 
@@ -121,12 +118,18 @@ class PapiService
             ++count;
         }
 
+        bool all_found = (static_cast<int>(eventlist.size()) == count);
+
         Log(2).stream() << "papi: Found "      << count
                         << " event codes for " << m_event_groups.size()
                         << " PAPI component(s)"
                         << std::endl;
 
-        return eventlist.size() == m_event_groups.size();
+        if (!all_found)
+            Log(0).stream() << "papi: Unable to process all requested counters"
+                            << std::endl;
+
+        return all_found;
     }
 
     bool setup_thread_eventsets(Caliper* c) {
@@ -134,9 +137,9 @@ class PapiService
         bool ok = true;
 
         for (auto &p : m_event_groups) {
-            if (Log::verbosity() >= 2) {
-                const PAPI_component_info_t* cpi = PAPI_get_component_info(p.first);
+            const PAPI_component_info_t* cpi = PAPI_get_component_info(p.first);
 
+            if (Log::verbosity() >= 2) {
                 Log(2).stream() << "papi: Creating eventset with " << p.second->codes.size()
                                 << " events for component " << p.first
                                 << " (" << (cpi ? cpi->name : "UKNOWN COMPONENT") << ")"
@@ -147,20 +150,40 @@ class PapiService
 
             int ret = PAPI_create_eventset(&eventset);
             if (ret != PAPI_OK) {
-                print_papi_error(Log(0).stream() << "PAPI_create_eventset(): ", ret)
-                    << std::endl;
+                print_papi_error("PAPI_create_eventset()", ret);
                 ok = false;
                 break;
             }
 
-            ret = PAPI_add_events(eventset, p.second->codes.data(), static_cast<int>(p.second->codes.size()));
-            if (ret != PAPI_OK) {
-                print_papi_error(Log(0).stream() << "PAPI_add_events(): ", ret)
-                    << std::endl;
+            int num = static_cast<int>(p.second->codes.size());
+
+            if (cpi && num > 4 /* magic number, tuned for intel skylake :-( */) {
+                if (Log::verbosity() >= 2)
+                    Log(2).stream() << "papi: Initializing multiplex support for component "
+                                    << p.first << " (" << cpi->name << ")"
+                                    << std::endl;
+
+                ret = PAPI_assign_eventset_component(eventset, p.first);
+                if (ret != PAPI_OK)
+                    print_papi_error("PAPI_assign_eventset_component", ret);
+                ret = PAPI_set_multiplex(eventset);
+                if (ret != PAPI_OK)
+                    print_papi_error("PAPI_set_multiplex", ret);
+            }
+
+            ret = PAPI_add_events(eventset, p.second->codes.data(), num);
+            if (ret < 0) {
+                print_papi_error("PAPI_add_events()", ret);
 
                 PAPI_destroy_eventset(&eventset);
                 ok = false;
                 break;
+            } else if (ret > 0 && ret < num) {
+                Log(0).stream() << "papi: Added " << ret << " of " << num
+                                << " events for component " << p.first
+                                << " (" << (cpi ? cpi->name : "UKNOWN COMPONENT")
+                                << "), skipping " << (num-ret)
+                                << std::endl;
             }
 
             eventsets.emplace(std::make_pair(eventset, p.second));
@@ -260,8 +283,7 @@ class PapiService
         int state = PAPI_NULL;
         int ret = PAPI_state(eventset, &state);
         if (ret != PAPI_OK) {
-            print_papi_error(Log(0).stream() << "PAPI_state(): ", ret)
-                << std::endl;
+            print_papi_error("PAPI_state()", ret);
             return;
         }
 
@@ -270,20 +292,17 @@ class PapiService
             ret = PAPI_stop(eventset, tmp);
 
             if (ret != PAPI_OK)
-                print_papi_error(Log(0).stream() << "PAPI_stop(): ", ret)
-                    << std::endl;
+                print_papi_error("PAPI_stop()", ret);
         }
 
         ret = PAPI_cleanup_eventset(eventset);
         if (ret != PAPI_OK) {
-            print_papi_error(Log(0).stream() << "PAPI_cleanup_eventset(): ", ret)
-                << std::endl;
+            print_papi_error("PAPI_cleanup_eventset(): ", ret);
         }
 
         ret = PAPI_destroy_eventset(&eventset);
         if (ret != PAPI_OK) {
-            print_papi_error(Log(0).stream() << "PAPI_destroy_eventset(): ", ret)
-                << std::endl;
+            print_papi_error("PAPI_destroy_eventset()", ret);
         }
     }
 
