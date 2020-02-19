@@ -45,7 +45,7 @@ public:
                     output.append(ext);
             }
 
-            auto avail_services = Services::get_available_services();
+            auto avail_services = services::get_available_services();
             bool have_mpi =
                 std::find(avail_services.begin(), avail_services.end(), "mpireport")    != avail_services.end();
             bool have_adiak =
@@ -88,8 +88,8 @@ public:
 
 std::string
 check_args(const cali::ConfigManager::Options& opts) {
-    Services::add_default_services();
-    auto svcs = Services::get_available_services();
+    services::add_default_service_specs();
+    auto svcs = services::get_available_services();
 
     //
     // Check if the sampler service is there

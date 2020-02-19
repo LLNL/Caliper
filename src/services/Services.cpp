@@ -30,59 +30,8 @@ struct ServicesList {
     ServicesList* next;
 };
 
-ServicesList* s_services_list { nullptr };
-
-}
-
-
-namespace cali
-{
-
-struct Services::ServicesImpl
-{
-    // --- data
-
-    static std::unique_ptr<ServicesImpl> s_instance;
-    static const ConfigSet::Entry        s_configdata[];
-
-    // --- interface
-
-    void register_services(Caliper* c, Channel* chn) {
-        // list services
-        
-        vector<string> services =
-            chn->config().init("services", s_configdata).get("enable").to_stringlist(",:");
-
-        // register caliper services
-
-        for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-            for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s) {
-                auto it = find(services.begin(), services.end(), string(s->name));
-
-                if (it != services.end()) {
-                    (*s->register_fn)(c, chn);
-                    services.erase(it);
-                }
-            }
-
-        for ( const string& s : services )
-            Log(0).stream() << "Warning: service \"" << s << "\" not found" << endl;
-    }
-
-    ServicesImpl()
-        { }
-
-    static ServicesImpl* instance() {
-        if (!s_instance)
-            s_instance.reset(new ServicesImpl);
-
-        return s_instance.get();
-    }
-};
-
-unique_ptr<Services::ServicesImpl> Services::ServicesImpl::s_instance      { nullptr };
-
-const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
+ServicesList*          s_services_list  { nullptr };
+const ConfigSet::Entry s_configdata[] = {
     // key, type, value, short description, long description
     { "enable", CALI_TYPE_STRING, "",
       "List of service modules to enable",
@@ -91,20 +40,57 @@ const ConfigSet::Entry             Services::ServicesImpl::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-} // namespace cali
+} // namespace [anonymous]
 
 
-//
-// --- Services public interface
-//
+namespace cali
+{
 
-void Services::add_services(const CaliperService* services)
+namespace services
+{
+
+bool register_service(Caliper* c, Channel* chn, const char* name) 
+{
+    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
+            if (strcmp(s->name, name) == 0) {
+                (*s->register_fn)(c, chn);
+                return true;
+            }
+
+    return false;
+}
+
+void register_configured_services(Caliper* c, Channel* chn) 
+{
+    // list services
+    
+    vector<string> services =
+        chn->config().init("services", s_configdata).get("enable").to_stringlist(",:");
+
+    // register caliper services
+
+    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
+        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s) {
+            auto it = find(services.begin(), services.end(), string(s->name));
+
+            if (it != services.end()) {
+                (*s->register_fn)(c, chn);
+                services.erase(it);
+            }
+        }
+
+    for ( const string& s : services )
+        Log(0).stream() << "Warning: service \"" << s << "\" not found" << endl;
+}
+
+void add_service_specs(const CaliperService* services)
 {
     ::ServicesList* elem = new ServicesList { services, ::s_services_list };
     ::s_services_list = elem;
 }
 
-void Services::cleanup()
+void cleanup_service_specs()
 {
     ::ServicesList* ptr = ::s_services_list;
 
@@ -117,21 +103,16 @@ void Services::cleanup()
     ::s_services_list = nullptr;
 }
 
-void Services::add_default_services()
+void add_default_service_specs()
 {
     for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
         if (lp->services == caliper_services)
             return;
     
-    add_services(caliper_services);
+    add_service_specs(caliper_services);
 }
 
-void Services::register_services(Caliper* c, Channel* chn)
-{
-    return ServicesImpl::instance()->register_services(c, chn);
-}
-
-std::vector<std::string> Services::get_available_services()
+std::vector<std::string> get_available_services()
 {
     std::vector<std::string> ret;
     
@@ -141,3 +122,7 @@ std::vector<std::string> Services::get_available_services()
 
     return ret;
 }
+
+} // namespace services
+
+} // namespace cali

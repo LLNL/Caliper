@@ -129,7 +129,7 @@ parse_snapshot_scopes(const char* channel_name, const StringConverter& cfg)
 std::ostream&
 print_available_services(std::ostream& os)
 {
-    std::vector<std::string> services = Services::get_available_services();
+    std::vector<std::string> services = services::get_available_services();
 
     int count = 0;
     for (const std::string& s : services)
@@ -417,7 +417,7 @@ struct Caliper::GlobalData
         gObj.g_ptr = nullptr;
 
         MetadataTree::release();
-        Services::cleanup();
+        services::cleanup_service_specs();
         ConfigManager::cleanup();
 
         Log(1).stream() << "Finished" << std::endl;
@@ -454,7 +454,7 @@ struct Caliper::GlobalData
 
         parse_attribute_config(RuntimeConfig::get_default_config().init("caliper", s_configdata));
 
-        Services::add_default_services();
+        services::add_default_service_specs();
 
         if (Log::verbosity() >= 2)
             print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
@@ -1633,7 +1633,7 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
                                     CALI_ATTR_GLOBAL),
           Variant(name));
 
-    Services::register_services(this, channel);
+    services::register_configured_services(this, channel);
 
     Log(1).stream() << "Creating channel " << name << std::endl;
 
@@ -1886,7 +1886,7 @@ Caliper::add_services(const CaliperService* s)
     if (is_initialized())
         Log(0).stream() << "add_services(): Caliper is already initialized - cannot add new services" << std::endl;
     else
-        Services::add_services(s);
+        services::add_service_specs(s);
 }
 
 void

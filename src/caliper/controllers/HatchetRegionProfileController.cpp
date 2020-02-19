@@ -44,7 +44,7 @@ public:
                     output.append(ext);
             }
 
-            auto avail_services = Services::get_available_services();
+            auto avail_services = services::get_available_services();
             bool have_mpi =
                 std::find(avail_services.begin(), avail_services.end(), "mpireport")    != avail_services.end();
             bool have_adiak =

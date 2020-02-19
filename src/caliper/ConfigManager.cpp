@@ -297,8 +297,8 @@ struct ConfigManager::Options::OptionsImpl
         // are there
         //
 
-        Services::add_default_services();
-        std::vector<std::string> services = Services::get_available_services();
+        services::add_default_service_specs();
+        auto slist = services::get_available_services();
 
         for (const std::string &opt : enabled_options) {
             auto o_it = spec.data.find(opt);
@@ -306,7 +306,7 @@ struct ConfigManager::Options::OptionsImpl
                 continue;
 
             for (const std::string& required_service : o_it->second.services)
-                if (std::find(services.begin(), services.end(), required_service) == services.end())
+                if (std::find(slist.begin(), slist.end(), required_service) == slist.end())
                     return required_service
                         + std::string(" service required for ")
                         + o_it->first
@@ -599,12 +599,12 @@ struct ConfigManager::ConfigManagerImpl
         if (it != dict.end())
             cfg_srvcs = ::to_stringlist(it->second.rec_list(&ok));
 
-        Services::add_default_services();
-        std::vector<std::string> avl_srvcs = Services::get_available_services();
+        services::add_default_service_specs();
+        auto slist = services::get_available_services();
 
         bool has_all_services = true;
         for (const auto& s : cfg_srvcs)
-            if (std::find(avl_srvcs.begin(), avl_srvcs.end(), s) == avl_srvcs.end())
+            if (std::find(slist.begin(), slist.end(), s) == slist.end())
                 has_all_services = false;
 
         if (!has_all_services)
@@ -621,7 +621,7 @@ struct ConfigManager::ConfigManagerImpl
             spec.opts.add(it->second.rec_list(&ok));
 
         spec.opts.add(base_options, spec.categories);
-        spec.opts.filter_unavailable_options(avl_srvcs);
+        spec.opts.filter_unavailable_options(slist);
 
         it = dict.find("name");
         if (it == dict.end()) {

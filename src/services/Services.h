@@ -18,22 +18,27 @@ class Caliper;
 struct CaliperService;
 class Channel;
 
-class Services
+namespace services
 {
-    struct ServicesImpl;
-    std::unique_ptr<ServicesImpl> mP;
 
-public:
+/// \brief Add Caliper service specs.
+void add_service_specs(const CaliperService* specs);
 
-    static void add_services(const CaliperService* services);
-    static void cleanup();
+/// \brief Cleanup memory for Caliper service specs.
+void cleanup_service_specs();
 
-    static void add_default_services();
+/// \brief Add the default built-in service specs.
+void add_default_service_specs();
 
-    static void register_services(Caliper* c, Channel* chn);
+/// \brief Register service \a name in channel \a chn.
+bool register_service(Caliper* c, Channel* chn, const char* name);
+/// \brief Register all services in the channel config
+void register_configured_services(Caliper* c, Channel* chn);
 
-    static std::vector<std::string> get_available_services();
-};
+/// \brief Get all currently available service names.
+std::vector<std::string> get_available_services();
+
+} // namespace services
 
 } // namespace cali
 
