@@ -103,18 +103,12 @@ class IntelTopdown
             v_uops_issued_any.empty()           ||
             v_int_misc_recovery_cycles.empty()  ||
             v_idq_uops_not_delivered_core.empty();
-        
-        if (is_incomplete)
+
+        double slots = 4.0 * v_cpu_clk_unhalted_thread_p.to_double();
+
+        if (is_incomplete || !(slots > 0.0))
             return ret;
 
-        ret.reserve(4);
-
-        double clocks = v_cpu_clk_unhalted_thread_p.to_double();
-
-        if (!(clocks > 0.0))
-            return ret;
-
-        double slots = 4.0 * clocks;
         double retiring = v_uops_retired_retire_slots.to_double() / slots;
         double bad_speculation = 
             (v_uops_issued_any.to_double() 
@@ -124,6 +118,7 @@ class IntelTopdown
         double backend_bound = 
             1.0 - (retiring + bad_speculation + frontend_bound);
 
+        ret.reserve(4);
         ret.push_back(Entry(result_attrs["retiring"],     Variant(retiring)));
         ret.push_back(Entry(result_attrs["backend_bound"], Variant(backend_bound)));
         ret.push_back(Entry(result_attrs["frontend_bound"], Variant(frontend_bound)));
