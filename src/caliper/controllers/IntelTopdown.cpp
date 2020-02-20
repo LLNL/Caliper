@@ -70,7 +70,7 @@ class IntelTopdownController : public cali::ChannelController
         }
 
         std::vector<Entry>
-        compute(Variant v_cpu_clk_unhaltes_thread_p,
+        compute(Variant v_cpu_clk_unhalted_thread_p,
                 Variant v_uops_retired_retire_slots,
                 Variant v_uops_issued_any,
                 Variant v_int_misc_recovery_cycles,
@@ -79,7 +79,7 @@ class IntelTopdownController : public cali::ChannelController
             std::vector<Entry> ret;
             ret.reserve(4);
 
-            double clocks = v_cpu_clk_unhaltes_thread_p.to_double();
+            double clocks = v_cpu_clk_unhalted_thread_p.to_double();
 
             if (!(clocks > 0.0))
                 return ret;
@@ -108,15 +108,15 @@ class IntelTopdownController : public cali::ChannelController
             : output(fn)
             {
                 cpu_clk_unhalted_thread_p_attr =
-                    db.get_attribute("sum#libpfm.counter.CPU_CLK_UNHALTED.THREAD_P");
+                    db.get_attribute("sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P");
                 uops_retired_retire_slots_attr =
-                    db.get_attribute("sum#libpfm.counter.UOPS_RETIRED.RETIRE_SLOTS");
+                    db.get_attribute("sum#papi.UOPS_RETIRED:RETIRE_SLOTS");
                 uops_issued_any_attr =
-                    db.get_attribute("sum#libpfm.counter.UOPS_ISSUED.ANY");
+                    db.get_attribute("sum#papi.UOPS_ISSUED:ANY");
                 int_misc_recovery_cycles_attr =
-                    db.get_attribute("sum#libpfm.counter.INT_MISC.RECOVERY_CYCLES");
+                    db.get_attribute("sum#papi.INT_MISC:RECOVERY_CYCLES");
                 idq_uops_not_delivered_core_attr = 
-                    db.get_attribute("sum#libpfm.counter.IDQ_UOPS_NOT_DELIVERED.CORE");
+                    db.get_attribute("sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE");
 
                 if (cpu_clk_unhalted_thread_p_attr == Attribute::invalid)
                     Log(0).stream() << "CPU_CLK_UNHALTED.THREAD_P counter attribute not found" << std::endl;
@@ -151,11 +151,11 @@ public:
 
         const char* local_query =
             "group by prop:nested aggregate"
-            " sum(libpfm.counter.CPU_CLK_UNHALTED.THREAD_P)"
-            ",sum(libpfm.counter.UOPS_RETIRED.RETIRE_SLOTS)"
-            ",sum(libpfm.counter.UOPS_ISSUED.ANY)"
-            ",sum(libpfm.counter.INT_MISC.RECOVERY_CYCLES)"
-            ",sum(libpfm.counter.IDQ_UOPS_NOT_DELIVERED.CORE)";
+            " sum(papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)"
+            ",sum(papi.UOPS_RETIRED:RETIRE_SLOTS)"
+            ",sum(papi.UOPS_ISSUED:ANY)"
+            ",sum(papi.INT_MISC:RECOVERY_CYCLES)"
+            ",sum(papi.IDQ_UOPS_NOT_DELIVERED:CORE)";
 
         Aggregator agg(CalQLParser(local_query).spec());
 
@@ -169,7 +169,7 @@ public:
 
         const char* output_query = 
             " select "
-            " sum#libpfm.counter.CPU_CLK_UNHALTED.THREAD_P as Clock"
+            " sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P as Clock"
             ",topdown.retiring as Retiring"
             ",topdown.frontend_bound as Frontend"
             ",topdown.backend_bound as Backend"
@@ -188,18 +188,18 @@ public:
 
     IntelTopdownController(bool use_mpi, const cali::ConfigManager::Options& opts)
         : ChannelController("intel-topdown", 0, {
-                { "CALI_SERVICES_ENABLE", "event,trace,libpfm" },
+                { "CALI_SERVICES_ENABLE", "event,trace,papi" },
                 { "CALI_CHANNEL_FLUSH_ON_EXIT",  "false" },
                 { "CALI_CHANNEL_CONFIG_CHECK",   "false" },
                 { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
                 { "CALI_LIBPFM_ENABLE_SAMPLING", "false" },
                 { "CALI_LIBPFM_RECORD_COUNTERS", "true"  },
-                { "CALI_LIBPFM_EVENTS",
-                    "CPU_CLK_UNHALTED.THREAD_P"
-                    ",UOPS_RETIRED.RETIRE_SLOTS"
-                    ",UOPS_ISSUED.ANY"
-                    ",INT_MISC.RECOVERY_CYCLES"
-                    ",IDQ_UOPS_NOT_DELIVERED.CORE"
+                { "CALI_PAPI_COUNTERS",
+                    "CPU_CLK_THREAD_UNHALTED:THREAD_P,"
+                    "UOPS_RETIRED:RETIRE_SLOTS,"
+                    "UOPS_ISSUED:ANY,"
+                    "INT_MISC:RECOVERY_CYCLES,"
+                    "IDQ_UOPS_NOT_DELIVERED:CORE"
                 }
             }),
             m_opts(opts)
@@ -226,6 +226,7 @@ const char* controller_spec =
     " \"name\"        : \"intel-topdown\","
     " \"description\" : \"Perform top-down CPU bottleneck analysis for Intel Skylake\","
     " \"categories\"  : [ \"output\", \"region\" ],"
+    " \"services\"    : [ \"papi\" ],"
     " \"options\": "
     " ["
     "  {"
