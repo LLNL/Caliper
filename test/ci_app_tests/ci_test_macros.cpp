@@ -54,8 +54,12 @@ int main(int argc, char* argv[])
 
     int count = 4;
 
-    if (argc > 3)
-        count = std::max(1, std::stoi(argv[3]));
+    {
+        CALI_CXX_MARK_SCOPE("before_loop");
+
+        if (argc > 3)
+            count = std::max(1, std::stoi(argv[3]));
+    }
 
     CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
 

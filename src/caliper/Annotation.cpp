@@ -24,6 +24,7 @@ namespace cali
 extern Attribute class_iteration_attr;
 extern Attribute function_attr;
 extern Attribute loop_attr;
+extern Attribute annotation_attr;
 
 }
 
@@ -31,25 +32,37 @@ extern Attribute loop_attr;
 
 Function::Function(const char* name)
 {
-    Caliper().begin(function_attr, Variant(CALI_TYPE_STRING, name, strlen(name)));
+    Caliper().begin(function_attr, Variant(name));
 }
 
 Function::~Function()
 {
     Caliper().end(function_attr);
 }
-        
+
+// --- Pre-defined scope annotation class
+
+ScopeAnnotation::ScopeAnnotation(const char* name)
+{
+    Caliper().begin(annotation_attr, Variant(name));
+}
+
+ScopeAnnotation::~ScopeAnnotation()
+{
+    Caliper().end(annotation_attr);
+}
+
 // --- Pre-defined loop annotation class
 
 struct Loop::Impl {
     Attribute        iter_attr;
     std::atomic<int> level;
     std::atomic<int> refcount;
-    
+
     Impl(const char* name)
         : level(0), refcount(1) {
         Variant v_true(true);
-        
+
         iter_attr =
             Caliper().create_attribute(std::string("iteration#") + name,
                                        CALI_TYPE_INT,
@@ -115,8 +128,8 @@ struct Annotation::Impl {
     int                      m_opt;
     std::atomic<int>         m_refcount;
     Impl(const std::string& name, MetadataListType metadata, int opt)
-        : m_attr(nullptr), 
-          m_name(name), 
+        : m_attr(nullptr),
+          m_name(name),
           m_opt(opt),
           m_refcount(1)
         {
@@ -130,8 +143,8 @@ struct Annotation::Impl {
         }
 
     Impl(const std::string& name, int opt)
-        : m_attr(nullptr), 
-          m_name(name), 
+        : m_attr(nullptr),
+          m_name(name),
           m_opt(opt),
           m_refcount(1)
         {}
@@ -157,7 +170,7 @@ struct Annotation::Impl {
 
     void end() {
         Caliper c;
-        
+
         c.end(get_attribute(c));
     }
 
@@ -172,7 +185,7 @@ struct Annotation::Impl {
             // Don't store invalid attribute in shared pointer
             if (*new_attr == Attribute::invalid)
                 return Attribute::invalid;
-            
+
             // Save new_attr iff m_attr == attr_p. If that is no longer the case,
             // some other thread has a set m_attr in the meantime, so just
             // delete our new object.
@@ -183,7 +196,7 @@ struct Annotation::Impl {
 
             if (!attr_p || *attr_p == Attribute::invalid)
                 Log(0).stream() << "Could not create attribute " << m_name << endl;
-        }        
+        }
 
         return (attr_p ? *attr_p : Attribute::invalid);
     }
@@ -254,7 +267,7 @@ Annotation& Annotation::begin()
 Annotation& Annotation::begin(int data)
 {
     Attribute* attr = pI->m_attr.load();
-    
+
     // special case: allow assignment of int values to 'double' or 'uint' attributes
     if (attr && attr->type() == CALI_TYPE_DOUBLE)
         return begin(Variant(static_cast<double>(data)));

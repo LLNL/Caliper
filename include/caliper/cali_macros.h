@@ -4,8 +4,8 @@
 
 #pragma once
 
-/** 
- * \file cali_macros.h 
+/**
+ * \file cali_macros.h
  * \brief Convenience macros for Caliper annotations
  *
  * \addtogroup AnnotationAPI
@@ -22,11 +22,19 @@
 /// function, and will automatically "close" the function at any return
 /// point. Will export the annotated function by name in the pre-defined
 /// `function` attribute. Only available in C++.
-
 #define CALI_CXX_MARK_FUNCTION \
     cali::Function __cali_ann##__func__(__func__)
 
-/// \brief Mark loop in C++ 
+/// \brief C++ macro marking a scoped region
+///
+/// Mark begin and end of a C++ scope. Should be placed at the top of the
+/// scope, and will automatically "close" the function at any return
+/// point. Will export the annotated function by name in the pre-defined
+/// `annotation` attribute. Only available in C++.
+#define CALI_CXX_MARK_SCOPE(name) \
+    cali::ScopeAnnotation __cali_ann_scope##__LINE__(name)
+
+/// \brief Mark loop in C++
 /// \copydetails CALI_MARK_LOOP_BEGIN
 #define CALI_CXX_MARK_LOOP_BEGIN(loop_id, name) \
     cali::Loop __cali_loop_##loop_id(name)
@@ -67,11 +75,11 @@ extern cali_id_t cali_loop_attr_id;
 extern cali_id_t cali_statement_attr_id;
 extern cali_id_t cali_annotation_attr_id;
 
-/// \brief Mark begin of a function. 
-/// 
-/// Exports the annotated function's name in the pre=defined 
-/// `function` attribute. A \ref CALI_MARK_FUNCTION_END marker must be 
-/// placed at \e all function exit points. For C++, we recommend using 
+/// \brief Mark begin of a function.
+///
+/// Exports the annotated function's name in the pre=defined
+/// `function` attribute. A \ref CALI_MARK_FUNCTION_END marker must be
+/// placed at \e all function exit points. For C++, we recommend using
 /// \ref CALI_CXX_MARK_FUNCTION instead.
 /// \sa CALI_MARK_FUNCTION_END, CALI_CXX_MARK_FUNCTION
 #define CALI_MARK_FUNCTION_BEGIN \
@@ -88,10 +96,10 @@ extern cali_id_t cali_annotation_attr_id;
     cali_safe_end_string(cali_function_attr_id, __func__)
 
 /// \brief Mark a loop
-/// 
+///
 /// Mark begin of a loop. Will export the user-provided loop name
 /// in the pre-defined `loop` attribute.
-/// This macro should be placed before the loop of interest, and 
+/// This macro should be placed before the loop of interest, and
 /// \ref CALI_MARK_LOOP_END should be placed after the loop.
 ///
 /// \param loop_id A loop identifier. Needed to refer to the loop
@@ -105,7 +113,7 @@ extern cali_id_t cali_annotation_attr_id;
         cali_make_loop_iteration_attribute(name);
 
 /// \brief Mark a loop
-/// 
+///
 /// Mark end of a loop. Will export the user-provided loop name
 /// in the pre-defined `loop` attribute.
 ///
@@ -119,9 +127,9 @@ extern cali_id_t cali_annotation_attr_id;
 #define CALI_MARK_LOOP_END(loop_id) \
     cali_end(cali_loop_attr_id)
 
-/// \brief Mark begin of a loop iteration. 
+/// \brief Mark begin of a loop iteration.
 ///
-/// This annotation should be placed at the top inside of the loop body. 
+/// This annotation should be placed at the top inside of the loop body.
 /// The loop must be annotated with \ref CALI_MARK_LOOP_BEGIN.
 /// The iteration number will be exported in the attribute `iteration#name`,
 /// where \a name is the loop name given to \ref CALI_MARK_LOOP_BEGIN.
@@ -139,7 +147,7 @@ extern cali_id_t cali_annotation_attr_id;
 /// \brief Mark end of a loop iteration.
 ///
 /// This annotation should be placed at the end inside of the loop body.
-/// If an iteration can be left prematurely (e.g., from a \c continue, 
+/// If an iteration can be left prematurely (e.g., from a \c continue,
 /// \c break, or \c return statement), an end marker must be placed there
 /// as well.
 ///
@@ -150,20 +158,20 @@ extern cali_id_t cali_annotation_attr_id;
 
 /// \brief Wrap Caliper annotations around a C/C++ statement.
 ///
-/// The wrapped statement will be annotated with the given \a name 
+/// The wrapped statement will be annotated with the given \a name
 /// in the `statement` attribute. Example
-/// 
-/// \code 
+///
+/// \code
 ///   double res;
 ///   /* Wrap the sqrt() call */
 ///   CALI_WRAP_STATEMENT( "sqrt", res = sqrt(49) );
-/// \endcode 
-/// 
+/// \endcode
+///
 /// \param name The user-defined region name. Must be convertible into
 ///   a `const char*`.
 /// \param statement C/C++ statement(s) that should be wrapped. The
-///   statements must complete within the wrapped region, that is, they 
-///   cannot branch out of the macro (e.g.  with \c goto, \c continue, 
+///   statements must complete within the wrapped region, that is, they
+///   cannot branch out of the macro (e.g.  with \c goto, \c continue,
 ///   \c break, or \c return).
 ///
 #define CALI_WRAP_STATEMENT(name, statement)     \
@@ -176,12 +184,12 @@ extern cali_id_t cali_annotation_attr_id;
 /// \brief Mark begin of a user-defined code region.
 ///
 /// This annotation should be placed before a code region of interest.
-/// The user-provided region name will be exported in the pre-defined 
+/// The user-provided region name will be exported in the pre-defined
 /// `annotation` attribute.
 ///
 /// Users must ensure proper nesting: Each CALI_MARK_BEGIN must be
 /// matched by a corresponding \ref CALI_MARK_END in the correct order.
-/// Regions may  be nested within another, but they cannot overlap 
+/// Regions may  be nested within another, but they cannot overlap
 /// partially.
 ///
 /// \param name The region name. Must be convertible to `const char*`.
@@ -192,10 +200,10 @@ extern cali_id_t cali_annotation_attr_id;
     cali_begin_string(cali_annotation_attr_id, (name))
 
 /// \brief Mark end of a user-defined code region.
-/// 
+///
 /// This annotation should be placed after a code region of interest
 /// that has been annotated with \ref CALI_MARK_BEGIN.
-/// 
+///
 /// \param name The region name given to \ref CALI_MARK_BEGIN.
 ///   The macro will check if the name matches, and report an error
 ///   if it doesn't.
@@ -204,5 +212,5 @@ extern cali_id_t cali_annotation_attr_id;
     cali_safe_end_string(cali_annotation_attr_id, (name))
 
 /**
- * \} (group) 
+ * \} (group)
  */
