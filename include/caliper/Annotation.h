@@ -20,9 +20,8 @@ namespace cali
 
 /// \addtogroup AnnotationAPI
 /// \{
-    
+
 /// \brief Pre-defined function annotation class
-    
 class Function
 {
 private:
@@ -30,20 +29,32 @@ private:
     // Do not copy Function objects: will double-end things
     Function(const Function&);
     Function& operator = (const Function&);
-    
+
 public:
 
     Function(const char* name);
-
     ~Function();
 };
 
+/// \brief Pre-defined region annotation class.
+///   Region begins and ends with object construction and destruction.
+class ScopeAnnotation
+{
+public:
+
+    explicit ScopeAnnotation(const char* name);
+
+    ScopeAnnotation(const ScopeAnnotation&) = delete;
+    ScopeAnnotation& operator = (const ScopeAnnotation&) = delete;
+
+    ~ScopeAnnotation();
+};
+
 /// \brief Pre-defined loop annotation class, with optional iteration attribute
-    
 class Loop
 {
     struct Impl;
-    Impl* pI;    
+    Impl* pI;
 
 public:
 
@@ -51,27 +62,27 @@ public:
         const Impl* pI;
 
     public:
-        
+
         Iteration(const Impl*, int);
         ~Iteration();
     };
 
     Loop(const char* name);
     Loop(const Loop& loop);
-    
+
     ~Loop();
 
     Iteration iteration(int i) const;
-    
+
     void end();
 };
 
-    
+
 /// \brief Instrumentation interface to add and manipulate context attributes
 ///
 /// The Annotation class is the primary source-code instrumentation interface
-/// for %Caliper. %Annotation objects provide access to named %Caliper context 
-/// attributes. If the referenced attribute does not exist yet, it will be 
+/// for %Caliper. %Annotation objects provide access to named %Caliper context
+/// attributes. If the referenced attribute does not exist yet, it will be
 /// created automatically.
 ///
 /// Example:
@@ -82,15 +93,15 @@ public:
 ///   // ...
 /// phase_ann.end();
 /// \endcode
-/// This example creates an annotation object for the \c myprogram.phase 
-/// attribute, and uses the \c begin()/end() methods to mark a section 
+/// This example creates an annotation object for the \c myprogram.phase
+/// attribute, and uses the \c begin()/end() methods to mark a section
 /// of code where that attribute is set to "Initialization".
 ///
 /// \note Access to the underlying named context attribute through
 /// %Annotation objects is not exclusive: multiple %Annotation objects
 /// can reference and update the same context attribute.
 
-class Annotation 
+class Annotation
 {
     struct Impl;
     Impl*  pI;
@@ -98,22 +109,22 @@ class Annotation
 
 public:
 
-    /// \brief Creates an annotation object to manipulate 
-    ///   the context attribute with the given \a name. 
-    /// 
+    /// \brief Creates an annotation object to manipulate
+    ///   the context attribute with the given \a name.
+    ///
     /// \param name The attribute name
-    /// \param opt  %Attribute flags. Bitwise OR combination 
+    /// \param opt  %Attribute flags. Bitwise OR combination
     ///   of \ref cali_attr_properties values.
     Annotation(const char* name, int opt = 0);
-    
+
     typedef std::map<const char*, Variant> MetadataListType ;
-    /// \brief Creates an annotation object to manipulate 
-    ///   the context attribute with the given \a name. 
-    /// 
+    /// \brief Creates an annotation object to manipulate
+    ///   the context attribute with the given \a name.
+    ///
     /// \param name The attribute name
-    /// \param opt  %Attribute flags. Bitwise OR combination 
+    /// \param opt  %Attribute flags. Bitwise OR combination
     ///   of \ref cali_attr_properties values.
-    /// \param metadata: a map of 
+    /// \param metadata: a map of
     Annotation(const char* name, const MetadataListType& metadata, int opt=0);
 
     Annotation(const Annotation&);
@@ -122,7 +133,7 @@ public:
 
     Annotation& operator = (const Annotation&);
 
-    
+
     /// \brief Scope guard to automatically close an annotation at the end of
     ///   the C++ scope.
     ///
@@ -130,8 +141,8 @@ public:
     /// \code
     ///   int var = 42;
     ///   while (condition) {
-    ///     cali::Annotation::Guard 
-    ///       g( cali::Annotation("myvar").set(var) ); 
+    ///     cali::Annotation::Guard
+    ///       g( cali::Annotation("myvar").set(var) );
     ///     // Sets "myvar=<var>" and automatically closes it at the end of the loop
     ///   }
     /// \endcode
@@ -157,7 +168,7 @@ public:
 
     Annotation& begin();
 
-    /// \brief Begin <em>name</em>=<em>data</em> region for the associated 
+    /// \brief Begin <em>name</em>=<em>data</em> region for the associated
     ///    context attribute.
     ///
     /// Marks begin of the <em>name</em>=<em>data</em> region, where
@@ -210,7 +221,7 @@ public:
     /// \name set() overloads
     /// \{
 
-    /// \brief Set <em>name</em>=<em>data</em> for the associated 
+    /// \brief Set <em>name</em>=<em>data</em> for the associated
     ///    context attribute.
     ///
     /// Exports <em>name</em>=<em>data</em>, where \a name is the
@@ -228,13 +239,13 @@ public:
 
     /// \}
 
-    /// \brief Close top-most open region for the associated 
+    /// \brief Close top-most open region for the associated
     ///   context attribute.
     void end();
 };
 
 /// \} // AnnotationAPI group
-    
+
 } // namespace cali
 
 #undef CALI_FORWARDING_ENABLED
