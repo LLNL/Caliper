@@ -183,14 +183,25 @@ public:
                 spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
             }
 
+            std::string spot_opts;
+
+            for (const auto &o : m_opts.enabled_options()) {
+                if (!spot_opts.empty())
+                    spot_opts.append(",");
+                spot_opts.append(o);
+            }
+
             Attribute mtr_attr =
                 db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
             Attribute fmt_attr =
                 db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
+            Attribute opt_attr =
+                db.create_attribute("spot.options",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
             // set the spot.metrics value
             db.set_global(mtr_attr, Variant(spot_metrics.c_str()));
             db.set_global(fmt_attr, Variant(spot_format_version));
+            db.set_global(opt_attr, Variant(spot_opts.c_str()));
 
             std::string output = m_opts.get("output", "").to_string();
 

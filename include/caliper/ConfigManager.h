@@ -95,6 +95,9 @@ public:
         /// \brief Perform a validity check.
         std::string check() const;
 
+        /// \brief Return a list of all enabled boolean options.
+        std::vector<std::string> enabled_options() const;
+
         /// \brief Update the config controller's %Caliper configuration
         ///   according to the requirements of the selected options.
         ///

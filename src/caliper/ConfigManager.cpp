@@ -501,6 +501,22 @@ ConfigManager::Options::is_enabled(const char* option) const
                      std::string(option)) != mP->enabled_options.end();
 }
 
+std::vector<std::string>
+ConfigManager::Options::enabled_options() const
+{
+    std::vector<std::string> ret;
+
+    for (const auto& s : mP->enabled_options) {
+        auto s_it = mP->spec.data.find(s);
+        if (s_it == mP->spec.data.end())
+            continue;
+        if (s_it->second.type == "bool")
+            ret.push_back(s);
+    }
+
+    return ret;
+}
+
 StringConverter
 ConfigManager::Options::get(const char* option, const char* default_val) const
 {
