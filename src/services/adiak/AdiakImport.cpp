@@ -121,7 +121,7 @@ set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t
     v_metavals[1] = Variant(CALI_TYPE_STRING, subcategory, strlen(subcategory)+1);
 
     Attribute attr =
-       c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL,
+       c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS,
                           2, meta_attr, v_metavals);
 
     c.set(channel, attr, val);
@@ -218,9 +218,9 @@ void
 register_adiak_import(Caliper* c, Channel* chn)
 {
     meta_attr[0] =
-        c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
     meta_attr[1] =
-       c->create_attribute("adiak.category", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+       c->create_attribute("adiak.category", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
     chn->events().pre_flush_evt.connect(
         [](Caliper*, Channel* chn, const SnapshotRecord*){

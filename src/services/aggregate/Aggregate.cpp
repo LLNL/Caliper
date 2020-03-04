@@ -35,7 +35,7 @@ namespace
 //
 
 class Aggregate
-{    
+{
     //
     // --- Class for the per-thread aggregation database
     //
@@ -43,7 +43,7 @@ class Aggregate
     //   ThreadDB manages an aggregation DB for one thread.
     // All ThreadDBs belonging to a channel are linked so they
     // can be flushed, cleared, and deleted from any thread.
-    
+
     struct ThreadDB {
         //
         // --- members
@@ -66,7 +66,7 @@ class Aggregate
 
         ThreadDB()
             : stopped(false), retired(false)
-            { }        
+            { }
     };
 
     static const ConfigSet::Entry  s_configdata[];
@@ -94,7 +94,7 @@ class Aggregate
             tdb = new ThreadDB;
 
             c->set(tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
-            
+
             std::lock_guard<util::spinlock>
                 g(tdb_lock);
 
@@ -102,29 +102,29 @@ class Aggregate
                 tdb_list->prev = tdb;
 
             tdb->next = tdb_list;
-            tdb_list  = tdb;            
+            tdb_list  = tdb;
         }
-        
-        return tdb;        
+
+        return tdb;
     }
 
     void init_aggregation_attributes(Caliper* c) {
         std::vector<std::string> aggr_attr_names =
             config.get("attributes").to_stringlist();
-        
+
         if (aggr_attr_names.empty()) {
             // find all attributes of class "class.aggregatable"
 
-            aI.aggr_attributes = 
+            aI.aggr_attributes =
                 c->find_attributes_with(c->get_attribute("class.aggregatable"));
         } else if (aggr_attr_names.front() != "none") {
             for (const std::string& name : aggr_attr_names) {
                 Attribute attr = c->get_attribute(name);
 
                 if (attr == Attribute::invalid) {
-                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \"" 
+                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \""
                                     << name
-                                    << "\" not found." 
+                                    << "\" not found."
                                     << std::endl;
 
                     continue;
@@ -132,11 +132,11 @@ class Aggregate
 
                 cali_attr_type type = attr.type();
 
-                if (!(type == CALI_TYPE_INT  || 
-                      type == CALI_TYPE_UINT || 
+                if (!(type == CALI_TYPE_INT  ||
+                      type == CALI_TYPE_UINT ||
                       type == CALI_TYPE_DOUBLE)) {
                     Log(1).stream() << "Aggregate: Warning: Aggregation attribute \""
-                                    << name << "\" has invalid type \"" 
+                                    << name << "\" has invalid type \""
                                     << cali_type2string(type) << "\""
                                     << std::endl;
 
@@ -156,16 +156,16 @@ class Aggregate
 
             aI.stats_attributes[i].min_attr =
                 c->create_attribute(std::string("min#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             aI.stats_attributes[i].max_attr =
                 c->create_attribute(std::string("max#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             aI.stats_attributes[i].sum_attr =
                 c->create_attribute(std::string("sum#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);            
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
             aI.stats_attributes[i].avg_attr =
                 c->create_attribute(std::string("avg#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 #ifdef CALIPER_ENABLE_HISTOGRAMS
             for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
                 aI.stats_attributes[i].histogram_attr[jj] =
@@ -177,7 +177,7 @@ class Aggregate
 
         aI.count_attribute =
             c->create_attribute("count",
-                                CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
+                                CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     }
 
     void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
@@ -257,10 +257,10 @@ class Aggregate
         }
 
         if (Log::verbosity() >= 2) {
-            unitfmt_result bytes_reserved_fmt = 
+            unitfmt_result bytes_reserved_fmt =
                 unitfmt(bytes_reserved, unitfmt_bytes);
 
-            Log(2).stream() << chn->name() << ": Aggregate: Releasing aggregation DB:\n    max key len " 
+            Log(2).stream() << chn->name() << ": Aggregate: Releasing aggregation DB:\n    max key len "
                             << max_keylen << ", "
                             << num_kernel_entries << " entries, "
                             << num_trie_entries << " nodes, "
@@ -271,11 +271,11 @@ class Aggregate
 
         if (num_skipped_keys > 0)
             Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_skipped_keys
-                            << " entries because key exceeded max length!" 
+                            << " entries because key exceeded max length!"
                             << std::endl;
         if (num_dropped_entries > 0)
             Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_dropped_entries
-                            << " entries because key could not be allocated!" 
+                            << " entries because key could not be allocated!"
                             << std::endl;
     }
 
@@ -319,11 +319,11 @@ class Aggregate
                 if (type != CALI_TYPE_INT  &&
                     type != CALI_TYPE_UINT &&
                     type != CALI_TYPE_ADDR &&
-                    type != CALI_TYPE_BOOL &&   
+                    type != CALI_TYPE_BOOL &&
                     type != CALI_TYPE_TYPE) {
                     Log(1).stream() << "Aggregate: warning: type " << cali_type2string(type)
-                                    << " in as-value attribute \"" << attr.name() 
-                                    << "\" is not supported in aggregation key and will be dropped." 
+                                    << " in as-value attribute \"" << attr.name()
+                                    << "\" is not supported in aggregation key and will be dropped."
                                     << std::endl;
                     return;
                 }
@@ -348,7 +348,7 @@ class Aggregate
     }
 
     void finish_cb(Caliper* c, Channel* chn) {
-        // report attribute keys we haven't found 
+        // report attribute keys we haven't found
         for (size_t i = 0; i < aI.key_attribute_ids.size(); ++i)
             if (aI.key_attribute_ids[i] == CALI_INV_ID)
                 Log(1).stream() << chn->name() << ": Aggregate: warning: key attribute \""
@@ -379,7 +379,7 @@ class Aggregate
                                     CALI_ATTR_SKIP_EVENTS  |
                                     CALI_ATTR_HIDDEN);
         }
-        
+
 public:
 
     ~Aggregate() {
@@ -394,10 +394,10 @@ public:
                 tdb_list = tmp;
 
             delete tdb;
-            tdb = tmp;            
+            tdb = tmp;
         }
     }
-    
+
     static void aggregate_register(Caliper* c, Channel* chn) {
         Aggregate* instance = new Aggregate(c, chn);
 
@@ -438,7 +438,7 @@ public:
 
         Log(1).stream() << chn->name() << ": Registered aggregation service" << std::endl;
     }
-    
+
 }; // class Aggregate
 
 const ConfigSet::Entry Aggregate::s_configdata[] = {
