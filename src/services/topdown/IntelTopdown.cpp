@@ -129,15 +129,21 @@ class IntelTopdown
             get_val_from_rec(rec, "IDQ_UOPS_NOT_DELIVERED:CORE");
 
         bool is_incomplete =
-            v_cpu_clk_unhalted_thread_p.empty() ||
-            v_uops_retired_retire_slots.empty() ||
-            v_uops_issued_any.empty()           ||
-            v_int_misc_recovery_cycles.empty()  ||
+            v_cpu_clk_unhalted_thread_p.empty()   ||
+            v_uops_retired_retire_slots.empty()   ||
+            v_uops_issued_any.empty()             ||
+            v_int_misc_recovery_cycles.empty()    ||
             v_idq_uops_not_delivered_core.empty();
+        bool is_nonzero =
+            v_cpu_clk_unhalted_thread_p.to_double() > 0.0 &&
+            v_uops_retired_retire_slots.to_double() > 0.0 &&
+            v_uops_issued_any.to_double() > 0.0           &&
+            v_int_misc_recovery_cycles.to_double()  > 0.0 &&
+            v_idq_uops_not_delivered_core.to_double() > 0.0;
 
         double slots = 4.0 * v_cpu_clk_unhalted_thread_p.to_double();
 
-        if (is_incomplete || !(slots > 1.0))
+        if (is_incomplete || !is_nonzero || slots < 1.0)
             return ret;
 
         double retiring = v_uops_retired_retire_slots.to_double() / slots;
@@ -150,10 +156,10 @@ class IntelTopdown
             1.0 - (retiring + bad_speculation + frontend_bound);
 
         ret.reserve(4);
-        ret.push_back(Entry(result_attrs["retiring"],     Variant(retiring)));
-        ret.push_back(Entry(result_attrs["backend_bound"], Variant(backend_bound)));
-        ret.push_back(Entry(result_attrs["frontend_bound"], Variant(frontend_bound)));
-        ret.push_back(Entry(result_attrs["bad_speculation"], Variant(bad_speculation)));
+        ret.push_back(Entry(result_attrs["retiring"],     Variant(std::max(retiring, 0.0))));
+        ret.push_back(Entry(result_attrs["backend_bound"], Variant(std::max(backend_bound, 0.0))));
+        ret.push_back(Entry(result_attrs["frontend_bound"], Variant(std::max(frontend_bound, 0.0))));
+        ret.push_back(Entry(result_attrs["bad_speculation"], Variant(std::max(bad_speculation, 0.0))));
 
         return ret;
     }
@@ -250,7 +256,7 @@ class IntelTopdown
 
         double clocks = v_cpu_clk_unhalted_thread_p.to_double();
 
-        if (is_incomplete || !(clocks > 1.0));
+        if (is_incomplete || clocks < 1.0);
             return ret;
 
         double fe_latency =
