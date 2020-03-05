@@ -1,6 +1,7 @@
 # MPI application tests
 # For simplicity, these tests only run on a single rank without mpiexec
 
+import json
 import os
 import unittest
 
@@ -168,19 +169,29 @@ class CaliperMPITest(unittest.TestCase):
 
     def test_spot_controller(self):
         target_cmd = [ './ci_test_mpi_before_cali', 'spot(output=stdout)' ]
-        query_cmd = [ '../../src/tools/cali-query/cali-query', '-e' ]
+        query_cmd = [ '../../src/tools/cali-query/cali-query', '-q', 'format json(object)' ]
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
             'CALI_LOG_VERBOSITY'      : '0',
         }
 
-        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
-        snapshots = cat.get_snapshots_from_text(query_output)
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
-        self.assertTrue(cat.has_snapshot_with_keys(
-            snapshots, { 'function', 'avg#inclusive#sum#time.duration'
-            }))
+        self.assertTrue('globals' in obj)
+        self.assertTrue('records' in obj)
+
+        self.assertTrue('spot.format.version' in obj['globals'])
+        self.assertTrue('avg#inclusive#sum#time.duration' in obj['globals']['spot.metrics'])
+
+        r = None
+        for rec in obj['records']:
+            if 'path' in rec and rec['path'] == 'main':
+                r = rec
+                break
+
+        self.assertTrue(r is not None, 'No record with "path" entry found')
+        self.assertTrue('avg#inclusive#sum#time.duration' in r)
         
 if __name__ == "__main__":
     unittest.main()
