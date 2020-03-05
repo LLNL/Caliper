@@ -79,6 +79,7 @@ namespace {
             chn->events().post_init_evt.connect(
                     [instance](Caliper *c, Channel *chn) {
                         kokkosp_callbacks.kokkosp_begin_parallel_for_callback.connect([&](const char* name, const uint32_t, uint64_t*){
+std::cout << "Begin parallel for\n";
                             instance->pushRegion(name, "kokkos.parallel_for");
                         });
                         kokkosp_callbacks.kokkosp_begin_parallel_reduce_callback.connect([&](const char* name, const uint32_t, uint64_t*){
@@ -88,6 +89,7 @@ namespace {
                             instance->pushRegion(name, "kokkos.parallel_scan");
                         });
                         kokkosp_callbacks.kokkosp_end_parallel_for_callback.connect([&](const uint64_t){
+std::cout << "End parallel for\n";
                             instance->popRegion();
                         });
                         kokkosp_callbacks.kokkosp_end_parallel_reduce_callback.connect([&](const uint64_t){
