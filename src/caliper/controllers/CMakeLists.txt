@@ -3,7 +3,6 @@ set(CALIPER_CONTROLLERS_SOURCES
   EventTraceController.cpp
   HatchetRegionProfileController.cpp
   HatchetSampleProfileController.cpp
-  IntelTopdown.cpp
   NvProfController.cpp
   RuntimeReportController.cpp
   controllers.cpp)

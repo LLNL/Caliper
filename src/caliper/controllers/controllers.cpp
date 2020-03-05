@@ -13,7 +13,6 @@ extern ConfigManager::ConfigInfo event_trace_controller_info;
 extern ConfigManager::ConfigInfo nvprof_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
-extern ConfigManager::ConfigInfo intel_topdown_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
@@ -22,7 +21,6 @@ ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &nvprof_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
-    &intel_topdown_controller_info,
     &runtime_report_controller_info,
     nullptr
 };
