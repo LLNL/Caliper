@@ -91,8 +91,7 @@ printActivity(CUpti_Activity *record)
     {
     case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
         {
-            if(!global_chn){ std::cout <<"No global channel\n";return; }
-    std::cout<<"Flushing CUPTI activity\n";
+            if(!global_chn){ return; }
             CUpti_ActivityUnifiedMemoryCounter2 *uvm = (CUpti_ActivityUnifiedMemoryCounter2 *)record;
 
             cali_id_t attr[3] = { fault_address_attr.id(), direction_attr.id(), bytes_attr.id() };
