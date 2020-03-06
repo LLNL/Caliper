@@ -1012,6 +1012,110 @@ private:
     Config*    m_config;
 };
 
+//
+// --- AnyKernel
+//
+
+class AnyKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        std::string m_target_attr_name;
+
+        Attribute   m_target_attr;
+        Attribute   m_any_attr;
+
+    public:
+
+        Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid) {
+                m_target_attr = db.get_attribute(m_target_attr_name);
+
+                if (m_target_attr != Attribute::invalid)
+                    if (!m_target_attr.store_as_value())
+                        Log(0).stream() << "any(" << m_target_attr_name << "): Attribute "
+                                        << m_target_attr_name
+                                        << " does not have CALI_ATTR_ASVALUE property!"
+                                        << std::endl;
+            }
+
+            return m_target_attr;
+        }
+
+        Attribute get_any_attr(CaliperMetadataAccessInterface& db) {
+            if (m_target_attr == Attribute::invalid)
+                return Attribute::invalid;
+
+            if (m_any_attr == Attribute::invalid)
+                m_any_attr = db.create_attribute(std::string("any#") + m_target_attr_name, m_target_attr.type(),
+                                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
+
+            return m_any_attr;
+        }
+
+        AggregateKernel* make_kernel() {
+            return new AnyKernel(this);
+        }
+
+        Config(const std::string& name, bool inclusive)
+            : m_target_attr_name(name),
+              m_target_attr(Attribute::invalid),
+              m_any_attr(Attribute::invalid)
+            { }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front(), false);
+        }
+
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front(), true);
+        }
+    };
+
+    AnyKernel(Config* config)
+        : m_count(0), m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        if (m_val.empty()) {
+            Attribute target_attr = m_config->get_target_attr(db);
+
+            if (target_attr == Attribute::invalid)
+                return;
+
+            Attribute any_attr = m_config->get_any_attr(db);
+
+            cali_id_t tgt_id = target_attr.id();
+            cali_id_t any_id = any_attr.id();
+
+            for (const Entry& e : rec) {
+                if (e.attribute() == tgt_id || e.attribute() == any_id) {
+                    m_val = e.value();
+                    ++m_count;
+                    break;
+                }
+            }
+        }
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        if (m_count > 0)
+            rec.push_back(Entry(m_config->get_any_attr(db), m_val));
+    }
+
+private:
+
+    unsigned   m_count;
+    Variant    m_val;
+    std::mutex m_lock;
+    Config*    m_config;
+};
+
 
 enum KernelID {
     Count         = 0,
@@ -1024,10 +1128,11 @@ enum KernelID {
     Avg           = 7,
     ScaledSum     = 8,
     IScaledSum    = 9,
-    IPercentTotal = 10
+    IPercentTotal = 10,
+    Any           = 11
 };
 
-#define MAX_KERNEL_ID 10
+#define MAX_KERNEL_ID 11
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -1045,6 +1150,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::ScaledSum,     "scale",         2, 2, scale_args   },
     { KernelID::IScaledSum,    "inclusive_scale", 2, 2, scale_args   },
     { KernelID::IPercentTotal, "inclusive_percent_total", 1, 1, kernel_args },
+    { KernelID::Any,           "any",           1, 1, kernel_args  },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1064,6 +1170,7 @@ const struct KernelInfo {
     { "scale",         ScaledSumKernel::Config::create     },
     { "inclusive_scale", ScaledSumKernel::Config::create_inclusive },
     { "inclusive_percent_total", PercentTotalKernel::Config::create_inclusive },
+    { "any",           AnyKernel::Config::create           },
     { 0, 0 }
 };
 
@@ -1508,6 +1615,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("iscale#") + op.args[0];
     case KernelID::IPercentTotal:
         return std::string("ipercent_total#") + op.args[0];
+    case KernelID::Any:
+        return std::string("any#") + op.args[0];
     }
 
     return std::string();

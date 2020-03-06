@@ -234,11 +234,10 @@ void print_caliquery_help(const Args& args, const char* usage)
         for (const auto &s : ConfigManager::get_config_docstrings())
             std::cerr << s << std::endl;
     } else if (helpopt == "services") {
-        Services::add_default_services();
-        auto srvcs = Services::get_available_services();
+        services::add_default_service_specs();
 
         int i = 0;
-        for (const auto& s : Services::get_available_services())
+        for (const auto& s : services::get_available_services())
             std::cerr << (i++ > 0 ? "," : "") << s;
         std::cerr << std::endl;
     } else if (!helpopt.empty()) {

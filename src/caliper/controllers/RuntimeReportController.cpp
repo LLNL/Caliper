@@ -92,7 +92,7 @@ public:
 bool
 use_mpi(const cali::ConfigManager::Options& opts)
 {
-    auto services = Services::get_available_services();
+    auto services = services::get_available_services();
 
     bool have_mpireport =
         std::find(services.begin(), services.end(), "mpireport") != services.end();
