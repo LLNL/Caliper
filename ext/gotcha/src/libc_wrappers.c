@@ -358,7 +358,12 @@ int gotcha_open(const char *pathname, int flags, ...)
    }
    va_end(args);
 
+#if defined(SYS_open)
    result = syscall(SYS_open, pathname, flags, mode);
+#else
+   result = syscall(SYS_openat, AT_FDCWD, pathname, flags, mode);
+#endif
+
    if (result >= 0)
       return (int) result;
    
