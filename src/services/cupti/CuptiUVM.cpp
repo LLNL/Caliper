@@ -239,12 +239,12 @@ static void initialize_uvm_callbacks(Caliper* c, Channel* chn){
 kokkosp_callbacks.kokkosp_end_parallel_for_callback.connect([&](const uint64_t){
         CUPTI_CALL(cuptiActivityFlushAll(0));
 });
-    chn->events().finish_evt.connect([](Caliper* c, Channel* chn){
-        CUPTI_CALL(cuptiActivityFlushAll(0));
+    //chn->events().finish_evt.connect([](Caliper* c, Channel* chn){
+    //    CUPTI_CALL(cuptiActivityFlushAll(0));
 
-    // disable unified memory counter activity
-    CUPTI_CALL(cuptiActivityDisable(CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER));
-});
+    //// disable unified memory counter activity
+    //    CUPTI_CALL(cuptiActivityDisable(CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER));
+    //});
 }
 
 namespace cali
