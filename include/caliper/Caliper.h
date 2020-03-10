@@ -35,7 +35,6 @@ typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cal
 
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data.
-
 class Channel : public IdType
 {
     struct ChannelImpl;
@@ -50,6 +49,7 @@ public:
 
     // --- Events (callback functions)
 
+    /// \brief Holds the %Caliper callbacks for a channel.
     struct Events {
         typedef util::callback<void(Caliper*,Channel*,const Attribute&)>
             attribute_cbvec;
@@ -76,48 +76,101 @@ public:
         typedef util::callback<void(Caliper*,Channel*,const void*)>
             untrack_mem_cbvec;
 
+        /// \brief Invoked when a new attribute has been created.
         attribute_cbvec        create_attr_evt;
 
+        /// \brief Invoked on region begin, \e before it has been put on the blackboard.
         update_cbvec           pre_begin_evt;
+        /// \brief Invoked on region begin, \e after it has been put on the blackboard.
         update_cbvec           post_begin_evt;
+        /// \brief Invoked when value is set, \e before it has been put on the blackboard.
         update_cbvec           pre_set_evt;
+        /// \brief Invoked when value is set, \e after it has been put on the blackboard.
         update_cbvec           post_set_evt;
+        /// \brief Invoked on region end, \e before it has been removed from the blackboard.
         update_cbvec           pre_end_evt;
+        /// \brief Invoked on region end, \e after it has been removed from the blackboard.
         update_cbvec           post_end_evt;
 
+        /// \brief Invoked when a new thread context is being created.
         caliper_cbvec          create_thread_evt;
+        /// \brief Invoked when a thread context is being released.
         caliper_cbvec          release_thread_evt;
 
+        /// \brief Invoked at the end of a %Caliper channel initialization.
+        ///
+        /// At this point, all registered services have been initialized.
         caliper_cbvec          post_init_evt;
+        /// \brief Invoked at the end of %Caliper channel finalization.
+        ///
+        /// At this point, other services in this channel may already be
+        /// destroyed. It is no longer safe to use any %Caliper API calls for
+        /// this channel. It is for local cleanup only.
         caliper_cbvec          finish_evt;
 
+        /// \brief Invoked when a snapshot is being taken.
+        ///
+        /// Use this callback to take performance measurements and append them
+        /// to the snapshot record.
         snapshot_cbvec         snapshot;
+        /// \brief Invoked when a snapshot has been completed.
+        ///
+        /// Used by snapshot processing services (e.g., trace and aggregate) to
+        /// store the snasphot record.
         process_snapshot_cbvec process_snapshot;
 
+        /// \brief Invoked before flush.
         write_cbvec            pre_flush_evt;
+        /// \brief Flush all snapshot records.
         flush_cbvec            flush_evt;
+        /// \brief Invoked after flush.
         write_cbvec            post_flush_evt;
 
+        /// \brief Modify snapshot records during flush.
         edit_snapshot_cbvec    postprocess_snapshot;
 
+        /// \brief Write output.
+        ///
+        /// This is invoked by the Caliper::flush_and_write() API call, and
+        /// causes output services (e.g., report or recorder) to trigger a
+        /// flush.
         write_cbvec            write_output_evt;
 
+        /// \brief Invoked at a memory region begin.
         track_mem_cbvec        track_mem_evt;
+        /// \brief Invoked at memory region end.
         untrack_mem_cbvec      untrack_mem_evt;
 
+        /// \brief Clear local storage (trace buffers, aggregation DB)
         caliper_cbvec          clear_evt;
 
+        /// \brief Process events for a subscription attribute in this channel.
+        ///
+        /// Indicates that the given subscription attribute should be tracked
+        /// in this channel. Subscription attributes are marked with the
+        /// \a subscription_event meta-attribute. They are used for attributes
+        /// that should be tracked in some channels but not necessarily all of
+        /// them, for example with wrapper services like IO or
+        /// MPI, where regions should only be tracked if the service is enabled
+        /// in the given channel.
         attribute_cbvec        subscribe_attribute;
     };
 
+    /// \brief Access the callback vectors to register callbacks for this channel.
     Events&        events();
 
+    /// \brief Return the configuration for this channel.
     RuntimeConfig  config();
 
     // --- Channel management
 
+    /// \brief Return the channel's name.
     std::string    name() const;
 
+    /// \brief Is the channel currently active?
+    ///
+    /// Channels can be enabled and disabled with Caliper::activate_channel()
+    /// and Caliper::deactivate_channel().
     bool           is_active() const;
 
     friend class Caliper;

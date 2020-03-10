@@ -18,7 +18,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
   "${BINARY_BUILD_DIR}/conf.py" 
   @ONLY)
 
-add_custom_target(caliper_sphinx_docs ALL
+add_custom_target(caliper_sphinx_doc ALL
   ${SPHINX_EXECUTABLE}
     -q -b html
     -c "${BINARY_BUILD_DIR}"
