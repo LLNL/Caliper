@@ -1066,10 +1066,6 @@ public:
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg.front(), false);
         }
-
-        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
-            return new Config(cfg.front(), true);
-        }
     };
 
     AnyKernel(Config* config)
