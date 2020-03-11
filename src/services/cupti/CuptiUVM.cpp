@@ -237,7 +237,7 @@ static void initialize_uvm_callbacks(Caliper* c, Channel* chn){
     // enable unified memory counter activity
     CUPTI_CALL(cuptiActivityEnable(CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER));
 kokkosp_callbacks.kokkosp_end_parallel_for_callback.connect([&](const uint64_t){
-        CUPTI_CALL(cuptiActivityFlushAll(0));
+        //CUPTI_CALL(cuptiActivityFlushAll(0));
 });
     //chn->events().finish_evt.connect([](Caliper* c, Channel* chn){
     //    CUPTI_CALL(cuptiActivityFlushAll(0));
