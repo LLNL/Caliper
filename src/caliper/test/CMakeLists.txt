@@ -1,6 +1,7 @@
 set(CALIPER_TEST_SOURCES
   test_attribute.cpp
   test_blackboard.cpp
+  test_c_api.cpp
   test_channel_api.cpp
   test_channel_controller.cpp
   test_configmanager.cpp

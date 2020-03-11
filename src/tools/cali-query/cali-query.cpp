@@ -264,7 +264,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("version")) {
-            cerr << CALIPER_VERSION << std::endl;
+            cerr << cali_caliper_version() << std::endl;
             return 0;
         }
     }
