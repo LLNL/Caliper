@@ -247,20 +247,20 @@ class IntelTopdown
 
         Variant v_cpu_clk_unhalted_thread_p =
             get_val_from_rec(rec, "CPU_CLK_THREAD_UNHALTED:THREAD_P");
-        Variant v_idq_uops_not_delivered_core =
-            get_val_from_rec(rec, "IDQ_UOPS_NOT_DELIVERED:CORE");
+        Variant v_idq_uops_not_delivered =
+            get_val_from_rec(rec, "IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE");
 
         bool is_incomplete =
             v_cpu_clk_unhalted_thread_p.empty() ||
-            v_idq_uops_not_delivered_core.empty();
+            v_idq_uops_not_delivered.empty();
 
         double clocks = v_cpu_clk_unhalted_thread_p.to_double();
+        double uops = v_idq_uops_not_delivered.to_double();
 
-        if (is_incomplete || clocks < 1.0);
+        if (is_incomplete || clocks < 1.0 || uops > clocks)
             return ret;
 
-        double fe_latency =
-            std::max(v_idq_uops_not_delivered_core.to_double(), 4.0) / clocks;
+        double fe_latency = uops / clocks;
 
         ret.reserve(2);
         ret.push_back(Entry(result_attrs["frontend_latency"], Variant(fe_latency)));
@@ -444,6 +444,7 @@ const char* IntelTopdown::s_all_counters =
     ",CYCLE_ACTIVITY:STALLS_L2_PENDING"
     ",CYCLE_ACTIVITY:STALLS_LDM_PENDING"
     ",IDQ_UOPS_NOT_DELIVERED:CORE"
+    ",IDQ_UOPS_NOT_DELIVERED:CYCLES_0_UOPS_DELIV_CORE"
     ",INT_MISC:RECOVERY_CYCLES"
     ",MACHINE_CLEARS:COUNT"
     ",MEM_LOAD_UOPS_RETIRED:L3_HIT"
