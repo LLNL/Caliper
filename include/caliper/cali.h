@@ -40,6 +40,15 @@ extern "C" {
 typedef int (*cali_entry_proc_fn)(void* user_arg, cali_id_t attr_id, cali_variant_t val);
 
 /*
+ * --- Miscellaneous ---------------------------------------------------
+ */
+
+/**
+ * \brief Return the %Caliper version string
+ */
+const char* cali_caliper_version();
+
+/*
  * --- Attributes ------------------------------------------------------
  */
 

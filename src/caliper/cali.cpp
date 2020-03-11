@@ -3,6 +3,8 @@
 
 // Caliper C interface implementation
 
+#include "caliper/caliper-config.h"
+
 #include "caliper/cali.h"
 
 #include "caliper/Caliper.h"
@@ -25,6 +27,16 @@
 #define SNAP_MAX 120
 
 using namespace cali;
+
+//
+// --- Miscellaneous
+//
+
+const char*
+cali_caliper_version()
+{
+    return CALIPER_VERSION;
+}
 
 //
 // --- Attribute interface
