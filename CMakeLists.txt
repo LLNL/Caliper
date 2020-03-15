@@ -67,7 +67,7 @@ add_caliper_option(WITH_LIBDW     "Enable libdw support (for symbollookup servic
 add_caliper_option(WITH_LIBUNWIND "Enable libunwind support (for callpath service)" FALSE)
 add_caliper_option(WITH_MPI       "Enable MPI" FALSE)
 # add_caliper_option(WITH_MPIT      "Enable MPI-T" FALSE)
-# add_caliper_option(WITH_OMPT      "Enable OMPT" FALSE)
+add_caliper_option(WITH_OMPT      "Enable OMPT" FALSE)
 add_caliper_option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 add_caliper_option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
@@ -321,19 +321,8 @@ set(THREADS_PREFER_PTHREAD_FLAG On)
 find_package(Threads REQUIRED)
 
 if (WITH_OMPT)
-  # Find OMPT header
-  find_path(OMPT_INCLUDE_DIR ompt.h
-    PATH_SUFFIXES include
-    HINTS $ENV{OMPT_DIR} ${OMPT_DIR})
-
-  if (OMPT_INCLUDE_DIR)
-    set(OMPT_FOUND TRUE)
     set(CALIPER_HAVE_OMPT TRUE)
-    set(CALIPER_OMPT_CMAKE_MSG "Yes, using ${OMPT_INCLUDE_DIR}")
-  else()
-    message(WARNING "OpenMP tools interface (OMPT) support requested but ompt.h not found!\n"
-      "Set OMPT_DIR to OpenMP tools interface installation directory and re-run cmake.")
-  endif()
+    set(CALIPER_OMPT_CMAKE_MSG "Yes")
 endif()
 
 # Find MPI
