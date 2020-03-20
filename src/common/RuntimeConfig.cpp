@@ -136,7 +136,6 @@ struct ConfigSetImpl
 struct RuntimeConfig::RuntimeConfigImpl
 {
     // --- data
-    static RuntimeConfig                     s_default_config;
     static const ConfigSet::Entry            s_configdata[];
 
     bool                                     m_allow_read_env = true;
@@ -303,8 +302,6 @@ struct RuntimeConfig::RuntimeConfigImpl
     }
 };
 
-RuntimeConfig RuntimeConfig::RuntimeConfigImpl::s_default_config;
-
 const ConfigSet::Entry RuntimeConfig::RuntimeConfigImpl::s_configdata[] = {
     { "profile",  CALI_TYPE_STRING, "default",
       "Configuration profile",
@@ -402,5 +399,7 @@ RuntimeConfig::allow_read_env(bool allow)
 RuntimeConfig
 RuntimeConfig::get_default_config()
 {
-    return RuntimeConfigImpl::s_default_config;
+    static RuntimeConfig s_default_config;
+
+    return s_default_config;
 }
