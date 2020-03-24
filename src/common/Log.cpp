@@ -19,9 +19,7 @@ struct LogImpl
 {
     // --- data
 
-    static unique_ptr<LogImpl>    s_instance;
     static const char*            s_prefix;
-
     static const ConfigSet::Entry s_configdata[];
 
     enum class Stream { StdOut, StdErr, None, File };
@@ -79,16 +77,16 @@ struct LogImpl
     }
 
     static LogImpl* instance() {
-        if (!s_instance)
-            s_instance.reset(new LogImpl);
+        static std::unique_ptr<LogImpl> instance;
 
-        return s_instance.get();
+        if (!instance)
+            instance.reset(new LogImpl);
+
+        return instance.get();
     }
 };
 
-unique_ptr<LogImpl>    LogImpl::s_instance { nullptr } ;
-const char*            LogImpl::s_prefix   { "== CALIPER: " };
-
+const char*            LogImpl::s_prefix = "== CALIPER: ";
 const ConfigSet::Entry LogImpl::s_configdata[] = {
     // key, type, value, short description, long description
     { "verbosity", CALI_TYPE_UINT,   "0",
@@ -117,7 +115,8 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
 ostream&
 Log::get_stream()
 {
-    return (LogImpl::instance()->get_stream() << LogImpl::instance()->m_prefix);
+    LogImpl* instance = LogImpl::instance();
+    return (instance->get_stream() << instance->m_prefix);
 }
 
 ostream&
