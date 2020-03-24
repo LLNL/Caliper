@@ -126,7 +126,7 @@ void add_mount(char *full_path, char *filesystem) {
     return;
   }
  
-  char *name;
+  char *name = NULL;
   char *path_copy = strdup(full_path);
   mount_tree_t *parent_mount = get_mount(path_copy, &name);
 
