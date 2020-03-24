@@ -23,8 +23,6 @@ using namespace std;
 
 namespace
 {
-    const string prefix { "cali" };
-
     const char*  builtin_profiles =
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
@@ -63,7 +61,7 @@ namespace
     string config_var_name(const string& name, const string& key) {
         // make uppercase PREFIX_NAMESPACE_KEY string
 
-        string str = prefix + string("_") + name + string("_") + key; // old formulation broke PGI
+        string str = string("CALI_") + name + string("_") + key;
         
         transform(str.begin(), str.end(), str.begin(), ::toupper);
 

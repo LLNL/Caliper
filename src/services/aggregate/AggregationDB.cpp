@@ -135,9 +135,9 @@ public:
         return m_num_blocks;
     }
 
-    BlockAlloc() {
-
-    }
+    BlockAlloc()
+        : m_num_blocks(0)
+        { }
 
     ~BlockAlloc() {
         clear();
