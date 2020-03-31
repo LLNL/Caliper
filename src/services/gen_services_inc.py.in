@@ -72,18 +72,33 @@ for service in services_list:
     if service_condition is not "":
         service_declaration_text += "#endif\n"
 
-service_list_definition_text="const CaliperService caliper_services[] = {\n"
+service_list_definition_text = """
+    namespace services
+    {
+
+    void add_default_service_specs()
+    {
+        const CaliperService caliper_services[] = {
+    """
 
 for service in services_list:
     service_name = service[0]
     service_condition = service[1]
     if service_condition is not "":
         service_list_definition_text += "#ifdef "+service_condition+"\n"
-    service_list_definition_text += "    "+service_name+",\n"
+    service_list_definition_text += "        "+service_name+",\n"
     if service_condition is not "":
         service_list_definition_text += "#endif\n"
 
-service_list_definition_text+="    { nullptr, nullptr }\n};\n\n}"
+service_list_definition_text += """
+            { nullptr, nullptr }
+        };
+        add_service_specs(caliper_services);
+    }
+
+    } // namespace services
+    } // namespace cali
+    """
 
 f = open('services.inc.cpp', 'w')
 

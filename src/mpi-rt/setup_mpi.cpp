@@ -29,28 +29,8 @@ extern CaliperService mpit_service;
 extern CaliperService tau_service;
 #endif
 
-CaliperService cali_mpi_services[] = {
-    mpiwrap_service,
-    mpireport_service,
-#ifdef CALIPER_HAVE_MPIT
-    mpit_service,
-#endif
-#ifdef CALIPER_HAVE_TAU
-    tau_service,
-#endif
-    { nullptr, nullptr }
-};
-
 extern ConfigManager::ConfigInfo spot_controller_info;
 extern ConfigManager::ConfigInfo spot_v1_controller_info;
-
-const ConfigManager::ConfigInfo *mpi_controllers[] = {
-    &spot_controller_info,
-    &spot_v1_controller_info,
-    nullptr
-};
-
-bool is_initialized = false;
 
 //   Pre-init setup routine that allows us to do some MPI-specific
 // initialization, e.g. disabling most logging on non-rank 0 ranks.
@@ -81,20 +61,32 @@ setup_mpi()
 }
 
 
-void mpirt_constructor() __attribute__((constructor));
+// void mpirt_constructor() __attribute__((constructor));
 
 void
 mpirt_constructor()
 {
-    if (is_initialized)
-        return;
+    CaliperService services[] = {
+        mpiwrap_service,
+        mpireport_service,
+#ifdef CALIPER_HAVE_MPIT
+        mpit_service,
+#endif
+#ifdef CALIPER_HAVE_TAU
+        tau_service,
+#endif
+        { nullptr, nullptr }
+    };
 
-    Caliper::add_services(cali_mpi_services);
+    const ConfigManager::ConfigInfo* controllers[] = {
+        &spot_controller_info,
+        &spot_v1_controller_info,
+        nullptr
+    };
+
     Caliper::add_init_hook(setup_mpi);
-
-    ConfigManager::add_controllers(mpi_controllers);
-
-    is_initialized = true;
+    Caliper::add_services(services);
+    ConfigManager::add_controllers(controllers);
 }
 
 }

@@ -29,6 +29,32 @@ extern const char* builtin_option_specs;
 namespace
 {
 
+class ConfigSpecManager
+{
+    std::vector<ConfigManager::ConfigInfo> m_configs;
+
+public:
+
+    void add_controller_specs(const ConfigManager::ConfigInfo** specs) {
+        for (const ConfigManager::ConfigInfo** s = specs; s && *s; s++)
+            m_configs.push_back(**s);
+    }
+
+    std::vector<ConfigManager::ConfigInfo> get_config_specs() const {
+        return m_configs;
+    }
+
+    static ConfigSpecManager* instance() {
+        static std::unique_ptr<ConfigSpecManager> mP { new ConfigSpecManager };
+
+        if (mP->m_configs.empty())
+            mP->add_controller_specs(builtin_controllers_table);
+
+        return mP.get();
+    }
+};
+
+
 template<typename K, typename V>
 std::map<K, V>
 merge_new_elements(std::map<K, V>& to, const std::map<K, V>& from) {
@@ -68,14 +94,6 @@ join_stringlist(const std::vector<std::string>& list)
 
     return ret;
 }
-
-struct ConfigInfoList {
-    const ConfigManager::ConfigInfo** configs;
-    ConfigInfoList* next;
-};
-
-ConfigInfoList  s_default_configs { cali::builtin_controllers_table, nullptr };
-ConfigInfoList* s_config_list     { &s_default_configs };
 
 } // namespace [anonymous]
 
@@ -568,7 +586,7 @@ struct ConfigManager::ConfigManagerImpl
     argmap_t    m_extra_vars;
 
     struct config_spec_t {
-        const ConfigInfo* info;
+        ConfigInfo info;
         std::string name;
         std::vector<std::string> categories;
         std::string description;
@@ -594,17 +612,17 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     void
-    parse_config_spec(const ConfigInfo* info, const OptionSpec& base_options) {
+    parse_config_spec(const ConfigInfo& info, const OptionSpec& base_options) {
         config_spec_t spec;
         bool ok;
 
         spec.info = info;
 
-        auto dict = StringConverter(info->spec).rec_dict(&ok);
+        auto dict = StringConverter(info.spec).rec_dict(&ok);
 
         if (!ok) {
             Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(info->spec, 40)
+                            << util::clamp_string(info.spec, 40)
                             << std::endl;
             return;
         }
@@ -642,7 +660,7 @@ struct ConfigManager::ConfigManagerImpl
         it = dict.find("name");
         if (it == dict.end()) {
             Log(0).stream() << "ConfigManager: 'name' missing in spec: "
-                            << util::clamp_string(info->spec, 32)
+                            << util::clamp_string(info.spec, 32)
                             << std::endl;
             return;
         }
@@ -663,9 +681,8 @@ struct ConfigManager::ConfigManagerImpl
                             << util::clamp_string(builtin_option_specs, 32)
                             << std::endl;
 
-        for (const ::ConfigInfoList *i = ::s_config_list; i; i = i->next)
-            for (const ConfigInfo **j = i->configs; *j; j++)
-                parse_config_spec(*j, base_opts);
+        for (const ConfigInfo& s : ::ConfigSpecManager::instance()->get_config_specs())
+            parse_config_spec(s, base_opts);
     }
 
     //   Parse "=value"
@@ -812,13 +829,13 @@ struct ConfigManager::ConfigManagerImpl
 
             check_error(opts.check());
 
-            if (cfg.first->info->check_args)
-                check_error((cfg.first->info->check_args)(opts));
+            if (cfg.first->info.check_args)
+                check_error((cfg.first->info.check_args)(opts));
 
             if (m_error)
                 return false;
             else
-                m_channels.emplace_back( (cfg.first->info->create)(opts) );
+                m_channels.emplace_back( (cfg.first->info.create)(opts) );
         }
 
         return !m_error;
@@ -947,22 +964,7 @@ ConfigManager::flush()
 void
 ConfigManager::add_controllers(const ConfigManager::ConfigInfo** ctrlrs)
 {
-    ::ConfigInfoList* elem = new ConfigInfoList { ctrlrs, ::s_config_list };
-    s_config_list = elem;
-}
-
-void
-ConfigManager::cleanup()
-{
-    ::ConfigInfoList* ptr = s_config_list;
-
-    while (ptr && ptr != &s_default_configs) {
-        ::ConfigInfoList* tmp = ptr->next;
-        delete ptr;
-        ptr = tmp;
-    }
-
-    s_config_list = &s_default_configs;
+    ::ConfigSpecManager::instance()->add_controller_specs(ctrlrs);
 }
 
 std::vector<std::string>
@@ -993,8 +995,8 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
     for (auto cfg : configs) {
         Options opts(cfg.first->opts, merge_new_elements(cfg.second, mgr.m_default_parameters));
 
-        if (cfg.first->info->check_args)
-            mgr.check_error((cfg.first->info->check_args)(opts));
+        if (cfg.first->info.check_args)
+            mgr.check_error((cfg.first->info.check_args)(opts));
 
         mgr.check_error(opts.check());
 
