@@ -232,9 +232,6 @@ public:
             if (opts.get("output", "").to_string() != "adiak")
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
 #endif
-            if (opts.get("profile.kokkos","").to_bool()) {
-                config()["CALI_SERVICES_ENABLE"].append(",kokkostime");
-            }
             m_opts.update_channel_config(config());
         }
 
