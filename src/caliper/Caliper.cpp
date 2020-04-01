@@ -417,8 +417,6 @@ struct Caliper::GlobalData
         gObj.g_ptr = nullptr;
 
         MetadataTree::release();
-        services::cleanup_service_specs();
-        ConfigManager::cleanup();
 
         Log(1).stream() << "Finished" << std::endl;
     }
@@ -533,9 +531,11 @@ struct Caliper::GlobalData
     struct S_GObject {
         GlobalData* g_ptr;
 
-        S_GObject()
-            : g_ptr(nullptr)
-            { }
+        // No constructor: Could overwrite existing Caliper object if Caliper
+        // is initialized somewhere before this static constructor runs.
+        // S_GObject()
+        //     : g_ptr(nullptr)
+        //     { }
 
         ~S_GObject() {
             // Only use if we're still active
@@ -1791,6 +1791,9 @@ Caliper::instance()
 
         std::lock_guard<std::mutex>
             g(GlobalData::s_init_mutex);
+
+        GlobalData::gObj.g_ptr = nullptr;
+        GlobalData::tObj.t_ptr = nullptr;
 
         if (!GlobalData::gObj.g_ptr) {
             tPtr = new ThreadData(true /* is_initial_thread */);

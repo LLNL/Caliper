@@ -17,7 +17,6 @@
 #include <vector>
 
 using namespace cali;
-using namespace std;
 
 // List of services, defined in services.inc.cpp
 #include "services.inc.cpp"
@@ -25,17 +24,52 @@ using namespace std;
 namespace
 {
 
-struct ServicesList {
-    const CaliperService* services;
-    ServicesList* next;
+class ServicesManager {
+    std::vector<CaliperService> m_services;
+
+public:
+
+    std::vector<std::string> get_available_services() const {
+        std::vector<std::string> ret;
+        ret.reserve(m_services.size());
+
+        for (const CaliperService& s : m_services)
+            ret.push_back(s.name);
+
+        return ret;
+    }
+
+    bool register_service(const char* name, Caliper* c, Channel* channel) const {
+        for (const CaliperService& s : m_services)
+            if (strcmp(s.name, name) == 0 && s.register_fn) {
+                (*s.register_fn)(c, channel);
+                return true;
+            }
+
+        return false;
+    }
+
+    void add_services(const CaliperService services_list[]) {
+        for (const CaliperService* s = services_list; s && s->name && s->register_fn; ++s)
+            if (std::find_if(m_services.begin(), m_services.end(),
+                    [s](const CaliperService& ls){
+                        // string pointer compare is fine here
+                        return s->name == ls.name && s->register_fn == ls.register_fn;
+                    }) == m_services.end())
+                        m_services.push_back(*s);
+    }
+
+    static ServicesManager* instance() {
+        static std::unique_ptr<ServicesManager> inst { new ServicesManager };
+        return inst.get();
+    }
 };
 
-ServicesList*          s_services_list  { nullptr };
 const ConfigSet::Entry s_configdata[] = {
     // key, type, value, short description, long description
     { "enable", CALI_TYPE_STRING, "",
       "List of service modules to enable",
-      "A list of comma-separated names of the service modules to enable"      
+      "A list of comma-separated names of the service modules to enable"
     },
     ConfigSet::Terminator
 };
@@ -49,78 +83,32 @@ namespace cali
 namespace services
 {
 
-bool register_service(Caliper* c, Channel* chn, const char* name) 
+bool register_service(Caliper* c, Channel* channel, const char* name)
 {
-    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
-            if (strcmp(s->name, name) == 0) {
-                (*s->register_fn)(c, chn);
-                return true;
-            }
-
-    return false;
+    return ServicesManager::instance()->register_service(name, c, channel);
 }
 
-void register_configured_services(Caliper* c, Channel* chn) 
+void register_configured_services(Caliper* c, Channel* channel)
 {
-    // list services
-    
-    vector<string> services =
-        chn->config().init("services", s_configdata).get("enable").to_stringlist(",:");
+    std::vector<std::string> services =
+        channel->config().init("services", s_configdata).get("enable").to_stringlist(",:");
 
-    // register caliper services
+    ServicesManager* sM = ServicesManager::instance();
 
-    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s) {
-            auto it = find(services.begin(), services.end(), string(s->name));
-
-            if (it != services.end()) {
-                (*s->register_fn)(c, chn);
-                services.erase(it);
-            }
-        }
-
-    for ( const string& s : services )
-        Log(0).stream() << "Warning: service \"" << s << "\" not found" << endl;
+    for (const std::string& s : services) {
+        if (!sM->register_service(s.c_str(), c, channel))
+            Log(0).stream() << "Service \"" << s << "\" not found!" << std::endl;
+    }
 }
 
 void add_service_specs(const CaliperService* services)
 {
-    ::ServicesList* elem = new ServicesList { services, ::s_services_list };
-    ::s_services_list = elem;
-}
-
-void cleanup_service_specs()
-{
-    ::ServicesList* ptr = ::s_services_list;
-
-    while (ptr) {
-        ::ServicesList* tmp = ptr->next;
-        delete ptr;
-        ptr = tmp;
-    }
-
-    ::s_services_list = nullptr;
-}
-
-void add_default_service_specs()
-{
-    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-        if (lp->services == caliper_services)
-            return;
-    
-    add_service_specs(caliper_services);
+    ServicesManager::instance()->add_services(services);
 }
 
 std::vector<std::string> get_available_services()
 {
-    std::vector<std::string> ret;
-    
-    for (const ServicesList* lp = ::s_services_list; lp; lp = lp->next)
-        for (const CaliperService* s = lp->services; s->name && s->register_fn; ++s)
-            ret.emplace_back(s->name);
-
-    return ret;
+    return ServicesManager::instance()->get_available_services();
 }
 
 } // namespace services

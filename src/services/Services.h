@@ -24,9 +24,6 @@ namespace services
 /// \brief Add Caliper service specs.
 void add_service_specs(const CaliperService* specs);
 
-/// \brief Cleanup memory for Caliper service specs.
-void cleanup_service_specs();
-
 /// \brief Add the default built-in service specs.
 void add_default_service_specs();
 
