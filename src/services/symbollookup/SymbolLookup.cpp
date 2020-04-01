@@ -4,6 +4,8 @@
 // SymbolLookup.cpp
 // Caliper symbol lookup service
 
+#include "Lookup.h"
+
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
@@ -13,11 +15,6 @@
 #include "caliper/common/Node.h"
 #include "caliper/common/RuntimeConfig.h"
 
-#include <Symtab.h>
-#include <LineInformation.h>
-#include <Function.h>
-#include <AddrLookup.h>
-
 #include <algorithm>
 #include <iterator>
 #include <map>
@@ -25,9 +22,7 @@
 #include <mutex>
 
 using namespace cali;
-
-using namespace Dyninst;
-using namespace SymtabAPI;
+using namespace symbollookup;
 
 namespace
 {
@@ -51,14 +46,13 @@ class SymbolLookup
     bool m_lookup_file;
     bool m_lookup_line;
     bool m_lookup_mod;
-    
+
     std::map<Attribute, SymbolAttributes> m_sym_attr_map;
     std::mutex m_sym_attr_mutex;
 
     std::vector<std::string> m_addr_attr_names;
 
-    AddressLookup* m_lookup;
-    std::mutex     m_lookup_mutex;
+    Lookup   m_lookup;
 
     unsigned m_num_lookups;
     unsigned m_num_failed;
@@ -70,13 +64,13 @@ class SymbolLookup
     void make_symbol_attributes(Caliper* c, const Attribute& attr) {
         struct SymbolAttributes sym_attribs;
 
-        sym_attribs.file_attr = 
-            c->create_attribute("source.file#" + attr.name(), 
+        sym_attribs.file_attr =
+            c->create_attribute("source.file#" + attr.name(),
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         sym_attribs.line_attr =
-            c->create_attribute("source.line#" + attr.name(), 
+            c->create_attribute("source.line#" + attr.name(),
                                 CALI_TYPE_UINT,   CALI_ATTR_DEFAULT);
-        sym_attribs.func_attr = 
+        sym_attribs.func_attr =
             c->create_attribute("source.function#" + attr.name(),
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
         sym_attribs.loc_attr  =
@@ -85,7 +79,7 @@ class SymbolLookup
         sym_attribs.mod_attr  =
             c->create_attribute("module#" + attr.name(),
                                 CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-            
+
         std::lock_guard<std::mutex>
             g(m_sym_attr_mutex);
 
@@ -103,132 +97,89 @@ class SymbolLookup
 
                 if (attr != Attribute::invalid)
                     vec.push_back(attr);
-                else 
+                else
                     Log(0).stream() << "Symbollookup: Address attribute \""
                                     << s << "\" not found!" << std::endl;
             }
         }
 
         if (vec.empty())
-            Log(1).stream() << "Symbollookup: No address attributes found." 
+            Log(1).stream() << "Symbollookup: No address attributes found."
                             << std::endl;
 
         for (const Attribute& a : vec)
             make_symbol_attributes(c, a);
     }
-    
-    void add_symbol_attributes(const Entry& e, 
+
+    void add_symbol_attributes(const Entry& e,
                                const SymbolAttributes& sym_attr,
                                MemoryPool& mempool,
-                               std::vector<Attribute>& attr, 
+                               std::vector<Attribute>& attr,
                                std::vector<Variant>&   data) {
-        std::vector<Statement*> statements;
-        SymtabAPI::Function* function = 0;
-        std::string          modname  = "UNKNOWN";
 
-        bool     ret_line = false;
-        bool     ret_func = false;
+        int what = 0;
 
-        uint64_t address  = e.value().to_uint();
+        if (m_lookup_functions)
+            what |= Lookup::Name;
+        if (m_lookup_file || m_lookup_sourceloc)
+            what |= Lookup::File;
+        if (m_lookup_line || m_lookup_sourceloc)
+            what |= Lookup::Line;
+        if (m_lookup_mod)
+            what |= Lookup::Module;
 
-        {
-            std::lock_guard<std::mutex>
-                g(m_lookup_mutex);
+        Lookup::Result result = m_lookup.lookup(e.value().to_uint(), what);
+        ++m_num_lookups;
 
-            if (!m_lookup)
-                return;
-
-            Symtab* symtab;
-            Offset  offset;
-
-            bool ret = m_lookup->getOffset(address, symtab, offset);
-
-            if (ret && m_lookup_sourceloc)
-                ret_line = symtab->getSourceLines(statements, offset);
-            if (ret && m_lookup_functions)
-                ret_func = symtab->getContainingFunction(offset, function);
-            if (ret && m_lookup_mod)
-                modname = symtab->name();
-            
-            ++m_num_lookups;
+        if (!result.success) {
+            ++m_num_failed;
+            return;
         }
 
         if (m_lookup_sourceloc) {
-            std::string filename = "UNKNOWN";
-            uint64_t    lineno   = 0;
+            std::string sourceloc = result.file;
+            sourceloc.append(":");
+            sourceloc.append(std::to_string(result.line));
 
-            if (ret_line && statements.size() > 0) {
-                filename = statements.front()->getFile();
-                lineno   = statements.front()->getLine();
-            }
-
-            filename.append(":");
-            filename.append(std::to_string(lineno));
-
-            char* tmp_s = static_cast<char*>(mempool.allocate(filename.size()+1));
-            std::copy(filename.begin(), filename.end(), tmp_s);
-            tmp_s[filename.size()] = '\0';
+            char* tmp_s = static_cast<char*>(mempool.allocate(sourceloc.size()+1));
+            std::copy(sourceloc.begin(), sourceloc.end(), tmp_s);
+            tmp_s[sourceloc.size()] = '\0';
 
             attr.push_back(sym_attr.loc_attr);
-            data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
+            data.push_back(Variant(tmp_s));
         }
 
         if (m_lookup_file) {
-            std::string filename = "UNKNOWN";
-
-            if (ret_line && statements.size() > 0) {
-                filename = statements.front()->getFile();
-            }
-
-            char* tmp_s = static_cast<char*>(mempool.allocate(filename.size()+1));
-            std::copy(filename.begin(), filename.end(), tmp_s);
-            tmp_s[filename.size()] = '\0';
+            char* tmp_s = static_cast<char*>(mempool.allocate(result.file.size()+1));
+            std::copy(result.file.begin(), result.file.end(), tmp_s);
+            tmp_s[result.file.size()] = '\0';
 
             attr.push_back(sym_attr.file_attr);
-            data.push_back(Variant(CALI_TYPE_STRING, tmp_s, filename.size()));
+            data.push_back(Variant(tmp_s));
         }
 
         if (m_lookup_line) {
-            uint64_t lineno = 0;
-
-            if (ret_line && statements.size() > 0) {
-                lineno = statements.front()->getLine();
-            }
-
             attr.push_back(sym_attr.line_attr);
-            data.push_back(Variant(CALI_TYPE_UINT,   &lineno, sizeof(uint64_t)));
+            data.push_back(cali_make_variant_from_uint(static_cast<uint64_t>(result.line)));
         }
 
         if (m_lookup_functions) {
-            std::string funcname = "UNKNOWN";
-
-            if (ret_func && function) {
-                auto it = function->pretty_names_begin();
-
-                if (it != function->pretty_names_end())
-                    funcname = *it;
-            }
-
-            char* tmp_f = static_cast<char*>(mempool.allocate(funcname.size()+1));
-            std::copy(funcname.begin(), funcname.end(), tmp_f);
-            tmp_f[funcname.size()] = '\0';
+            char* tmp_f = static_cast<char*>(mempool.allocate(result.name.size()+1));
+            std::copy(result.name.begin(), result.name.end(), tmp_f);
+            tmp_f[result.name.size()] = '\0';
 
             attr.push_back(sym_attr.func_attr);
-            data.push_back(Variant(CALI_TYPE_STRING, tmp_f, funcname.size()));
+            data.push_back(Variant(tmp_f));
         }
 
         if (m_lookup_mod) {
-            char* tmp_f = static_cast<char*>(mempool.allocate(modname.size()+1));
-            std::copy(modname.begin(), modname.end(), tmp_f);
-            tmp_f[modname.size()] = '\0';
+            char* tmp_f = static_cast<char*>(mempool.allocate(result.module.size()+1));
+            std::copy(result.module.begin(), result.module.end(), tmp_f);
+            tmp_f[result.module.size()] = '\0';
 
             attr.push_back(sym_attr.mod_attr);
-            data.push_back(Variant(CALI_TYPE_STRING, tmp_f, modname.size()));            
+            data.push_back(Variant(tmp_f));
         }
-
-        if ((m_lookup_functions && !ret_func) ||
-            ((m_lookup_sourceloc || m_lookup_file || m_lookup_line) && !ret_line))
-            ++m_num_failed; // not locked, doesn't matter too much if it's slightly off
     }
 
     void process_snapshot(Caliper* c, std::vector<Entry>& rec) {
@@ -256,10 +207,10 @@ class SymbolLookup
         // unpack nodes, check for address attributes, and perform symbol lookup
         for (auto it : sym_map) {
             cali_id_t sym_attr_id = it.first.id();
-            
+
             for (const Entry& e : rec)
                 if (e.is_reference()) {
-                    for (const cali::Node* node = e.node(); node; node = node->parent()) 
+                    for (const cali::Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == sym_attr_id)
                             add_symbol_attributes(Entry(node), it.second, mempool, attr, data);
                 } else if (e.attribute() == sym_attr_id) {
@@ -274,7 +225,7 @@ class SymbolLookup
         // Add entries to snapshot. Strings are copied here, temporary mempool will be free'd
 
         Node* node = nullptr;
-        
+
         for (size_t i = 0; i < attr.size(); ++i)
             if (attr[i].store_as_value())
                 rec.push_back(Entry(attr[i], data[i]));
@@ -287,33 +238,23 @@ class SymbolLookup
 
     // some final log output; print warning if we didn't find an address attribute
     void finish_log(Caliper* c, Channel* chn) {
-        Log(1).stream() << chn->name()   << ": Symbollookup: Performed " 
+        Log(1).stream() << chn->name()   << ": Symbollookup: Performed "
                         << m_num_lookups << " address lookups, "
-                        << m_num_failed  << " failed." 
+                        << m_num_failed  << " failed."
                         << std::endl;
     }
 
     void init_lookup() {
-        std::lock_guard<std::mutex> 
-            g(m_lookup_mutex);
-
-        if (!m_lookup) {
-            m_lookup = AddressLookup::createAddressLookup();
-
-            if (!m_lookup)
-                Log(0).stream() << "Symbollookup: Could not create address lookup object"
-                                << std::endl;
-
-            m_lookup->refresh();
-        }
+        m_num_lookups = 0;
+        m_num_failed  = 0;
     }
 
     SymbolLookup(Caliper* c, Channel* chn)
-        : m_lookup(0)
+        : m_num_lookups(0), m_num_failed(0)
         {
             ConfigSet config =
                 chn->config().init("symbollookup", s_configdata);
-            
+
             m_addr_attr_names  = config.get("attributes").to_stringlist(",:");
 
             m_lookup_functions = config.get("lookup_functions").to_bool();
@@ -374,7 +315,7 @@ const ConfigSet::Entry SymbolLookup::s_configdata[] = {
     },
     ConfigSet::Terminator
 };
-    
+
 } // namespace [anonymous]
 
 
