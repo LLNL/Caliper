@@ -10,7 +10,7 @@ addons:
     packages:
       - openmpi-bin
       - libopenmpi-dev
-      - libunwind-dev
+      - libunwind8-dev
       - g++-6
       - clang-4.0
 
