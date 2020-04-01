@@ -10,6 +10,7 @@ addons:
     packages:
       - openmpi-bin
       - libopenmpi-dev
+      - libunwind-dev
       - g++-6
       - clang-4.0
 
@@ -53,7 +54,7 @@ script:
   - CMAKE_OPTS="-DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=On"
   - CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_COMPILER=${CALI_CC} -DCMAKE_CXX_COMPILER=${CALI_CXX}"
   - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_MPI=${WITH_MPI}"
-  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_GOTCHA=${WITH_GOTCHA} -DWITH_SAMPLER=On -DWITH_SYMBOLLOOKUP=On"
+  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_GOTCHA=${WITH_GOTCHA} -DWITH_CALLPATH=On -DWITH_SAMPLER=On -DWITH_SYMBOLLOOKUP=On"
   - if [[ -n "${COVERAGE}" ]] ; then CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"; fi
   - cmake ${CMAKE_OPTS} ..
   - make -j4
