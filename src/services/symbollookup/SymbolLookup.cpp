@@ -131,10 +131,8 @@ class SymbolLookup
         Lookup::Result result = m_lookup.lookup(e.value().to_uint(), what);
         ++m_num_lookups;
 
-        if (!result.success) {
+        if (!result.success)
             ++m_num_failed;
-            return;
-        }
 
         if (m_lookup_sourceloc) {
             std::string sourceloc = result.file;
