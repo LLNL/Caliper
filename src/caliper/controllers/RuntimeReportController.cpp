@@ -54,7 +54,7 @@ public:
 
             if (opts.is_set("max_column_width")) {
                 formatarg = "(prop:nested,";
-                formatarg.append(opts.get("column_width").to_string());
+                formatarg.append(opts.get("max_column_width").to_string());
                 formatarg.append(")");
             }
 
