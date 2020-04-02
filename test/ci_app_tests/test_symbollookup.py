@@ -42,7 +42,7 @@ class CaliperSamplerTest(unittest.TestCase):
             'CALI_LOG_VERBOSITY' : '0'
         }
 
-        obj = json.loads( cat.run_test(target_cmd, caliper_config) )
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
         self.assertEqual(set(obj['columns']), { 'count', 'sourceloc#cali.sampler.pc', 'module#cali.sampler.pc', 'path' } )
 

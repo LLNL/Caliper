@@ -48,6 +48,7 @@ option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(WITH_ADIAK     "Enable adiak support" FALSE)
 option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
+option(WITH_SYMBOLLOOKUP "Enable symbollookup service using either Dyninst or libdl" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -313,21 +314,40 @@ find_package(PythonInterp REQUIRED)
 if (WITH_SAMPLER)
   # Sampler is currently Linux-specific: check for Linux
   if (${CMAKE_SYSTEM_NAME} MATCHES Linux)
-    set(CALIPER_HAVE_SAMPLER TRUE)
-    set(CALIPER_Sampler_CMAKE_MSG "Yes")
     # Linux PC sampler needs -lrt
-    list(APPEND CALIPER_EXTERNAL_LIBS "-lrt")
+    find_library(RT_LIBRARY
+      rt)
+    if (NOT ${RT_LIBRARY} MATCHES RT_LIBRARY-NOTFOUND)
+      set(CALIPER_HAVE_SAMPLER TRUE)
+      set(CALIPER_Sampler_CMAKE_MSG "Yes")
+      list(APPEND CALIPER_EXTERNAL_LIBS ${RT_LIBRARY})
+    endif()
   else()
     message(WARNING "Sampler is not supported on ${CMAKE_SYSTEM_NAME}")
   endif()
 endif()
 
+if (WITH_SYMBOLLOOKUP)
+  if (CALIPER_HAVE_DYNINST)
+    set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
+    set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using Dyninst")
+  else()
+    find_library(DL_LIBRARY
+      dl)
+    if (NOT ${DL_LIBRARY} MATCHES DL_LIBRARY-NOTFOUND)
+      set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
+      set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using ${DL_LIBRARY}")
+      list(APPEND CALIPER_EXTERNAL_LIBS ${DL_LIBRARY})
+    endif()
+  endif()
+endif()
+
 # PGI 17.x has issues with some constexpr constructors
-if(CMAKE_CXX_COMPILER_ID MATCHES PGI) 
+if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
   set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
 else()
   set(CALIPER_REDUCED_CONSTEXPR_USAGE FALSE)
-endif() 
+endif()
 
 # Create a config header file
 configure_file(
@@ -408,6 +428,7 @@ set(CALIPER_MODULES
   Dyninst
   Sampler
   SOSFlow
+  SymbolLookup
   MPI
   MPIWRAP
   MPIT
