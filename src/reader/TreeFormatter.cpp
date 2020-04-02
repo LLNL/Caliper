@@ -54,6 +54,10 @@ struct TreeFormatter::TreeFormatterImpl
     std::mutex               m_path_key_lock;
 
 
+    int column_width(int base) const {
+        return std::max(m_max_column_width > 0 ? std::min(base, m_max_column_width) : base, 4);
+    }
+
     void configure(const QuerySpec& spec) {
         // set path keys (first argument in spec.format.args)
         if (spec.format.args.size() > 0)
@@ -174,20 +178,24 @@ struct TreeFormatter::TreeFormatterImpl
         // print this node
         //
 
-        std::string path_str;
-        path_str.append(std::min(2*level, m_path_column_width-2), ' ');
+        {
+            int width = column_width(m_path_column_width);
 
-        if (2*level >= m_path_column_width)
-            path_str.append("..");
-        else
-            path_str.append(util::clamp_string(node->label_value().to_string(), m_path_column_width-2*level));
+            std::string path_str;
+            path_str.append(std::min(2*level, width-2), ' ');
 
-        util::pad_right(os, path_str, m_path_column_width);
+            if (2*level >= width)
+                path_str.append("..");
+            else
+                path_str.append(util::clamp_string(node->label_value().to_string(), width-2*level));
+
+            util::pad_right(os, path_str, width);
+        }
 
         for (const Attribute& a : attributes) {
             std::string str;
 
-            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+            int width = column_width(m_column_info[a].width);
 
             {
                 auto it = node->attributes().find(a);
@@ -218,11 +226,6 @@ struct TreeFormatter::TreeFormatterImpl
     }
 
     void flush(const CaliperMetadataAccessInterface& db, std::ostream& os) {
-        m_path_column_width = std::max<std::size_t>(m_path_column_width, 4 /* strlen("Path") */);
-
-        if (m_max_column_width > 0)
-            m_path_column_width = std::min(m_path_column_width, std::max(4, m_max_column_width));
-
         //
         // establish order of attribute columns
         //
@@ -263,10 +266,13 @@ struct TreeFormatter::TreeFormatterImpl
         // print header
         //
 
-        util::pad_right(os, "Path", m_path_column_width);
+        {
+            int width = column_width(m_path_column_width);
+            util::pad_right(os, util::clamp_string("Path", width), width);
+        }
 
         for (const Attribute& a : attributes) {
-            int width = std::min(m_column_info[a].width, std::max(4, m_max_column_width));
+            int width = column_width(m_column_info[a].width);
             util::pad_right(os, util::clamp_string(m_column_info[a].display_name, width), width);
         }
 
