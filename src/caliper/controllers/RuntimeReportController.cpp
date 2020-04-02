@@ -147,7 +147,7 @@ const char* runtime_report_spec =
     "  {"
     "   \"name\": \"max_column_width\","
     "   \"type\": \"int\","
-    "   \"description\": \"Maximum column with in the tree display\""
+    "   \"description\": \"Maximum column width in the tree display\""
     "  }"
     " ]"
     "}";
