@@ -1,63 +1,34 @@
 language: cpp
-sudo: false
-dist: trusty
+dist: bionic
+os: linux
 
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-4.0
     packages:
       - openmpi-bin
       - libopenmpi-dev
-      - libunwind8-dev
-      - g++-6
-      - clang-4.0
+      - libunwind-dev
 
+# The base build matrix
+compiler:
+  - gcc
+  - clang
 env:
-  matrix:
-    # Coverage test
-    - CALI_TRAVIS_TESTNAME=coverage
-      CALI_CC=gcc
-      CALI_CXX=g++
-      WITH_MPI=Off
-      WITH_GOTCHA=On
-      COVERAGE=On
-    # Test with mpi using GOTCHA.
-    - CALI_TRAVIS_TESTNAME=mpi-gotcha
-      CALI_CC=gcc
-      CALI_CXX=g++
-      WITH_MPI=On
-      WITH_GOTCHA=On
-    # Test with mpi without GOTCHA (using PMPI)
-    - CALI_TRAVIS_TESTNAME=mpi-pmpi
-      CALI_CC=gcc
-      CALI_CXX=g++
-      WITH_MPI=On
-      WITH_GOTCHA=Off
-    # Build test with clang
-    - CALI_TRAVIS_TESTNAME=clang-4
-      CALI_CC=clang-4.0
-      CALI_CXX=clang++-4.0
-      WITH_MPI=Off
-      WITH_GOTCHA=On
-    # Build test with gcc-6
-    - CALI_TRAVIS_TESTNAME=gcc-6
-      CALI_CC=gcc-6
-      CALI_CXX=g++-6
-      WITH_MPI=Off
-      WITH_GOTCHA=On
+  - WITH_MPI=On WITH_GOTCHA=On
+  - WITH_MPI=On WITH_GOTCHA=Off
 
+# Add explicit job for coverage and mpi off
+jobs:
+  include:
+    - compiler: gcc
+      env: WITH_MPI=Off WITH_GOTCHA=On COVERAGE="-DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"
+    
 script:
-  - mkdir build-${CALI_TRAVIS_TESTNAME}
-  - cd build-${CALI_TRAVIS_TESTNAME}
-  - CMAKE_OPTS="-DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=On"
-  - CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_COMPILER=${CALI_CC} -DCMAKE_CXX_COMPILER=${CALI_CXX}"
-  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_MPI=${WITH_MPI}"
-  - CMAKE_OPTS="${CMAKE_OPTS} -DWITH_GOTCHA=${WITH_GOTCHA} -DWITH_CALLPATH=On -DWITH_SAMPLER=On -DWITH_SYMBOLLOOKUP=On"
-  - if [[ -n "${COVERAGE}" ]] ; then CMAKE_OPTS="${CMAKE_OPTS} -DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"; fi
-  - cmake ${CMAKE_OPTS} ..
-  - make -j4
+  - mkdir build && cd build
+  - cmake -C ../cmake/hostconfig/travis.cmake ${COVERAGE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DWITH_MPI=${WITH_MPI} -DWITH_GOTCHA=${WITH_GOTCHA} ..
+  - make -j8
   - ctest --output-on-failure
 
 after_success:
