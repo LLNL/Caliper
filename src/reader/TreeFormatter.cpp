@@ -1,7 +1,7 @@
 // Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-// Pretty-print tree-organized snapshots 
+// Pretty-print tree-organized snapshots
 
 #include "caliper/reader/TreeFormatter.h"
 
@@ -38,13 +38,15 @@ struct TreeFormatter::TreeFormatterImpl
         std::string display_name;
         int width;
     };
-    
+
     std::map<Attribute, ColumnInfo> m_column_info;
 
     int                      m_path_column_width;
     int                      m_max_column_width;
 
     std::map<std::string, std::string> m_aliases;
+
+    bool                     m_use_nested;
 
     std::vector<std::string> m_path_key_names;
     std::vector<Attribute>   m_path_keys;
@@ -61,23 +63,34 @@ struct TreeFormatter::TreeFormatterImpl
         // set max column width
         if (spec.format.args.size() > 1) {
             bool ok = false;
-            
+
             m_max_column_width = StringConverter(spec.format.args[1]).to_int(&ok);
 
             if (!ok) {
-                Log(0).stream() << "TreeFormatter: invalid column width argument \"" 
+                Log(0).stream() << "TreeFormatter: invalid column width argument \""
                                 << spec.format.args[1] << "\""
                                 << std::endl;
-                
+
                 m_max_column_width = -1;
             }
         }
-        
+
+        {
+            auto it = std::find(m_path_key_names.begin(), m_path_key_names.end(),
+                                "prop:nested");
+
+            if (it != m_path_key_names.end()) {
+                m_use_nested = true;
+                m_path_key_names.erase(it);
+            } else if (!m_path_key_names.empty())
+                m_use_nested = false;
+        }
+
         m_path_keys.assign(m_path_key_names.size(), Attribute::invalid);
         m_attribute_columns = spec.attribute_selection;
         m_aliases = spec.aliases;
     }
-    
+
     std::vector<Attribute> get_path_keys(const CaliperMetadataAccessInterface& db) {
         std::vector<Attribute> path_keys;
 
@@ -88,7 +101,7 @@ struct TreeFormatter::TreeFormatterImpl
             path_keys = m_path_keys;
         }
 
-        for (std::vector<Attribute>::size_type i = 0; i < path_keys.size(); ++i) 
+        for (std::vector<Attribute>::size_type i = 0; i < path_keys.size(); ++i)
             if (path_keys[i] == Attribute::invalid) {
                 Attribute attr = db.get_attribute(m_path_key_names[i]);
 
@@ -97,7 +110,7 @@ struct TreeFormatter::TreeFormatterImpl
                     std::lock_guard<std::mutex>
                         g(m_path_key_lock);
                     m_path_keys[i] = attr;
-                } 
+                }
             }
 
         return path_keys;
@@ -106,19 +119,19 @@ struct TreeFormatter::TreeFormatterImpl
     void add(const CaliperMetadataAccessInterface& db, const EntryList& list) {
         const SnapshotTreeNode* node = nullptr;
 
-        if (m_path_key_names.empty()) {
+        if (m_use_nested) {
             node = m_tree.add_snapshot(db, list, [](const Attribute& attr,const Variant&){
                     return attr.is_nested();
                 });
-        } else { 
+        } else {
             auto path_keys = get_path_keys(db);
 
             node = m_tree.add_snapshot(db, list, [&path_keys](const Attribute& attr, const Variant&){
-                    return (std::find(std::begin(path_keys), std::end(path_keys), 
+                    return (std::find(std::begin(path_keys), std::end(path_keys),
                                       attr) != std::end(path_keys));
                 });
         }
-        
+
         if (!node)
             return;
 
@@ -139,7 +152,7 @@ struct TreeFormatter::TreeFormatterImpl
 
             if (it == m_column_info.end()) {
                 std::string name = p.first.name();
-                                
+
                 auto ait = m_aliases.find(name);
                 if (ait != m_aliases.end())
                     name = ait->second;
@@ -152,18 +165,18 @@ struct TreeFormatter::TreeFormatterImpl
         }
     }
 
-    void recursive_print_nodes(const SnapshotTreeNode* node, 
-                               int level, 
-                               const std::vector<Attribute>& attributes, 
+    void recursive_print_nodes(const SnapshotTreeNode* node,
+                               int level,
+                               const std::vector<Attribute>& attributes,
                                std::ostream& os)
     {
-        // 
+        //
         // print this node
         //
 
         std::string path_str;
         path_str.append(std::min(2*level, m_path_column_width-2), ' ');
-        
+
         if (2*level >= m_path_column_width)
             path_str.append("..");
         else
@@ -196,7 +209,7 @@ struct TreeFormatter::TreeFormatterImpl
 
         os << std::endl;
 
-        // 
+        //
         // recursively descend
         //
 
@@ -209,7 +222,7 @@ struct TreeFormatter::TreeFormatterImpl
 
         if (m_max_column_width > 0)
             m_path_column_width = std::min(m_path_column_width, std::max(4, m_max_column_width));
-        
+
         //
         // establish order of attribute columns
         //
@@ -272,7 +285,8 @@ struct TreeFormatter::TreeFormatterImpl
 
     TreeFormatterImpl()
         : m_path_column_width(0),
-          m_max_column_width(48)
+          m_max_column_width(48),
+          m_use_nested(true)
     { }
 };
 

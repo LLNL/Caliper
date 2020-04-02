@@ -50,6 +50,14 @@ public:
                 pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
+            std::string formatarg;
+
+            if (opts.is_set("max_column_width")) {
+                formatarg = "(prop:nested,";
+                formatarg.append(opts.get("max_column_width").to_string());
+                formatarg.append(")");
+            }
+
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
                   std::string(" min(") + tmetric + ") as \"Min time/rank\""
@@ -71,7 +79,8 @@ public:
                     + opts.query_select("cross", cross_select)
                     + " group by "
                     + opts.query_groupby("cross", "prop:nested")
-                    + " format tree";
+                    + " format tree"
+                    + formatarg;
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
@@ -80,7 +89,8 @@ public:
                     + opts.query_select("serial", serial_select)
                     + " group by "
                     + opts.query_groupby("serial", "prop:nested")
-                    + " format tree";
+                    + " format tree"
+                    + formatarg;
             }
 
             opts.update_channel_config(config());
@@ -133,6 +143,11 @@ const char* runtime_report_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
+    "  },"
+    "  {"
+    "   \"name\": \"max_column_width\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Maximum column width in the tree display\""
     "  }"
     " ]"
     "}";
