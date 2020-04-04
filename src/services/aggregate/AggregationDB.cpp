@@ -144,6 +144,119 @@ public:
     }
 };
 
+const cali::Node* get_key_node(Caliper* c, std::size_t n_ref, const cali::Node* const rec_nodes[], const std::vector<cali::Attribute>& ref_key_attrs, cali::Node* root)
+{
+    // --- count number of key entries
+    std::size_t  key_entries = 0;
+    const Node* *start_nodes = static_cast<const Node**>(alloca(n_ref * sizeof(const Node*)));
+
+    memset(start_nodes, 0, n_ref * sizeof(const Node*));
+
+    for (std::size_t i = 0; i < n_ref; ++i)
+        for (const Node* node = rec_nodes[i]; node; node = node->parent())
+            for (const Attribute& a : ref_key_attrs)
+                if (a.id() == node->attribute()) {
+                    ++key_entries;
+
+                    // Save the snapshot nodes that lead to key nodes
+                    // to short-cut the subsequent loop a bit
+                    if (!start_nodes[i])
+                        start_nodes[i] = node;
+                }
+
+    // FIXME: Strictly, we need to partition between nested/nonnested attribute nodes here
+    //   and order nonnested ones by attribute ID, as nodes of different attributes
+    //   can appear in any order in the context tree.
+
+    // --- construct path of key nodes in reverse order, make/find new entry
+
+    if (key_entries > 0) {
+        const Node* *nodelist = static_cast<const Node**>(alloca(key_entries*sizeof(const Node*)));
+        std::size_t  filled   = 0;
+
+        memset(nodelist, 0, key_entries * sizeof(const Node*));
+
+        for (std::size_t i = 0; i < n_ref; ++i)
+            for (const Node* node = start_nodes[i]; node; node = node->parent())
+                for (const Attribute& a : ref_key_attrs)
+                    if (a.id() == node->attribute())
+                        nodelist[key_entries - ++filled] = node;
+
+        return c->make_tree_entry(key_entries, nodelist, root);
+    }
+
+    return root;
+}
+
+size_t pack_key(unsigned char* key,
+                size_t n_key_nodes, const cali_id_t key_node_vec[],
+                size_t n_imm,       const cali_id_t imm_attrs[], const Variant imm_data[],
+                const std::vector<Attribute>& imm_key_attrs,
+                size_t &skipped)
+{
+    // key encoding is as follows:
+    //    - 1 u64: "toc" = 2 * num_nodes + (1 if immediate entries | 0 if no immediate entries)
+    //    - num_nodes u64: key node ids
+    //    - 1 u64: bitfield of indices into info.imm_key_attrs that mark immediate key entries
+    //    - for each immediate entry, 1 u64 entry for the value
+
+    // encode node key
+
+    unsigned char   node_key[MAX_KEYLEN];
+    size_t          node_key_len = 0;
+
+    for (size_t i = 0; i < n_key_nodes; ++i) {
+        unsigned char buf[16];
+        size_t p = vlenc_u64(key_node_vec[i], buf);
+
+        if (node_key_len + p + 1 >= MAX_KEYLEN) {
+            ++skipped;
+            break;
+        }
+
+        memcpy(node_key + node_key_len, buf, p);
+        node_key_len += p;
+    }
+
+    // encode selected immediate key entries
+
+    unsigned char   imm_key[MAX_KEYLEN];
+    size_t          imm_key_len = 0;
+    uint64_t        imm_key_bitfield = 0;
+
+    for (size_t k = 0; k < imm_key_attrs.size(); ++k)
+        for (size_t i = 0; i < n_imm; ++i)
+            if (imm_key_attrs[k].id() == imm_attrs[i]) {
+                unsigned char bbuf[16];
+                unsigned char vbuf[16];
+                size_t        p = vlenc_u64(*static_cast<const uint64_t*>(imm_data[i].data()), vbuf);
+
+                // check size and discard entry if it won't fit :(
+                if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), bbuf) + 1 >= MAX_KEYLEN) {
+                    ++skipped;
+                    break;
+                }
+
+                memcpy(imm_key + imm_key_len, vbuf, p);
+                imm_key_bitfield |= (1 << k);
+                imm_key_len      += p;
+            }
+
+    size_t pos = 0;
+
+    pos += vlenc_u64(n_key_nodes * 2 + (imm_key_bitfield ? 1 : 0), key);
+    memcpy(key+pos, node_key, node_key_len);
+    pos += node_key_len;
+
+    if (imm_key_bitfield) {
+        pos += vlenc_u64(imm_key_bitfield, key+pos);
+        memcpy(key+pos, imm_key, imm_key_len);
+        pos += imm_key_len;
+    }
+
+    return pos;
+}
+
 } // namespace [anonymous]
 
 
@@ -196,7 +309,7 @@ struct AggregationDB::AggregationDBImpl
         return entry;
     }
 
-    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
+    void write_aggregated_snapshot(const unsigned char* key, const TrieNode* entry, const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
         // --- decode key
 
         size_t    p = 0;
@@ -205,7 +318,7 @@ struct AggregationDB::AggregationDBImpl
         int       num_nodes = static_cast<int>(toc)/2;
 
         std::vector<Entry> rec;
-        rec.reserve(num_nodes + info.key_attribute_ids.size() + 5);
+        rec.reserve(num_nodes + info.imm_key_attrs.size() + 5);
 
         for (int i = 0; i < num_nodes; ++i)
             rec.push_back(Entry(c->node(vldec_u64(key + p, &p))));
@@ -215,18 +328,18 @@ struct AggregationDB::AggregationDBImpl
 
             uint64_t imm_bitfield = vldec_u64(key+p, &p);
 
-            for (size_t k = 0; k < info.key_attribute_ids.size(); ++k)
+            for (size_t k = 0; k < info.imm_key_attrs.size(); ++k)
                 if (imm_bitfield & (1 << k)) {
                     uint64_t val = vldec_u64(key+p, &p);
-                    Variant  v(info.key_attributes[k].type(), &val, sizeof(uint64_t));
+                    Variant  v(info.imm_key_attrs[k].type(), &val, sizeof(uint64_t));
 
-                    rec.push_back(Entry(info.key_attribute_ids[k], v));
+                    rec.push_back(Entry(info.imm_key_attrs[k], v));
                 }
         }
 
         // --- write aggregate entries
 
-        int num_aggr_attr = info.aggr_attributes.size();
+        int num_aggr_attr = info.aggr_attrs.size();
 
         for (int a = 0; a < num_aggr_attr; ++a) {
             AggregateKernel* k = m_kernels.get(entry->k_id+a, false);
@@ -236,10 +349,10 @@ struct AggregationDB::AggregationDBImpl
             if (k->count == 0)
                 continue;
 
-            rec.push_back(Entry(info.stats_attributes[a].min_attr.id(), Variant(k->min)));
-            rec.push_back(Entry(info.stats_attributes[a].max_attr.id(), Variant(k->max)));
-            rec.push_back(Entry(info.stats_attributes[a].sum_attr.id(), Variant(k->sum)));
-            rec.push_back(Entry(info.stats_attributes[a].avg_attr.id(), Variant(k->avg)));
+            rec.push_back(Entry(info.result_attrs[a].min_attr.id(), Variant(k->min)));
+            rec.push_back(Entry(info.result_attrs[a].max_attr.id(), Variant(k->max)));
+            rec.push_back(Entry(info.result_attrs[a].sum_attr.id(), Variant(k->sum)));
+            rec.push_back(Entry(info.result_attrs[a].avg_attr.id(), Variant(k->avg)));
 #ifdef CALIPER_ENABLE_HISTOGRAMS
             for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
                 rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
@@ -247,16 +360,14 @@ struct AggregationDB::AggregationDBImpl
 #endif
         }
 
-        uint64_t count = entry->count;
-
-        rec.push_back(Entry(info.count_attribute.id(), Variant(cali_make_variant_from_uint(count))));
+        rec.push_back(Entry(info.count_attr, Variant(cali_make_variant_from_uint(entry->count))));
 
         // --- write snapshot record
 
         proc_fn(*c, rec);
     }
 
-    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
+    size_t recursive_flush(size_t n, unsigned char* key, TrieNode* entry, const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
         if (!entry)
             return 0;
 
@@ -303,181 +414,76 @@ struct AggregationDB::AggregationDBImpl
         m_kernels.get(0, true);
     }
 
-    void process_snapshot(const AggregateAttributeInfo& info, Caliper* c, const SnapshotRecord* snapshot) {
-        SnapshotRecord::Sizes sizes = snapshot->size();
+    void process_snapshot(Caliper* c, const SnapshotRecord* rec, const AttributeInfo& info, bool implicit_grouping) {
+        auto n_ref = rec->size().n_nodes;
+        auto n_imm = rec->size().n_immediate;
 
-        if (sizes.n_nodes + sizes.n_immediate == 0)
+        if (n_ref + n_imm == 0)
             return;
 
-        SnapshotRecord::Data addr   = snapshot->data();
+        SnapshotRecord::Data data = rec->data();
 
-        //
-        // --- create / get context tree nodes for key
-        //
+        // --- extract refrence (node) key entries
 
-        cali_id_t   key_node   = CALI_INV_ID;
-        cali_id_t*  nodeid_vec = &key_node;
-        uint64_t    n_nodes    = 0;
+        cali_id_t   key_node     = CALI_INV_ID;
+        cali_id_t*  key_node_vec = &key_node;
+        size_t      n_key_nodes  = 0;
 
-        size_t      n_key_attr = 0;
-        cali_id_t*  key_attribute_ids = static_cast<cali_id_t*>(alloca(info.key_attribute_ids.size() * sizeof(cali_id_t)));
+        if (n_ref > 0) {
+            if (implicit_grouping) {
+                // --- implicit grouping: all nodes are key nodes
 
-        // create list of all valid key attribute ids
-        for (size_t i = 0; i < info.key_attribute_ids.size(); ++i)
-            if (info.key_attribute_ids[i] != CALI_INV_ID)
-                key_attribute_ids[n_key_attr++] = info.key_attribute_ids[i];
+                key_node_vec = static_cast<cali_id_t*>(alloca((n_ref+1) * sizeof(cali_id_t)));
+                n_key_nodes  = n_ref;
 
-        if (n_key_attr > 0 && sizes.n_nodes > 0) {
-            // --- find out number of key node entries
+                for (size_t i = 0; i < n_ref; ++i)
+                    key_node_vec[i] = data.node_entries[i]->id();
 
-            size_t       key_entries = 0;
-            const Node* *start_nodes = static_cast<const Node**>(alloca(sizes.n_nodes * sizeof(const Node*)));
+                // --- sort to make unique keys
+                std::sort(key_node_vec, key_node_vec + n_key_nodes);
+            } else if (!info.ref_key_attrs.empty()) {
+                const Node* node = get_key_node(c, n_ref, data.node_entries, info.ref_key_attrs, &m_aggr_root_node);
 
-            memset(start_nodes, 0, sizes.n_nodes * sizeof(const Node*));
-
-            for (size_t i = 0; i < sizes.n_nodes; ++i)
-                for (const Node* node = addr.node_entries[i]; node; node = node->parent())
-                    for (size_t a = 0; a < n_key_attr; ++a)
-                        if (key_attribute_ids[a] == node->attribute()) {
-                            ++key_entries;
-
-                            // Save the snapshot nodes that lead to key nodes
-                            // to short-cut the subsequent loop a bit
-                            if (!start_nodes[i])
-                                start_nodes[i] = node;
-                        }
-
-            // FIXME: Strictly, we need to partition between nested/nonnested attribute nodes here
-            //   and order nonnested ones by attribute ID, as nodes of different attributes
-            //   can appear in any order in the context tree.
-
-            // --- construct path of key nodes in reverse order, make/find new entry
-
-            if (key_entries > 0) {
-                const Node* *nodelist = static_cast<const Node**>(alloca(key_entries*sizeof(const Node*)));
-                size_t       filled   = 0;
-
-                memset(nodelist, 0, key_entries * sizeof(const Node*));
-
-                for (size_t i = 0; i < sizes.n_nodes; ++i)
-                    for (const Node* node = start_nodes[i]; node; node = node->parent())
-                        for (size_t a = 0; a < n_key_attr; ++a)
-                            if (key_attribute_ids[a] == node->attribute())
-                                nodelist[key_entries - ++filled] = node;
-
-                const Node* node = c->make_tree_entry(key_entries, nodelist, &m_aggr_root_node);
-
-                if (node)
-                    nodeid_vec[n_nodes++] = node->id();
-                else
-                    Log(0).stream() << "aggregate: can't create node" << std::endl;
-            }
-        } else if (info.key_attribute_ids.size() == 0) {
-            // --- no key attributes set: take nodes in snapshot
-
-            nodeid_vec = static_cast<cali_id_t*>(alloca((sizes.n_nodes+1) * sizeof(cali_id_t)));
-            n_nodes    = sizes.n_nodes;
-
-            for (size_t i = 0; i < sizes.n_nodes; ++i)
-                nodeid_vec[i] = addr.node_entries[i]->id();
-
-            // --- sort to make unique keys
-            std::sort(nodeid_vec, nodeid_vec + sizes.n_nodes);
-        }
-
-        //
-        // --- encode key
-        //
-
-        // key encoding is as follows:
-        //    - 1 u64: "toc" = 2 * num_nodes + (1 if immediate entries | 0 if no immediate entries)
-        //    - num_nodes u64: key node ids
-        //    - 1 u64: bitfield of indices in info.key_attributes that mark immediate key entries
-        //    - for each immediate entry, 1 u64 entry for the value
-
-        // encode node key
-
-        unsigned char   node_key[MAX_KEYLEN];
-        size_t          node_key_len = 0;
-
-        for (size_t i = 0; i < n_nodes; ++i) {
-            size_t p = vlenc_u64(nodeid_vec[i], node_key + node_key_len);
-
-            if (node_key_len + p + 1 >= MAX_KEYLEN) {
-                ++m_num_skipped_keys;
-                break;
-            }
-
-            node_key_len += p;
-        }
-
-        // encode selected immediate key entries
-
-        unsigned char   imm_key[MAX_KEYLEN];
-        size_t          imm_key_len = 0;
-        uint64_t        imm_key_bitfield = 0;
-
-        for (size_t k = 0; k < info.key_attribute_ids.size(); ++k)
-            for (size_t i = 0; i < sizes.n_immediate; ++i)
-                if (info.key_attribute_ids[k] == addr.immediate_attr[i]) {
-                    unsigned char buf[10];
-                    size_t        p = 0;
-
-                    p += vlenc_u64(*static_cast<const uint64_t*>(addr.immediate_data[i].data()), imm_key + imm_key_len);
-
-                    // check size and discard entry if it won't fit :(
-                    if (node_key_len + imm_key_len + p + vlenc_u64(imm_key_bitfield | (1 << k), buf) + 1 >= MAX_KEYLEN) {
+                if (node != &m_aggr_root_node) {
+                    if (node)
+                        key_node_vec[n_key_nodes++] = node->id();
+                    else
                         ++m_num_skipped_keys;
-                        break;
-                    }
-
-                    imm_key_bitfield |= (1 << k);
-                    imm_key_len      += p;
                 }
-
-        unsigned char   key[MAX_KEYLEN];
-        size_t          pos = 0;
-
-        pos += vlenc_u64(n_nodes * 2 + (imm_key_bitfield ? 1 : 0), key + pos);
-        memcpy(key+pos, node_key, node_key_len);
-        pos += node_key_len;
-
-        if (imm_key_bitfield) {
-            pos += vlenc_u64(imm_key_bitfield, key+pos);
-            memcpy(key+pos, imm_key, imm_key_len);
-            pos += imm_key_len;
+            }
         }
 
-        m_max_keylen = std::max(pos, m_max_keylen);
+        // --- encode key
 
-        //
+        unsigned char key[MAX_KEYLEN];
+        size_t len = pack_key(key, n_key_nodes, key_node_vec, n_imm, data.immediate_attr, data.immediate_data, info.imm_key_attrs, m_num_skipped_keys);
+
+        m_max_keylen = std::max(len, m_max_keylen);
+
         // --- find entry
-        //
 
-        TrieNode* entry = find_entry(pos, key, info.aggr_attributes.size(), !c->is_signal());
+        TrieNode* entry = find_entry(len, key, info.aggr_attrs.size(), !c->is_signal());
 
         if (!entry) {
             ++m_num_dropped;
             return;
         }
 
-        //
         // --- update values
-        //
 
         ++entry->count;
 
-        for (size_t a = 0; a < info.aggr_attributes.size(); ++a)
-            for (size_t i = 0; i < sizes.n_immediate; ++i)
-                if (addr.immediate_attr[i] == info.aggr_attributes[a].id()) {
+        for (size_t a = 0; a < info.aggr_attrs.size(); ++a)
+            for (size_t i = 0; i < n_imm; ++i)
+                if (data.immediate_attr[i] == info.aggr_attrs[a].id()) {
                     AggregateKernel* k = m_kernels.get(entry->k_id + a, !c->is_signal());
 
                     if (k)
-                        k->add(addr.immediate_data[i].to_double());
+                        k->add(data.immediate_data[i].to_double());
                 }
     }
 
-    size_t flush(const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
+    size_t flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn) {
         TrieNode*     entry = m_trie.get(0, false);
         unsigned char key   = 0;
 
@@ -514,9 +520,9 @@ AggregationDB::~AggregationDB()
 }
 
 void
-AggregationDB::process_snapshot(const AggregateAttributeInfo& info, Caliper* c, const SnapshotRecord* snapshot)
+AggregationDB::process_snapshot(Caliper* c, const SnapshotRecord* rec, const AttributeInfo& info, bool implicit_grouping)
 {
-    mP->process_snapshot(info, c, snapshot);
+    mP->process_snapshot(c, rec, info, implicit_grouping);
 }
 
 void
@@ -526,7 +532,7 @@ AggregationDB::clear()
 }
 
 size_t
-AggregationDB::flush(const AggregateAttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn)
+AggregationDB::flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc_fn)
 {
     return mP->flush(info, c, proc_fn);
 }
