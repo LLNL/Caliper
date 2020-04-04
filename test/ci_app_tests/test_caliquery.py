@@ -21,7 +21,7 @@ class CaliperCaliQueryTest(unittest.TestCase):
         obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
 
         self.assertEqual(obj[0]["path"], "A")
-        self.assertEqual(obj[0]["count"], 16)
+        self.assertEqual(obj[0]["count"], 19)
         self.assertTrue("sum#time.inclusive.duration" in obj[0])
 
     def test_caliquery_list_services(self):
