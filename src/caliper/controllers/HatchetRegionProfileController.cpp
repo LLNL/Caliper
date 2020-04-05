@@ -60,7 +60,7 @@ public:
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
-                config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "annotation,function,loop,mpi.rank");
+                config()["CALI_AGGREGATE_KEY"     ] = opts.query_groupby("runtime", "*,mpi.rank");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
