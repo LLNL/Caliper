@@ -76,8 +76,11 @@ class Aggregate
     ThreadDB*                      tdb_list = nullptr;
     util::spinlock                 tdb_lock;
 
-    AggregateAttributeInfo         aI;
+    AttributeInfo                  info;
     std::vector<std::string>       key_attribute_names;
+
+    bool                           implicit_grouping;
+    bool                           group_nested;
 
     Attribute                      tdb_attr;
 
@@ -115,7 +118,7 @@ class Aggregate
         if (aggr_attr_names.empty()) {
             // find all attributes of class "class.aggregatable"
 
-            aI.aggr_attributes =
+            info.aggr_attrs =
                 c->find_attributes_with(c->get_attribute("class.aggregatable"));
         } else if (aggr_attr_names.front() != "none") {
             for (const std::string& name : aggr_attr_names) {
@@ -143,39 +146,39 @@ class Aggregate
                     continue;
                 }
 
-                aI.aggr_attributes.push_back(attr);
+                info.aggr_attrs.push_back(attr);
             }
         }
 
         // Create the derived statistics attributes
 
-        aI.stats_attributes.resize(aI.aggr_attributes.size());
+        info.result_attrs.resize(info.aggr_attrs.size());
 
-        for (size_t i = 0; i < aI.aggr_attributes.size(); ++i) {
-            std::string name = aI.aggr_attributes[i].name();
+        for (size_t i = 0; i < info.aggr_attrs.size(); ++i) {
+            std::string name = info.aggr_attrs[i].name();
 
-            aI.stats_attributes[i].min_attr =
+            info.result_attrs[i].min_attr =
                 c->create_attribute(std::string("min#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            aI.stats_attributes[i].max_attr =
+            info.result_attrs[i].max_attr =
                 c->create_attribute(std::string("max#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            aI.stats_attributes[i].sum_attr =
+            info.result_attrs[i].sum_attr =
                 c->create_attribute(std::string("sum#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            aI.stats_attributes[i].avg_attr =
+            info.result_attrs[i].avg_attr =
                 c->create_attribute(std::string("avg#") + name,
                                     CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 #ifdef CALIPER_ENABLE_HISTOGRAMS
             for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
-                aI.stats_attributes[i].histogram_attr[jj] =
+                info.result_attrs[i].histogram_attr[jj] =
                    c->create_attribute(std::string("histogram.bin.") + std::to_string(jj) + std::string("#") + name,
                                        CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
             }
 #endif
         }
 
-        aI.count_attribute =
+        info.count_attr =
             c->create_attribute("count",
                                 CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     }
@@ -194,7 +197,7 @@ class Aggregate
 
         for ( ; tdb; tdb = tdb->next) {
             tdb->stopped.store(true);
-            num_written += tdb->db.flush(aI, c, proc_fn);
+            num_written += tdb->db.flush(info, c, proc_fn);
             tdb->stopped.store(false);
         }
 
@@ -279,39 +282,19 @@ class Aggregate
                             << std::endl;
     }
 
-    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* snapshot) {
+    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* rec) {
         ThreadDB* tdb = acquire_tdb(c, chn, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
-            tdb->db.process_snapshot(aI, c, snapshot);
+            tdb->db.process_snapshot(c, rec, info, implicit_grouping);
         else
             ++num_dropped_snapshots;
     }
 
-    void post_init_cb(Caliper* c, Channel* chn) {
-        // Update key attributes
-        for (unsigned i = 0; i < key_attribute_names.size(); ++i) {
-            Attribute attr = c->get_attribute(key_attribute_names[i]);
-
-            if (attr != Attribute::invalid) {
-                aI.key_attributes[i]    = attr;
-                aI.key_attribute_ids[i] = attr.id();
-            }
-        }
-
-        init_aggregation_attributes(c);
-
-        // Initialize master-thread aggregation DB
-        acquire_tdb(c, chn, true);
-    }
-
-    void create_attribute_cb(Caliper* c, const Attribute& attr) {
-        // Update key attributes
+    void check_key_attribute(const Attribute& attr) {
         auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(),
                             attr.name());
 
-        // No lock: hope that update is more-or-less atomic, and
-        // consequences of invalid values are negligible
         if (it != key_attribute_names.end()) {
             if (attr.store_as_value()) {
                 cali_attr_type type = attr.type();
@@ -327,13 +310,30 @@ class Aggregate
                                     << std::endl;
                     return;
                 }
+
+                info.imm_key_attrs.push_back(attr);
+            } else {
+                info.ref_key_attrs.push_back(attr);
             }
 
-            auto index = it - key_attribute_names.begin();
+            key_attribute_names.erase(it);
+        } else if (group_nested && attr.is_nested())
+            info.ref_key_attrs.push_back(attr);
+    }
 
-            aI.key_attributes   [index] = attr;
-            aI.key_attribute_ids[index] = attr.id();
-        }
+    void post_init_cb(Caliper* c, Channel* chn) {
+        // Update key attributes
+        for (const Attribute& a : c->get_all_attributes())
+            check_key_attribute(a);
+
+        init_aggregation_attributes(c);
+
+        // Initialize master-thread aggregation DB
+        acquire_tdb(c, chn, true);
+    }
+
+    void create_attribute_cb(Caliper*, const Attribute& attr) {
+        check_key_attribute(attr);
     }
 
     void create_thread_cb(Caliper* c, Channel* chn) {
@@ -349,27 +349,56 @@ class Aggregate
 
     void finish_cb(Caliper* c, Channel* chn) {
         // report attribute keys we haven't found
-        for (size_t i = 0; i < aI.key_attribute_ids.size(); ++i)
-            if (aI.key_attribute_ids[i] == CALI_INV_ID)
-                Log(1).stream() << chn->name() << ": Aggregate: warning: key attribute \""
-                                << key_attribute_names[i]
-                                << "\" unused" << std::endl;
+        for (const std::string& s : key_attribute_names)
+            Log(1).stream() << chn->name() << ": Aggregate: warning: key attribute \""
+                            << s
+                            << "\" unused" << std::endl;
 
         if (num_dropped_snapshots > 0)
             Log(1).stream() << chn->name() << ": Aggregate: dropped " << num_dropped_snapshots
                             << " snapshots." << std::endl;
     }
 
+    void apply_key_config() {
+        if (key_attribute_names.empty()) {
+            implicit_grouping = true;
+            return;
+        }
+
+        implicit_grouping = false;
+
+        // Check for "*" and "prop:nested" special arguments to determine
+        // nested or implicit grouping
+
+        {
+            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "*");
+
+            if (it != key_attribute_names.end()) {
+                implicit_grouping = true;
+                key_attribute_names.erase(it);
+            }
+        }
+
+        {
+            auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "prop:nested");
+
+            if (it != key_attribute_names.end()) {
+                group_nested = true;
+                key_attribute_names.erase(it);
+            }
+        }
+    }
+
     Aggregate(Caliper* c, Channel* chn)
         : config(chn->config().init("aggregate", s_configdata)),
+          implicit_grouping(true),
+          group_nested(false),
           num_dropped_snapshots(0)
         {
             tdb_lock.unlock();
 
-            key_attribute_names = config.get("key").to_stringlist(",:");
-
-            aI.key_attribute_ids.assign(key_attribute_names.size(), CALI_INV_ID);
-            aI.key_attributes.assign(key_attribute_names.size(), Attribute::invalid);
+            key_attribute_names = config.get("key").to_stringlist(",");
+            apply_key_config();
 
             tdb_attr =
                 c->create_attribute(std::string("aggregate.tdb.") + std::to_string(chn->id()),
