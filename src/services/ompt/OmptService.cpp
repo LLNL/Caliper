@@ -1,4 +1,4 @@
-// Copyright (c) 2020, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2020, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/Caliper.h"
@@ -13,7 +13,7 @@
 
 using namespace cali;
 
-namespace 
+namespace
 {
 
 struct OmptAPI {
@@ -57,7 +57,9 @@ Attribute    thread_type_attr   { Attribute::invalid };
 Attribute    state_attr         { Attribute::invalid };
 Attribute    proc_id_attr       { Attribute::invalid };
 
-// 
+unsigned int num_skipped        { 0 };
+
+//
 // --- The OMPT callbacks
 //
 
@@ -65,8 +67,13 @@ void cb_thread_begin(ompt_thread_t type, ompt_data_t*)
 {
     Caliper c;
 
+    if (!c) {
+        ++num_skipped;
+        return;
+    }
+
     switch (type) {
-    case ompt_thread_initial:  
+    case ompt_thread_initial:
         c.begin(thread_type_attr, Variant("initial"));
         break;
     case ompt_thread_worker:
@@ -82,7 +89,12 @@ void cb_thread_begin(ompt_thread_t type, ompt_data_t*)
 
 void cb_thread_end(ompt_data_t*)
 {
-    Caliper c = Caliper::sigsafe_instance();
+    Caliper c;
+
+    if (!c){
+        ++num_skipped;
+        return;
+    }
 
     if (c && !c.get(thread_type_attr).is_empty())
         c.end(thread_type_attr);
@@ -91,12 +103,24 @@ void cb_thread_end(ompt_data_t*)
 void cb_parallel_begin(ompt_data_t*, ompt_frame_t*, ompt_data_t*, unsigned, int, const void*)
 {
     Caliper c;
+
+    if (!c){
+        ++num_skipped;
+        return;
+    }
+
     c.begin(region_attr, Variant("parallel"));
 }
 
 void cb_parallel_end(ompt_data_t*, ompt_data_t*, int, const void*)
 {
     Caliper c;
+
+    if (!c){
+        ++num_skipped;
+        return;
+    }
+
     c.end(region_attr);
 }
 
@@ -117,6 +141,11 @@ void cb_work(int wstype, ompt_scope_endpoint_t endpoint, ompt_data_t*, ompt_data
     const char* name = (std::max(wstype, 0) > ompt_work_taskloop ? "UNKNOWN" : work_info[wstype].name);
 
     Caliper c;
+
+    if (!c){
+        ++num_skipped;
+        return;
+    }
 
     if (endpoint == ompt_scope_begin) {
         c.begin(work_attr, name);
@@ -149,6 +178,11 @@ void cb_sync_region(int kind, ompt_scope_endpoint_t endpoint, ompt_data_t*, ompt
 
     Caliper c;
 
+    if (!c){
+        ++num_skipped;
+        return;
+    }
+
     if (endpoint == ompt_scope_begin)
         c.begin(sync_attr, Variant(name));
     else if (endpoint == ompt_scope_end)
@@ -178,7 +212,7 @@ void setup_ompt_callbacks()
         (*(api.set_callback))(info.cb, info.fn);
 }
 
-int initialize_ompt(ompt_function_lookup_t lookup, int initial_device_num, ompt_data_t* tool_data) 
+int initialize_ompt(ompt_function_lookup_t lookup, int initial_device_num, ompt_data_t* tool_data)
 {
     if (!api.init(lookup)) {
         Log(0).stream() << "Cannot initialize OMPT API" << std::endl;
@@ -192,9 +226,10 @@ int initialize_ompt(ompt_function_lookup_t lookup, int initial_device_num, ompt_
     return 42;
 }
 
-void finalize_ompt(ompt_data_t* tool_data) 
+void finalize_ompt(ompt_data_t* tool_data)
 {
-
+    if (num_skipped > 0)
+        std::cerr << "OMPT: " << num_skipped << " callbacks skipped" << std::endl;
 }
 
 ompt_start_tool_result_t start_tool_result { initialize_ompt, finalize_ompt, { 0 } };
@@ -229,17 +264,17 @@ void create_attributes(Caliper* c)
         { &work_attr, "omp.work" },
     };
 
-    for (attribute_info_t& info : attr_info) 
-        *(info.attr) = 
-            c->create_attribute(info.name, CALI_TYPE_STRING, 
-                                CALI_ATTR_SCOPE_THREAD, 
+    for (attribute_info_t& info : attr_info)
+        *(info.attr) =
+            c->create_attribute(info.name, CALI_TYPE_STRING,
+                                CALI_ATTR_SCOPE_THREAD,
                                 1, &subscription_attr, &v_true);
 
     state_attr =
-        c->create_attribute("omp.state",       CALI_TYPE_STRING, 
+        c->create_attribute("omp.state",       CALI_TYPE_STRING,
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     proc_id_attr =
-        c->create_attribute("omp.proc.id",     CALI_TYPE_INT, 
+        c->create_attribute("omp.proc.id",     CALI_TYPE_INT,
                             CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 }
 
