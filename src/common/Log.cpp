@@ -22,21 +22,21 @@ struct LogImpl
     static const char*            s_prefix;
     static const ConfigSet::Entry s_configdata[];
 
+    static LogImpl*               s_instance;
+
     enum class Stream { StdOut, StdErr, None, File };
 
     ConfigSet     m_config;
 
     Stream        m_stream;
     std::ofstream m_ofstream;
-    unsigned      m_verbosity;
+    int           m_verbosity;
 
     std::string   m_prefix;
 
     // --- helpers
 
-    void init_stream() {
-        string name = m_config.get("logfile").to_string();
-
+    void init_stream(const std::string& name) {
         const map<string, Stream> strmap {
             { "none",   Stream::None   },
             { "stdout", Stream::StdOut },
@@ -58,11 +58,13 @@ struct LogImpl
     // --- interface
 
     LogImpl()
-        : m_config { RuntimeConfig::get_default_config().init("log", s_configdata) },
-          m_prefix { s_prefix }
+        : m_prefix { s_prefix }
     {
-        m_verbosity = m_config.get("verbosity").to_uint();
-        init_stream();
+        ConfigSet config =
+            RuntimeConfig::get_default_config().init("log", s_configdata);
+
+        m_verbosity = config.get("verbosity").to_int();
+        init_stream(config.get("logfile").to_string());
     }
 
     ostream& get_stream() {
@@ -74,15 +76,6 @@ struct LogImpl
         default:
             return m_ofstream;
         }
-    }
-
-    static LogImpl* instance() {
-        static std::unique_ptr<LogImpl> instance;
-
-        if (!instance)
-            instance.reset(new LogImpl);
-
-        return instance.get();
     }
 };
 
@@ -107,6 +100,8 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
     ConfigSet::Terminator
 };
 
+LogImpl* LogImpl::s_instance = nullptr;
+
 
 //
 // --- Log public interface
@@ -115,8 +110,7 @@ const ConfigSet::Entry LogImpl::s_configdata[] = {
 ostream&
 Log::get_stream()
 {
-    LogImpl* instance = LogImpl::instance();
-    return (instance->get_stream() << instance->m_prefix);
+    return LogImpl::s_instance->get_stream() << LogImpl::s_instance->m_prefix;
 }
 
 ostream&
@@ -133,20 +127,36 @@ Log::perror(int errnum, const char* msg)
 #endif
 }
 
-unsigned
+int
 Log::verbosity()
 {
-    return LogImpl::instance()->m_verbosity;
+    if (LogImpl::s_instance == nullptr)
+        return -1;
+
+    return LogImpl::s_instance->m_verbosity;
 }
 
 void
-Log::set_verbosity(unsigned v)
+Log::set_verbosity(int v)
 {
-    LogImpl::instance()->m_verbosity = v;
+    LogImpl::s_instance->m_verbosity = v;
 }
 
 void
 Log::add_prefix(const std::string& prefix)
 {
-    LogImpl::instance()->m_prefix += prefix;
+    LogImpl::s_instance->m_prefix += prefix;
+}
+
+void
+Log::init()
+{
+    LogImpl::s_instance = new LogImpl;
+}
+
+void
+Log::fini()
+{
+    delete LogImpl::s_instance;
+    LogImpl::s_instance = nullptr;
 }

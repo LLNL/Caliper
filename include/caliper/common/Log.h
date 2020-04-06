@@ -17,15 +17,18 @@ namespace cali
 class Log
 {
     std::ofstream m_nullstream;
-    unsigned      m_level;
+    int           m_level;
 
     std::ostream& get_stream();
 
 public:
 
-    static unsigned verbosity();
-    static void set_verbosity(unsigned v);
+    static int  verbosity();
+    static void set_verbosity(int v);
     static void add_prefix(const std::string& prefix);
+
+    static void init();
+    static void fini();
 
     inline std::ostream& stream() {
         if (verbosity() < m_level)
@@ -53,7 +56,7 @@ public:
     /// \return The log stream's \a std::ostream object
     std::ostream& perror(int errnum, const char* msg = "");
 
-    Log(unsigned level = 1)
+    Log(int level = 1)
         : m_level { level }
         { }
 };

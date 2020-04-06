@@ -419,6 +419,7 @@ struct Caliper::GlobalData
         MetadataTree::release();
 
         Log(1).stream() << "Finished" << std::endl;
+        Log::fini();
     }
 
     void parse_attribute_config(const ConfigSet& config) {
@@ -1791,6 +1792,8 @@ Caliper::instance()
 
         std::lock_guard<std::mutex>
             g(GlobalData::s_init_mutex);
+
+        Log::init();
 
         GlobalData::gObj.g_ptr = nullptr;
         GlobalData::tObj.t_ptr = nullptr;
