@@ -92,7 +92,7 @@ Caliper library in a program. The program example.cpp_ was run:
 
 .. code-block:: sh
 
-    $ CALI_SERVICES_ENABLE=event:recorder:timestamp:trace example
+    $ CALI_SERVICES_ENABLE=event,recorder,timestamp,trace example
     == CALIPER: Registered event trigger service
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
@@ -127,6 +127,9 @@ Basic Use
 
 Note that ``-o`` is being used to control the output in all examples.
 
+Without selection, aggregation, or formatting options, ``cali-query`` 
+merges the input files and writes out an output stream in its native .cali
+format. 
 The first six lines of records after processing look like this:
 
 .. code-block:: none
@@ -138,8 +141,6 @@ The first six lines of records after processing look like this:
     __rec=node,id=12,attr=8,data=cali.caliper.version,parent=11
     __rec=node,id=13,attr=10,data=148,parent=0
 
-Without using ``-e`` or ``--expand``, ``cali-query`` does not change the format
-of the records.
 
 CalQL expressions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -462,131 +463,6 @@ The report is the same as above with the following added at the end::
     event.end#factorial             2           1           13          13          6.5         
     event.set#factorial             1           1           12          12          12          
     factorial                       22          2           74          37          3.36364
-
-
-Cali-graph
---------------------------------
-
-Calling the ``cali-graph`` function on a ``.cali`` files will export
-the general context tree in a graphviz (``.dot``) format. Use the 
-``-o`` or ``--output`` option to specify a ``.dot`` output file.
-
-Usage
-````````````````````````````````
-``cali-graph [OPTIONS]... [FILES]...``
-
-Options
-````````````````````````````````
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-n`` | ``--max-nodes=NUMBER_OF_NODES``   | This option limits the number of nodes exported into the graph to   |
-|        |                                   | the first NUMBER_OF_NODES. Nodes are the individual attribute values|
-|        |                                   | numbered as encountered in the course of the program. An attribute  |
-|        |                                   | with the same name and same value but different parent node is      |
-|        |                                   | considered a unique node.                                           |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-|        | ``--skip-attribute-prefixes``     | If called, the graph does not print the name of the attribute for   |
-|        |                                   | each node, only the value of the attribute.                         |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-o`` | ``--output=FILE``                 | Set the name of the output file.                                    |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-| ``-h`` | ``--help``                        | Print the help message, a summary of these options.                 |
-+--------+-----------------------------------+---------------------------------------------------------------------+
-
-Files
-````````````````````````````````
-The files used by ``cali-graph`` are ``.cali`` record files produced from running Caliper
-in a program. Multiple ``.cali`` files can be read at once.
-
-Examples
-````````````````````````````````
-
-Basic Use
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. code-block:: sh
-
-    $ cali-graph -o cali-graph.output 160809-094411_72298_fuu1NeAHT2US.cali 
-    == CALIPER: Initialized
-
-This is a sample from a text only output:: 
-
-    1 -- 15;
-    16 [label="cali.attribute.name:cali.lvl.22"];
-    15 -- 16;
-    17 [label="cali.attribute.name:cali.lvl.38"];
-    15 -- 17;
-    18 [label="cali.attribute.prop:84"];
-    2 -- 18;
-    19 [label="cali.attribute.name:cali.snapshot.event.attr.level"];
-    18 -- 19;
-    20 [label="cali.attribute.name:cali.snapshot.event.begin"];
-    18 -- 20;
-    21 [label="cali.attribute.name:cali.snapshot.event.end"];
-
-
-``-n`` and ``--max-nodes``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``-n`` and ``--max-nodes`` limit the number of nodes graphed to the first
-``NUMBER_OF_NODES``, an ``int``.
-
-.. code-block:: sh
-
-    $ cali-graph -n 16 -o cali-graph-max-nodes.output 160809-094411_72298_fuu1NeAHT2US.cali 
-    == CALIPER: Initialized
-
-This is the entire file as printed::
-
-    graph {
-      0 [label=":usr"];
-      1 [label=":int"];
-      2 [label=":uint"];
-      3 [label=":string"];
-      4 [label=":addr"];
-      5 [label=":double"];
-      6 [label=":bool"];
-      7 [label=":type"];
-      8 [label=":cali.attribute.name"];
-      3 -- 8;
-      9 [label="cali.attribute.name:cali.attribute.type"];
-      7 -- 9;
-      10 [label="cali.attribute.name:cali.attribute.prop"];
-      1 -- 10;
-      11 [label="cali.attribute.prop:12"];
-      3 -- 11;
-      12 [label="cali.attribute.name:cali.caliper.version"];
-      11 -- 12;
-      13 [label="cali.attribute.prop:148"];
-      0 -- 13;
-      14 [label="cali.attribute.name:cali.key.attribute"];
-      13 -- 14;
-      15 [label="cali.attribute.prop:213"];
-      1 -- 15;
-    }
-
-
-``--skip-attribute-prefixes``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-``--skip-attribute-prefixes`` shortens the names of each node.
-
-.. code-block:: sh
-
-    $ cali-graph --skip-attribute-prefixes -o cali-graph-skip.output 160809-094411_72298_fuu1NeAHT2US.cali 
-    == CALIPER: Initialized
-
-The prefix of the node name is suppressed::
-
-    1 -- 15;
-    16 [label="name:cali.lvl.22"];
-    15 -- 16;
-    17 [label="name:cali.lvl.38"];
-    15 -- 17;
-    18 [label="prop:84"];
-    2 -- 18;
-    19 [label="name:cali.snapshot.event.attr.level"];
-    18 -- 19;
-    20 [label="name:cali.snapshot.event.begin"];
-    18 -- 20;
-    21 [label="name:cali.snapshot.event.end"];
-
 
 Example Files
 --------------------------------
