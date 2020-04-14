@@ -100,7 +100,7 @@ struct TrieNode {
 
 template<typename T, size_t MAX_BLOCKS = 2048, size_t ENTRIES_PER_BLOCK = 1024>
 class BlockAlloc {
-    T*     m_blocks[MAX_BLOCKS] = { 0 };
+    T*     m_blocks[MAX_BLOCKS] = { nullptr };
     size_t m_num_blocks;
 
 public:
@@ -108,15 +108,15 @@ public:
     T* get(size_t id, bool alloc) {
         size_t block = id / ENTRIES_PER_BLOCK;
 
-        if (block > MAX_BLOCKS)
-            return 0;
+        if (block >= MAX_BLOCKS)
+            return nullptr;
 
         if (!m_blocks[block]) {
             if (alloc) {
                 m_blocks[block] = new T[ENTRIES_PER_BLOCK];
                 ++m_num_blocks;
             } else
-                return 0;
+                return nullptr;
         }
 
         return m_blocks[block] + (id % ENTRIES_PER_BLOCK);
