@@ -147,7 +147,6 @@ get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
     SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
     SnapshotRecord rec(rec_data);
 
-    // All global attributes are process scope, so just grab the process blackboard
     blackboard.snapshot(&rec);
 
     std::vector<const Node*> nodes;
@@ -294,13 +293,15 @@ struct Caliper::ThreadData
     int            channel_bb_id;
 
     bool           is_initial_thread;
+    bool           stack_error;
 
     ThreadData(bool initial_thread = false)
         : process_snapshot(process_snapshot_data),
           process_bb_count(-1),
           channel_bb_count(-1),
           channel_bb_id(-1),
-          is_initial_thread(initial_thread)
+          is_initial_thread(initial_thread),
+          stack_error(false)
         { }
 
     ~ThreadData() {
@@ -313,6 +314,42 @@ struct Caliper::ThreadData
             << std::endl;
         thread_blackboard.print_statistics( os << "  Thread blackboard:\n    " )
             << std::endl;
+    }
+
+    cali_err
+    log_stack_error(const Node* stack, const Attribute& attr)
+    {
+        stack_error = true;
+        std::string stackstr;
+        std::string helpstr;
+
+        if (stack) {
+            stackstr =
+                "\n  but current region is\n    \"";
+
+            const Node* attr_node = tree.node(stack->attribute());
+
+            if (attr_node)
+                stackstr.append(attr_node->data().to_string());
+
+            stackstr.append("=");
+            stackstr.append(stack->data().to_string());
+            stackstr.append("\".");
+
+            helpstr =
+                "\n  Run program with CALI_SERVICES_ENABLE=validator to examine nesting errors, or"
+                "\n  run with CALI_CALIPER_ALLOW_REGION_OVERLAP=true to continue at your own risk.";
+        } else
+            stackstr =
+                "\n  but region stack is empty!";
+
+        Log(0).stream() << "Region stack mismatch: Trying to end\n    \"" << attr.name_c_str() << "\""
+                        << stackstr
+                        << "\n  Ceasing region tracking!"
+                        << helpstr
+                        << std::endl;
+
+        return CALI_ESTACK;
     }
 };
 
@@ -360,11 +397,13 @@ struct Caliper::GlobalData
     // --- data
 
     bool                               automerge;
+    bool                               allow_region_overlap;
 
     mutable std::mutex                 attribute_lock;
     map<string, Node*>                 attribute_nodes;
 
     Attribute                          key_attr;
+    Attribute                          globals_key_attr;
 
     map<string, int>                   attribute_prop_presets;
     int                                attribute_default_scope;
@@ -380,6 +419,7 @@ struct Caliper::GlobalData
 
     GlobalData(ThreadData* sT)
         : key_attr { Attribute::invalid },
+          globals_key_attr { Attribute::invalid },
           attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {
         // put the attribute [name,type,prop] attributes in the map
@@ -446,6 +486,7 @@ struct Caliper::GlobalData
             log_invalid_cfg_value("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", scope_str.c_str());
 
         automerge = config.get("automerge").to_bool();
+        allow_region_overlap = config.get("allow_region_overlap").to_bool();
     }
 
     void init() {
@@ -462,6 +503,8 @@ struct Caliper::GlobalData
 
         key_attr =
             c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
+        globals_key_attr =
+            c.create_attribute("cali.globals.key.attribute", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
 
         init_attribute_classes(&c);
         init_api_attributes(&c);
@@ -481,6 +524,8 @@ struct Caliper::GlobalData
 
         if (!automerge || (prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
             return attr;
+        if (prop & CALI_ATTR_GLOBAL)
+            return globals_key_attr;
 
         return key_attr;
     }
@@ -592,6 +637,10 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
       "Automatically merge attributes into a common context tree.\n"
       "Decreases the size of context records, but may increase\n"
       "the amount of metadata and reduce performance."
+    },
+    { "allow_region_overlap", CALI_TYPE_BOOL, "false",
+      "Allow overlapping regions for all attributes",
+      "Allow overlapping begin/end regions for all attributes."
     },
 
     ConfigSet::Terminator
@@ -1063,6 +1112,8 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     if (attr == Attribute::invalid)
         return CALI_EINV;
+    if (sT->stack_error)
+        return CALI_ESTACK;
 
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
@@ -1115,10 +1166,13 @@ Caliper::end(const Attribute& attr)
 {
     cali_err ret = CALI_SUCCESS;
 
+    if (sT->stack_error)
+        return CALI_ESTACK;
+
     Entry e = get(attr);
 
     if (e.is_empty())
-        return CALI_ESTACK;
+        return sT->log_stack_error(nullptr, attr);
 
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
@@ -1147,6 +1201,9 @@ Caliper::end(const Attribute& attr)
         Node*    node = bb->get_node(key);
 
         if (node) {
+            if (node->attribute() != attr.id() && !sG->allow_region_overlap)
+                return sT->log_stack_error(node, attr);
+
             node = sT->tree.remove_first_in_path(node, attr);
 
             if (node == sT->tree.root())
