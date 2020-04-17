@@ -518,6 +518,12 @@ struct Caliper::GlobalData
         Log(1).stream() << "Initialized" << std::endl;
     }
 
+    // Get the attribute key, which determines the blackboard slot for each
+    // attribute. By default, we merge most attributes into two slots:
+    // region_key for region-type (begin/end) attributes, unaligned_key for
+    // set-type attributes. We skip stack nesting checks for unaligned
+    // attributes. Immediate (as_value) and nomerge attributes get
+    // their own slots.
     inline const Attribute&
     get_key(const Attribute& attr) const {
         int prop = attr.properties();
