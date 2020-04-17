@@ -508,7 +508,7 @@ cali_set_double_byname(const char* attr_name, double val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_DEFAULT);
+        c.create_attribute(attr_name, CALI_TYPE_DOUBLE, CALI_ATTR_UNALIGNED);
 
     c.set(attr, Variant(val));
 }
@@ -518,7 +518,7 @@ cali_set_int_byname(const char* attr_name, int val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(attr_name, CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+        c.create_attribute(attr_name, CALI_TYPE_INT, CALI_ATTR_UNALIGNED);
 
     c.set(attr, Variant(val));
 }
@@ -528,7 +528,7 @@ cali_set_string_byname(const char* attr_name, const char* val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(attr_name, CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+        c.create_attribute(attr_name, CALI_TYPE_STRING, CALI_ATTR_UNALIGNED);
 
     c.set(attr, Variant(CALI_TYPE_STRING, val, strlen(val)));
 }
@@ -550,7 +550,7 @@ cali_set_global_double_byname(const char* name, double val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(name, CALI_TYPE_DOUBLE, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+        c.create_attribute(name, CALI_TYPE_DOUBLE, CALI_ATTR_GLOBAL | CALI_ATTR_UNALIGNED | CALI_ATTR_SKIP_EVENTS);
 
     // TODO: check for existing incompatible attribute key
 
@@ -562,7 +562,7 @@ cali_set_global_int_byname(const char* name, int val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(name, CALI_TYPE_INT, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+        c.create_attribute(name, CALI_TYPE_INT, CALI_ATTR_GLOBAL | CALI_ATTR_UNALIGNED | CALI_ATTR_SKIP_EVENTS);
 
     // TODO: check for existing incompatible attribute key
 
@@ -574,7 +574,7 @@ cali_set_global_string_byname(const char* name, const char* val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+        c.create_attribute(name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL | CALI_ATTR_UNALIGNED | CALI_ATTR_SKIP_EVENTS);
 
     // TODO: check for existing incompatible attribute key
 
@@ -586,7 +586,7 @@ cali_set_global_uint_byname(const char* name, uint64_t val)
 {
     Caliper   c;
     Attribute attr =
-        c.create_attribute(name, CALI_TYPE_UINT, CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS);
+        c.create_attribute(name, CALI_TYPE_UINT, CALI_ATTR_GLOBAL | CALI_ATTR_UNALIGNED | CALI_ATTR_SKIP_EVENTS);
 
     // TODO: check for existing incompatible attribute key
 

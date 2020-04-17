@@ -402,8 +402,8 @@ struct Caliper::GlobalData
     mutable std::mutex                 attribute_lock;
     map<string, Node*>                 attribute_nodes;
 
-    Attribute                          key_attr;
-    Attribute                          globals_key_attr;
+    Attribute                          region_key_attr;
+    Attribute                          unaligned_key_attr;
 
     map<string, int>                   attribute_prop_presets;
     int                                attribute_default_scope;
@@ -418,8 +418,8 @@ struct Caliper::GlobalData
     // --- constructor
 
     GlobalData(ThreadData* sT)
-        : key_attr { Attribute::invalid },
-          globals_key_attr { Attribute::invalid },
+        : region_key_attr    { Attribute::invalid },
+          unaligned_key_attr { Attribute::invalid },
           attribute_default_scope { CALI_ATTR_SCOPE_THREAD }
     {
         // put the attribute [name,type,prop] attributes in the map
@@ -501,10 +501,10 @@ struct Caliper::GlobalData
 
         Caliper c(this, tObj.t_ptr, false);
 
-        key_attr =
-            c.create_attribute("cali.key.attribute", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
-        globals_key_attr =
-            c.create_attribute("cali.globals.key.attribute", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
+        region_key_attr =
+            c.create_attribute("cali.region.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
+        unaligned_key_attr =
+            c.create_attribute("cali.unaligned.key", CALI_TYPE_USR, CALI_ATTR_SKIP_EVENTS);
 
         init_attribute_classes(&c);
         init_api_attributes(&c);
@@ -522,12 +522,12 @@ struct Caliper::GlobalData
     get_key(const Attribute& attr) const {
         int prop = attr.properties();
 
-        if (!automerge || (prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE))
+        if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE) || !automerge)
             return attr;
-        if (prop & CALI_ATTR_GLOBAL)
-            return globals_key_attr;
+        if (prop & CALI_ATTR_UNALIGNED)
+            return unaligned_key_attr;
 
-        return key_attr;
+        return region_key_attr;
     }
 
     ThreadData* add_thread_data(ThreadData* t) {
@@ -722,10 +722,11 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         if (propit != sG->attribute_prop_presets.end())
             prop = propit->second;
 
-        // Set scope to PROCESS for all global attributes
+        // Set scope to PROCESS for all global attributes and mark them as unaligned
         if (prop & CALI_ATTR_GLOBAL) {
             prop &= ~CALI_ATTR_SCOPE_MASK;
             prop |= CALI_ATTR_SCOPE_PROCESS;
+            prop |= CALI_ATTR_UNALIGNED;
         }
         // Set scope to default scope if none is set
         if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
@@ -1201,7 +1202,7 @@ Caliper::end(const Attribute& attr)
         Node*    node = bb->get_node(key);
 
         if (node) {
-            if (node->attribute() != attr.id() && !sG->allow_region_overlap)
+            if (node->attribute() != attr.id() && key != sG->unaligned_key_attr && !sG->allow_region_overlap)
                 return sT->log_stack_error(node, attr);
 
             node = sT->tree.remove_first_in_path(node, attr);
@@ -1347,7 +1348,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     Entry e = get(channel, attr);
 
     if (e.is_empty())
-        return CALI_ESTACK;
+        return sT->log_stack_error(nullptr, attr);
 
     int prop = attr.properties();
     Blackboard* bb = &channel->mP->channel_blackboard;
@@ -1366,6 +1367,9 @@ Caliper::end(Channel* channel, const Attribute& attr)
         Node*    node = bb->get_node(key);
 
         if (node) {
+            if (node->attribute() != attr.id() && key != sG->unaligned_key_attr && !sG->allow_region_overlap)
+                return sT->log_stack_error(node, attr);
+
             node = sT->tree.remove_first_in_path(node, attr);
 
             if (node == sT->tree.root())

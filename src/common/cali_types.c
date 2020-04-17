@@ -57,6 +57,7 @@ static const struct propmap_t {
   { "hidden",        CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN      },
   { "nested",        CALI_ATTR_NESTED,        CALI_ATTR_NESTED      },
   { "global",        CALI_ATTR_GLOBAL,        CALI_ATTR_GLOBAL      },
+  { "unaligned",     CALI_ATTR_UNALIGNED,     CALI_ATTR_UNALIGNED   },
   { 0, CALI_ATTR_DEFAULT, CALI_ATTR_DEFAULT }
 };
 

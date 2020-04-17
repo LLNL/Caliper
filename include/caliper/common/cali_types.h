@@ -2,8 +2,8 @@
  * See top-level LICENSE file for details.
  */
 
-/** 
- * \file  cali_types.h 
+/**
+ * \file  cali_types.h
  * \brief Context annotation library typedefs
  */
 
@@ -40,12 +40,12 @@ typedef enum {
 #define CALI_MAXTYPE CALI_TYPE_PTR
 
 /**
- * \brief 
+ * \brief
  */
-const char* 
+const char*
 cali_type2string(cali_attr_type type);
 
-cali_attr_type 
+cali_attr_type
 cali_string2type(const char* str);
 
 /**
@@ -59,21 +59,26 @@ typedef enum {
   /** \brief Default value */
   CALI_ATTR_DEFAULT       =     0,
 
-  /** 
+  /**
    * \brief Store directly as key:value pair, not in the context tree.
    *
-   * Attributes with this property will be not be put into the context
+   * Entries with this property will be not be put into the context
    * tree, but stored directly as key:value pairs on the blackboard
    * and in snapshot records. ASVALUE attributes cannot be
    * nested. Only applicable to scalar data types.
    */
   CALI_ATTR_ASVALUE       =     1,
-  /** \brief Create a separate context tree root node for this attribute. */
+
+  /** \brief Create a separate context tree root node for this attribute.
+   *
+   * Useful for attributes that form overlapping hierarchies separate from
+   * the main region stack.
+   */
   CALI_ATTR_NOMERGE       =     2,
   /** \brief Process-scope attribute. Shared between all threads. */
   CALI_ATTR_SCOPE_PROCESS =    12, /* scope flags are mutually exclusive */
   /** \brief Thread-scope attribute. */
-  CALI_ATTR_SCOPE_THREAD  =    20, 
+  CALI_ATTR_SCOPE_THREAD  =    20,
   /** \brief Task-scope attribute. Currently unused. */
   CALI_ATTR_SCOPE_TASK    =    24,
 
@@ -84,7 +89,7 @@ typedef enum {
   CALI_ATTR_HIDDEN        =   128,
 
   /** \brief Begin/end calls are properly aligned with the call stack.
-   * 
+   *
    * Indicates that \a begin/end calls for this attribute are
    * correctly nested with the call stack and other NESTED attributes.
    * That is, an active region of a NESTED attribute does not
@@ -92,17 +97,25 @@ typedef enum {
    * regions.
    */
   CALI_ATTR_NESTED        =   256,
-  
+
   /** \brief A metadata attribute describing global information
    *    for a measurement run
    *
    * Global attributes represent metadata associated with an application
-   * run (e.g., application executable name and version, start date and 
+   * run (e.g., application executable name and version, start date and
    * time, and so on). They may be written in a separate metadata section
-   * in some output formats. For distributed programs (e.g. MPI), 
+   * in some output formats. For distributed programs (e.g. MPI),
    * global attributes should have the same value on each process.
    */
-  CALI_ATTR_GLOBAL        =   512
+  CALI_ATTR_GLOBAL        =   512,
+
+  /** \brief This attribute is not aligned with stacked begin/end regions.
+   *
+   * Entries with this property may still be merged into a single context
+   * tree branch, but one that is separate from the properly nested
+   * region branch. Stack nesting checks are skipped.
+   */
+  CALI_ATTR_UNALIGNED     =  1024
 } cali_attr_properties;
 
 #define CALI_ATTR_SCOPE_MASK 60
@@ -113,13 +126,13 @@ typedef enum {
  * \param  buf  Buffer to write string to
  * \param  len  Length of string buffer
  * \return      -1 if provided buffer is too short; length of written string otherwise
- */  
+ */
 int
 cali_prop2string(int prop, char* buf, size_t len);
 
 int
 cali_string2prop(const char*);
-  
+
 typedef enum {
   CALI_OP_SUM = 1,
   CALI_OP_MIN = 2,
