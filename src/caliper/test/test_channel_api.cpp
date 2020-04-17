@@ -85,8 +85,6 @@ TEST(ChannelAPITest, C_API) {
     EXPECT_EQ(cali_channel_is_active(chn_b_id), 0);
     EXPECT_EQ(cali_channel_is_active(chn_c_id), 0);
 
-    cali_begin_int_byname("chn.c_api.not_b", 4477);
-
     cali_id_t attr_a = cali_find_attribute("chn.c_api.all");
 
     ASSERT_NE(attr_a, CALI_INV_ID);

@@ -10,8 +10,8 @@ int main()
   cali_set_global_int_byname("global.int", 1337);
   cali_set_global_string_byname("global.string", "my global string");
   cali_set_global_uint_byname("global.uint", 42);
-                                
-  cali_id_t iter_attr = 
+
+  cali_id_t iter_attr =
     cali_create_attribute("iteration", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
   cali_begin_string_byname("phase", "loop");
@@ -20,7 +20,7 @@ int main()
     cali_begin_int(iter_attr, i);
     cali_end(iter_attr);
   }
-  
+
   cali_end_byname("phase");
 
   cali_begin_byname("ci_test_c_ann.meta-attr");
@@ -31,13 +31,13 @@ int main()
     cali_make_variant_from_int(47);
 
   cali_id_t test_attr =
-      cali_create_attribute_with_metadata("test-attr-with-metadata", CALI_TYPE_STRING, CALI_ATTR_DEFAULT,
+      cali_create_attribute_with_metadata("test-attr-with-metadata", CALI_TYPE_STRING, CALI_ATTR_NOMERGE,
                                           1, &meta_attr, &meta_val);
 
   cali_set_string(test_attr, "abracadabra");
-  
+
   cali_end_byname("ci_test_c_ann.meta-attr");
-  
+
   cali_begin_byname("ci_test_c_ann.setbyname");
 
   cali_set_int_byname("attr.int", 20);

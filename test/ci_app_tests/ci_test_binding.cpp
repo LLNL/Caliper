@@ -24,7 +24,7 @@ public:
 
     void initialize(Caliper* c, Channel*) {
         m_my_attr = 
-            c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+            c->create_attribute("testbinding",  CALI_TYPE_STRING, CALI_ATTR_NOMERGE);
         m_prop_attr =
             c->create_attribute("testproperty", CALI_TYPE_INT,    CALI_ATTR_DEFAULT);
     }
