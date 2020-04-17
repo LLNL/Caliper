@@ -7,15 +7,14 @@
 
 #include <pthread.h>
 
+cali_id_t thread_attr_id = CALI_INV_ID;
 
 void* thread_proc(void* arg)
 {
     CALI_CXX_MARK_FUNCTION;
 
     int thread_id = *(static_cast<int*>(arg));
-
-    cali::Annotation::Guard
-        g( cali::Annotation("my_thread_id", CALI_ATTR_SCOPE_THREAD).begin(thread_id) );
+    cali_set_int(thread_attr_id, thread_id);
 
     return NULL;
 }
@@ -23,6 +22,9 @@ void* thread_proc(void* arg)
 int main()
 {
     CALI_CXX_MARK_FUNCTION;
+
+    thread_attr_id =
+        cali_create_attribute("my_thread_id", CALI_TYPE_INT, CALI_ATTR_SCOPE_THREAD | CALI_ATTR_UNALIGNED);
 
     cali::Caliper c;
     cali::RuntimeConfig exp_nopthread_cfg;
