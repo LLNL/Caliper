@@ -8,12 +8,10 @@ class CaliperCAPITest(unittest.TestCase):
     """ Caliper C API test cases """
 
     def test_c_ann_trace(self):
-        target_cmd = [ './ci_test_c_ann' ]
+        target_cmd = [ './ci_test_c_ann', 'event-trace,output=stdout' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 

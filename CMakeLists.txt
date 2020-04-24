@@ -60,6 +60,10 @@ option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
 option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
 
+if (WITH_FORTRAN)
+  enable_language(Fortran)
+endif()
+
 if (BUILD_TESTING)
   enable_testing()
 endif()

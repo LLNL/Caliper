@@ -1,0 +1,43 @@
+library: Caliper
+cxx_header: caliper/cali.h
+
+namespace: cali
+
+options:
+  F_module_per_class: false
+
+format:
+  C_prefix: cali_
+
+declarations:
+  - decl: void cali_mpi_init()
+    cpp_if: ifdef CALIPER_HAVE_MPI
+    options:
+      C_extern_C: true
+  - decl: void cali_init()
+    options:
+      C_extern_C: true
+  - decl: void cali_config_preset(const char* key, const char* value)
+    options:
+      C_extern_C: true
+  - decl: void cali_config_set(const char* key, const char* value)
+    options:
+      C_extern_C: true
+
+  - decl: class ScopeAnnotation
+    declarations:
+      - decl: ScopeAnnotation(const char* name) +name(begin)
+      - decl: ~ScopeAnnotation()                +name(end)
+
+  - decl: class ConfigManager
+    cxx_header: caliper/cali-manager.h
+    declarations:
+      - decl: ConfigManager()  +name(new)
+      - decl: ~ConfigManager() +name(delete)
+      # really bool add(const char* config) but subroutine syntax is more consistent here
+      - decl: void add(const char* config)
+      - decl: bool error()
+      - decl: std::string error_msg()
+      - decl: void start()
+      - decl: void stop()
+      - decl: void flush()

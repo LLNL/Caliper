@@ -22,6 +22,8 @@ set(CALIPER_CXX_EXAMPLE_APPS
 set(CALIPER_C_EXAMPLE_APPS
   cali-basic-annotations-c
   cali-print-snapshot)
+set(CALIPER_Fortran_EXAMPLE_APPS
+  fortran-example)
 
 foreach(app ${CALIPER_CXX_EXAMPLE_APPS})
   add_executable(${app} ${app}.cpp)
@@ -33,6 +35,16 @@ foreach(app ${CALIPER_C_EXAMPLE_APPS})
   target_link_libraries(${app} caliper)
   set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
 endforeach()
+
+if (WITH_FORTRAN)
+  foreach(app ${CALIPER_Fortran_EXAMPLE_APPS})
+    add_executable(${app} ${app}.f)
+    set_source_files_properties(${app}.f PROPERTIES Fortran_FORMAT FREE)
+    set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
+    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/../../src/interface/c_fortran")
+    target_link_libraries(${app} caliper)
+  endforeach()
+endif()
 
 target_link_libraries(cali-memtracking
   caliper-tools-util)

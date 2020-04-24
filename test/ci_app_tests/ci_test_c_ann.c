@@ -1,10 +1,26 @@
 // --- Caliper continuous integration test app for C annotation interface
 
+#include "../../src/interface/c_fortran/wrapConfigManager.h"
+
 #include "caliper/cali.h"
 
-int main()
+#include <stdio.h>
+
+int main(int argc, char* argv[])
 {
-  cali_config_preset("CALI_CALIPER_FLUSH_ON_EXIT", "false");
+  cali_config_preset("CALI_CHANNEL_FLUSH_ON_EXIT", "false");
+
+  cali_ConfigManager mgr;
+  cali_ConfigManager_new(&mgr);
+
+  if (argc > 1)
+    cali_ConfigManager_add(&mgr, argv[1]);
+  if (cali_ConfigManager_error(&mgr)) {
+    fprintf(stderr, "ConfigManager error");
+    return -1;
+  }
+
+  cali_ConfigManager_start(&mgr);
 
   cali_set_global_double_byname("global.double", 42.42);
   cali_set_global_int_byname("global.int", 1337);
@@ -45,6 +61,9 @@ int main()
   cali_set_string_byname("attr.str", "fidibus");
 
   cali_end_byname("ci_test_c_ann.setbyname");
+
+  cali_ConfigManager_flush(&mgr);
+  cali_ConfigManager_delete(&mgr);
 
   cali_flush(CALI_FLUSH_CLEAR_BUFFERS);
 
