@@ -62,6 +62,7 @@ option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TR
 
 if (WITH_FORTRAN)
   enable_language(Fortran)
+  set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/fortran")
 endif()
 
 if (BUILD_TESTING)
@@ -369,6 +370,13 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 
 install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
+
+if (WITH_FORTRAN)
+  install(
+    DIRECTORY   ${CMAKE_Fortran_MODULE_DIRECTORY}/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fortran
+    FILES_MATCHING PATTERN "*.mod")
+endif()
 
 # Create pkg-config .pc file
 set(PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
