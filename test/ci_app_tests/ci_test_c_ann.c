@@ -16,7 +16,11 @@ int main(int argc, char* argv[])
   if (argc > 1)
     cali_ConfigManager_add(&mgr, argv[1]);
   if (cali_ConfigManager_error(&mgr)) {
-    fprintf(stderr, "ConfigManager error");
+    cali_SHROUD_array errmsg;
+    cali_ConfigManager_error_msg_bufferify(&mgr, &errmsg);
+    fprintf(stderr, "Caliper config error: %s\n", errmsg.addr.ccharp);
+    cali_SHROUD_memory_destructor(&errmsg.cxx);
+    cali_ConfigManager_delete(&mgr);
     return -1;
   }
 

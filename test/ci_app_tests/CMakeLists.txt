@@ -22,6 +22,8 @@ set(CALIPER_CI_C_TEST_APPS
 set(CALIPER_CI_MPI_TEST_APPS
   ci_test_cali_before_mpi
   ci_test_mpi_before_cali)
+set(CALIPER_CI_Fortran_TEST_APPS
+  ci_test_f_ann)
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
@@ -65,7 +67,7 @@ if (CALIPER_HAVE_LIBUNWIND)
   list(APPEND PYTHON_SCRIPTS test_callpath.py)
 endif()
 if (CALIPER_HAVE_GOTCHA)
-  list(APPEND PYTHON_SCRIPTS 
+  list(APPEND PYTHON_SCRIPTS
     test_alloc_hooks.py
     test_ioservice.py
     test_pthread.py)
@@ -84,11 +86,10 @@ if (CALIPER_HAVE_SAMPLER)
 endif()
 
 if (CALIPER_HAVE_MPI)
-  include_directories(${MPI_CXX_INCLUDE_PATH})
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
-  
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
+    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${MPI_CXX_INCLUDE_PATH})
+    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include")
     target_link_libraries(${app} caliper ${MPI_CXX_LIBRARIES})
   endforeach()
 
@@ -98,13 +99,25 @@ if (CALIPER_HAVE_MPI)
     if (CALIPER_HAVE_TAU)
       list(APPEND PYTHON_SCRIPTS test_tau_service.py)
     endif()
-  endif()  
+  endif()
+endif()
+
+if (WITH_FORTRAN)
+  foreach(app ${CALIPER_CI_Fortran_TEST_APPS})
+    add_executable(${app} ${app}.f)
+    set_source_files_properties(${app}.f PROPERTIES Fortran_FORMAT FREE)
+    set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
+    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_Fortran_MODULE_DIRECTORY})
+    target_link_libraries(${app} caliper-serial)
+  endforeach()
+
+  list(APPEND PYTHON_SCRIPTS test_fortran_api.py)
 endif()
 
 foreach(file ${PYTHON_SCRIPTS})
   add_custom_target(${file} ALL
-    COMMAND ${CMAKE_COMMAND} -E create_symlink 
-      ${CMAKE_CURRENT_SOURCE_DIR}/${file} 
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+      ${CMAKE_CURRENT_SOURCE_DIR}/${file}
       ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
 
