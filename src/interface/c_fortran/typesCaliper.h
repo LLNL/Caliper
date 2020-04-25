@@ -33,6 +33,13 @@ struct s_cali_SHROUD_array {
 };
 typedef struct s_cali_SHROUD_array cali_SHROUD_array;
 
+// helper capsule_cali_Annotation
+struct s_cali_Annotation {
+    void *addr;     /* address of C++ memory */
+    int idtor;      /* index of destructor */
+};
+typedef struct s_cali_Annotation cali_Annotation;
+
 // helper capsule_cali_ConfigManager
 struct s_cali_ConfigManager {
     void *addr;     /* address of C++ memory */

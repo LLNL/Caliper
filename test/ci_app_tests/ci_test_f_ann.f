@@ -3,10 +3,11 @@ program fortran_example
 
     implicit none
 
+    type(Annotation)      :: g_ann
     type(ScopeAnnotation) :: f_ann, w_ann
     type(ConfigManager)   :: mgr
 
-    integer               :: i, count, argc
+    integer               :: i, count, argc, prop
 
     logical               :: ret
     character(len=:), allocatable :: errmsg
@@ -30,10 +31,13 @@ program fortran_example
     call mgr%start
 
     f_ann = ScopeAnnotation_begin('main')
-
-    ! Mark "initialization" phase
     w_ann = ScopeAnnotation_begin('work')
-    count = 4
+
+    prop  = IOR(CALI_ATTR_GLOBAL, CALI_ATTR_ASVALUE)
+    g_ann = Annotation_new_with_properties('global.int', prop)
+    call g_ann%set_int(42)
+    call Annotation_delete(g_ann)
+
     call ScopeAnnotation_end(w_ann)
 
     call ScopeAnnotation_end(f_ann)

@@ -37,6 +37,19 @@ module caliper_mod
         integer(C_INT) :: rank = -1
     end type SHROUD_array
 
+    !  enum cali::cali_attr_properties
+    integer(C_INT), parameter :: cali_attr_default = 0
+    integer(C_INT), parameter :: cali_attr_asvalue = 1
+    integer(C_INT), parameter :: cali_attr_nomerge = 2
+    integer(C_INT), parameter :: cali_attr_scope_process = 12
+    integer(C_INT), parameter :: cali_attr_scope_thread = 20
+    integer(C_INT), parameter :: cali_attr_scope_task = 24
+    integer(C_INT), parameter :: cali_attr_skip_events = 64
+    integer(C_INT), parameter :: cali_attr_hidden = 128
+    integer(C_INT), parameter :: cali_attr_nested = 256
+    integer(C_INT), parameter :: cali_attr_global = 512
+    integer(C_INT), parameter :: cali_attr_unaligned = 1024
+
     type, bind(C) :: SHROUD_scopeannotation_capsule
         type(C_PTR) :: addr = C_NULL_PTR  ! address of C++ memory
         integer(C_INT) :: idtor = 0       ! index of destructor
@@ -54,6 +67,31 @@ module caliper_mod
         ! splicer begin class.ScopeAnnotation.type_bound_procedure_part
         ! splicer end class.ScopeAnnotation.type_bound_procedure_part
     end type scopeannotation
+
+    type, bind(C) :: SHROUD_annotation_capsule
+        type(C_PTR) :: addr = C_NULL_PTR  ! address of C++ memory
+        integer(C_INT) :: idtor = 0       ! index of destructor
+    end type SHROUD_annotation_capsule
+
+    type annotation
+        type(SHROUD_annotation_capsule) :: cxxmem
+        ! splicer begin class.Annotation.component_part
+        ! splicer end class.Annotation.component_part
+    contains
+        procedure :: delete => annotation_delete
+        procedure :: begin_int => annotation_begin_int
+        procedure :: begin_string => annotation_begin_string
+        procedure :: set_int => annotation_set_int
+        procedure :: set_string => annotation_set_string
+        procedure :: end => annotation_end
+        procedure :: get_instance => annotation_get_instance
+        procedure :: set_instance => annotation_set_instance
+        procedure :: associated => annotation_associated
+        generic :: begin => begin_int, begin_string
+        generic :: set => set_int, set_string
+        ! splicer begin class.Annotation.type_bound_procedure_part
+        ! splicer end class.Annotation.type_bound_procedure_part
+    end type annotation
 
     type, bind(C) :: SHROUD_configmanager_capsule
         type(C_PTR) :: addr = C_NULL_PTR  ! address of C++ memory
@@ -81,11 +119,13 @@ module caliper_mod
 
     interface operator (.eq.)
         module procedure scopeannotation_eq
+        module procedure annotation_eq
         module procedure configmanager_eq
     end interface
 
     interface operator (.ne.)
         module procedure scopeannotation_ne
+        module procedure annotation_ne
         module procedure configmanager_ne
     end interface
 
@@ -111,6 +151,83 @@ module caliper_mod
 
         ! splicer begin class.ScopeAnnotation.additional_interfaces
         ! splicer end class.ScopeAnnotation.additional_interfaces
+
+        function c_annotation_new(key, SHT_crv) &
+                result(SHT_rv) &
+                bind(C, name="cali_Annotation_new")
+            use iso_c_binding, only : C_CHAR, C_PTR
+            import :: SHROUD_annotation_capsule
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: key(*)
+            type(SHROUD_annotation_capsule), intent(OUT) :: SHT_crv
+            type(C_PTR) SHT_rv
+        end function c_annotation_new
+
+        function c_annotation_new_with_properties(key, properties, &
+                SHT_crv) &
+                result(SHT_rv) &
+                bind(C, name="cali_Annotation_new_with_properties")
+            use iso_c_binding, only : C_CHAR, C_INT, C_PTR
+            import :: SHROUD_annotation_capsule
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: key(*)
+            integer(C_INT), value, intent(IN) :: properties
+            type(SHROUD_annotation_capsule), intent(OUT) :: SHT_crv
+            type(C_PTR) SHT_rv
+        end function c_annotation_new_with_properties
+
+        subroutine c_annotation_delete(self) &
+                bind(C, name="cali_Annotation_delete")
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+        end subroutine c_annotation_delete
+
+        subroutine c_annotation_begin_int(self, val) &
+                bind(C, name="cali_Annotation_begin_int")
+            use iso_c_binding, only : C_INT
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+            integer(C_INT), value, intent(IN) :: val
+        end subroutine c_annotation_begin_int
+
+        subroutine c_annotation_begin_string(self, val) &
+                bind(C, name="cali_Annotation_begin_string")
+            use iso_c_binding, only : C_CHAR
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: val(*)
+        end subroutine c_annotation_begin_string
+
+        subroutine c_annotation_set_int(self, val) &
+                bind(C, name="cali_Annotation_set_int")
+            use iso_c_binding, only : C_INT
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+            integer(C_INT), value, intent(IN) :: val
+        end subroutine c_annotation_set_int
+
+        subroutine c_annotation_set_string(self, val) &
+                bind(C, name="cali_Annotation_set_string")
+            use iso_c_binding, only : C_CHAR
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: val(*)
+        end subroutine c_annotation_set_string
+
+        subroutine c_annotation_end(self) &
+                bind(C, name="cali_Annotation_end")
+            import :: SHROUD_annotation_capsule
+            implicit none
+            type(SHROUD_annotation_capsule), intent(IN) :: self
+        end subroutine c_annotation_end
+
+        ! splicer begin class.Annotation.additional_interfaces
+        ! splicer end class.Annotation.additional_interfaces
 
         function c_configmanager_new(SHT_crv) &
                 result(SHT_rv) &
@@ -212,6 +329,11 @@ module caliper_mod
         ! splicer end additional_interfaces
     end interface
 
+    interface annotation_new
+        module procedure annotation_new
+        module procedure annotation_new_with_properties
+    end interface annotation_new
+
     interface
         ! helper copy_string
         ! Copy the char* or std::string in context into c_var.
@@ -271,6 +393,108 @@ contains
 
     ! splicer begin class.ScopeAnnotation.additional_functions
     ! splicer end class.ScopeAnnotation.additional_functions
+
+    function annotation_new(key) &
+            result(SHT_rv)
+        use iso_c_binding, only : C_NULL_CHAR, C_PTR
+        character(len=*), intent(IN) :: key
+        type(annotation) :: SHT_rv
+        ! splicer begin class.Annotation.method.new
+        type(C_PTR) :: SHT_prv
+        SHT_prv = c_annotation_new(trim(key)//C_NULL_CHAR, &
+            SHT_rv%cxxmem)
+        ! splicer end class.Annotation.method.new
+    end function annotation_new
+
+    function annotation_new_with_properties(key, properties) &
+            result(SHT_rv)
+        use iso_c_binding, only : C_INT, C_NULL_CHAR, C_PTR
+        character(len=*), intent(IN) :: key
+        integer(C_INT), value, intent(IN) :: properties
+        type(annotation) :: SHT_rv
+        ! splicer begin class.Annotation.method.new_with_properties
+        type(C_PTR) :: SHT_prv
+        SHT_prv = c_annotation_new_with_properties(trim(key)//C_NULL_CHAR, &
+            properties, SHT_rv%cxxmem)
+        ! splicer end class.Annotation.method.new_with_properties
+    end function annotation_new_with_properties
+
+    subroutine annotation_delete(obj)
+        class(annotation) :: obj
+        ! splicer begin class.Annotation.method.delete
+        call c_annotation_delete(obj%cxxmem)
+        ! splicer end class.Annotation.method.delete
+    end subroutine annotation_delete
+
+    subroutine annotation_begin_int(obj, val)
+        use iso_c_binding, only : C_INT
+        class(annotation) :: obj
+        integer(C_INT), value, intent(IN) :: val
+        ! splicer begin class.Annotation.method.begin_int
+        call c_annotation_begin_int(obj%cxxmem, val)
+        ! splicer end class.Annotation.method.begin_int
+    end subroutine annotation_begin_int
+
+    subroutine annotation_begin_string(obj, val)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(annotation) :: obj
+        character(len=*), intent(IN) :: val
+        ! splicer begin class.Annotation.method.begin_string
+        call c_annotation_begin_string(obj%cxxmem, &
+            trim(val)//C_NULL_CHAR)
+        ! splicer end class.Annotation.method.begin_string
+    end subroutine annotation_begin_string
+
+    subroutine annotation_set_int(obj, val)
+        use iso_c_binding, only : C_INT
+        class(annotation) :: obj
+        integer(C_INT), value, intent(IN) :: val
+        ! splicer begin class.Annotation.method.set_int
+        call c_annotation_set_int(obj%cxxmem, val)
+        ! splicer end class.Annotation.method.set_int
+    end subroutine annotation_set_int
+
+    subroutine annotation_set_string(obj, val)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(annotation) :: obj
+        character(len=*), intent(IN) :: val
+        ! splicer begin class.Annotation.method.set_string
+        call c_annotation_set_string(obj%cxxmem, trim(val)//C_NULL_CHAR)
+        ! splicer end class.Annotation.method.set_string
+    end subroutine annotation_set_string
+
+    subroutine annotation_end(obj)
+        class(annotation) :: obj
+        ! splicer begin class.Annotation.method.end
+        call c_annotation_end(obj%cxxmem)
+        ! splicer end class.Annotation.method.end
+    end subroutine annotation_end
+
+    ! Return pointer to C++ memory.
+    function annotation_get_instance(obj) result (cxxptr)
+        use iso_c_binding, only: C_PTR
+        class(annotation), intent(IN) :: obj
+        type(C_PTR) :: cxxptr
+        cxxptr = obj%cxxmem%addr
+    end function annotation_get_instance
+
+    subroutine annotation_set_instance(obj, cxxmem)
+        use iso_c_binding, only: C_PTR
+        class(annotation), intent(INOUT) :: obj
+        type(C_PTR), intent(IN) :: cxxmem
+        obj%cxxmem%addr = cxxmem
+        obj%cxxmem%idtor = 0
+    end subroutine annotation_set_instance
+
+    function annotation_associated(obj) result (rv)
+        use iso_c_binding, only: c_associated
+        class(annotation), intent(IN) :: obj
+        logical rv
+        rv = c_associated(obj%cxxmem%addr)
+    end function annotation_associated
+
+    ! splicer begin class.Annotation.additional_functions
+    ! splicer end class.Annotation.additional_functions
 
     function configmanager_new() &
             result(SHT_rv)
@@ -411,6 +635,28 @@ contains
             rv = .false.
         endif
     end function scopeannotation_ne
+
+    function annotation_eq(a,b) result (rv)
+        use iso_c_binding, only: c_associated
+        type(annotation), intent(IN) ::a,b
+        logical :: rv
+        if (c_associated(a%cxxmem%addr, b%cxxmem%addr)) then
+            rv = .true.
+        else
+            rv = .false.
+        endif
+    end function annotation_eq
+
+    function annotation_ne(a,b) result (rv)
+        use iso_c_binding, only: c_associated
+        type(annotation), intent(IN) ::a,b
+        logical :: rv
+        if (.not. c_associated(a%cxxmem%addr, b%cxxmem%addr)) then
+            rv = .true.
+        else
+            rv = .false.
+        endif
+    end function annotation_ne
 
     function configmanager_eq(a,b) result (rv)
         use iso_c_binding, only: c_associated

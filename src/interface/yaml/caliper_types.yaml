@@ -4,6 +4,16 @@
 typemap:
   - namespace: cali
     declarations: cali
+    - type: Annotation
+      fields:
+        base: shadow
+        wrap_header:
+        - typesCaliper.h
+        c_type: cali_Annotation
+        f_module_name: caliper_mod
+        f_derived_type: annotation
+        f_capsule_data_type: SHROUD_annotation_capsule
+        f_to_c: "{f_var}%cxxmem"
     - type: ConfigManager
       fields:
         base: shadow

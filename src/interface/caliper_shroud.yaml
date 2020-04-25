@@ -10,6 +10,23 @@ format:
   C_prefix: cali_
 
 declarations:
+  - decl: | 
+      enum cali_attr_properties {
+        CALI_ATTR_DEFAULT       =     0,
+        CALI_ATTR_ASVALUE       =     1,
+        CALI_ATTR_NOMERGE       =     2,
+        CALI_ATTR_SCOPE_PROCESS =    12,
+        CALI_ATTR_SCOPE_THREAD  =    20,
+        CALI_ATTR_SCOPE_TASK    =    24,
+        CALI_ATTR_SKIP_EVENTS   =    64,
+        CALI_ATTR_HIDDEN        =   128,
+        CALI_ATTR_NESTED        =   256,
+        CALI_ATTR_GLOBAL        =   512,
+        CALI_ATTR_UNALIGNED     =  1024
+      }
+    options:
+      C_extern_C: true
+
   - decl: void cali_mpi_init()
     cpp_if: ifdef CALIPER_HAVE_MPI
     options:
@@ -28,6 +45,27 @@ declarations:
     declarations:
       - decl: ScopeAnnotation(const char* name) +name(begin)
       - decl: ~ScopeAnnotation()                +name(end)
+
+  - decl: class Annotation
+    declarations:
+      - decl: Annotation(const char* key, int properties = 0) +name(new)
+        default_arg_suffix:
+          -
+          - _with_properties
+      - decl: ~Annotation() +name(delete)
+      - decl: void begin(int val)
+        format:
+          function_suffix: _int
+      - decl: void begin(const char* val)
+        format:
+          function_suffix: _string
+      - decl: void set(int val)
+        format:
+          function_suffix: _int
+      - decl: void set(const char* val)
+        format:
+          function_suffix: _string
+      - decl: void end()
 
   - decl: class ConfigManager
     cxx_header: caliper/cali-manager.h

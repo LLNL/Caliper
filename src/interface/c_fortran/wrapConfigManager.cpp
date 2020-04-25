@@ -91,7 +91,7 @@ void cali_ConfigManager_error_msg_bufferify(cali_ConfigManager * self,
     // splicer begin class.ConfigManager.method.error_msg_bufferify
     std::string * SHCXX_rv = new std::string;
     *SHCXX_rv = SH_this->error_msg();
-    ShroudStrToArray(DSHF_rv, SHCXX_rv, 3);
+    ShroudStrToArray(DSHF_rv, SHCXX_rv, 4);
     // splicer end class.ConfigManager.method.error_msg_bufferify
 }
 
