@@ -202,40 +202,17 @@ To use Caliper annotations and services, it is sufficient to link the
 Fortran
 ................................
 
-Caliper provides a Fortran wrapper module in source code form under
-``share/fortran/caliper.f90`` in the Caliper installation
-directory. This way, we avoid potential incompatibilities between
-compilers used to build Caliper and the target program.
-We recommend to simply add the Caliper module to the target
-program. An example Makefile may look like this: ::
+When Fortran support is enabled, a `caliper_mod.mod` module file is 
+installed inside `include/caliper/fortran/` in the Caliper installation
+directory. 
+The wrapper module uses Fortran 2003 C bindings.
+Caliper must be built with the same compiler as the target program.
 
-  F90         = gfortran
-  
-  CALIPER_DIR = /path/to/caliper/installation
-  OBJECTS     = main.o
-  
-  target-program : $(OBJECTS) caliper.o
-      $(F90) -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper -lstdc++
-
-  %.o : %.f90 caliper.mod
-      $(F90) -c $<
-
-  caliper.mod : caliper.o
-      
-  caliper.o : $(CALIPER_DIR)/share/fortran/caliper.f90
-      $(F90) -std=f2003 -c $<
-
-Note that it is necessary to link in the C++ standard library as
-well. With ``gfortran``, add ``-lstdc++``: ::
+It is necessary to link in the C++ standard library as well. 
+With ``gfortran``, add ``-lstdc++``: ::
 
   gfortran -o target-program *.o -L/path/to/caliper/lib64 -lcaliper -lstdc++
   
 With Intel ``ifort``, you can use the ``-cxxlib`` option: ::
 
   ifort -o target-program *.o -cxxlib -L/path/to/caliper/lib64 -lcaliper
-
-The wrapper module uses Fortran 2003 C bindings. Thus, it requires a
-Fortran 2003 compatible compiler to build, but should be usable with
-any reasonably "modern" Fortran code. More work may be required to
-integrate it with Fortran 77 codes.
-
