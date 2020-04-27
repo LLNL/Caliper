@@ -88,8 +88,10 @@ endif()
 if (CALIPER_HAVE_MPI)
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
-    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${MPI_CXX_INCLUDE_PATH})
-    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include")
+    set(CALI_MPI_INCLUDE_DIRS
+      ${MPI_CXX_INCLUDE_PATH}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
+    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${CALI_MPI_INCLUDE_DIRS})
     target_link_libraries(${app} caliper ${MPI_CXX_LIBRARIES})
   endforeach()
 
