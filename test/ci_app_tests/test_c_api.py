@@ -8,12 +8,10 @@ class CaliperCAPITest(unittest.TestCase):
     """ Caliper C API test cases """
 
     def test_c_ann_trace(self):
-        target_cmd = [ './ci_test_c_ann' ]
+        target_cmd = [ './ci_test_c_ann', 'event-trace,output=stdout' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
 
         caliper_config = {
-            'CALI_CONFIG_PROFILE'    : 'serial-trace',
-            'CALI_RECORDER_FILENAME' : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -62,7 +60,7 @@ class CaliperCAPITest(unittest.TestCase):
                          'global.string' : 'my global string',
                          'global.uint'   : '42'
             }))
-        
+
     def test_c_ann_metadata(self):
         target_cmd = [ './ci_test_c_ann' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', '--list-attributes',
@@ -102,6 +100,6 @@ class CaliperCAPITest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'ci_test_c': 'snapshot', 'string_arg': 'teststring', 'int_arg': '42' }))
 
-        
+
 if __name__ == "__main__":
     unittest.main()

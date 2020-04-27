@@ -29,6 +29,8 @@ set(CALIPER_SERIAL_OBJS
   $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
 
+  $<TARGET_OBJECTS:caliper-interface>
+  
   $<TARGET_OBJECTS:caliper-reader>
 
   $<TARGET_OBJECTS:caliper-services>

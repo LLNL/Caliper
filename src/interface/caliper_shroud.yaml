@@ -1,0 +1,125 @@
+library: Caliper
+cxx_header: caliper/cali.h
+
+namespace: cali
+
+options:
+  F_module_per_class: false
+
+format:
+  C_prefix: cali_
+  F_filename_suffix: F
+
+declarations:
+  - decl: |
+      enum cali_attr_properties {
+        CALI_ATTR_DEFAULT       =     0,
+        CALI_ATTR_ASVALUE       =     1,
+        CALI_ATTR_NOMERGE       =     2,
+        CALI_ATTR_SCOPE_PROCESS =    12,
+        CALI_ATTR_SCOPE_THREAD  =    20,
+        CALI_ATTR_SCOPE_TASK    =    24,
+        CALI_ATTR_SKIP_EVENTS   =    64,
+        CALI_ATTR_HIDDEN        =   128,
+        CALI_ATTR_NESTED        =   256,
+        CALI_ATTR_GLOBAL        =   512,
+        CALI_ATTR_UNALIGNED     =  1024
+      }
+    options:
+      wrap_c: false
+  - decl: |
+      enum cali_attr_type {
+        CALI_TYPE_INV    = 0,
+        CALI_TYPE_USR    = 1,
+        CALI_TYPE_INT    = 2,
+        CALI_TYPE_UINT   = 3,
+        CALI_TYPE_STRING = 4,
+        CALI_TYPE_ADDR   = 5,
+        CALI_TYPE_DOUBLE = 6,
+        CALI_TYPE_BOOL   = 7,
+        CALI_TYPE_TYPE   = 8,
+        CALI_TYPE_PTR    = 9
+      }
+    options:
+      wrap_c: false
+  - decl: typedef uint64_t cali_id_t
+    options:
+      C_extern_C: true
+
+  - decl: void cali_mpi_init()
+    cpp_if: ifdef CALIPER_HAVE_MPI
+    options:
+      C_extern_C: true
+  - decl: void cali_init()
+    options:
+      C_extern_C: true
+  - decl: void cali_config_preset(const char* key, const char* value)
+    options:
+      C_extern_C: true
+  - decl: void cali_config_set(const char* key, const char* value)
+    options:
+      C_extern_C: true
+
+  - decl: cali_id_t cali_create_attribute(const char* name, cali_attr_type type, int prop)
+    options:
+      C_extern_C: true
+  - decl: cali_id_t cali_find_attribute(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_int(cali_id_t attr_id, int val)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_string(cali_id_t attr_id, const char* val)
+    options:
+      C_extern_C: true
+  - decl: void cali_end(cali_id_t attr_id)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_int_byname(const char* attr_name, int val)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_string_byname(const char* attr_name, const char* val)
+    options:
+      C_extern_C: true
+  - decl: void cali_end_byname(const char* attr_name)
+    options:
+      C_extern_C: true
+
+  - decl: class ScopeAnnotation
+    declarations:
+      - decl: ScopeAnnotation(const char* name) +name(begin)
+      - decl: ~ScopeAnnotation()                +name(end)
+
+  - decl: class Annotation
+    declarations:
+      - decl: Annotation(const char* key, int properties = 0) +name(new)
+        default_arg_suffix:
+          -
+          - _with_properties
+      - decl: ~Annotation() +name(delete)
+      - decl: void begin(int val)
+        format:
+          function_suffix: _int
+      - decl: void begin(const char* val)
+        format:
+          function_suffix: _string
+      - decl: void set(int val)
+        format:
+          function_suffix: _int
+      - decl: void set(const char* val)
+        format:
+          function_suffix: _string
+      - decl: void end()
+
+  - decl: class ConfigManager
+    cxx_header: caliper/cali-manager.h
+    declarations:
+      - decl: ConfigManager()  +name(new)
+      - decl: ~ConfigManager() +name(delete)
+      # really bool add(const char* config) but subroutine syntax is more consistent here
+      - decl: void add(const char* config)
+      - decl: bool error()
+      - decl: std::string error_msg()
+      - decl: void start()
+      - decl: void stop()
+      - decl: void flush()

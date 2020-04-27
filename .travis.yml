@@ -10,24 +10,25 @@ addons:
       - openmpi-bin
       - libopenmpi-dev
       - libunwind-dev
+      - gfortran
 
 # The base build matrix
 compiler:
   - gcc
   - clang
 env:
-  - WITH_MPI=On WITH_GOTCHA=On
-  - WITH_MPI=On WITH_GOTCHA=Off
+  - WITH_MPI=On WITH_FORTRAN=Off WITH_GOTCHA=On
+  - WITH_MPI=On WITH_FORTRAN=Off WITH_GOTCHA=Off
 
-# Add explicit job for coverage and mpi off
+# Add explicit job for mpi off, fortran on, and coverage
 jobs:
   include:
     - compiler: gcc
-      env: WITH_MPI=Off WITH_GOTCHA=On COVERAGE="-DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"
+      env: WITH_MPI=Off WITH_FORTRAN=On WITH_GOTCHA=On COVERAGE="-DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"
     
 script:
   - mkdir build && cd build
-  - cmake -C ../cmake/hostconfig/travis.cmake ${COVERAGE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DWITH_MPI=${WITH_MPI} -DWITH_GOTCHA=${WITH_GOTCHA} ..
+  - cmake -C ../cmake/hostconfig/travis.cmake ${COVERAGE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DWITH_FORTRAN=${WITH_FORTRAN} -DWITH_MPI=${WITH_MPI} -DWITH_GOTCHA=${WITH_GOTCHA} ..
   - make -j8
   - ctest --output-on-failure
 

@@ -8,6 +8,7 @@ include_directories(${PROJECT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(common)
+add_subdirectory(interface/c_fortran)
 add_subdirectory(reader)
 add_subdirectory(services)
 add_subdirectory(caliper)
@@ -29,9 +30,6 @@ endforeach()
 
 if (WITH_TOOLS)
   add_subdirectory(tools)
-endif()
-if (WITH_FORTRAN)
-  add_subdirectory(fortran)
 endif()
 
 install(TARGETS caliper
