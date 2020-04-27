@@ -82,6 +82,7 @@ option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TR
 if (WITH_FORTRAN)
   enable_language(Fortran)
   set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/fortran")
+  set(CALIPER_Fortran_CMAKE_MSG "Yes, using ${CMAKE_Fortran_COMPILER_ID} ${CMAKE_Fortran_COMPILER_VERSION}")
 endif()
 
 if (BUILD_TESTING)
@@ -454,6 +455,7 @@ message(STATUS "Build Caliper tools       : ${WITH_TOOLS}")
 message(STATUS "Build tests               : ${BUILD_TESTING}")
 
 set(CALIPER_MODULES
+  Fortran
   cpuinfo
   memusage
   adiak
@@ -474,7 +476,6 @@ set(CALIPER_MODULES
   Kokkos
   TAU
   VTune
-  Shroud
   histogram)
 
 foreach(_caliper_module ${CALIPER_MODULES})
