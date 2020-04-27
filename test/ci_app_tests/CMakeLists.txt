@@ -88,10 +88,10 @@ endif()
 if (CALIPER_HAVE_MPI)
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
-    set(CALI_MPI_INCLUDE_DIRS
+    set(calitest_mpi_include_dirs
       ${MPI_CXX_INCLUDE_PATH}
       ${CMAKE_CURRENT_SOURCE_DIR}/../../mpi/include)
-    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${CALI_MPI_INCLUDE_DIRS})
+    target_include_directories(${app} PRIVATE ${calitest_mpi_include_dirs})
     target_link_libraries(${app} caliper ${MPI_CXX_LIBRARIES})
   endforeach()
 
@@ -109,7 +109,7 @@ if (WITH_FORTRAN)
     add_executable(${app} ${app}.f)
     set_source_files_properties(${app}.f PROPERTIES Fortran_FORMAT FREE)
     set_target_properties(${app} PROPERTIES LINKER_LANGUAGE CXX)
-    set_target_properties(${app} PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_Fortran_MODULE_DIRECTORY})
+    target_include_directories(${app} PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
     target_link_libraries(${app} caliper-serial)
   endforeach()
 
