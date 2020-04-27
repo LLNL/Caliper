@@ -33,6 +33,20 @@ enum cali_cali_attr_properties {
     cali_CALI_ATTR_UNALIGNED = 1024
 };
 
+//  cali::cali_attr_type
+enum cali_cali_attr_type {
+    cali_CALI_TYPE_INV = 0,
+    cali_CALI_TYPE_USR = 1,
+    cali_CALI_TYPE_INT = 2,
+    cali_CALI_TYPE_UINT = 3,
+    cali_CALI_TYPE_STRING = 4,
+    cali_CALI_TYPE_ADDR = 5,
+    cali_CALI_TYPE_DOUBLE = 6,
+    cali_CALI_TYPE_BOOL = 7,
+    cali_CALI_TYPE_TYPE = 8,
+    cali_CALI_TYPE_PTR = 9
+};
+
 // splicer begin C_declarations
 // splicer end C_declarations
 

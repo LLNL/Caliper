@@ -8,9 +8,10 @@ options:
 
 format:
   C_prefix: cali_
+  F_filename_suffix: F
 
 declarations:
-  - decl: | 
+  - decl: |
       enum cali_attr_properties {
         CALI_ATTR_DEFAULT       =     0,
         CALI_ATTR_ASVALUE       =     1,
@@ -25,6 +26,24 @@ declarations:
         CALI_ATTR_UNALIGNED     =  1024
       }
     options:
+      wrap_c: false
+  - decl: |
+      enum cali_attr_type {
+        CALI_TYPE_INV    = 0,
+        CALI_TYPE_USR    = 1,
+        CALI_TYPE_INT    = 2,
+        CALI_TYPE_UINT   = 3,
+        CALI_TYPE_STRING = 4,
+        CALI_TYPE_ADDR   = 5,
+        CALI_TYPE_DOUBLE = 6,
+        CALI_TYPE_BOOL   = 7,
+        CALI_TYPE_TYPE   = 8,
+        CALI_TYPE_PTR    = 9
+      }
+    options:
+      wrap_c: false
+  - decl: typedef uint64_t cali_id_t
+    options:
       C_extern_C: true
 
   - decl: void cali_mpi_init()
@@ -38,6 +57,31 @@ declarations:
     options:
       C_extern_C: true
   - decl: void cali_config_set(const char* key, const char* value)
+    options:
+      C_extern_C: true
+
+  - decl: cali_id_t cali_create_attribute(const char* name, cali_attr_type type, int prop)
+    options:
+      C_extern_C: true
+  - decl: cali_id_t cali_find_attribute(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_int(cali_id_t attr_id, int val)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_string(cali_id_t attr_id, const char* val)
+    options:
+      C_extern_C: true
+  - decl: void cali_end(cali_id_t attr_id)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_int_byname(const char* attr_name, int val)
+    options:
+      C_extern_C: true
+  - decl: void cali_begin_string_byname(const char* attr_name, const char* val)
+    options:
+      C_extern_C: true
+  - decl: void cali_end_byname(const char* attr_name)
     options:
       C_extern_C: true
 
