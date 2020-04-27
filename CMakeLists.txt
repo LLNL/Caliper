@@ -21,7 +21,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 endif()
 
 # Optional Fortran
-option(WITH_FORTRAN "Install Fortran interface and build test programs")
+option(WITH_FORTRAN   "Install Fortran interface")
 
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
@@ -59,6 +59,25 @@ option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
 option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
 option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
+
+## Find Shroud
+## Doesn't work for me :-/ Generating wrapper manually.
+# if (EXISTS ${SHROUD_EXECUTABLE})
+#   execute_process(COMMAND ${SHROUD_EXECUTABLE}
+#     --cmake ${CMAKE_CURRENT_BINARY_DIR}/SetupShroud.cmake
+#     ERROR_VARIABLE SHROUD_cmake_error
+#     OUTPUT_STRIP_TRAILING_WHITESPACE)
+#   if (${SHROUD_cmake_error})
+#     message(FATAL_ERROR "Error from Shroud: ${SHROUD_cmake_error}")
+#   endif ()
+#   include(${CMAKE_CURRENT_BINARY_DIR}/SetupShroud.cmake)
+# endif ()
+# if (${SHROUD_FOUND})
+#   set(CALIPER_Shroud_CMAKE_MSG "Yes, using ${SHROUD_EXECUTABLE}")
+#   add_subdirectory(src/interface)
+# else()
+#   set(CALIPER_Shroud_CMAKE_MSG "No")
+# endif()
 
 if (WITH_FORTRAN)
   enable_language(Fortran)
@@ -371,10 +390,15 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
+install(
+  DIRECTORY   src/interface/c_fortran/
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper
+  FILES_MATCHING PATTERN "*.h")
+
 if (WITH_FORTRAN)
   install(
     DIRECTORY   ${CMAKE_Fortran_MODULE_DIRECTORY}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/fortran
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran
     FILES_MATCHING PATTERN "*.mod")
 endif()
 
@@ -450,6 +474,7 @@ set(CALIPER_MODULES
   Kokkos
   TAU
   VTune
+  Shroud
   histogram)
 
 foreach(_caliper_module ${CALIPER_MODULES})
