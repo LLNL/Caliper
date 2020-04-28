@@ -123,3 +123,17 @@ declarations:
       - decl: void start()
       - decl: void stop()
       - decl: void flush()
+
+  - decl: class BufferedRegionProfile
+    cxx_header: BufferedRegionProfile.h
+    declarations:
+      - decl: BufferedRegionProfile() +name(new)
+      - decl: ~BufferedRegionProfile() +name(delete)
+      - decl: void start()
+      - decl: void stop()
+      - decl: void clear()
+      - decl: void fetch_exclusive_region_times()
+      - decl: void fetch_inclusive_region_times()
+      - decl: double total_profiling_time() const
+      - decl: double total_region_time() const
+      - decl: double region_time(const char* region)

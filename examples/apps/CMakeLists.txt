@@ -23,7 +23,8 @@ set(CALIPER_C_EXAMPLE_APPS
   cali-basic-annotations-c
   cali-print-snapshot)
 set(CALIPER_Fortran_EXAMPLE_APPS
-  fortran-example)
+  fortran-example
+  fortran-regionprofile)
 
 foreach(app ${CALIPER_CXX_EXAMPLE_APPS})
   add_executable(${app} ${app}.cpp)

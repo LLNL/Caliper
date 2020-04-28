@@ -129,16 +129,44 @@ module caliper_mod
         ! splicer end class.ConfigManager.type_bound_procedure_part
     end type configmanager
 
+    type, bind(C) :: SHROUD_bufferedregionprofile_capsule
+        type(C_PTR) :: addr = C_NULL_PTR  ! address of C++ memory
+        integer(C_INT) :: idtor = 0       ! index of destructor
+    end type SHROUD_bufferedregionprofile_capsule
+
+    type bufferedregionprofile
+        type(SHROUD_bufferedregionprofile_capsule) :: cxxmem
+        ! splicer begin class.BufferedRegionProfile.component_part
+        ! splicer end class.BufferedRegionProfile.component_part
+    contains
+        procedure :: delete => bufferedregionprofile_delete
+        procedure :: start => bufferedregionprofile_start
+        procedure :: stop => bufferedregionprofile_stop
+        procedure :: clear => bufferedregionprofile_clear
+        procedure :: fetch_exclusive_region_times => bufferedregionprofile_fetch_exclusive_region_times
+        procedure :: fetch_inclusive_region_times => bufferedregionprofile_fetch_inclusive_region_times
+        procedure :: total_profiling_time => bufferedregionprofile_total_profiling_time
+        procedure :: total_region_time => bufferedregionprofile_total_region_time
+        procedure :: region_time => bufferedregionprofile_region_time
+        procedure :: get_instance => bufferedregionprofile_get_instance
+        procedure :: set_instance => bufferedregionprofile_set_instance
+        procedure :: associated => bufferedregionprofile_associated
+        ! splicer begin class.BufferedRegionProfile.type_bound_procedure_part
+        ! splicer end class.BufferedRegionProfile.type_bound_procedure_part
+    end type bufferedregionprofile
+
     interface operator (.eq.)
         module procedure scopeannotation_eq
         module procedure annotation_eq
         module procedure configmanager_eq
+        module procedure bufferedregionprofile_eq
     end interface
 
     interface operator (.ne.)
         module procedure scopeannotation_ne
         module procedure annotation_ne
         module procedure configmanager_ne
+        module procedure bufferedregionprofile_ne
     end interface
 
     interface
@@ -308,6 +336,94 @@ module caliper_mod
 
         ! splicer begin class.ConfigManager.additional_interfaces
         ! splicer end class.ConfigManager.additional_interfaces
+
+        function c_bufferedregionprofile_new(SHT_crv) &
+                result(SHT_rv) &
+                bind(C, name="cali_BufferedRegionProfile_new")
+            use iso_c_binding, only : C_PTR
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(OUT) :: SHT_crv
+            type(C_PTR) SHT_rv
+        end function c_bufferedregionprofile_new
+
+        subroutine c_bufferedregionprofile_delete(self) &
+                bind(C, name="cali_BufferedRegionProfile_delete")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_delete
+
+        subroutine c_bufferedregionprofile_start(self) &
+                bind(C, name="cali_BufferedRegionProfile_start")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_start
+
+        subroutine c_bufferedregionprofile_stop(self) &
+                bind(C, name="cali_BufferedRegionProfile_stop")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_stop
+
+        subroutine c_bufferedregionprofile_clear(self) &
+                bind(C, name="cali_BufferedRegionProfile_clear")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_clear
+
+        subroutine c_bufferedregionprofile_fetch_exclusive_region_times( &
+                self) &
+                bind(C, name="cali_BufferedRegionProfile_fetch_exclusive_region_times")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_fetch_exclusive_region_times
+
+        subroutine c_bufferedregionprofile_fetch_inclusive_region_times( &
+                self) &
+                bind(C, name="cali_BufferedRegionProfile_fetch_inclusive_region_times")
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+        end subroutine c_bufferedregionprofile_fetch_inclusive_region_times
+
+        pure function c_bufferedregionprofile_total_profiling_time(self) &
+                result(SHT_rv) &
+                bind(C, name="cali_BufferedRegionProfile_total_profiling_time")
+            use iso_c_binding, only : C_DOUBLE
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+            real(C_DOUBLE) :: SHT_rv
+        end function c_bufferedregionprofile_total_profiling_time
+
+        pure function c_bufferedregionprofile_total_region_time(self) &
+                result(SHT_rv) &
+                bind(C, name="cali_BufferedRegionProfile_total_region_time")
+            use iso_c_binding, only : C_DOUBLE
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+            real(C_DOUBLE) :: SHT_rv
+        end function c_bufferedregionprofile_total_region_time
+
+        function c_bufferedregionprofile_region_time(self, region) &
+                result(SHT_rv) &
+                bind(C, name="cali_BufferedRegionProfile_region_time")
+            use iso_c_binding, only : C_CHAR, C_DOUBLE
+            import :: SHROUD_bufferedregionprofile_capsule
+            implicit none
+            type(SHROUD_bufferedregionprofile_capsule), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: region(*)
+            real(C_DOUBLE) :: SHT_rv
+        end function c_bufferedregionprofile_region_time
+
+        ! splicer begin class.BufferedRegionProfile.additional_interfaces
+        ! splicer end class.BufferedRegionProfile.additional_interfaces
 
 #ifdef CALIPER_HAVE_MPI
         subroutine cali_mpi_init() &
@@ -669,6 +785,116 @@ contains
     ! splicer begin class.ConfigManager.additional_functions
     ! splicer end class.ConfigManager.additional_functions
 
+    function bufferedregionprofile_new() &
+            result(SHT_rv)
+        use iso_c_binding, only : C_PTR
+        type(bufferedregionprofile) :: SHT_rv
+        ! splicer begin class.BufferedRegionProfile.method.new
+        type(C_PTR) :: SHT_prv
+        SHT_prv = c_bufferedregionprofile_new(SHT_rv%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.new
+    end function bufferedregionprofile_new
+
+    subroutine bufferedregionprofile_delete(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.delete
+        call c_bufferedregionprofile_delete(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.delete
+    end subroutine bufferedregionprofile_delete
+
+    subroutine bufferedregionprofile_start(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.start
+        call c_bufferedregionprofile_start(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.start
+    end subroutine bufferedregionprofile_start
+
+    subroutine bufferedregionprofile_stop(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.stop
+        call c_bufferedregionprofile_stop(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.stop
+    end subroutine bufferedregionprofile_stop
+
+    subroutine bufferedregionprofile_clear(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.clear
+        call c_bufferedregionprofile_clear(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.clear
+    end subroutine bufferedregionprofile_clear
+
+    subroutine bufferedregionprofile_fetch_exclusive_region_times(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.fetch_exclusive_region_times
+        call c_bufferedregionprofile_fetch_exclusive_region_times(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.fetch_exclusive_region_times
+    end subroutine bufferedregionprofile_fetch_exclusive_region_times
+
+    subroutine bufferedregionprofile_fetch_inclusive_region_times(obj)
+        class(bufferedregionprofile) :: obj
+        ! splicer begin class.BufferedRegionProfile.method.fetch_inclusive_region_times
+        call c_bufferedregionprofile_fetch_inclusive_region_times(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.fetch_inclusive_region_times
+    end subroutine bufferedregionprofile_fetch_inclusive_region_times
+
+    function bufferedregionprofile_total_profiling_time(obj) &
+            result(SHT_rv)
+        use iso_c_binding, only : C_DOUBLE
+        class(bufferedregionprofile) :: obj
+        real(C_DOUBLE) :: SHT_rv
+        ! splicer begin class.BufferedRegionProfile.method.total_profiling_time
+        SHT_rv = c_bufferedregionprofile_total_profiling_time(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.total_profiling_time
+    end function bufferedregionprofile_total_profiling_time
+
+    function bufferedregionprofile_total_region_time(obj) &
+            result(SHT_rv)
+        use iso_c_binding, only : C_DOUBLE
+        class(bufferedregionprofile) :: obj
+        real(C_DOUBLE) :: SHT_rv
+        ! splicer begin class.BufferedRegionProfile.method.total_region_time
+        SHT_rv = c_bufferedregionprofile_total_region_time(obj%cxxmem)
+        ! splicer end class.BufferedRegionProfile.method.total_region_time
+    end function bufferedregionprofile_total_region_time
+
+    function bufferedregionprofile_region_time(obj, region) &
+            result(SHT_rv)
+        use iso_c_binding, only : C_DOUBLE, C_NULL_CHAR
+        class(bufferedregionprofile) :: obj
+        character(len=*), intent(IN) :: region
+        real(C_DOUBLE) :: SHT_rv
+        ! splicer begin class.BufferedRegionProfile.method.region_time
+        SHT_rv = c_bufferedregionprofile_region_time(obj%cxxmem, &
+            trim(region)//C_NULL_CHAR)
+        ! splicer end class.BufferedRegionProfile.method.region_time
+    end function bufferedregionprofile_region_time
+
+    ! Return pointer to C++ memory.
+    function bufferedregionprofile_get_instance(obj) result (cxxptr)
+        use iso_c_binding, only: C_PTR
+        class(bufferedregionprofile), intent(IN) :: obj
+        type(C_PTR) :: cxxptr
+        cxxptr = obj%cxxmem%addr
+    end function bufferedregionprofile_get_instance
+
+    subroutine bufferedregionprofile_set_instance(obj, cxxmem)
+        use iso_c_binding, only: C_PTR
+        class(bufferedregionprofile), intent(INOUT) :: obj
+        type(C_PTR), intent(IN) :: cxxmem
+        obj%cxxmem%addr = cxxmem
+        obj%cxxmem%idtor = 0
+    end subroutine bufferedregionprofile_set_instance
+
+    function bufferedregionprofile_associated(obj) result (rv)
+        use iso_c_binding, only: c_associated
+        class(bufferedregionprofile), intent(IN) :: obj
+        logical rv
+        rv = c_associated(obj%cxxmem%addr)
+    end function bufferedregionprofile_associated
+
+    ! splicer begin class.BufferedRegionProfile.additional_functions
+    ! splicer end class.BufferedRegionProfile.additional_functions
+
     subroutine cali_config_preset(key, value)
         use iso_c_binding, only : C_NULL_CHAR
         character(len=*), intent(IN) :: key
@@ -816,5 +1042,27 @@ contains
             rv = .false.
         endif
     end function configmanager_ne
+
+    function bufferedregionprofile_eq(a,b) result (rv)
+        use iso_c_binding, only: c_associated
+        type(bufferedregionprofile), intent(IN) ::a,b
+        logical :: rv
+        if (c_associated(a%cxxmem%addr, b%cxxmem%addr)) then
+            rv = .true.
+        else
+            rv = .false.
+        endif
+    end function bufferedregionprofile_eq
+
+    function bufferedregionprofile_ne(a,b) result (rv)
+        use iso_c_binding, only: c_associated
+        type(bufferedregionprofile), intent(IN) ::a,b
+        logical :: rv
+        if (.not. c_associated(a%cxxmem%addr, b%cxxmem%addr)) then
+            rv = .true.
+        else
+            rv = .false.
+        endif
+    end function bufferedregionprofile_ne
 
 end module caliper_mod

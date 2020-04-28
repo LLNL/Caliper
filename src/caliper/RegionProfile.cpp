@@ -36,6 +36,8 @@ RegionProfile::RegionProfile()
     , mP { new RegionProfileImpl }
 { }
 
+RegionProfile::~RegionProfile()
+{ }
 
 RegionProfile::region_profile_t
 RegionProfile::exclusive_region_times(const std::string& region_type)
