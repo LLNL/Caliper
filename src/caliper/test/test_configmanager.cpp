@@ -196,8 +196,8 @@ const ConfigManager::ConfigInfo* controller_list[] = { &testcontroller_info, nul
 
 TEST(ConfigManagerTest, Options)
 {
-    ConfigManager::add_controllers(controller_list);
-
+    add_global_config_specs(controller_list);
+    
     {
         auto configs = cali::ConfigManager::available_configs();
         std::sort(configs.begin(), configs.end());

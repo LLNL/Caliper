@@ -46,7 +46,7 @@ const char* controller_spec =
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_SPOT_TIME_DIVISOR\"          : \"1000\","
-    "     \"CALI_SPOT_Y_AXES\"                : \"Milliseconds\","
+    "     \"CALI_SPOT_Y_AXES\"                : \"Milliseconds\""
     "   },"
     " \"options\": "
     " ["

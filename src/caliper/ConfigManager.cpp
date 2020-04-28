@@ -611,13 +611,17 @@ struct ConfigManager::ConfigManagerImpl
     argmap_t    m_default_parameters;
     argmap_t    m_extra_vars;
 
+    OptionSpec  m_global_opts;
+
     struct config_spec_t {
-        ConfigInfo   info;
-        std::string  name;
+        std::string    json; // the json spec
+        CreateConfigFn create;
+        CheckArgsFn    check_args;
+        std::string    name;
         std::vector<std::string> categories;
-        std::string  description;
-        config_map_t initial_cfg;
-        OptionSpec   opts;
+        std::string    description;
+        config_map_t   initial_cfg;
+        OptionSpec     opts;
     };
 
     std::map< std::string, std::shared_ptr<config_spec_t> >
@@ -639,13 +643,15 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     void
-    parse_config_spec(const ConfigInfo& info, const OptionSpec& base_options) {
+    parse_config_spec(const char* jsonspec, CreateConfigFn create, CheckArgsFn check) {
         config_spec_t spec;
         bool ok = false;
 
-        spec.info = info;
+        spec.json       = jsonspec;
+        spec.create     = (create == nullptr) ? ::make_basic_channel_controller : create;
+        spec.check_args = check;
 
-        auto dict = StringConverter(info.spec).rec_dict(&ok);
+        auto dict = StringConverter(spec.json).rec_dict(&ok);
 
         std::vector<std::string> cfg_srvcs;
 
@@ -656,19 +662,17 @@ struct ConfigManager::ConfigManagerImpl
         services::add_default_service_specs();
         auto slist = services::get_available_services();
 
-        bool has_all_services = true;
+        bool have_all_services = true;
         for (const auto& s : cfg_srvcs)
             if (std::find(slist.begin(), slist.end(), s) == slist.end())
-                has_all_services = false;
+                have_all_services = false;
 
         if (!ok) {
-            Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(info.spec, 52)
-                            << std::endl;
+            set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
             return;
         }
 
-        if (!has_all_services)
+        if (!have_all_services)
             return;
 
         it = dict.find("categories");
@@ -688,21 +692,17 @@ struct ConfigManager::ConfigManagerImpl
         if (cfg_srvcs.size() > 0)
             spec.initial_cfg["CALI_SERVICES_ENABLE"].append(::join_stringlist(cfg_srvcs));
 
-        spec.opts.add(base_options, spec.categories);
+        spec.opts.add(m_global_opts, spec.categories);
         spec.opts.filter_unavailable_options(slist);
 
         if (!ok) {
-            Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(info.spec, 52)
-                            << std::endl;
+            set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
             return;
         }
 
         it = dict.find("name");
         if (it == dict.end()) {
-            Log(0).stream() << "ConfigManager: 'name' missing in spec: "
-                            << util::clamp_string(info.spec, 32)
-                            << std::endl;
+            set_error(std::string("'name' missing in spec: ") + util::clamp_string(spec.json, 48));
             return;
         }
 
@@ -711,19 +711,18 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     void
-    update_spec() {
+    import_global_specs() {
         bool ok = false;
 
-        OptionSpec base_opts;
-        base_opts.add(StringConverter(builtin_option_specs).rec_list(&ok));
+        m_global_opts.add(StringConverter(builtin_option_specs).rec_list(&ok));
 
         if (!ok)
             Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(builtin_option_specs, 32)
+                            << util::clamp_string(builtin_option_specs, 52)
                             << std::endl;
 
         for (const ConfigInfo& s : ::ConfigSpecManager::instance()->get_config_specs())
-            parse_config_spec(s, base_opts);
+            parse_config_spec(s.spec, s.create, s.check_args);
     }
 
     //   Parse "=value"
@@ -870,13 +869,13 @@ struct ConfigManager::ConfigManagerImpl
 
             check_error(opts.check());
 
-            if (cfg.first->info.check_args)
-                check_error((cfg.first->info.check_args)(opts));
+            if (cfg.first->check_args)
+                check_error((cfg.first->check_args)(opts));
 
             if (m_error)
                 return false;
             else
-                m_channels.emplace_back( (cfg.first->info.create)(cfg.first->name.c_str(), cfg.first->initial_cfg, opts) );
+                m_channels.emplace_back( (cfg.first->create)(cfg.first->name.c_str(), cfg.first->initial_cfg, opts) );
         }
 
         return !m_error;
@@ -906,7 +905,7 @@ struct ConfigManager::ConfigManagerImpl
 
     ConfigManagerImpl()
         {
-            update_spec();
+            import_global_specs();
         }
 };
 
@@ -924,6 +923,20 @@ ConfigManager::ConfigManager(const char* config_string)
 ConfigManager::~ConfigManager()
 {
     mP.reset();
+}
+
+bool
+ConfigManager::add_config_spec(const ConfigInfo& info)
+{
+    mP->parse_config_spec(info.spec, info.create, info.check_args);
+    return !mP->m_error;
+}
+
+bool
+ConfigManager::add_config_spec(const char* json)
+{
+    ConfigInfo info { json, nullptr, nullptr };
+    return add_config_spec(info);
 }
 
 bool
@@ -1002,12 +1015,6 @@ ConfigManager::flush()
         chn->flush();
 }
 
-void
-ConfigManager::add_controllers(const ConfigManager::ConfigInfo** ctrlrs)
-{
-    ::ConfigSpecManager::instance()->add_controller_specs(ctrlrs);
-}
-
 std::vector<std::string>
 ConfigManager::available_configs()
 {
@@ -1036,8 +1043,8 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
     for (auto cfg : configs) {
         Options opts(cfg.first->opts, merge_new_elements(cfg.second, mgr.m_default_parameters));
 
-        if (cfg.first->info.check_args)
-            mgr.check_error((cfg.first->info.check_args)(opts));
+        if (cfg.first->check_args)
+            mgr.check_error((cfg.first->check_args)(opts));
 
         mgr.check_error(opts.check());
 
@@ -1049,4 +1056,10 @@ ConfigManager::check_config_string(const char* config_string, bool allow_extra_k
         mgr.set_error("Unknown config or parameter: " + mgr.m_extra_vars.begin()->first);
 
     return mgr.m_error_msg;
+}
+
+void
+cali::add_global_config_specs(const ConfigManager::ConfigInfo** configs)
+{
+    ::ConfigSpecManager::instance()->add_controller_specs(configs);
 }

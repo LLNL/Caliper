@@ -169,38 +169,21 @@ namespace
 
 }
 
-// A ChannelController for printing cali-query progress
-class ProgressController : public cali::ChannelController
-{
-public:
-
-    ProgressController()
-        : ChannelController("progress", 0, {
-                { "CALI_SERVICES_ENABLE",  "event,textlog,timestamp" },
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                { "CALI_EVENT_TRIGGER",    "cali-query.stream"       },
-                { "CALI_TEXTLOG_TRIGGER",  "cali-query.stream" },
-                { "CALI_TEXTLOG_FILENAME", "stderr"            },
-                { "CALI_TEXTLOG_FORMATSTRING",
-                        "cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[8]time.inclusive.duration% us" }
-            })
-    {}
-
-    static ChannelController* create(const char*, const config_map_t&, const ConfigManager::Options&) {
-        return new ProgressController;
-    }
-};
-
-ConfigManager::ConfigInfo ProgressInfo = {
-    "{ \"name\": \"caliquery-progress\", \"description\": \"Print cali-query progress (when processing multiple files)\" }",
-    ProgressController::create,
-    nullptr
-};
-
-const ConfigManager::ConfigInfo* caliquery_cfglist[] = {
-   &ProgressInfo,
-   nullptr
-};
+const char* progress_config_spec =
+    "{"
+    " \"name\"        : \"caliquery-progress\","
+    " \"description\" : \"Print cali-query progress (when processing multiple files)\","
+    " \"services\"    : [ \"event\", \"textlog\", \"timestamp\" ],"
+    " \"config\"      : {"
+    "   \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\","
+    "   \"CALI_TIMER_UNIT\"            : \"sec\","
+    "   \"CALI_EVENT_TRIGGER\"         : \"cali-query.stream\","
+    "   \"CALI_TEXTLOG_TRIGGER\"       : \"cali-query.stream\","
+    "   \"CALI_TEXTLOG_FILENAME\"      : \"stderr\","
+    "   \"CALI_TEXTLOG_FORMATSTRING\"  : "
+    "     \"cali-query: Processed %[52]cali-query.stream% (thread %[2]thread%): %[6]time.inclusive.duration% us\""
+    "  }"
+    "}";
 
 void setup_caliper_config(const Args& args)
 {
@@ -238,8 +221,6 @@ void setup_caliper_config(const Args& args)
 
 int main(int argc, const char* argv[])
 {
-    ConfigManager::add_controllers(caliquery_cfglist);
-
     Args args(::option_table);
 
     //
@@ -274,7 +255,10 @@ int main(int argc, const char* argv[])
     // The Caliper config setup must run before Caliper runtime initialization
     setup_caliper_config(args);
 
-    ConfigManager mgr(args.get("caliper-config").c_str());
+    ConfigManager mgr;
+
+    mgr.add_config_spec(progress_config_spec);
+    mgr.add(args.get("caliper-config").c_str());
 
     if (mgr.error()) {
         std::cerr << "cali-query: Caliper config parse error: "

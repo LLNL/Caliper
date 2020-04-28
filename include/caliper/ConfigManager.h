@@ -137,16 +137,18 @@ public:
         CheckArgsFn    check_args;
     };
 
-    /// \brief Add a list of pre-defined configurations. Internal use.
-    static void
-    add_controllers(const ConfigInfo**);
-
     ConfigManager();
 
     /// \brief Construct ConfigManager and add the given configuration string.
     explicit ConfigManager(const char* config_string);
 
     ~ConfigManager();
+
+    /// \brief Add config spec to this ConfigManager
+    bool add_config_spec(const ConfigInfo& info);
+
+    /// \brief Add a JSON config spec to this ConfigManager
+    bool add_config_spec(const char* json);
 
     /// \brief Parse the \a config_string configuration string and add the
     ///   specified configuration channels.
@@ -267,5 +269,7 @@ public:
     static std::string
     check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
 };
+
+void add_global_config_specs(const ConfigManager::ConfigInfo** configs);
 
 } // namespace cali

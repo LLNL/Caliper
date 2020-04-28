@@ -5,20 +5,76 @@
 
 #include "caliper/ConfigManager.h"
 
+namespace
+{
+
+const char* event_trace_spec = 
+    "{"
+    " \"name\"        : \"event-trace\","
+    " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
+    " \"services\"    : [ \"event\", \"recorder\", \"timestamp\", \"trace\" ],"
+    " \"categories\"  : [ \"output\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"   : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\" : \"true\","
+    "     \"CALI_TIMER_UNIT\"              : \"sec\""
+    "   },"
+    " \"options\": "
+    " ["
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"trace.mpi\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"mpi\" ],"
+    "    \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_Comm_rank\" }"
+    "  },"
+    "  { \"name\"        : \"trace.cuda\","
+    "    \"description\" : \"Trace CUDA API events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"cupti\" ]"
+    "  },"
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"event.timestamps\","
+    "    \"description\" : \"Record event timestamps\","
+    "    \"type\"        : \"bool\","
+    "    \"extra_config_flags\": { \"CALI_TIMER_OFFSET\": \"true\" }"
+    "  }"
+    " ]"
+    "}";
+
+const char* nvprof_spec =
+    "{"
+    " \"name\"        : \"nvprof\","
+    " \"services\"    : [ \"nvprof\" ],"
+    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\","
+    " \"config        : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false }"
+    "}";
+
+cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
+cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
+
+}
+
 namespace cali
 {
 
 extern ConfigManager::ConfigInfo cuda_activity_controller_info;
-extern ConfigManager::ConfigInfo event_trace_controller_info;
-extern ConfigManager::ConfigInfo nvprof_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &cuda_activity_controller_info,
-    &event_trace_controller_info,
-    &nvprof_controller_info,
+    &::event_trace_controller_info,
+    &::nvprof_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
     &runtime_report_controller_info,
