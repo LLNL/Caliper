@@ -10,7 +10,7 @@ namespace
 {
 
 cali::ChannelController*
-make_nvprof_controller(const cali::ConfigManager::Options&)
+make_nvprof_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options&)
 {
     return new ChannelController("nvprof", 0 , {
             { "CALI_SERVICES_ENABLE",       "nvprof" },
@@ -28,7 +28,8 @@ ConfigManager::ConfigInfo nvprof_controller_info
     "{"
     " \"name\"        : \"nvprof\","
     " \"services\"    : [ \"nvprof\" ],"
-    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\""
+    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\","
+    " \"config        : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false }"
     "}",
     ::make_nvprof_controller, nullptr
 };

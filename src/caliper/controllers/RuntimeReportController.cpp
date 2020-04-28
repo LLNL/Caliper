@@ -21,15 +21,8 @@ class RuntimeReportController : public cali::ChannelController
 {
 public:
 
-    RuntimeReportController(bool use_mpi, const ConfigManager::Options& opts)
-        : ChannelController("runtime-report", 0, {
-                { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
-                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-                { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
-                { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
-                { "CALI_TIMER_UNIT", "sec" }
-            })
+    RuntimeReportController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg)
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
@@ -122,9 +115,9 @@ use_mpi(const cali::ConfigManager::Options& opts)
 }
 
 cali::ChannelController*
-make_runtime_report_controller(const cali::ConfigManager::Options& opts)
+make_runtime_report_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    return new RuntimeReportController(use_mpi(opts), opts);
+    return new RuntimeReportController(use_mpi(opts), name, initial_cfg, opts);
 }
 
 const char* runtime_report_spec =
@@ -132,6 +125,14 @@ const char* runtime_report_spec =
     " \"name\"        : \"runtime-report\","
     " \"description\" : \"Print a time profile for annotated regions\","
     " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
+    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
+    "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
+    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
+    "   },"
     " \"options\": "
     " ["
     "  {"

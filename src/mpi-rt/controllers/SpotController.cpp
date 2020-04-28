@@ -226,16 +226,8 @@ public:
         }
     }
 
-    SpotController(bool use_mpi, const cali::ConfigManager::Options& opts)
-        : ChannelController("spot", 0, {
-                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-                { "CALI_TIMER_INCLUSIVE_DURATION", "false" },
-                { "CALI_TIMER_SNAPSHOT_DURATION",  "true" },
-                { "CALI_TIMER_UNIT", "sec" },
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                { "CALI_CHANNEL_CONFIG_CHECK",  "false" }
-            }),
+    SpotController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg),
           m_opts(opts),
           m_use_mpi(use_mpi)
         {
@@ -252,7 +244,7 @@ public:
 
 
 cali::ChannelController*
-make_spot_controller(const cali::ConfigManager::Options& opts) {
+make_spot_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
     bool use_mpi = false;
 #ifdef CALIPER_HAVE_MPI
     use_mpi = true;
@@ -261,7 +253,7 @@ make_spot_controller(const cali::ConfigManager::Options& opts) {
     if (opts.is_set("aggregate_across_ranks"))
         use_mpi = opts.get("aggregate_across_ranks").to_bool();
 
-    return new SpotController(use_mpi, opts);
+    return new SpotController(use_mpi, name, initial_cfg, opts);
 }
 
 const char* controller_spec =
@@ -269,6 +261,15 @@ const char* controller_spec =
     " \"name\"        : \"spot\","
     " \"description\" : \"Record a time profile for the Spot web visualization framework\","
     " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
+    "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
+    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
+    "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
+    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
+    "   },"
     " \"options\": "
     " ["
     "  {"

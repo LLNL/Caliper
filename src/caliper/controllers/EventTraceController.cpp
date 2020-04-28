@@ -13,13 +13,8 @@ class EventTraceController : public cali::ChannelController
 {
 public:
 
-    EventTraceController(const ConfigManager::Options& opts)
-        : ChannelController("event-trace", 0, {
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                { "CALI_SERVICES_ENABLE", "event,recorder,timestamp,trace" },
-                { "CALI_TIMER_UNIT", "sec" },
-                { "CALI_TIMER_SNAPSHOT_DURATION", "true" }
-            })
+    EventTraceController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg)
         {
             std::string tmp = opts.get("output", "").to_string();
 
@@ -39,16 +34,22 @@ public:
 };
 
 static cali::ChannelController*
-make_event_trace_controller(const cali::ConfigManager::Options& opts)
+make_event_trace_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    return new EventTraceController(opts);
+    return new EventTraceController(name, initial_cfg, opts);
 }
 
-const char* event_trace_spec = 
+const char* event_trace_spec =
     "{"
     " \"name\"        : \"event-trace\","
     " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
+    " \"services\"    : [ \"event\", \"recorder\", \"timestamp\", \"trace\" ],"
     " \"categories\"  : [ \"output\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"   : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\" : \"true\","
+    "     \"CALI_TIMER_UNIT\"              : \"sec\""
+    "   },"
     " \"options\": "
     " ["
     "  { \"name\"        : \"trace.io\","

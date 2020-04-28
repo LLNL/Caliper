@@ -24,11 +24,8 @@ class HatchetSampleProfileController : public cali::ChannelController
 {
 public:
 
-    HatchetSampleProfileController(const cali::ConfigManager::Options& opts, const std::string& format)
-        : ChannelController("hatchet-sample-profile", 0, {
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" },
-                { "CALI_SERVICES_ENABLE", "sampler,trace" }
-            })
+    HatchetSampleProfileController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts, const std::string& format)
+        : ChannelController(name, 0, initial_cfg)
         {
             config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sample.frequency", "200").to_string();
 
@@ -66,18 +63,18 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    std::string("select ") 
-                    + opts.query_select("local", "*,count()") 
-                    + " group by " 
+                    std::string("select ")
+                    + opts.query_select("local", "*,count()")
+                    + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
-                    std::string("select ") 
+                    std::string("select ")
                     + opts.query_select("local", "*,count()")
-                    + " group by " 
+                    + " group by "
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;
             }
@@ -112,7 +109,7 @@ check_args(const cali::ConfigManager::Options& opts) {
 }
 
 cali::ChannelController*
-make_controller(const cali::ConfigManager::Options& opts)
+make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
     std::string format = opts.get("output.format", "json-split").to_string();
 
@@ -126,15 +123,16 @@ make_controller(const cali::ConfigManager::Options& opts)
                         << std::endl;
     }
 
-    return new HatchetSampleProfileController(opts, format);
+    return new HatchetSampleProfileController(name, initial_cfg, opts, format);
 }
 
 const char* controller_spec =
     "{"
     " \"name\"        : \"hatchet-sample-profile\","
     " \"description\" : \"Record a sampling profile for processing with hatchet\","
-    " \"services\"    : [ \"sampler\" ],"
-    " \"categories\"  : [ \"output\"  ],"
+    " \"services\"    : [ \"sampler\", \"trace\" ],"
+    " \"categories\"  : [ \"output\" ],"
+    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" },"
     " \"options\": "
     " ["
     "  { "

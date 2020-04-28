@@ -128,7 +128,7 @@ public:
         friend class ConfigManager;
     };
 
-    typedef cali::ChannelController* (*CreateConfigFn)(const Options&);
+    typedef cali::ChannelController* (*CreateConfigFn)(const char*, const config_map_t&, const Options&);
     typedef std::string              (*CheckArgsFn)(const Options&);
 
     struct ConfigInfo {

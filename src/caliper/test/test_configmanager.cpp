@@ -152,7 +152,7 @@ public:
         return a == b;
     }
 
-    static cali::ChannelController* create(const cali::ConfigManager::Options& opts) {
+    static cali::ChannelController* create(const char*, const config_map_t&, const cali::ConfigManager::Options& opts) {
         return new TestController(opts);
     }
 

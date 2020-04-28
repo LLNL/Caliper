@@ -24,15 +24,8 @@ class HatchetRegionProfileController : public cali::ChannelController
 {
 public:
 
-    HatchetRegionProfileController(const ConfigManager::Options& opts, const std::string& format)
-        : ChannelController("hatchet-region-profile", 0, {
-                { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false" },
-                { "CALI_SERVICES_ENABLE", "aggregate,event,timestamp" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false" },
-                { "CALI_TIMER_SNAPSHOT_DURATION",    "true"  },
-                { "CALI_TIMER_INCLUSIVE_DURATION",   "false" },
-                { "CALI_TIMER_UNIT", "sec" }
-            })
+    HatchetRegionProfileController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts, const std::string& format)
+        : ChannelController(name, 0, initial_cfg)
         {
             std::string output(opts.get("output", "region_profile").to_string());
 
@@ -98,7 +91,7 @@ check_args(const cali::ConfigManager::Options& opts) {
 }
 
 cali::ChannelController*
-make_controller(const cali::ConfigManager::Options& opts)
+make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
     std::string format = opts.get("output.format", "json-split").to_string();
 
@@ -112,7 +105,7 @@ make_controller(const cali::ConfigManager::Options& opts)
                         << std::endl;
     }
 
-    return new HatchetRegionProfileController(opts, format);
+    return new HatchetRegionProfileController(name, initial_cfg, opts, format);
 }
 
 const char* controller_spec =
@@ -120,6 +113,14 @@ const char* controller_spec =
     " \"name\"        : \"hatchet-region-profile\","
     " \"description\" : \"Record a region time profile for processing with hatchet\","
     " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
+    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
+    "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
+    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
+    "   },"
     " \"options\": "
     " ["
     "  { "

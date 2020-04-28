@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.  
+// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 #include "caliper/Caliper.h"
@@ -16,14 +16,8 @@ class SpotV1Controller : public cali::ChannelController
 {
 public:
 
-    SpotV1Controller(const cali::ConfigManager::Options& opts)
-        : cali::ChannelController("spot-v1", 0, {
-                { "CALI_SERVICES_ENABLE", "event,aggregate,spot,timestamp" },
-                { "CALI_CHANNEL_FLUSH_ON_EXIT",   "false"        },
-                { "CALI_TIMER_SNAPSHOT_DURATION", "false"        },
-                { "CALI_SPOT_TIME_DIVISOR",       "1000"         },
-                { "CALI_SPOT_Y_AXES",             "Milliseconds" }
-            })
+    SpotV1Controller(const char* name, const cali::config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
+        : cali::ChannelController(name, 0, initial_cfg)
         {
             if (opts.is_set("config"))
                 config()["CALI_SPOT_CONFIG"] = opts.get("config", "").to_string();
@@ -31,6 +25,8 @@ public:
                 config()["CALI_SPOT_CODE_VERSION"] = opts.get("code_version", "").to_string();
             if (opts.is_set("title"))
                 config()["CALI_SPOT_TITLE"] = opts.get("title", "").to_string();
+
+            opts.update_channel_config(config());
         }
 
     void flush() {
@@ -42,10 +38,16 @@ public:
     }
 };
 
-const char* controller_spec = 
+const char* controller_spec =
     "{"
     " \"name\"        : \"spot-v1\","
     " \"description\" : \"Write Spot v1 JSON output\","
+    " \"services\"    : [\"event\", \"aggregate\", \"spot\", \"timestamp\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
+    "     \"CALI_SPOT_TIME_DIVISOR\"          : \"1000\","
+    "     \"CALI_SPOT_Y_AXES\"                : \"Milliseconds\","
+    "   },"
     " \"options\": "
     " ["
     "  {"
@@ -64,9 +66,9 @@ const char* controller_spec =
     "}";
 
 cali::ChannelController*
-make_spot_v1_controller(const cali::ConfigManager::Options& opts)
+make_spot_v1_controller(const char* name, const cali::config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    return new SpotV1Controller(opts);
+    return new SpotV1Controller(name, initial_cfg, opts);
 }
 
 } // namespace [anonymous]
@@ -74,8 +76,8 @@ make_spot_v1_controller(const cali::ConfigManager::Options& opts)
 namespace cali
 {
 
-cali::ConfigManager::ConfigInfo spot_v1_controller_info 
-{ 
+cali::ConfigManager::ConfigInfo spot_v1_controller_info
+{
     ::controller_spec, ::make_spot_v1_controller, nullptr
 };
 

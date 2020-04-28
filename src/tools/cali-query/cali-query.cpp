@@ -186,7 +186,7 @@ public:
             })
     {}
 
-    static ChannelController* create(const ConfigManager::Options&) {
+    static ChannelController* create(const char*, const config_map_t&, const ConfigManager::Options&) {
         return new ProgressController;
     }
 };

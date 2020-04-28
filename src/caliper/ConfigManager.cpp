@@ -29,6 +29,32 @@ extern const char* builtin_option_specs;
 namespace
 {
 
+class BasicChannelController : public ChannelController
+{
+public:
+
+    BasicChannelController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg)
+        {
+            // Hacky way to handle "output" option
+            if (opts.is_set("output")) {
+                std::string output = opts.get("output").to_string();
+
+                config()["CALI_RECORDER_FILENAME" ] = output;
+                config()["CALI_REPORT_FILENAME"   ] = output;
+                config()["CALI_MPIREPORT_FILENAME"] = output;
+            }
+
+            opts.update_channel_config(config());
+        }
+};
+
+ChannelController* make_basic_channel_controller(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+{
+    return new BasicChannelController(name, initial_cfg, opts);
+}
+
+
 class ConfigSpecManager
 {
     std::vector<ConfigManager::ConfigInfo> m_configs;
@@ -586,11 +612,12 @@ struct ConfigManager::ConfigManagerImpl
     argmap_t    m_extra_vars;
 
     struct config_spec_t {
-        ConfigInfo info;
-        std::string name;
+        ConfigInfo   info;
+        std::string  name;
         std::vector<std::string> categories;
-        std::string description;
-        OptionSpec  opts;
+        std::string  description;
+        config_map_t initial_cfg;
+        OptionSpec   opts;
     };
 
     std::map< std::string, std::shared_ptr<config_spec_t> >
@@ -614,18 +641,11 @@ struct ConfigManager::ConfigManagerImpl
     void
     parse_config_spec(const ConfigInfo& info, const OptionSpec& base_options) {
         config_spec_t spec;
-        bool ok;
+        bool ok = false;
 
         spec.info = info;
 
         auto dict = StringConverter(info.spec).rec_dict(&ok);
-
-        if (!ok) {
-            Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(info.spec, 40)
-                            << std::endl;
-            return;
-        }
 
         std::vector<std::string> cfg_srvcs;
 
@@ -641,6 +661,13 @@ struct ConfigManager::ConfigManagerImpl
             if (std::find(slist.begin(), slist.end(), s) == slist.end())
                 has_all_services = false;
 
+        if (!ok) {
+            Log(0).stream() << "ConfigManager: parse error: "
+                            << util::clamp_string(info.spec, 52)
+                            << std::endl;
+            return;
+        }
+
         if (!has_all_services)
             return;
 
@@ -653,9 +680,23 @@ struct ConfigManager::ConfigManagerImpl
         it = dict.find("options");
         if (it != dict.end())
             spec.opts.add(it->second.rec_list(&ok));
+        it = dict.find("config");
+        if (it != dict.end())
+            for (const auto &p : it->second.rec_dict(&ok))
+                spec.initial_cfg[p.first] = p.second.to_string();
+
+        if (cfg_srvcs.size() > 0)
+            spec.initial_cfg["CALI_SERVICES_ENABLE"].append(::join_stringlist(cfg_srvcs));
 
         spec.opts.add(base_options, spec.categories);
         spec.opts.filter_unavailable_options(slist);
+
+        if (!ok) {
+            Log(0).stream() << "ConfigManager: parse error: "
+                            << util::clamp_string(info.spec, 52)
+                            << std::endl;
+            return;
+        }
 
         it = dict.find("name");
         if (it == dict.end()) {
@@ -835,7 +876,7 @@ struct ConfigManager::ConfigManagerImpl
             if (m_error)
                 return false;
             else
-                m_channels.emplace_back( (cfg.first->info.create)(opts) );
+                m_channels.emplace_back( (cfg.first->info.create)(cfg.first->name.c_str(), cfg.first->initial_cfg, opts) );
         }
 
         return !m_error;

@@ -21,13 +21,8 @@ class CudaActivityController : public cali::ChannelController
 {
 public:
 
-    CudaActivityController(bool use_mpi, const ConfigManager::Options& opts)
-        : ChannelController("cuda-activity", 0, {
-                { "CALI_CHANNEL_FLUSH_ON_EXIT",      "false"  },
-                { "CALI_SERVICES_ENABLE", "cuptitrace,aggregate,event" },
-                { "CALI_EVENT_ENABLE_SNAPSHOT_INFO", "false"  },
-                { "CALI_CUPTITRACE_SNAPSHOT_DURATION", "true" }
-            })
+    CudaActivityController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg) 
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
@@ -101,9 +96,9 @@ use_mpi(const cali::ConfigManager::Options& opts)
 }
 
 cali::ChannelController*
-make_controller(const cali::ConfigManager::Options& opts)
+make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    return new CudaActivityController(use_mpi(opts), opts);
+    return new CudaActivityController(use_mpi(opts), name, initial_cfg, opts);
 }
 
 const char* controller_spec =
@@ -111,7 +106,12 @@ const char* controller_spec =
     " \"name\"        : \"cuda-activity\","
     " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
     " \"categories\"  : [ \"output\", \"region\" ],"
-    " \"services\"    : [ \"cupti\", \"cuptitrace\" ],"
+    " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
+    "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"   : \"false\","
+    "     \"CALI_CUPTITRACE_SNAPSHOT_DURATION\" : \"true\""
+    "   },"
     " \"options\": "
     " ["
     "  {"
