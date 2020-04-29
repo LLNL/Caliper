@@ -20,13 +20,13 @@ namespace cali
 
 /// \class ConfigManager
 /// \ingroup ControlChannelAPI
-/// \brief Configure, enable, and manage built-in %Caliper configurations
+/// \brief Configure, enable, and manage built-in or custom %Caliper configurations
 ///
-///   ConfigManager is the principal component for managing and built-in
-/// %Caliper measurement configurations. It parses a configuration
+///   ConfigManager is the principal component for managing %Caliper
+/// measurement configurations programmatically. It parses a configuration
 /// string and creates a set of control channels for the requested
-/// measurement configurations. The control channel objects can then be
-/// used to start, stop, and flush the measurements channels.
+/// measurement configurations, and provides control methods
+/// to start, stop, and flush the created measurements channels.
 /// Example:
 ///
 /// \code
@@ -51,6 +51,10 @@ namespace cali
 /// // not flush results automatically.
 /// mgr.flush();
 /// \endcode
+///
+///   ConfigManager provides a set of built-in configurations specifications
+/// like "runtime-report". Users can also add custom specifications with
+/// add_config_spec().
 ///
 /// \example cxx-example.cpp
 /// This example demonstrates the C++ annotation macros as well as the
@@ -144,13 +148,19 @@ public:
 
     ~ConfigManager();
 
-    /// \brief Add config spec to this ConfigManager
+    /// \brief Add a custom config spec to this ConfigManager
+    ///
+    /// Adds a new %Caliper configuration specification for this ConfigManager
+    /// using a custom ChannelController or option checking function.
     bool add_config_spec(const ConfigInfo& info);
 
     /// \brief Add a JSON config spec to this ConfigManager
+    ///
+    /// Adds a new %Caliper configuration specification for this ConfigManager
+    /// using a basic ChannelController.
     bool add_config_spec(const char* json);
 
-    /// \brief Parse the \a config_string configuration string and add the
+    /// \brief Parse the \a config_string configuration string and create the
     ///   specified configuration channels.
     ///
     /// Parses configuration strings of the following form:
@@ -178,7 +188,7 @@ public:
     /// \return false if there was a parse error, true otherwise
     bool add(const char* config_string);
 
-    /// \brief Parse the \a config_string configuration string and add the
+    /// \brief Parse the \a config_string configuration string and create the
     ///   specified configuration channels.
     ///
     /// Works similar to ConfigManager::add(const char*), but does not mark
@@ -251,25 +261,53 @@ public:
     void
     flush();
 
-    /// \brief Return names of available configs
-    static std::vector<std::string>
-    available_configs();
-
-    /// \brief Return descriptions for all available configs
-    static std::vector<std::string>
-    get_config_docstrings();
-
-    /// \brief Check if given config string is valid.
+    /// \brief Check if the given config string is valid.
     ///
     /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
     /// in the config string that do not represent configurations or parameters
     /// will be marked as errors.
     ///
-    /// \return error message, or empty string if input is valid.
+    /// \return Error message, or empty string if input is valid.
+    std::string
+    check(const char* config_string, bool allow_extra_kv_pairs = false) const;
+
+    /// \brief Return names of available config specs
+    ///
+    /// Returns only the specifications whose requirements (e.g., available services)
+    /// are met in this %Caliper instance.
+    ///
+    /// \return Names of all available config specs for this ConfigManager.
+    std::vector<std::string>
+    available_config_specs() const;
+
+    /// \brief Return description and options for the given config spec.
+    std::string
+    get_documentation_for_spec(const char* name) const;
+
+    /// \brief Return names of global config specs. Deprectated.
+    static std::vector<std::string>
+    available_configs();
+
+    /// \brief Return descriptions for available global configs.
+    static std::vector<std::string>
+    get_config_docstrings();
+
+    /// \brief Check if given config string is valid for global config specs.
+    ///   Deprecated.
+    ///
+    /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
+    /// in the config string that do not represent configurations or parameters
+    /// will be marked as errors.
+    ///
+    /// Deprecated; create a ConfigManager object and use its check() method.
+    ///
+    /// \return Error message, or empty string if input is valid.
     static std::string
     check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
 };
 
+/// \brief Add a set of global ConfigManager configs
+/// \ingroup ControlChannelAPI
 void add_global_config_specs(const ConfigManager::ConfigInfo** configs);
 
 } // namespace cali

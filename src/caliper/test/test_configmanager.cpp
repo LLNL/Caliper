@@ -122,11 +122,8 @@ class TestController : public cali::ChannelController
 {
     cali::ConfigManager::Options opts;
 
-    TestController(const cali::ConfigManager::Options& o)
-        : ChannelController("testcontroller", 0, {
-                { "CALI_CHANNEL_CONFIG_CHECK",  "false" },
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }
-            }),
+    TestController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& o)
+        : ChannelController(name, 0, initial_cfg),
           opts(o)
     { }
 
@@ -152,8 +149,8 @@ public:
         return a == b;
     }
 
-    static cali::ChannelController* create(const char*, const config_map_t&, const cali::ConfigManager::Options& opts) {
-        return new TestController(opts);
+    static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+        return new TestController(name, initial_cfg, opts);
     }
 
     ~TestController()
@@ -164,6 +161,11 @@ const char* testcontroller_spec =
     "{"
     " \"name\"        : \"testcontroller\","
     " \"description\" : \"Test controller for ConfigManager unit tests\","
+    " \"config\"      : "
+    " {"
+    "  \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
+    "  \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\""
+    " },"
     " \"options\" : "
     " ["
     "  {"
@@ -189,17 +191,17 @@ const char* testcontroller_spec =
     " ]"
     "}";
 
-const ConfigManager::ConfigInfo  testcontroller_info = { testcontroller_spec, TestController::create, nullptr };
-const ConfigManager::ConfigInfo* controller_list[] = { &testcontroller_info, nullptr };
 
 } // namespace [anonymous]
 
 TEST(ConfigManagerTest, Options)
 {
-    add_global_config_specs(controller_list);
-    
+    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
+
     {
-        auto configs = cali::ConfigManager::available_configs();
+        ConfigManager mgr;
+        mgr.add_config_spec(testcontroller_info);
+        auto configs = mgr.available_config_specs();
         std::sort(configs.begin(), configs.end());
 
         std::string expected_configs[] = { "event-trace", "runtime-report", "testcontroller" };
@@ -208,10 +210,13 @@ TEST(ConfigManagerTest, Options)
                                 std::begin(expected_configs), std::end(expected_configs)));
     }
 
-    EXPECT_EQ(cali::ConfigManager::check_config_string("testcontroller(boolopt=bla,stringopt=hi)"), "Invalid value \"bla\" for boolopt");
-
     {
-        ConfigManager mgr("testcontroller (   boolopt, another_opt=false,stringopt=hi)");
+        ConfigManager mgr;
+        mgr.add_config_spec(testcontroller_info);
+
+        EXPECT_EQ(mgr.check("testcontroller(boolopt=bla,stringopt=hi)"), "Invalid value \"bla\" for boolopt");
+
+        mgr.add("testcontroller (   boolopt, another_opt=false,stringopt=hi)");
 
         EXPECT_FALSE(mgr.error()) << mgr.error_msg();
         auto cP = mgr.get_channel("testcontroller");

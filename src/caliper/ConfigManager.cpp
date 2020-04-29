@@ -881,8 +881,30 @@ struct ConfigManager::ConfigManagerImpl
         return !m_error;
     }
 
+    std::string
+    get_documentation_for_spec(const char* name) const {
+        std::string doc;
+
+        auto it = m_spec.find(name);
+        if (it == m_spec.end()) {
+            doc.append(name).append(": Not available");
+        } else {
+            doc.append(it->second->description);
+
+            auto optdescrmap = it->second->opts.get_option_descriptions();
+
+            if (!optdescrmap.empty()) {
+                doc.append("\n Options:");
+                for (const auto &op : optdescrmap)
+                    doc.append("\n  ").append(op.first).append("\n   ").append(op.second);
+            }
+        }
+
+        return doc;
+    }
+
     std::vector<std::string>
-    get_docstrings() {
+    get_docstrings() const {
         std::vector<std::string> ret;
 
         for (const auto &p : m_spec) {
@@ -1015,16 +1037,51 @@ ConfigManager::flush()
         chn->flush();
 }
 
+std::string
+ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
+{
+    // Make a copy of our data because parsing the string modifies its state
+    ConfigManagerImpl tmpP(*mP);
+    auto configs = tmpP.parse_configstring(configstr);
+
+    for (auto cfg : configs) {
+        Options opts(cfg.first->opts, merge_new_elements(cfg.second, tmpP.m_default_parameters));
+
+        if (cfg.first->check_args)
+            tmpP.check_error((cfg.first->check_args)(opts));
+
+        tmpP.check_error(opts.check());
+
+        if (tmpP.m_error)
+            break;
+    }
+
+    if (!allow_extra_kv_pairs && !tmpP.m_extra_vars.empty())
+        tmpP.set_error("Unknown config or parameter: " + tmpP.m_extra_vars.begin()->first);
+
+    return tmpP.m_error_msg;
+}
+
 std::vector<std::string>
-ConfigManager::available_configs()
+ConfigManager::available_config_specs() const
 {
     std::vector<std::string> ret;
-    ConfigManagerImpl mgr;
-
-    for (const auto &p : mgr.m_spec)
+    for (const auto &p : mP->m_spec)
         ret.push_back(p.first);
 
     return ret;
+}
+
+std::string
+ConfigManager::get_documentation_for_spec(const char* name) const
+{
+    return mP->get_documentation_for_spec(name);
+}
+
+std::vector<std::string>
+ConfigManager::available_configs()
+{
+    return ConfigManager().available_config_specs();
 }
 
 std::vector<std::string>
@@ -1035,27 +1092,9 @@ ConfigManager::get_config_docstrings()
 }
 
 std::string
-ConfigManager::check_config_string(const char* config_string, bool allow_extra_kv_pairs)
+ConfigManager::check_config_string(const char* configstr, bool allow_extra_kv_pairs)
 {
-    ConfigManagerImpl mgr;
-    auto configs = mgr.parse_configstring(config_string);
-
-    for (auto cfg : configs) {
-        Options opts(cfg.first->opts, merge_new_elements(cfg.second, mgr.m_default_parameters));
-
-        if (cfg.first->check_args)
-            mgr.check_error((cfg.first->check_args)(opts));
-
-        mgr.check_error(opts.check());
-
-        if (mgr.m_error)
-            break;
-    }
-
-    if (!allow_extra_kv_pairs && !mgr.m_extra_vars.empty())
-        mgr.set_error("Unknown config or parameter: " + mgr.m_extra_vars.begin()->first);
-
-    return mgr.m_error_msg;
+    return ConfigManager().check(configstr, allow_extra_kv_pairs);
 }
 
 void

@@ -170,6 +170,8 @@ void setup_caliper_config(const Args& args)
 
 int main(int argc, char* argv[])
 {
+    cali_mpi_init();
+
     // --- Parse command line arguments
     //
 
