@@ -519,6 +519,20 @@ module caliper_mod
             character(kind=C_CHAR), intent(IN) :: attr_name(*)
         end subroutine c_cali_end_byname
 
+        subroutine c_cali_begin_region(name) &
+                bind(C, name="cali_begin_region")
+            use iso_c_binding, only : C_CHAR
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: name(*)
+        end subroutine c_cali_begin_region
+
+        subroutine c_cali_end_region(name) &
+                bind(C, name="cali_end_region")
+            use iso_c_binding, only : C_CHAR
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: name(*)
+        end subroutine c_cali_end_region
+
         ! splicer begin additional_interfaces
         ! splicer end additional_interfaces
     end interface
@@ -973,6 +987,22 @@ contains
         call c_cali_end_byname(trim(attr_name)//C_NULL_CHAR)
         ! splicer end function.cali_end_byname
     end subroutine cali_end_byname
+
+    subroutine cali_begin_region(name)
+        use iso_c_binding, only : C_NULL_CHAR
+        character(len=*), intent(IN) :: name
+        ! splicer begin function.cali_begin_region
+        call c_cali_begin_region(trim(name)//C_NULL_CHAR)
+        ! splicer end function.cali_begin_region
+    end subroutine cali_begin_region
+
+    subroutine cali_end_region(name)
+        use iso_c_binding, only : C_NULL_CHAR
+        character(len=*), intent(IN) :: name
+        ! splicer begin function.cali_end_region
+        call c_cali_end_region(trim(name)//C_NULL_CHAR)
+        ! splicer end function.cali_end_region
+    end subroutine cali_end_region
 
     ! splicer begin additional_functions
     ! splicer end additional_functions

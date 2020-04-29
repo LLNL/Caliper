@@ -3,7 +3,7 @@ program fortran_example
 
     implicit none
 
-    type(ScopeAnnotation) :: m_ann, o_ann
+    type(ScopeAnnotation) :: m_ann
     type(BufferedRegionProfile) :: rp
     type(ConfigManager)   :: mgr
 
@@ -45,14 +45,16 @@ program fortran_example
         ! Start the region profile
         call rp%start()
 
-        ! Add region 'outer'
-        o_ann = ScopeAnnotation_begin('outer')
-        ! Add another region 'inner' nested under 'outer' using a different syntax
-        call cali_begin_string_byname('annotation', 'inner')
+        ! Add region 'outer' using cali_begin_region()
+        ! Equivalent to "ann = ScopeAnnotation_begin('outer')"
+        call cali_begin_region('outer')
+        ! Add another region 'inner' nested under 'outer'
+        call cali_begin_region('inner')
         ! End 'inner'
-        call cali_end_byname('annotation')
+        call cali_end_region('inner')
         ! End 'outer'
-        call ScopeAnnotation_end(o_ann)
+        ! Equivalent to "call ScopeAnnotation_end(ann)"
+        call cali_end_region('bla')
 
         ! Stop the region profile and fetch region times 
         call rp%stop

@@ -84,6 +84,12 @@ declarations:
   - decl: void cali_end_byname(const char* attr_name)
     options:
       C_extern_C: true
+  - decl: void cali_begin_region(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_end_region(const char* name)
+    options:
+      C_extern_C: true
 
   - decl: class ScopeAnnotation
     declarations:

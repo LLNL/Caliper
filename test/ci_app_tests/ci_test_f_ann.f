@@ -40,6 +40,9 @@ program fortran_example
 
     call ScopeAnnotation_end(w_ann)
 
+    call cali_begin_region('foo')
+    call cali_end_region('foo')
+
     call ScopeAnnotation_end(f_ann)
 
     call mgr%flush
