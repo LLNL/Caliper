@@ -29,31 +29,29 @@ extern const char* builtin_option_specs;
 namespace
 {
 
-class BasicChannelController : public ChannelController
-{
-public:
-
-    BasicChannelController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
-        : ChannelController(name, 0, initial_cfg)
-        {
-            // Hacky way to handle "output" option
-            if (opts.is_set("output")) {
-                std::string output = opts.get("output").to_string();
-
-                config()["CALI_RECORDER_FILENAME" ] = output;
-                config()["CALI_REPORT_FILENAME"   ] = output;
-                config()["CALI_MPIREPORT_FILENAME"] = output;
-            }
-
-            opts.update_channel_config(config());
-        }
-};
-
 ChannelController* make_basic_channel_controller(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
 {
-    return new BasicChannelController(name, initial_cfg, opts);
-}
+    class BasicController : public ChannelController
+    {
+    public:
+        BasicController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+            : ChannelController(name, 0, initial_cfg)
+            {
+                // Hacky way to handle "output" option
+                if (opts.is_set("output")) {
+                    std::string output = opts.get("output").to_string();
 
+                    config()["CALI_RECORDER_FILENAME" ] = output;
+                    config()["CALI_REPORT_FILENAME"   ] = output;
+                    config()["CALI_MPIREPORT_FILENAME"] = output;
+                }
+
+                opts.update_channel_config(config());
+            }
+    };
+
+    return new BasicController(name, initial_cfg, opts);
+}
 
 class ConfigSpecManager
 {
@@ -947,14 +945,13 @@ ConfigManager::~ConfigManager()
     mP.reset();
 }
 
-bool
+void
 ConfigManager::add_config_spec(const ConfigInfo& info)
 {
     mP->parse_config_spec(info.spec, info.create, info.check_args);
-    return !mP->m_error;
 }
 
-bool
+void
 ConfigManager::add_config_spec(const char* json)
 {
     ConfigInfo info { json, nullptr, nullptr };
