@@ -147,6 +147,13 @@ class ConfigManager::OptionSpec
 
     std::map<std::string, option_spec_t> data;
 
+    bool        m_error;
+    std::string m_error_msg;
+
+    void set_error(const std::string& msg) {
+        m_error = true;
+        m_error_msg = msg;
+    }
 
     void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
         for (const StringConverter& sc : list) {
@@ -170,7 +177,7 @@ class ConfigManager::OptionSpec
 
             it = dict.find("level");
             if (it == dict.end()) {
-                Log(0).stream() << "OptionSpec: query args: missing \"level\"" << std::endl;
+                set_error(": query arg: missing \"level\"");
                 continue;
             }
 
@@ -185,7 +192,7 @@ class ConfigManager::OptionSpec
 
     void parse_spec(const std::map<std::string, StringConverter>& dict) {
         option_spec_t opt;
-        bool ok = false;
+        bool ok = true;
 
         auto it = dict.find("category");
         if (it != dict.end())
@@ -194,28 +201,31 @@ class ConfigManager::OptionSpec
         if (it != dict.end())
             opt.services = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("inherit");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             opt.inherited_specs = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("config");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
         it = dict.find("query args");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             parse_query_args(it->second.rec_list(&ok), opt);
         it = dict.find("type");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             opt.type = it->second.to_string();
         it = dict.find("description");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             opt.description = it->second.to_string();
 
         it = dict.find("name");
         if (it == dict.end()) {
-            Log(0).stream() << "ConfigOptionManager: option description needs a name" << std::endl;
+            set_error(": \"name\" missing");
             return;
         }
 
-        data[it->second.to_string()] = opt;
+        if (!ok)
+            set_error(": parse error");
+        if (!m_error)
+            data[it->second.to_string()] = opt;
     }
 
     std::vector<std::string> recursive_get_services_list(const std::string& cfg) {
@@ -242,6 +252,7 @@ class ConfigManager::OptionSpec
 public:
 
     OptionSpec()
+        : m_error(false)
     { }
 
     OptionSpec(const OptionSpec&) = default;
@@ -253,6 +264,14 @@ public:
     ~OptionSpec()
     { }
 
+    bool error() const {
+        return m_error;
+    }
+
+    std::string error_msg() const {
+        return m_error_msg;
+    }
+
     void add(const OptionSpec& other, const std::vector<std::string>& categories) {
         for (const auto &p : other.data)
             if (std::find(categories.begin(), categories.end(), p.second.category) != categories.end())
@@ -260,8 +279,19 @@ public:
     }
 
     void add(const std::vector<StringConverter>& list) {
-        for (auto &p : list)
+        if (m_error)
+            return;
+
+        for (auto &p : list) {
             parse_spec(p.rec_dict());
+
+            if (m_error) {
+                m_error_msg = std::string("option spec: ")
+                    + util::clamp_string(p.to_string(), 32)
+                    + m_error_msg;
+                break;
+            }
+        }
     }
 
     bool contains(const std::string& name) const {
@@ -641,7 +671,12 @@ struct ConfigManager::ConfigManagerImpl
     }
 
     void
-    parse_config_spec(const char* jsonspec, CreateConfigFn create, CheckArgsFn check) {
+    add_option_spec(const char* jsonspec) {
+
+    }
+
+    void
+    add_config_spec(const char* jsonspec, CreateConfigFn create, CheckArgsFn check, bool ignore_existing) {
         config_spec_t spec;
         bool ok = false;
 
@@ -651,10 +686,30 @@ struct ConfigManager::ConfigManagerImpl
 
         auto dict = StringConverter(spec.json).rec_dict(&ok);
 
+        if (!ok) {
+            set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
+            return;
+        }
+
+        auto it = dict.find("name");
+        if (it == dict.end()) {
+            set_error(std::string("'name' missing in spec: ") + util::clamp_string(spec.json, 48));
+            return;
+        }
+
+        spec.name = it->second.to_string();
+
+        // check if the spec already exists
+        if (m_spec.count(spec.name) > 0) {
+            if (!ignore_existing)
+                set_error(spec.name + std::string(" already exists"));
+            return;
+        }
+
         std::vector<std::string> cfg_srvcs;
 
-        auto it = dict.find("services");
-        if (it != dict.end())
+        it = dict.find("services");
+        if (ok && !m_error && it != dict.end())
             cfg_srvcs = ::to_stringlist(it->second.rec_list(&ok));
 
         services::add_default_service_specs();
@@ -665,25 +720,20 @@ struct ConfigManager::ConfigManagerImpl
             if (std::find(slist.begin(), slist.end(), s) == slist.end())
                 have_all_services = false;
 
-        if (!ok) {
-            set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
-            return;
-        }
-
         if (!have_all_services)
             return;
 
         it = dict.find("categories");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             spec.categories = ::to_stringlist(it->second.rec_list(&ok));
         it = dict.find("description");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             spec.description = it->second.to_string();
         it = dict.find("options");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             spec.opts.add(it->second.rec_list(&ok));
         it = dict.find("config");
-        if (it != dict.end())
+        if (ok && !m_error && it != dict.end())
             for (const auto &p : it->second.rec_dict(&ok))
                 spec.initial_cfg[p.first] = p.second.to_string();
 
@@ -693,34 +743,27 @@ struct ConfigManager::ConfigManagerImpl
         spec.opts.add(m_global_opts, spec.categories);
         spec.opts.filter_unavailable_options(slist);
 
-        if (!ok) {
+        if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
-            return;
-        }
-
-        it = dict.find("name");
-        if (it == dict.end()) {
-            set_error(std::string("'name' missing in spec: ") + util::clamp_string(spec.json, 48));
-            return;
-        }
-
-        spec.name = it->second.to_string();
-        m_spec.emplace(spec.name, std::make_shared<config_spec_t>(spec));
+        if (!m_error)
+            m_spec.emplace(spec.name, std::make_shared<config_spec_t>(spec));
     }
 
     void
-    import_global_specs() {
+    add_global_option_specs(const char* json) {
         bool ok = false;
+        m_global_opts.add(StringConverter(json).rec_list(&ok));
 
-        m_global_opts.add(StringConverter(builtin_option_specs).rec_list(&ok));
-
+        if (m_global_opts.error())
+            set_error(m_global_opts.error_msg());
         if (!ok)
-            Log(0).stream() << "ConfigManager: parse error: "
-                            << util::clamp_string(builtin_option_specs, 52)
-                            << std::endl;
+            set_error(std::string("parse error: ") + util::clamp_string(builtin_option_specs, 48));
+    }
 
+    void
+    import_builtin_config_specs() {
         for (const ConfigInfo& s : ::ConfigSpecManager::instance()->get_config_specs())
-            parse_config_spec(s.spec, s.create, s.check_args);
+            add_config_spec(s.spec, s.create, s.check_args, true /* ignore existing */ );
     }
 
     //   Parse "=value"
@@ -761,7 +804,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string key = util::read_word(is, ",=()\n");
 
             if (!(key == "profile" || opts.contains(key))) {
-                set_error("Unknown argument: " + key);
+                set_error("Unknown option: " + key);
                 args.clear();
                 return args;
             }
@@ -807,6 +850,8 @@ struct ConfigManager::ConfigManagerImpl
     // and extra variables list.
     std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> >
     parse_configstring(const char* config_string) {
+        import_builtin_config_specs();
+
         std::vector< std::pair<const std::shared_ptr<config_spec_t>, argmap_t> > ret;
 
         std::istringstream is(config_string);
@@ -925,7 +970,7 @@ struct ConfigManager::ConfigManagerImpl
 
     ConfigManagerImpl()
         {
-            import_global_specs();
+            add_global_option_specs(builtin_option_specs);
         }
 };
 
@@ -948,14 +993,20 @@ ConfigManager::~ConfigManager()
 void
 ConfigManager::add_config_spec(const ConfigInfo& info)
 {
-    mP->parse_config_spec(info.spec, info.create, info.check_args);
+    mP->add_config_spec(info.spec, info.create, info.check_args, false /* treat existing spec as error */);
 }
 
 void
 ConfigManager::add_config_spec(const char* json)
 {
     ConfigInfo info { json, nullptr, nullptr };
-    return add_config_spec(info);
+    add_config_spec(info);
+}
+
+void
+ConfigManager::add_option_spec(const char* json)
+{
+    mP->add_global_option_specs(json);
 }
 
 bool
@@ -1062,6 +1113,8 @@ ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
 std::vector<std::string>
 ConfigManager::available_config_specs() const
 {
+    mP->import_builtin_config_specs();
+
     std::vector<std::string> ret;
     for (const auto &p : mP->m_spec)
         ret.push_back(p.first);
@@ -1072,6 +1125,8 @@ ConfigManager::available_config_specs() const
 std::string
 ConfigManager::get_documentation_for_spec(const char* name) const
 {
+    mP->import_builtin_config_specs();
+
     return mP->get_documentation_for_spec(name);
 }
 

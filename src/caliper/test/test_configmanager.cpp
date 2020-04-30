@@ -21,7 +21,7 @@ TEST(ConfigManagerTest, ParseErrors) {
         cali::ConfigManager mgr("  event-trace(foo  = bar)");
 
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown argument: foo");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown option: foo");
 
         auto list = mgr.get_all_channels();
 
@@ -161,6 +161,7 @@ const char* testcontroller_spec =
     "{"
     " \"name\"        : \"testcontroller\","
     " \"description\" : \"Test controller for ConfigManager unit tests\","
+    " \"categories\"  : [ \"testcategory\" ],"
     " \"config\"      : "
     " {"
     "  \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
@@ -191,6 +192,17 @@ const char* testcontroller_spec =
     " ]"
     "}";
 
+const char* test_option_spec =
+    "["
+    " {  \"name\"     : \"global_boolopt\","
+    "    \"category\" : \"testcategory\","
+    "    \"type\"     : \"bool\""
+    " },"
+    " {  \"name\"     : \"invisible_opt\","
+    "    \"category\" : \"not_the_testcategory\","
+    "    \"type\"     : \"bool\""
+    " }"
+    "]";
 
 } // namespace [anonymous]
 
@@ -200,7 +212,11 @@ TEST(ConfigManagerTest, Options)
 
     {
         ConfigManager mgr;
+        mgr.add_option_spec(test_option_spec);
+        EXPECT_FALSE(mgr.error()) << mgr.error_msg();
         mgr.add_config_spec(testcontroller_info);
+        EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+
         auto configs = mgr.available_config_specs();
         std::sort(configs.begin(), configs.end());
 
@@ -212,11 +228,13 @@ TEST(ConfigManagerTest, Options)
 
     {
         ConfigManager mgr;
+        mgr.add_option_spec(test_option_spec);
         mgr.add_config_spec(testcontroller_info);
 
         EXPECT_EQ(mgr.check("testcontroller(boolopt=bla,stringopt=hi)"), "Invalid value \"bla\" for boolopt");
+        EXPECT_EQ(mgr.check("testcontroller(invisible_opt)"), "Unknown option: invisible_opt");
 
-        mgr.add("testcontroller (   boolopt, another_opt=false,stringopt=hi)");
+        mgr.add("testcontroller ( global_boolopt=true,  boolopt, another_opt=false,stringopt=hi)");
 
         EXPECT_FALSE(mgr.error()) << mgr.error_msg();
         auto cP = mgr.get_channel("testcontroller");
@@ -225,18 +243,20 @@ TEST(ConfigManagerTest, Options)
         ASSERT_TRUE(tP);
 
         EXPECT_TRUE(tP->is_set("boolopt"));
+        EXPECT_TRUE(tP->is_set("global_boolopt"));
         EXPECT_TRUE(tP->is_set("another_opt"));
         EXPECT_FALSE(tP->is_set("not_set_opt"));
         EXPECT_TRUE(tP->is_set("stringopt"));
 
         EXPECT_TRUE(tP->is_enabled("boolopt"));
+        EXPECT_TRUE(tP->is_enabled("global_boolopt"));
         EXPECT_FALSE(tP->is_enabled("anotheropt"));
         EXPECT_TRUE(tP->is_enabled("stringopt"));
         EXPECT_FALSE(tP->is_enabled("not_set_opt"));
 
         EXPECT_EQ(tP->get_opt("stringopt"), std::string("hi"));
 
-        std::vector<std::string> list { "boolopt" };
+        std::vector<std::string> list { "boolopt", "global_boolopt" };
         EXPECT_TRUE(tP->enabled_opts_list_matches(list));
     }
 }

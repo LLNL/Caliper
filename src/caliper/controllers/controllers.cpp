@@ -55,7 +55,7 @@ const char* nvprof_spec =
     " \"name\"        : \"nvprof\","
     " \"services\"    : [ \"nvprof\" ],"
     " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\","
-    " \"config        : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false }"
+    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
 
 cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
@@ -96,14 +96,14 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"description\" : \"Profile CUDA API functions\","
     " \"category\"    : \"region\","
-    " \"services\"    : [ \"cupti\"  ]"
+    " \"services\"    : [ \"cupti\" ]"
     "},"
     "{"
     " \"name\"        : \"profile.kokkos\","
     " \"type\"        : \"bool\","
     " \"description\" : \"Profile Kokkos functions\","
     " \"category\"    : \"region\","
-    " \"services\"    : [ \"kokkostime\"  ]"
+    " \"services\"    : [ \"kokkostime\" ]"
     "},"
     "{"
     " \"name\"        : \"io.bytes.written\","
