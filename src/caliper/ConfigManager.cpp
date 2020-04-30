@@ -142,7 +142,7 @@ class ConfigManager::OptionSpec
         std::vector<std::string> inherited_specs;
 
         std::map<std::string, query_arg_t> query_args;
-        std::map<std::string, std::string> extra_config_flags;
+        std::map<std::string, std::string> config;
     };
 
     std::map<std::string, option_spec_t> data;
@@ -180,7 +180,7 @@ class ConfigManager::OptionSpec
 
     void parse_config(const std::map<std::string, StringConverter>& dict, option_spec_t& opt) {
         for (auto p : dict)
-            opt.extra_config_flags[p.first] = p.second.to_string();
+            opt.config[p.first] = p.second.to_string();
     }
 
     void parse_spec(const std::map<std::string, StringConverter>& dict) {
@@ -196,7 +196,7 @@ class ConfigManager::OptionSpec
         it = dict.find("inherit");
         if (it != dict.end())
             opt.inherited_specs = ::to_stringlist(it->second.rec_list(&ok));
-        it = dict.find("extra_config_flags");
+        it = dict.find("config");
         if (it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
         it = dict.find("query args");
@@ -379,20 +379,20 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     void
-    append_extra_config_flags(config_map_t& config) {
+    append_config(config_map_t& config) {
         for (const std::string &opt : enabled_options) {
             auto o_it = spec.data.find(opt);
             if (o_it == spec.data.end())
                 continue;
 
-            config.insert(o_it->second.extra_config_flags.begin(), o_it->second.extra_config_flags.end());
+            config.insert(o_it->second.config.begin(), o_it->second.config.end());
         }
     }
 
     void
     update_channel_config(config_map_t& config) {
         config["CALI_SERVICES_ENABLE"] = services(config["CALI_SERVICES_ENABLE"]);
-        append_extra_config_flags(config);
+        append_config(config);
     }
 
     std::string
