@@ -223,6 +223,13 @@ int main(int argc, const char* argv[])
 {
     Args args(::option_table);
 
+    // The Caliper config setup must run before Caliper runtime initialization
+    setup_caliper_config(args);
+
+    ConfigManager mgr;
+
+    mgr.add_config_spec(progress_config_spec);
+
     //
     // --- Parse command line arguments
     //
@@ -240,7 +247,7 @@ int main(int argc, const char* argv[])
         }
 
         if (args.is_set("help")) {
-            print_caliquery_help(args, usage);
+            print_caliquery_help(args, usage, mgr);
             return 0;
         }
 
@@ -252,12 +259,6 @@ int main(int argc, const char* argv[])
 
     bool verbose = args.is_set("verbose");
 
-    // The Caliper config setup must run before Caliper runtime initialization
-    setup_caliper_config(args);
-
-    ConfigManager mgr;
-
-    mgr.add_config_spec(progress_config_spec);
     mgr.add(args.get("caliper-config").c_str());
 
     if (mgr.error()) {

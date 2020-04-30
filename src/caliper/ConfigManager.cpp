@@ -883,20 +883,20 @@ struct ConfigManager::ConfigManagerImpl
 
     std::string
     get_documentation_for_spec(const char* name) const {
-        std::string doc;
+        std::string doc(name);
 
         auto it = m_spec.find(name);
         if (it == m_spec.end()) {
-            doc.append(name).append(": Not available");
+            doc.append(": Not available");
         } else {
-            doc.append(it->second->description);
+            doc.append("\n ").append(it->second->description);
 
             auto optdescrmap = it->second->opts.get_option_descriptions();
 
             if (!optdescrmap.empty()) {
-                doc.append("\n Options:");
+                doc.append("\n  Options:");
                 for (const auto &op : optdescrmap)
-                    doc.append("\n  ").append(op.first).append("\n   ").append(op.second);
+                    doc.append("\n   ").append(op.first).append("\n    ").append(op.second);
             }
         }
 
