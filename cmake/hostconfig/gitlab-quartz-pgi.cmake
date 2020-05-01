@@ -1,5 +1,6 @@
 set(CMAKE_C_COMPILER   "/usr/tce/packages/pgi/pgi-19.7/bin/pgcc" CACHE PATH "")
 set(CMAKE_CXX_COMPILER "/usr/tce/packages/pgi/pgi-19.7/bin/pgc++" CACHE PATH "")
+set(CMAKE_CXX_COMPILER "/usr/tce/packages/pgi/pgi-19.7/bin/pgfortran" CACHE PATH "")
 
 set(CMAKE_CXX_FLAGS    "-std=c++11" CACHE STRING "")
 
@@ -13,7 +14,8 @@ set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
 # undefined references or non-existing include files. Turn it off for now.
 # Build with spack if dyninst is needed.
 #set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
- 
+
+set(WITH_FORTRAN  On  CACHE BOOL "")
 set(WITH_CALLPATH On  CACHE BOOL "")
 set(WITH_NVPROF   Off CACHE BOOL "")
 set(WITH_CUPTI    Off CACHE BOOL "")

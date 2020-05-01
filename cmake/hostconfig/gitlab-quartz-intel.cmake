@@ -1,5 +1,6 @@
 set(CMAKE_C_COMPILER   "/usr/tce/packages/intel/intel-19.0.4/bin/icc" CACHE PATH "")
 set(CMAKE_CXX_COMPILER "/usr/tce/packages/intel/intel-19.0.4/bin/icpc" CACHE PATH "")
+set(CMAKE_Fortran_COMPILER "/usr/tce/packages/intel/intel-19.0.4/bin/ifort" CACHE PATH "")
 
 set(MPI_C_COMPILER     "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicc" CACHE PATH "")
 set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin/mpicxx" CACHE PATH "")
@@ -14,6 +15,7 @@ set(adiak_DIR "/g/g90/boehme3/local/adiak/toss3-0.1.1/lib/cmake/adiak" CACHE PAT
 # Build with spack if dyninst is needed.
 #set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
 
+set(WITH_FORTRAN  On  CACHE BOOL "")
 set(WITH_ADIAK    On  CACHE BOOL "")
 set(WITH_CALLPATH On  CACHE BOOL "")
 set(WITH_NVPROF   Off CACHE BOOL "")
