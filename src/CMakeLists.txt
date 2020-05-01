@@ -6,6 +6,7 @@ set(CMAKE_C_STANDARD   99)
 
 include_directories(${PROJECT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/interface/c_fortran)
 
 add_subdirectory(common)
 add_subdirectory(interface/c_fortran)

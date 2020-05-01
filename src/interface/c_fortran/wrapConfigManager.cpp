@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
-#include "caliper/cali-manager.h"
+#include "caliper/ConfigManager.h"
 
 // splicer begin class.ConfigManager.CXX_definitions
 // splicer end class.ConfigManager.CXX_definitions

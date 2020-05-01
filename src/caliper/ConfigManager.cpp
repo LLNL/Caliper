@@ -1140,6 +1140,7 @@ std::vector<std::string>
 ConfigManager::get_config_docstrings()
 {
     ConfigManagerImpl mgr;
+    mgr.import_builtin_config_specs();
     return mgr.get_docstrings();
 }
 

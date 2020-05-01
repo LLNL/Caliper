@@ -1,4 +1,5 @@
 include_directories("../../src/caliper")
+include_directories("../../src/interface/c_fortran")
 
 # build the C/C++ CI test apps
 
