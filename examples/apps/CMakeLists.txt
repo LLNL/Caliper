@@ -16,7 +16,7 @@ set(CALIPER_CXX_EXAMPLE_APPS
   cali-functional
   cali-regionprofile)
 set(CALIPER_C_EXAMPLE_APPS
-  cali-basic-annotations-c
+  c-example
   cali-print-snapshot)
 set(CALIPER_Fortran_EXAMPLE_APPS
   fortran-example

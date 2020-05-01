@@ -1,7 +1,7 @@
 // Copyright (c) 2015-2020, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-// A C++ Caliper instrumentation and ConfigManager example
+// A C Caliper instrumentation and ConfigManager example
 
 //   Usage: $ cali-basic-annotations <configuration-string>
 // For example, "$ cali-basic-annotations runtime-report" will print a
@@ -10,70 +10,70 @@
 #include <caliper/cali.h>
 #include <caliper/cali-manager.h>
 
-#include <cstring>
-#include <iostream>
-#include <string>
+#include <stdio.h>
+#include <string.h>
 
-void print_help(const cali::ConfigManager& mgr)
+void print_help()
 {
-    std::cerr << "Usage: cxx-example [caliper-config(arg=...,),...]."
-              << "\nRuns \"runtime-report\" configuration by default."
-              << "\nUse \"none\" to run without a ConfigManager configuration."
-              << "\nAvailable configurations: ";
+    const char* helpstr = 
+        "Usage: c-example [caliper-config(arg=...,),...]."
+        "\nRuns \"runtime-report\" configuration by default."
+        "\nUse \"none\" to run without a ConfigManager configuration."
+        "\nAvailable configurations: ";
 
-    auto configs = mgr.available_config_specs();
-
-    // Print info on all available ConfigManager configurations.
-    for (auto str : configs)
-        std::cerr << "\n" << mgr.get_documentation_for_spec(str.c_str());
-
-    std::cerr << std::endl;
+    puts(helpstr);
 }
 
 double foo(int i)
 {
     //   A function annotation. Opens region "function=foo" in Caliper,
     // and automatically closes it at the end of the function.
-    CALI_CXX_MARK_FUNCTION;
-
-    return 0.5*i;
+    CALI_MARK_FUNCTION_BEGIN;
+    double res = 0.5 * i;
+    CALI_MARK_FUNCTION_END;
+    return res;
 }
 
 int main(int argc, char* argv[])
 {
     //   The ConfigManager manages built-in or custom Caliper measurement
     // configurations, and provides an API to control performance profiling.
-    cali::ConfigManager mgr;
+    cali_ConfigManager mgr;
+    cali_ConfigManager_new(&mgr);
 
     //   We can set default parameters for the Caliper configurations.
     // These can be overridden in the user-provided configuration string.
-    mgr.set_default_parameter("aggregate_across_ranks", "false");
+    cali_ConfigManager_set_default_parameter(&mgr, "aggregate_across_ranks", "false");
 
     //   Use the "runtime-report" configuration by default to print a
     // runtime summary for all annotated regions. Let users overwrite
     // the default configuration with their own on the command line.
-    std::string configstr = "runtime-report";
+    const char* configstr = "runtime-report";
 
     if (argc > 1) {
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-            print_help(mgr);
+            print_help();
             return 0;
         } else {
             configstr = argv[1];
         }
     }
 
-    if (configstr == "none")
-        configstr.clear();
+    if (strcmp(configstr, "none") == 0)
+        configstr = "";
 
     //   Enable the requested performance measurement channels and start
     // profiling.
-    mgr.add(configstr.c_str());
+    cali_ConfigManager_add(&mgr, configstr);
 
-    if (mgr.error())
-        std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
+    if (cali_ConfigManager_error(&mgr)) {
+        cali_SHROUD_array errmsg;
+        cali_ConfigManager_error_msg_bufferify(&mgr, &errmsg);
+        fprintf(stderr, "Caliper config error: %s\n", errmsg.addr.ccharp);
+        cali_SHROUD_memory_destructor(&errmsg.cxx);
+    }
 
-    mgr.start();
+    cali_ConfigManager_start(&mgr);
 
     //   Mark begin of the current function. Must be manually closed.
     // Opens region "function=main" in Caliper.
@@ -86,25 +86,28 @@ int main(int argc, char* argv[])
     CALI_MARK_END("init");
 
     // Mark a loop. Opens region "loop=mainloop" in Caliper.
-    CALI_CXX_MARK_LOOP_BEGIN(loop_ann, "mainloop");
+    CALI_MARK_LOOP_BEGIN(loop_ann, "mainloop");
 
     for (int i = 0; i < count; ++i) {
         //   Mark loop iterations of an annotated loop.
         // Sets "iteration#main loop=<i> in Caliper.
-        CALI_CXX_MARK_LOOP_ITERATION(loop_ann, i);
+        CALI_MARK_ITERATION_BEGIN(loop_ann, i);
 
         //   A Caliper snapshot taken at this point will contain
         // { "function"="main", "loop"="mainloop", "iteration#main loop"=<i> }
 
         t += foo(i);
+
+        CALI_MARK_ITERATION_END(loop_ann);
     }
 
     // Mark the end of the "loop=mainloop" region.
-    CALI_CXX_MARK_LOOP_END(loop_ann);
+    CALI_MARK_LOOP_END(loop_ann);
     // Mark the end of the "function=main" region.
     CALI_MARK_FUNCTION_END;
 
     //   Trigger output in all Caliper control channels.
     // This should be done after all measurement regions have been closed.
-    mgr.flush();
+    cali_ConfigManager_flush(&mgr);
+    cali_ConfigManager_delete(&mgr);
 }
