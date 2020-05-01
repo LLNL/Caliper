@@ -3,7 +3,6 @@ program fortran_example
 
     implicit none
 
-    type(ScopeAnnotation) :: m_ann
     type(BufferedRegionProfile) :: rp
     type(ConfigManager)   :: mgr
 
@@ -36,7 +35,7 @@ program fortran_example
     call mgr%start
 
     ! A scope annotation. Start region 'main'
-    m_ann = ScopeAnnotation_begin('main')
+    call cali_begin_region('main')
 
     ! Create a BufferedRegionProfile instance to query Caliper region times
     rp = BufferedRegionProfile_new()
@@ -46,15 +45,12 @@ program fortran_example
         call rp%start()
 
         ! Add region 'outer' using cali_begin_region()
-        ! Equivalent to "ann = ScopeAnnotation_begin('outer')"
         call cali_begin_region('outer')
         ! Add another region 'inner' nested under 'outer'
         call cali_begin_region('inner')
-        ! End 'inner'
+
         call cali_end_region('inner')
-        ! End 'outer'
-        ! Equivalent to "call ScopeAnnotation_end(ann)"
-        call cali_end_region('bla')
+        call cali_end_region('outer')
 
         ! Stop the region profile and fetch region times 
         call rp%stop
@@ -74,8 +70,7 @@ program fortran_example
     ! Delete the RegionProfile instance
     call BufferedRegionProfile_delete(rp)
 
-    ! End 'outer'
-    call ScopeAnnotation_end(m_ann)
+    call cali_end_region('main')
   
     ! Compute and flush output for the ConfigManager profiles.
     call mgr%flush

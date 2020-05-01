@@ -116,6 +116,7 @@ module caliper_mod
         ! splicer end class.ConfigManager.component_part
     contains
         procedure :: delete => configmanager_delete
+        procedure :: set_default_parameter => configmanager_set_default_parameter
         procedure :: add => configmanager_add
         procedure :: error => configmanager_error
         procedure :: error_msg => configmanager_error_msg
@@ -285,6 +286,17 @@ module caliper_mod
             implicit none
             type(SHROUD_configmanager_capsule), intent(IN) :: self
         end subroutine c_configmanager_delete
+
+        subroutine c_configmanager_set_default_parameter(self, option, &
+                val) &
+                bind(C, name="cali_ConfigManager_set_default_parameter")
+            use iso_c_binding, only : C_CHAR
+            import :: SHROUD_configmanager_capsule
+            implicit none
+            type(SHROUD_configmanager_capsule), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: option(*)
+            character(kind=C_CHAR), intent(IN) :: val(*)
+        end subroutine c_configmanager_set_default_parameter
 
         subroutine c_configmanager_add(self, config) &
                 bind(C, name="cali_ConfigManager_add")
@@ -720,6 +732,17 @@ contains
         call c_configmanager_delete(obj%cxxmem)
         ! splicer end class.ConfigManager.method.delete
     end subroutine configmanager_delete
+
+    subroutine configmanager_set_default_parameter(obj, option, val)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(configmanager) :: obj
+        character(len=*), intent(IN) :: option
+        character(len=*), intent(IN) :: val
+        ! splicer begin class.ConfigManager.method.set_default_parameter
+        call c_configmanager_set_default_parameter(obj%cxxmem, &
+            trim(option)//C_NULL_CHAR, trim(val)//C_NULL_CHAR)
+        ! splicer end class.ConfigManager.method.set_default_parameter
+    end subroutine configmanager_set_default_parameter
 
     subroutine configmanager_add(obj, config)
         use iso_c_binding, only : C_NULL_CHAR

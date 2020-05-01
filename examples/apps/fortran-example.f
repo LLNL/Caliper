@@ -3,7 +3,6 @@ program fortran_example
 
     implicit none
 
-    type(ScopeAnnotation) :: m_ann, i_ann
     type(ConfigManager)   :: mgr
 
     integer               :: i, count, argc
@@ -34,16 +33,16 @@ program fortran_example
     call mgr%start
 
     ! A scope annotation. Start region 'main'
-    m_ann = ScopeAnnotation_begin('main')
+    call cali_begin_region('main')
 
     ! Add another region 'inner' nested under 'main'
-    i_ann = ScopeAnnotation_begin('inner')
+    call cali_begin_region('inner')
     count = 4
     ! End the inner region
-    call ScopeAnnotation_end(i_ann)
+    call cali_end_region('inner')
 
     ! End 'main'
-    call ScopeAnnotation_end(m_ann)
+    call cali_end_region('main')
 
     ! Compute and flush output for the ConfigManager profiles.
     call mgr%flush

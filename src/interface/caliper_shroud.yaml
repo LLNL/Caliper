@@ -122,6 +122,7 @@ declarations:
     declarations:
       - decl: ConfigManager()  +name(new)
       - decl: ~ConfigManager() +name(delete)
+      - decl: void set_default_parameter(const char* option, const char* val)
       # really bool add(const char* config) but subroutine syntax is more consistent here
       - decl: void add(const char* config)
       - decl: bool error()

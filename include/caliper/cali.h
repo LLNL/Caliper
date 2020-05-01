@@ -340,6 +340,8 @@ cali_channel_get(cali_id_t chn_id, cali_id_t attr_id);
  *
  * Begins nested region \a name using the built-in \a annotation attribute.
  * Equivalent to the macro CALI_MARK_REGION_BEGIN.
+ *
+ * \see cali_end_region()
  */
 void
 cali_begin_region(const char* name);
@@ -350,6 +352,8 @@ cali_begin_region(const char* name);
  * Ends nested region \a name using the built-in \a annotation attribute.
  * Prints an error if \a name does not match the currently open region.
  * Equivalent to the macro CALI_MARK_REGION_END.
+ *
+ * \see cali_begin_region()
  */
 void
 cali_end_region(const char* name);
@@ -413,6 +417,8 @@ cali_set_string(cali_id_t attr, const char* val);
 /**
  * \brief  Begin region where the value for the attribute named \a attr_name
  *   is set to `true` on the blackboard.
+ *
+ * \deprecated Use cali_begin_region()
  */
 void
 cali_begin_byname(const char* attr_name);
