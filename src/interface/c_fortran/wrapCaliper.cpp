@@ -6,7 +6,7 @@
 #include "typesCaliper.h"
 
 #include "BufferedRegionProfile.h"
-#include "caliper/cali-manager.h"
+#include "caliper/ConfigManager.h"
 
 // splicer begin CXX_definitions
 // splicer end CXX_definitions

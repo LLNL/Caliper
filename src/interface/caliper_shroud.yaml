@@ -118,7 +118,7 @@ declarations:
       - decl: void end()
 
   - decl: class ConfigManager
-    cxx_header: caliper/cali-manager.h
+    cxx_header: caliper/ConfigManager.h
     declarations:
       - decl: ConfigManager()  +name(new)
       - decl: ~ConfigManager() +name(delete)

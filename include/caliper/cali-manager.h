@@ -3,9 +3,11 @@
 
 #pragma once
 
+#include "wrapConfigManager.h"
+
 #ifdef __cplusplus
-#include "caliper/ConfigManager.h"
-#include "caliper/ChannelController.h"
+#include "ConfigManager.h"
+#include "ChannelController.h"
 
 extern "C" {
 #endif
