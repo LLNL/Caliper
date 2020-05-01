@@ -38,7 +38,12 @@ TEST(ChannelAPITest, MultiChannel) {
     EXPECT_TRUE(c.get(chn_default, attr_local).is_empty());
     EXPECT_EQ(c.get(attr_global).value().to_int(), 42);
 
+    c.end(chn_b, attr_local);
+    c.end(chn_a, attr_local);
+
     c.delete_channel(chn_a);
+
+    c.end(attr_global);
 
     int chn_a_count = 0, chn_b_count = 0;
 

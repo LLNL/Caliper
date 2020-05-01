@@ -7,7 +7,9 @@ using namespace cali;
 
 struct BufferedRegionProfile::BufferedRegionProfileImpl
 {
-    RegionProfile::region_profile_t result;
+    std::map<std::string, double> reg_times;
+    double tot_reg_time;
+    double tot_time;
 };
 
 BufferedRegionProfile::BufferedRegionProfile()
@@ -30,35 +32,36 @@ void BufferedRegionProfile::stop()
 
 void BufferedRegionProfile::clear()
 {
-    std::get<0>(mP->result).clear();
-    std::get<1>(mP->result) = 0.0;
-    std::get<2>(mP->result) = 0.0;
-
+    mP->reg_times.clear();
+    mP->tot_reg_time = 0.0;
+    mP->tot_time = 0.0;
     RegionProfile::clear();
 }
 
 void BufferedRegionProfile::fetch_exclusive_region_times(const char* region_type)
 {
-    mP->result = exclusive_region_times(region_type);
+    std::tie(mP->reg_times, mP->tot_reg_time, mP->tot_time)
+        = exclusive_region_times(region_type);
 }
 
 void BufferedRegionProfile::fetch_inclusive_region_times(const char* region_type)
 {
-    mP->result = inclusive_region_times(region_type);
+    std::tie(mP->reg_times, mP->tot_reg_time, mP->tot_time)
+        = inclusive_region_times(region_type);
 }
 
 double BufferedRegionProfile::total_profiling_time() const
 {
-    return std::get<2>(mP->result);
+    return mP->tot_time;
 }
 
 double BufferedRegionProfile::total_region_time() const
 {
-    return std::get<1>(mP->result);
+    return mP->tot_reg_time;
 }
 
 double BufferedRegionProfile::region_time(const char* region) const
 {
-    auto it = std::get<0>(mP->result).find(region);
-    return (it == std::get<0>(mP->result).end() ? 0.0 : it->second);
+    auto it = mP->reg_times.find(region);
+    return (it == (mP->reg_times).end() ? 0.0 : it->second);
 }
