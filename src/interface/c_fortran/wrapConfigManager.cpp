@@ -63,6 +63,16 @@ void cali_ConfigManager_delete(cali_ConfigManager * self)
     // splicer end class.ConfigManager.method.delete
 }
 
+void cali_ConfigManager_set_default_parameter(cali_ConfigManager * self,
+    const char * option, const char * val)
+{
+    cali::ConfigManager *SH_this =
+        static_cast<cali::ConfigManager *>(self->addr);
+    // splicer begin class.ConfigManager.method.set_default_parameter
+    SH_this->set_default_parameter(option, val);
+    // splicer end class.ConfigManager.method.set_default_parameter
+}
+
 void cali_ConfigManager_add(cali_ConfigManager * self,
     const char * config)
 {

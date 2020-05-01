@@ -143,4 +143,8 @@ TEST(AttributeAPITest, NestedAttribute) {
     node = node->parent();
     ASSERT_NE(node, nullptr);
     EXPECT_EQ(node->attribute(), CALI_INV_ID);
+
+    c.end(nested_b);
+    c.end(nomerge);
+    c.end(nested_a);
 }

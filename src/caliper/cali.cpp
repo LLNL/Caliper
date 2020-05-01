@@ -26,6 +26,13 @@
 
 #define SNAP_MAX 120
 
+namespace cali
+{
+
+extern Attribute annotation_attr;
+
+}
+
 using namespace cali;
 
 //
@@ -357,6 +364,28 @@ cali_channel_get(cali_id_t chn_id, cali_id_t attr_id)
 //
 
 void
+cali_begin_region(const char* name)
+{
+    Caliper c;
+    c.begin(cali::annotation_attr, Variant(name));
+}
+
+void
+cali_end_region(const char* name)
+{
+    Caliper c;
+    Variant v_n(name);
+    Variant v_s = c.get(cali::annotation_attr).value();
+
+    if (!(v_n == v_s))
+        Log(0).stream() << "region nesting error: trying to end \"" << v_n
+                        << "\" but current region is \""            << v_s << "\""
+                        << std::endl;
+
+    c.end(cali::annotation_attr);
+}
+
+void
 cali_begin(cali_id_t attr_id)
 {
     Caliper   c;
@@ -653,7 +682,7 @@ struct emplace_helper<
            decltype(std::declval<Container>().emplace(std::make_pair("","")))
        >::value
        , void
-   >::type 
+   >::type
 > {
     template<typename Emplaced>
     static void emplace(Container& emplace_into, Emplaced&& object){

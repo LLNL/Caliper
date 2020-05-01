@@ -84,6 +84,12 @@ declarations:
   - decl: void cali_end_byname(const char* attr_name)
     options:
       C_extern_C: true
+  - decl: void cali_begin_region(const char* name)
+    options:
+      C_extern_C: true
+  - decl: void cali_end_region(const char* name)
+    options:
+      C_extern_C: true
 
   - decl: class ScopeAnnotation
     declarations:
@@ -116,6 +122,7 @@ declarations:
     declarations:
       - decl: ConfigManager()  +name(new)
       - decl: ~ConfigManager() +name(delete)
+      - decl: void set_default_parameter(const char* option, const char* val)
       # really bool add(const char* config) but subroutine syntax is more consistent here
       - decl: void add(const char* config)
       - decl: bool error()
@@ -123,3 +130,17 @@ declarations:
       - decl: void start()
       - decl: void stop()
       - decl: void flush()
+
+  - decl: class BufferedRegionProfile
+    cxx_header: BufferedRegionProfile.h
+    declarations:
+      - decl: BufferedRegionProfile() +name(new)
+      - decl: ~BufferedRegionProfile() +name(delete)
+      - decl: void start()
+      - decl: void stop()
+      - decl: void clear()
+      - decl: void fetch_exclusive_region_times()
+      - decl: void fetch_inclusive_region_times()
+      - decl: double total_profiling_time() const
+      - decl: double total_region_time() const
+      - decl: double region_time(const char* region)

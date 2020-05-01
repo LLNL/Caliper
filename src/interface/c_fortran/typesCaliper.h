@@ -40,6 +40,13 @@ struct s_cali_Annotation {
 };
 typedef struct s_cali_Annotation cali_Annotation;
 
+// helper capsule_cali_BufferedRegionProfile
+struct s_cali_BufferedRegionProfile {
+    void *addr;     /* address of C++ memory */
+    int idtor;      /* index of destructor */
+};
+typedef struct s_cali_BufferedRegionProfile cali_BufferedRegionProfile;
+
 // helper capsule_cali_ConfigManager
 struct s_cali_ConfigManager {
     void *addr;     /* address of C++ memory */

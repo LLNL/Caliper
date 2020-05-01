@@ -44,6 +44,8 @@ public:
     /// Note that profiling must be started explicitly with the start() method.
     RegionProfile();
 
+    virtual ~RegionProfile();
+
     /// \brief A tuple containing the computed time profiles.
     /// 
     /// The first member is a string -> double STL map that stores the times 

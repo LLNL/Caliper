@@ -1,5 +1,6 @@
 set(CMAKE_C_COMPILER   "/usr/tce/packages/gcc/gcc-8.1.0/bin/gcc" CACHE PATH "")
 set(CMAKE_CXX_COMPILER "/usr/tce/packages/gcc/gcc-8.1.0/bin/g++" CACHE PATH "")
+set(CMAKE_Fortran_COMPILER "/usr/tce/packages/gcc/gcc-8.1.0/bin/gfortran" CACHE PATH "")
 
 set(CMAKE_BUILD_TYPE   "RelWithDebInfo" CACHE STRING "")
 
@@ -16,6 +17,7 @@ set(adiak_DIR "/g/g90/boehme3/local/adiak/toss3-0.1.1/lib/cmake/adiak" CACHE PAT
 # Build with spack if dyninst is needed.
 #set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
 
+set(WITH_FORTRAN  On  CACHE BOOL "")
 set(WITH_ADIAK    On  CACHE BOOL "")
 set(WITH_CALLPATH On  CACHE BOOL "")
 set(WITH_NVPROF   Off CACHE BOOL "")

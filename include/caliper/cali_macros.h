@@ -195,9 +195,7 @@ extern cali_id_t cali_annotation_attr_id;
 /// \param name The region name. Must be convertible to `const char*`.
 /// \sa CALI_MARK_END
 #define CALI_MARK_BEGIN(name) \
-    if (cali_annotation_attr_id == CALI_INV_ID) \
-        cali_init(); \
-    cali_begin_string(cali_annotation_attr_id, (name))
+    cali_begin_region(name)
 
 /// \brief Mark end of a user-defined code region.
 ///
@@ -209,7 +207,7 @@ extern cali_id_t cali_annotation_attr_id;
 ///   if it doesn't.
 /// \sa CALI_MARK_BEGIN
 #define CALI_MARK_END(name) \
-    cali_safe_end_string(cali_annotation_attr_id, (name))
+    cali_end_region(name)
 
 /**
  * \} (group)

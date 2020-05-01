@@ -5,6 +5,7 @@
 #include "caliper/cali.h"
 #include "typesCaliper.h"
 
+#include "BufferedRegionProfile.h"
 #include "caliper/cali-manager.h"
 
 // splicer begin CXX_definitions
@@ -49,6 +50,13 @@ void cali_SHROUD_memory_destructor(cali_SHROUD_capsule_data *cap)
     case 4:   // new_string
     {
         std::string *cxx_ptr = reinterpret_cast<std::string *>(ptr);
+        delete cxx_ptr;
+        break;
+    }
+    case 5:   // cali::BufferedRegionProfile
+    {
+        cali::BufferedRegionProfile *cxx_ptr = 
+            reinterpret_cast<cali::BufferedRegionProfile *>(ptr);
         delete cxx_ptr;
         break;
     }

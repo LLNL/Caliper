@@ -29,6 +29,9 @@ cali_ConfigManager * cali_ConfigManager_new(
 
 void cali_ConfigManager_delete(cali_ConfigManager * self);
 
+void cali_ConfigManager_set_default_parameter(cali_ConfigManager * self,
+    const char * option, const char * val);
+
 void cali_ConfigManager_add(cali_ConfigManager * self,
     const char * config);
 

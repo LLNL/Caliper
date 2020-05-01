@@ -1,11 +1,7 @@
-set(CALIPER_INTERFACE_HEADERS
-  typesCaliper.h
-  wrapAnnotation.h
-  wrapConfigManager.h
-  wrapScopeAnnotation.h)
-
 set(CALIPER_INTERFACE_SOURCES
+  BufferedRegionProfile.cpp
   wrapAnnotation.cpp
+  wrapBufferedRegionProfile.cpp
   wrapCaliper.cpp
   wrapConfigManager.cpp
   wrapScopeAnnotation.cpp)

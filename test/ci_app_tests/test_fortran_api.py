@@ -22,6 +22,8 @@ class CaliperFortranAPITest(unittest.TestCase):
             snapshots, { 'annotation', 'time.inclusive.duration' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'annotation': 'main/work' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'annotation': 'main/foo' }))
 
     def test_f_ann_globals(self):
         target_cmd = [ './ci_test_f_ann', 'event-trace,output=stdout' ]
