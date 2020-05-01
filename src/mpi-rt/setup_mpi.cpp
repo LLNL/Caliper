@@ -86,7 +86,8 @@ mpirt_constructor()
 
     Caliper::add_init_hook(setup_mpi);
     Caliper::add_services(services);
-    ConfigManager::add_controllers(controllers);
+
+    add_global_config_specs(controllers);
 }
 
 }

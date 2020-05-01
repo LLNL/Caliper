@@ -19,6 +19,7 @@
 
 #include "caliper/ConfigManager.h"
 
+#include <algorithm>
 #include <cctype>
 #include <iterator>
 #include <sstream>
@@ -226,13 +227,14 @@ QueryArgsParser::parse_args(const Args& args)
     return true;
 }
 
-void print_caliquery_help(const Args& args, const char* usage)
+void print_caliquery_help(const Args& args, const char* usage, const ConfigManager& mgr)
 {
     std::string helpopt = args.get("help");
 
     if (helpopt == "configs") {
-        for (const auto &s : ConfigManager::get_config_docstrings())
-            std::cerr << s << std::endl;
+        auto list = mgr.available_config_specs();
+        for (const auto &s : list)
+            std::cerr << mgr.get_documentation_for_spec(s.c_str()) << "\n";
     } else if (helpopt == "services") {
         services::add_default_service_specs();
 
@@ -241,11 +243,17 @@ void print_caliquery_help(const Args& args, const char* usage)
             std::cerr << (i++ > 0 ? "," : "") << s;
         std::cerr << std::endl;
     } else if (!helpopt.empty()) {
-        std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                    << "\n  [none]:   Describe cali-query usage (default)"
-                    << "\n  configs:  Describe Caliper profiling configurations"
-                    << "\n  services: List available services"
-                    << std::endl;
+        auto list = mgr.available_config_specs();
+
+        if (std::find(list.begin(), list.end(), helpopt) == list.end()) {
+            std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
+                      << "\n  [none]:   Describe cali-query usage (default)"
+                      << "\n  configs:  Describe Caliper profiling configurations"
+                      << "\n  services: List available services"
+                      << std::endl;
+        } else {
+            std::cerr << mgr.get_documentation_for_spec(helpopt.c_str()) << std::endl;
+        }
     } else {
         std::cerr << usage << "\n\n";
         args.print_available_options(std::cerr);

@@ -20,13 +20,13 @@ namespace cali
 
 /// \class ConfigManager
 /// \ingroup ControlChannelAPI
-/// \brief Configure, enable, and manage built-in %Caliper configurations
+/// \brief Configure, enable, and manage built-in or custom %Caliper configurations
 ///
-///   ConfigManager is the principal component for managing and built-in
-/// %Caliper measurement configurations. It parses a configuration
+///   ConfigManager is the principal component for managing %Caliper
+/// measurement configurations programmatically. It parses a configuration
 /// string and creates a set of control channels for the requested
-/// measurement configurations. The control channel objects can then be
-/// used to start, stop, and flush the measurements channels.
+/// measurement configurations, and provides control methods
+/// to start, stop, and flush the created measurements channels.
 /// Example:
 ///
 /// \code
@@ -51,6 +51,10 @@ namespace cali
 /// // not flush results automatically.
 /// mgr.flush();
 /// \endcode
+///
+///   ConfigManager provides a set of built-in configurations specifications
+/// like "runtime-report". Users can also add custom specifications with
+/// add_config_spec().
 ///
 /// \example cxx-example.cpp
 /// This example demonstrates the C++ annotation macros as well as the
@@ -128,18 +132,53 @@ public:
         friend class ConfigManager;
     };
 
-    typedef cali::ChannelController* (*CreateConfigFn)(const Options&);
-    typedef std::string              (*CheckArgsFn)(const Options&);
+    /// \brief Callback function to create a custom ChannelController for a config.
+    ///
+    /// Example:
+    /// \code
+    /// cali::ChannelController* make_controller(const char* name,
+    ///         const cali::config_map_t& initial_cfg,
+    ///         const cali::ConfigManager::Options& opts)
+    /// {
+    ///     class MyChannelController : public cali::ChannelController {
+    ///     public:
+    ///         MyChannelController(const char* name,
+    ///                 const cali::config_map_t& initial_cfg,
+    ///                 const cali::ConfigManager::Options& opts)
+    ///             : cali::ChannelController(name, 0, initial_cfg)
+    ///         {
+    ///             opts.update_channel_config(config());
+    ///         }
+    ///     };
+    ///
+    ///     return new MyChannelController(name, initial_cfg, opts);
+    /// }
+    /// \endcode
+    ///
+    /// \param name The channel name. Must be passed to the created
+    ///    ChannelController object.
+    /// \param initial_cfg The initial config map from the config's JSON spec.
+    ///    Must be passed to the created ChannelController object.
+    /// \param opts User-requested options for the channel. Invoke
+    ///    Options::update_channel_config(config_map_t&) const
+    ///    on the ChannelController's config map to apply options.
+    /// \return A new ChannelController object.
+    typedef cali::ChannelController* (*CreateConfigFn)(const char* name, const config_map_t& initial_cfg, const Options& opts);
+    /// \brief Callback function to implement custom options checking for a config spec.
+    typedef std::string              (*CheckArgsFn)(const Options& opts);
 
+    /// \brief Define a config spec with custom ChannelController creation
+    ///   and option checking functions
     struct ConfigInfo {
+        /// \brief JSON config spec. \see ConfigManager::add_config_spec(const char*)
         const char*    spec;
+        /// \brief Optional custom ChannelController creation function,
+        ///   or \a nullptr to use the default.
         CreateConfigFn create;
+        /// \brief Optional argument checking function, or \a nullptr
+        ///   to use the default.
         CheckArgsFn    check_args;
     };
-
-    /// \brief Add a list of pre-defined configurations. Internal use.
-    static void
-    add_controllers(const ConfigInfo**);
 
     ConfigManager();
 
@@ -148,12 +187,153 @@ public:
 
     ~ConfigManager();
 
-    /// \brief Parse the \a config_string configuration string and add the
+    /// \brief Add a custom config spec to this ConfigManager
+    ///
+    /// Adds a new %Caliper configuration specification for this ConfigManager
+    /// using a custom ChannelController or option checking function.
+    void add_config_spec(const ConfigInfo& info);
+
+    /// \brief Add a JSON config spec to this ConfigManager
+    ///
+    /// Adds a new %Caliper configuration specification for this ConfigManager
+    /// using a basic ChannelController.
+    ///
+    /// This example adds a config spec to perform simple sample tracing:
+    /// \code
+    /// const char* spec =
+    ///   "{"
+    ///   " \"name\"        : \"sampletracing\","
+    ///   " \"description\" : \"Perform sample tracing\","
+    ///   " \"services\"    : [ \"recorder\", \"sampler\", \"trace\" ],"
+    ///   " \"config\"      :
+    ///   "  { \"CALI_SAMPLER_FREQUENCY\"     : \"100\",  "
+    ///   "    \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\" "
+    ///   "  },"
+    ///   " \"categories\"  : [ \"output\" ],"
+    ///   " \"options\"     : "
+    ///   " [ "
+    ///   "  { \"name\"        : \"sample.threads\","
+    ///   "    \"description\" : \"Sample all threads\","
+    ///   "    \"type\"        : \"bool\","
+    ///   "    \"services\"    : [ \"pthread\" ]"
+    ///   "  }"
+    ///   " ]"
+    ///   "}";
+    ///
+    /// ConfigManager mgr;
+    /// mgr.add_config_spec(spec);
+    ///
+    /// // Add a thread sampling channel using the spec and start recording
+    /// mgr.add("sampletracing(sample.threads=true,output=trace.cali)");
+    /// mgr.start();
+    /// // ...
+    /// mgr.flush();
+    /// \endcode
+    ///
+    /// \par Config specification syntax
+    /// The config spec is a JSON dictionary with the following elements:
+    /// \li \a name: Name of the config spec.
+    /// \li \a description: A short one-line description.
+    ///   Included in the documentation string generated by
+    ///   get_documentation_for_spec().
+    /// \li \a services: List of %Caliper services this config requires.
+    ///   Note that the config will only be available if all required
+    ///   services are present in %Caliper.
+    /// \li \a config: A dictionary with %Caliper configuration
+    ///   variables required for this config. Note that services will be
+    ///   added automatically based on the \a services entry.
+    /// \li \a categories: A list of option categories. Defines which
+    ///   options, in addition to the ones defined inside the config spec,
+    ///   apply to this config. The example above
+    ///   uses the "output" category, which makes the built-in \a output
+    ///   option for setting output file names available.
+    /// \li \a options: A list of custom options for this config.
+    ///
+    /// \see add_option_spec()
+    ///
+    /// If there was an error parsing the config spec, the error() method will
+    /// return \a true and an error message can be retrieved with error_msg().
+    void add_config_spec(const char* json);
+
+    /// \brief Add a JSON option spec to this %ConfigManager
+    ///
+    /// Allows one to define options for any config in a matching category.
+    /// Option specifications must be added before querying or creating any
+    /// configurations to be effective.
+    /// If there was an error parsing the config spec, the error() method will
+    /// return \a true and an error message can be retrieved with error_msg().
+    /// The following example adds a metric
+    /// option to compute instructions counts using the papi service:
+    ///
+    /// \code
+    /// const char* spec =
+    ///   "{"
+    ///   " \"name\"        : \"count.instructions\","
+    ///   " \"category\"    : \"metric\","
+    ///   " \"description\" : \"Count total instructions\","
+    ///   " \"services\"    : [ \"papi\" ],"
+    ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
+    ///   " \"query_args\"  : "
+    ///   " ["
+    ///   "  { \"level\": \"serial\", \"select\":"
+    ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\", \"as\": \"Instructions\" } ]"
+    ///   "  },"
+    ///   "  { \"level\": \"local\", \"select\":"
+    ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
+    ///   "  },"
+    ///   "  { \"level\": \"cross\", \"select\":"
+    ///   "   [ { \"expr\": \"avg(sum#sum#papi.PAPI_TOT_INS)\", \"as\": \"Avg instr./rank\" },"
+    ///   "     { \"expr\": \"max(sum#sum#papi.PAPI_TOT_INS)\", \"as\": \"Max instr./rank\" }"
+    ///   "   ]"
+    ///   "  }"
+    ///   " ]"
+    ///   "}";
+    ///
+    /// ConfigManager mgr;
+    /// mgr.add_option_spec(spec);
+    ///
+    /// //   Create a runtime-report channel using the count.instructions option
+    /// // and start recording.
+    /// mgr.add("runtime-report(count.instructions)");
+    /// mgr.start();
+    /// \endcode
+    ///
+    /// \par Option specification syntax
+    /// The option spec is a JSON dictionary with the following elements:
+    /// \li \a name: Name of the option.
+    /// \li \a category: The option's category. The category defines
+    ///   which configs can use this option: An option is only available
+    ///   to configs which list this category in their "categories"
+    ///   setting.
+    /// \li \a description: A short one-line description.
+    ///   Included in the documentation string generated by
+    ///   get_documentation_for_spec().
+    /// \li \a services: List of %Caliper services this option requires.
+    ///   Note that the option will only be available if all required
+    ///   services are present in %Caliper.
+    /// \li \a config: A dictionary with %Caliper configuration
+    ///   variables required for this option. Note that services will be
+    ///   added automatically based on the \a services entry.
+    /// \li \a query_args: Defines aggregation operations to compute
+    ///   performance metrics. Specific to "metric" options. There are
+    ///   three aggregation levels: \e serial computes metrics for
+    ///   non-MPI programs, \e local computes process-local intermediate
+    ///   metrics in MPI programs, and \e cross computes cross-process
+    ///   metrics in MPI programs. For each level, specify metrics
+    ///   using a list of "select" definitions, where \e expr defines an
+    ///   aggregation using a CalQL expression, and \e as provides a
+    ///   human-readable name for the metric. Metrics on the \e serial
+    ///   and \e local levels use runtime aggregation results from
+    ///   the "aggregate" service as input, metrics on the \e cross level
+    ///   use "local" metrics as input.
+    void add_option_spec(const char* json);
+
+    /// \brief Parse the \a config_string configuration string and create the
     ///   specified configuration channels.
     ///
     /// Parses configuration strings of the following form:
     ///
-    ///   <config> ( <argument> = value, ... ), ...
+    ///   <config> ( <option> = value, ... ), ...
     ///
     /// e.g., "runtime-report,event-trace(output=trace.cali)"
     ///
@@ -165,23 +345,23 @@ public:
     /// instances for the requested configurations will be created and can be
     /// accessed through get_all_channels() or get_channel(). The channels are
     /// initially inactive and must be activated explicitly with
-    /// ChannelController::start().
+    /// ConfigManager::start().
     ///
     /// add() can be invoked multiple times.
     ///
     /// In this add() version, key-value pairs in the config string that
-    /// neither represent a valid configuration or configuration parameter
+    /// neither represent a valid configuration or configuration option
     /// will be marked as a parse error.
     ///
     /// \return false if there was a parse error, true otherwise
     bool add(const char* config_string);
 
-    /// \brief Parse the \a config_string configuration string and add the
+    /// \brief Parse the \a config_string configuration string and create the
     ///   specified configuration channels.
     ///
     /// Works similar to ConfigManager::add(const char*), but does not mark
     /// extra key-value pairs in the config string that do not represent a
-    /// configuration name or parameter as errors, and instead returns them in
+    /// configuration name or option as errors, and instead returns them in
     /// \a extra_kv_pairs.
     bool add(const char* config_string, argmap_t& extra_kv_pairs);
 
@@ -249,23 +429,55 @@ public:
     void
     flush();
 
-    /// \brief Return names of available configs
-    static std::vector<std::string>
-    available_configs();
-
-    /// \brief Return descriptions for all available configs
-    static std::vector<std::string>
-    get_config_docstrings();
-
-    /// \brief Check if given config string is valid.
+    /// \brief Check if the given config string is valid.
     ///
     /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
     /// in the config string that do not represent configurations or parameters
     /// will be marked as errors.
     ///
-    /// \return error message, or empty string if input is valid.
+    /// \return Error message, or empty string if input is valid.
+    std::string
+    check(const char* config_string, bool allow_extra_kv_pairs = false) const;
+
+    /// \brief Return names of available config specs
+    ///
+    /// Returns only the specifications whose requirements (e.g., available services)
+    /// are met in this %Caliper instance.
+    ///
+    /// \return Names of all available config specs for this ConfigManager.
+    std::vector<std::string>
+    available_config_specs() const;
+
+    /// \brief Return description and options for the given config spec.
+    std::string
+    get_documentation_for_spec(const char* name) const;
+
+    /// \brief Return names of global config specs.
+    ///
+    /// \deprecated Query specific ConfigManager object instead.
+    static std::vector<std::string>
+    available_configs();
+
+    /// \brief Return descriptions for available global configs.
+    static std::vector<std::string>
+    get_config_docstrings();
+
+    /// \brief Check if given config string is valid for global config specs.
+    ///   Deprecated.
+    ///
+    /// If \a allow_extra_kv_pairs is set to \t false, extra key-value pairs
+    /// in the config string that do not represent configurations or parameters
+    /// will be marked as errors.
+    ///
+    /// \deprecated Create a ConfigManager object and use its check() method.
+    ///
+    /// \return Error message, or empty string if input is valid.
     static std::string
     check_config_string(const char* config_string, bool allow_extra_kv_pairs = false);
 };
+
+/// \brief Add a set of global ConfigManager configs
+/// \ingroup ControlChannelAPI
+void add_global_config_specs(const ConfigManager::ConfigInfo** configs);
 
 } // namespace cali

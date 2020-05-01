@@ -170,6 +170,8 @@ void setup_caliper_config(const Args& args)
 
 int main(int argc, char* argv[])
 {
+    cali_mpi_init();
+
     // --- Parse command line arguments
     //
 
@@ -178,6 +180,7 @@ int main(int argc, char* argv[])
 
     // must be done before Caliper initialization in MPI_Init wrapper
     ::setup_caliper_config(args);
+    cali::ConfigManager mgr;
 
     MPI_Init(&argc, &argv);
 
@@ -210,13 +213,13 @@ int main(int argc, char* argv[])
 
     if (args.is_set("help")) {
         if (rank == 0)
-            print_caliquery_help(args, usage);
+            print_caliquery_help(args, usage, mgr);
 
         MPI_Finalize();
         return 0;
     }
 
-    cali::ConfigManager mgr(args.get("caliper-config").c_str());
+    mgr.add(args.get("caliper-config").c_str());
 
     if (mgr.error())
         if (rank == 0)

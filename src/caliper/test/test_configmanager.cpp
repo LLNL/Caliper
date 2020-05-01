@@ -21,7 +21,7 @@ TEST(ConfigManagerTest, ParseErrors) {
         cali::ConfigManager mgr("  event-trace(foo  = bar)");
 
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown argument: foo");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Unknown option: foo");
 
         auto list = mgr.get_all_channels();
 
@@ -122,11 +122,8 @@ class TestController : public cali::ChannelController
 {
     cali::ConfigManager::Options opts;
 
-    TestController(const cali::ConfigManager::Options& o)
-        : ChannelController("testcontroller", 0, {
-                { "CALI_CHANNEL_CONFIG_CHECK",  "false" },
-                { "CALI_CHANNEL_FLUSH_ON_EXIT", "false" }
-            }),
+    TestController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& o)
+        : ChannelController(name, 0, initial_cfg),
           opts(o)
     { }
 
@@ -152,8 +149,8 @@ public:
         return a == b;
     }
 
-    static cali::ChannelController* create(const cali::ConfigManager::Options& opts) {
-        return new TestController(opts);
+    static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+        return new TestController(name, initial_cfg, opts);
     }
 
     ~TestController()
@@ -164,6 +161,12 @@ const char* testcontroller_spec =
     "{"
     " \"name\"        : \"testcontroller\","
     " \"description\" : \"Test controller for ConfigManager unit tests\","
+    " \"categories\"  : [ \"testcategory\" ],"
+    " \"config\"      : "
+    " {"
+    "  \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
+    "  \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\""
+    " },"
     " \"options\" : "
     " ["
     "  {"
@@ -189,17 +192,32 @@ const char* testcontroller_spec =
     " ]"
     "}";
 
-const ConfigManager::ConfigInfo  testcontroller_info = { testcontroller_spec, TestController::create, nullptr };
-const ConfigManager::ConfigInfo* controller_list[] = { &testcontroller_info, nullptr };
+const char* test_option_spec =
+    "["
+    " {  \"name\"     : \"global_boolopt\","
+    "    \"category\" : \"testcategory\","
+    "    \"type\"     : \"bool\""
+    " },"
+    " {  \"name\"     : \"invisible_opt\","
+    "    \"category\" : \"not_the_testcategory\","
+    "    \"type\"     : \"bool\""
+    " }"
+    "]";
 
 } // namespace [anonymous]
 
 TEST(ConfigManagerTest, Options)
 {
-    ConfigManager::add_controllers(controller_list);
+    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
 
     {
-        auto configs = cali::ConfigManager::available_configs();
+        ConfigManager mgr;
+        mgr.add_option_spec(test_option_spec);
+        EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+        mgr.add_config_spec(testcontroller_info);
+        EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+
+        auto configs = mgr.available_config_specs();
         std::sort(configs.begin(), configs.end());
 
         std::string expected_configs[] = { "event-trace", "runtime-report", "testcontroller" };
@@ -208,10 +226,15 @@ TEST(ConfigManagerTest, Options)
                                 std::begin(expected_configs), std::end(expected_configs)));
     }
 
-    EXPECT_EQ(cali::ConfigManager::check_config_string("testcontroller(boolopt=bla,stringopt=hi)"), "Invalid value \"bla\" for boolopt");
-
     {
-        ConfigManager mgr("testcontroller (   boolopt, another_opt=false,stringopt=hi)");
+        ConfigManager mgr;
+        mgr.add_option_spec(test_option_spec);
+        mgr.add_config_spec(testcontroller_info);
+
+        EXPECT_EQ(mgr.check("testcontroller(boolopt=bla,stringopt=hi)"), "Invalid value \"bla\" for boolopt");
+        EXPECT_EQ(mgr.check("testcontroller(invisible_opt)"), "Unknown option: invisible_opt");
+
+        mgr.add("testcontroller ( global_boolopt=true,  boolopt, another_opt=false,stringopt=hi)");
 
         EXPECT_FALSE(mgr.error()) << mgr.error_msg();
         auto cP = mgr.get_channel("testcontroller");
@@ -220,18 +243,20 @@ TEST(ConfigManagerTest, Options)
         ASSERT_TRUE(tP);
 
         EXPECT_TRUE(tP->is_set("boolopt"));
+        EXPECT_TRUE(tP->is_set("global_boolopt"));
         EXPECT_TRUE(tP->is_set("another_opt"));
         EXPECT_FALSE(tP->is_set("not_set_opt"));
         EXPECT_TRUE(tP->is_set("stringopt"));
 
         EXPECT_TRUE(tP->is_enabled("boolopt"));
+        EXPECT_TRUE(tP->is_enabled("global_boolopt"));
         EXPECT_FALSE(tP->is_enabled("anotheropt"));
         EXPECT_TRUE(tP->is_enabled("stringopt"));
         EXPECT_FALSE(tP->is_enabled("not_set_opt"));
 
         EXPECT_EQ(tP->get_opt("stringopt"), std::string("hi"));
 
-        std::vector<std::string> list { "boolopt" };
+        std::vector<std::string> list { "boolopt", "global_boolopt" };
         EXPECT_TRUE(tP->enabled_opts_list_matches(list));
     }
 }

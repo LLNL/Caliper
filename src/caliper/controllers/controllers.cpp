@@ -5,20 +5,76 @@
 
 #include "caliper/ConfigManager.h"
 
+namespace
+{
+
+const char* event_trace_spec = 
+    "{"
+    " \"name\"        : \"event-trace\","
+    " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
+    " \"services\"    : [ \"event\", \"recorder\", \"timestamp\", \"trace\" ],"
+    " \"categories\"  : [ \"output\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"   : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\" : \"true\","
+    "     \"CALI_TIMER_UNIT\"              : \"sec\""
+    "   },"
+    " \"options\": "
+    " ["
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"trace.mpi\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"mpi\" ],"
+    "    \"config\"      : { \"CALI_MPI_BLACKLIST\": \"MPI_Wtime,MPI_Wtick,MPI_Comm_size,MPI_Comm_rank\" }"
+    "  },"
+    "  { \"name\"        : \"trace.cuda\","
+    "    \"description\" : \"Trace CUDA API events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"cupti\" ]"
+    "  },"
+    "  { \"name\"        : \"trace.io\","
+    "    \"description\" : \"Trace I/O events\","
+    "    \"type\"        : \"bool\","
+    "    \"services\"    : [ \"io\" ] "
+    "  },"
+    "  { \"name\"        : \"event.timestamps\","
+    "    \"description\" : \"Record event timestamps\","
+    "    \"type\"        : \"bool\","
+    "    \"config\"      : { \"CALI_TIMER_OFFSET\": \"true\" }"
+    "  }"
+    " ]"
+    "}";
+
+const char* nvprof_spec =
+    "{"
+    " \"name\"        : \"nvprof\","
+    " \"services\"    : [ \"nvprof\" ],"
+    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\","
+    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
+    "}";
+
+cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
+cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
+
+}
+
 namespace cali
 {
 
 extern ConfigManager::ConfigInfo cuda_activity_controller_info;
-extern ConfigManager::ConfigInfo event_trace_controller_info;
-extern ConfigManager::ConfigInfo nvprof_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &cuda_activity_controller_info,
-    &event_trace_controller_info,
-    &nvprof_controller_info,
+    &::event_trace_controller_info,
+    &::nvprof_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
     &runtime_report_controller_info,
@@ -33,21 +89,21 @@ const char* builtin_option_specs =
     " \"description\" : \"Profile MPI functions\","
     " \"category\"    : \"region\","
     " \"services\"    : [ \"mpi\" ],"
-    " \"extra_config_flags\": { \"CALI_MPI_BLACKLIST\": \"MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\" }"
+    " \"config\": { \"CALI_MPI_BLACKLIST\": \"MPI_Comm_rank,MPI_Comm_size,MPI_Wtick,MPI_Wtime\" }"
     "},"
     "{"
     " \"name\"        : \"profile.cuda\","
     " \"type\"        : \"bool\","
     " \"description\" : \"Profile CUDA API functions\","
     " \"category\"    : \"region\","
-    " \"services\"    : [ \"cupti\"  ]"
+    " \"services\"    : [ \"cupti\" ]"
     "},"
     "{"
     " \"name\"        : \"profile.kokkos\","
     " \"type\"        : \"bool\","
     " \"description\" : \"Profile Kokkos functions\","
     " \"category\"    : \"region\","
-    " \"services\"    : [ \"kokkostime\"  ]"
+    " \"services\"    : [ \"kokkostime\" ]"
     "},"
     "{"
     " \"name\"        : \"io.bytes.written\","
@@ -146,7 +202,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"category\"    : \"metric\","
     " \"services\"    : [ \"alloc\", \"sysalloc\" ],"
-    " \"extra_config_flags\" : { \"CALI_ALLOC_TRACK_ALLOCATIONS\": \"false\", \"CALI_ALLOC_RECORD_HIGHWATERMARK\": \"true\" },"
+    " \"config\"      : { \"CALI_ALLOC_TRACK_ALLOCATIONS\": \"false\", \"CALI_ALLOC_RECORD_HIGHWATERMARK\": \"true\" },"
     " \"query args\"  : "
     " ["
     "   { \"level\": \"serial\", \"select\": [ { \"expr\": \"max(max#alloc.region.highwatermark)\", \"as\": \"Max Alloc'd Mem\" } ] },"
@@ -160,7 +216,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"category\"    : \"metric\","
     " \"services\"    : [ \"topdown\" ],"
-    " \"extra_config_flags\" : { \"CALI_TOPDOWN_LEVEL\": \"top\" },"
+    " \"config\"      : { \"CALI_TOPDOWN_LEVEL\": \"top\" },"
     " \"query args\"  : "
     " ["
     "  { \"level\": \"serial\", \"select\": "
@@ -195,7 +251,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"category\"    : \"metric\","
     " \"services\"    : [ \"topdown\" ],"
-    " \"extra_config_flags\" : { \"CALI_TOPDOWN_LEVEL\": \"all\" },"
+    " \"config\"      : { \"CALI_TOPDOWN_LEVEL\": \"all\" },"
     " \"query args\"  : "
     " ["
     "  { \"level\": \"serial\", \"select\": "
@@ -260,7 +316,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"category\"    : \"metric\","
     " \"services\"    : [ \"papi\" ],"
-    " \"extra_config_flags\" : "
+    " \"config\"      : "
     " {"
     "   \"CALI_PAPI_COUNTERS\": "
     "     \"CPU_CLK_THREAD_UNHALTED:THREAD_P,UOPS_RETIRED:RETIRE_SLOTS,UOPS_ISSUED:ANY,INT_MISC:RECOVERY_CYCLES,IDQ_UOPS_NOT_DELIVERED:CORE\""
@@ -302,7 +358,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"category\"    : \"metric\","
     " \"services\"    : [ \"papi\" ],"
-    " \"extra_config_flags\" : "
+    " \"config\"      : "
     " {"
     "   \"CALI_PAPI_COUNTERS\": "
     "     \"BR_MISP_RETIRED:ALL_BRANCHES"

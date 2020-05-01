@@ -20,6 +20,7 @@ namespace cali
 {
 
 class CaliperMetadataAccessInterface;
+class ConfigManager;
 
 /// \brief Create QuerySpec from command-line arguments
 class QueryArgsParser {
@@ -51,7 +52,7 @@ struct SnapshotFilterStep {
     SnapshotFilterFn  m_filter_fn;  ///< This processing step
     SnapshotProcessFn m_push_fn;    ///< Next processing step
 
-    SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn) 
+    SnapshotFilterStep(SnapshotFilterFn filter_fn, SnapshotProcessFn push_fn)
         : m_filter_fn { filter_fn }, m_push_fn { push_fn }
     { }
 
@@ -61,6 +62,6 @@ struct SnapshotFilterStep {
 };
 
 /// \brief Process --help for cali-query and mpi-caliquery
-void print_caliquery_help(const util::Args& args, const char* usage);
+void print_caliquery_help(const util::Args& args, const char* usage, const ConfigManager&);
 
 }
