@@ -8,12 +8,8 @@ set(CMAKE_Fortran_COMPILER "/usr/tce/packages/xl/xl-2019.02.07/bin/xlf" CACHE PA
 set(CUDA_TOOLKIT_ROOT_DIR "/usr/tce/packages/cuda/cuda-9.2.148" CACHE PATH "")
 set(CUPTI_PREFIX "/usr/tce/packages/cuda/cuda-9.2.148/extras/CUPTI" CACHE PATH "")
 
-# DBO 2019-02-28: dyninst-10/boost installation on toss3 is broken, leading to
-# undefined references or non-existing include files. Turn it off for now.
-# Build with spack if dyninst is needed.
-#set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
-
-set(WITH_FORTRAN  On  CACHE BOOL "")
+# Our f2003 requires some extra options for xlf. Skip it for now. 
+set(WITH_FORTRAN  Off CACHE BOOL "")
 set(WITH_CALLPATH Off CACHE BOOL "")
 set(WITH_NVPROF   On  CACHE BOOL "")
 set(WITH_CUPTI    On  CACHE BOOL "")
