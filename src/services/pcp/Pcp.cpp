@@ -13,6 +13,7 @@
 #include "caliper/common/Log.h"
 
 #include <pcp/pmapi.h>
+#include <sys/time.h>
 
 using namespace cali;
 
@@ -42,9 +43,15 @@ class PcpService {
     std::vector<pmID>       m_metric_list;
     std::vector<double>     m_prev_value;  // last snapshot's value to compute diffs
 
+    double m_prev_timestamp { 0 };
+
     unsigned m_num_lookups        { 0 };
     unsigned m_num_failed_lookups { 0 };
     unsigned m_num_failed_values  { 0 };
+
+    Attribute m_timestamp_sec_attr;
+    Attribute m_timestamp_attr;
+    Attribute m_time_duration_attr;
 
     void snapshot(Caliper*, SnapshotRecord* rec) {
         pmResult* res = nullptr;
@@ -83,6 +90,16 @@ class PcpService {
 
             m_prev_value[i] = total;
         }
+
+        double timestamp = res->timestamp.tv_sec + (res->timestamp.tv_usec * 1e-6);
+
+        if (rec) {
+            rec->append(m_timestamp_sec_attr.id(), cali_make_variant_from_uint(res->timestamp.tv_sec));
+            rec->append(m_timestamp_attr.id(),     Variant(timestamp));
+            rec->append(m_time_duration_attr.id(), Variant(timestamp - m_prev_timestamp));
+        }
+
+        m_prev_timestamp = timestamp;
 
         ++m_num_lookups;
 
@@ -140,6 +157,39 @@ class PcpService {
                         << m_num_failed_lookups << " failed." << std::endl;
     }
 
+    PcpService(Caliper* c, Channel* channel)
+    {
+        Attribute unit_attr =
+            c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        Attribute aggr_class_attr =
+            c->get_attribute("class.aggregatable");
+
+        Variant   sec_val   = Variant("sec");
+        Variant   true_val  = Variant(true);
+
+        Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
+        Variant   meta_vals[2] = { true_val,        sec_val   };
+
+        m_timestamp_sec_attr =
+            c->create_attribute("pcp.timestamp.sec", CALI_TYPE_UINT,
+                                CALI_ATTR_ASVALUE       |
+                                CALI_ATTR_SCOPE_PROCESS |
+                                CALI_ATTR_SKIP_EVENTS,
+                                1, &unit_attr, &sec_val);
+        m_timestamp_attr =
+            c->create_attribute("pcp.timestamp", CALI_TYPE_DOUBLE,
+                                CALI_ATTR_ASVALUE       |
+                                CALI_ATTR_SCOPE_PROCESS |
+                                CALI_ATTR_SKIP_EVENTS,
+                                1, &unit_attr, &sec_val);
+        m_time_duration_attr =
+            c->create_attribute("pcp.time.duration", CALI_TYPE_DOUBLE,
+                                CALI_ATTR_ASVALUE       |
+                                CALI_ATTR_SCOPE_PROCESS |
+                                CALI_ATTR_SKIP_EVENTS,
+                                2, meta_attr, meta_vals);
+    }
+
     static bool init_pcp_context(const char* hostname) {
         if (s_pcp_context < 0)
             s_pcp_context = pmNewContext(PM_CONTEXT_HOST, hostname);
@@ -174,7 +224,7 @@ public:
             return;
         }
 
-        PcpService* instance = new PcpService;
+        PcpService* instance = new PcpService(c, channel);
         ++s_num_instances;
 
         if (!instance->setup_metrics(c, metriclist)) {
