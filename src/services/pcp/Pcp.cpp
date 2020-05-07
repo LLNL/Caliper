@@ -262,8 +262,8 @@ int PcpService::s_pcp_context   = -1;
 
 const ConfigSet::Entry PcpService::s_configdata[] = {
     { "metrics", CALI_TYPE_STRING, "",
-      "List of PCP metrics to record",
-      "List of PCP metrics to record, separated by ','"
+      "List of performance co-pilot metrics to record",
+      "List of performance co-pilot metrics to record, separated by ','"
     },
     ConfigSet::Terminator
 };
