@@ -22,12 +22,16 @@ namespace
 {
 
 const char* rd_cas_metrics =
-    "bla_1"
-    ",bla_2";
+    "perfevent.hwcounters.bdx_unc_imc0__UNC_M_CAS_COUNT_RD.value"
+    ",perfevent.hwcounters.bdx_unc_imc1__UNC_M_CAS_COUNT_RD.value"
+    ",perfevent.hwcounters.bdx_unc_imc4__UNC_M_CAS_COUNT_RD.value"
+    ",perfevent.hwcounters.bdx_unc_imc5__UNC_M_CAS_COUNT_RD.value";
 
 const char* wr_cas_metrics =
-    "bla_1"
-    ",bla_2";
+    "perfevent.hwcounters.bdx_unc_imc0__UNC_M_CAS_COUNT_WR.value"
+    ",perfevent.hwcounters.bdx_unc_imc1__UNC_M_CAS_COUNT_WR.value"
+    ",perfevent.hwcounters.bdx_unc_imc4__UNC_M_CAS_COUNT_WR.value"
+    ",perfevent.hwcounters.bdx_unc_imc5__UNC_M_CAS_COUNT_WR.value";
 
 std::vector<Attribute>
 find_counter_attributes(const CaliperMetadataAccessInterface& db, const char* metrics) {
@@ -57,12 +61,12 @@ sum_attributes(const std::vector<Entry>& rec, const std::vector<Attribute>& attr
 
     for (const Attribute& a : attributes) {
         auto it = std::find_if(rec.begin(), rec.end(), [a](const Entry& e) {
-                            e.attribute() == a.id();
+                            return e.attribute() == a.id();
                         });
 
         if (it != rec.end()) {
             ++count;
-            sum += it->value.to_double();
+            sum += it->value().to_double();
         }
     }
 
@@ -119,7 +123,7 @@ class PcpMemory
     PcpMemory(Caliper* c, Channel*)
         : num_computed(0)
         {
-            Attribute aggr_attr = c->get_attribute("class.aggregate");
+            Attribute aggr_attr = c->get_attribute("class.aggregatable");
             Variant v_true(true);
 
             rd_result_attr =
@@ -166,7 +170,7 @@ public:
                 delete instance;
             });
 
-        Log(1).stream() << channel->name() << "Registered pcp.memory service";
+        Log(1).stream() << channel->name() << ": Registered pcp.memory service" << std::endl;
     }
 
 };

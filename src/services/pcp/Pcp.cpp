@@ -152,7 +152,7 @@ class PcpService {
     }
 
     void finish(Caliper*, Channel* channel) {
-        Log(1).stream() << channel->name() << "pcp: "
+        Log(1).stream() << channel->name() << ": pcp: "
                         << m_num_lookups << " lookups, "
                         << m_num_failed_lookups << " failed." << std::endl;
     }
