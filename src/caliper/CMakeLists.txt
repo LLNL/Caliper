@@ -1,4 +1,4 @@
-set(CALIPER_SOURCES
+set(CALIPER_RUNTIME_SOURCES
   Annotation.cpp
   AnnotationBinding.cpp
   Blackboard.cpp
@@ -16,16 +16,16 @@ set(CALIPER_SOURCES
 
 add_subdirectory(controllers)
 
-add_library(caliper-serial-obj OBJECT ${CALIPER_SOURCES})
+add_library(caliper-runtime OBJECT ${CALIPER_RUNTIME_SOURCES})
 
-target_compile_options(caliper-serial-obj PRIVATE
+target_compile_options(caliper-runtime PRIVATE
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
 
 if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-serial-obj PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+  set_property(TARGET caliper-runtime PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-set(CALIPER_SERIAL_OBJS
+set(CALIPER_RUNTIME_OBJS
   $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
 
@@ -36,9 +36,14 @@ set(CALIPER_SERIAL_OBJS
   $<TARGET_OBJECTS:caliper-services>
   $<TARGET_OBJECTS:caliper-controllers>
 
-  $<TARGET_OBJECTS:caliper-serial-obj>
+  $<TARGET_OBJECTS:caliper-runtime>
   ${CALIPER_SERVICES_LIBS}
   ${CALIPER_EXTERNAL_SOURCES})
+
+list(APPEND CALIPER_SERIAL_OBJS
+  ${CALIPER_RUNTIME_OBJS})
+list(APPEND CALIPER_SERIAL_OBJS
+  machine_serial.cpp)
 
 add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
 
@@ -51,12 +56,20 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper-serial PRIVATE ${_extlib})
 endforeach()
 
-# Add serial objects and dependencies to global list for combined caliper lib
+# Add runtime objects and dependencies to global list for combined caliper lib
 list(APPEND CALIPER_ALL_OBJS
-  ${CALIPER_SERIAL_OBJS})
+  ${CALIPER_RUNTIME_OBJS})
 list(APPEND CALIPER_ALL_EXTERNAL_LIBS
   Threads::Threads
   ${CALIPER_EXTERNAL_LIBS})
+
+if (CALIPER_HAVE_MPI)
+  list(APPEND CALIPER_ALL_OBJS
+    caliper/machine_mpi.cpp)
+else()
+  list(APPEND CALIPER_ALL_OBJS
+    caliper/machine_serial.cpp)
+endif()
 
 set(CALIPER_ALL_OBJS ${CALIPER_ALL_OBJS} PARENT_SCOPE)
 set(CALIPER_ALL_EXTERNAL_LIBS ${CALIPER_ALL_EXTERNAL_LIBS} PARENT_SCOPE)

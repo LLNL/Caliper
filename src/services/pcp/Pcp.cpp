@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../../caliper/machine.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -216,6 +218,15 @@ public:
                             << std::endl;
             return;
         }
+
+        int node_rank = machine::get_rank_for(MachineLevel::Node);
+
+        if (node_rank < 0)
+            Log(0).stream() << channel->name()
+                            << ": pcp: Unable to determine node master"
+                            << std::endl;
+        if (node_rank != 0)
+            return;
 
         if (!init_pcp_context("local:")) {
             Log(0).stream() << channel->name()
