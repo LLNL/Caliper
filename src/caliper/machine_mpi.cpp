@@ -8,7 +8,7 @@
 #include "caliper/common/Log.h"
 
 #ifdef CALIPER_HAVE_MPI
-#include "../mpi-common/mpi_machine.h"
+#include "../mpi/mpi_machine.h"
 #endif
 
 namespace cali

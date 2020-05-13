@@ -26,16 +26,11 @@ if (${BUILD_SHARED_LIBS})
 endif()
 
 set(CALIPER_RUNTIME_OBJS
-  $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
-
   $<TARGET_OBJECTS:caliper-interface>
-  
   $<TARGET_OBJECTS:caliper-reader>
-
   $<TARGET_OBJECTS:caliper-services>
   $<TARGET_OBJECTS:caliper-controllers>
-
   $<TARGET_OBJECTS:caliper-runtime>
   ${CALIPER_SERVICES_LIBS}
   ${CALIPER_EXTERNAL_SOURCES})

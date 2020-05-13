@@ -1,11 +1,8 @@
 set(UTIL_SOURCES
-  format_util.cpp
-  parse_util.cpp
-  unitfmt.c
-  vlenc.c)
+  util/format_util.cpp
+  util/parse_util.cpp
+  util/unitfmt.c
+  util/vlenc.c)
 
-add_library(caliper-util OBJECT ${UTIL_SOURCES})
-
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-util PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
+list(APPEND CALIPER_COMMON_SOURCES ${UTIL_SOURCES})
+set(CALIPER_COMMON_SOURCES ${CALIPER_COMMON_SOURCES} PARENT_SCOPE)

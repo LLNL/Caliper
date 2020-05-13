@@ -15,8 +15,7 @@ add_subdirectory(services)
 add_subdirectory(caliper)
 
 if (CALIPER_HAVE_MPI)
-  add_subdirectory(mpi-common)
-  add_subdirectory(mpi-rt)
+  add_subdirectory(mpi)
 endif()
 
 # Make the combined libcaliper
