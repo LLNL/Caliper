@@ -84,7 +84,11 @@ mpirt_constructor()
         nullptr
     };
 
-    Caliper::add_init_hook(setup_mpi);
+    if (Caliper::is_initialized())
+        setup_mpi();
+    else
+        Caliper::add_init_hook(setup_mpi);
+
     Caliper::add_services(services);
 
     add_global_config_specs(controllers);

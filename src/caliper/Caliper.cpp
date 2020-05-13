@@ -1932,7 +1932,8 @@ Caliper::is_initialized()
     return GlobalData::s_init_lock == 0;
 }
 
-/// \brief Add a list of available caliper services.
+/// \brief Add a list of %Caliper service specs.
+///
 /// Adds services that will be made available by %Caliper. This does *not*
 /// activate the services automatically, they must still be listed in the
 /// CALI_SERVICES_ENABLE configuration variable at runtime.
@@ -1949,17 +1950,11 @@ Caliper::is_initialized()
 ///
 ///   Caliper::add_services(my_services);
 /// \endcode
-///
-/// This is only effective _before_ %Caliper is initialized, and should be
-/// called e.g. during static initialization or from a library constructor.
 
 void
 Caliper::add_services(const CaliperService* s)
 {
-    if (is_initialized())
-        Log(0).stream() << "add_services(): Caliper is already initialized - cannot add new services" << std::endl;
-    else
-        services::add_service_specs(s);
+    services::add_service_specs(s);
 }
 
 void
