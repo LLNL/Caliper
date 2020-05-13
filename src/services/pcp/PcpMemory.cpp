@@ -84,7 +84,8 @@ class PcpMemory
     Attribute rd_result_attr;
     Attribute wr_result_attr;
 
-    unsigned num_computed;
+    unsigned  num_computed;
+    unsigned  num_flushes;
 
     void postprocess_snapshot_cb(std::vector<Entry>& rec) {
         auto rp = sum_attributes(rec, rd_counter_attrs);
@@ -100,20 +101,33 @@ class PcpMemory
     }
 
     void pre_flush_cb(Caliper* c, Channel* channel) {
+        ++num_flushes;
+
+        if (rd_counter_attrs.size() + wr_counter_attrs.size() > 0)
+            return;
+
         rd_counter_attrs = ::find_counter_attributes(*c, rd_cas_metrics);
         wr_counter_attrs = ::find_counter_attributes(*c, wr_cas_metrics);
 
-        if (rd_counter_attrs.empty())
-            Log(0).stream() << channel->name()
-                            << ": pcp.memory: read metrics not found"
-                            << std::endl;
-        if (wr_counter_attrs.empty())
-            Log(0).stream() << channel->name()
-                            << ": pcp.memory: write metrics not found"
-                            << std::endl;
+        if (rd_counter_attrs.size() + wr_counter_attrs.size() > 0)
+            channel->events().postprocess_snapshot.connect(
+                [this](Caliper*, Channel*, std::vector<Entry>& rec){
+                    this->postprocess_snapshot_cb(rec);
+                });
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
+        if (num_flushes > 0) {
+            if (rd_counter_attrs.empty())
+                Log(1).stream() << channel->name()
+                                << ": pcp.memory: read metrics not found"
+                                << std::endl;
+            if (wr_counter_attrs.empty())
+                Log(1).stream() << channel->name()
+                                << ": pcp.memory: write metrics not found"
+                                << std::endl;
+        }
+
         Log(1).stream() << channel->name()
                         << ": pcp.memory: Computed memory metrics for "
                         << num_computed << " records"
@@ -121,7 +135,7 @@ class PcpMemory
     }
 
     PcpMemory(Caliper* c, Channel*)
-        : num_computed(0)
+        : num_computed(0), num_flushes(0)
         {
             Attribute aggr_attr = c->get_attribute("class.aggregatable");
             Variant v_true(true);
@@ -159,10 +173,6 @@ public:
         channel->events().pre_flush_evt.connect(
             [instance](Caliper* c, Channel* channel, const SnapshotRecord*){
                 instance->pre_flush_cb(c, channel);
-            });
-        channel->events().postprocess_snapshot.connect(
-            [instance](Caliper*, Channel*, std::vector<Entry>& rec){
-                instance->postprocess_snapshot_cb(rec);
             });
         channel->events().finish_evt.connect(
             [instance](Caliper* c, Channel* channel){
