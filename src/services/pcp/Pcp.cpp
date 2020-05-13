@@ -219,7 +219,7 @@ public:
             return;
         }
 
-        int node_rank = machine::get_rank_for(MachineLevel::Node);
+        int node_rank = machine::get_rank_for(machine::MachineLevel::Node);
 
         if (node_rank < 0)
             Log(0).stream() << channel->name()
