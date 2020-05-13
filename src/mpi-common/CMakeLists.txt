@@ -1,7 +1,8 @@
 include_directories(${MPI_CXX_INCLUDE_PATH})
 
 set(CALIPER_MPI_SOURCES
-  aggregate_over_mpi.cpp)
+  aggregate_over_mpi.cpp
+  mpi_machine.cpp)
 
 add_library(caliper-mpi-common OBJECT ${CALIPER_MPI_SOURCES})
 

@@ -49,6 +49,7 @@ option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(WITH_ADIAK     "Enable adiak support" FALSE)
 option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
 option(WITH_SYMBOLLOOKUP "Enable symbollookup service using either Dyninst or libdl" FALSE)
+option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -367,6 +368,16 @@ if (WITH_SYMBOLLOOKUP)
   endif()
 endif()
 
+if (WITH_PCP)
+  find_library(PCP_LIBRARY
+    pcp)
+  if (NOT ${PCP_LIBRARY} MATCHES PCP_LIBRARY-NOTFOUND)
+    set(CALIPER_HAVE_PCP TRUE)
+    set(CALIPER_PCP_CMAKE_MSG "Yes, using ${PCP_LIBRARY}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${PCP_LIBRARY})
+  endif()
+endif()
+
 # PGI 17.x has issues with some constexpr constructors
 if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
   set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
@@ -476,6 +487,7 @@ set(CALIPER_MODULES
   Kokkos
   TAU
   VTune
+  PCP
   histogram)
 
 foreach(_caliper_module ${CALIPER_MODULES})
