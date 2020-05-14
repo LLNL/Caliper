@@ -1,12 +1,9 @@
 set(CALIPER_CONTROLLERS_SOURCES
-  CudaActivityController.cpp
-  HatchetRegionProfileController.cpp
-  HatchetSampleProfileController.cpp
-  RuntimeReportController.cpp
-  controllers.cpp)
+  controllers/CudaActivityController.cpp
+  controllers/HatchetRegionProfileController.cpp
+  controllers/HatchetSampleProfileController.cpp
+  controllers/RuntimeReportController.cpp
+  controllers/controllers.cpp)
 
-add_library(caliper-controllers OBJECT ${CALIPER_CONTROLLERS_SOURCES})
-
-if (BUILD_SHARED_LIBS)
-  set_property(TARGET caliper-controllers PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
+list(APPEND CALIPER_RUNTIME_SOURCES ${CALIPER_CONTROLLERS_SOURCES})
+set(CALIPER_RUNTIME_SOURCES ${CALIPER_RUNTIME_SOURCES} PARENT_SCOPE)
