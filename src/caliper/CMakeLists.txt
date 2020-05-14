@@ -25,43 +25,8 @@ if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-runtime PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 endif()
 
-set(CALIPER_RUNTIME_OBJS
-  $<TARGET_OBJECTS:caliper-util>
-  $<TARGET_OBJECTS:caliper-common>
-
-  $<TARGET_OBJECTS:caliper-interface>
-  
-  $<TARGET_OBJECTS:caliper-reader>
-
-  $<TARGET_OBJECTS:caliper-services>
-  $<TARGET_OBJECTS:caliper-controllers>
-
-  $<TARGET_OBJECTS:caliper-runtime>
-  ${CALIPER_SERVICES_LIBS}
-  ${CALIPER_EXTERNAL_SOURCES})
-
 list(APPEND CALIPER_SERIAL_OBJS
-  ${CALIPER_RUNTIME_OBJS})
-list(APPEND CALIPER_SERIAL_OBJS
-  machine_serial.cpp)
-
-add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
-
-set_target_properties(caliper-serial PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
-set_target_properties(caliper-serial PROPERTIES VERSION ${CALIPER_VERSION})
-
-target_link_libraries(caliper-serial PRIVATE Threads::Threads)
-
-foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
-  target_link_libraries(caliper-serial PRIVATE ${_extlib})
-endforeach()
-
-# Add runtime objects and dependencies to global list for combined caliper lib
-list(APPEND CALIPER_ALL_OBJS
-  ${CALIPER_RUNTIME_OBJS})
-list(APPEND CALIPER_ALL_EXTERNAL_LIBS
-  Threads::Threads
-  ${CALIPER_EXTERNAL_LIBS})
+  caliper/machine_serial.cpp)
 
 if (CALIPER_HAVE_MPI)
   list(APPEND CALIPER_ALL_OBJS
@@ -71,14 +36,9 @@ else()
     caliper/machine_serial.cpp)
 endif()
 
-set(CALIPER_ALL_OBJS ${CALIPER_ALL_OBJS} PARENT_SCOPE)
-set(CALIPER_ALL_EXTERNAL_LIBS ${CALIPER_ALL_EXTERNAL_LIBS} PARENT_SCOPE)
+set(CALIPER_SERIAL_OBJS ${CALIPER_SERIAL_OBJS} PARENT_SCOPE)
+set(CALIPER_ALL_OBJS    ${CALIPER_ALL_OBJS}    PARENT_SCOPE)
 
 if (BUILD_TESTING)
   add_subdirectory(test)
 endif()
-
-install(TARGETS caliper-serial
-  EXPORT caliper 
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

@@ -10,7 +10,6 @@ set(CALIPER_READER_TEST_SOURCES
   test_nodebuffer.cpp)
 
 add_executable(test_caliper-reader
-  $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
   $<TARGET_OBJECTS:caliper-reader>
   ${CALIPER_READER_TEST_SOURCES})

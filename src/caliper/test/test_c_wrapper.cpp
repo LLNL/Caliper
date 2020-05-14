@@ -4,7 +4,6 @@
 
 #include "caliper/cali.h"
 
-#define _XOPEN_SOURCE
 #include <unistd.h>
 
 #include <gtest/gtest.h>

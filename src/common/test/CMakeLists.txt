@@ -8,7 +8,6 @@ set(CALIPER_COMMON_TEST_SOURCES
   test_variant.cpp)
 
 add_executable(test_caliper-common
-  $<TARGET_OBJECTS:caliper-util>
   $<TARGET_OBJECTS:caliper-common>
   ${CALIPER_COMMON_TEST_SOURCES})
 
