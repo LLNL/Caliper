@@ -8,7 +8,7 @@
 namespace
 {
 
-const char* event_trace_spec = 
+const char* event_trace_spec =
     "{"
     " \"name\"        : \"event-trace\","
     " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
@@ -58,8 +58,43 @@ const char* nvprof_spec =
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
 
+const char* mpireport_spec =
+    "{"
+    " \"name\"        : \"mpi-report\","
+    " \"services\"    : [ \"aggregate\", \"event\", \"mpi\", \"mpireport\", \"timestamp\" ],"
+    " \"description\" : \"Print time spent in MPI functions\","
+    " \"config\"      : "
+    "  { \"CALI_CHANNEL_FLUSH_ON_EXIT\"       : \"false\","
+    "    \"CALI_EVENT_TRIGGER\"               : \"mpi.function\","
+    "    \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"  : \"false\","
+    "    \"CALI_TIMER_SNAPSHOT_DURATION\"     : \"true\","
+    "    \"CALI_TIMER_INCLUSIVE_DURATION\"    : \"false\","
+    "    \"CALI_TIMER_UNIT\"                  : \"sec\","
+    "    \"CALI_MPI_BLACKLIST\"    :"
+    "      \"MPI_Comm_size,MPI_Comm_rank,MPI_Wtime\","
+    "    \"CALI_MPIREPORT_WRITE_ON_FINALIZE\" : \"false\","
+    "    \"CALI_MPIREPORT_CONFIG\" :"
+    "      \"select "
+    "          mpi.function as Function,"
+    "          min(count) as \\\"Count (min)\\\","
+    "          max(count) as \\\"Count (max)\\\","
+    "          min(sum#time.duration) as \\\"Time (min)\\\","
+    "          max(sum#time.duration) as \\\"Time (max)\\\","
+    "          avg(sum#time.duration) as \\\"Time (avg)\\\","
+    "          percent_total(sum#time.duration) as \\\"Time %\\\""
+    "        group by       "
+    "          mpi.function "
+    "        format         "
+    "          table        "
+    "        order by       "
+    "          percent_total#sum#time.duration desc"
+    "      \""
+    "  }"
+    "}";
+
 cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
 cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
+cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   nullptr, nullptr };
 
 }
 
@@ -75,6 +110,7 @@ ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &cuda_activity_controller_info,
     &::event_trace_controller_info,
     &::nvprof_controller_info,
+    &::mpireport_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
     &runtime_report_controller_info,

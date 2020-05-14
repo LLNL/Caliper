@@ -192,6 +192,29 @@ class CaliperMPITest(unittest.TestCase):
 
         self.assertTrue(r is not None, 'No record with "path" entry found')
         self.assertTrue('avg#inclusive#sum#time.duration' in r)
-        
+
+    def test_mpireport_controller(self):
+        target_cmd = [ './ci_test_mpi_before_cali', 'mpi-report' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        log_targets = [
+            'Function',
+            'MPI_Bcast'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
 if __name__ == "__main__":
     unittest.main()
