@@ -65,6 +65,7 @@ const char* mpireport_spec =
     " \"description\" : \"Print time spent in MPI functions\","
     " \"config\"      : "
     "  { \"CALI_CHANNEL_FLUSH_ON_EXIT\"       : \"false\","
+    "    \"CALI_AGGREGATE_KEY\"               : \"mpi.function\","
     "    \"CALI_EVENT_TRIGGER\"               : \"mpi.function\","
     "    \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"  : \"false\","
     "    \"CALI_TIMER_SNAPSHOT_DURATION\"     : \"true\","
