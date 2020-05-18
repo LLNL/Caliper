@@ -22,6 +22,7 @@ class ThreadMonitor
     static const ConfigSet::Entry s_configdata[];
 
     pthread_t monitor_thread;
+    bool      thread_running;
 
     Channel*  channel;
 
@@ -80,6 +81,7 @@ class ThreadMonitor
         }
 
         Log(1).stream() << channel->name() << ": monitor: monitoring thread initialized" << std::endl;
+        thread_running = true;
         return true;
     }
 
@@ -89,10 +91,6 @@ class ThreadMonitor
         if (pthread_cancel(monitor_thread) != 0)
             Log(0).stream() << channel->name() << ": monitor: pthread_cancel() failed" << std::endl;
 
-        Log(1).stream() << channel->name()
-                        << ": monitor: waiting for monitoring thread to finish ... "
-                        << std::endl;
-
         pthread_join(monitor_thread, nullptr);
 
         Log(1).stream() << channel->name() << ": monitor: monitoring thread finished" << std::endl;
@@ -101,21 +99,19 @@ class ThreadMonitor
     void post_init_cb() {
         if (!start())
             return;
-
-        channel->events().pre_flush_evt.connect(
-            [this](Caliper*, Channel*, const SnapshotRecord*){
-                cancel();
-            });
     }
 
     void finish_cb() {
+        if (thread_running)
+            cancel();
+
         Log(1).stream() << channel->name()
                         << ": monitor: triggered " << num_events << " monitoring events"
                         << std::endl;
     }
 
     ThreadMonitor(Caliper* c, Channel* chn)
-        : channel(chn), sleep_sec(2), sleep_nsec(0), num_events(0)
+        : thread_running(false), channel(chn), sleep_sec(2), sleep_nsec(0), num_events(0)
         {
             monitor_attr =
                 c->create_attribute("monitor.event", CALI_TYPE_INT,
@@ -141,6 +137,10 @@ public:
                 instance->finish_cb();
                 delete instance;
             });
+
+        Log(1).stream() << channel->name()
+                        << ": Registered thread_monitor service"
+                        << std::endl;
     }
 
 };
@@ -158,6 +158,6 @@ const ConfigSet::Entry ThreadMonitor::s_configdata[] = {
 namespace cali
 {
 
-CaliperService monitor_service { "monitor", ::ThreadMonitor::create };
+CaliperService thread_monitor_service { "thread_monitor", ::ThreadMonitor::create };
 
 }
