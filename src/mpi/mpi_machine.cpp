@@ -57,6 +57,11 @@ int get_rank_for_node()
     if (gethostname(hostname, max_len) < 0)
         return -1;
 
+    int initialized = 0;
+    PMPI_Initialized(&initialized);
+    if (!initialized)
+        return 0;
+
     return ::get_rank_for_hash(std::hash<std::string>{}(std::string(hostname)), MPI_COMM_WORLD);
 }
 
