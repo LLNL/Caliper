@@ -62,7 +62,7 @@ namespace
           "Expand context records and print the selected attributes (default: all)",
           nullptr
         },
-        { "attributes", "attributes", 0, true,
+        { "attributes", "print-attributes", 0, true,
           "Select attributes to print (or hide) in expanded output: [-]attribute[:...]",
           "ATTRIBUTES"
         },

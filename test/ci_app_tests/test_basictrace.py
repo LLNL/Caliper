@@ -160,7 +160,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
     def test_globals_selection(self):
         target_cmd = [ './ci_test_basic' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e', '--list-globals', '-a', 'cali.caliper.version' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-G', '-q', 'select cali.caliper.version format expand' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
