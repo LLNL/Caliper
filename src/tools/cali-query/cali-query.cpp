@@ -50,7 +50,7 @@ namespace
           "Filter records by selected attributes: [-]attribute[(<|>|=)value][:...]",
           "QUERY_STRING"
         },
-        { "aggregate", "aggregate", 'a', true,
+        { "aggregate", "aggregate", 0, true,
           "Aggregate snapshots using the given aggregation operators: (sum(attribute)|count)[:...]",
           "AGGREGATION_OPS"
         },
@@ -70,11 +70,11 @@ namespace
           "Sort rows in table format: attribute[:...]",
           "SORT_ATTRIBUTES"
         },
-	{ "format", "format", 'f', true,
+	    { "format", "format", 'f', true,
           "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
           "FORMAT_STRING"
         },
-	{ "title",  "title",  'T', true,
+    	{ "title",  "title",  0, true,
           "Set the title row for formatted output",
           "STRING"
         },
@@ -118,7 +118,7 @@ namespace
           "Extract and list attributes in Caliper stream instead of snapshot records",
           nullptr
         },
-        { "list-globals", "list-globals", 0, false,
+        { "list-globals", "list-globals", 'G', false,
           "Extract and list global per-run attributes",
           nullptr
         },
@@ -414,12 +414,12 @@ int main(int argc, const char* argv[])
             for (const Attribute& attr : metadb.get_all_attributes())
                 if (attr.is_global())
                     spec.attribute_selection.list.push_back(attr.name());
-
-            FormatProcessor global_format(spec, stream);
-
-            global_format.process_record(metadb, metadb.get_globals());
-            global_format.flush(metadb);
         }
+
+        FormatProcessor global_format(spec, stream);
+
+        global_format.process_record(metadb, metadb.get_globals());
+        global_format.flush(metadb);
     } else {
         aggregate.flush(metadb, format);
         format.flush(metadb);
