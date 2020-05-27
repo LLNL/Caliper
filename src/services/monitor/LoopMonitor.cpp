@@ -55,7 +55,8 @@ class LoopMonitor
 
     void begin_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value) {
         if (attr == loop_attr) {
-            snapshot(c, channel);
+            if (loop_level == 0)
+                snapshot(c, channel);
             ++loop_level;
         } else if (loop_level == 1 && attr.get(cali::class_iteration_attr).to_bool())
             ++num_iterations;
