@@ -123,7 +123,7 @@ class RegionMonitor
         Log(1).stream() << channel->name()
                         << ": " << m_tracking_regions.size()
                         << " regions marked, "
-                        << m_num_measured << " measured."
+                        << m_num_measured << " instances measured."
                         << std::endl;
     }
 
