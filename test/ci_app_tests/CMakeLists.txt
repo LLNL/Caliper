@@ -51,6 +51,7 @@ set(PYTHON_SCRIPTS
   test_file_io.py
   test_json.py
   test_log.py
+  test_monitor.py
   test_multichannel.py
   test_report.py
   test_textlog.py
