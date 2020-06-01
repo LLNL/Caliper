@@ -87,9 +87,15 @@ class PcpService {
                 ++nvals;
             }
 
-            if (rec && nvals > 0)
-                rec->append(m_metric_info[i].attr.id(), Variant(total - m_prev_value[i]));
+            if (rec && nvals > 0) {
+                double val = total;
 
+                if (m_metric_info[i].pmdesc.type == PM_SEM_COUNTER)
+                    val = total - m_prev_value[i];
+
+                rec->append(m_metric_info[i].attr.id(), Variant(val));
+            }
+            
             m_prev_value[i] = total;
         }
 
@@ -131,6 +137,15 @@ class PcpService {
             if (status != 0) {
                 Log(0).stream() << "pcp: pmLookupDesc failed" << std::endl;
                 return false;
+            }
+
+            if (Log::verbosity() >= 2) {
+                Log(2).stream() << "pcp: Adding "
+                                << name
+                                << " (pmid=" << pmid
+                                << ", type=" << pmdesc.type
+                                << ", sem="  << pmdesc.sem
+                                << ")" << std::endl;
             }
 
             // TODO: Do some sanity checking
