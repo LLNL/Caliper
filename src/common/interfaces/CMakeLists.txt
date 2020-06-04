@@ -1,0 +1,4 @@
+if(WITH_KOKKOS_PROFILING)
+  add_subdirectory(kokkos)
+endif()
+set(CALIPER_COMMON_SOURCES ${CALIPER_COMMON_SOURCES} PARENT_SCOPE)

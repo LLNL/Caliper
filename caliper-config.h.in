@@ -11,6 +11,7 @@
 #cmakedefine CALIPER_HAVE_SAMPLER
 #cmakedefine CALIPER_HAVE_NVPROF
 #cmakedefine CALIPER_HAVE_TAU
+#cmakedefine CALIPER_HAVE_KOKKOS
 #cmakedefine CALIPER_HAVE_VTUNE
 #cmakedefine CALIPER_HAVE_DYNINST
 #cmakedefine CALIPER_HAVE_GOTCHA

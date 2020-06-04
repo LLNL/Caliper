@@ -16,6 +16,7 @@ set(CALIPER_COMMON_SOURCES
   cali_variant.c)
 
 add_subdirectory(util)
+add_subdirectory(interfaces)
 
 add_library(caliper-common OBJECT
   ${CALIPER_COMMON_SOURCES})
