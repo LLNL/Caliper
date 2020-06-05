@@ -11,8 +11,7 @@ extern "C" void kokkosp_init_library(const int loadSeq,
   const uint64_t interfaceVer,
   const uint32_t devInfoCount,
   void* deviceInfo) {
-    cali::Annotation("caliper_initialization_trigger",CALI_ATTR_HIDDEN).begin();
-    cali::Annotation("caliper_initialization_trigger",CALI_ATTR_HIDDEN).end();
+    cali_init();
     kokkosp_callbacks.kokkosp_init_callback(loadSeq,interfaceVer,devInfoCount, deviceInfo);
 }
 
