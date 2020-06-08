@@ -21,6 +21,10 @@
 #include <numeric>
 #include <string>
 
+#if defined(__GNUC__)
+#    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 namespace cali
 {
 

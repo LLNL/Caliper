@@ -26,11 +26,18 @@
 #undef __GNUC__
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ > 7)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
 #define RAPIDJSON_NAMESPACE cali_rapidjson
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
 #include "rapidjson/ostreamwrapper.h"
 #include "rapidjson/writer.h"
+#if defined(__GNUC__) && (__GNUC__ > 7)
+#    pragma GCC diagnostic pop
+#endif
 
 #ifdef CALIPER_REDUCED_CONSTEXPR_USAGE
 #define __GNUC_ OLD_GNUC
