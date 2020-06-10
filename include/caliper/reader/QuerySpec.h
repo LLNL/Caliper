@@ -128,6 +128,9 @@ struct QuerySpec
 
     /// \brief Output aliases for attributes (i.e., "select x AS y" )
     std::map<std::string, std::string> aliases;
+
+    /// \brief List of preprocessing operations (i.e., "LET y=f(x)")
+    std::map<std::string, AggregationOp> preprocess_ops;
 };
 
 } // namespace cali

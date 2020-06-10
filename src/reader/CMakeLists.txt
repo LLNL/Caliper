@@ -10,6 +10,7 @@ set(CALIPER_READER_SOURCES
   FormatProcessor.cpp
   NestedExclusiveRegionProfile.cpp
   NestedInclusiveRegionProfile.cpp
+  Preprocessor.cpp
   QueryProcessor.cpp
   QuerySpec.cpp
   RecordSelector.cpp

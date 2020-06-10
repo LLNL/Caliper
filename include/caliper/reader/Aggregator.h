@@ -18,7 +18,7 @@ namespace cali
 
 class CaliperMetadataAccessInterface;
 
-/// \brief Post-processing aggregator
+/// \brief Perform aggregation operations on Caliper data
 /// \ingroup ReaderAPI
     
 class Aggregator 
