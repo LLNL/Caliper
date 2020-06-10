@@ -5,6 +5,7 @@
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/Preprocessor.h"
 
 #include "../common/util/parse_util.h"
 
@@ -52,7 +53,8 @@ struct CalQLParser::CalQLParserImpl
         Group,
         Select,
         Sort,
-        Where
+        Where,
+        Let
     };
 
     Clause get_clause_from_word(const std::string& w) {
@@ -65,6 +67,7 @@ struct CalQLParser::CalQLParserImpl
             { "select",    Select    },
             { "order",     Sort      },
             { "where",     Where     },
+            { "let",       Let       },
 
             { nullptr,     None      }
         };
@@ -432,6 +435,64 @@ struct CalQLParser::CalQLParserImpl
     }
 
     void
+    parse_let(std::istream& is) {
+        char c = 0;
+
+        do {
+            const QuerySpec::FunctionSignature* defs = Preprocessor::preprocess_defs();
+
+            std::string target = util::read_word(is, ",;=<>()\n");
+
+            c = util::read_char(is);
+
+            if (c != '=') {
+                set_error(std::string("Expected \"=\" after ") + target, is);
+                return;
+            }
+
+            std::string opname = util::read_word(is, ",;=<>()\n");
+            std::transform(opname.begin(), opname.end(), opname.begin(), ::tolower);
+
+            int i = 0;
+
+            for ( ; defs[i].name && opname != defs[i].name; ++i)
+                ;
+
+            if (!defs[i].name) {
+                set_error(std::string("Unknown operator ")  + opname, is);
+                return;
+            }
+
+            std::vector<std::string> args = parse_arglist(is);
+            int argsize = static_cast<int>(args.size());
+
+            if (defs[i].min_args > argsize || defs[i].max_args < argsize)
+                set_error(std::string("Invalid number of arguments for operator ") + opname, is);
+            else {
+                auto it = std::find_if(spec.preprocess_ops.begin(), spec.preprocess_ops.end(), 
+                                [&target](QuerySpec::PreprocessSpec& s){
+                                    return s.target == target;
+                            });
+
+                if (it == spec.preprocess_ops.end()) {
+                    QuerySpec::PreprocessSpec pspec;
+
+                    pspec.target = target;
+                    pspec.op = QuerySpec::AggregationOp(defs[i], args);
+
+                    spec.preprocess_ops.emplace_back(std::move(pspec));
+                } else
+                    set_error(target + " defined twice", is);
+            }
+
+            c = util::read_char(is);
+        } while (!error && is.good() && c == ',');
+
+        if (c)
+            is.unget();
+    }
+
+    void
     parse_clause(Clause clause, std::istream& is) {
         switch (clause) {
         case Aggregate:
@@ -453,6 +514,9 @@ struct CalQLParser::CalQLParserImpl
             break;
         case Where:
             parse_where(is);
+            break;
+        case Let:
+            parse_let(is);
             break;
         case None:
             // do nothing

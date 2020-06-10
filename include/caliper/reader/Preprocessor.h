@@ -32,10 +32,10 @@ public:
 
     ~Preprocessor();
 
-    void process(CaliperMetadataAccessInterface&, EntryList&);
+    EntryList process(CaliperMetadataAccessInterface&, const EntryList&);
 
-    void operator()(CaliperMetadataAccessInterface& db, EntryList& list) {
-        process(db, list);
+    void operator()(CaliperMetadataAccessInterface& db, const EntryList& rec, SnapshotProcessFn push) {
+        push(db, process(db, rec));
     }
 
     static const QuerySpec::FunctionSignature*

@@ -178,15 +178,21 @@ struct Preprocessor::PreprocessorImpl
     std::vector<Kernel*> kernels;
 
     void configure(const QuerySpec& spec) {
-        for (const auto &p : spec.preprocess_ops) {
-            if (p.second.op.id >= 0 && p.second.op.id <= MAX_KERNEL_ID)
-                kernels.push_back((*::kernel_create_fn[p.second.op.id])(p.first, p.second.args));
+        for (const auto &pspec : spec.preprocess_ops) {
+            int index = pspec.op.op.id;
+
+            if (index >= 0 && index <= MAX_KERNEL_ID)
+                kernels.push_back((*::kernel_create_fn[index])(pspec.target, pspec.op.args));
         }
     }
 
-    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+    EntryList process(CaliperMetadataAccessInterface& db, const EntryList& rec) {
+        EntryList ret = rec;
+
         for (auto &k : kernels)
-            k->process(db, rec);
+            k->process(db, ret);
+
+        return ret;
     }
 
     PreprocessorImpl(const QuerySpec& spec) {
@@ -207,10 +213,10 @@ Preprocessor::Preprocessor(const QuerySpec& spec)
 Preprocessor::~Preprocessor()
 { }
 
-void
-Preprocessor::process(CaliperMetadataAccessInterface& db, EntryList& rec)
+EntryList
+Preprocessor::process(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-    mP->process(db, rec);
+    return mP->process(db, rec);
 }
 
 const QuerySpec::FunctionSignature*

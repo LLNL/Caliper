@@ -34,6 +34,17 @@ make_op(const char* name, const char* arg1 = nullptr, const char* arg2 = nullptr
     return op;
 }
 
+QuerySpec::PreprocessSpec
+make_spec(const std::string& target, const QuerySpec::AggregationOp& op)
+{
+    QuerySpec::PreprocessSpec spec;
+
+    spec.target = target;
+    spec.op = op;
+
+    return spec;
+}
+
 std::map<cali_id_t, cali::Entry>
 make_dict_from_entrylist(const EntryList& list)
 {
@@ -71,15 +82,15 @@ TEST(PreprocessorTest, Ratio) {
 
     QuerySpec spec;
 
-    spec.preprocess_ops.insert(std::make_pair("d.ratio", ::make_op("ratio", "nom", "dnm")));
-    spec.preprocess_ops.insert(std::make_pair("s.ratio", ::make_op("ratio", "nom", "dnm", "2.0")));
+    spec.preprocess_ops.push_back(::make_spec("d.ratio", ::make_op("ratio", "nom", "dnm")));
+    spec.preprocess_ops.push_back(::make_spec("s.ratio", ::make_op("ratio", "nom", "dnm", "2.0")));
 
     //
     // --- run
     //
 
     Preprocessor pp(spec);
-    pp.process(db, rec);
+    EntryList out = pp.process(db, rec);
 
     Attribute d_attr = db.get_attribute("d.ratio");
     Attribute s_attr = db.get_attribute("s.ratio");
@@ -89,7 +100,7 @@ TEST(PreprocessorTest, Ratio) {
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
-    auto res = ::make_dict_from_entrylist(rec);
+    auto res  = ::make_dict_from_entrylist(out);
     auto d_it = res.find(d_attr.id());
     auto s_it = res.find(s_attr.id());
 
@@ -121,15 +132,15 @@ TEST(PreprocessorTest, Scale) {
 
     QuerySpec spec;
 
-    spec.preprocess_ops.insert(std::make_pair("valx2.0", ::make_op("scale", "val", "2.0")));
-    spec.preprocess_ops.insert(std::make_pair("valx0.5", ::make_op("scale", "val", "0.5")));
+    spec.preprocess_ops.push_back(::make_spec("valx2.0", ::make_op("scale", "val", "2.0")));
+    spec.preprocess_ops.push_back(::make_spec("valx0.5", ::make_op("scale", "val", "0.5")));
 
     //
     // --- run
     //
 
     Preprocessor pp(spec);
-    pp.process(db, rec);
+    EntryList out = pp.process(db, rec);
 
     Attribute v_attr = db.get_attribute("val");
     Attribute d_attr = db.get_attribute("valx2.0");
@@ -141,7 +152,7 @@ TEST(PreprocessorTest, Scale) {
     EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
     EXPECT_TRUE(d_attr.store_as_value());
 
-    auto res = ::make_dict_from_entrylist(rec);
+    auto res  = ::make_dict_from_entrylist(out);
     auto d_it = res.find(d_attr.id());
     auto h_it = res.find(h_attr.id());
 
