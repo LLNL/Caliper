@@ -147,9 +147,68 @@ public:
 };
 
 
+class TruncateKernel : public Kernel
+{
+    std::string m_res_attr_name;
+    std::string m_tgt_attr_name;
+
+    Attribute   m_res_attr;
+    Attribute   m_tgt_attr;
+
+    double      m_factor;
+
+    TruncateKernel(const std::string& def, const std::vector<std::string>& args)
+        : m_res_attr_name(def),
+          m_tgt_attr_name(args[0]),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr(Attribute::invalid),
+          m_factor(1.0)
+        {
+            if (args.size() > 1)
+                m_factor = std::stod(args[1]);
+        }
+
+public:
+
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        Variant v_tgt = get_value(db, m_tgt_attr_name, m_tgt_attr, rec);
+
+        if (v_tgt.empty())
+            return;
+
+        cali_attr_type type = m_tgt_attr.type();
+
+        if (!(type == CALI_TYPE_INT || type == CALI_TYPE_UINT))
+            type = CALI_TYPE_DOUBLE;
+
+        if (m_res_attr == Attribute::invalid)
+            m_res_attr = db.create_attribute(m_res_attr_name, type,
+                            CALI_ATTR_SKIP_EVENTS |
+                            CALI_ATTR_ASVALUE);
+
+        double val = v_tgt.to_double();
+        double res = val - fmod(val, m_factor);
+
+        Variant v_res(res);
+
+        if (type == CALI_TYPE_INT)
+            v_res = cali_make_variant_from_int(static_cast<int>(res));
+        else if (type == CALI_TYPE_UINT)
+            v_res = cali_make_variant_from_uint(static_cast<uint64_t>(fabs(res)));
+
+        rec.push_back(Entry(m_res_attr, Variant(v_res)));
+    }
+
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+        return new TruncateKernel(def, args);
+    }
+};
+
+
 enum KernelID {
     ScaledRatio,
-    Scale
+    Scale,
+    Truncate
 };
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -158,6 +217,7 @@ const char* scale_args[]   = { "attribute", "scale" };
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::ScaledRatio,   "ratio",         2, 3, sratio_args  },
     { KernelID::Scale,         "scale",         2, 2, scale_args   },
+    { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -166,10 +226,11 @@ typedef Kernel* (*KernelCreateFn)(const std::string& def, const std::vector<std:
 
 const KernelCreateFn kernel_create_fn[] = {
     ScaledRatioKernel::create,
-    ScaleKernel::create
+    ScaleKernel::create,
+    TruncateKernel::create
 };
 
-constexpr int MAX_KERNEL_ID = 1;
+constexpr int MAX_KERNEL_ID = 2;
 
 }
 
