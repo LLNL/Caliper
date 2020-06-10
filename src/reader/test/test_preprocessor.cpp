@@ -162,3 +162,107 @@ TEST(PreprocessorTest, Scale) {
     EXPECT_DOUBLE_EQ(d_it->second.value().to_double(), 84.0);
     EXPECT_DOUBLE_EQ(h_it->second.value().to_double(), 21.0);
 }
+
+
+TEST(PreprocessorTest, Truncate) {
+    //
+    // --- setup
+    //
+
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute ctx_a =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a =
+        db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+
+    EntryList rec;
+
+    rec.push_back(Entry(db.merge_node(100, ctx_a.id(), CALI_INV_ID, Variant("test.preprocessor.scale"), idmap)));
+    rec.push_back(Entry(val_a, Variant(15.5)));
+
+    QuerySpec spec;
+
+    spec.preprocess_ops.push_back(::make_spec("valt6", ::make_op("truncate", "val", "6.0")));
+    spec.preprocess_ops.push_back(::make_spec("valtd", ::make_op("truncate", "val")));
+
+    //
+    // --- run
+    //
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute v_attr = db.get_attribute("val");
+    Attribute t6_attr = db.get_attribute("valt6");
+    Attribute td_attr = db.get_attribute("valtd");
+
+    EXPECT_NE(v_attr, Attribute::invalid);
+    EXPECT_NE(t6_attr, Attribute::invalid);
+    EXPECT_NE(td_attr, Attribute::invalid);
+    EXPECT_EQ(td_attr.type(), CALI_TYPE_DOUBLE);
+    EXPECT_TRUE(td_attr.store_as_value());
+
+    auto res  = ::make_dict_from_entrylist(out);
+    auto t6_it = res.find(t6_attr.id());
+    auto td_it = res.find(td_attr.id());
+
+    ASSERT_NE(t6_it, res.end()) << "valt6 attribute not found\n";
+    ASSERT_NE(td_it, res.end()) << "valtd attribute not found\n";
+
+    EXPECT_DOUBLE_EQ(t6_it->second.value().to_double(), 12.0);
+    EXPECT_DOUBLE_EQ(td_it->second.value().to_double(), 15.0);
+}
+
+
+TEST(PreprocessorTest, Chain) {
+    //
+    // --- setup
+    //
+
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute ctx_a =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a =
+        db.create_attribute("val", CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE);
+
+    EntryList rec;
+
+    rec.push_back(Entry(db.merge_node(100, ctx_a.id(), CALI_INV_ID, Variant("test.preprocessor.scale"), idmap)));
+    rec.push_back(Entry(val_a, Variant(5.5)));
+
+    QuerySpec spec;
+
+    spec.preprocess_ops.push_back(::make_spec("valx2",   ::make_op("scale", "val", "2.0")));
+    spec.preprocess_ops.push_back(::make_spec("valx2t5", ::make_op("truncate", "valx2", "10")));
+
+    //
+    // --- run
+    //
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute v_attr = db.get_attribute("val");
+    Attribute d_attr = db.get_attribute("valx2");
+    Attribute t_attr = db.get_attribute("valx2t5");
+
+    EXPECT_NE(v_attr, Attribute::invalid);
+    EXPECT_NE(d_attr, Attribute::invalid);
+    EXPECT_NE(t_attr, Attribute::invalid);
+    EXPECT_EQ(d_attr.type(), CALI_TYPE_DOUBLE);
+    EXPECT_TRUE(d_attr.store_as_value());
+
+    auto res  = ::make_dict_from_entrylist(out);
+    auto d_it = res.find(d_attr.id());
+    auto t_it = res.find(t_attr.id());
+
+    ASSERT_NE(d_it, res.end()) << "valtx2 attribute not found\n";
+    ASSERT_NE(t_it, res.end()) << "valx2t5 attribute not found\n";
+
+    EXPECT_DOUBLE_EQ(d_it->second.value().to_double(), 11.0);
+    EXPECT_DOUBLE_EQ(t_it->second.value().to_double(), 10.0);
+}
