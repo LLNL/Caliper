@@ -18,6 +18,7 @@
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/CalQLParser.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/Preprocessor.h"
 #include "caliper/reader/RecordSelector.h"
 
 #include <memory>
@@ -53,20 +54,28 @@ class MpiReport
         Aggregator        cross_agg(m_cross_spec);
         Aggregator        local_agg(m_local_spec);
 
+        Preprocessor      cross_pp(m_cross_spec);
+        Preprocessor      local_pp(m_local_spec);
+
         RecordSelector    filter(m_2step_agg ? m_local_spec : m_cross_spec);
         Aggregator        agg = m_2step_agg ? local_agg : cross_agg;
+        Preprocessor      pp  = m_2step_agg ? local_pp  : cross_pp;
 
         // flush this rank's caliper data into local aggregator
-        c->flush(chn, flush_info, [&db,&agg,&filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+        c->flush(chn, flush_info, [&db,&agg,&pp,&filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
                 EntryList mrec = db.merge_snapshot(in_db, rec);
 
-                if (filter.pass(db, mrec))
+                if (filter.pass(db, mrec)) {
+                    mrec = pp.process(db, mrec);
                     agg.add(db, mrec);
+                }
             });
 
         // with 2-step aggregation, flush local aggregator results into cross-process aggregator
         if (m_2step_agg)
-            local_agg.flush(db, cross_agg);
+            local_agg.flush(db, [&cross_agg,&cross_pp](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                    cross_agg.add(db, cross_pp.process(db, rec));
+                });
 
         MPI_Comm comm;
         MPI_Comm_dup(MPI_COMM_WORLD, &comm);

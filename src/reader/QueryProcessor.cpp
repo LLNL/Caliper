@@ -5,6 +5,7 @@
 
 #include "caliper/reader/Aggregator.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/Preprocessor.h"
 #include "caliper/reader/RecordSelector.h"
 
 #include "caliper/common/CaliperMetadataAccessInterface.h"
@@ -14,14 +15,17 @@ using namespace cali;
 struct QueryProcessor::QueryProcessorImpl
 {
     Aggregator        aggregator;
+    Preprocessor      preprocessor;
     RecordSelector    filter;
     FormatProcessor   formatter;
 
     bool              do_aggregate;
 
     void
-    process_record(CaliperMetadataAccessInterface& db, const EntryList& rec) {
-        if (filter.pass(db, rec)) {
+    process_record(CaliperMetadataAccessInterface& db, const EntryList& in_rec) {
+        if (filter.pass(db, in_rec)) {
+            auto rec = preprocessor.process(db, in_rec);
+
             if (do_aggregate)
                 aggregator.add(db, rec);
             else
@@ -34,9 +38,10 @@ struct QueryProcessor::QueryProcessorImpl
         aggregator.flush(db, formatter);
         formatter.flush(db);
     }
-    
+
     QueryProcessorImpl(const QuerySpec& spec, OutputStream& stream)
         : aggregator(spec),
+          preprocessor(spec),
           filter(spec),
           formatter(spec, stream)
     {
@@ -57,7 +62,7 @@ QueryProcessor::~QueryProcessor()
 void
 QueryProcessor::process_record(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-    
+
     mP->process_record(db, rec);
 }
 

@@ -23,6 +23,11 @@ This table contains a quick reference of all CalQL statements:
 
 ::
 
+  LET <list>                   # Compute additional attributes in input records
+    <a>=ratio(<b>,<c>,<S>)     # computes a = <b>/<c>*S
+    <a>=scale(<b>,<S>)         # computes <a> = <b>*S
+    <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
+
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
     *                          # select all attributes
     <attribute>                # select <attribute>
@@ -63,6 +68,30 @@ This table contains a quick reference of all CalQL statements:
     <attribute>                # order by <attribute>
     ... ASC                    # sort in ascending order
     ... DESC                   # sort in descending order
+
+LET
+--------------------------------
+
+The LET statement applies computation operators on input record entries
+and adds the results as a new entries in the input records. The new entries
+can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
+For example, we can use the scale() operator to scale a value before
+subsequent aggregations:
+
+  LET sec=scale(time.duration,1e-6) SELECT prop:nested,sum(sec)
+
+For example, we can use the truncate() operator on an iteration counter to
+aggregate blocks of 10 iterations in a time-series profile:
+
+  LET block=truncate(iteration#mainloop,10) SELECT block,sum(time.duration) GROUP BY block
+
+LET terms have the general form
+
+  a = f(...)
+
+where f is one of the operators and `a` is the name of the result attribute.
+The result is added to the input records before the record is processed further.
+Result entries are only added to a record if all required input operands are present.
 
 SELECT
 --------------------------------

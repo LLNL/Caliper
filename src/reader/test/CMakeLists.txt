@@ -7,7 +7,8 @@ set(CALIPER_READER_TEST_SOURCES
   test_metadb.cpp
   test_nestedexclusiveregionprofile.cpp
   test_nestedinclusiveregionprofile.cpp
-  test_nodebuffer.cpp)
+  test_nodebuffer.cpp
+  test_preprocessor.cpp)
 
 add_executable(test_caliper-reader
   $<TARGET_OBJECTS:caliper-common>

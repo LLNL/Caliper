@@ -99,6 +99,11 @@ struct QuerySpec
         FunctionSignature        formatter; ///< The formatter to use. Signatures provided by FormatProcessor. 
         std::vector<std::string> args;      ///< Arguments to the formatter.
     };
+
+    struct PreprocessSpec {
+        std::string   target;
+        AggregationOp op;
+    };
     
     //
     // --- Data members
@@ -128,6 +133,9 @@ struct QuerySpec
 
     /// \brief Output aliases for attributes (i.e., "select x AS y" )
     std::map<std::string, std::string> aliases;
+
+    /// \brief List of preprocessing operations (i.e., "LET y=f(x)")
+    std::vector<PreprocessSpec>  preprocess_ops;
 };
 
 } // namespace cali

@@ -13,6 +13,7 @@
 #include "caliper/reader/CaliReader.h"
 #include "caliper/reader/CaliperMetadataDB.h"
 #include "caliper/reader/FormatProcessor.h"
+#include "caliper/reader/Preprocessor.h"
 #include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/RecordProcessor.h"
 #include "caliper/reader/RecordSelector.h"
@@ -130,6 +131,8 @@ void process_my_input(int rank, const Args& args, const QuerySpec& spec, Caliper
     NodeProcessFn     node_proc = [](CaliperMetadataAccessInterface&,const Node*) { return; };
     SnapshotProcessFn snap_proc = aggregate;
 
+    if (!spec.preprocess_ops.empty())
+        snap_proc = SnapshotFilterStep(Preprocessor(spec),   snap_proc);
     if (spec.filter.selection == QuerySpec::FilterSelection::List)
         snap_proc = SnapshotFilterStep(RecordSelector(spec), snap_proc);
 
