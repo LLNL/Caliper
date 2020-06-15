@@ -45,6 +45,8 @@ namespace cali
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
 
+extern void init_submodules();
+
 extern void config_sanity_check(RuntimeConfig);
 
 }
@@ -490,11 +492,9 @@ struct Caliper::GlobalData
     }
 
     void init() {
-        run_init_hooks();
+        init_submodules();
 
         parse_attribute_config(RuntimeConfig::get_default_config().init("caliper", s_configdata));
-
-        services::add_default_service_specs();
 
         if (Log::verbosity() >= 2)
             print_available_services( Log(2).stream() << "Available services: " ) << std::endl;

@@ -5,7 +5,7 @@ set(CALIPER_MPI_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CALIPER_MPI_SOURCES
   aggregate_over_mpi.cpp
   mpi_machine.cpp
-  setup_mpi.cpp)
+  mpi_setup.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}) # Find MpiEvents.h
 

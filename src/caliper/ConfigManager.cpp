@@ -24,6 +24,8 @@ namespace cali
 extern const ConfigManager::ConfigInfo* builtin_controllers_table[];
 extern const char* builtin_option_specs;
 
+extern void add_submodule_controllers_and_services();
+
 }
 
 namespace
@@ -369,7 +371,7 @@ struct ConfigManager::Options::OptionsImpl
         // are there
         //
 
-        services::add_default_service_specs();
+        add_submodule_controllers_and_services();
         auto slist = services::get_available_services();
 
         for (const std::string &opt : enabled_options) {
@@ -762,6 +764,8 @@ struct ConfigManager::ConfigManagerImpl
 
     void
     import_builtin_config_specs() {
+        add_submodule_controllers_and_services();
+
         for (const ConfigInfo& s : ::ConfigSpecManager::instance()->get_config_specs())
             add_config_spec(s.spec, s.create, s.check_args, true /* ignore existing */ );
     }

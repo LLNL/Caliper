@@ -30,13 +30,6 @@
 #include <caliper/cali.h>
 #include <caliper/tools-util/Args.h>
 
-#ifdef CALIPER_HAVE_MPI
-extern "C"
-{
-void cali_mpi_init(); // init spot controller
-}
-#endif
-
 #include <chrono>
 #include <iostream>
 
@@ -139,9 +132,6 @@ void record_globals(const Config& cfg, int threads, const cali::ConfigManager::a
 
 int main(int argc, char* argv[])
 {
-#ifdef CALIPER_HAVE_MPI
-    cali_mpi_init(); // init spot controller
-#endif
     cali_config_preset("CALI_ATTRIBUTE_DEFAULT_SCOPE", "process");
 
     const util::Args::Table option_table[] = {

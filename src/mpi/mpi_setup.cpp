@@ -31,16 +31,19 @@ extern CaliperService tau_service;
 
 extern ConfigManager::ConfigInfo spot_controller_info;
 extern ConfigManager::ConfigInfo spot_v1_controller_info;
+}
 
-//   Pre-init setup routine that allows us to do some MPI-specific
-// initialization, e.g. disabling most logging on non-rank 0 ranks.
-//
-//   This is called by Caliper::init() _before_ Caliper is initialized:
-// can't use the Caliper API here!
+namespace
+{
 
 void
-setup_mpi()
+setup_log_prefix()
 {
+    static bool done = false;
+
+    if (done)
+        return;
+
     int is_initialized = 0;
     MPI_Initialized(&is_initialized);
 
@@ -57,14 +60,20 @@ setup_mpi()
 
         if (rank > 0)
             Log::set_verbosity(0);
+
+        done = true;
     }
 }
 
+} // namespace [anonymous]
 
-// void mpirt_constructor() __attribute__((constructor));
+namespace cali
+{
+namespace mpi
+{
 
 void
-mpirt_constructor()
+add_mpi_controllers_and_services()
 {
     CaliperService services[] = {
         mpiwrap_service,
@@ -84,17 +93,19 @@ mpirt_constructor()
         nullptr
     };
 
-    if (Caliper::is_initialized())
-        setup_mpi();
-    else
-        Caliper::add_init_hook(setup_mpi);
-
     Caliper::add_services(services);
-
     add_global_config_specs(controllers);
 }
 
+void
+setup_mpi()
+{
+    ::setup_log_prefix();
 }
+
+} // namespace mpi
+} // namespace cali
+
 
 extern "C"
 {
@@ -102,7 +113,7 @@ extern "C"
 void
 cali_mpi_init()
 {
-    ::mpirt_constructor();
+    ::setup_log_prefix();
 }
 
 }
