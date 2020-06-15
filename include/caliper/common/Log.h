@@ -29,6 +29,7 @@ public:
 
     static void init();
     static void fini();
+    static bool is_initialized();
 
     inline std::ostream& stream() {
         if (verbosity() < m_level)

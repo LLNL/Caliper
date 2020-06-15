@@ -160,3 +160,9 @@ Log::fini()
     delete LogImpl::s_instance;
     LogImpl::s_instance = nullptr;
 }
+
+bool
+Log::is_initialized()
+{
+    return LogImpl::s_instance != nullptr;
+}

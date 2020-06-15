@@ -44,10 +44,10 @@ setup_log_prefix()
     if (done)
         return;
 
-    int is_initialized = 0;
-    MPI_Initialized(&is_initialized);
+    int mpi_is_initialized = 0;
+    MPI_Initialized(&mpi_is_initialized);
 
-    if (is_initialized) {
+    if (mpi_is_initialized && Log::is_initialized()) {
         int rank = 0;
 
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
