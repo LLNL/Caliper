@@ -45,6 +45,8 @@ namespace cali
 extern void init_attribute_classes(Caliper* c);
 extern void init_api_attributes(Caliper* c);
 
+extern void init_submodules();
+
 extern void config_sanity_check(RuntimeConfig);
 
 }
@@ -367,33 +369,6 @@ struct Caliper::GlobalData
 
     static const ConfigSet::Entry      s_configdata[];
 
-    struct InitHookList {
-        void          (*hook)();
-        InitHookList* next;
-    };
-
-    static InitHookList*               s_init_hooks;
-
-    // --- static functions
-
-    static void add_init_hook(void (*hook)()) {
-        InitHookList* elem = new InitHookList { hook, s_init_hooks };
-        s_init_hooks = elem;
-    }
-
-    static void run_init_hooks() {
-        InitHookList* ptr = s_init_hooks;
-
-        while (ptr) {
-            (*(ptr->hook))();
-            InitHookList* tmp = ptr->next;
-            delete ptr;
-            ptr = tmp;
-        }
-
-        s_init_hooks = nullptr;
-    }
-
     // --- data
 
     bool                               automerge;
@@ -490,11 +465,9 @@ struct Caliper::GlobalData
     }
 
     void init() {
-        run_init_hooks();
+        init_submodules();
 
         parse_attribute_config(RuntimeConfig::get_default_config().init("caliper", s_configdata));
-
-        services::add_default_service_specs();
 
         if (Log::verbosity() >= 2)
             print_available_services( Log(2).stream() << "Available services: " ) << std::endl;
@@ -613,8 +586,6 @@ mutex                  Caliper::GlobalData::s_init_mutex;
 
 Caliper::GlobalData::S_GObject Caliper::GlobalData::gObj;
 thread_local Caliper::GlobalData::S_TLSObject Caliper::GlobalData::tObj;
-
-Caliper::GlobalData::InitHookList* Caliper::GlobalData::s_init_hooks = nullptr;
 
 const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
@@ -1955,13 +1926,4 @@ void
 Caliper::add_services(const CaliperService* s)
 {
     services::add_service_specs(s);
-}
-
-void
-Caliper::add_init_hook(void (*hook)())
-{
-    if (is_initialized())
-        Log(0).stream() << "add_init_hook(): Caliper is already initialized - cannot add init hook" << std::endl;
-    else
-        GlobalData::add_init_hook(hook);
 }

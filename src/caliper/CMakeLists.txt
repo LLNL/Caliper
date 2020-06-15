@@ -26,14 +26,17 @@ if (${BUILD_SHARED_LIBS})
 endif()
 
 list(APPEND CALIPER_SERIAL_OBJS
-  caliper/machine_serial.cpp)
+  caliper/machine_serial.cpp
+  caliper/setup_serial.cpp)
 
 if (CALIPER_HAVE_MPI)
   list(APPEND CALIPER_ALL_OBJS
-    caliper/machine_mpi.cpp)
+    caliper/machine_mpi.cpp
+    caliper/setup_mpi.cpp)
 else()
   list(APPEND CALIPER_ALL_OBJS
-    caliper/machine_serial.cpp)
+    caliper/machine_serial.cpp
+    caliper/setup_serial.cpp)
 endif()
 
 set(CALIPER_SERIAL_OBJS ${CALIPER_SERIAL_OBJS} PARENT_SCOPE)
