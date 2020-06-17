@@ -19,6 +19,7 @@
 #include <caliper/common/StringConverter.h>
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 
 #ifdef CALIPER_HAVE_MPI
@@ -34,26 +35,26 @@ namespace
 struct LoopInfo {
     std::string name;
     int iterations;
+    int count;
 };
 
 LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
 {
-    LoopInfo ret { "", 0 };
+    LoopInfo ret { "", 0, 0 };
 
     Attribute loop_a = db.get_attribute("loop");
     Attribute iter_a = db.get_attribute("max#sum#loop.iterations");
+    Attribute lcnt_a = db.get_attribute("max#count");
 
     for (const Entry& e : rec) {
-        if (e.attribute() == iter_a.id()) {
+        if      (e.attribute() == iter_a.id())
             ret.iterations = e.value().to_int();
-            break;
-        }
-    }
-    for (const Entry& e : rec) {
-        Variant v_loop = e.value(loop_a);
-        if (!v_loop.empty()) {
-            ret.name = v_loop.to_string();
-            break;
+        else if (e.attribute() == lcnt_a.id())
+            ret.count      = e.value().to_int();
+        else {
+            Variant v_loop = e.value(loop_a);
+            if (!v_loop.empty())
+                ret.name = v_loop.to_string();
         }
     }
 
@@ -122,6 +123,7 @@ class LoopReportController : public cali::ChannelController
     Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db) {
         const char* select =
             " loop"
+            ",count()"
             ",sum(loop.iterations)"
             ",sum(time.duration)"
             ",min(iter_per_sec)"
@@ -153,7 +155,7 @@ class LoopReportController : public cali::ChannelController
             + m_opts.query_select("cross", select, true)
             + " group by "
             + m_opts.query_groupby("cross", "loop")
-            + " format table";
+            + " aggregate max(count) format table";
 
         return CalQLParser(query.c_str()).spec();
     }
@@ -166,7 +168,7 @@ class LoopReportController : public cali::ChannelController
             ",ratio(loop.iterations,time.duration)";
 
         std::string query =
-            std::string("let Block = truncate(iteration#") + loopname + "," + std::to_string(blocksize)
+            std::string("let Block = truncate(loop.start_iteration,") + std::to_string(blocksize)
             + ") select "
             + m_opts.query_select("local", select, false)
             + " group by "
@@ -198,11 +200,13 @@ class LoopReportController : public cali::ChannelController
 
     void process_timeseries(Caliper& c, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info) {
         int  iterations = 0;
+        int  rec_count = 0;
         char namebuf[64];
         memset(namebuf, 0, 64);
 
         if (m_rank == 0) {
             iterations = info.iterations;
+            rec_count  = info.count;
 
             if (info.name.size() < 64) {
                 std::copy(info.name.begin(), info.name.end(), std::begin(namebuf));
@@ -215,13 +219,16 @@ class LoopReportController : public cali::ChannelController
 #ifdef CALIPER_HAVE_MPI
         if (m_use_mpi) {
             MPI_Bcast(&iterations, 1,  MPI_INT,  0, m_comm);
+            MPI_Bcast(&rec_count,  1,  MPI_INT,  0, m_comm);
             MPI_Bcast(namebuf,     64, MPI_CHAR, 0, m_comm);
         }
 #endif
 
         if (iterations > 0) {
             const int nblocks = 20;
-            int blocksize = iterations / nblocks;
+            int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
+
+            Log(1).stream() << "recs: " << rec_count << " iterations: " << iterations << " blocksize: " << blocksize << std::endl;
 
             Aggregator local_agg = timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1));
             QuerySpec  spec      = timeseries_spec();
