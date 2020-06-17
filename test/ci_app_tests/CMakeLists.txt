@@ -28,7 +28,7 @@ set(CALIPER_CI_Fortran_TEST_APPS
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper)
+  target_link_libraries(${app} caliper-serial)
 endforeach()
 
 target_link_libraries(ci_test_thread       Threads::Threads)

@@ -228,8 +228,6 @@ class LoopReportController : public cali::ChannelController
             const int nblocks = 20;
             int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
 
-            Log(1).stream() << "recs: " << rec_count << " iterations: " << iterations << " blocksize: " << blocksize << std::endl;
-
             Aggregator local_agg = timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1));
             QuerySpec  spec      = timeseries_spec();
             Aggregator cross_agg(spec);
