@@ -29,6 +29,7 @@ extern CaliperService mpit_service;
 extern CaliperService tau_service;
 #endif
 
+extern ConfigManager::ConfigInfo loop_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 extern ConfigManager::ConfigInfo spot_v1_controller_info;
 }
@@ -88,6 +89,7 @@ add_mpi_controllers_and_services()
     };
 
     const ConfigManager::ConfigInfo* controllers[] = {
+        &loop_report_controller_info,
         &spot_controller_info,
         &spot_v1_controller_info,
         nullptr
