@@ -79,9 +79,9 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     std::string("select ")
-                    + opts.query_select("serial", serial_select)
+                    + opts.query_select("local", serial_select)
                     + " group by "
-                    + opts.query_groupby("serial", "prop:nested")
+                    + opts.query_groupby("local", "prop:nested")
                     + " format tree"
                     + formatarg;
             }
