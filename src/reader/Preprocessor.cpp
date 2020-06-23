@@ -204,20 +204,70 @@ public:
     }
 };
 
+class FirstKernel : public Kernel
+{
+    std::string m_res_attr_name;
+    Attribute   m_res_attr;
+
+    std::vector<std::string> m_tgt_attr_names;
+    std::vector<Attribute>   m_tgt_attrs;
+
+public:
+
+    FirstKernel(const std::string& def, const std::vector<std::string>& args)
+        : m_res_attr_name(def),
+          m_res_attr(Attribute::invalid),
+          m_tgt_attr_names(args)
+        {
+            m_tgt_attrs.assign(args.size(), Attribute::invalid);
+        }
+    
+    void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
+        for (size_t i = 0; i < m_tgt_attrs.size(); ++i) {
+            Variant v_tgt = get_value(db, m_tgt_attr_names[i], m_tgt_attrs[i], rec);
+
+            if (v_tgt.empty())
+                continue;
+                        
+            cali_attr_type type = m_tgt_attrs[i].type();
+
+            if (m_res_attr == Attribute::invalid)
+                m_res_attr = db.create_attribute(m_res_attr_name, type,
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_ASVALUE);
+
+            rec.push_back(Entry(m_res_attr, v_tgt));
+
+            break;
+        }
+    }
+
+    static Kernel* create(const std::string& def, const std::vector<std::string>& args) {
+        return new FirstKernel(def, args);
+    }
+
+};
 
 enum KernelID {
     ScaledRatio,
     Scale,
-    Truncate
+    Truncate,
+    First,
 };
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
 const char* scale_args[]   = { "attribute", "scale" };
+const char* first_args[]   = { 
+    "attribute0", "attribute1", "attribute2", 
+    "attribute3", "attribute4", "attribute5", 
+    "attribute6", "attribute7", "attribute8"
+};
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::ScaledRatio,   "ratio",         2, 3, sratio_args  },
     { KernelID::Scale,         "scale",         2, 2, scale_args   },
     { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
+    { KernelID::First,         "first",         2, 8, first_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -227,10 +277,11 @@ typedef Kernel* (*KernelCreateFn)(const std::string& def, const std::vector<std:
 const KernelCreateFn kernel_create_fn[] = {
     ScaledRatioKernel::create,
     ScaleKernel::create,
-    TruncateKernel::create
+    TruncateKernel::create,
+    FirstKernel::create
 };
 
-constexpr int MAX_KERNEL_ID = 2;
+constexpr int MAX_KERNEL_ID = 3;
 
 }
 
