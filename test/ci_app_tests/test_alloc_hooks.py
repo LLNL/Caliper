@@ -1,6 +1,6 @@
 # Tests of the alloc service
 
-import unittest
+import json, unittest
 
 import calipertest as cat
 
@@ -79,6 +79,18 @@ class CaliperAllocServiceTest(unittest.TestCase):
         self.helper_test_hook('calloc')
         self.helper_test_hook('realloc')
 
+
+    def test_mem_highwatermark_option(self):
+        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,output=stdout,output.format=json,mem.highwatermark' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
+
+        self.assertEqual(obj[1]['path'], 'main')
+        self.assertTrue(float(obj[1]['Allocated (MB)']) > 0.0)
 
 if __name__ == "__main__":
     unittest.main()

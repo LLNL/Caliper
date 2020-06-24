@@ -164,6 +164,59 @@ TEST(PreprocessorTest, Scale) {
 }
 
 
+TEST(PreprocessorTest, First) {
+    //
+    // --- setup
+    //
+
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute ctx_a =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a =
+        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b =
+        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    EntryList rec;
+
+    rec.push_back(Entry(db.merge_node(100, ctx_a.id(), CALI_INV_ID, Variant("test.preprocessor.first"), idmap)));
+    rec.push_back(Entry(val_a, Variant(42)));
+    rec.push_back(Entry(val_b, Variant(24)));
+
+    QuerySpec spec;
+
+    spec.preprocess_ops.push_back(::make_spec("val.a.out",  ::make_op("first", "dummy.0", "val.a", "dummy.1")));
+    spec.preprocess_ops.push_back(::make_spec("val.b.out",  ::make_op("first", "val.b",   "val.a", "dummy.0")));
+
+    //
+    // --- run
+    //
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute vao_attr = db.get_attribute("val.a.out");
+    Attribute vbo_attr = db.get_attribute("val.b.out");
+
+    EXPECT_NE(vao_attr, Attribute::invalid);
+    EXPECT_NE(vbo_attr, Attribute::invalid);
+    EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
+    EXPECT_EQ(vbo_attr.type(), CALI_TYPE_INT);
+
+    auto res  = ::make_dict_from_entrylist(out);
+    auto a_it = res.find(vao_attr.id());
+    auto b_it = res.find(vbo_attr.id());
+
+    ASSERT_NE(a_it, res.end()) << "val.a.out attribute not found\n";
+    ASSERT_NE(b_it, res.end()) << "val.b.out attribute not found\n";
+
+    EXPECT_EQ(a_it->second.value().to_int(), 42);
+    EXPECT_EQ(b_it->second.value().to_int(), 24);
+}
+
+
 TEST(PreprocessorTest, Truncate) {
     //
     // --- setup
