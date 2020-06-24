@@ -284,9 +284,6 @@ public:
     ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
     ///   " \"query_args\"  : "
     ///   " ["
-    ///   "  { \"level\": \"serial\", \"select\":"
-    ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\", \"as\": \"Instructions\" } ]"
-    ///   "  },"
     ///   "  { \"level\": \"local\", \"select\":"
     ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
     ///   "  },"
@@ -325,9 +322,8 @@ public:
     ///   added automatically based on the \a services entry.
     /// \li \a query_args: Defines aggregation operations to compute
     ///   performance metrics. Specific to "metric" options. There are
-    ///   three aggregation levels: \e serial computes metrics for
-    ///   non-MPI programs, \e local computes process-local intermediate
-    ///   metrics in MPI programs, and \e cross computes cross-process
+    ///   two aggregation levels: \e local computes process-local
+    ///   metrics, and \e cross computes cross-process
     ///   metrics in MPI programs. For each level, specify metrics
     ///   using a list of "select" definitions, where \e expr defines an
     ///   aggregation using a CalQL expression, and \e as provides a
