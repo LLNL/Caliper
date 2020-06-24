@@ -132,7 +132,8 @@ class ConfigManager::OptionSpec
 {
     struct query_arg_t {
         std::vector< std::pair<std::string, std::string> > select;
-        std::vector< std::string> groupby;
+        std::vector< std::string > groupby;
+        std::vector< std::string > let;
     };
 
     struct option_spec_t {
@@ -172,6 +173,10 @@ class ConfigManager::OptionSpec
             auto it = dict.find("group by");
             if (it != dict.end())
                 qarg.groupby = ::to_stringlist(it->second.rec_list());
+
+            it = dict.find("let");
+            if (it != dict.end())
+                qarg.let = ::to_stringlist(it->second.rec_list());
 
             it = dict.find("select");
             if (it != dict.end())
@@ -477,6 +482,32 @@ struct ConfigManager::Options::OptionsImpl
         return ret;
     }
 
+    std::string
+    query_let(const std::string& level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const std::string& opt : enabled_options) {
+            auto s_it = spec.data.find(opt); // find option description
+            if (s_it == spec.data.end())
+                continue;
+
+            auto l_it = s_it->second.query_args.find(level); // find query level
+            if (l_it == s_it->second.query_args.end())
+                continue;
+
+            for (const auto &s : l_it->second.let) {
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(s);
+            }
+        }
+
+        if (!ret.empty())
+            ret = std::string(" let ") + ret;
+
+        return ret;
+    }
+
     std::vector<std::string>
     get_inherited_specs(const std::string& name) {
         std::vector<std::string> ret;
@@ -626,6 +657,11 @@ ConfigManager::Options::query_groupby(const char* level, const std::string& in) 
     return mP->query_groupby(level, in);
 }
 
+std::string
+ConfigManager::Options::query_let(const char* level, const std::string& in) const
+{
+    return mP->query_let(level, in);
+}
 
 //
 // --- ConfigManager

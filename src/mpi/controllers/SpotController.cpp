@@ -90,9 +90,9 @@ class SpotController : public cali::ChannelController
     bool m_use_mpi;
 
     /// \brief Perform intermediate aggregation of channel data into \a output_agg
-    void aggregate(const std::string& aggcfg, const std::string& groupby, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
+    void aggregate(const std::string& query, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
         QuerySpec spec =
-            CalQLParser(std::string("aggregate " + aggcfg + " group by " + groupby).c_str()).spec();
+            CalQLParser(query.c_str()).spec();
 
         Aggregator agg(spec);
 
@@ -134,12 +134,13 @@ public:
         //     inclusive times
 
         {
-            std::string local_select  =
-                m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false);
-            std::string local_groupby =
-                m_opts.query_groupby("local", "prop:nested");
+            std::string query = m_opts.query_let("local", "")
+                + " aggregate "
+                + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
+                + " group by "
+                + m_opts.query_groupby("local", "prop:nested");
 
-            aggregate(local_select, local_groupby, c, db, output_agg);
+            aggregate(query, c, db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks

@@ -111,7 +111,7 @@ public:
 
         /// \brief Returns a CalQL SELECT expression to compute metrics
         ///   in the option list.
-        /// \param level The aggregation level ('serial', 'local', or 'cross')
+        /// \param level The aggregation level ('local' or 'cross')
         /// \param in Base SELECT expression as required by the controller
         /// \param use_alias Wether to add aliases to the expression
         ///   (as in SELECT x AS y)
@@ -122,12 +122,21 @@ public:
 
         /// \brief Returns a CalQL GROUP BY list for metrics in the option
         ///   list.
-        /// \param level The aggregation level ('serial', 'local', or 'cross')
+        /// \param level The aggregation level ('local' or 'cross')
         /// \param in Base GROUP BY list as required by the controller
         /// \return The GROUP BY list (comma-separated string), but without the
         ///   'GROUP BY' keyword
         std::string
         query_groupby(const char* level, const std::string& in) const;
+
+        /// \brief Returns a CalQL LET list for metrics in the option
+        ///   list.
+        /// \param level The aggregation level ('local' or 'cross')
+        /// \param in Base LET list as required by the controller
+        /// \return The LET clause ('LET' + comma-separated list of definitions),
+        ///    or an empty string if there is no LET input
+        std::string
+        query_let(const char* level, const std::string& in) const;
 
         friend class ConfigManager;
     };
@@ -275,9 +284,6 @@ public:
     ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
     ///   " \"query_args\"  : "
     ///   " ["
-    ///   "  { \"level\": \"serial\", \"select\":"
-    ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\", \"as\": \"Instructions\" } ]"
-    ///   "  },"
     ///   "  { \"level\": \"local\", \"select\":"
     ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
     ///   "  },"
@@ -316,9 +322,8 @@ public:
     ///   added automatically based on the \a services entry.
     /// \li \a query_args: Defines aggregation operations to compute
     ///   performance metrics. Specific to "metric" options. There are
-    ///   three aggregation levels: \e serial computes metrics for
-    ///   non-MPI programs, \e local computes process-local intermediate
-    ///   metrics in MPI programs, and \e cross computes cross-process
+    ///   two aggregation levels: \e local computes process-local
+    ///   metrics, and \e cross computes cross-process
     ///   metrics in MPI programs. For each level, specify metrics
     ///   using a list of "select" definitions, where \e expr defines an
     ///   aggregation using a CalQL expression, and \e as provides a
