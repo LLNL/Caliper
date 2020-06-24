@@ -131,8 +131,8 @@ class LoopReportController : public cali::ChannelController
             ",avg(iter_per_sec)";
 
         std::string query =
-            std::string("let iter_per_sec = ratio(loop.iterations,time.duration)")
-            + " select   "
+            m_opts.query_let("local", "iter_per_sec = ratio(loop.iterations,time.duration)")
+            + " select "
             + m_opts.query_select("local", select, false)
             + " group by "
             + m_opts.query_groupby("local", "loop")
@@ -151,7 +151,8 @@ class LoopReportController : public cali::ChannelController
             ",avg(avg#iter_per_sec) as \"Iter/s (avg)\"";
 
         std::string query =
-            std::string("select ")
+            m_opts.query_let("cross", "")
+            + " select "
             + m_opts.query_select("cross", select, true)
             + " group by "
             + m_opts.query_groupby("cross", "loop")
@@ -167,9 +168,12 @@ class LoopReportController : public cali::ChannelController
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration)";
 
+        std::string block =
+            std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+
         std::string query =
-            std::string("let Block = truncate(loop.start_iteration,") + std::to_string(blocksize)
-            + ") select "
+            m_opts.query_let("local", block)
+            + " select "
             + m_opts.query_select("local", select, false)
             + " group by "
             + m_opts.query_groupby("local", "Block")
@@ -186,7 +190,8 @@ class LoopReportController : public cali::ChannelController
             ",avg(loop.iterations/time.duration) as \"Iter/s\"";
 
         std::string query =
-            std::string("select ")
+            m_opts.query_let("cross", "")
+            + " select "
             + m_opts.query_select("cross", select, true)
             + " group by Block format table order by Block";
 
@@ -316,6 +321,13 @@ public:
           , m_comm(MPI_COMM_NULL)
 #endif
     {
+        if (m_opts.is_set("iteration_interval"))
+            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
+        else if (m_opts.is_set("time_interval"))
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
+        else
+            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
+
         m_opts.update_channel_config(config());
     }
 
@@ -335,8 +347,7 @@ const char* loop_report_spec =
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
     "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
-    "     \"CALI_TIMER_UNIT\"                 : \"sec\","
-    "     \"CALI_LOOP_MONITOR_TIME_INTERVAL\" : \"0.5\""
+    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
     "   },"
     " \"options\": "
     " ["
@@ -354,6 +365,16 @@ const char* loop_report_spec =
     "   \"name\": \"timeseries\","
     "   \"type\": \"bool\","
     "   \"description\": \"Print time series\""
+    "  },"
+    "  {"
+    "   \"name\": \"iteration_interval\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Measure every N loop iterations\""
+    "  },"
+    "  {"
+    "   \"name\": \"time_interval\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Measure after t seconds\""
     "  }"
     " ]"
     "}";
