@@ -63,7 +63,8 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    std::string("select ")
+                    opts.query_let("local", "")
+                    + " select "
                     + opts.query_select("local", "*,count()")
                     + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
@@ -72,7 +73,8 @@ public:
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
-                    std::string("select ")
+                    opts.query_let("local", "")
+                    + " select "
                     + opts.query_select("local", "*,count()")
                     + " group by "
                     + opts.query_groupby("local", "prop:nested")

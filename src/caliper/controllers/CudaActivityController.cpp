@@ -47,12 +47,14 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                    std::string("select ")
+                    opts.query_let("local", "")
+                    + " select "
                     + opts.query_select("local", local_select)
                     + " group by "
                     + opts.query_groupby("local", "prop:nested");
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    std::string("select ")
+                    opts.query_let("cross", "")
+                    + " select "
                     + opts.query_select("cross", cross_select)
                     + " group by "
                     + opts.query_groupby("cross", "prop:nested")
@@ -61,7 +63,8 @@ public:
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
-                    std::string("select ")
+                    opts.query_let("local", "")
+                    + " select "
                     + opts.query_select("local", serial_select)
                     + " group by "
                     + opts.query_groupby("local", "prop:nested")
