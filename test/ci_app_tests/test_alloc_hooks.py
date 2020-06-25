@@ -81,7 +81,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
 
 
     def test_mem_highwatermark_option(self):
-        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,output=stdout,output.format=json,mem.highwatermark' ]
+        target_cmd = [ './ci_test_macros', '10', 'hatchet-region-profile,use.mpi=false,output=stdout,output.format=json,mem.highwatermark' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

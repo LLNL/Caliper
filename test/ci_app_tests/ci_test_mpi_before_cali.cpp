@@ -26,10 +26,7 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
-    auto list = mgr.get_all_channels();
-
-    for (auto channel : list)
-        channel->start();
+    mgr.start();
 
     {
         CALI_CXX_MARK_FUNCTION;
@@ -49,8 +46,7 @@ int main(int argc, char* argv[])
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    for (auto channel : list)
-        channel->flush();
+    mgr.flush();
 
     MPI_Finalize();
 }

@@ -90,7 +90,7 @@ class PcpService {
             if (rec && nvals > 0) {
                 double val = total;
 
-                if (m_metric_info[i].pmdesc.type == PM_SEM_COUNTER)
+                if (m_metric_info[i].pmdesc.sem == PM_SEM_COUNTER)
                     val = total - m_prev_value[i];
 
                 rec->append(m_metric_info[i].attr.id(), Variant(val));

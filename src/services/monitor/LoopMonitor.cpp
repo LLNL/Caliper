@@ -30,6 +30,7 @@ class LoopMonitor
     static const ConfigSet::Entry s_configdata[];
 
     int       loop_level;
+    int       start_iteration;
     int       num_iterations;
     int       num_snapshots;
 
@@ -37,17 +38,25 @@ class LoopMonitor
     double    time_interval;
 
     Attribute num_iterations_attr;
+    Attribute start_iteration_attr;
 
     std::chrono::high_resolution_clock::time_point last_snapshot_time;
 
     void snapshot(Caliper* c, Channel* channel) {
-        cali_id_t attr_id = num_iterations_attr.id();
-        Variant   v_iter(num_iterations);
+        cali_id_t attr[2] = { 
+            num_iterations_attr.id(), start_iteration_attr.id()
+        };
+        Variant   data[2] = {
+             Variant(num_iterations), Variant(start_iteration)
+        };
 
-        SnapshotRecord trigger_info(1, &attr_id, &v_iter);
+        size_t n = start_iteration >= 0 ? 2 : 1;
+
+        SnapshotRecord trigger_info(n, attr, data);
         c->push_snapshot(channel, &trigger_info);
 
-        num_iterations = 0;
+        start_iteration = -1;
+        num_iterations  =  0;
         ++num_snapshots;
 
         last_snapshot_time = std::chrono::high_resolution_clock::now();
@@ -58,8 +67,11 @@ class LoopMonitor
             if (loop_level == 0)
                 snapshot(c, channel);
             ++loop_level;
-        } else if (loop_level == 1 && attr.get(cali::class_iteration_attr).to_bool())
+        } else if (loop_level == 1 && attr.get(cali::class_iteration_attr).to_bool()) {
             ++num_iterations;
+            if (start_iteration < 0)
+                start_iteration = value.to_int();
+        }
     }
 
     void end_cb(Caliper* c, Channel* channel, const Attribute& attr, const Variant& value) {
@@ -91,6 +103,7 @@ class LoopMonitor
 
     LoopMonitor(Caliper* c, Channel* channel)
         : loop_level(0),
+          start_iteration(-1),
           num_iterations(0),
           num_snapshots(0),
           iteration_interval(0),
@@ -99,8 +112,14 @@ class LoopMonitor
         Variant v_true(true);
 
         num_iterations_attr =
-            c->create_attribute("loop.iterations", CALI_TYPE_INT, CALI_ATTR_ASVALUE,
+            c->create_attribute("loop.iterations", CALI_TYPE_INT, 
+                                CALI_ATTR_SKIP_EVENTS | 
+                                CALI_ATTR_ASVALUE,
                                 1, &class_aggregatable_attr, &v_true);
+        start_iteration_attr =
+            c->create_attribute("loop.start_iteration", CALI_TYPE_INT, 
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_ASVALUE);                                
 
         ConfigSet config = channel->config().init("loop_monitor", s_configdata);
 
