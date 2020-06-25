@@ -36,7 +36,7 @@ class CaliperSamplerTest(unittest.TestCase):
                          'function', 'loop' }))
 
     def test_hatchet_sample_profile_lookup(self):
-        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(output=stdout,sample.callpath=false,lookup.sourceloc=true,lookup.module=true)' ]
+        target_cmd = [ './ci_test_macros', '5000', 'hatchet-sample-profile(use.mpi=false,output=stdout,sample.callpath=false,lookup.sourceloc=true,lookup.module=true)' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY' : '0'

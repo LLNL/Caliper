@@ -9,7 +9,7 @@ class CaliperFileIOTest(unittest.TestCase):
     """ Caliper file and directory creation test case """
 
     def test_createdir(self):
-        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,output.format=json,output=foo/bar/test.json' ]
+        target_cmd = [ './ci_test_macros', '0', 'hatchet-region-profile,use.mpi=false,output.format=json,output=foo/bar/test.json' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'     : '0'

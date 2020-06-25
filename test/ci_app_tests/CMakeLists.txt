@@ -28,7 +28,7 @@ set(CALIPER_CI_Fortran_TEST_APPS
 
 foreach(app ${CALIPER_CI_CXX_TEST_APPS})
   add_executable(${app} ${app}.cpp)
-  target_link_libraries(${app} caliper-serial)
+  target_link_libraries(${app} caliper)
 endforeach()
 
 target_link_libraries(ci_test_thread       Threads::Threads)
@@ -88,6 +88,8 @@ if (CALIPER_HAVE_SAMPLER)
 endif()
 
 if (CALIPER_HAVE_MPI)
+  list(APPEND PYTHON_SCRIPTS test_loopreport.py)
+
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
     set(calitest_mpi_include_dirs
