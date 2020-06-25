@@ -230,7 +230,13 @@ class LoopReportController : public cali::ChannelController
 #endif
 
         if (iterations > 0) {
-            const int nblocks = 20;
+            int nblocks = 20;
+
+            if (m_opts.is_set("timeseries.rows"))
+                nblocks = m_opts.get("timeseries.rows").to_int();
+            if (nblocks <= 0)
+                nblocks = rec_count;
+
             int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
 
             Aggregator local_agg = timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1));
@@ -373,8 +379,13 @@ const char* loop_report_spec =
     "  },"
     "  {"
     "   \"name\": \"time_interval\","
-    "   \"type\": \"int\","
+    "   \"type\": \"double\","
     "   \"description\": \"Measure after t seconds\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.rows\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Max number of rows in timeseries display. Set to 0 to show all. Default: 20.\""
     "  }"
     " ]"
     "}";
