@@ -132,7 +132,6 @@ const char* controller_spec =
     "  },"
     "  { "
     "    \"name\": \"use.mpi\","
-    "    \"services\": [ \"mpi\", \"mpireport\" ],"
     "    \"type\": \"bool\","
     "    \"description\": \"Merge results into a single output stream in MPI programs\""
     "  }"
