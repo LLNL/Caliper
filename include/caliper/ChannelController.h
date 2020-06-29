@@ -58,7 +58,7 @@ protected:
     ///
     ///   This can be used to setup additional functionality, e.g.
     /// registering %Caliper callbacks.
-    virtual void  on_create(Caliper* c, Channel* chn) { }
+    virtual void  on_create(Caliper* /*c*/, Channel* /*chn*/) { }
 
 public:
 
