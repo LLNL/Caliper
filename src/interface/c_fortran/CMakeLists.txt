@@ -4,7 +4,8 @@ set(CALIPER_INTERFACE_SOURCES
   wrapBufferedRegionProfile.cpp
   wrapCaliper.cpp
   wrapConfigManager.cpp
-  wrapScopeAnnotation.cpp)
+  wrapScopeAnnotation.cpp
+  utilCaliper.cpp)
 
 if (WITH_FORTRAN)
   list(APPEND CALIPER_INTERFACE_SOURCES
