@@ -94,6 +94,7 @@ class CuptiTraceService
     unsigned        num_driver_recs         = 0;
     unsigned        num_memcpy_recs         = 0;
     unsigned        num_runtime_recs        = 0;
+    unsigned        num_uvm_recs            = 0;
     unsigned        num_unknown_recs        = 0;
 
     unsigned        num_correlations_found  = 0;
@@ -110,6 +111,10 @@ class CuptiTraceService
     Attribute       timestamp_attr;
     Attribute       duration_attr;
     Attribute       device_uuid_attr;
+    Attribute       fault_address_attr;
+    Attribute       uvm_kind_attr;
+    Attribute       uvm_bytes_attr;
+    Attribute       uvm_pagefault_groups_attr;
 
     bool            record_host_timestamp = false;
     bool            record_host_duration  = false;
@@ -198,6 +203,31 @@ class CuptiTraceService
             break;
         }
 
+        return "<unknown>";
+    }
+
+    const char *
+    get_uvm_counter_kind_string(CUpti_ActivityUnifiedMemoryCounterKind kind)
+    {
+        switch (kind)
+        {
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_HTOD:
+            return "HtoD";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_DTOH:
+            return "DtoH";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_CPU_PAGE_FAULT_COUNT:
+            return "pagefaults.cpu";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_GPU_PAGE_FAULT:
+            return "pagefaults.gpu";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_THRASHING:
+            return "thrashing";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_THROTTLING:
+            return "throttling";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_DTOD:
+            return "DtoD";
+        default:
+            break;
+        }
         return "<unknown>";
     }
 
@@ -393,6 +423,79 @@ class CuptiTraceService
 
             return 1;
         }
+        case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
+        {
+            CUpti_ActivityUnifiedMemoryCounter2* uvm =
+                reinterpret_cast<CUpti_ActivityUnifiedMemoryCounter2*>(rec);
+
+            Attribute attr[8];
+            Variant   data[8];
+
+            std::fill(std::begin(attr), std::end(attr), Attribute::invalid);
+            std::fill(std::begin(data), std::end(data), Variant());
+
+            attr[0] = activity_kind_attr;
+            attr[1] = uvm_kind_attr;
+            attr[2] = fault_address_attr;
+
+            data[0] = Variant("uvm");
+            data[1] = Variant(get_uvm_counter_kind_string(uvm->counterKind));
+            data[2] = Variant(CALI_TYPE_ADDR, &uvm->address, sizeof(void*));
+            size_t n = 3;
+
+            switch (uvm->counterKind) {
+                case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_HTOD:
+                case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_DTOH:
+                {
+                    attr[n+0] = uvm_bytes_attr;
+                    attr[n+1] = activity_start_attr;
+                    attr[n+2] = activity_end_attr;
+                    attr[n+3] = activity_duration_attr;
+
+                    data[n+0] = Variant(cali_make_variant_from_uint(uvm->value));
+                    data[n+1] = Variant(cali_make_variant_from_uint(uvm->start));
+                    data[n+2] = Variant(cali_make_variant_from_uint(uvm->end));
+                    data[n+3] = Variant(cali_make_variant_from_uint(uvm->end - uvm->start));
+
+                    n += 4;
+                }
+                break;
+                case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_CPU_PAGE_FAULT_COUNT:
+                {
+                    attr[n+0] = activity_start_attr;
+                    data[n+0] = Variant(cali_make_variant_from_uint(uvm->start));
+                    n += 1;
+                }
+                break;
+                case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_GPU_PAGE_FAULT:
+                {
+                    attr[n+0] = uvm_pagefault_groups_attr;
+                    attr[n+1] = activity_start_attr;
+                    attr[n+2] = activity_end_attr;
+                    attr[n+3] = activity_duration_attr;
+
+                    data[n+0] = Variant(cali_make_variant_from_uint(uvm->value));
+                    data[n+1] = Variant(cali_make_variant_from_uint(uvm->start));
+                    data[n+2] = Variant(cali_make_variant_from_uint(uvm->end));
+                    data[n+3] = Variant(cali_make_variant_from_uint(uvm->end - uvm->start));
+
+                    n += 4;
+                }
+                break;
+                default:
+                break;
+            }
+
+            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
+            SnapshotRecord snapshot(snapshot_data);
+            c->make_record(n, attr, data, snapshot);
+
+            proc_fn(*c, snapshot.to_entrylist());
+
+            ++num_uvm_recs;
+
+            return 1;
+        }
         default:
             ++num_unknown_recs;
         }
@@ -541,6 +644,7 @@ class CuptiTraceService
                         << "\n  runtime records:     " << num_runtime_recs
                         << "\n  kernel records:      " << num_kernel_recs
                         << "\n  memcpy records:      " << num_memcpy_recs
+                        << "\n  uvm records:         " << num_uvm_recs
                         << "\n  unknown records:     " << num_unknown_recs
                         << std::endl;
 
@@ -548,6 +652,50 @@ class CuptiTraceService
                         << num_correlations_found  << " context correlations found, "
                         << num_correlations_missed << " missed."
                         << std::endl;
+    }
+
+    void configure_uvm_recording(const ConfigSet& config) {
+        CUpti_ActivityUnifiedMemoryCounterConfig umcfg[4];
+        size_t n = 0;
+
+        if (config.get("uvm_transfers").to_bool()) {
+            umcfg[n].scope = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_SCOPE_PROCESS_SINGLE_DEVICE;
+            umcfg[n].kind  = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_HTOD;
+            umcfg[n].deviceId = 0;
+            umcfg[n].enable   = 1;
+            ++n;
+
+            umcfg[n].scope = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_SCOPE_PROCESS_SINGLE_DEVICE;
+            umcfg[n].kind  = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_DTOH;
+            umcfg[n].deviceId = 0;
+            umcfg[n].enable   = 1;
+            ++n;
+        }
+        if (config.get("uvm_pagefaults").to_bool()) {
+            umcfg[n].scope = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_SCOPE_PROCESS_SINGLE_DEVICE;
+            umcfg[n].kind  = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_CPU_PAGE_FAULT_COUNT;
+            umcfg[n].deviceId = 0;
+            umcfg[n].enable   = 1;
+            ++n;
+
+            umcfg[n].scope = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_SCOPE_PROCESS_SINGLE_DEVICE;
+            umcfg[n].kind  = CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_GPU_PAGE_FAULT;
+            umcfg[n].deviceId = 0;
+            umcfg[n].enable   = 1;
+            ++n;
+        }
+
+        Log(2).stream() << "Configuring " << n << " unified memory counters" << std::endl;
+
+        CUptiResult res = cuptiActivityConfigureUnifiedMemoryCounter(umcfg, n);
+
+        if (res != CUPTI_SUCCESS) {
+            const char* errstr;
+            cuptiGetResultString(res, &errstr);
+
+            Log(0).stream() << "cuptitrace: cuptiActivityConfigureUnifiedMemoryCounter: "
+                            << errstr << std::endl;
+        }
     }
 
     void enable_cupti_activities(const ConfigSet& config) {
@@ -561,12 +709,16 @@ class CuptiTraceService
             { "runtime",     CUPTI_ACTIVITY_KIND_RUNTIME },
             { "kernel",      CUPTI_ACTIVITY_KIND_KERNEL  },
             { "memcpy",      CUPTI_ACTIVITY_KIND_MEMCPY  },
+            { "uvm",         CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER },
 
             { nullptr,       CUPTI_ACTIVITY_KIND_INVALID }
         };
 
         std::vector<std::string> selection =
             config.get("activities").to_stringlist();
+
+        if (std::find(selection.begin(), selection.end(), "uvm") != selection.end())
+            configure_uvm_recording(config);
 
         for (const activity_map_t* act = activity_map; act && act->name; ++act) {
             auto it = std::find(selection.begin(), selection.end(),
@@ -668,7 +820,9 @@ class CuptiTraceService
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
             Attribute aggr_class_attr =
                 c->get_attribute("class.aggregatable");
-            
+            Attribute addr_class_attr =
+                c->get_attribute("class.memoryaddress");
+
             Variant   nsec_val  = Variant(CALI_TYPE_STRING, "nsec", 4);
             Variant   true_val  = Variant(true);
 
@@ -700,11 +854,26 @@ class CuptiTraceService
                                     1, &aggr_class_attr, &true_val);
             starttime_attr =
                 c->create_attribute("cupti.starttime",         CALI_TYPE_UINT,
-                                    CALI_ATTR_SCOPE_PROCESS | 
+                                    CALI_ATTR_SCOPE_PROCESS |
                                     CALI_ATTR_SKIP_EVENTS);
             device_uuid_attr =
                 c->create_attribute("cupti.device.uuid",       CALI_TYPE_STRING,
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+            fault_address_attr =
+                c->create_attribute("cupti.fault.addr",        CALI_TYPE_ADDR,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                    1, &addr_class_attr, &true_val);
+            uvm_kind_attr =
+                c->create_attribute("cupti.uvm.kind",       CALI_TYPE_STRING,
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+            uvm_bytes_attr =
+                c->create_attribute("cupti.uvm.bytes",      CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                    1, &aggr_class_attr, &true_val);
+            uvm_pagefault_groups_attr =
+                c->create_attribute("cupti.uvm.pagefault.groups", CALI_TYPE_UINT,
+                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                    1, &aggr_class_attr, &true_val);
 
             ConfigSet config = chn->config().init("cuptitrace", s_configdata);
 
@@ -752,14 +921,15 @@ public:
 const struct ConfigSet::Entry CuptiTraceService::s_configdata[] = {
     { "activities", CALI_TYPE_STRING, "correlation,device,runtime,kernel,memcpy",
       "The CUpti activity kinds to record",
-      "The CUpti activity kinds to record. Possible values: "
-      "  device:       Device info"
-      "  correlation:  Correlation records. Required for Caliper context correlation."
-      "  driver:       Driver API."
-      "  runtime:      Runtime API."
-      "    Runtime records are also required for Caliper context correlation."
-      "  kernel:       CUDA Kernels being executed."
-      "  memcpy:       CUDA memory copies."
+      "\nThe CUpti activity kinds to record. Possible values: "
+      "\n  device:       Device info"
+      "\n  correlation:  Correlation records. Required for Caliper context correlation."
+      "\n  driver:       Driver API."
+      "\n  runtime:      Runtime API."
+      "\n    Runtime records are also required for Caliper context correlation."
+      "\n  kernel:       CUDA Kernels being executed."
+      "\n  memcpy:       CUDA memory copies."
+      "\n  uvm:          Unified memory events."
     },
     { "correlate_context",   CALI_TYPE_BOOL, "true",
       "Correlate CUpti records with Caliper context",
@@ -767,6 +937,14 @@ const struct ConfigSet::Entry CuptiTraceService::s_configdata[] = {
     { "snapshot_timestamps", CALI_TYPE_BOOL, "false",
       "Record CUpti timestamps for all Caliper snapshots",
       "Record CUpti timestamps for all Caliper snapshots"
+    },
+    { "uvm_transfers",       CALI_TYPE_BOOL, "true",
+      "When recording uvm events, record memory transfers",
+      "When recording uvm events, record memory transfers"
+    },
+    { "uvm_pagefaults",       CALI_TYPE_BOOL, "true",
+      "When recording uvm events, record pagefaults",
+      "When recording uvm events, record pagefaults"
     },
     { "snapshot_duration",   CALI_TYPE_BOOL, "false",
       "Record duration of host-side activities using CUpti timestamps",
