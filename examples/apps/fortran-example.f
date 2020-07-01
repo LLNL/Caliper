@@ -18,6 +18,7 @@ program fortran_example
     ! Users can provide a configuration string (e.g., 'runtime-report')
     ! on the command line.
     mgr = ConfigManager_new()
+    call mgr%set_default_parameter('aggregate_across_ranks', 'false')
     argc = command_argument_count()
     if (argc .ge. 1) then
         call get_command_argument(1, arg)
