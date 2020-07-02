@@ -232,8 +232,8 @@ class LoopReportController : public cali::ChannelController
         if (iterations > 0) {
             int nblocks = 20;
 
-            if (m_opts.is_set("timeseries.rows"))
-                nblocks = m_opts.get("timeseries.rows").to_int();
+            if (m_opts.is_set("timeseries.maxrows"))
+                nblocks = m_opts.get("timeseries.maxrows").to_int();
             if (nblocks <= 0)
                 nblocks = rec_count;
 
@@ -383,7 +383,7 @@ const char* loop_report_spec =
     "   \"description\": \"Measure after t seconds\""
     "  },"
     "  {"
-    "   \"name\": \"timeseries.rows\","
+    "   \"name\": \"timeseries.maxrows\","
     "   \"type\": \"int\","
     "   \"description\": \"Max number of rows in timeseries display. Set to 0 to show all. Default: 20.\""
     "  }"

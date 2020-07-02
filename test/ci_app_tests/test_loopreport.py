@@ -74,7 +74,7 @@ class CaliperLoopReportTest(unittest.TestCase):
 
     """ Loop report controller (timeseries info, display all rows) """
     def test_loopreport_display_all_rows(self):
-        target_cmd = [ './ci_test_macros', '0', 'loop-report,timeseries.rows=0,timeseries=true,summary=false,iteration_interval=2,output=stdout', '80' ]
+        target_cmd = [ './ci_test_macros', '0', 'loop-report,timeseries.maxrows=0,timeseries=true,summary=false,iteration_interval=2,output=stdout', '80' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'      : '0',
