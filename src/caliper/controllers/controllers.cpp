@@ -478,6 +478,13 @@ const char* builtin_option_specs =
     " \"description\" : \"Output location ('stdout', 'stderr', or filename)\","
     " \"type\"        : \"string\","
     " \"category\"    : \"output\""
+    "},"
+    "{"
+    " \"name\"        : \"adiak.import_categories\","
+    " \"services\"    : [ \"adiak_import\" ],"
+    " \"description\" : \"Adiak import categories. Comma-separated list of integers.\","
+    " \"type\"        : \"string\","
+    " \"category\"    : \"adiak\""
     "}"
     "]";
 

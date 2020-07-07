@@ -53,8 +53,11 @@ public:
             if (opts.is_set("use.mpi"))
                 use_mpi = have_mpi && opts.is_enabled("use.mpi");
 
-            if (have_adiak)
+            if (have_adiak) {
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+                config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
+                    opts.get("adiak.import_categories", "2,3").to_string();
+            }
 
             if (use_mpi) {
                 groupby += ",mpi.rank";
@@ -133,7 +136,7 @@ const char* controller_spec =
     " \"name\"        : \"hatchet-sample-profile\","
     " \"description\" : \"Record a sampling profile for processing with hatchet\","
     " \"services\"    : [ \"sampler\", \"trace\" ],"
-    " \"categories\"  : [ \"output\" ],"
+    " \"categories\"  : [ \"adiak\", \"output\" ],"
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" },"
     " \"options\": "
     " ["
