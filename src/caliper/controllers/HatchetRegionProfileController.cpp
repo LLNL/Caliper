@@ -48,8 +48,11 @@ public:
             if (opts.is_set("use.mpi"))
                 use_mpi = have_mpi && opts.is_enabled("use.mpi");
 
-            if (have_adiak)
+            if (have_adiak) {
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+                config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
+                    opts.get("adiak.import_categories", "2,3").to_string();
+            }
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
@@ -60,7 +63,7 @@ public:
                     opts.query_let("local", "")
                     + " select "
                     + opts.query_select("local", "*,sum(sum#time.duration) as time")
-                    + " group by " 
+                    + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
             } else {
@@ -68,9 +71,9 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.query_let("local", "")
-                    + " select " 
+                    + " select "
                     + opts.query_select("local", "*,sum(sum#time.duration) as time")
-                    + " group by " 
+                    + " group by "
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;
             }
@@ -114,7 +117,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"hatchet-region-profile\","
     " \"description\" : \"Record a region time profile for processing with hatchet\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"categories\"  : [ \"adiak\", \"metric\", \"output\", \"region\" ],"
     " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","

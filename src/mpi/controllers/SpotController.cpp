@@ -235,6 +235,8 @@ public:
 #ifdef CALIPER_HAVE_ADIAK
             if (opts.get("output", "").to_string() != "adiak")
                 config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+            config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
+                opts.get("adiak.import_categories", "2,3").to_string();
 #endif
             m_opts.update_channel_config(config());
         }
@@ -261,7 +263,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"spot\","
     " \"description\" : \"Record a time profile for the Spot web visualization framework\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"categories\"  : [ \"adiak\", \"metric\", \"output\", \"region\" ],"
     " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","

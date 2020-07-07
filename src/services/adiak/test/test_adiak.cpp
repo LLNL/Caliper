@@ -59,7 +59,7 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(vec_attr.type(), CALI_TYPE_STRING);
 
     EXPECT_TRUE(int_attr.is_global());
-    
+
     Attribute adk_type_attr = c.get_attribute("adiak.type");
 
     EXPECT_EQ(int_attr.get(adk_type_attr).to_string(), std::string("int"));
@@ -69,6 +69,46 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(c.get(chn, int_attr).value().to_int(), 42);
     EXPECT_EQ(c.get(chn, str_attr).value().to_string(), std::string("import"));
     EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
+}
+
+TEST(AdiakServiceTest, AdiakImportCategoryFilter)
+{
+    cali_id_t import_chn_id =
+        cali::create_channel("adiak_import", 0, {
+                { "CALI_SERVICES_ENABLE",         "adiak_import" },
+                { "CALI_ADIAK_IMPORT_CATEGORIES", "424242,12345" }
+            });
+
+    adiak_namevalue("do.not.import", adiak_general, "none", "%d", 23);
+    adiak_namevalue("do.import.1", static_cast<adiak_category_t>(424242), "import.category", "%d", 42);
+    adiak_namevalue("do.import.2", static_cast<adiak_category_t>(12345), "import.category", "%s", "hi");
+
+    Caliper  c;
+    Channel* chn = c.get_channel(import_chn_id);
+
+    ASSERT_NE(chn, nullptr);
+
+    chn->events().pre_flush_evt(&c, chn, nullptr);
+
+    Attribute do_import_attr_1 = c.get_attribute("do.import.1");
+    Attribute do_import_attr_2 = c.get_attribute("do.import.2");
+    Attribute do_not_import_attr = c.get_attribute("do.not.import");
+
+    EXPECT_EQ(do_import_attr_1.type(), CALI_TYPE_INT);
+    EXPECT_EQ(do_import_attr_2.type(), CALI_TYPE_STRING);
+    EXPECT_EQ(do_not_import_attr, Attribute::invalid);
+
+    EXPECT_TRUE(do_import_attr_1.is_global());
+    EXPECT_TRUE(do_import_attr_2.is_global());
+
+    Attribute adk_type_attr = c.get_attribute("adiak.type");
+    Attribute adk_caty_attr = c.get_attribute("adiak.category");
+
+    EXPECT_EQ(do_import_attr_1.get(adk_type_attr).to_string(), std::string("int"));
+    EXPECT_EQ(do_import_attr_1.get(adk_caty_attr).to_string(), std::string("import.category"));
+
+    EXPECT_EQ(c.get(chn, do_import_attr_1).value().to_int(), 42);
+    EXPECT_EQ(c.get(chn, do_import_attr_2).value().to_string(), std::string("hi"));
 }
 
 TEST(AdiakServiceTest, AdiakExport)
@@ -89,7 +129,7 @@ TEST(AdiakServiceTest, AdiakExport)
     chn->events().pre_flush_evt(&c, chn, nullptr);
 
     std::map<std::string, std::string> res;
-    
+
     adiak_list_namevals(1, adiak_category_all, ::extract_cb, &res);
 
     EXPECT_STREQ(res["export.int"].c_str(), "42");
