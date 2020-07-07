@@ -7,6 +7,7 @@
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
+#include "caliper/common/RuntimeConfig.h"
 
 #include <adiak_tool.h>
 
@@ -14,6 +15,7 @@
 #include <ctime>
 #include <memory>
 #include <sstream>
+#include <vector>
 
 using namespace cali;
 
@@ -215,24 +217,41 @@ nameval_cb(const char *name, adiak_category_t category, const char *subcategory,
 }
 
 void
-register_adiak_import(Caliper* c, Channel* chn)
+register_adiak_import(Caliper* c, Channel* channel)
 {
+    static const ConfigSet::Entry configdata[] = {
+        { "categories",   CALI_TYPE_STRING, "2,3",
+          "List of Adiak categories to import",
+          "List of Adiak categories to import. Comma-separated list of integers."
+          "\nDefault is 2,3 (\"general\", \"performance\")."
+          "\nSet to 1 to import everything."
+        },
+        ConfigSet::Terminator
+    };
+
+    ConfigSet cfg = channel->config().init("adiak_import", configdata);
+    std::vector<int> categories;
+
+    for (const std::string& s : cfg.get("categories").to_stringlist())
+        categories.push_back(std::stoi(s));
+
     meta_attr[0] =
         c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
     meta_attr[1] =
        c->create_attribute("adiak.category", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
-    chn->events().pre_flush_evt.connect(
-        [](Caliper*, Channel* chn, const SnapshotRecord*){
-            nameval_usr_args_t args { chn, 0 };
+    channel->events().pre_flush_evt.connect(
+        [categories](Caliper*, Channel* channel, const SnapshotRecord*){
+            nameval_usr_args_t args { channel, 0 };
 
-            adiak_list_namevals(1, adiak_category_all, nameval_cb, &args);
+            for (int category : categories)
+                adiak_list_namevals(1, static_cast<adiak_category_t>(category), nameval_cb, &args);
 
-            Log(1).stream() << chn->name() << ": adiak_import: Imported " << args.count
+            Log(1).stream() << channel->name() << ": adiak_import: Imported " << args.count
                             << " adiak values" << std::endl;
         });
 
-    Log(1).stream() << chn->name() << ": Registered adiak_import service" << std::endl;
+    Log(1).stream() << channel->name() << ": Registered adiak_import service" << std::endl;
 }
 
 } // namespace [anonymous]
