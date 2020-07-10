@@ -103,9 +103,11 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
 
     Attribute adk_type_attr = c.get_attribute("adiak.type");
     Attribute adk_caty_attr = c.get_attribute("adiak.category");
+    Attribute adk_scat_attr = c.get_attribute("adiak.subcategory");
 
     EXPECT_EQ(do_import_attr_1.get(adk_type_attr).to_string(), std::string("int"));
-    EXPECT_EQ(do_import_attr_1.get(adk_caty_attr).to_string(), std::string("import.category"));
+    EXPECT_EQ(do_import_attr_1.get(adk_caty_attr).to_int(), 424242);
+    EXPECT_EQ(do_import_attr_1.get(adk_scat_attr).to_string(), std::string("import.category"));
 
     EXPECT_EQ(c.get(chn, do_import_attr_1).value().to_int(), 42);
     EXPECT_EQ(c.get(chn, do_import_attr_2).value().to_string(), std::string("hi"));

@@ -22,7 +22,7 @@ using namespace cali;
 namespace
 {
 
-Attribute meta_attr[2];
+Attribute meta_attr[3];
 
 unsigned s_unknown_type_error = 0;
 
@@ -110,21 +110,22 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
 }
 
 void
-set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type, adiak_category_t, const char *subcategory)
+set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t* type, adiak_category_t category, const char *subcategory)
 {
     Caliper c;
-    Variant v_metavals[2];
+    Variant v_metavals[3];
 
     std::shared_ptr<char> typestr(adiak_type_to_string(type, 1), free);
-    v_metavals[0] = Variant(CALI_TYPE_STRING, typestr.get(), strlen(typestr.get())+1);
+    v_metavals[0] = Variant(typestr.get());
+    v_metavals[1] = Variant(static_cast<int>(category));
 
     if (!subcategory || subcategory[0] == '\0')
        subcategory = "none";
-    v_metavals[1] = Variant(CALI_TYPE_STRING, subcategory, strlen(subcategory)+1);
+    v_metavals[2] = Variant(subcategory);
 
     Attribute attr =
        c.create_attribute(name, val.type(), CALI_ATTR_GLOBAL | CALI_ATTR_SKIP_EVENTS,
-                          2, meta_attr, v_metavals);
+                          3, meta_attr, v_metavals);
 
     c.set(channel, attr, val);
 }
@@ -238,7 +239,9 @@ register_adiak_import(Caliper* c, Channel* channel)
     meta_attr[0] =
         c->create_attribute("adiak.type", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
     meta_attr[1] =
-       c->create_attribute("adiak.category", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+       c->create_attribute("adiak.category", CALI_TYPE_INT, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+    meta_attr[2] =
+       c->create_attribute("adiak.subcategory", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
     channel->events().pre_flush_evt.connect(
         [categories](Caliper*, Channel* channel, const SnapshotRecord*){
