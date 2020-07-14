@@ -1276,6 +1276,13 @@ void mpiwrap_init(Caliper* c, Channel* chn)
 #ifdef CALIPER_MPIWRAP_USE_GOTCHA
     Log(2).stream() << chn->name() << ": mpiwrap: Using GOTCHA wrappers." << std::endl;
 
+    //   AWFUL HACK: gotcha can modify our bindings buffer later.
+    // (It should copy them instead!)
+    // Copy them to a large enough static buffer for now.
+
+    static struct gotcha_binding_t s_bindings[1024];
+    static size_t s_binding_pos = 0;
+
     std::vector<struct gotcha_binding_t> bindings;
 
     // we always wrap init & finalize
@@ -1297,7 +1304,9 @@ void mpiwrap_init(Caliper* c, Channel* chn)
     }
     {{endforallfn}}
 
-    gotcha_wrap(bindings.data(), bindings.size(), "caliper/mpi");
+    std::copy_n(bindings.data(), bindings.size(), s_bindings+s_binding_pos);
+    gotcha_wrap(s_bindings+s_binding_pos, bindings.size(), "caliper/mpi");
+    s_binding_pos += bindings.size();
 #else
     Log(2).stream() << chn->name() << ": mpiwrap: Using PMPI wrappers." << std::endl;
 #endif

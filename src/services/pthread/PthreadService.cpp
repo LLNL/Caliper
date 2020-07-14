@@ -28,8 +28,6 @@ gotcha_wrappee_handle_t  orig_pthread_create_handle = 0x0;
 Attribute id_attr = Attribute::invalid;
 Attribute master_attr = Attribute::invalid;
 
-bool is_wrapped = false;
-
 struct wrapper_args {
     void* (*fn)(void*);
     void* arg;
@@ -70,8 +68,10 @@ post_init_cb(Caliper* c, Channel* channel)
 {
     channel->events().subscribe_attribute(c, channel, id_attr);
 
+    static bool is_wrapped = false;
+
     if (!is_wrapped) {
-        struct gotcha_binding_t pthread_binding[] = {
+        static struct gotcha_binding_t pthread_binding[] = {
             { "pthread_create", (void*) cali_pthread_create_wrapper, &orig_pthread_create_handle }
         };
 
