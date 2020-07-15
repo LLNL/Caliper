@@ -308,11 +308,13 @@ public:
                     infovec.push_back(get_loop_info(db, rec));
                 });
 
-            if (!infovec.empty())
-                process_timeseries(c, db, stream, infovec.front());
-            else
+            if (!infovec.empty()) {
+                for (const LoopInfo& loopinfo : infovec)
+                    if (loopinfo.iterations > 0)
+                        process_timeseries(c, db, stream, loopinfo);
+            } else {
                 Log(1).stream() << channel()->name() << ": No instrumented loops found" << std::endl;
-
+            }
         }
 
         finalize_mpi();
@@ -333,6 +335,9 @@ public:
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
         else
             config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
+
+        if (m_opts.is_set("target_loops"))
+            config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = m_opts.get("target_loops").to_string();
 
         m_opts.update_channel_config(config());
     }
@@ -386,6 +391,11 @@ const char* loop_report_spec =
     "   \"name\": \"timeseries.maxrows\","
     "   \"type\": \"int\","
     "   \"description\": \"Max number of rows in timeseries display. Set to 0 to show all. Default: 20.\""
+    "  },"
+    "  {"
+    "   \"name\": \"target_loops\","
+    "   \"type\": \"string\","
+    "   \"description\": \"List of loops to target. Default: any top-level loop.\""
     "  }"
     " ]"
     "}";
