@@ -1,4 +1,4 @@
-The Caliper Query Language
+The Caliper query language
 ================================
 
 The Caliper Query Language (CalQL) is used to filter, aggregate, and
@@ -76,12 +76,12 @@ The LET statement applies computation operators on input record entries
 and adds the results as a new entries in the input records. The new entries
 can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
 For example, we can use the scale() operator to scale a value before
-subsequent aggregations:
+subsequent aggregations::
 
   LET sec=scale(time.duration,1e-6) SELECT prop:nested,sum(sec)
 
 For example, we can use the truncate() operator on an iteration counter to
-aggregate blocks of 10 iterations in a time-series profile:
+aggregate blocks of 10 iterations in a time-series profile::
 
   LET block=truncate(iteration#mainloop,10) SELECT block,sum(time.duration) GROUP BY block
 

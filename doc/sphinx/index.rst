@@ -7,7 +7,7 @@ Caliper: A Performance Analysis Toolbox in a Library
 ================================================================
 
 Caliper is a program instrumentation and performance measurement
-framework. It is designed as a performance-analysis toolbox in a
+framework. It is a performance-analysis toolbox in a
 library, allowing one to bake performance analysis capabilities
 directly into applications and activate them at runtime.
 Caliper is primarily aimed at HPC applications, but works for
@@ -26,8 +26,6 @@ Features include:
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
   models like MPI
-* Synchronous (event based) and asynchronous (sampling) performance
-  data collection
 * Trace and profile recording with flexible online and offline
   data aggregation
 * Connection to third-party tools, e.g., NVidia NVProf and
@@ -38,10 +36,7 @@ Features include:
   with named memory regions
 
 Caliper is available for download on `GitHub
-<https://github.com/LLNL/Caliper>`_.  Example applications, runtime
-configurations, analysis scripts, and a tutorial are available in the
-`Caliper examples <https://github.com/LLNL/caliper-examples>`_
-repository.
+<https://github.com/LLNL/Caliper>`_.
 
 Contents
 --------------------------------
@@ -49,15 +44,16 @@ Contents
    :maxdepth: 1
 
    build
-   workflow
    AnnotationAPI
    ConfigManagerAPI
+   FortranSupport
    configuration
+   workflow
    services
    ThirdPartyTools
+   calql
    OutputFormats
    tools
-   calql
    DeveloperGuide
 
 Getting started
@@ -80,22 +76,17 @@ Building and installing
 Download Caliper from `GitHub <https://github.com/LLNL/Caliper>`_.
 
 Building and installing Caliper requires cmake 3.1+ and a current
-C++11-compatible compiler. Clone Caliper from github and proceed
-as follows:
+C++11-compatible compiler. See :doc:`build` for details.
+
+You can also install Caliper through `Spack <https://github.com/spack/spack>`_.
+
+To use Caliper, add annotation statements to your program and link it
+against the Caliper library. Programs must be linked with the Caliper
+runtime (libcaliper.so), as shown in the example link command:
 
 .. code-block:: sh
 
-     $ git clone https://github.com/LLNL/Caliper.git
-     $ cd Caliper
-     $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \
-         -DCMAKE_C_COMPILER=<path to c-compiler> \
-         -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
-         ..
-     $ make
-     $ make install
-
-See :doc:`build` for more details.
+    g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
 
 Source-code annotations
 ................................
@@ -127,10 +118,10 @@ using the high-level annotation macros:
         CALI_CXX_MARK_FUNCTION;
 
         // Mark the "intialization" phase
-        CALI_MARK_BEGIN("initialization");
+        CALI_MARK_BEGIN("init");
         int count = 4;
         double t = 0.0, delta_t = 1e-6;
-        CALI_MARK_END("initialization");
+        CALI_MARK_END("init");
 
         // Mark the loop
         CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
@@ -151,25 +142,15 @@ using the high-level annotation macros:
 See the :doc:`AnnotationAPI` chapter for a complete reference to the C,
 C++, and Fortran annotation APIs.
 
-Linking the Caliper library
+Recording Performance Data
 ................................
 
-To use Caliper, add annotation statements to your program and link it
-against the Caliper library. Programs must be linked with the Caliper
-runtime (libcaliper.so), as shown in the example link command: ::
-
-    g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
-
-Runtime configuration
-................................
-
-Caliper's performance measurement and data collection functionality
-must be enabled and configured at runtime through Caliper's
-configuration API, configuration files, or environment variables. By
-default, Caliper will keep track of the current Caliper context
-provided by the annotation API calls (allowing third-party tools to
-access program context information), but won't run any performance
-measurement or data recording on its own.
+Performance measuremens can be controlled most conveniently via the
+ConfigManager API. The ConfigManager covers the most common use cases,
+such as recording traces or printing time reports. For custom analysis
+tasks or when not using the ConfigManager API, Caliper can be configured
+manually by setting configuration variables via the environment or
+in config files.
 
 ConfigManager API
 ###############################
@@ -199,50 +180,46 @@ A complete code example where users can provide a configuration string
 on the command line is [here](examples/apps/cxx-example.cpp). Built-in
 configs include
 
-* runtime-report: Prints a time profile for annotated code regions.
-* event-trace: Records a trace of region begin/end events.
+runtime-report
+  Prints a time profile for annotated code regions.
 
-Complete documentation on the ConfigManager configurations can be found
-in :doc:`ConfigManagerAPI`.
+event-trace
+  Records a trace of region begin/end events.
 
-Configuring through environment variables
+See :doc:`ConfigManagerAPI` to learn more.
+
+Manual runtime configuration
 ###############################################
 
 The ConfigManager API is not required to run Caliper - performance
-measurements can also be configured with environment variables or a config
-file. For starters, there are a set of pre-defined configuration
-profiles that can be activated with the
-`CALI_CONFIG_PROFILE` environment variable. For example, the
-`runtime-report` configuration profile prints the total time (in
-microseconds) spent in each code path based on the nesting of
+measurements can also be configured with environment variables or
+a config file.
+For starters, there are a set of pre-defined configuration
+profiles that can be activated with the `CALI_CONFIG_PROFILE`.
+For example, the `runtime-report` configuration profile prints
+the total time spent in each code path based on the nesting of
 annotated code regions: ::
 
-  $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
+  $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cxx-example
   Path          Inclusive time Exclusive time Time %
   main                0.000099       0.000070 5.751849
     main loop         0.000013       0.000013 1.068200
     init              0.000016       0.000016 1.314708
 
-The example shows Caliper output for the ``runtime-report``
-configuration profile for the source-code annotation example above.
+For complete control, users can select and configure Caliper
+*services* (:doc:`services`) manually. See :doc:`configuration`
+to learn more. For example, this configuration records an event
+trace for each annotation event: ::
 
-As another example, the ``serial-trace`` configuration profile
-configures Caliper to record an event trace for each annotation event: ::
+    $ CALI_SERVICES_ENABLE=event,recorder,timestamp,trace ./examples/apps/cxx-example
 
-    $ CALI_CONFIG_PROFILE=serial-trace ./examples/apps/cali-basic-annotations
-    == CALIPER: Registered event trigger service
-    == CALIPER: Registered recorder service
-    == CALIPER: Registered timestamp service
-    == CALIPER: Registered trace service
-    == CALIPER: Initialized
-    == CALIPER: Flushing Caliper data
-    == CALIPER: Trace: Flushed 14 snapshots.
-    == CALIPER: Recorder: Wrote 71 records.
+Post-processing
+###############################################
 
 The trace data is stored in a ``.cali`` file in a text-based,
 Caliper-specific file format. Use the ``cali-query`` tool to filter,
 aggregate, or print the recorded data. Here we use ``cali-query`` to
-print the recorded trace data in a human-readable json format:
+print the recorded trace data as json text:
 
 .. code-block:: sh
 
@@ -273,9 +250,6 @@ print the recorded trace data in a human-readable json format:
             "event.begin#iteration#main loop":0
     },
     ...
-
-The :doc:`configuration` section demonstrates the setup of Caliper runtime
-configurations through environment variables or configuration files.
 
 Where to go from here
 ................................

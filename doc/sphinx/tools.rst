@@ -1,4 +1,4 @@
-Caliper Tools
+Caliper tools
 ================================
 
 Caliper comes with additional tool programs for post-processing

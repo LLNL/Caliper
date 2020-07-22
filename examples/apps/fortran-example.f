@@ -11,9 +11,6 @@ program fortran_example
     character(len=:), allocatable :: errmsg
     character(len=256)    :: arg
 
-    ! Initialize Caliper. Use cali_mpi_init() in an MPI program.
-    call cali_init()
-
     ! (Optional) create a ConfigManager object to control profiling.
     ! Users can provide a configuration string (e.g., 'runtime-report')
     ! on the command line.

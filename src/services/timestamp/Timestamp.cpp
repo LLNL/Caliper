@@ -274,7 +274,7 @@ public:
 }; // class Timestamp
 
 const ConfigSet::Entry Timestamp::s_configdata[] = {
-    { "snapshot_duration", CALI_TYPE_BOOL, "false",
+    { "snapshot_duration", CALI_TYPE_BOOL, "true",
       "Include duration of snapshot epoch with each context record",
       "Include duration of snapshot epoch with each context record"
     },
@@ -290,7 +290,7 @@ const ConfigSet::Entry Timestamp::s_configdata[] = {
       "Record inclusive duration of begin/end phases.",
       "Record inclusive duration of begin/end phases."
     },
-    { "unit", CALI_TYPE_STRING, "usec",
+    { "unit", CALI_TYPE_STRING, "sec",
       "Unit for time durations (sec or usec)",
       "Unit for time durations (sec or usec)"
     },

@@ -2,7 +2,7 @@ Connection to third-party tools
 ================================
 
 Caliper provides bindings to export Caliper annotations to third-party
-tools. Currently, Nvidia's NVProf/NVVP and Intel VTune Amplifier are
+tools. Currently, Nvidia's NVProf/NSight and Intel VTune Amplifier are
 supported.
 
 
@@ -12,7 +12,7 @@ NVProf
 The `nvprof` service translates Caliper annotations into NVTX ranges
 (Nvidia's source-code annoatation interface). Caliper-annotated
 regions will then be visible in the "Markers and Ranges" section of
-the NVVP timeline display.
+the NVprof or NSight timeline display.
 
 To use the NVprof bindings, enable the `nvprof` service and run the
 target application under nvprof:
@@ -36,7 +36,7 @@ variable.
     Specify which attributes should be exported as NVTX
     ranges. Comma-separated list.
 
-    
+
 Intel VTune
 --------------------------------
 

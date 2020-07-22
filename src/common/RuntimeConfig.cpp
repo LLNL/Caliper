@@ -26,6 +26,8 @@ namespace
     const char*  builtin_profiles =
         "# [serial-trace]\n"
         "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
+        "# [event-trace]\n"
+        "CALI_SERVICES_ENABLE=event,recorder,timestamp,trace\n"
         "# [flat-function-profile]\n"
         "CALI_SERVICES_ENABLE=aggregate,event,report,timestamp\n"
         "CALI_AGGREGATE_KEY=event.end#function\n"
