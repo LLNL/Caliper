@@ -1,4 +1,4 @@
-Source-code Annotations
+Source-code annotations
 ================================
 
 Caliper provides source-code annotation APIs to mark and name code
@@ -205,7 +205,7 @@ follows:
 The ``byname`` variants refer to attribute keys by their name. If no
 attribute key with the given name exists, it will be created with
 default properties. The basic variants take an attribute ID, e.g.
-from :c:func:`cali_create_attribute()`.
+from :cpp:func:`cali_create_attribute()`.
 
 Example:
 

@@ -1,4 +1,4 @@
-Developer Guide
+Developer guide
 ================================
 
 This section describes internal APIs for Caliper service developers.

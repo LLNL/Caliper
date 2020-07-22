@@ -5,8 +5,8 @@ Caliper: A Performance Analysis Toolbox in a Library
 [![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
 Caliper is a program instrumentation and performance measurement
-framework. It is designed as a performance analysis toolbox in a
-library, allowing one to bake performance analysis capabilities
+framework. It is a performance analysis toolbox in a library,
+allowing one to bake performance analysis capabilities
 directly into applications and activate them at runtime.
 
 Caliper can be used for lightweight always-on profiling or advanced
@@ -39,13 +39,10 @@ Documentation
 Extensive documentation is available here:
 https://llnl.github.io/Caliper/
 
-Usage examples of the C++ and C annotation interfaces are provided in
-the [examples](examples/apps) directory.
+Usage examples of the C++, C, and Fortran annotation and ConfigManager
+APIs are provided in the [examples](examples/apps) directory.
 
 See the "Getting started" section below for a brief tutorial.
-
-Example applications, configuration files, and a more extensive
-tutorial can be found [here](https://github.com/LLNL/caliper-examples).
 
 Building and installing
 ------------------------------------------
@@ -135,15 +132,14 @@ runtime (libcaliper.so), as shown in the example link command:
 
     g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
 
-### Runtime configuration
+### Recording performance data
 
-Caliper's performance measurement and data collection functionality
-must be enabled and configured at runtime through Caliper's
-configuration API, configuration files, or environment variables. By
-default, Caliper will keep track of the current Caliper context
-provided by the annotation API calls (allowing third-party tools to
-access program context information), but won't run any performance
-measurement or data recording on its own.
+Performance measuremens can be controlled most conveniently via the
+ConfigManager API. The ConfigManager covers many common use cases,
+such as recording traces or printing time reports. For custom analysis
+tasks or when not using the ConfigManager API, Caliper can be configured
+manually by setting configuration variables via the environment or
+in config files.
 
 #### ConfigManager API
 
@@ -178,7 +174,7 @@ configs include
 Complete documentation on the ConfigManager configurations can be found
 [here](doc/ConfigManagerAPI.md).
 
-#### Configuring through environment variables
+#### Manual configuration through environment variables
 
 The ConfigManager API is not required to run Caliper - performance
 measurements can also be configured with environment variables or a config
@@ -189,7 +185,7 @@ profiles that can be activated with the
 microseconds) spent in each code path based on the nesting of
 annotated code regions:
 
-    $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cali-basic-annotations
+    $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cxx-example
     Path         Inclusive time (usec) Exclusive time (usec) Time %
     main                     38.000000             20.000000   52.6
       main loop               8.000000              8.000000   21.1
@@ -198,10 +194,11 @@ annotated code regions:
 The example shows Caliper output for the `runtime-report`
 configuration profile for the source-code annotation example above.
 
-As another example, the `serial-trace` configuration profile
-configures Caliper to record an event trace of each annotation event:
+For complete control, users can select and configure Caliper *services*
+manually. For example, this configuration records an event trace
+recording all enter and leave events for annotated code regions:
 
-    $ CALI_CONFIG_PROFILE=serial-trace ./examples/apps/cali-basic-annotations
+    $ CALI_SERVICES_ENABLE=event,recorder,timestamp,trace ./examples/apps/cxx-example
     == CALIPER: Registered event trigger service
     == CALIPER: Registered recorder service
     == CALIPER: Registered timestamp service
@@ -235,9 +232,6 @@ print the recorded trace data in a human-readable json format:
     },
     ...
 
-It is possible to create entirely custom configurations. This requires
-selecting a combination of Caliper *services* that implement specific
-functionality and configuring them for the task at hand.
 More information can be found in the [Caliper documentation](https://llnl.github.io/Caliper/).
 
 Authors

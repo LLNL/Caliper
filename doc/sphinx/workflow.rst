@@ -1,4 +1,4 @@
-Architecture and Workflow
+Architecture and workflow
 ================================
 
 Caliper's highly modular architecture allows for a wide range of use
