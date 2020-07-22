@@ -1,32 +1,24 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Runtime Configuration &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>Manual runtime configuration &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Caliper Services" href="services.html" />
-    <link rel="prev" title="Source-code Annotations" href="AnnotationAPI.html" /> 
-  </head>
-  <body>
+    <link rel="next" title="Architecture and workflow" href="workflow.html" />
+    <link rel="prev" title="Fortran support" href="FortranSupport.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -34,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="services.html" title="Caliper Services"
+          <a href="workflow.html" title="Architecture and workflow"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code Annotations"
+          <a href="FortranSupport.html" title="Fortran support"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -48,51 +40,43 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="runtime-configuration">
-<h1>Runtime Configuration<a class="headerlink" href="#runtime-configuration" title="Permalink to this headline">¶</a></h1>
-<p>This section describes the general configuration of the Caliper
-runtime system and lists the core system’s configuration
-variables. See next section for the list of measurement services and
-their configuration.</p>
-<p><strong>Note</strong>: by default, Caliper does not activate any measurement or
-output/processing services. Unless you run with third-party tool
-that uses the Caliper API to retrieve data you will at least need to
-select a configuration profile to obtain output.</p>
-<div class="section" id="configuring-the-caliper-runtime-system">
-<h2>Configuring the Caliper runtime system<a class="headerlink" href="#configuring-the-caliper-runtime-system" title="Permalink to this headline">¶</a></h2>
-<p>The Caliper runtime system can be configured through environment
-variables and/or configuration files. In addition, Caliper comes with
-some built-in configuration profiles.</p>
-<div class="section" id="configuration-variables">
-<h3>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this headline">¶</a></h3>
-<p>In general, Caliper configuration variables have the form</p>
-<div class="highlight-sh"><div class="highlight"><pre>CALI_&lt;MODULE&gt;_&lt;KEY&gt;<span class="o">=</span>&lt;VALUE&gt;
-</pre></div>
-</div>
+  <div class="section" id="manual-runtime-configuration">
+<h1>Manual runtime configuration<a class="headerlink" href="#manual-runtime-configuration" title="Permalink to this headline">¶</a></h1>
+<p>When not using the ConfigManager API (<a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">Configuration manager API</span></a>),
+Caliper can be configured manually by setting configuration
+variables through the environment or configuration files.</p>
+<p>Configuration variables have the form</p>
+<blockquote>
+<div><p>CALI_&lt;MODULE&gt;_&lt;KEY&gt;=&lt;VALUE&gt;</p>
+</div></blockquote>
 <p>Values can be strings, lists, numbers, or boolean values, depending on
 the variable. List elements are typically separated by commas.
 Boolean values can be given as ‘1’, ‘true’, or ‘0’, ‘false’
 for <em>true</em> and <em>false</em>, respectively.</p>
-<p>Set caliper configuration variables through environment variables,
-e.g.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span><span class="nb">export </span><span class="nv">CALI_LOG_VERBOSITY</span><span class="o">=</span>2
+<p>Generally, configuring Caliper requires selecting a set of <em>services</em>,
+which implement Caliper’s measurement functionality.
+Refer to <a class="reference internal" href="workflow.html"><span class="doc">Architecture and workflow</span></a> to learn how services can be combined to
+form a complete measurement, data collection, and output pipeline.
+Select services with CALI_SERVICES_ENABLE configuration variable,
+for example by setting it as an environment variable:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,trace,recorder,timestamp
 </pre></div>
 </div>
-<p>or configuration files (see below).</p>
-</div>
+<p>Many services have additional configuration variables. See <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a>
+for a complete list of available services and their configuration.</p>
 <div class="section" id="configuration-files">
-<h3>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h3>
+<h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
 <p>Configuration variables can be put in configuration files. By default,
 Caliper reads the file <cite>caliper.config</cite> in the current working
 directory, if present. Alternatively, you can provide a list of
-configuration files with the <cite>CALI_CONFIG_FILE</cite> variable. Note that
-<cite>CALI_CONFIG_FILE</cite> can only be set through an environment variable.</p>
+configuration files with the CALI_CONFIG_FILE variable. Note that
+CALI_CONFIG_FILE can only be set through an environment variable.</p>
 <p>The configuration files use a simple <cite>&lt;VARIABLE&gt;=&lt;VALUE&gt;</cite>
 syntax. Lines starting with <cite>#</cite> are interpreted as comments.
 Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># My configuration</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span><span class="p">:</span><span class="n">mpi</span>
-<span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span><span class="p">:</span><span class="n">MPI_Barrier</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># My configuration</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span><span class="p">:</span><span class="n">mpi</span>
+<span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span><span class="p">,</span><span class="n">MPI_Barrier</span>
 <span class="n">CALI_TIMER_TIMESTAMP</span><span class="o">=</span><span class="n">true</span>
 </pre></div>
 </div>
@@ -102,26 +86,26 @@ they are processed in the order they are given. Values set through
 environment variables override values given in configuration files.</p>
 </div>
 <div class="section" id="configuration-profiles">
-<h3>Configuration profiles<a class="headerlink" href="#configuration-profiles" title="Permalink to this headline">¶</a></h3>
+<h2>Configuration profiles<a class="headerlink" href="#configuration-profiles" title="Permalink to this headline">¶</a></h2>
 <p>Configuration profiles allow you to put multiple Caliper
 configurations into a file and select one of them with a single
-switch. You can declare a profile in a configuration file with <code class="docutils literal"><span class="pre">#</span>
+switch. You can declare a profile in a configuration file with <code class="docutils literal notranslate"><span class="pre">#</span>
 <span class="pre">[profile</span> <span class="pre">name]</span></code>. The following lines up to the next profile
 declaration then belong to this profile. Entries that do not belong to
 any specific profile are inserted into the default profile. Caliper
 will use the profile given by the <cite>CALI_CONFIG_PROFILE</cite> variable, or
 the default profile if none is set.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">CALI_CONFIG_PROFILE</span><span class="o">=</span><span class="n">callstack</span><span class="o">-</span><span class="n">trace</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CONFIG_PROFILE</span><span class="o">=</span><span class="n">callstack</span><span class="o">-</span><span class="n">trace</span>
 
-<span class="c"># [callstack-trace]</span>
-<span class="c"># A trace with call-path info</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">callpath</span><span class="p">:</span><span class="n">event</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span>
+<span class="c1"># [callstack-trace]</span>
+<span class="c1"># A trace with call-path info</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">callpath</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span>
 <span class="n">CALI_CALLPATH_USE_NAME</span><span class="o">=</span><span class="n">true</span>
 
-<span class="c"># [hwc-trace]</span>
-<span class="c"># A trace with PAPI hardware counters</span>
-<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">:</span><span class="n">papi</span><span class="p">:</span><span class="n">recorder</span><span class="p">:</span><span class="n">timestamp</span>
+<span class="c1"># [hwc-trace]</span>
+<span class="c1"># A trace with PAPI hardware counters</span>
+<span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">event</span><span class="p">,</span><span class="n">papi</span><span class="p">,</span><span class="n">recorder</span><span class="p">,</span><span class="n">timestamp</span>
 <span class="n">CALI_PAPI_COUNTERS</span><span class="o">=</span><span class="n">PAPI_FP_OPS</span>
 </pre></div>
 </div>
@@ -133,77 +117,49 @@ variables always override values set in a configuration file,
 regardless of the selected profile.</p>
 </div>
 <div class="section" id="built-in-configuration-profiles">
-<h3>Built-in configuration profiles<a class="headerlink" href="#built-in-configuration-profiles" title="Permalink to this headline">¶</a></h3>
+<h2>Built-in configuration profiles<a class="headerlink" href="#built-in-configuration-profiles" title="Permalink to this headline">¶</a></h2>
 <p>Caliper provides built-in configuration profiles for common use
 cases. Currently, the following profiles are defined:</p>
-<table border="1" class="docutils">
-<colgroup>
-<col width="16%" />
-<col width="84%" />
-</colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Profile name</th>
-<th class="head">Variables set</th>
-</tr>
-</thead>
-<tbody valign="top">
-<tr class="row-even"><td>serial-trace</td>
-<td>CALI_SERVICES_ENABLE=event:recorder:timestamp:trace</td>
-</tr>
-<tr class="row-odd"><td>thread-trace</td>
-<td>CALI_SERVICES_ENABLE=event:pthread:recorder:timestamp:trace</td>
-</tr>
-<tr class="row-even"><td>mpi-trace</td>
-<td>CALI_SERVICES_ENABLE=event:mpi:pthread:recorder:timestamp:trace</td>
-</tr>
-</tbody>
-</table>
+<dl class="simple">
+<dt>event-trace</dt><dd><p>Records and writes a trace of begin/end records in .cali format</p>
+</dd>
+<dt>runtime-report</dt><dd><p>Prints time spent in annotated regions for a non-MPI program</p>
+</dd>
+<dt>mpi-runtime-report</dt><dd><p>Prints time spent in annotated regions for MPI programs.
+Results are aggregated across MPI ranks.</p>
+</dd>
+</dl>
 <p>Configuration profiles, including built-in profiles, can be
 extended. For example, the following configuration file</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="c"># [mpi-trace]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># [mpi-trace]</span>
 <span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span>
 </pre></div>
 </div>
-<p>adds the <code class="docutils literal"><span class="pre">CALI_MPI_WHITELIST</span></code> entry to the built-in <cite>mpi-trace</cite>
+<p>adds the <code class="docutils literal notranslate"><span class="pre">CALI_MPI_WHITELIST</span></code> entry to the built-in <cite>mpi-runtime-report</cite>
 profile.</p>
-</div>
 </div>
 <div class="section" id="configuration-variables-reference">
 <h2>Configuration variables reference<a class="headerlink" href="#configuration-variables-reference" title="Permalink to this headline">¶</a></h2>
 <p>This section describes the configuration variables of the Caliper
 runtime system.</p>
 <p>Many Caliper services define additional configuration variables. See
-<a class="reference internal" href="services.html"><span class="doc">Caliper Services</span></a> for a list of Caliper services and their
+<a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for a list of Caliper services and their
 configuration.</p>
-<dl class="envvar">
-<dt id="envvar-CALI_CONFIG_PROFILE">
-<code class="descname">CALI_CONFIG_PROFILE</code><a class="headerlink" href="#envvar-CALI_CONFIG_PROFILE" title="Permalink to this definition">¶</a></dt>
-<dd><p>A configuration profile name. This can be a profile defined in a
+<dl>
+<dt>CALI_CONFIG_PROFILE</dt><dd><p>A configuration profile name. This can be a profile defined in a
 configuration file, or one of Caliper’s pre-defined configuration
-profiles. E.g. <code class="docutils literal"><span class="pre">CALI_CONFIG_PROFILE=runtime-report</span></code> selects the
+profiles. E.g. <code class="docutils literal notranslate"><span class="pre">CALI_CONFIG_PROFILE=runtime-report</span></code> selects the
 built-in runtime-report config profile.</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_CONFIG_FILE">
-<code class="descname">CALI_CONFIG_FILE</code><a class="headerlink" href="#envvar-CALI_CONFIG_FILE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of configuration files. The provided
+</dd>
+<dt>CALI_CONFIG_FILE</dt><dd><p>Comma-separated list of configuration files. The provided
 configuration files are read in order. Note: this variable can only
 be set as an environment variable or through the configuration API.</p>
-<p>Default: <code class="docutils literal"><span class="pre">caliper.config</span></code></p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_SERVICES_ENABLE">
-<code class="descname">CALI_SERVICES_ENABLE</code><a class="headerlink" href="#envvar-CALI_SERVICES_ENABLE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of Caliper service modules to enable.</p>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">caliper.config</span></code></p>
+</dd>
+<dt>CALI_SERVICES_ENABLE</dt><dd><p>Comma-separated list of Caliper service modules to enable.</p>
 <p>Default: Not set. Caliper will not record performance data.</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_LOG_VERBOSITY">
-<code class="descname">CALI_LOG_VERBOSITY</code><a class="headerlink" href="#envvar-CALI_LOG_VERBOSITY" title="Permalink to this definition">¶</a></dt>
-<dd><div class="line-block">
+</dd>
+<dt>CALI_LOG_VERBOSITY</dt><dd><div class="line-block">
 <div class="line">Verbosity level. Default: 1</div>
 <div class="line-block">
 <div class="line">0: No output except for severe errors.</div>
@@ -213,33 +169,16 @@ be set as an environment variable or through the configuration API.</p>
 <div class="line">3: More debug output. Shows configuration settings.</div>
 </div>
 </div>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_LOG_LOGFILE">
-<code class="descname">CALI_LOG_LOGFILE</code><a class="headerlink" href="#envvar-CALI_LOG_LOGFILE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Log file name, or ‘stdout’/’stderr’ for streaming to standard out or
+</dd>
+<dt>CALI_LOG_LOGFILE</dt><dd><p>Log file name, or ‘stdout’/’stderr’ for streaming to standard out or
 standard error, respectively. Default: stderr</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_CALIPER_AUTOMERGE">
-<code class="descname">CALI_CALIPER_AUTOMERGE</code><a class="headerlink" href="#envvar-CALI_CALIPER_AUTOMERGE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Automatically merge attributes into a common context tree.
-Decreases the size of context records, but may increase the amount
-of metadata and reduce performance.</p>
-<p>Default: enabled (<code class="docutils literal"><span class="pre">true</span></code>)</p>
-</dd></dl>
-
-<dl class="envvar">
-<dt id="envvar-CALI_CALIPER_CONFIG_CHECK">
-<code class="descname">CALI_CALIPER_CONFIG_CHECK</code><a class="headerlink" href="#envvar-CALI_CALIPER_CONFIG_CHECK" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform basic configuration sanity checks. Caliper prints warnings
+</dd>
+<dt>CALI_CHANNEL_CONFIG_CHECK</dt><dd><p>Perform basic configuration sanity checks. Caliper prints warnings
 for incomplete configurations, e.g., if a snapshot trigger service
 is enabled but no output service.</p>
-<p>Default: enabled (<code class="docutils literal"><span class="pre">true</span></code>)</p>
-</dd></dl>
-
+<p>Default: enabled (<code class="docutils literal notranslate"><span class="pre">true</span></code>)</p>
+</dd>
+</dl>
 </div>
 </div>
 
@@ -252,27 +191,23 @@ is enabled but no output service.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Runtime Configuration</a><ul>
-<li><a class="reference internal" href="#configuring-the-caliper-runtime-system">Configuring the Caliper runtime system</a><ul>
-<li><a class="reference internal" href="#configuration-variables">Configuration variables</a></li>
+<li><a class="reference internal" href="#">Manual runtime configuration</a><ul>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#configuration-profiles">Configuration profiles</a></li>
 <li><a class="reference internal" href="#built-in-configuration-profiles">Built-in configuration profiles</a></li>
-</ul>
-</li>
 <li><a class="reference internal" href="#configuration-variables-reference">Configuration variables reference</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="AnnotationAPI.html"
-                        title="previous chapter">Source-code Annotations</a></p>
+  <p class="topless"><a href="FortranSupport.html"
+                        title="previous chapter">Fortran support</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="services.html"
-                        title="next chapter">Caliper Services</a></p>
+  <p class="topless"><a href="workflow.html"
+                        title="next chapter">Architecture and workflow</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -281,15 +216,15 @@ is enabled but no output service.</p>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -301,17 +236,17 @@ is enabled but no output service.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="services.html" title="Caliper Services"
+          <a href="workflow.html" title="Architecture and workflow"
              >next</a> |</li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code Annotations"
+          <a href="FortranSupport.html" title="Fortran support"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>

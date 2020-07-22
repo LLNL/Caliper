@@ -1,32 +1,24 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>The Caliper Query Language &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>The Caliper query language &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Developer Guide" href="DeveloperGuide.html" />
-    <link rel="prev" title="Caliper Tools" href="tools.html" /> 
-  </head>
-  <body>
+    <link rel="next" title="Output formatting" href="OutputFormats.html" />
+    <link rel="prev" title="Connection to third-party tools" href="ThirdPartyTools.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -34,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="DeveloperGuide.html" title="Developer Guide"
+          <a href="OutputFormats.html" title="Output formatting"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -49,63 +41,164 @@
           <div class="body" role="main">
             
   <div class="section" id="the-caliper-query-language">
-<h1>The Caliper Query Language<a class="headerlink" href="#the-caliper-query-language" title="Permalink to this headline">¶</a></h1>
+<h1>The Caliper query language<a class="headerlink" href="#the-caliper-query-language" title="Permalink to this headline">¶</a></h1>
 <p>The Caliper Query Language (CalQL) is used to filter, aggregate, and
 create reports from Caliper data in Caliper’s data processing tools
 (cali-query) and report services. Its syntax is very similar to SQL.</p>
 <p>For example, filtering and aggregating a trace into a function time
 profile for an application’s main loop and printing results in a
 table, sorted by time, is accomplished with the following statement:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">(),</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">(),</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
 <span class="n">WHERE</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span>
 <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span>
 <span class="n">FORMAT</span> <span class="n">table</span>
 <span class="n">ORDER</span> <span class="n">BY</span> <span class="n">time</span><span class="o">.</span><span class="n">duration</span>
 </pre></div>
 </div>
+<div class="section" id="quick-reference">
+<h2>Quick reference<a class="headerlink" href="#quick-reference" title="Permalink to this headline">¶</a></h2>
+<p>This table contains a quick reference of all CalQL statements:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                   <span class="c1"># Compute additional attributes in input records</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">c</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>     <span class="c1"># computes a = &lt;b&gt;/&lt;c&gt;*S</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># computes &lt;a&gt; = &lt;b&gt;*S</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">truncate</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>      <span class="c1"># computes &lt;a&gt; = &lt;b&gt; - mod(&lt;b&gt;, S)</span>
+
+<span class="n">SELECT</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                <span class="c1"># Select attributes and define aggregations (i.e., select columns)</span>
+  <span class="o">*</span>                          <span class="c1"># select all attributes</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># select &lt;attribute&gt;</span>
+  <span class="n">count</span><span class="p">()</span>                    <span class="c1"># number of input records in grouping</span>
+  <span class="nb">sum</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># compute sum of &lt;attribute&gt; for grouping</span>
+  <span class="nb">min</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># compute min of &lt;attribute&gt; for grouping</span>
+  <span class="nb">max</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># compute max of &lt;attribute&gt; for grouping</span>
+  <span class="n">avg</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># compute average of &lt;attribute&gt; for grouping</span>
+  <span class="n">percent_total</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># compute percent of total sum for &lt;attribute&gt; in grouping</span>
+  <span class="n">ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># compute sum(&lt;a&gt;)/sum(&lt;b&gt;)*S for grouping</span>
+  <span class="n">inclusive_sum</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># computes inclusive sum of &lt;a&gt; in a nested hierarchy</span>
+  <span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>             <span class="c1"># computes sum of &lt;a&gt; multiplied by scaling factor S</span>
+  <span class="n">inclusive_scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>   <span class="c1"># computes inclusive scaled sum of &lt;a&gt; in a nested hierarchy</span>
+  <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># computes inclusive percent-of-total of &lt;a&gt; in a nested hierarchy</span>
+  <span class="o">...</span> <span class="n">AS</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>              <span class="c1"># use &lt;name&gt; as column header in tree or table formatter</span>
+
+<span class="n">GROUP</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Define aggregation grouping (what to aggregate over, e.g. &quot;function,mpi.rank&quot;)</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># include &lt;attribute&gt; in grouping</span>
+  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>                <span class="c1"># include default annotation attributes (&#39;function&#39;, &#39;annotation&#39;, ...) in grouping</span>
+
+<span class="n">WHERE</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                 <span class="c1"># define filter (i.e., select records/rows)</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># records where &lt;attribute&gt; exists</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;=&lt;</span><span class="n">value</span><span class="o">&gt;</span>        <span class="c1"># records where &lt;attribute&gt;=&lt;value&gt;</span>
+  <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>            <span class="c1"># records where &lt;attribute&gt; does not exist</span>
+  <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;=&lt;</span><span class="n">value</span><span class="o">&gt;</span>    <span class="c1"># records where &lt;attribute&gt;!=&lt;value&gt;</span>
+
+<span class="n">FORMAT</span> <span class="o">&lt;</span><span class="n">formatter</span><span class="o">&gt;</span>           <span class="c1"># Define output format</span>
+  <span class="n">cali</span>                       <span class="c1"># .cali format</span>
+  <span class="n">expand</span>                     <span class="c1"># “&lt;attribute1&gt;=&lt;value1&gt;,&lt;attibute2&gt;=&lt;value2&gt;,...”</span>
+  <span class="n">json</span>                       <span class="c1"># write json records { “attribute1”: “value1”, “attribute2”: “value2” }</span>
+    <span class="p">(</span><span class="n">pretty</span><span class="p">)</span>                 <span class="c1">#   ... in a more human-readable format</span>
+    <span class="p">(</span><span class="nb">object</span><span class="p">)</span>                 <span class="c1">#   ... in a json object that includes attribute info and globals</span>
+  <span class="n">json</span><span class="o">-</span><span class="n">split</span>                 <span class="c1"># json format w/ separate node hierarchy for hatchet library</span>
+  <span class="n">table</span>                      <span class="c1"># human-readable text table</span>
+  <span class="n">tree</span>                       <span class="c1"># human-readable text tree output</span>
+
+<span class="n">ORDER</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Sort records in output (table formatter only)</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># order by &lt;attribute&gt;</span>
+  <span class="o">...</span> <span class="n">ASC</span>                    <span class="c1"># sort in ascending order</span>
+  <span class="o">...</span> <span class="n">DESC</span>                   <span class="c1"># sort in descending order</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="let">
+<h2>LET<a class="headerlink" href="#let" title="Permalink to this headline">¶</a></h2>
+<p>The LET statement applies computation operators on input record entries
+and adds the results as a new entries in the input records. The new entries
+can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
+For example, we can use the scale() operator to scale a value before
+subsequent aggregations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">SELECT</span> <span class="n">prop</span><span class="p">:</span><span class="n">nested</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For example, we can use the truncate() operator on an iteration counter to
+aggregate blocks of 10 iterations in a time-series profile:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">block</span><span class="o">=</span><span class="n">truncate</span><span class="p">(</span><span class="n">iteration</span><span class="c1">#mainloop,10) SELECT block,sum(time.duration) GROUP BY block</span>
+</pre></div>
+</div>
+<p>LET terms have the general form</p>
+<blockquote>
+<div><p>a = f(…)</p>
+</div></blockquote>
+<p>where f is one of the operators and <cite>a</cite> is the name of the result attribute.
+The result is added to the input records before the record is processed further.
+Result entries are only added to a record if all required input operands are present.</p>
+</div>
 <div class="section" id="select">
 <h2>SELECT<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h2>
 <p>The SELECT statement selects which attributes in snapshot records
-should be printed, and defines aggregations. <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span></code> selects all
-attributes. <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">op(arg)</span></code> enables aggregation operation <cite>op</cite> with
+should be printed, and defines aggregations. <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span></code> selects all
+attributes. <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">op(arg)</span></code> enables aggregation operation <cite>op</cite> with
 argument <cite>arg</cite>. Generally, attributes will be printed in the order
 given in the SELECT statement.</p>
-<p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">()</span>
+<p>An example to print all attributes and enable visit count aggregation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Print all attributes and enable visit count aggregation.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span> <span class="n">annotation</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+<p>Aggregation operations create a new output attribute. The name is typically
+derived from the input attribute(s). For example, the result of <code class="docutils literal notranslate"><span class="pre">sum(attr)</span></code>
+is stored in <code class="docutils literal notranslate"><span class="pre">sum#attr</span></code>. All selection attributes and aggregation
+arguments must come from the input data; recursive
+aggregations (e.g., <code class="docutils literal notranslate"><span class="pre">min(count())</span></code>) within a query are not supported.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">AS</span></code> keyword assigns a user-defined name to a selected attribute
+or aggregation result. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time (usec)&quot;</span> <span class="n">FORMAT</span> <span class="n">table</span>
 </pre></div>
 </div>
-<p>Aggregate <cite>time.duration</cite> using <cite>sum</cite> and print <cite>function</cite> and
-<cite>annotation</cite> attributes from snapshot records.</p>
+<p>Here, the <cite>table</cite> formatter uses “Time (usec)” instead of “sum#time.duration” as
+column name for the <code class="docutils literal notranslate"><span class="pre">sum(time.duration)</span></code> column. Only some
+formatters (table, tree, json, and json-split) support <code class="docutils literal notranslate"><span class="pre">AS</span></code>.</p>
+<p>Inclusive aggregation operations (<cite>inclusive_sum</cite>, <cite>inclusive_scale</cite>, and
+<cite>inclusive_percent_total</cite>) compute inclusive values (value for a tree node
+plus all of its children) for datasets with hierarchical regions. This
+applies to the hierarchy defined by attributes with the
+<code class="docutils literal notranslate"><span class="pre">CALI_ATTR_NESTED</span></code> property, including the default <cite>function</cite>,
+<cite>annotation</cite>, and <cite>loop</cite> attributes from Caliper’s high-level annotation macros.</p>
+<p>A more complex example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span> <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">prop</span><span class="p">:</span><span class="n">nested</span> <span class="n">FORMAT</span> <span class="n">tree</span>
+</pre></div>
+</div>
+<p>The computes the (exclusive) sum of <cite>time.duration</cite> divided by 100000 and the inclusive
+percent-of-total for <cite>time.duration</cite>. Example output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Path</span>      <span class="n">Time</span>  <span class="n">Time</span> <span class="o">%</span>
+<span class="n">main</span>         <span class="mi">5</span>     <span class="mi">100</span>
+  <span class="n">foo</span>       <span class="mi">35</span>      <span class="mi">90</span>
+    <span class="n">bar</span>     <span class="mi">10</span>      <span class="mi">20</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="where">
 <h2>WHERE<a class="headerlink" href="#where" title="Permalink to this headline">¶</a></h2>
 <p>The WHERE statement can be used to filter the records to aggregate/print.
 The statement takes a comma-separated list of clauses. Records that don’t
-match all of the clauses are filtered out.</p>
+match all of the clauses are filtered out. Filters can only be defined on
+input attributes, i.e. it is not possible to filter on aggregation
+results.</p>
 <p>Currently, there are clauses to test for existance of an attribute
 label in a record, and to filter for specific attribute
-values. Clauses can be negated with <code class="docutils literal"><span class="pre">NOT</span></code>. Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">WHERE</span> <span class="n">loop</span><span class="p">,</span><span class="n">function</span><span class="o">=</span><span class="n">foo</span>
+values. Clauses can be negated with <code class="docutils literal notranslate"><span class="pre">NOT</span></code>. Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WHERE</span> <span class="n">loop</span><span class="p">,</span><span class="n">function</span><span class="o">=</span><span class="n">foo</span>
 </pre></div>
 </div>
-<p>Select records that contain <code class="docutils literal"><span class="pre">loop</span></code> attributes where function equals
-<code class="docutils literal"><span class="pre">foo</span></code>. Note: for nested attributes, the match may occur on any
+<p>Select records that contain <code class="docutils literal notranslate"><span class="pre">loop</span></code> attributes where function equals
+<code class="docutils literal notranslate"><span class="pre">foo</span></code>. Note: for nested attributes, the match may occur on any
 level. The above example matches the following:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">iteration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="p">}</span>      <span class="n">Matches</span>
-<span class="p">{</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">iteration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span><span class="o">/</span><span class="n">bar</span> <span class="p">}</span>  <span class="n">Matches</span> <span class="p">(</span><span class="s">&#39;function=foo&#39;</span> <span class="n">will</span> <span class="n">be</span> <span class="n">matched</span> <span class="n">on</span> <span class="nb">any</span> <span class="n">nesting</span> <span class="n">level</span><span class="p">)</span>
-<span class="p">{</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="p">}</span>                                  <span class="n">No</span> <span class="n">match</span><span class="p">:</span> <span class="s">&#39;loop&#39;</span> <span class="n">attribute</span> <span class="n">missing</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">iteration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="p">}</span>      <span class="n">Matches</span>
+<span class="p">{</span> <span class="n">loop</span><span class="o">=</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">iteration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span><span class="o">/</span><span class="n">bar</span> <span class="p">}</span>  <span class="n">Matches</span> <span class="p">(</span><span class="s1">&#39;function=foo&#39;</span> <span class="n">will</span> <span class="n">be</span> <span class="n">matched</span> <span class="n">on</span> <span class="nb">any</span> <span class="n">nesting</span> <span class="n">level</span><span class="p">)</span>
+<span class="p">{</span> <span class="n">function</span><span class="o">=</span><span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="p">}</span>                                  <span class="n">No</span> <span class="n">match</span><span class="p">:</span> <span class="s1">&#39;loop&#39;</span> <span class="n">attribute</span> <span class="n">missing</span>
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">NOT</span></code> keyword negates clauses:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">WHERE</span> <span class="n">NOT</span> <span class="n">iteration</span><span class="c">#mainloop=4</span>
+<p>The <code class="docutils literal notranslate"><span class="pre">NOT</span></code> keyword negates clauses:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WHERE</span> <span class="n">NOT</span> <span class="n">iteration</span><span class="c1">#mainloop=4</span>
 </pre></div>
 </div>
-<p>matches every record where <code class="docutils literal"><span class="pre">iteration#mainloop</span></code> is not 4 (including
-records without <code class="docutils literal"><span class="pre">iteration#mainloop</span></code> attributes.</p>
+<p>matches every record where <code class="docutils literal notranslate"><span class="pre">iteration#mainloop</span></code> is not 4 (including
+records without <code class="docutils literal notranslate"><span class="pre">iteration#mainloop</span></code> attributes.</p>
 </div>
 <div class="section" id="group-by">
 <h2>GROUP BY<a class="headerlink" href="#group-by" title="Permalink to this headline">¶</a></h2>
@@ -117,7 +210,7 @@ found in the input records.  The values of the aggregation attributes
 in the input records will be accumulated and appended to the aggregate
 record.</p>
 <p>Consider the following table of input records:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span>
          <span class="n">mainloop</span>
 <span class="n">foo</span>      <span class="n">mainloop</span>         <span class="mi">0</span>
 <span class="n">bar</span>      <span class="n">mainloop</span>         <span class="mi">0</span>
@@ -129,11 +222,11 @@ record.</p>
 </div>
 <p>With this input, the following GROUP BY statement will create a
 function profile:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">()</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">count</span><span class="p">()</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span>
 
-<span class="n">function</span> <span class="n">aggregate</span><span class="o">.</span><span class="n">count</span>
-<span class="n">foo</span>                    <span class="mi">3</span>
-<span class="n">bar</span>                    <span class="mi">3</span>
+<span class="n">function</span> <span class="n">count</span>
+<span class="n">foo</span>          <span class="mi">3</span>
+<span class="n">bar</span>          <span class="mi">3</span>
 </pre></div>
 </div>
 </div>
@@ -142,14 +235,7 @@ function profile:</p>
 <p>The FORMAT statement selects the output format option. Caliper can
 produce machine-readable (e.g., json or Caliper’s own csv-style) or
 human-readable output (text tables or a tree representation).</p>
-<p>Currently available formatters are</p>
-<ul class="simple">
-<li>csv (Caliper’s default machine-readable format)</li>
-<li>json</li>
-<li>expand (expanded attr1=value1,attr2=value2,… records)</li>
-<li>table (human-readable text table)</li>
-<li>tree (print records in a tree based on the hierarchy of selected path attributes)</li>
-</ul>
+<p>See <a class="reference internal" href="OutputFormats.html"><span class="doc">Output formatting</span></a> for a list of available formatters.</p>
 </div>
 <div class="section" id="order-by">
 <h2>ORDER BY<a class="headerlink" href="#order-by" title="Permalink to this headline">¶</a></h2>
@@ -159,18 +245,20 @@ ascending (using the ASC keyword) or descending (using DESC). Note
 that the sorting is performed by the output formatter and only
 available in some formatters (e.g., table).</p>
 <p>The following example prints a iteration/function profile ordered by
-time and iteration number:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">FORMAT</span> <span class="n">table</span> <span class="n">ORDER</span> <span class="n">BY</span> <span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span> <span class="n">DESC</span><span class="p">,</span> <span class="n">iteration</span><span class="c">#mainloop</span>
+time and iteration number. Note that one must use the original
+attribute name and not an alias assigned with <code class="docutils literal notranslate"><span class="pre">AS</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span> <span class="n">FORMAT</span> <span class="n">table</span> \
+  <span class="n">ORDER</span> <span class="n">BY</span> <span class="nb">sum</span><span class="c1">#time.inclusive.duration DESC, iteration#mainloop</span>
 
-<span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span><span class="c">#mainloop time.inclusive.duration</span>
-<span class="n">main</span>                                                  <span class="mi">100000</span>
-<span class="n">main</span>     <span class="n">mainloop</span>                                      <span class="mi">80000</span>
-<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">0</span>                    <span class="mi">2500</span>
-<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">0</span>                    <span class="mi">1500</span>
-<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">1</span>                    <span class="mi">3500</span>
-<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">1</span>                    <span class="mi">2000</span>
-<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">2</span>                    <span class="mi">1000</span>
-<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">2</span>                     <span class="mi">600</span>
+<span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span><span class="c1">#mainloop     Time</span>
+<span class="n">main</span>                                   <span class="mi">100000</span>
+<span class="n">main</span>     <span class="n">mainloop</span>                       <span class="mi">80000</span>
+<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">0</span>     <span class="mi">2500</span>
+<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">0</span>     <span class="mi">1500</span>
+<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">1</span>     <span class="mi">3500</span>
+<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">1</span>     <span class="mi">2000</span>
+<span class="n">main</span>     <span class="n">mainloop</span>                  <span class="mi">2</span>     <span class="mi">1000</span>
+<span class="n">main</span><span class="o">/</span><span class="n">foo</span> <span class="n">mainloop</span>                  <span class="mi">2</span>      <span class="mi">600</span>
 <span class="o">...</span>
 </pre></div>
 </div>
@@ -186,9 +274,11 @@ time and iteration number:</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">The Caliper Query Language</a><ul>
+<li><a class="reference internal" href="#">The Caliper query language</a><ul>
+<li><a class="reference internal" href="#quick-reference">Quick reference</a></li>
+<li><a class="reference internal" href="#let">LET</a></li>
 <li><a class="reference internal" href="#select">SELECT</a></li>
 <li><a class="reference internal" href="#where">WHERE</a></li>
 <li><a class="reference internal" href="#group-by">GROUP BY</a></li>
@@ -199,11 +289,11 @@ time and iteration number:</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tools.html"
-                        title="previous chapter">Caliper Tools</a></p>
+  <p class="topless"><a href="ThirdPartyTools.html"
+                        title="previous chapter">Connection to third-party tools</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="DeveloperGuide.html"
-                        title="next chapter">Developer Guide</a></p>
+  <p class="topless"><a href="OutputFormats.html"
+                        title="next chapter">Output formatting</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -212,15 +302,15 @@ time and iteration number:</p>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -232,17 +322,17 @@ time and iteration number:</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="DeveloperGuide.html" title="Developer Guide"
+          <a href="OutputFormats.html" title="Output formatting"
              >next</a> |</li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>

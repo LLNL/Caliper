@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Fortran support &#8212; Caliper 2.4.0 documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Manual runtime configuration" href="configuration.html" />
+    <link rel="prev" title="Configuration manager API" href="ConfigManagerAPI.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="configuration.html" title="Manual runtime configuration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ConfigManagerAPI.html" title="Configuration manager API"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fortran-support">
+<h1>Fortran support<a class="headerlink" href="#fortran-support" title="Permalink to this headline">¶</a></h1>
+<p>Caliper provides Fortran wrappers for the annotation and ConfigManager
+APIs. To build Caliper with Fortran support, enable the <code class="docutils literal notranslate"><span class="pre">WITH_FORTRAN</span></code>
+option in the CMake configuration:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cmake -DWITH_FORTRAN<span class="o">=</span>On ..
+</pre></div>
+</div>
+<div class="section" id="using-the-fortran-module">
+<h2>Using the Fortran module<a class="headerlink" href="#using-the-fortran-module" title="Permalink to this headline">¶</a></h2>
+<p>The Fortran wrapper module requires Fortran 2003, and Caliper must be built
+with the same compiler as the target program.</p>
+<p>The Caliper fortran module is installed in <code class="docutils literal notranslate"><span class="pre">include/caliper/fortran/</span></code> in the
+Caliper installation directory. Simply add this directory to the application
+include path and import it with <code class="docutils literal notranslate"><span class="pre">use</span> <span class="pre">caliper_mod</span></code> where needed.
+Remember to also link libcaliper to the target program.</p>
+</div>
+<div class="section" id="caliper-fortran-api">
+<h2>Caliper Fortran API<a class="headerlink" href="#caliper-fortran-api" title="Permalink to this headline">¶</a></h2>
+<p>The Caliper Fortran API supports a subset of the C and C++ annotation APIs.
+The simplest options are the <a class="reference internal" href="AnnotationAPI.html#_CPPv417cali_begin_regionPKc" title="cali_begin_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_begin_region()</span></code></a> and
+<a class="reference internal" href="AnnotationAPI.html#_CPPv415cali_end_regionPKc" title="cali_end_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_end_region()</span></code></a> functions.</p>
+<p>The Fortran API also supports the Caliper ConfigManager API (<a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">Configuration manager API</span></a>).
+The example in examples/apps/fortran-example.f demonstrates the annotation and
+ConfigManager APIs for Fortran:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">program </span><span class="n">fortran_example</span>
+    <span class="k">use </span><span class="n">caliper_mod</span>
+
+    <span class="k">implicit none</span>
+
+<span class="k">    type</span><span class="p">(</span><span class="n">ConfigManager</span><span class="p">)</span>   <span class="kd">::</span> <span class="n">mgr</span>
+
+    <span class="kt">integer</span>               <span class="kd">::</span> <span class="n">i</span><span class="p">,</span> <span class="nb">count</span><span class="p">,</span> <span class="n">argc</span>
+
+    <span class="kt">logical</span>               <span class="kd">::</span> <span class="n">ret</span>
+    <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="p">:),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">errmsg</span>
+    <span class="kt">character</span><span class="p">(</span><span class="nb">len</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>    <span class="kd">::</span> <span class="n">arg</span>
+
+    <span class="c">! (Optional) create a ConfigManager object to control profiling.</span>
+    <span class="c">! Users can provide a configuration string (e.g., &#39;runtime-report&#39;)</span>
+    <span class="c">! on the command line.</span>
+    <span class="n">mgr</span> <span class="o">=</span> <span class="n">ConfigManager_new</span><span class="p">()</span>
+    <span class="k">call </span><span class="n">mgr</span><span class="p">%</span><span class="n">set_default_parameter</span><span class="p">(</span><span class="s1">&#39;aggregate_across_ranks&#39;</span><span class="p">,</span> <span class="s1">&#39;false&#39;</span><span class="p">)</span>
+    <span class="n">argc</span> <span class="o">=</span> <span class="nb">command_argument_count</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="p">.</span><span class="n">ge</span><span class="p">.</span> <span class="mi">1</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">        call </span><span class="nb">get_command_argument</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
+        <span class="k">call </span><span class="n">mgr</span><span class="p">%</span><span class="n">add</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">mgr</span><span class="p">%</span><span class="n">error</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="k">then</span>
+<span class="k">            </span><span class="n">errmsg</span> <span class="o">=</span> <span class="n">mgr</span><span class="p">%</span><span class="n">error_msg</span><span class="p">()</span>
+            <span class="k">write</span><span class="p">(</span><span class="o">*</span><span class="p">,</span><span class="o">*</span><span class="p">)</span> <span class="s1">&#39;ConfigManager: &#39;</span><span class="p">,</span> <span class="n">errmsg</span>
+        <span class="n">endif</span>
+    <span class="n">endif</span>
+
+    <span class="c">! Start configured profiling channels</span>
+    <span class="k">call </span><span class="n">mgr</span><span class="p">%</span><span class="n">start</span>
+
+    <span class="c">! A scope annotation. Start region &#39;main&#39;</span>
+    <span class="k">call </span><span class="n">cali_begin_region</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">)</span>
+
+    <span class="c">! Add another region &#39;inner&#39; nested under &#39;main&#39;</span>
+    <span class="k">call </span><span class="n">cali_begin_region</span><span class="p">(</span><span class="s1">&#39;inner&#39;</span><span class="p">)</span>
+    <span class="nb">count</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="c">! End the inner region</span>
+    <span class="k">call </span><span class="n">cali_end_region</span><span class="p">(</span><span class="s1">&#39;inner&#39;</span><span class="p">)</span>
+
+    <span class="c">! End &#39;main&#39;</span>
+    <span class="k">call </span><span class="n">cali_end_region</span><span class="p">(</span><span class="s1">&#39;main&#39;</span><span class="p">)</span>
+
+    <span class="c">! Compute and flush output for the ConfigManager profiles.</span>
+    <span class="k">call </span><span class="n">mgr</span><span class="p">%</span><span class="nb">flush</span>
+<span class="nb">    </span><span class="k">call </span><span class="n">ConfigManager_delete</span><span class="p">(</span><span class="n">mgr</span><span class="p">)</span>
+<span class="k">end program </span><span class="n">fortran_example</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Fortran support</a><ul>
+<li><a class="reference internal" href="#using-the-fortran-module">Using the Fortran module</a></li>
+<li><a class="reference internal" href="#caliper-fortran-api">Caliper Fortran API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ConfigManagerAPI.html"
+                        title="previous chapter">Configuration manager API</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="configuration.html"
+                        title="next chapter">Manual runtime configuration</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/FortranSupport.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="configuration.html" title="Manual runtime configuration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ConfigManagerAPI.html" title="Configuration manager API"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+    </div>
+  </body>
+</html>

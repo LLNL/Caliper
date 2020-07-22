@@ -1,32 +1,24 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Caliper Tools &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>Caliper tools &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="The Caliper Query Language" href="calql.html" />
+    <link rel="next" title="Developer guide" href="DeveloperGuide.html" />
     <link rel="prev" title="Output formatting" href="OutputFormats.html" /> 
-  </head>
-  <body>
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -34,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="calql.html" title="The Caliper Query Language"
+          <a href="DeveloperGuide.html" title="Developer guide"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="OutputFormats.html" title="Output formatting"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -49,119 +41,119 @@
           <div class="body" role="main">
             
   <div class="section" id="caliper-tools">
-<h1>Caliper Tools<a class="headerlink" href="#caliper-tools" title="Permalink to this headline">¶</a></h1>
+<h1>Caliper tools<a class="headerlink" href="#caliper-tools" title="Permalink to this headline">¶</a></h1>
 <p>Caliper comes with additional tool programs for post-processing
-the raw Caliper output data (in <code class="docutils literal"><span class="pre">.cali</span></code> files by default).</p>
+the raw Caliper output data (in <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files by default).</p>
 <p>Caliper’s output is in the form of snapshots. Snapshots
 hold the information chosen to be recorded by the enabled services.
-See <a class="reference internal" href="services.html"><span class="doc">Caliper Services</span></a> for more on services.</p>
+See <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for more on services.</p>
 <p>All examples on this page use the sample program <a class="reference internal" href="#example-cpp">example.cpp</a>.</p>
 <div class="section" id="cali-query">
 <h2>Cali-query<a class="headerlink" href="#cali-query" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal"><span class="pre">cali-query</span></code> tool reads the raw snapshot records and can merge data and filter output.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> tool reads the raw snapshot records and can merge data and filter output.</p>
 <div class="section" id="usage">
 <h3>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h3>
-<p><code class="docutils literal"><span class="pre">cali-query</span> <span class="pre">[OPTIONS]...</span> <span class="pre">[FILES]...</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">cali-query</span> <span class="pre">[OPTIONS]...</span> <span class="pre">[FILES]...</span></code></p>
 </div>
 <div class="section" id="options">
 <h3>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="7%" />
-<col width="31%" />
-<col width="62%" />
+<col style="width: 7%" />
+<col style="width: 31%" />
+<col style="width: 62%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-q</span></code></td>
-<td><code class="docutils literal"><span class="pre">--query=QUERY_STRING</span></code></td>
-<td>A CalQL expression. Specify the filter, aggregation, and formatting
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-q</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--query=QUERY_STRING</span></code></p></td>
+<td><p>A CalQL expression. Specify the filter, aggregation, and formatting
 operations to execute as a SQL-like CalQL expression.
-See <a class="reference internal" href="calql.html"><span class="doc">The Caliper Query Language</span></a>.</td>
+See <a class="reference internal" href="calql.html"><span class="doc">The Caliper query language</span></a>.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-s</span></code></td>
-<td><code class="docutils literal"><span class="pre">--select=QUERY_STRING</span></code></td>
-<td>Selects snapshots to expand. Snapshots can be filtered by which
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--select=QUERY_STRING</span></code></p></td>
+<td><p>Selects snapshots to expand. Snapshots can be filtered by which
 attributes or variables appear, and specific states of attributes or
 variables. When this is set, all other snapshots are ignored in the
-<code class="docutils literal"><span class="pre">expand</span></code> command. Snapshots with specific attributes and variables
-or values thereof can be excluded by using a <code class="docutils literal"><span class="pre">-</span></code> symbol in front
+<code class="docutils literal notranslate"><span class="pre">expand</span></code> command. Snapshots with specific attributes and variables
+or values thereof can be excluded by using a <code class="docutils literal notranslate"><span class="pre">-</span></code> symbol in front
 of the name of the attribute/variable. Specific attribute or
-variable values are listed in <code class="docutils literal"><span class="pre">attribute=value</span></code> format. Multiple
-attributes/variables are selected by listing with a <code class="docutils literal"><span class="pre">,</span></code> separator.
-The default behavior is to select all snapshots.</td>
+variable values are listed in <code class="docutils literal notranslate"><span class="pre">attribute=value</span></code> format. Multiple
+attributes/variables are selected by listing with a <code class="docutils literal notranslate"><span class="pre">,</span></code> separator.
+The default behavior is to select all snapshots.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-t</span></code></td>
-<td><code class="docutils literal"><span class="pre">--table</span></code></td>
-<td>Print snapshots in a human-readable table format.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-t</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--table</span></code></p></td>
+<td><p>Print snapshots in a human-readable table format.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-S</span></code></td>
-<td><code class="docutils literal"><span class="pre">--sort-by=ATTRIBUTES</span></code></td>
-<td>Sort snapshots by the given attributes when printing a table.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-S</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--sort-by=ATTRIBUTES</span></code></p></td>
+<td><p>Sort snapshots by the given attributes when printing a table.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-e</span></code></td>
-<td><code class="docutils literal"><span class="pre">--expand</span></code></td>
-<td>Expands the selected snapshots (from <code class="docutils literal"><span class="pre">-s</span></code>) and prints the selected
-attributes (from <code class="docutils literal"><span class="pre">--print-attributes</span></code>) as lists of comma-separated
-key-value pairs (e.g., <code class="docutils literal"><span class="pre">attribute1=value1,...</span></code>. Default behavior
-is to expand and print all snapshots and attributes.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-e</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--expand</span></code></p></td>
+<td><p>Expands the selected snapshots (from <code class="docutils literal notranslate"><span class="pre">-s</span></code>) and prints the selected
+attributes (from <code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code>) as lists of comma-separated
+key-value pairs (e.g., <code class="docutils literal notranslate"><span class="pre">attribute1=value1,...</span></code>. Default behavior
+is to expand and print all snapshots and attributes.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-p</span></code></td>
-<td><code class="docutils literal"><span class="pre">--print-attributes=ATTRIBUTES</span></code></td>
-<td>Select which attributes to print with the <code class="docutils literal"><span class="pre">--expand</span></code> or
-<code class="docutils literal"><span class="pre">--table</span></code> formatters.
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-p</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--print-attributes=ATTRIBUTES</span></code></p></td>
+<td><p>Select which attributes to print with the <code class="docutils literal notranslate"><span class="pre">--expand</span></code> or
+<code class="docutils literal notranslate"><span class="pre">--table</span></code> formatters.
 Attributes can be
-excluded by using a <code class="docutils literal"><span class="pre">-</span></code> symbol in front of the name. Multiple
-attributes are selected/excluded by listing with a <code class="docutils literal"><span class="pre">,</span></code> separator.</td>
+excluded by using a <code class="docutils literal notranslate"><span class="pre">-</span></code> symbol in front of the name. Multiple
+attributes are selected/excluded by listing with a <code class="docutils literal notranslate"><span class="pre">,</span></code> separator.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-a</span></code></td>
-<td><code class="docutils literal"><span class="pre">--aggregate=AGGREGATION_OPS</span></code></td>
-<td>Aggregate over the specified attributes with the specified
-operation(s). <code class="docutils literal"><span class="pre">AGGREGATION_OPS</span></code> format is:
-<code class="docutils literal"><span class="pre">(operation(attr1)|operation(attr1)),(operation(attr2)),...</span></code>
-Operations available: <code class="docutils literal"><span class="pre">sum(attr)</span></code>, <code class="docutils literal"><span class="pre">max(attr)</span></code>, <code class="docutils literal"><span class="pre">min(attr)</span></code>,
-<code class="docutils literal"><span class="pre">count</span></code>.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-a</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--aggregate=AGGREGATION_OPS</span></code></p></td>
+<td><p>Aggregate over the specified attributes with the specified
+operation(s). <code class="docutils literal notranslate"><span class="pre">AGGREGATION_OPS</span></code> format is:
+<code class="docutils literal notranslate"><span class="pre">(operation(attr1)|operation(attr1)),(operation(attr2)),...</span></code>
+Operations available: <code class="docutils literal notranslate"><span class="pre">sum(attr)</span></code>, <code class="docutils literal notranslate"><span class="pre">max(attr)</span></code>, <code class="docutils literal notranslate"><span class="pre">min(attr)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">count</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal"><span class="pre">--aggregate-key=ATTRIBUTES</span></code></td>
-<td>Collapses previously aggregated snapshots, using <code class="docutils literal"><span class="pre">--aggregate</span></code>,
-by the specified attributes. <code class="docutils literal"><span class="pre">ATTRIBUTES</span></code> is of the form:
-<code class="docutils literal"><span class="pre">attr1,attr2,...</span></code> where <code class="docutils literal"><span class="pre">attribute#value</span></code> may be used.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--aggregate-key=ATTRIBUTES</span></code></p></td>
+<td><p>Collapses previously aggregated snapshots, using <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code>,
+by the specified attributes. <code class="docutils literal notranslate"><span class="pre">ATTRIBUTES</span></code> is of the form:
+<code class="docutils literal notranslate"><span class="pre">attr1,attr2,...</span></code> where <code class="docutils literal notranslate"><span class="pre">attribute#value</span></code> may be used.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-f</span></code></td>
-<td><code class="docutils literal"><span class="pre">--format=FORMAT_STRING</span></code></td>
-<td>Print the snapshot data in a table in the format specified by
-<code class="docutils literal"><span class="pre">FORMAT_STRING</span></code>. <code class="docutils literal"><span class="pre">FORMAT_STRING</span></code> should be of the form:
-<code class="docutils literal"><span class="pre">%[width1]attr1%</span> <span class="pre">%[width2]attr2%</span> <span class="pre">...</span></code>, where <code class="docutils literal"><span class="pre">width</span></code> is the
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-f</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--format=FORMAT_STRING</span></code></p></td>
+<td><p>Print the snapshot data in a table in the format specified by
+<code class="docutils literal notranslate"><span class="pre">FORMAT_STRING</span></code>. <code class="docutils literal notranslate"><span class="pre">FORMAT_STRING</span></code> should be of the form:
+<code class="docutils literal notranslate"><span class="pre">%[width1]attr1%</span> <span class="pre">%[width2]attr2%</span> <span class="pre">...</span></code>, where <code class="docutils literal notranslate"><span class="pre">width</span></code> is the
 minimum width in characters of the printed value for the matching
-attribute, <code class="docutils literal"><span class="pre">attr</span></code>. Limits the printed attributes to those
-listed in <code class="docutils literal"><span class="pre">FORMAT_STRING</span></code>. Will override the <code class="docutils literal"><span class="pre">--expand</span></code> option.</td>
+attribute, <code class="docutils literal notranslate"><span class="pre">attr</span></code>. Limits the printed attributes to those
+listed in <code class="docutils literal notranslate"><span class="pre">FORMAT_STRING</span></code>. Will override the <code class="docutils literal notranslate"><span class="pre">--expand</span></code> option.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-T</span></code></td>
-<td><code class="docutils literal"><span class="pre">--title=TITLE_STRING</span></code></td>
-<td>Specify a custom title (header line) for formatted (<code class="docutils literal"><span class="pre">-f</span></code>) output.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-T</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--title=TITLE_STRING</span></code></p></td>
+<td><p>Specify a custom title (header line) for formatted (<code class="docutils literal notranslate"><span class="pre">-f</span></code>) output.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-o</span></code></td>
-<td><code class="docutils literal"><span class="pre">--output=FILE</span></code></td>
-<td>Set the name of the output file.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-o</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--output=FILE</span></code></p></td>
+<td><p>Set the name of the output file.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-h</span></code></td>
-<td><code class="docutils literal"><span class="pre">--help</span></code></td>
-<td>Print the help message, a summary of these options.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-h</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--help</span></code></p></td>
+<td><p>Print the help message, a summary of these options.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="files">
 <h3>Files<a class="headerlink" href="#files" title="Permalink to this headline">¶</a></h3>
-<p>The files used by <code class="docutils literal"><span class="pre">cali-query</span></code> are <code class="docutils literal"><span class="pre">.cali</span></code> record files produced from running Caliper
-in a program. Multiple <code class="docutils literal"><span class="pre">.cali</span></code> files can be read at once; <code class="docutils literal"><span class="pre">cali-query</span></code> will merge their
+<p>The files used by <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> are <code class="docutils literal notranslate"><span class="pre">.cali</span></code> record files produced from running Caliper
+in a program. Multiple <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files can be read at once; <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> will merge their
 contents into a single output stream.</p>
 </div>
 <div class="section" id="examples">
 <h3>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
-<p><code class="docutils literal"><span class="pre">cali-query</span></code> can only be used on the <code class="docutils literal"><span class="pre">.cali</span></code> files created by using a configured
+<p><code class="docutils literal notranslate"><span class="pre">cali-query</span></code> can only be used on the <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files created by using a configured
 Caliper library in a program. The program <a class="reference internal" href="#example-cpp">example.cpp</a> was run:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ CALI_SERVICES_ENABLE</span><span class="o">=</span>event:recorder:timestamp:trace <span class="nv">example</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,recorder,timestamp,trace <span class="nv">example</span>
 <span class="o">==</span> CALIPER: Registered event trigger <span class="nv">service</span>
 <span class="o">==</span> CALIPER: Registered recorder <span class="nv">service</span>
 <span class="o">==</span> CALIPER: Registered timestamp <span class="nv">service</span>
@@ -173,11 +165,11 @@ Caliper library in a program. The program <a class="reference internal" href="#e
 </pre></div>
 </div>
 <p>and produced the following file:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="mi">160809</span><span class="o">-</span><span class="mi">094411</span><span class="n">_72298_fuu1NeAHT2US</span><span class="o">.</span><span class="n">cali</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">160809</span><span class="o">-</span><span class="mi">094411_72298</span><span class="n">_fuu1NeAHT2US</span><span class="o">.</span><span class="n">cali</span>
 </pre></div>
 </div>
 <p>For comparison, here are the first six lines of records from this file:</p>
-<div class="highlight-none"><div class="highlight"><pre>__rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>__rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
 __rec=node,id=9,attr=8,data=cali.attribute.type,parent=7
 __rec=node,id=10,attr=8,data=cali.attribute.prop,parent=1
 __rec=node,id=13,attr=10,data=12,parent=3
@@ -187,13 +179,16 @@ __rec=node,id=11,attr=10,data=148,parent=0
 </div>
 <div class="section" id="basic-use">
 <h4>Basic Use<a class="headerlink" href="#basic-use" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -o cali-query.output 160809-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -o cali-query.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
-<p>Note that <code class="docutils literal"><span class="pre">-o</span></code> is being used to control the output in all examples.</p>
-<p>The first six lines of records after processing look like this:</p>
-<div class="highlight-none"><div class="highlight"><pre>__rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
+<p>Note that <code class="docutils literal notranslate"><span class="pre">-o</span></code> is being used to control the output in all examples.</p>
+<p>Without selection, aggregation, or formatting options, <code class="docutils literal notranslate"><span class="pre">cali-query</span></code>
+merges the input files and writes out an output stream in its native .cali
+format.
+The first six lines of records after processing look like this:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>__rec=node,id=8,attr=8,data=cali.attribute.name,parent=3
 __rec=node,id=9,attr=8,data=cali.attribute.type,parent=7
 __rec=node,id=10,attr=8,data=cali.attribute.prop,parent=1
 __rec=node,id=11,attr=10,data=12,parent=3
@@ -201,27 +196,25 @@ __rec=node,id=12,attr=8,data=cali.caliper.version,parent=11
 __rec=node,id=13,attr=10,data=148,parent=0
 </pre></div>
 </div>
-<p>Without using <code class="docutils literal"><span class="pre">-e</span></code> or <code class="docutils literal"><span class="pre">--expand</span></code>, <code class="docutils literal"><span class="pre">cali-query</span></code> does not change the format
-of the records.</p>
 </div>
 <div class="section" id="calql-expressions">
 <h4>CalQL expressions<a class="headerlink" href="#calql-expressions" title="Permalink to this headline">¶</a></h4>
 <p>An easy way to specify query and report options for cali-query is the
-SQL-like CalQL language (see <a class="reference internal" href="calql.html"><span class="doc">The Caliper Query Language</span></a>). For example, filtering and
+SQL-like CalQL language (see <a class="reference internal" href="calql.html"><span class="doc">The Caliper query language</span></a>). For example, filtering and
 aggregating trace records to print a table report can be accomplished
 with the following expression:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -q <span class="s2">&quot;SELECT *,sum(time.inclusive.duration) WHERE main=loop FORMAT table&quot;</span> *.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -q <span class="s2">&quot;SELECT *,sum(time.inclusive.duration) WHERE main=loop FORMAT table&quot;</span> *.cali
 </pre></div>
 </div>
 </div>
 <div class="section" id="t-table">
-<h4><code class="docutils literal"><span class="pre">-t</span></code> / <code class="docutils literal"><span class="pre">--table</span></code><a class="headerlink" href="#t-table" title="Permalink to this headline">¶</a></h4>
-<p>The <code class="docutils literal"><span class="pre">--table</span></code> option prints snaphsots in a human-readable table format. For example,</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -t 160809-094411_72298_fuu1NeAHT2US.cali
+<h4><code class="docutils literal notranslate"><span class="pre">-t</span></code> / <code class="docutils literal notranslate"><span class="pre">--table</span></code><a class="headerlink" href="#t-table" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">--table</span></code> option prints snaphsots in a human-readable table format. For example,</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -t <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 </pre></div>
 </div>
 <p>will print snapsots as follows:</p>
-<div class="highlight-none"><div class="highlight"><pre>main            time.inclusive.duration iteration factorial
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>main            time.inclusive.duration iteration factorial
 init                               1813
 body
 body/init                           114
@@ -234,17 +227,17 @@ body/loop                                       1
 </pre></div>
 </div>
 <p>The table’s columns represent attributes. Each row represents a single snapshot.</p>
-<p>The <code class="docutils literal"><span class="pre">--print-attributes</span></code> specifies the list of attributes to
+<p>The <code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code> specifies the list of attributes to
 print, and the order in which they are shown. By default, the table includes all
 attributes except certain Caliper-internal attributes whose names start
 with “event.” or “cali.”.</p>
-<p>The <code class="docutils literal"><span class="pre">--sort-by</span></code> option specifies a list of attributes to be used as sorting
+<p>The <code class="docutils literal notranslate"><span class="pre">--sort-by</span></code> option specifies a list of attributes to be used as sorting
 criteria. If given, rows will be printed in ascending order according to the value
 of the given attributes:</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -t 160809-094411_72298_fuu1NeAHT2US.cali --sort-by<span class="o">=</span>time.inclusive.duration
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -t <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali --sort-by<span class="o">=</span>time.inclusive.duration
 </pre></div>
 </div>
-<div class="highlight-none"><div class="highlight"><pre>main            time.inclusive.duration iteration factorial
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>main            time.inclusive.duration iteration factorial
 ...
 body/init                           114
 body/loop                           164         3
@@ -258,15 +251,15 @@ init                               1813
 </div>
 </div>
 <div class="section" id="e-and-expand">
-<h4><code class="docutils literal"><span class="pre">-e</span></code> and <code class="docutils literal"><span class="pre">--expand</span></code><a class="headerlink" href="#e-and-expand" title="Permalink to this headline">¶</a></h4>
-<p>The <code class="docutils literal"><span class="pre">-e</span></code> or <code class="docutils literal"><span class="pre">--expand</span></code> option expands snapshot records into
+<h4><code class="docutils literal notranslate"><span class="pre">-e</span></code> and <code class="docutils literal notranslate"><span class="pre">--expand</span></code><a class="headerlink" href="#e-and-expand" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">-e</span></code> or <code class="docutils literal notranslate"><span class="pre">--expand</span></code> option expands snapshot records into
 comma-separated <cite>attribute=value</cite> lists.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -e -o cali-query-expanded.output 160809-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -e -o cali-query-expanded.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
 <p>The first six lines of records after expansion look like this:</p>
-<div class="highlight-none"><div class="highlight"><pre>event.begin#main=init,cali.snapshot.event.begin=38,cali.snapshot.event.attr.level=1,cali.caliper.version=1.5.dev
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>event.begin#main=init,cali.snapshot.event.begin=38,cali.snapshot.event.attr.level=1,cali.caliper.version=1.5.dev
 event.set#main=body,cali.snapshot.event.set=38,cali.snapshot.event.attr.level=1,main=init,cali.caliper.version=1.5.dev,time.inclusive.duration=1813
 event.begin#main=init,cali.snapshot.event.begin=38,cali.snapshot.event.attr.level=2,main=body,cali.caliper.version=1.5.dev
 event.set#main=loop,cali.snapshot.event.set=38,cali.snapshot.event.attr.level=1,main=body/init,cali.caliper.version=1.5.dev,time.inclusive.duration=114
@@ -275,18 +268,18 @@ event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr
 </pre></div>
 </div>
 <p>The records are now in a more readable, parsable form. All examples following will
-be using the <code class="docutils literal"><span class="pre">-e</span></code> option.</p>
+be using the <code class="docutils literal notranslate"><span class="pre">-e</span></code> option.</p>
 </div>
 <div class="section" id="s-and-select">
-<h4><code class="docutils literal"><span class="pre">-s</span></code> and <code class="docutils literal"><span class="pre">--select</span></code><a class="headerlink" href="#s-and-select" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">-s</span></code> and <code class="docutils literal"><span class="pre">--select</span></code> expands and/or prints only records that contain the selected attributes.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -s <span class="s2">&quot;iteration=3,factorial&quot;</span> -e -o cali-query-selected.output 160809-094411_72298_fuu1NeAHT2US.cali
+<h4><code class="docutils literal notranslate"><span class="pre">-s</span></code> and <code class="docutils literal notranslate"><span class="pre">--select</span></code><a class="headerlink" href="#s-and-select" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">-s</span></code> and <code class="docutils literal notranslate"><span class="pre">--select</span></code> expands and/or prints only records that contain the selected attributes.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -s <span class="s2">&quot;iteration=3,factorial&quot;</span> -e -o cali-query-selected.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
-<p>Here, only the records that contain the <code class="docutils literal"><span class="pre">iteration=3</span></code> attribute value and the <code class="docutils literal"><span class="pre">factorial</span></code> attribute
+<p>Here, only the records that contain the <code class="docutils literal notranslate"><span class="pre">iteration=3</span></code> attribute value and the <code class="docutils literal notranslate"><span class="pre">factorial</span></code> attribute
 are expanded and written. These are the first six lines of records written</p>
-<div class="highlight-none"><div class="highlight"><pre>event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=15
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=15
 event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
 event.set#factorial=comp,cali.snapshot.event.set=70,cali.snapshot.event.attr.level=1,factorial=comp/init,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=36
 event.begin#factorial=init,cali.snapshot.event.begin=70,cali.snapshot.event.attr.level=2,factorial=comp/comp,iteration=3,main=body/loop,cali.caliper.version=1.5.dev
@@ -296,15 +289,15 @@ event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.lev
 </div>
 </div>
 <div class="section" id="a-aggregate-and-aggregate-key">
-<h4><code class="docutils literal"><span class="pre">-a</span></code>/ <code class="docutils literal"><span class="pre">--aggregate</span></code> and <code class="docutils literal"><span class="pre">--aggregate-key</span></code><a class="headerlink" href="#a-aggregate-and-aggregate-key" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">-a</span></code> and <code class="docutils literal"><span class="pre">--aggregate</span></code> will give the appropriate values of the operations in <code class="docutils literal"><span class="pre">AGGREGATION_OPS</span></code> for the specified attribute(s)
+<h4><code class="docutils literal notranslate"><span class="pre">-a</span></code>/ <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> and <code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code><a class="headerlink" href="#a-aggregate-and-aggregate-key" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">-a</span></code> and <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> will give the appropriate values of the operations in <code class="docutils literal notranslate"><span class="pre">AGGREGATION_OPS</span></code> for the specified attribute(s)
 performed over all snapshots with a matching key.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -a <span class="s2">&quot;sum(time.inclusive.duration)&quot;</span> -e -o cali-query-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;sum(time.inclusive.duration)&quot;</span> -e -o cali-query-aggregated.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
-<p>This is the last six records after aggregation of the <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code> attribute:</p>
-<div class="highlight-none"><div class="highlight"><pre>event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp/comp,iteration=4,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
+<p>This is the last six records after aggregation of the <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code> attribute:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>event.end#factorial=comp,cali.snapshot.event.end=70,cali.snapshot.event.attr.level=1,factorial=comp/comp/comp/comp,iteration=4,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=14
 event.set#iteration=2,cali.snapshot.event.set=60,cali.snapshot.event.attr.level=1,iteration=1,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=69
 event.set#iteration=3,cali.snapshot.event.set=60,cali.snapshot.event.attr.level=1,iteration=2,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=183
 event.set#iteration=4,cali.snapshot.event.set=60,cali.snapshot.event.attr.level=1,iteration=3,main=body/loop,cali.caliper.version=1.5.dev,time.inclusive.duration=164
@@ -312,52 +305,52 @@ event.end#iteration=4,cali.snapshot.event.end=60,cali.snapshot.event.attr.level=
 event.end#main=conclusion,cali.snapshot.event.end=38,cali.snapshot.event.attr.level=1,main=body/conclusion,cali.caliper.version=1.5.dev,time.inclusive.duration=37
 </pre></div>
 </div>
-<p><code class="docutils literal"><span class="pre">--aggregate-key</span></code> will collapse the aggregated value(s) by what attributes you select with <code class="docutils literal"><span class="pre">ATTRIBUTES</span></code>.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -a <span class="s2">&quot;count,sum(time.inclusive.duration)&quot;</span> --aggregate-key<span class="o">=</span><span class="s2">&quot;event.end#main,event.end#factorial&quot;</span> -e 160809-094411_72298_fuu1NeAHT2US.cali
+<p><code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code> will collapse the aggregated value(s) by what attributes you select with <code class="docutils literal notranslate"><span class="pre">ATTRIBUTES</span></code>.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;count,sum(time.inclusive.duration)&quot;</span> --aggregate-key<span class="o">=</span><span class="s2">&quot;event.end#main,event.end#factorial&quot;</span> -e <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 </pre></div>
 </div>
-<p>The <code class="docutils literal"><span class="pre">event.end</span></code> attributes work in <code class="docutils literal"><span class="pre">--aggregate-key</span></code> to add up all of the values for the listed attribute:</p>
-<div class="highlight-none"><div class="highlight"><pre>aggregate.count=33,time.inclusive.duration=4852
+<p>The <code class="docutils literal notranslate"><span class="pre">event.end</span></code> attributes work in <code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code> to add up all of the values for the listed attribute:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>aggregate.count=33,time.inclusive.duration=4852
 event.end#factorial=comp,aggregate.count=11,time.inclusive.duration=79
 event.end#main=conclusion,aggregate.count=1,time.inclusive.duration=37
 </pre></div>
 </div>
-<p>Note the first line, with no attribute listed. That is every other call of <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code> that does not fall into
-the listed attributes, <code class="docutils literal"><span class="pre">event.end#main</span></code> and <code class="docutils literal"><span class="pre">event.end#factorial</span></code>, added together.</p>
-<p>Options available for <code class="docutils literal"><span class="pre">--aggregate</span></code> are:</p>
-<table border="1" class="docutils">
+<p>Note the first line, with no attribute listed. That is every other call of <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code> that does not fall into
+the listed attributes, <code class="docutils literal notranslate"><span class="pre">event.end#main</span></code> and <code class="docutils literal notranslate"><span class="pre">event.end#factorial</span></code>, added together.</p>
+<p>Options available for <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> are:</p>
+<table class="docutils align-default">
 <colgroup>
-<col width="20%" />
-<col width="80%" />
+<col style="width: 20%" />
+<col style="width: 80%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sum(attr)</span></code></td>
-<td>Sum up the values of the designated attribute.</td>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sum(attr)</span></code></p></td>
+<td><p>Sum up the values of the designated attribute.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">count</span></code></td>
-<td>Total the number of times the attribute is called.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">count</span></code></p></td>
+<td><p>Total the number of times the attribute is called.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">min(attr)</span></code></td>
-<td>Display just the minimum value of the selected attribute.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">min(attr)</span></code></p></td>
+<td><p>Display just the minimum value of the selected attribute.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">max(attr)</span></code></td>
-<td>Display just the maximum value of the selected attribute.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max(attr)</span></code></p></td>
+<td><p>Display just the maximum value of the selected attribute.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="print-attributes">
-<h4><code class="docutils literal"><span class="pre">--print-attributes</span></code><a class="headerlink" href="#print-attributes" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">--print-attributes</span></code> controls which parts of each record are written to the output
-with the <code class="docutils literal"><span class="pre">--expand</span></code> and <code class="docutils literal"><span class="pre">--table</span></code> formatters.
+<h4><code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code><a class="headerlink" href="#print-attributes" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code> controls which parts of each record are written to the output
+with the <code class="docutils literal notranslate"><span class="pre">--expand</span></code> and <code class="docutils literal notranslate"><span class="pre">--table</span></code> formatters.
 Only the selected attributes will print in each record.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -a <span class="s2">&quot;time.inclusive.duration&quot;</span> --print-attributes<span class="o">=</span><span class="s2">&quot;main,iteration,time.inclusive.duration&quot;</span> -e -o cali-query-print-aggregated.output 160809-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -a <span class="s2">&quot;time.inclusive.duration&quot;</span> --print-attributes<span class="o">=</span><span class="s2">&quot;main,iteration,time.inclusive.duration&quot;</span> -e -o cali-query-print-aggregated.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
 <p>This is the last six records as above, but printing only the
-<code class="docutils literal"><span class="pre">main</span></code>, <code class="docutils literal"><span class="pre">iteration</span></code>, and <code class="docutils literal"><span class="pre">time.inclusive.duration</span></code> attributes:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">iteration</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span><span class="n">main</span><span class="o">=</span><span class="n">body</span><span class="o">/</span><span class="n">loop</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">=</span><span class="mi">14</span>
+<code class="docutils literal notranslate"><span class="pre">main</span></code>, <code class="docutils literal notranslate"><span class="pre">iteration</span></code>, and <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code> attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">iteration</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span><span class="n">main</span><span class="o">=</span><span class="n">body</span><span class="o">/</span><span class="n">loop</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">=</span><span class="mi">14</span>
 <span class="n">iteration</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">main</span><span class="o">=</span><span class="n">body</span><span class="o">/</span><span class="n">loop</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">=</span><span class="mi">69</span>
 <span class="n">iteration</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="n">main</span><span class="o">=</span><span class="n">body</span><span class="o">/</span><span class="n">loop</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">=</span><span class="mi">183</span>
 <span class="n">iteration</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">main</span><span class="o">=</span><span class="n">body</span><span class="o">/</span><span class="n">loop</span><span class="p">,</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="o">=</span><span class="mi">164</span>
@@ -367,16 +360,17 @@ Only the selected attributes will print in each record.</p>
 </div>
 </div>
 <div class="section" id="f-and-format">
-<h4><code class="docutils literal"><span class="pre">-f</span></code> and <code class="docutils literal"><span class="pre">--format</span></code><a class="headerlink" href="#f-and-format" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">-f</span></code> and <code class="docutils literal"><span class="pre">--format</span></code> can be used to specify a custom output format
+<h4><code class="docutils literal notranslate"><span class="pre">-f</span></code> and <code class="docutils literal notranslate"><span class="pre">--format</span></code><a class="headerlink" href="#f-and-format" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">-f</span></code> and <code class="docutils literal notranslate"><span class="pre">--format</span></code> can be used to specify a custom output format
 for snapshots, including limiting the printed attributes. The output
 format is specified with a format string of the form
-<code class="docutils literal"><span class="pre">%[width1]attr1%</span> <span class="pre">%[width2]attr2%</span> <span class="pre">...</span></code>.
+<code class="docutils literal notranslate"><span class="pre">%[width1]attr1%</span> <span class="pre">%[width2]attr2%</span> <span class="pre">...</span></code>.
 .. code-block:: sh</p>
 <blockquote>
-<div>$ cali-query -f “%[10]main% %[20]factorial% %[10]time.inclusive.duration%” -o cali-print-agg-format.output cali-query-aggregated.output</div></blockquote>
+<div><p>$ cali-query -f “%[10]main% %[20]factorial% %[10]time.inclusive.duration%” -o cali-print-agg-format.output cali-query-aggregated.output</p>
+</div></blockquote>
 <p>The title line and first eight records are formatted as specified:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">init</span>                                <span class="mi">1813</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">init</span>                                <span class="mi">1813</span>
 <span class="n">body</span><span class="o">/</span><span class="n">init</span>                           <span class="mi">114</span>
 <span class="n">body</span><span class="o">/</span><span class="n">loop</span>                           <span class="mi">1214</span>
 <span class="n">body</span><span class="o">/</span><span class="n">loop</span>                           <span class="mi">529</span>
@@ -388,13 +382,13 @@ format is specified with a format string of the form
 </div>
 </div>
 <div class="section" id="t-and-title">
-<h4><code class="docutils literal"><span class="pre">-T</span></code> and <code class="docutils literal"><span class="pre">--title</span></code><a class="headerlink" href="#t-and-title" title="Permalink to this headline">¶</a></h4>
-<p>Prints a custom title string for the <code class="docutils literal"><span class="pre">--format</span></code> output option. The format is any string.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-query -f <span class="s2">&quot;%[10]main% %[20]factorial% %[10]time.inclusive.duration%&quot;</span> -t <span class="s2">&quot;Main         Factorial              Time&quot;</span> -o cali-print-agg-format-title.output cali-query-aggregated.output
+<h4><code class="docutils literal notranslate"><span class="pre">-T</span></code> and <code class="docutils literal notranslate"><span class="pre">--title</span></code><a class="headerlink" href="#t-and-title" title="Permalink to this headline">¶</a></h4>
+<p>Prints a custom title string for the <code class="docutils literal notranslate"><span class="pre">--format</span></code> output option. The format is any string.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-query -f <span class="s2">&quot;%[10]main% %[20]factorial% %[10]time.inclusive.duration%&quot;</span> -t <span class="s2">&quot;Main         Factorial              Time&quot;</span> -o cali-print-agg-format-title.output cali-query-aggregated.output
 </pre></div>
 </div>
-<p>This is the same as the <code class="docutils literal"><span class="pre">--format</span></code> example, but with a custom title:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">Main</span>         <span class="n">Factorial</span>              <span class="n">Time</span>
+<p>This is the same as the <code class="docutils literal notranslate"><span class="pre">--format</span></code> example, but with a custom title:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Main</span>         <span class="n">Factorial</span>              <span class="n">Time</span>
 <span class="n">init</span>                                <span class="mi">1813</span>
 <span class="n">body</span><span class="o">/</span><span class="n">init</span>                           <span class="mi">114</span>
 <span class="n">body</span><span class="o">/</span><span class="n">loop</span>                           <span class="mi">1214</span>
@@ -414,48 +408,48 @@ format is specified with a format string of the form
 Currently an internal debugging tool for the Caliper context tree.</p>
 <div class="section" id="id1">
 <h3>Usage<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
-<p><code class="docutils literal"><span class="pre">cali-stat</span> <span class="pre">[OPTIONS]...</span> <span class="pre">[FILES]...</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">cali-stat</span> <span class="pre">[OPTIONS]...</span> <span class="pre">[FILES]...</span></code></p>
 </div>
 <div class="section" id="id2">
 <h3>Options<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="7%" />
-<col width="31%" />
-<col width="62%" />
+<col style="width: 7%" />
+<col style="width: 31%" />
+<col style="width: 62%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-r</span></code></td>
-<td><code class="docutils literal"><span class="pre">--reuse-statistics</span></code></td>
-<td>Prints statistics about the reuse of the branches of the snapshot
-record tree. More reuse is more efficient.</td>
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-r</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code></p></td>
+<td><p>Prints statistics about the reuse of the branches of the snapshot
+record tree. More reuse is more efficient.</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-o</span></code></td>
-<td><code class="docutils literal"><span class="pre">--output=FILE</span></code></td>
-<td>Set the name of the output file.</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-o</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--output=FILE</span></code></p></td>
+<td><p>Set the name of the output file.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-h</span></code></td>
-<td><code class="docutils literal"><span class="pre">--help</span></code></td>
-<td>Print the help message, a summary of these options.</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-h</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--help</span></code></p></td>
+<td><p>Print the help message, a summary of these options.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="id3">
 <h3>Files<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
-<p>The files used by <code class="docutils literal"><span class="pre">cali-stat</span></code> are <code class="docutils literal"><span class="pre">.cali</span></code> record files produced from running Caliper
-in a program. Multiple <code class="docutils literal"><span class="pre">.cali</span></code> files can be read at once.</p>
+<p>The files used by <code class="docutils literal notranslate"><span class="pre">cali-stat</span></code> are <code class="docutils literal notranslate"><span class="pre">.cali</span></code> record files produced from running Caliper
+in a program. Multiple <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files can be read at once.</p>
 </div>
 <div class="section" id="id4">
 <h3>Examples<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="id5">
 <h4>Basic Use<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-stat -o cali-stat.output 160809-094411_72298_fuu1NeAHT2US.cali
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-stat -o cali-stat.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
 <p>The report generated:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">Number</span> <span class="n">of</span> <span class="n">records</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Number</span> <span class="n">of</span> <span class="n">records</span>
 <span class="n">Total</span>          <span class="n">Nodes</span>          <span class="n">Snapshots</span>
 <span class="mi">169</span>            <span class="mi">124</span>            <span class="mi">45</span>
 
@@ -478,15 +472,15 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
 </div>
 </div>
 <div class="section" id="r-and-reuse-statistics">
-<h4><code class="docutils literal"><span class="pre">-r</span></code> and <code class="docutils literal"><span class="pre">--reuse-statistics</span></code><a class="headerlink" href="#r-and-reuse-statistics" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">-r</span></code> and <code class="docutils literal"><span class="pre">--reuse-statistics</span></code> prints how often a node is reused in the tree.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-stat -r -o cali-stat-reuse.output 160809-094411_72298_fuu1NeAHT2US.cali
+<h4><code class="docutils literal notranslate"><span class="pre">-r</span></code> and <code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code><a class="headerlink" href="#r-and-reuse-statistics" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">-r</span></code> and <code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code> prints how often a node is reused in the tree.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ cali-stat -r -o cali-stat-reuse.output <span class="m">160809</span>-094411_72298_fuu1NeAHT2US.cali
 <span class="o">==</span> CALIPER: Initialized
 </pre></div>
 </div>
 <p>The report is the same as above with the following added at the end:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">Reuse</span> <span class="n">statistics</span><span class="p">:</span>
-<span class="n">Attribute</span>                       <span class="c">#nodes      #elem       #uses       #uses/elem  #uses/node</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Reuse</span> <span class="n">statistics</span><span class="p">:</span>
+<span class="n">Attribute</span>                       <span class="c1">#nodes      #elem       #uses       #uses/elem  #uses/node</span>
 <span class="n">cali</span><span class="o">.</span><span class="n">attribute</span><span class="o">.</span><span class="n">name</span>             <span class="mi">38</span>          <span class="mi">38</span>          <span class="mi">38</span>          <span class="mi">1</span>           <span class="mi">1</span>
 <span class="n">cali</span><span class="o">.</span><span class="n">attribute</span><span class="o">.</span><span class="n">type</span>             <span class="mi">8</span>           <span class="mi">8</span>           <span class="mi">8</span>           <span class="mi">1</span>           <span class="mi">1</span>
 <span class="n">cali</span><span class="o">.</span><span class="n">attribute</span><span class="o">.</span><span class="n">prop</span>             <span class="mi">12</span>          <span class="mi">7</span>           <span class="mi">12</span>          <span class="mf">1.71429</span>     <span class="mi">1</span>
@@ -495,151 +489,17 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
 <span class="n">cali</span><span class="o">.</span><span class="n">snapshot</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">begin</span>       <span class="mi">4</span>           <span class="mi">2</span>           <span class="mi">17</span>          <span class="mf">8.5</span>         <span class="mf">4.25</span>
 <span class="n">cali</span><span class="o">.</span><span class="n">snapshot</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">end</span>         <span class="mi">4</span>           <span class="mi">3</span>           <span class="mi">17</span>          <span class="mf">5.66667</span>     <span class="mf">4.25</span>
 <span class="n">cali</span><span class="o">.</span><span class="n">snapshot</span><span class="o">.</span><span class="n">event</span><span class="o">.</span><span class="n">set</span>         <span class="mi">5</span>           <span class="mi">5</span>           <span class="mi">24</span>          <span class="mf">4.8</span>         <span class="mf">4.8</span>
-<span class="n">event</span><span class="o">.</span><span class="n">begin</span><span class="c">#main                2           1           4           4           2</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#main                  1           1           2           2           2</span>
-<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c">#main                  3           3           6           2           2</span>
+<span class="n">event</span><span class="o">.</span><span class="n">begin</span><span class="c1">#main                2           1           4           4           2</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#main                  1           1           2           2           2</span>
+<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c1">#main                  3           3           6           2           2</span>
 <span class="n">main</span>                            <span class="mi">5</span>           <span class="mi">4</span>           <span class="mi">91</span>          <span class="mf">22.75</span>       <span class="mf">18.2</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#iteration             1           1           2           2           2</span>
-<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c">#iteration             5           5           10          2           2</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#iteration             1           1           2           2           2</span>
+<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c1">#iteration             5           5           10          2           2</span>
 <span class="n">iteration</span>                       <span class="mi">5</span>           <span class="mi">5</span>           <span class="mi">43</span>          <span class="mf">8.6</span>         <span class="mf">8.6</span>
-<span class="n">event</span><span class="o">.</span><span class="n">begin</span><span class="c">#factorial           2           1           13          13          6.5</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#factorial             2           1           13          13          6.5</span>
-<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c">#factorial             1           1           12          12          12</span>
+<span class="n">event</span><span class="o">.</span><span class="n">begin</span><span class="c1">#factorial           2           1           13          13          6.5</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#factorial             2           1           13          13          6.5</span>
+<span class="n">event</span><span class="o">.</span><span class="n">set</span><span class="c1">#factorial             1           1           12          12          12</span>
 <span class="n">factorial</span>                       <span class="mi">22</span>          <span class="mi">2</span>           <span class="mi">74</span>          <span class="mi">37</span>          <span class="mf">3.36364</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="section" id="cali-graph">
-<h2>Cali-graph<a class="headerlink" href="#cali-graph" title="Permalink to this headline">¶</a></h2>
-<p>Calling the <code class="docutils literal"><span class="pre">cali-graph</span></code> function on a <code class="docutils literal"><span class="pre">.cali</span></code> files will export
-the general context tree in a graphviz (<code class="docutils literal"><span class="pre">.dot</span></code>) format. Use the
-<code class="docutils literal"><span class="pre">-o</span></code> or <code class="docutils literal"><span class="pre">--output</span></code> option to specify a <code class="docutils literal"><span class="pre">.dot</span></code> output file.</p>
-<div class="section" id="id6">
-<h3>Usage<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
-<p><code class="docutils literal"><span class="pre">cali-graph</span> <span class="pre">[OPTIONS]...</span> <span class="pre">[FILES]...</span></code></p>
-</div>
-<div class="section" id="id7">
-<h3>Options<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
-<table border="1" class="docutils">
-<colgroup>
-<col width="7%" />
-<col width="31%" />
-<col width="62%" />
-</colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-n</span></code></td>
-<td><code class="docutils literal"><span class="pre">--max-nodes=NUMBER_OF_NODES</span></code></td>
-<td>This option limits the number of nodes exported into the graph to
-the first NUMBER_OF_NODES. Nodes are the individual attribute values
-numbered as encountered in the course of the program. An attribute
-with the same name and same value but different parent node is
-considered a unique node.</td>
-</tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal"><span class="pre">--skip-attribute-prefixes</span></code></td>
-<td>If called, the graph does not print the name of the attribute for
-each node, only the value of the attribute.</td>
-</tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">-o</span></code></td>
-<td><code class="docutils literal"><span class="pre">--output=FILE</span></code></td>
-<td>Set the name of the output file.</td>
-</tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">-h</span></code></td>
-<td><code class="docutils literal"><span class="pre">--help</span></code></td>
-<td>Print the help message, a summary of these options.</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section" id="id8">
-<h3>Files<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
-<p>The files used by <code class="docutils literal"><span class="pre">cali-graph</span></code> are <code class="docutils literal"><span class="pre">.cali</span></code> record files produced from running Caliper
-in a program. Multiple <code class="docutils literal"><span class="pre">.cali</span></code> files can be read at once.</p>
-</div>
-<div class="section" id="id9">
-<h3>Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="id10">
-<h4>Basic Use<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h4>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-graph -o cali-graph.output 160809-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
-</pre></div>
-</div>
-<p>This is a sample from a text only output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="mi">1</span> <span class="o">--</span> <span class="mi">15</span><span class="p">;</span>
-<span class="mi">16</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.lvl.22&quot;</span><span class="p">];</span>
-<span class="mi">15</span> <span class="o">--</span> <span class="mi">16</span><span class="p">;</span>
-<span class="mi">17</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.lvl.38&quot;</span><span class="p">];</span>
-<span class="mi">15</span> <span class="o">--</span> <span class="mi">17</span><span class="p">;</span>
-<span class="mi">18</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.prop:84&quot;</span><span class="p">];</span>
-<span class="mi">2</span> <span class="o">--</span> <span class="mi">18</span><span class="p">;</span>
-<span class="mi">19</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.snapshot.event.attr.level&quot;</span><span class="p">];</span>
-<span class="mi">18</span> <span class="o">--</span> <span class="mi">19</span><span class="p">;</span>
-<span class="mi">20</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.snapshot.event.begin&quot;</span><span class="p">];</span>
-<span class="mi">18</span> <span class="o">--</span> <span class="mi">20</span><span class="p">;</span>
-<span class="mi">21</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.snapshot.event.end&quot;</span><span class="p">];</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="n-and-max-nodes">
-<h4><code class="docutils literal"><span class="pre">-n</span></code> and <code class="docutils literal"><span class="pre">--max-nodes</span></code><a class="headerlink" href="#n-and-max-nodes" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">-n</span></code> and <code class="docutils literal"><span class="pre">--max-nodes</span></code> limit the number of nodes graphed to the first
-<code class="docutils literal"><span class="pre">NUMBER_OF_NODES</span></code>, an <code class="docutils literal"><span class="pre">int</span></code>.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-graph -n <span class="m">16</span> -o cali-graph-max-nodes.output 160809-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
-</pre></div>
-</div>
-<p>This is the entire file as printed:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">graph</span> <span class="p">{</span>
-  <span class="mi">0</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:usr&quot;</span><span class="p">];</span>
-  <span class="mi">1</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:int&quot;</span><span class="p">];</span>
-  <span class="mi">2</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:uint&quot;</span><span class="p">];</span>
-  <span class="mi">3</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:string&quot;</span><span class="p">];</span>
-  <span class="mi">4</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:addr&quot;</span><span class="p">];</span>
-  <span class="mi">5</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:double&quot;</span><span class="p">];</span>
-  <span class="mi">6</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:bool&quot;</span><span class="p">];</span>
-  <span class="mi">7</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:type&quot;</span><span class="p">];</span>
-  <span class="mi">8</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;:cali.attribute.name&quot;</span><span class="p">];</span>
-  <span class="mi">3</span> <span class="o">--</span> <span class="mi">8</span><span class="p">;</span>
-  <span class="mi">9</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.attribute.type&quot;</span><span class="p">];</span>
-  <span class="mi">7</span> <span class="o">--</span> <span class="mi">9</span><span class="p">;</span>
-  <span class="mi">10</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.attribute.prop&quot;</span><span class="p">];</span>
-  <span class="mi">1</span> <span class="o">--</span> <span class="mi">10</span><span class="p">;</span>
-  <span class="mi">11</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.prop:12&quot;</span><span class="p">];</span>
-  <span class="mi">3</span> <span class="o">--</span> <span class="mi">11</span><span class="p">;</span>
-  <span class="mi">12</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.caliper.version&quot;</span><span class="p">];</span>
-  <span class="mi">11</span> <span class="o">--</span> <span class="mi">12</span><span class="p">;</span>
-  <span class="mi">13</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.prop:148&quot;</span><span class="p">];</span>
-  <span class="mi">0</span> <span class="o">--</span> <span class="mi">13</span><span class="p">;</span>
-  <span class="mi">14</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.name:cali.key.attribute&quot;</span><span class="p">];</span>
-  <span class="mi">13</span> <span class="o">--</span> <span class="mi">14</span><span class="p">;</span>
-  <span class="mi">15</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;cali.attribute.prop:213&quot;</span><span class="p">];</span>
-  <span class="mi">1</span> <span class="o">--</span> <span class="mi">15</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="skip-attribute-prefixes">
-<h4><code class="docutils literal"><span class="pre">--skip-attribute-prefixes</span></code><a class="headerlink" href="#skip-attribute-prefixes" title="Permalink to this headline">¶</a></h4>
-<p><code class="docutils literal"><span class="pre">--skip-attribute-prefixes</span></code> shortens the names of each node.</p>
-<div class="highlight-sh"><div class="highlight"><pre><span class="nv">$ </span>cali-graph --skip-attribute-prefixes -o cali-graph-skip.output 160809-094411_72298_fuu1NeAHT2US.cali
-<span class="o">==</span> CALIPER: Initialized
-</pre></div>
-</div>
-<p>The prefix of the node name is suppressed:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="mi">1</span> <span class="o">--</span> <span class="mi">15</span><span class="p">;</span>
-<span class="mi">16</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;name:cali.lvl.22&quot;</span><span class="p">];</span>
-<span class="mi">15</span> <span class="o">--</span> <span class="mi">16</span><span class="p">;</span>
-<span class="mi">17</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;name:cali.lvl.38&quot;</span><span class="p">];</span>
-<span class="mi">15</span> <span class="o">--</span> <span class="mi">17</span><span class="p">;</span>
-<span class="mi">18</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;prop:84&quot;</span><span class="p">];</span>
-<span class="mi">2</span> <span class="o">--</span> <span class="mi">18</span><span class="p">;</span>
-<span class="mi">19</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;name:cali.snapshot.event.attr.level&quot;</span><span class="p">];</span>
-<span class="mi">18</span> <span class="o">--</span> <span class="mi">19</span><span class="p">;</span>
-<span class="mi">20</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;name:cali.snapshot.event.begin&quot;</span><span class="p">];</span>
-<span class="mi">18</span> <span class="o">--</span> <span class="mi">20</span><span class="p">;</span>
-<span class="mi">21</span> <span class="p">[</span><span class="n">label</span><span class="o">=</span><span class="s">&quot;name:cali.snapshot.event.end&quot;</span><span class="p">];</span>
 </pre></div>
 </div>
 </div>
@@ -647,12 +507,12 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
 </div>
 <div class="section" id="example-files">
 <h2>Example Files<a class="headerlink" href="#example-files" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-cpp" id="example-cpp"><div class="highlight"><pre><span class="c1">// An example program for Caliper functionality //</span>
+<div class="highlight-cpp notranslate" id="example-cpp"><div class="highlight"><pre><span></span><span class="c1">// An example program for Caliper functionality //</span>
 
-<span class="cp">#include &lt;caliper/Annotation.h&gt;</span>
-<span class="cp">#include &lt;stdlib.h&gt;</span>
-<span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &lt;iostream&gt;</span>
+<span class="cp">#include</span> <span class="cpf">&lt;caliper/Annotation.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
 <span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
 
 <span class="kt">int</span> <span class="nf">factorial</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
@@ -743,9 +603,9 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Caliper Tools</a><ul>
+<li><a class="reference internal" href="#">Caliper tools</a><ul>
 <li><a class="reference internal" href="#cali-query">Cali-query</a><ul>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#options">Options</a></li>
@@ -753,13 +613,13 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
 <li><a class="reference internal" href="#examples">Examples</a><ul>
 <li><a class="reference internal" href="#basic-use">Basic Use</a></li>
 <li><a class="reference internal" href="#calql-expressions">CalQL expressions</a></li>
-<li><a class="reference internal" href="#t-table"><code class="docutils literal"><span class="pre">-t</span></code> / <code class="docutils literal"><span class="pre">--table</span></code></a></li>
-<li><a class="reference internal" href="#e-and-expand"><code class="docutils literal"><span class="pre">-e</span></code> and <code class="docutils literal"><span class="pre">--expand</span></code></a></li>
-<li><a class="reference internal" href="#s-and-select"><code class="docutils literal"><span class="pre">-s</span></code> and <code class="docutils literal"><span class="pre">--select</span></code></a></li>
-<li><a class="reference internal" href="#a-aggregate-and-aggregate-key"><code class="docutils literal"><span class="pre">-a</span></code>/ <code class="docutils literal"><span class="pre">--aggregate</span></code> and <code class="docutils literal"><span class="pre">--aggregate-key</span></code></a></li>
-<li><a class="reference internal" href="#print-attributes"><code class="docutils literal"><span class="pre">--print-attributes</span></code></a></li>
-<li><a class="reference internal" href="#f-and-format"><code class="docutils literal"><span class="pre">-f</span></code> and <code class="docutils literal"><span class="pre">--format</span></code></a></li>
-<li><a class="reference internal" href="#t-and-title"><code class="docutils literal"><span class="pre">-T</span></code> and <code class="docutils literal"><span class="pre">--title</span></code></a></li>
+<li><a class="reference internal" href="#t-table"><code class="docutils literal notranslate"><span class="pre">-t</span></code> / <code class="docutils literal notranslate"><span class="pre">--table</span></code></a></li>
+<li><a class="reference internal" href="#e-and-expand"><code class="docutils literal notranslate"><span class="pre">-e</span></code> and <code class="docutils literal notranslate"><span class="pre">--expand</span></code></a></li>
+<li><a class="reference internal" href="#s-and-select"><code class="docutils literal notranslate"><span class="pre">-s</span></code> and <code class="docutils literal notranslate"><span class="pre">--select</span></code></a></li>
+<li><a class="reference internal" href="#a-aggregate-and-aggregate-key"><code class="docutils literal notranslate"><span class="pre">-a</span></code>/ <code class="docutils literal notranslate"><span class="pre">--aggregate</span></code> and <code class="docutils literal notranslate"><span class="pre">--aggregate-key</span></code></a></li>
+<li><a class="reference internal" href="#print-attributes"><code class="docutils literal notranslate"><span class="pre">--print-attributes</span></code></a></li>
+<li><a class="reference internal" href="#f-and-format"><code class="docutils literal notranslate"><span class="pre">-f</span></code> and <code class="docutils literal notranslate"><span class="pre">--format</span></code></a></li>
+<li><a class="reference internal" href="#t-and-title"><code class="docutils literal notranslate"><span class="pre">-T</span></code> and <code class="docutils literal notranslate"><span class="pre">--title</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -770,19 +630,7 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
 <li><a class="reference internal" href="#id3">Files</a></li>
 <li><a class="reference internal" href="#id4">Examples</a><ul>
 <li><a class="reference internal" href="#id5">Basic Use</a></li>
-<li><a class="reference internal" href="#r-and-reuse-statistics"><code class="docutils literal"><span class="pre">-r</span></code> and <code class="docutils literal"><span class="pre">--reuse-statistics</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a class="reference internal" href="#cali-graph">Cali-graph</a><ul>
-<li><a class="reference internal" href="#id6">Usage</a></li>
-<li><a class="reference internal" href="#id7">Options</a></li>
-<li><a class="reference internal" href="#id8">Files</a></li>
-<li><a class="reference internal" href="#id9">Examples</a><ul>
-<li><a class="reference internal" href="#id10">Basic Use</a></li>
-<li><a class="reference internal" href="#n-and-max-nodes"><code class="docutils literal"><span class="pre">-n</span></code> and <code class="docutils literal"><span class="pre">--max-nodes</span></code></a></li>
-<li><a class="reference internal" href="#skip-attribute-prefixes"><code class="docutils literal"><span class="pre">--skip-attribute-prefixes</span></code></a></li>
+<li><a class="reference internal" href="#r-and-reuse-statistics"><code class="docutils literal notranslate"><span class="pre">-r</span></code> and <code class="docutils literal notranslate"><span class="pre">--reuse-statistics</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -796,8 +644,8 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
   <p class="topless"><a href="OutputFormats.html"
                         title="previous chapter">Output formatting</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="calql.html"
-                        title="next chapter">The Caliper Query Language</a></p>
+  <p class="topless"><a href="DeveloperGuide.html"
+                        title="next chapter">Developer guide</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -806,15 +654,15 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -826,17 +674,17 @@ in a program. Multiple <code class="docutils literal"><span class="pre">.cali</s
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="calql.html" title="The Caliper Query Language"
+          <a href="DeveloperGuide.html" title="Developer guide"
              >next</a> |</li>
         <li class="right" >
           <a href="OutputFormats.html" title="Output formatting"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>

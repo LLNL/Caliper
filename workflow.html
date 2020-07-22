@@ -1,32 +1,24 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Architecture and Workflow &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>Architecture and workflow &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Source-code Annotations" href="AnnotationAPI.html" />
-    <link rel="prev" title="Build and Link" href="build.html" /> 
-  </head>
-  <body>
+    <link rel="next" title="Caliper services" href="services.html" />
+    <link rel="prev" title="Manual runtime configuration" href="configuration.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -34,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code Annotations"
+          <a href="services.html" title="Caliper services"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="build.html" title="Build and Link"
+          <a href="configuration.html" title="Manual runtime configuration"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -49,7 +41,7 @@
           <div class="body" role="main">
             
   <div class="section" id="architecture-and-workflow">
-<h1>Architecture and Workflow<a class="headerlink" href="#architecture-and-workflow" title="Permalink to this headline">¶</a></h1>
+<h1>Architecture and workflow<a class="headerlink" href="#architecture-and-workflow" title="Permalink to this headline">¶</a></h1>
 <p>Caliper’s highly modular architecture allows for a wide range of use
 cases. For example, it can be used as a library to access application
 context information from third-party tools, or it can be configured as
@@ -58,26 +50,26 @@ a stand-alone performance data recorder.</p>
 set up a data recording pipeline by enabling appropriate services on
 each pipeline stage. The following figure illustrates the recording
 pipeline:</p>
-<div class="figure" id="id1">
+<div class="figure align-default" id="id1">
 <a class="reference internal image-reference" href="_images/caliper-services-workflow.png"><img alt="_images/caliper-services-workflow.png" src="_images/caliper-services-workflow.png" style="width: 947.4px; height: 600.0px;" /></a>
 <p class="caption"><span class="caption-text">Caliper components and the data recording pipeline. The orange boxes
 are core components of the Caliper runtime library, the blue boxes
-are services.</span></p>
+are services.</span><a class="headerlink" href="#id1" title="Permalink to this image">¶</a></p>
 </div>
 <p>Caliper services can be used in any combination. However, to produce
 any output, at least one component must be active in each stage of the
 recording pipeline.</p>
-<p>To activate services, add them to the <code class="docutils literal"><span class="pre">CALI_SERVICES_ENABLE</span></code>
+<p>To activate services, add them to the <code class="docutils literal notranslate"><span class="pre">CALI_SERVICES_ENABLE</span></code>
 configuration variable. The following example activates the event,
 trace, timestamp, and recorder services to create an event trace with
 timing information for annotated regions (this is the setup of the
-pre-defined <code class="docutils literal"><span class="pre">serial-trace</span></code> configuration profile):</p>
-<div class="highlight-default"><div class="highlight"><pre>$ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
+pre-defined <code class="docutils literal notranslate"><span class="pre">serial-trace</span></code> configuration profile):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ export CALI_SERVICES_ENABLE=event,recorder,timestamp,trace
 </pre></div>
 </div>
 <p>Caliper warns if the configuration is missing a processing pipeline
 stage while others are active:</p>
-<div class="highlight-default"><div class="highlight"><pre>$ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_SERVICES_ENABLE=event,timestamp,trace ./examples/apps/cali-basic-annotations
 == CALIPER: Config check: Warning: snapshot buffer service &quot;trace&quot; requires offline output services, but none are active.
      Add &quot;recorder&quot;, &quot;report&quot;, &quot;sos&quot; or &quot;mpireport&quot; to CALI_SERVICES_ENABLE to generate Caliper output.
 </pre></div>
@@ -87,15 +79,15 @@ stage while others are active:</p>
 <h2>Context Information and Event Hooks<a class="headerlink" href="#context-information-and-event-hooks" title="Permalink to this headline">¶</a></h2>
 <p>Context information is the key:value data provided by Caliper’s
 annotation API. For example, an application can mark a section of code
-with the <code class="docutils literal"><span class="pre">CALI_MARK_BEGIN</span></code> and <code class="docutils literal"><span class="pre">CALI_MARK_END</span></code> macros, or export
+with the <code class="docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code> and <code class="docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code> macros, or export
 any application-specific information that may be relevant for
-performance analysis in key:value form with, e.g., <code class="docutils literal"><span class="pre">cali_set_int</span></code>.</p>
+performance analysis in key:value form with, e.g., <code class="docutils literal notranslate"><span class="pre">cali_set_int</span></code>.</p>
 <p>Context information collection is active for any target program that
 contains Caliper annotations and does not need to be configured
 explicitly. There are also services that provide additional
-context information through the annotation API, for example <code class="docutils literal"><span class="pre">mpi</span></code>
-(marks MPI functions), <code class="docutils literal"><span class="pre">ompt</span></code> (marks OpenMP regions using the OpenMP
-tools interface), or <code class="docutils literal"><span class="pre">cupti</span></code> (marks CUDA runtime and driver API
+context information through the annotation API, for example <code class="docutils literal notranslate"><span class="pre">mpi</span></code>
+(marks MPI functions), <code class="docutils literal notranslate"><span class="pre">ompt</span></code> (marks OpenMP regions using the OpenMP
+tools interface), or <code class="docutils literal notranslate"><span class="pre">cupti</span></code> (marks CUDA runtime and driver API
 calls).</p>
 <p>In addition to providing context information, the API calls also serve
 as hooks for Caliper-internal callbacks. These can be used to trigger
@@ -171,15 +163,15 @@ addresses provided by e.g. the <a class="reference internal" href="services.html
 <p>The final pipeline stage formats and writes the collected
 records. There are multiple options here.</p>
 <p>The <a class="reference internal" href="services.html#recorder-service"><span class="std std-ref">recorder</span></a> service writes records into Caliper-specific
-<code class="docutils literal"><span class="pre">.cali</span></code> format files (one per process), which can be examined
-off-line with the <code class="docutils literal"><span class="pre">cali-query</span></code> tool.  The <a class="reference internal" href="services.html#report-service"><span class="std std-ref">report</span></a> service can
+<code class="docutils literal notranslate"><span class="pre">.cali</span></code> format files (one per process), which can be examined
+off-line with the <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> tool.  The <a class="reference internal" href="services.html#report-service"><span class="std std-ref">report</span></a> service can
 filter, aggregate, and sort output records, and produce JSON output or
 human-readable reports in table or hierarchical form. The reports can
-be written into files or to standard output. As with <code class="docutils literal"><span class="pre">recorder</span></code>,
+be written into files or to standard output. As with <code class="docutils literal notranslate"><span class="pre">recorder</span></code>,
 reports will be written per process.  Finally, the <a class="reference internal" href="services.html#mpireport-service"><span class="std std-ref">mpireport</span></a>
 service aggregates or gathers output records from all ranks in an MPI
-program, and writes a single output report. Like <code class="docutils literal"><span class="pre">report</span></code>, it can
-produce JSON or human-readable output as well as <code class="docutils literal"><span class="pre">.cali</span></code> files.</p>
+program, and writes a single output report. Like <code class="docutils literal notranslate"><span class="pre">report</span></code>, it can
+produce JSON or human-readable output as well as <code class="docutils literal notranslate"><span class="pre">.cali</span></code> files.</p>
 </div>
 </div>
 
@@ -192,9 +184,9 @@ produce JSON or human-readable output as well as <code class="docutils literal">
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Architecture and Workflow</a><ul>
+<li><a class="reference internal" href="#">Architecture and workflow</a><ul>
 <li><a class="reference internal" href="#context-information-and-event-hooks">Context Information and Event Hooks</a></li>
 <li><a class="reference internal" href="#runtime-data-sources">Runtime Data Sources</a></li>
 <li><a class="reference internal" href="#snapshots">Snapshots</a></li>
@@ -206,11 +198,11 @@ produce JSON or human-readable output as well as <code class="docutils literal">
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="build.html"
-                        title="previous chapter">Build and Link</a></p>
+  <p class="topless"><a href="configuration.html"
+                        title="previous chapter">Manual runtime configuration</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="AnnotationAPI.html"
-                        title="next chapter">Source-code Annotations</a></p>
+  <p class="topless"><a href="services.html"
+                        title="next chapter">Caliper services</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -219,15 +211,15 @@ produce JSON or human-readable output as well as <code class="docutils literal">
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -239,17 +231,17 @@ produce JSON or human-readable output as well as <code class="docutils literal">
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code Annotations"
+          <a href="services.html" title="Caliper services"
              >next</a> |</li>
         <li class="right" >
-          <a href="build.html" title="Build and Link"
+          <a href="configuration.html" title="Manual runtime configuration"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>

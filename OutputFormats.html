@@ -1,32 +1,24 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Output formatting &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>Output formatting &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Caliper Tools" href="tools.html" />
-    <link rel="prev" title="Connection to third-party tools" href="ThirdPartyTools.html" /> 
-  </head>
-  <body>
+    <link rel="next" title="Caliper tools" href="tools.html" />
+    <link rel="prev" title="The Caliper query language" href="calql.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -34,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="tools.html" title="Caliper tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="calql.html" title="The Caliper query language"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -59,7 +51,7 @@ services, as well as the report generation API.</p>
 <p>To select a formatter, use the <cite>FORMAT</cite> statement in CalQL. Some
 formatters, e.g. <cite>tree</cite>, take additional arguments in a “function
 call” syntax, e.g.</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">FORMAT</span> <span class="n">tree</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">function</span><span class="c">#callpath.address)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FORMAT</span> <span class="n">tree</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">function</span><span class="c1">#callpath.address)</span>
 </pre></div>
 </div>
 <p>The <cite>SELECT</cite> CalQL statement determines the attributes that will be
@@ -78,19 +70,19 @@ to print records in a given order, but not all of them do.</p>
 <h2>Expand<a class="headerlink" href="#expand" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>expand</cite> formatter writes records as comma-separated key-value
 lists, with each record in a single line. Hierachical values are
-written with slash <code class="docutils literal"><span class="pre">/</span></code> separators.</p>
+written with slash <code class="docutils literal notranslate"><span class="pre">/</span></code> separators.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT expand</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT expand</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=TimeIncrement,count=100,time.inclusive.duration=1280</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=IntegrateStressForElems,count=100,time.inclusive.duration=358512</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcFBHourglassForceForElems,count=100,time.inclusive.duration=700886</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcHourglassControlForElems,count=100,time.inclusive.duration=1073630</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcVolumeForceForElems,count=100,time.inclusive.duration=1456613</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=CalcForceForNodes,count=100,time.inclusive.duration=1466051</span>
-<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function=LagrangeNodal,count=100,time.inclusive.duration=1508828</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=TimeIncrement,count=100,time.inclusive.duration=1280</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=IntegrateStressForElems,count=100,time.inclusive.duration=358512</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcFBHourglassForceForElems,count=100,time.inclusive.duration=700886</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcHourglassControlForElems,count=100,time.inclusive.duration=1073630</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcVolumeForceForElems,count=100,time.inclusive.duration=1456613</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=CalcForceForNodes,count=100,time.inclusive.duration=1466051</span>
+<span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=LagrangeNodal,count=100,time.inclusive.duration=1508828</span>
 </pre></div>
 </div>
 </div>
@@ -99,11 +91,11 @@ written with slash <code class="docutils literal"><span class="pre">/</span></co
 <p>The <cite>table</cite> formatter prints a human-readable text table with
 automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT table ORDER BY time.inclusive.duration DESC</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function,count(),sum(time.inclusive.duration) GROUP BY event.end#function FORMAT table ORDER BY time.inclusive.duration DESC</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function              count time.inclusive.duration</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function              count time.inclusive.duration</span>
 <span class="n">main</span>                                <span class="mi">1</span>                 <span class="mi">3395643</span>
 <span class="n">LagrangeLeapFrog</span>                  <span class="mi">100</span>                 <span class="mi">3379753</span>
 <span class="n">LagrangeElements</span>                  <span class="mi">100</span>                 <span class="mi">1755059</span>
@@ -136,7 +128,7 @@ automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <p>The <cite>tree</cite> formatter prints records in hierarchical form based on the
 input data, such as nested functions and regions.</p>
 <p>The attribute used to build the hierarchy can be given as an argument
-to the formatter (e.g. <code class="docutils literal"><span class="pre">FORMAT</span> <span class="pre">tree(function)</span></code> to use <cite>function</cite>). By
+to the formatter (e.g. <code class="docutils literal notranslate"><span class="pre">FORMAT</span> <span class="pre">tree(function)</span></code> to use <cite>function</cite>). By
 default, the hierarchy is built from all attributes flagged as <cite>NESTED</cite>,
 which includes the default <cite>function</cite>, <cite>loop</cite>, and <cite>region</cite>
 annotations.</p>
@@ -144,11 +136,11 @@ annotations.</p>
 tree node in the input data. It is best to aggregate data so that
 there is only one record for each node.</p>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function GROUP BY function FORMAT tree</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function GROUP BY function FORMAT tree</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">Path</span>                                       <span class="n">count</span> <span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Path</span>                                       <span class="n">count</span> <span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span>
 <span class="n">main</span>                                           <span class="mi">1</span>                 <span class="mi">3395643</span>
   <span class="n">LagrangeLeapFrog</span>                           <span class="mi">100</span>                 <span class="mi">3379753</span>
     <span class="n">CalcTimeConstraintsForElems</span>              <span class="mi">100</span>                  <span class="mi">110236</span>
@@ -181,29 +173,29 @@ there is only one record for each node.</p>
 <p>The <cite>json</cite> formatter writes a list-of-dicts style json file, where
 each Caliper record is a JSON object with attribute:value
 entries. Hierarchical values are written as a single string with a
-slash (<code class="docutils literal"><span class="pre">/</span></code>) as separator. Note that the <cite>json</cite> formatter usually
+slash (<code class="docutils literal notranslate"><span class="pre">/</span></code>) as separator. Note that the <cite>json</cite> formatter usually
 produces larger files than <cite>json-split</cite>.</p>
 <p>Optional arguments:</p>
-<dl class="docutils">
-<dt>pretty</dt>
-<dd>More human-readable output (inserts extra whitespace and line breaks).</dd>
-<dt>split</dt>
-<dd>Just write the records, skip the outer “[ ]” array delimiters.</dd>
-<dt>quote-all</dt>
-<dd>Write all values as strings using <code class="docutils literal"><span class="pre">&quot;</span></code> quotes, even numerical ones.</dd>
+<dl class="simple">
+<dt>pretty</dt><dd><p>More human-readable output (inserts extra whitespace and line breaks).</p>
+</dd>
+<dt>split</dt><dd><p>Just write the records, skip the outer “[ ]” array delimiters.</p>
+</dd>
+<dt>quote-all</dt><dd><p>Write all values as strings using <code class="docutils literal notranslate"><span class="pre">&quot;</span></code> quotes, even numerical ones.</p>
+</dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c">#function GROUP BY function,loop FORMAT json</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">WHERE</span> <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function GROUP BY function,loop FORMAT json</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="p">[</span>
-<span class="p">{</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3395643</span><span class="p">},</span>
-<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/TimeIncrement&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1280</span><span class="p">},</span>
-<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3379753</span><span class="p">},</span>
-<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1508828</span><span class="p">},</span>
-<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1466051</span><span class="p">},</span>
-<span class="p">{</span><span class="s">&quot;loop&quot;</span><span class="p">:</span><span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s">&quot;function&quot;</span><span class="p">:</span><span class="s">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes/CalcVolumeForceForElems&quot;</span><span class="p">,</span><span class="s">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1456613</span><span class="p">},</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+<span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3395643</span><span class="p">},</span>
+<span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/TimeIncrement&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1280</span><span class="p">},</span>
+<span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/LagrangeLeapFrog&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">3379753</span><span class="p">},</span>
+<span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/LagrangeLeapFrog/LagrangeNodal&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1508828</span><span class="p">},</span>
+<span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1466051</span><span class="p">},</span>
+<span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes/CalcVolumeForceForElems&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1456613</span><span class="p">},</span>
 </pre></div>
 </div>
 </div>
@@ -217,29 +209,27 @@ explicitly retains hierarchical information. Attributes flagged as
 and <cite>loop</cite>) will be merged into the <cite>path</cite> column to retain
 hierarchical information between them.</p>
 <p>The top-level object contains the following fields:</p>
-<dl class="docutils">
-<dt>data</dt>
-<dd><p class="first">The Caliper records as a 2D array (array of arrays). Each row is a
+<dl>
+<dt>data</dt><dd><p>The Caliper records as a 2D array (array of arrays). Each row is a
 record, each column is an attribute. The attribute/column labels are
 stored in the <cite>columns</cite> array.  Missing values in a record are
 written as <cite>null</cite> entries.</p>
-<p class="last">A column is either a <em>value</em> or <em>reference</em> entry. Value entries are
+<p>A column is either a <em>value</em> or <em>reference</em> entry. Value entries are
 stored directly in each record, whereas reference entries contain the
 index of the corresponding generalized context tree node in the
 <cite>nodes</cite> array. The <cite>is_value</cite> entry in the <cite>column_metadata</cite> array
 determines which columns are value and which are reference entries.</p>
 </dd>
-<dt>columns</dt>
-<dd>The labels (i.e., attribute names) of the data columns as array of
-strings.</dd>
-<dt>column_metadata</dt>
-<dd>Any metadata for the data columns as array of objects. The objects
+<dt>columns</dt><dd><p>The labels (i.e., attribute names) of the data columns as array of
+strings.</p>
+</dd>
+<dt>column_metadata</dt><dd><p>Any metadata for the data columns as array of objects. The objects
 contain the <cite>is_value</cite> entry, which determines if the corresponding
-data column stores a value or a reference entry.</dd>
-<dt>nodes</dt>
-<dd><p class="first">An array of metadata node objects. A reference entry in a data
+data column stores a value or a reference entry.</p>
+</dd>
+<dt>nodes</dt><dd><p>An array of metadata node objects. A reference entry in a data
 record refers to the node at the corresponding index in this array.</p>
-<p class="last">The metadata nodes generally form a tree (or forest), retaining
+<p>The metadata nodes generally form a tree (or forest), retaining
 hierarchical information. Nodes have a <cite>label</cite> entry with the nodes’
 value, and an optional <cite>parent</cite> entry, which is the index of the
 node’s hierarchical parent node in the <cite>nodes</cite> array. It is
@@ -248,12 +238,12 @@ in the array.</p>
 </dd>
 </dl>
 <p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span> <span class="n">FORMAT</span> <span class="n">json</span><span class="o">-</span><span class="n">split</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span><span class="p">,</span><span class="n">count</span><span class="p">(),</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">function</span><span class="p">,</span><span class="n">loop</span> <span class="n">FORMAT</span> <span class="n">json</span><span class="o">-</span><span class="n">split</span>
 </pre></div>
 </div>
 <p>Output:</p>
-<div class="highlight-default"><div class="highlight"><pre><span class="p">{</span>
-   <span class="s">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+   <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">[</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3395643</span><span class="p">,</span> <span class="mi">0</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1280</span><span class="p">,</span> <span class="mi">2</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">3379753</span><span class="p">,</span> <span class="mi">3</span> <span class="p">],</span>
@@ -279,9 +269,9 @@ in the array.</p>
     <span class="p">[</span> <span class="mi">1100</span><span class="p">,</span> <span class="mi">49281</span><span class="p">,</span> <span class="mi">23</span> <span class="p">],</span>
     <span class="p">[</span> <span class="mi">1100</span><span class="p">,</span> <span class="mi">33125</span><span class="p">,</span> <span class="mi">24</span> <span class="p">]</span>
   <span class="p">],</span>
-  <span class="s">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s">&quot;count&quot;</span><span class="p">,</span> <span class="s">&quot;time.inclusive.duration&quot;</span><span class="p">,</span> <span class="s">&quot;path&quot;</span> <span class="p">],</span>
-  <span class="s">&quot;column_metadata&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">false</span> <span class="p">}</span>  <span class="p">],</span>
-  <span class="s">&quot;nodes&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;main&quot;</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;lulesh.cycle&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;TimeIncrement&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeLeapFrog&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeNodal&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcForceForNodes&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcVolumeForceForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">5</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;IntegrateStressForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcHourglassControlForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcFBHourglassForceForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;LagrangeElements&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcLagrangeElements&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcKinematicsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">11</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcQForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcMonotonicQGradientsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcMonotonicQRegionForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;ApplyMaterialPropertiesForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;EvalEOSForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">16</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcEnergyForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcPressureForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">18</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcSoundSpeedForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;UpdateVolumesForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcTimeConstraintsForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcCourantConstraintForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">},</span> <span class="p">{</span> <span class="s">&quot;label&quot;</span><span class="p">:</span> <span class="s">&quot;CalcHydroConstraintForElems&quot;</span><span class="p">,</span> <span class="s">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">}</span> <span class="p">]</span>
+  <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">,</span> <span class="s2">&quot;path&quot;</span> <span class="p">],</span>
+  <span class="s2">&quot;column_metadata&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">true</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;is_value&quot;</span><span class="p">:</span> <span class="n">false</span> <span class="p">}</span>  <span class="p">],</span>
+  <span class="s2">&quot;nodes&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;main&quot;</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">0</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;TimeIncrement&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeLeapFrog&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeNodal&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcForceForNodes&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">4</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcVolumeForceForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">5</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;IntegrateStressForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcHourglassControlForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcFBHourglassForceForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">8</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;LagrangeElements&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcLagrangeElements&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcKinematicsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">11</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcQForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcMonotonicQGradientsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcMonotonicQRegionForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">13</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;ApplyMaterialPropertiesForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;EvalEOSForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">16</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcEnergyForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcPressureForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">18</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcSoundSpeedForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">17</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;UpdateVolumesForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">10</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcTimeConstraintsForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">3</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcCourantConstraintForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">},</span> <span class="p">{</span> <span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="s2">&quot;CalcHydroConstraintForElems&quot;</span><span class="p">,</span> <span class="s2">&quot;parent&quot;</span><span class="p">:</span> <span class="mi">22</span> <span class="p">}</span> <span class="p">]</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -297,7 +287,7 @@ in the array.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Output formatting</a><ul>
 <li><a class="reference internal" href="#formatter-configuration">Formatter configuration</a></li>
@@ -312,11 +302,11 @@ in the array.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="ThirdPartyTools.html"
-                        title="previous chapter">Connection to third-party tools</a></p>
+  <p class="topless"><a href="calql.html"
+                        title="previous chapter">The Caliper query language</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="tools.html"
-                        title="next chapter">Caliper Tools</a></p>
+                        title="next chapter">Caliper tools</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -325,15 +315,15 @@ in the array.</p>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -345,17 +335,17 @@ in the array.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper Tools"
+          <a href="tools.html" title="Caliper tools"
              >next</a> |</li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="calql.html" title="The Caliper query language"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>

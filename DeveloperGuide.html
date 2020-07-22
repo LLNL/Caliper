@@ -1,31 +1,23 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Developer Guide &#8212; Caliper 2.0.0-dev documentation</title>
+    <meta charset="utf-8" />
+    <title>Developer guide &#8212; Caliper 2.4.0 documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '2.0.0-dev',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="The Caliper Query Language" href="calql.html" /> 
-  </head>
-  <body>
+    <link rel="prev" title="Caliper tools" href="tools.html" /> 
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
@@ -33,9 +25,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="calql.html" title="The Caliper Query Language"
+          <a href="tools.html" title="Caliper tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -45,16 +37,16 @@
           <div class="body" role="main">
             
   <div class="section" id="developer-guide">
-<h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline">¶</a></h1>
+<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline">¶</a></h1>
 <p>This section describes internal APIs for Caliper service developers.</p>
 <div class="section" id="caliper-instance-objects">
 <h2>Caliper instance objects<a class="headerlink" href="#caliper-instance-objects" title="Permalink to this headline">¶</a></h2>
 <p>The Caliper API is accessed through objects of the <cite>cali::Caliper</cite>
 class. The class constructor or the static
-<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::instance()</span></code> and
-<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::sigsafe_instance()</span></code> methods can create Caliper
+<code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::instance()</span></code> and
+<code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::sigsafe_instance()</span></code> methods can create Caliper
 instance objects. Example:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;Caliper.h&gt;</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
 
 <span class="kt">int</span> <span class="nf">foo</span><span class="p">()</span>
 <span class="p">{</span>
@@ -75,26 +67,27 @@ not</em> share Caliper objects between different threads.</p>
 <p>(Most of) Caliper’s API is async-signal safe. This works as follows:</p>
 <blockquote>
 <div><ul class="simple">
-<li>A signal handler function must request a Caliper instance object
-with the <code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::sigsafe_instance()</span></code> static method, and
+<li><p>A signal handler function must request a Caliper instance object
+with the <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::sigsafe_instance()</span></code> static method, and
 test if the object could be successfully obtained. The request will
-fail if:<ul>
-<li>The thread executing the signal handler is already
-executing a Caliper API function, or</li>
-<li>Caliper has not been initialized, or Caliper’s thread-local data
+fail if:</p>
+<ul>
+<li><p>The thread executing the signal handler is already
+executing a Caliper API function, or</p></li>
+<li><p>Caliper has not been initialized, or Caliper’s thread-local data
 has not been initialized yet for the thread executing the signal
 handler. Caliper needs to create a thread-local data object
 for each new thread. This can be done by creating a Caliper
-instance object in the new thread outside of a signal handler.</li>
+instance object in the new thread outside of a signal handler.</p></li>
 </ul>
 </li>
-<li>Caliper instance objects contain a flag that indicates whether the
+<li><p>Caliper instance objects contain a flag that indicates whether the
 object was created in a signal handler. Caliper API functions
 deemed signal-safe, and callback functions invoked through these
 API functions, must check this flag using the
-<code class="xref cpp cpp-func docutils literal"><span class="pre">Caliper::is_signal()</span></code> method before executing any
+<code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::is_signal()</span></code> method before executing any
 non-signal safe actions. If the flag is set, they must not execute
-such actions.</li>
+such actions.</p></li>
 </ul>
 </div></blockquote>
 <p>Note that compliance with Caliper’s signal safety mechanics can’t be
@@ -106,7 +99,7 @@ necessary to skip functionality when it can’t be performed in a
 signal-safe way; in this case it is good practice to count and report
 the number of times the functionality had to be skipped.</p>
 <p>Example:</p>
-<div class="highlight-c++"><div class="highlight"><pre><span class="cp">#include &lt;Caliper.h&gt;</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
 
 <span class="k">static</span> <span class="kt">unsigned</span> <span class="n">n_snapshots_dropped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 <span class="k">static</span> <span class="kt">unsigned</span> <span class="n">n_signals_dropped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
@@ -164,9 +157,9 @@ the number of times the functionality had to be skipped.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table Of Contents</a></h3>
+  <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Developer Guide</a><ul>
+<li><a class="reference internal" href="#">Developer guide</a><ul>
 <li><a class="reference internal" href="#caliper-instance-objects">Caliper instance objects</a></li>
 <li><a class="reference internal" href="#signal-safety">Signal safety</a></li>
 </ul>
@@ -174,8 +167,8 @@ the number of times the functionality had to be skipped.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="calql.html"
-                        title="previous chapter">The Caliper Query Language</a></p>
+  <p class="topless"><a href="tools.html"
+                        title="previous chapter">Caliper tools</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -184,15 +177,15 @@ the number of times the functionality had to be skipped.</p>
     </ul>
    </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
     </form>
+    </div>
 </div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -204,14 +197,14 @@ the number of times the functionality had to be skipped.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="calql.html" title="The Caliper Query Language"
+          <a href="tools.html" title="Caliper tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.0.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
     </div>
   </body>
 </html>
