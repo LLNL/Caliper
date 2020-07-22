@@ -28,6 +28,7 @@ set(WITH_MPIT     Off CACHE BOOL "") # default toss3 mvapich2-2.2 doesn't have a
 set(WITH_GOTCHA   On  CACHE BOOL "")
 set(WITH_VTUNE    On  CACHE BOOL "")
 set(WITH_SYMBOLLOOKUP On CACHE BOOL "")
+set(WITH_PCP      On  CACHE BOOL "")
 
 set(WITH_DOCS     Off CACHE BOOL "")
 set(BUILD_TESTING On  CACHE BOOL "")
