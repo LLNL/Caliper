@@ -14,8 +14,17 @@ using namespace cali;
 namespace
 {
 
-const char* trigger_grp[] = { "event", "sampler", "libpfm", "alloc", nullptr };
-const char* buffer_grp[]  = { "aggregate", "trace", nullptr };
+const char* trigger_grp[] = {
+    "alloc",
+    "cuptitrace",
+    "event",
+    "libpfm",
+    "loop_monitor",
+    "region_monitor",
+    "sampler",
+    nullptr
+};
+const char* buffer_grp[]  = { "aggregate", "trace", "cuptitrace", nullptr };
 const char* process_grp[] = { "aggregate", "trace", "textlog", nullptr };
 const char* online_grp[]  = { "textlog", nullptr };
 const char* offline_grp[] = { "recorder", "report", "sos", "mpireport", nullptr };
@@ -65,7 +74,7 @@ check_service_dependency(const service_group_t dependent,
                          const std::vector<std::string>& services)
 {
     const char* const* dept = dependent.services;
-    
+
     for ( ; dept && *dept; ++dept)
         if (std::find(services.begin(), services.end(), *dept) != services.end())
             break;
@@ -92,7 +101,7 @@ check_service_dependency(const service_group_t dependent,
 void check_services(const std::vector<std::string>& services)
 {
     const struct ServiceDependency {
-        ServiceGroupID dept; ServiceGroupID depcy; 
+        ServiceGroupID dept; ServiceGroupID depcy;
     } dependencies[] {
         { SnapshotTrigger, SnapshotProcess },
         { SnapshotProcess, SnapshotTrigger },
