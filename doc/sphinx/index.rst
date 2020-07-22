@@ -146,7 +146,7 @@ Recording Performance Data
 ................................
 
 Performance measuremens can be controlled most conveniently via the
-ConfigManager API. The ConfigManager covers the most common use cases,
+ConfigManager API. The ConfigManager covers many common use cases,
 such as recording traces or printing time reports. For custom analysis
 tasks or when not using the ConfigManager API, Caliper can be configured
 manually by setting configuration variables via the environment or
