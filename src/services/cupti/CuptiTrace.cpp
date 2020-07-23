@@ -115,6 +115,8 @@ class CuptiTraceService
     Attribute       uvm_kind_attr;
     Attribute       uvm_bytes_attr;
     Attribute       uvm_pagefault_groups_attr;
+    Attribute       uvm_migration_cause_attr;
+    Attribute       uvm_access_type_attr;
 
     bool            record_host_timestamp = false;
     bool            record_host_duration  = false;
@@ -225,6 +227,44 @@ class CuptiTraceService
             return "throttling";
         case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_BYTES_TRANSFER_DTOD:
             return "DtoD";
+        default:
+            break;
+        }
+        return "<unknown>";
+    }
+
+    const char *
+    get_uvm_migration_cause_string(CUpti_ActivityUnifiedMemoryMigrationCause cause)
+    {
+        switch (cause) {
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_MIGRATION_CAUSE_USER:
+            return "user";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_MIGRATION_CAUSE_COHERENCE:
+            return "coherence";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_MIGRATION_CAUSE_PREFETCH:
+            return "prefetch";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_MIGRATION_CAUSE_EVICTION:
+            return "eviction";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_MIGRATION_CAUSE_ACCESS_COUNTERS:
+            return "access_counters";
+        default:
+            break;
+        }
+        return "<unknown>";
+    }
+
+    const char*
+    get_uvm_access_type_string(CUpti_ActivityUnifiedMemoryAccessType access)
+    {
+        switch (access) {
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_ACCESS_TYPE_READ:
+            return "read";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_ACCESS_TYPE_WRITE:
+            return "write";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_ACCESS_TYPE_ATOMIC:
+            return "atomic";
+        case CUPTI_ACTIVITY_UNIFIED_MEMORY_ACCESS_TYPE_PREFETCH:
+            return "prefetch";
         default:
             break;
         }
@@ -451,13 +491,18 @@ class CuptiTraceService
                     attr[n+1] = activity_start_attr;
                     attr[n+2] = activity_end_attr;
                     attr[n+3] = activity_duration_attr;
+                    attr[n+4] = uvm_migration_cause_attr;
+
+                    CUpti_ActivityUnifiedMemoryMigrationCause cause =
+                        static_cast<CUpti_ActivityUnifiedMemoryMigrationCause>(uvm->flags);
 
                     data[n+0] = Variant(cali_make_variant_from_uint(uvm->value));
                     data[n+1] = Variant(cali_make_variant_from_uint(uvm->start));
                     data[n+2] = Variant(cali_make_variant_from_uint(uvm->end));
                     data[n+3] = Variant(cali_make_variant_from_uint(uvm->end - uvm->start));
+                    data[n+4] = Variant(get_uvm_migration_cause_string(cause));
 
-                    n += 4;
+                    n += 5;
                 }
                 break;
                 case CUPTI_ACTIVITY_UNIFIED_MEMORY_COUNTER_KIND_CPU_PAGE_FAULT_COUNT:
@@ -473,13 +518,18 @@ class CuptiTraceService
                     attr[n+1] = activity_start_attr;
                     attr[n+2] = activity_end_attr;
                     attr[n+3] = activity_duration_attr;
+                    attr[n+4] = uvm_access_type_attr;
+
+                    CUpti_ActivityUnifiedMemoryAccessType access =
+                        static_cast<CUpti_ActivityUnifiedMemoryAccessType>(uvm->flags);
 
                     data[n+0] = Variant(cali_make_variant_from_uint(uvm->value));
                     data[n+1] = Variant(cali_make_variant_from_uint(uvm->start));
                     data[n+2] = Variant(cali_make_variant_from_uint(uvm->end));
                     data[n+3] = Variant(cali_make_variant_from_uint(uvm->end - uvm->start));
+                    data[n+4] = Variant(get_uvm_access_type_string(access));
 
-                    n += 4;
+                    n += 5;
                 }
                 break;
                 default:
@@ -874,6 +924,12 @@ class CuptiTraceService
                 c->create_attribute("cupti.uvm.pagefault.groups", CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                     1, &aggr_class_attr, &true_val);
+            uvm_migration_cause_attr =
+                c->create_attribute("cupti.uvm.migration.cause", CALI_TYPE_STRING,
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
+            uvm_access_type_attr =
+                c->create_attribute("cupti.uvm.access.type", CALI_TYPE_STRING,
+                                    CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
             ConfigSet config = chn->config().init("cuptitrace", s_configdata);
 
