@@ -399,41 +399,49 @@ events. With ``CALI_CUPTITRACE_SNAPSHOT_DURATION``, cuptitrace will
 also calculate the time duration of host-side events based on CUpti
 timestamps.
 
-.. envvar:: CALI_CUPTITRACE_ACTIVITIES
+CALI_CUPTITRACE_ACTIVITIES
+   The CUpti activity kinds to record. Comma-separated list.
+   Possible values:
 
-    The CUpti activity kinds to record. Comma-separated list.
-    Possible values:
+      device:       Device info
+      correlation:  Correlation records
+      driver:       Driver API
+      runtime:      Runtime API
+      kernel:       CUDA Kernels being executed
+      memcpy:       CUDA memory copies
+      uvm:          Unified memory events
 
-       device:       Device info
-       correlation:  Correlation records
-       driver:       Driver API
-       runtime:      Runtime API
-       kernel:       CUDA Kernels being executed
-       memcpy:       CUDA memory copies
+   Default: correlation,device,kernel,memcpy,runtime
 
-    Default: correlation,device,kernel,memcpy,runtime
+CALI_CUPTITRACE_CORRELATE_CONTEXT
+   Add the Caliper context (annotations) from the point where a CUDA
+   activity was launched to the CUDA activity records. Boolean.
 
-.. envvar:: CALI_CUPTITRACE_CORRELATE_CONTEXT
+   Default: true.
 
-    Add the Caliper context (annotations) from the point where a CUDA
-    activity was launched to the CUDA activity records. Boolean.
+CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS
+   Add CUpti timestamps to all Caliper snapshot records. Allows one
+   to compare timestamps from CUDA activity records with host-side
+   Caliper events. Boolean.
 
-    Default: true.
+   Default: false
 
-.. envvar:: CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS
+CALI_CUPTITRACE_SNAPSHOT_DURATION
+   Calculate duration of host-side events using CUpti timestamps. Useful
+   to compare duration of GPU and Host activities. Boolean.
 
-    Add CUpti timestamps to all Caliper snapshot records. Allows one
-    to compare timestamps from CUDA activity records with host-side
-    Caliper events. Boolean.
+   Default: false
 
-    Default: false
+CALI_CUPTITRACE_UVM_TRANSFERS
+   If uvm memory events are enabled, record host-to-device and
+   device-to-host transfers.
 
-.. envvar:: CALI_CUPTITRACE_SNAPSHOT_DURATION
+   Default: true
 
-    Calculate duration of host-side events using CUpti timestamps. Useful
-    to compare duration of GPU and Host activities. Boolean.
+CALI_CUPTITRACE_UVM_PAGEFAULTS
+   If uvm memory events are enabled, record CPU and GPU pagefaults.
 
-    Default: false
+   Default: true
 
 CUptiTrace records contain the following attributes:
 
@@ -464,6 +472,20 @@ CUptiTrace records contain the following attributes:
 +-------------------------+--------------------------------------------------+
 | cupti.device.uuid       | A globally unique ID of the CUDA device the      |
 |                         | activity is running on.                          |
++-------------------------+--------------------------------------------------+
+| cupti.device.uuid       | A globally unique ID of the CUDA device the      |
+|                         | activity is running on.                          |
++-------------------------+--------------------------------------------------+
+| cupti.uvm.kind          | The kind of unified memory event.                |
++-------------------------+--------------------------------------------------+
+| cupti.fault.addr        | Pagefault address for unified memory events.     |
++-------------------------+--------------------------------------------------+
+| cupti.uvm.bytes         | Bytes transferred in a unified memory event.     |
++-------------------------+--------------------------------------------------+
+| cupti.uvm.migration.cause | Cause of a unified memory page migration.      |
++-------------------------+--------------------------------------------------+
+| cupti.uvm.access.type   | Access type that caused a unified memory page    |
+|                         | fault.                                           |
 +-------------------------+--------------------------------------------------+
 
 
