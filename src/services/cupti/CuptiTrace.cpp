@@ -121,6 +121,8 @@ class CuptiTraceService
     bool            record_host_timestamp = false;
     bool            record_host_duration  = false;
 
+    std::vector<std::string>  flush_info_attributes;
+
     static CuptiTraceService* s_instance;
 
     typedef std::unordered_map<uint32_t, uint64_t> correlation_id_map_t;
@@ -272,7 +274,7 @@ class CuptiTraceService
     }
 
     size_t
-    flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    flush_record(CUpti_Activity* rec, correlation_id_map_t& correlation_map, Caliper* c, const std::vector<Entry>& irec, SnapshotFlushFn proc_fn) {
         switch (rec->kind) {
         case CUPTI_ACTIVITY_KIND_DEVICE:
         {
@@ -377,10 +379,8 @@ class CuptiTraceService
                 activity_duration_attr
             };
             Variant   data[6] = {
-                Variant(CALI_TYPE_STRING, "memcpy", 7),
-                Variant(CALI_TYPE_STRING,
-                        get_memcpy_kind_string(static_cast<CUpti_ActivityMemcpyKind>(memcpy->copyKind)),
-                        5),
+                Variant("memcpy"),
+                Variant(get_memcpy_kind_string(static_cast<CUpti_ActivityMemcpyKind>(memcpy->copyKind))),
                 Variant(cali_make_variant_from_uint(memcpy->bytes)),
                 Variant(cali_make_variant_from_uint(memcpy->start)),
                 Variant(cali_make_variant_from_uint(memcpy->end)),
@@ -392,7 +392,9 @@ class CuptiTraceService
 
             c->make_record(6, attr, data, snapshot, parent);
 
-            proc_fn(*c, snapshot.to_entrylist());
+            auto rec = snapshot.to_entrylist();
+            rec.insert(rec.end(), irec.begin(), irec.end());
+            proc_fn(*c, rec);
 
             ++num_memcpy_recs;
 
@@ -445,8 +447,8 @@ class CuptiTraceService
                 activity_duration_attr
             };
             Variant   data[5] = {
-                Variant(CALI_TYPE_STRING, "kernel", 7),
-                Variant(CALI_TYPE_STRING, kernel->name, strlen(kernel->name)+1),
+                Variant("kernel"),
+                Variant(kernel->name),
                 Variant(cali_make_variant_from_uint(kernel->start)),
                 Variant(cali_make_variant_from_uint(kernel->end)),
                 Variant(cali_make_variant_from_uint(kernel->end - kernel->start))
@@ -457,7 +459,9 @@ class CuptiTraceService
 
             c->make_record(5, attr, data, snapshot, parent);
 
-            proc_fn(*c, snapshot.to_entrylist());
+            auto rec = snapshot.to_entrylist();
+            rec.insert(rec.end(), irec.begin(), irec.end());
+            proc_fn(*c, rec);
 
             ++num_kernel_recs;
 
@@ -540,7 +544,9 @@ class CuptiTraceService
             SnapshotRecord snapshot(snapshot_data);
             c->make_record(n, attr, data, snapshot);
 
-            proc_fn(*c, snapshot.to_entrylist());
+            auto rec = snapshot.to_entrylist();
+            rec.insert(rec.end(), irec.begin(), irec.end());
+            proc_fn(*c, rec);
 
             ++num_uvm_recs;
 
@@ -554,7 +560,7 @@ class CuptiTraceService
     }
 
     size_t
-    flush_buffer(ActivityBuffer* acb, Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    flush_buffer(ActivityBuffer* acb, Caliper* c, const std::vector<Entry>& irec, SnapshotFlushFn proc_fn) {
         if (! (acb->valid_size > 0))
             return 0;
 
@@ -569,13 +575,42 @@ class CuptiTraceService
             res = cuptiActivityGetNextRecord(acb->buffer, acb->valid_size, &rec);
 
             if (res == CUPTI_SUCCESS)
-                num_records += flush_record(rec, correlation_map, c, flush_info, proc_fn);
+                num_records += flush_record(rec, correlation_map, c, irec, proc_fn);
         } while (res == CUPTI_SUCCESS);
 
         if (res != CUPTI_SUCCESS && res != CUPTI_ERROR_MAX_LIMIT_REACHED)
             print_cupti_error(Log(0).stream(), res, "cuptiActivityGetNextRecord");
 
         return num_records;
+    }
+
+    std::vector<Entry> get_flush_info(Caliper* c, const SnapshotRecord* flush_info) {
+        // Extract requested flush_info_attributes from flush_info
+
+        std::vector<Entry> ret;
+
+        if (!flush_info)
+            return ret;
+
+        std::vector<const Node*> nodes;
+
+        for (const std::string& attribute : flush_info_attributes) {
+            Attribute attr = c->get_attribute(attribute);
+            if (attr == Attribute::invalid)
+                continue;
+
+            Entry e = flush_info->get(attr);
+
+            if (e.is_reference())
+                nodes.push_back(e.node());
+            else if (e.is_immediate())
+                ret.push_back(e);
+        }
+
+        if (!nodes.empty())
+            ret.push_back(Entry(c->make_tree_entry(nodes.size(), nodes.data())));
+
+        return ret;
     }
 
     // --- Caliper callbacks
@@ -592,6 +627,8 @@ class CuptiTraceService
             return;
         }
 
+        std::vector<Entry> irec = get_flush_info(c, flush_info);
+
         // go through all stored buffers and flush them
 
         ActivityBuffer* acb = nullptr;
@@ -606,7 +643,7 @@ class CuptiTraceService
         size_t num_written = 0;
 
         for ( ; acb; acb = acb->next )
-            num_written += flush_buffer(acb, c, flush_info, proc_fn);
+            num_written += flush_buffer(acb, c, irec, proc_fn);
 
         Log(1).stream() << "cuptitrace: Wrote " << num_written << " records." << std::endl;
     }
@@ -953,6 +990,8 @@ class CuptiTraceService
                                         CALI_ATTR_SKIP_EVENTS,
                                         2, meta_attr, meta_vals);
             }
+
+            flush_info_attributes = config.get("info_attributes").to_stringlist();
         }
 
 public:
@@ -998,13 +1037,17 @@ const struct ConfigSet::Entry CuptiTraceService::s_configdata[] = {
       "When recording uvm events, record memory transfers",
       "When recording uvm events, record memory transfers"
     },
-    { "uvm_pagefaults",       CALI_TYPE_BOOL, "true",
+    { "uvm_pagefaults",      CALI_TYPE_BOOL, "true",
       "When recording uvm events, record pagefaults",
       "When recording uvm events, record pagefaults"
     },
     { "snapshot_duration",   CALI_TYPE_BOOL, "false",
       "Record duration of host-side activities using CUpti timestamps",
       "Record duration of host-side activities using CUpti timestamps"
+    },
+    { "info_attributes",     CALI_TYPE_STRING, "mpi.rank",
+      "Flush info attributes to append to the cupti activity records",
+      "Flush info attributes to append to the cupti activity records"
     },
 
     ConfigSet::Terminator
