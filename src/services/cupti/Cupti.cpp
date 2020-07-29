@@ -59,7 +59,6 @@ class CuptiService
         Attribute device_attr;
         Attribute stream_attr;
 
-        bool      record_context;
         bool      record_symbol;
     }                      cupti_info;
 
@@ -217,15 +216,6 @@ class CuptiService
         ++num_api_cb;
 
         Caliper c;
-
-        // --- Don't record context id for now: need better way to pass this info through
-        // if (cupti_info.record_context) {
-        //     uint64_t ctx = cbInfo->contextUid;
-        //     Entry    e   = c.get(cupti_info.context_attr);
-
-        //     if (e.is_empty() || e.value().to_uint() != ctx)
-        //         c.set(cupti_info.context_attr, Variant(ctx));
-        // }
 
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
             if (cupti_info.record_symbol && cbInfo->symbolName)
@@ -459,11 +449,9 @@ class CuptiService
           num_nvtx_cb(0),
           channel(chn)
         {
-            cupti_info.record_context = config.get("record_context").to_bool();
-            cupti_info.record_symbol  = config.get("record_symbol").to_bool();
+            cupti_info.record_symbol = config.get("record_symbol").to_bool();
 
             uint64_t sample_event_id = config.get("sample_event_id").to_uint();
-
             if (sample_event_id > 0)
                 event_sampling.setup(c, static_cast<CUpti_EventID>(sample_event_id));
 
@@ -515,10 +503,6 @@ const ConfigSet::Entry CuptiService::s_configdata[] = {
     { "record_symbol", CALI_TYPE_BOOL, "false",
       "Record symbol name (kernel) for CUDA runtime and driver callbacks",
       "Record symbol name (kernel) for CUDA runtime and driver callbacks"
-    },
-    { "record_context", CALI_TYPE_BOOL, "false",
-      "Record CUDA context ID for CUDA runtime and driver callbacks",
-      "Record CUDA context ID for CUDA runtime and driver callbacks"
     },
     { "sample_events", CALI_TYPE_STRING, "",
       "CUpti events to sample",
