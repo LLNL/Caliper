@@ -59,7 +59,6 @@ class CuptiService
         Attribute device_attr;
         Attribute stream_attr;
 
-        bool      record_context;
         bool      record_symbol;
     }                      cupti_info;
 
@@ -165,7 +164,7 @@ class CuptiService
 
             handle_context_event(cbInfo->context,
                                  cupti_info.resource_attr,
-                                 Variant(CALI_TYPE_STRING, "create_context", 15));
+                                 Variant("create_context"));
             break;
         case CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING:
             if (event_sampling.is_enabled())
@@ -173,17 +172,17 @@ class CuptiService
 
             handle_context_event(cbInfo->context,
                                  cupti_info.resource_attr,
-                                 Variant(CALI_TYPE_STRING, "destroy_context", 16));
+                                 Variant("destroy_context"));
             break;
         case CUPTI_CBID_RESOURCE_STREAM_CREATED:
             handle_stream_event(cbInfo->context, cbInfo->resourceHandle.stream,
                                 cupti_info.resource_attr,
-                                Variant(CALI_TYPE_STRING,  "create_stream", 14));
+                                Variant("create_stream"));
             break;
         case CUPTI_CBID_RESOURCE_STREAM_DESTROY_STARTING:
             handle_stream_event(cbInfo->context, cbInfo->resourceHandle.stream,
                                 cupti_info.resource_attr,
-                                Variant(CALI_TYPE_STRING,  "destroy_stream", 15));
+                                Variant("destroy_stream"));
             break;
         default:
             ;
@@ -198,14 +197,12 @@ class CuptiService
         switch (cbid) {
         case CUPTI_CBID_SYNCHRONIZE_STREAM_SYNCHRONIZED:
             handle_stream_event(cbInfo->context, cbInfo->stream,
-                                cupti_info.sync_attr,
-                                Variant(CALI_TYPE_STRING, "stream",   7));
+                                cupti_info.sync_attr, Variant("stream"));
             break;
 
         case CUPTI_CBID_SYNCHRONIZE_CONTEXT_SYNCHRONIZED:
             handle_context_event(cbInfo->context,
-                                 cupti_info.sync_attr,
-                                 Variant(CALI_TYPE_STRING, "context", 8));
+                                 cupti_info.sync_attr, Variant("context"));
             break;
         default:
             // Do nothing
@@ -220,23 +217,11 @@ class CuptiService
 
         Caliper c;
 
-        // --- Don't record context id for now: need better way to pass this info through
-        // if (cupti_info.record_context) {
-        //     uint64_t ctx = cbInfo->contextUid;
-        //     Entry    e   = c.get(cupti_info.context_attr);
-
-        //     if (e.is_empty() || e.value().to_uint() != ctx)
-        //         c.set(cupti_info.context_attr, Variant(ctx));
-        // }
-
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
-            if (cupti_info.record_symbol && cbInfo->symbolName) {
-                Variant v_sname(CALI_TYPE_STRING, cbInfo->symbolName, strlen(cbInfo->symbolName));
-                c.begin(cupti_info.symbol_attr, v_sname);
-            }
+            if (cupti_info.record_symbol && cbInfo->symbolName)
+                c.begin(cupti_info.symbol_attr, Variant(cbInfo->symbolName));
 
-            Variant v_fname(CALI_TYPE_STRING, cbInfo->functionName, strlen(cbInfo->functionName));
-            c.begin(attr, v_fname);
+            c.begin(attr, Variant(cbInfo->functionName));
         } else if (cbInfo->callbackSite == CUPTI_API_EXIT) {
             c.end(attr);
 
@@ -464,11 +449,9 @@ class CuptiService
           num_nvtx_cb(0),
           channel(chn)
         {
-            cupti_info.record_context = config.get("record_context").to_bool();
-            cupti_info.record_symbol  = config.get("record_symbol").to_bool();
+            cupti_info.record_symbol = config.get("record_symbol").to_bool();
 
             uint64_t sample_event_id = config.get("sample_event_id").to_uint();
-
             if (sample_event_id > 0)
                 event_sampling.setup(c, static_cast<CUpti_EventID>(sample_event_id));
 
@@ -517,13 +500,9 @@ const ConfigSet::Entry CuptiService::s_configdata[] = {
       "  nvtx     :  Capture NVidia NVTX annotations\n"
       "  none     :  Don't capture callbacks"
     },
-    { "record_symbol", CALI_TYPE_BOOL, "true",
+    { "record_symbol", CALI_TYPE_BOOL, "false",
       "Record symbol name (kernel) for CUDA runtime and driver callbacks",
       "Record symbol name (kernel) for CUDA runtime and driver callbacks"
-    },
-    { "record_context", CALI_TYPE_BOOL, "true",
-      "Record CUDA context ID for CUDA runtime and driver callbacks",
-      "Record CUDA context ID for CUDA runtime and driver callbacks"
     },
     { "sample_events", CALI_TYPE_STRING, "",
       "CUpti events to sample",
