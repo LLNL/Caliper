@@ -19,7 +19,6 @@ namespace cali
 
 extern Attribute class_aggregatable_attr;
 extern Attribute class_iteration_attr;
-extern Attribute loop_attr;
 
 }
 
@@ -157,7 +156,7 @@ public:
             });
 
         Log(1).stream() << channel->name()
-                        << ": Registered loop_monitor service"
+                        << ": Registered region_monitor service"
                         << std::endl;
     }
 };
