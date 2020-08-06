@@ -58,16 +58,16 @@ Notes:
 
 Trace output from the config above has the following relevant attributes:
 
-cupti.uvm.kind
-    UVM activity kind, e.g. transfer or page fault. (DtoH, HtoD, pagefault.gpu, pagefault.cpu)
-cupti.fault.addr
-    Page address of the unified memory event.
-alloc.label#cupti.fault.address
-    Resolved user annotation label for the unified memory event's page address.
-cupti.uvm.bytes
-    Bytes involved in a UVM data transfer
-cupti.activity.duration
-    Time in ns for the activity.
+* cupti.uvm.kind
+    * UVM activity kind, e.g. transfer or page fault. (DtoH, HtoD, pagefault.gpu, pagefault.cpu)
+* cupti.fault.addr
+    * Page address of the unified memory event.
+* alloc.label#cupti.fault.address
+    * Resolved user annotation label for the unified memory event's page address.
+* cupti.uvm.bytes
+    * Bytes involved in a UVM data transfer
+* cupti.activity.duration
+    * Time in ns for the activity.
 
 Example query:
 
