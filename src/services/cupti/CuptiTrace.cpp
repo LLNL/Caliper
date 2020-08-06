@@ -124,7 +124,7 @@ class CuptiTraceService
     bool            record_host_duration  = false;
     bool            flush_on_snapshot     = false;
 
-    Attribute       snapshot_flush_trigger_attr;
+    Attribute       flush_trigger_attr;
 
     std::vector<std::string>  flush_info_attributes;
 
@@ -618,10 +618,7 @@ class CuptiTraceService
         return ret;
     }
 
-    // --- Caliper callbacks
-    //
-
-    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    size_t do_flush(Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
         //   Flush CUpti. Apppends all currently active CUpti trace buffers
         // to the retired_buffers_list.
 
@@ -629,7 +626,7 @@ class CuptiTraceService
 
         if (res != CUPTI_SUCCESS) {
             print_cupti_error(Log(0).stream(), res, "cuptiActivityFlushAll");
-            return;
+            return 0;
         }
 
         std::vector<Entry> irec = get_flush_info(c, flush_info);
@@ -650,7 +647,17 @@ class CuptiTraceService
         for ( ; acb; acb = acb->next )
             num_written += flush_buffer(acb, c, irec, proc_fn);
 
-        Log(1).stream() << "cuptitrace: Wrote " << num_written << " records." << std::endl;
+        return num_written;
+    }
+
+    // --- Caliper callbacks
+    //
+
+    void flush_cb(Caliper* c, Channel* channel, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+        size_t num_written = do_flush(c, flush_info, proc_fn);
+
+        Log(1).stream() << channel->name() << ": cuptitrace: Wrote "
+                        << num_written << " records." << std::endl;
     }
 
     void clear_cb(Caliper* c, Channel* chn) {
@@ -853,15 +860,13 @@ class CuptiTraceService
                              Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint())));
     }
 
-    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
+    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, const SnapshotRecord* info, SnapshotRecord* snapshot) {
         if (c->is_signal())
             return;
-        if (snapshot_flush_trigger_attr != Attribute::invalid && trigger_info->get(snapshot_flush_trigger_attr).is_empty())
-            return;
-        if (!trigger_info->get(activity_kind_attr).is_empty())
+        if (flush_trigger_attr == Attribute::invalid || info->get(flush_trigger_attr).is_empty())
             return;
 
-        flush_cb(c, channel, nullptr, [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+        do_flush(c, nullptr, [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
                 SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
                 SnapshotRecord info(snapshot_data);
 
@@ -921,16 +926,23 @@ class CuptiTraceService
         flush_on_snapshot = config.get("flush_on_snapshot").to_bool();
 
         if (flush_on_snapshot) {
-            snapshot_flush_trigger_attr =
-                c->get_attribute(config.get("flush_trigger").to_string());
+            std::string attr_name = config.get("flush_trigger").to_string();
+            flush_trigger_attr = c->get_attribute(attr_name);
+
+            if (flush_trigger_attr == Attribute::invalid)
+                chn->events().create_attr_evt.connect(
+                    [attr_name](Caliper* c, Channel*, const Attribute& attr){
+                        if (attr.name() == attr_name)
+                            s_instance->flush_trigger_attr = attr;
+                    });
 
             chn->events().snapshot.connect(
                 [](Caliper* c, Channel* channel, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
                     s_instance->snapshot_flush_activities_cb(c, channel, scopes, info, rec);
                 });
 
-            Log(1).stream() << chn->name() << ": cuptitrace: Using flush-on-snapshot mode, "
-                            << "triggering on " << snapshot_flush_trigger_attr.name()
+            Log(1).stream() << chn->name() << ": cuptitrace: Using flush-on-snapshot mode."
+                            << " Triggering on " << attr_name
                             << std::endl;
         } else {
             chn->events().flush_evt.connect(
