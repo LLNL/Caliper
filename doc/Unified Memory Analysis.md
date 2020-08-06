@@ -15,7 +15,7 @@ This requires
 * Enabling the alloc service "resolve address" feature
 * Using the cuptitrace "flush-on-snapshot" mode
 
-### Memory annotations 
+### Memory annotations
 
 Place track/untrack calls around memory allocations:
 
@@ -62,7 +62,7 @@ Trace output from the config above has the following relevant attributes:
     * UVM activity kind, e.g. transfer or page fault. (DtoH, HtoD, pagefault.gpu, pagefault.cpu)
 * cupti.fault.addr
     * Page address of the unified memory event.
-* alloc.label#cupti.fault.address
+* alloc.label#cupti.fault.addr
     * Resolved user annotation label for the unified memory event's page address.
 * cupti.uvm.bytes
     * Bytes involved in a UVM data transfer
@@ -75,23 +75,23 @@ Example query:
 
 Example output from a modified Rodinia CUDA BFS benchmark:
 
-    UVM Activity   Label                 count MB        Time (s) 
-    pagefaults.gpu h_updating_graph_mask    10           0.001716 
-    pagefaults.gpu h_graph_nodes             8           0.005155 
-    pagefaults.gpu h_cost                    7           0.000553 
-    pagefaults.gpu h_graph_visited           6           0.000838 
-    pagefaults.gpu h_graph_edges             6           0.002730 
-    pagefaults.gpu h_graph_mask              4           0.000802 
-    pagefaults.cpu h_graph_edges            71                    
-    pagefaults.cpu h_graph_nodes            24                    
-    pagefaults.cpu h_updating_graph_mask    15                    
-    pagefaults.cpu h_cost                   12                    
-    pagefaults.cpu h_graph_mask              6                    
-    pagefaults.cpu h_graph_visited           5                    
-    HtoD           h_graph_edges           237 24.051712 0.001303 
-    HtoD           h_graph_nodes            74  8.060928 0.000426 
-    HtoD           h_cost                   47  4.063232 0.000265 
-    HtoD           h_graph_visited          14  1.048576 0.000071 
-    HtoD           h_updating_graph_mask    14  1.769472 0.000088 
-    HtoD           h_graph_mask              8  1.048576 0.000049 
-    DtoH           h_updating_graph_mask    11  0.720896 0.000036 
+    UVM Activity   Label                 count MB        Time (s)
+    pagefaults.gpu h_updating_graph_mask    10           0.001716
+    pagefaults.gpu h_graph_nodes             8           0.005155
+    pagefaults.gpu h_cost                    7           0.000553
+    pagefaults.gpu h_graph_visited           6           0.000838
+    pagefaults.gpu h_graph_edges             6           0.002730
+    pagefaults.gpu h_graph_mask              4           0.000802
+    pagefaults.cpu h_graph_edges            71
+    pagefaults.cpu h_graph_nodes            24
+    pagefaults.cpu h_updating_graph_mask    15
+    pagefaults.cpu h_cost                   12
+    pagefaults.cpu h_graph_mask              6
+    pagefaults.cpu h_graph_visited           5
+    HtoD           h_graph_edges           237 24.051712 0.001303
+    HtoD           h_graph_nodes            74  8.060928 0.000426
+    HtoD           h_cost                   47  4.063232 0.000265
+    HtoD           h_graph_visited          14  1.048576 0.000071
+    HtoD           h_updating_graph_mask    14  1.769472 0.000088
+    HtoD           h_graph_mask              8  1.048576 0.000049
+    DtoH           h_updating_graph_mask    11  0.720896 0.000036
