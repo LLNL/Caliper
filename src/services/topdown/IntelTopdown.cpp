@@ -210,14 +210,17 @@ class IntelTopdown
             (v_cycle_activity_cycles_no_execute.to_double()
                 + v_uops_executed_core_cycles_ge_1.to_double()
                 - v_uops_executed_core_cycles_ge_2.to_double()) / clocks;
-        double l3_hit_fraction =
-            v_mem_load_uops_retired_l3_hit.to_double() /
-                (v_mem_load_uops_retired_l3_hit.to_double()
-                 + 7.0 * v_mem_load_uops_retired_l3_miss.to_double());
-        double l3_miss_fraction =
-            v_mem_load_uops_retired_l3_miss.to_double() /
-                (v_mem_load_uops_retired_l3_hit.to_double()
-                 + 7.0 * v_mem_load_uops_retired_l3_miss.to_double());
+        double l3_tot =
+            v_mem_load_uops_retired_l3_hit.to_double() +
+                7.0 * v_mem_load_uops_retired_l3_miss.to_double();
+        double l3_hit_fraction  = 0.0;
+        double l3_miss_fraction = 0.0;
+        if (l3_tot > 0.0) {
+            l3_hit_fraction =
+                v_mem_load_uops_retired_l3_hit.to_double()  / l3_tot;
+            l3_miss_fraction =
+                v_mem_load_uops_retired_l3_miss.to_double() / l3_tot;
+        }
         double ext_mem_bound =
             v_cycle_activity_stalls_l2_pending.to_double() * l3_miss_fraction / clocks;
         double l1_bound =
