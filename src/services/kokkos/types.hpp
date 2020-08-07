@@ -30,7 +30,9 @@ namespace kokkos {
                                                              const SpaceHandle, const char *, const void *,
                                                              const uint64_t)>;
         using end_deep_copy_callback = util::callback<void()>;
-
+         
+	using begin_fence_callback = util::callback<void(const char*, const uint32_t, uint64_t*)>; 
+	using end_fence_callback = util::callback<void(uint64_t)>; 
         struct callbacks {
 
             init_callback kokkosp_init_callback;
@@ -53,6 +55,9 @@ namespace kokkos {
 
             begin_deep_copy_callback kokkosp_begin_deep_copy_callback;
             end_deep_copy_callback kokkosp_end_deep_copy_callback;
+
+            begin_fence_callback kokkosp_begin_fence_callback;
+            end_fence_callback kokkosp_end_fence_callback;
         };
 
 } // end namespace kokkos

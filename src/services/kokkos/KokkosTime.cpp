@@ -87,6 +87,9 @@ namespace {
                         kokkosp_callbacks.kokkosp_begin_parallel_scan_callback.connect([&](const char* name, const uint32_t, uint64_t*){
                             instance->pushRegion(name, "kokkos.parallel_scan");
                         });
+                        kokkosp_callbacks.kokkosp_begin_fence_callback.connect([&](const char* name, const uint32_t, uint64_t*){
+                            instance->pushRegion(name, "kokkos.fence");
+                        });
                         kokkosp_callbacks.kokkosp_end_parallel_for_callback.connect([&](const uint64_t){
                             instance->popRegion();
                         });
@@ -94,6 +97,9 @@ namespace {
                             instance->popRegion();
                         });
                         kokkosp_callbacks.kokkosp_end_parallel_scan_callback.connect([&](const uint64_t){
+                            instance->popRegion();
+                        });
+                        kokkosp_callbacks.kokkosp_end_fence_callback.connect([&](const uint64_t){
                             instance->popRegion();
                         });
                         kokkosp_callbacks.kokkosp_push_region_callback.connect([&](const char* regionName){
