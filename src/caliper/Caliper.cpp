@@ -629,29 +629,6 @@ const ConfigSet::Entry Caliper::GlobalData::s_configdata[] = {
 
 // --- Attribute interface
 
-/// \brief Create an attribute
-///
-/// This function creates and returns an attribute key with the given name, type, and properties.
-/// Optionally, metadata can be added via attribute:value pairs.
-/// Attribute names must be unique. If an attribute with the given name already exists, the
-/// existing attribute is returned.
-///
-/// After a new attribute has been created, this function will invoke the create_attr_evt callback.
-/// If an attribute with the given name already exists, the callbacks will not be invoked.
-/// If two threads create an attribute with the same name simultaneously, the pre_create_attr_evt
-/// callback may be invoked on both threads, but create_attr_evt will only be invoked once.
-/// However, both threads will successfully return the new attribute.
-///
-/// This function is not signal safe.
-///
-/// \param name Name of the attribute
-/// \param type Type of the attribute
-/// \param prop Attribute property bitmap. Values of type cali_attr_properties combined with bitwise or.
-/// \param n_meta Number of metadata entries
-/// \param meta_attr Metadata attribute list. An array of n_meta attribute entries.
-/// \param meta_val Metadata values. An array of n_meta values.
-/// \return The created attribute.
-
 Attribute
 Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop,
                           int n_meta, const Attribute* meta_attr, const Variant* meta_val)
@@ -744,13 +721,6 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
     return attr;
 }
 
-/// \brief Find an attribute by name
-///
-/// While it should be signal safe, we do not recommend using this function in a signal handler.
-///
-/// \param name The attribute name
-/// \return true if the attribute exists, false otherwise
-
 bool
 Caliper::attribute_exists(const std::string& name) const
 {
@@ -761,13 +731,6 @@ Caliper::attribute_exists(const std::string& name) const
 
     return (sG->attribute_nodes.find(name) != sG->attribute_nodes.end());
 }
-
-/// \brief Find an attribute by name
-///
-/// While it should be signal safe, we do not recommend using this function in a signal handler.
-///
-/// \param name The attribute name
-/// \return Attribute object, or Attribute::invalid if not found.
 
 Attribute
 Caliper::get_attribute(const std::string& name) const
@@ -789,11 +752,6 @@ Caliper::get_attribute(const std::string& name) const
     return Attribute::make_attribute(node);
 }
 
-/// \brief Find attribute by id
-/// \note This function is signal safe.
-/// \param id The attribute id
-/// \return Attribute object, or Attribute::invalid if not found.
-
 Attribute
 Caliper::get_attribute(cali_id_t id) const
 {
@@ -801,10 +759,6 @@ Caliper::get_attribute(cali_id_t id) const
 
     return Attribute::make_attribute(sT->tree.node(id));
 }
-
-/// \brief Get all attributes.
-/// \note This function is _not_ signal safe.
-/// \return   A vector that containing all attribute objects
 
 std::vector<Attribute>
 Caliper::get_all_attributes() const
@@ -877,30 +831,6 @@ Caliper::get_globals(Channel* channel)
 
 // --- Snapshot interface
 
-/// \brief Trigger and return a snapshot.
-///
-/// This function triggers a snapshot for a given channel and returns a snapshot
-/// record to the caller
-/// The returned snapshot record contains the current blackboard contents, measurement
-/// values provided by service modules, and the contents of the trigger_info list
-/// provided by the caller.
-///
-/// The function invokes the snapshot callback, which instructs attached services to
-/// take measurements (e.g., a timestamp) and add them to the returned record. The
-/// caller-provided trigger_info list is passed to the snapshot callback.
-/// The returned snapshot record also contains contents of the current thread's and the
-/// process-wide blackboard, as specified in the scopes flag.
-///
-/// The caller must provide a snapshot buffer with sufficient free space.
-///
-/// \note This function is signal safe.
-///
-/// \param scopes       Specifies which blackboard contents to put into the snapshot buffer.
-///                     Bitfield of cali_scope_t values combined with bitwise OR.
-/// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
-///                     callback, and added to the returned snapshot record.
-/// \param sbuf         Caller-provided snapshot record buffer in which the snapshot record is
-///                     returned. Must have sufficient space for the snapshot contents.
 void
 Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
 {
@@ -957,26 +887,6 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
     }
 }
 
-/// \brief Trigger and process a snapshot.
-///
-/// This function triggers a snapshot and processes it. The snapshot contains the
-/// current blackboard contents, measurement values provided by service modules,
-/// and the contents of the trigger_info list provided by the caller.
-/// The complete snapshot is then passed to snapshot processing services registered
-/// with Caliper.
-///
-/// The function creates a snapshot record with measurements provided by the snapshot callbac,
-/// the current thread's and/or processes' blackboard contents, as well as the contents of
-/// the trigger_info list provided by the caller.
-///
-/// The function invokes the snapshot callback to obtain measurements.
-/// The fully assembled snapshot record is then passed to the process_snapshot callback.
-///
-/// \note This function is signal safe.
-///
-/// \param trigger_info A caller-provided list of attributes that is passed to the snapshot
-///                     and process_snapshot callbacks, and added to the returned snapshot record.
-
 void
 Caliper::push_snapshot(Channel* channel, const SnapshotRecord* trigger_info)
 {
@@ -991,8 +901,6 @@ Caliper::push_snapshot(Channel* channel, const SnapshotRecord* trigger_info)
     channel->mP->events.process_snapshot(this, channel, trigger_info, &sbuf);
 }
 
-
-/// \brief Flush aggregation/trace buffer contents.
 void
 Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
 {
@@ -1015,18 +923,6 @@ Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn p
     chn->mP->events.post_flush_evt(this, chn, flush_info);
 }
 
-
-/// Forward aggregation/trace buffer contents to output services.
-///
-/// Flushes trace buffers and / or the aggregation database in the trace and aggregation
-/// services, respectively. This will
-/// forward all buffered snapshot records to output services, e.g., report and recorder.
-///
-/// This function will invoke the pre_flush, flush, and flush_finish callbacks.
-/// \note This function is not signal safe.
-///
-/// \param input_flush_info User-provided flush context information. Currently unused.
-
 void
 Caliper::flush_and_write(Channel* channel, const SnapshotRecord* input_flush_info)
 {
@@ -1048,14 +944,6 @@ Caliper::flush_and_write(Channel* channel, const SnapshotRecord* input_flush_inf
     channel->mP->events.write_output_evt(this, channel, &flush_info);
 }
 
-
-/// Clear aggregation and/or trace buffers.
-///
-/// Clears aggregation and trace buffers. Data in those buffers
-/// that has not been written yet will be lost.
-///
-/// \note This function is not signal safe.
-
 void
 Caliper::clear(Channel* chn)
 {
@@ -1067,21 +955,6 @@ Caliper::clear(Channel* chn)
 
 
 // --- Annotation interface
-
-/// \brief Push attribute:value pair on the process or thread
-///   blackboard.
-///
-/// Adds the given attribute/value pair on the blackboard. Appends
-/// the value to any previous values of the same attribute,
-/// creating a hierarchy.
-///
-/// This function invokes pre_begin/post_begin callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key
-/// \param data Value to set
 
 cali_err
 Caliper::begin(const Attribute& attr, const Variant& data)
@@ -1128,16 +1001,6 @@ Caliper::begin(const Attribute& attr, const Variant& data)
 
     return ret;
 }
-
-/// \brief Pop/remove top-most entry with given attribute from
-///   the process or thread blackboard.
-///
-/// This function invokes the pre_end/post_end callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key.
 
 cali_err
 Caliper::end(const Attribute& attr)
@@ -1203,19 +1066,6 @@ Caliper::end(const Attribute& attr)
     return ret;
 }
 
-/// \brief Set attribute:value pair on the process or thread blackboard.
-///
-/// Set the given attribute/value pair on the blackboard. Overwrites
-/// the previous values of the same attribute.
-///
-/// This function invokes pre_set/post_set callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key
-/// \param data Value to set
-
 cali_err
 Caliper::set(const Attribute& attr, const Variant& data)
 {
@@ -1260,21 +1110,6 @@ Caliper::set(const Attribute& attr, const Variant& data)
     return ret;
 }
 
-/// \brief Push attribute:value pair on the channel blackboard.
-///
-/// Adds the given attribute/value pair on the given channel's
-/// blackboard. Appends the value to any previous values of the
-/// same attribute, creating a hierarchy.
-///
-/// This function invokes pre_begin/post_begin callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in `attr`.
-///
-/// This function is signal safe.
-///
-/// \param channel Designated channel
-/// \param attr Attribute key
-/// \param data Value to set
-
 cali_err
 Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 {
@@ -1306,16 +1141,6 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
 
     return ret;
 }
-
-/// \brief Pop/remove top-most entry with given attribute from
-///   the channel blackboard.
-///
-/// This function invokes the pre_end/post_end callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key.
 
 cali_err
 Caliper::end(Channel* channel, const Attribute& attr)
@@ -1366,19 +1191,6 @@ Caliper::end(Channel* channel, const Attribute& attr)
     return ret;
 }
 
-/// \brief Set attribute:value pair on the channel blackboard.
-///
-/// Set the given attribute/value pair on the given channel's blackboard.
-/// Overwrites the previous values of the same attribute.
-///
-/// This function invokes pre_set/post_set callbacks, unless the
-/// CALI_ATTR_SKIP_EVENTS attribute property is set in \a attr.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key
-/// \param data Value to set
-
 cali_err
 Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
 {
@@ -1413,16 +1225,6 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
 
 // --- Query
 
-/// \brief Retrieve top-most entry for the given attribute key from the
-///   process or thread blackboard.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key.
-///
-/// \return The top-most entry on the blackboard for the given attribute key.
-///         An empty Entry object if this attribute is not set.
-
 Entry
 Caliper::get(const Attribute& attr)
 {
@@ -1448,16 +1250,6 @@ Caliper::get(const Attribute& attr)
     else
         return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(sG->get_key(attr))));
 }
-
-/// \brief Retrieve top-most entry for the given attribute key from the
-///    channel blackboard of the given channel.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key.
-///
-/// \return The top-most entry on the blackboard for the given attribute key.
-///         An empty Entry object if this attribute is not set.
 
 Entry
 Caliper::get(Channel* channel, const Attribute& attr)
@@ -1497,15 +1289,6 @@ Caliper::memory_region_end(Channel* channel, const void* ptr)
 
 // --- Generic entry API
 
-/// \brief Create a snapshot record (entry list) from the given attribute:value pairs
-///
-/// This function is signal-safe.
-///
-/// \param n      Number of elements in attribute/value lists
-/// \param attr   Attribute list
-/// \param value  Value list
-/// \param list   Output record. Must be large enough to hold all entries.
-/// \param parent (Optional) parent node for any treee elements.
 void
 Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
 {
@@ -1524,17 +1307,6 @@ Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, Snap
         list.append(node);
 }
 
-/// \brief Return a context tree path for the key:value pairs from a given list of
-/// nodes.
-///
-/// This function is signal safe.
-///
-/// \param n Number of nodes in node list
-/// \param nodelist List of nodes to take key:value pairs from
-/// \param parent   Construct path off this parent node
-///
-/// \return Node pointing to the end of the new path
-
 Node*
 Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
@@ -1543,16 +1315,6 @@ Caliper::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 
     return sT->tree.get_path(n, nodelist, parent);
 }
-
-/// \brief Return a context tree path for the given key:value pairs.
-///
-/// \note This function is signal safe.
-///
-/// \param attr   Attribute. Cannot have the AS VALUE property.
-/// \param data   Value
-/// \param parent Construct path off this parent node
-///
-/// \return Node pointing to the end of the new path
 
 Node*
 Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  parent)
@@ -1566,16 +1328,6 @@ Caliper::make_tree_entry(const Attribute& attr, const Variant& data, Node*  pare
     return sT->tree.get_path(1, &attr, &data, parent);
 }
 
-/// \brief Return a context tree branch for the list of values with the given attribute.
-///
-/// \note This function is signal safe.
-///
-/// \param attr   Attribute. Cannot have the AS VALUE property.
-/// \param n      Number of values in \a data array
-/// \param data   Array of values
-/// \param parent Construct path off this parent node
-///
-/// \return Node pointing to the end of the new path
 Node*
 Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], Node* parent)
 {
@@ -1588,11 +1340,6 @@ Caliper::make_tree_entry(const Attribute& attr, size_t n, const Variant data[], 
     return sT->tree.get_path(attr, n, data, parent);
 }
 
-/// \brief Return the node with the given id.
-///
-/// This function is signal safe.
-///
-/// \return The node. Null if the node was not found.
 
 Node*
 Caliper::node(cali_id_t id) const
@@ -1600,16 +1347,6 @@ Caliper::node(cali_id_t id) const
     // no siglock necessary
     return sT->tree.node(id);
 }
-
-/// Exchange value on the blackboard. Atomically updates value for given
-/// attribute key and returns the previous value.
-///
-/// This function is signal safe.
-///
-/// \param attr Attribute key. Must have AS_VALUE attribute property.
-/// \param data The new value.
-///
-/// \return The previous value for the given key.
 
 Variant
 Caliper::exchange(const Attribute& attr, const Variant& data)
@@ -1635,27 +1372,6 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
 // --- Channel API
 //
 
-/// \brief Create a %Caliper channel with the given runtime configuration.
-///
-/// An channel controls %Caliper's annotation tracking and measurement
-/// activities. Multiple channels can be active at the same time, independent
-/// of each other. Each channel has its own runtime configuration,
-/// blackboard, and active services.
-///
-/// Creating channels is \b not thread-safe. Users must make sure that no
-/// %Caliper activities (e.g. annotations) are active on any program thread
-/// during channel creation.
-///
-/// The call returns a pointer to the created channel object. %Caliper
-/// retains ownership of the channel object. This pointer becomes invalid
-/// when the channel is deleted. %Caliper notifies users with the
-/// finish_evt callback when an channel is about to be deleted.
-///
-/// \param name Name of the channel. This is used to identify the channel
-///   in %Caliper log output.
-/// \param cfg The channel's runtime configuration.
-/// \return Pointer to the channel. Null pointer if the channel could
-///   not be created.
 Channel*
 Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 {
@@ -1686,12 +1402,6 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     return channel;
 }
 
-/// \brief Return pointer to channel object with the given ID.
-///
-/// The call returns a pointer to the created channel object. %Caliper
-/// retains ownership of the channel object. This pointer becomes invalid
-/// when the channel is deleted. %Caliper notifies users with the
-/// finish_evt callback when an channel is about to be deleted.
 Channel*
 Caliper::get_channel(cali_id_t id)
 {
@@ -1701,7 +1411,6 @@ Caliper::get_channel(cali_id_t id)
     return sG->channels[id].get();
 }
 
-/// \brief Return all existing channels (active and inactive).
 std::vector<Channel*>
 Caliper::get_all_channels()
 {
@@ -1716,11 +1425,6 @@ Caliper::get_all_channels()
     return ret;
 }
 
-/// \brief Delete the given channel.
-///
-/// Deleting channels is \b not thread-safe. Users must make sure that no
-/// %Caliper activities (e.g. annotations) are active on any program thread
-/// during channel creation.
 void
 Caliper::delete_channel(Channel* chn)
 {
@@ -1733,18 +1437,12 @@ Caliper::delete_channel(Channel* chn)
     sG->channels[chn->id()].reset();
 }
 
-/// \brief Activate the given channel.
-///
-/// Inactive channels will not track or process annotations and other
-/// blackboard updates.
 void
 Caliper::activate_channel(Channel* chn)
 {
     chn->mP->active = true;
 }
 
-/// \brief Deactivate the given channel.
-/// \copydetails Caliper::activate_channel
 void
 Caliper::deactivate_channel(Channel* chn)
 {
@@ -1763,7 +1461,6 @@ Caliper::release_thread()
             chn->mP->events.release_thread_evt(this, chn.get());
 }
 
-/// \brief Flush and delete all channels
 void
 Caliper::finalize()
 {
@@ -1788,31 +1485,11 @@ Caliper::finalize()
 // --- Caliper constructor & singleton API
 //
 
-/// \brief Construct a Caliper instance object.
-/// \see instance()
-
 Caliper::Caliper()
     : m_is_signal(false)
 {
     *this = Caliper::instance();
 }
-
-/// \brief Construct a Caliper instance object.
-///
-/// The Caliper instance object provides access to the Caliper API.
-/// Internally, Caliper maintains a variety of thread-local data structures.
-/// The instance object caches access to these structures. As a result,
-/// one cannot share Caliper instance objects between threads.
-/// Use Caliper instance objects only within a function context
-/// (i.e., on the stack).
-///
-/// For use within signal handlers, use `sigsafe_instance()`.
-/// \see sigsafe_instance()
-///
-/// Caliper will initialize itself in the first instance object request on a
-/// process.
-///
-/// \return Caliper instance object
 
 Caliper
 Caliper::instance()
@@ -1861,15 +1538,6 @@ Caliper::instance()
     return Caliper(gPtr, tPtr, false);
 }
 
-/// \brief Construct a signal-safe Caliper instance object.
-///
-/// A signal-safe Caliper instance object will have a flag set to instruct
-/// the API and services that only signal-safe operations can be used.
-///
-/// \see instance()
-///
-/// \return Caliper instance object
-
 Caliper
 Caliper::sigsafe_instance()
 {
@@ -1881,8 +1549,6 @@ Caliper::operator bool() const
     return (sG && sT && !(m_is_signal && sT->lock.is_locked()));
 }
 
-/// \brief Release %Caliper. Note that %Caliper cannot be re-initialized
-///   after it has been released.
 void
 Caliper::release()
 {
@@ -1895,32 +1561,11 @@ Caliper::release()
     }
 }
 
-/// \brief Test if Caliper has been initialized yet.
-
 bool
 Caliper::is_initialized()
 {
     return GlobalData::s_init_lock == 0;
 }
-
-/// \brief Add a list of %Caliper service specs.
-///
-/// Adds services that will be made available by %Caliper. This does *not*
-/// activate the services automatically, they must still be listed in the
-/// CALI_SERVICES_ENABLE configuration variable at runtime.
-/// Services must be provided in a list of CaliperService entries,
-/// terminated by a `{ nullptr, nullptr}` entry. Example:
-///
-/// \code
-///   extern void myservice_register(Caliper* c);
-///
-///   CaliperService my_services[] = {
-///     { "myservice", myservice_register },
-///     { nullptr, nullptr }
-///   };
-///
-///   Caliper::add_services(my_services);
-/// \endcode
 
 void
 Caliper::add_services(const CaliperService* s)

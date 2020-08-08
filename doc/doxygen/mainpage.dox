@@ -3,10 +3,10 @@
 
 \section main_user Caliper user APIs
 
-\li For documentation on the macro, C++, and C source-code annotation APIs, 
+\li For documentation on the macro, C++, and C source-code annotation APIs,
   see \ref AnnotationAPI.
-\li The \ref ControlChannelAPI provides means to access and 
-  control built-in %Caliper configurations and enable measurements 
+\li The \ref ControlChannelAPI provides means to access and
+  control built-in %Caliper configurations and enable measurements
   from within a target program.
 
 \section main_cxx C++ API reference
