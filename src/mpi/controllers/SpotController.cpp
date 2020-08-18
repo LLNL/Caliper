@@ -149,7 +149,8 @@ public:
 
     void timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize, Aggregator& output_agg) {
         const char* select =
-            " loop"
+            " cali.channel"
+            ",loop"
             ",block"
             ",sum(time.duration)"
             ",sum(loop.iterations)"
@@ -163,15 +164,16 @@ public:
             + " select "
             + m_opts.query_select("local", select, false)
             + " group by "
-            + m_opts.query_groupby("local", "loop,block")
-            + " where loop=" + loopname;
+            + m_opts.query_groupby("local", "cali.channel,loop,block")
+            + " where loop.start_iteration,loop=" + loopname;
 
         local_aggregate(query.c_str(), c, channel(), db, output_agg);
     }
 
     QuerySpec timeseries_spec() {
         const char* select =
-            " loop"
+            " cali.channel"
+            ",loop"
             ",block"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(sum#time.duration) as \"Time (s)\""
@@ -181,7 +183,8 @@ public:
             m_opts.query_let("cross", "")
             + " select "
             + m_opts.query_select("cross", select, true)
-            + " group by loop,block";
+            + " group by "
+            + m_opts.query_groupby("cross", "cali.channel,loop,block");
 
         CalQLParser parser(query.c_str());
 
@@ -222,6 +225,7 @@ const char* spot_timeseries_spec =
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
+    "     \"CALI_CHANNEL_SNAPSHOT_SCOPES\"    : \"process,thread,channel\","
     "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
     "     \"CALI_TIMER_UNIT\"                 : \"sec\""
@@ -339,12 +343,25 @@ class SpotController : public cali::ChannelController
 
             int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
 
-            Aggregator cross_agg(tsc->timeseries_spec());
+            QuerySpec  spec = tsc->timeseries_spec();
+            Aggregator cross_agg(spec);
 
             tsc->timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1), cross_agg);
             cross_aggregate(db, cross_agg);
 
             if (m_rank == 0) {
+                // --- Save the timeseries metrics. Should be the same for each
+                //   loop, so just clear them before setting them.
+                m_spot_timeseries_metrics.clear();
+
+                for (const auto &op : spec.aggregation_ops.list) {
+                    if (!m_spot_timeseries_metrics.empty())
+                        m_spot_timeseries_metrics.append(",");
+
+                    m_spot_timeseries_metrics.append(Aggregator::get_aggregation_attribute_name(op));
+                }
+
+                // --- Write data
                 cross_agg.flush(db, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
                         writer.write_snapshot(db, rec);
                     });
@@ -398,7 +415,7 @@ class SpotController : public cali::ChannelController
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
             + " group by "
-            + m_opts.query_groupby("cross", "prop:nested");
+            + m_opts.query_groupby("cross", "cali.channel,prop:nested");
 
         QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
@@ -410,7 +427,7 @@ class SpotController : public cali::ChannelController
                 + " aggregate "
                 + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
                 + " group by "
-                + m_opts.query_groupby("local", "prop:nested");
+                + m_opts.query_groupby("local", "cali.channel,prop:nested");
 
             local_aggregate(query.c_str(), c, channel(), db, output_agg);
         }
@@ -447,12 +464,15 @@ class SpotController : public cali::ChannelController
 
         Attribute mtr_attr =
             db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute tsm_attr =
+            db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         Attribute fmt_attr =
             db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
         Attribute opt_attr =
             db.create_attribute("spot.options",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
         db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
+        db.set_global(tsm_attr, Variant(m_spot_timeseries_metrics.c_str()));
         db.set_global(fmt_attr, Variant(spot_format_version));
         db.set_global(opt_attr, Variant(spot_opts.c_str()));
     }
@@ -578,6 +598,7 @@ const char* controller_spec =
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
+    "     \"CALI_CHANNEL_SNAPSHOT_SCOPES\"    : \"process,thread,channel\","
     "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
     "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
