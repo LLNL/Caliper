@@ -154,20 +154,21 @@ public:
 
     void timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize, Aggregator& output_agg) {
         const char* select =
-            " Block"
+            " loop"
+            ",block"
             ",sum(time.duration)"
             ",sum(loop.iterations)"
             ",ratio(loop.iterations,time.duration)";
 
         std::string block =
-            std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+            std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
         std::string query =
             m_opts.query_let("local", block)
             + " select "
             + m_opts.query_select("local", select, false)
             + " group by "
-            + m_opts.query_groupby("local", "Block")
+            + m_opts.query_groupby("local", "loop,block")
             + " where loop=" + loopname;
 
         local_aggregate(query.c_str(), c, channel(), db, output_agg);
@@ -175,7 +176,8 @@ public:
 
     QuerySpec timeseries_spec() {
         const char* select =
-            " Block"
+            " loop"
+            ",block"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(sum#time.duration) as \"Time (s)\""
             ",avg(loop.iterations/time.duration) as \"Iter/s\"";
@@ -184,7 +186,7 @@ public:
             m_opts.query_let("cross", "")
             + " select "
             + m_opts.query_select("cross", select, true)
-            + " group by Block";
+            + " group by loop,block";
 
         CalQLParser parser(query.c_str());
 
