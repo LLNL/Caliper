@@ -9,9 +9,11 @@
 
 #include <caliper/reader/Aggregator.h>
 #include <caliper/reader/CaliperMetadataDB.h>
+#include <caliper/reader/CaliWriter.h>
 #include <caliper/reader/CalQLParser.h>
-#include <caliper/reader/FormatProcessor.h>
 #include <caliper/reader/NestedExclusiveRegionProfile.h>
+#include <caliper/reader/Preprocessor.h>
+#include <caliper/reader/RecordSelector.h>
 
 #include <caliper/common/Log.h>
 #include <caliper/common/OutputStream.h>
@@ -38,7 +40,31 @@ using namespace cali;
 namespace
 {
 
-constexpr int spot_format_version = 1;
+constexpr int spot_format_version = 2;
+
+//
+// Helper functions
+//
+
+/// \brief Perform process-local aggregation of channel data into \a output_agg
+void
+local_aggregate(const char* query, Caliper& c, Channel* channel, CaliperMetadataDB& db, Aggregator& output_agg) {
+    QuerySpec      spec(CalQLParser(query).spec());
+
+    RecordSelector filter(spec);
+    Preprocessor   prp(spec);
+    Aggregator     agg(spec);
+
+    c.flush(channel, nullptr, [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+            EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
+
+            if (filter.pass(db, mrec))
+                agg.add(db, mrec);
+        });
+
+    // write intermediate results into output aggregator
+    agg.flush(db, output_agg);
+}
 
 std::string
 make_filename()
@@ -50,67 +76,321 @@ make_filename()
     return std::string(timestr) + std::to_string(getpid()) + ".cali";
 }
 
-#ifdef CALIPER_HAVE_ADIAK
+//
+// Timeseries processing
+//
+
 void
-write_adiak(CaliperMetadataDB& db, Aggregator& output_agg)
+convert_timeseries_option(const ConfigManager::Options& opts, const char* ts_opt_name, std::string& target)
 {
-    Log(2).stream() << "[spot controller]: Writing adiak output" << std::endl;
+    std::string spot_opt_name = "timeseries.";
+    spot_opt_name.append(ts_opt_name);
 
-    //   Extract / calculate avg inclusive time for paths.
-    // Use exclusive processor b/c values are inclusive already.
+    if (opts.is_set(spot_opt_name.c_str())) {
+        if (!target.empty())
+            target.append(",");
 
-    NestedExclusiveRegionProfile rp(db, "avg#inclusive#sum#time.duration");
-    output_agg.flush(db, rp);
-
-    std::map<std::string, double> nested_region_times;
-    double total_time;
-
-    std::tie(nested_region_times, std::ignore, total_time) =
-        rp.result();
-
-    // export time profile into adiak
-
-    adiak::value("total_time", total_time, adiak_performance);
-
-    // copy our map into a vector that adiak can process
-    std::vector< std::tuple<std::string, double> > tmpvec(nested_region_times.size());
-
-    std::transform(nested_region_times.begin(), nested_region_times.end(), tmpvec.begin(),
-                   [](std::pair<std::string,double>&& p){
-                       return std::make_tuple(std::move(p.first), p.second);
-                   });
-
-    adiak::value("avg#inclusive#sum#time.duration", tmpvec, adiak_performance);
+        target.append(ts_opt_name);
+        target.append("=");
+        target.append(opts.get(spot_opt_name.c_str()).to_string());
+    }
 }
-#endif
+
+//   Make a config string for the timeseries ConfigManager from the
+// Spot controller's options
+std::string
+get_timeseries_config_string(const ConfigManager::Options& opts)
+{
+    std::string ret = "spot.timeseries(";
+    std::string tsopts;
+
+    convert_timeseries_option(opts, "iteration_interval", tsopts);
+    convert_timeseries_option(opts, "time_interval", tsopts);
+    convert_timeseries_option(opts, "target_loops", tsopts);
+
+    if (opts.is_set("timeseries.metrics"))
+        ret.append(opts.get("timeseries.metrics").to_string());
+
+    ret.append(tsopts);
+    ret.append(")");
+
+    return ret;
+}
+
+struct LoopInfo {
+    std::string name;
+    int iterations;
+    int count;
+};
+
+LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
+{
+    LoopInfo ret { "", 0, 0 };
+
+    Attribute loop_a = db.get_attribute("loop");
+    Attribute iter_a = db.get_attribute("max#sum#loop.iterations");
+    Attribute lcnt_a = db.get_attribute("max#count");
+
+    for (const Entry& e : rec) {
+        if      (e.attribute() == iter_a.id())
+            ret.iterations = e.value().to_int();
+        else if (e.attribute() == lcnt_a.id())
+            ret.count      = e.value().to_int();
+        else {
+            Variant v_loop = e.value(loop_a);
+            if (!v_loop.empty())
+                ret.name = v_loop.to_string();
+        }
+    }
+
+    return ret;
+}
+
+class SpotTimeseriesController : public cali::ChannelController
+{
+    cali::ConfigManager::Options m_opts;
+
+public:
+
+    void timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize, Aggregator& output_agg) {
+        const char* select =
+            " Block"
+            ",sum(time.duration)"
+            ",sum(loop.iterations)"
+            ",ratio(loop.iterations,time.duration)";
+
+        std::string block =
+            std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
+
+        std::string query =
+            m_opts.query_let("local", block)
+            + " select "
+            + m_opts.query_select("local", select, false)
+            + " group by "
+            + m_opts.query_groupby("local", "Block")
+            + " where loop=" + loopname;
+
+        local_aggregate(query.c_str(), c, channel(), db, output_agg);
+    }
+
+    QuerySpec timeseries_spec() {
+        const char* select =
+            " Block"
+            ",max(sum#loop.iterations) as \"Iterations\""
+            ",max(sum#time.duration) as \"Time (s)\""
+            ",avg(loop.iterations/time.duration) as \"Iter/s\"";
+
+        std::string query =
+            m_opts.query_let("cross", "")
+            + " select "
+            + m_opts.query_select("cross", select, true)
+            + " group by Block";
+
+        CalQLParser parser(query.c_str());
+
+        if (parser.error())
+            Log(0).stream() << parser.error_msg() << " " << query << std::endl;
+
+        return CalQLParser(query.c_str()).spec();
+    }
+
+    void flush() { }
+
+    SpotTimeseriesController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
+        : ChannelController(name, 0, initial_cfg),
+          m_opts(opts)
+        {
+            if (m_opts.is_set("iteration_interval"))
+                config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
+            else if (m_opts.is_set("time_interval"))
+                config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
+            else
+                config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
+
+            if (m_opts.is_set("target_loops"))
+                config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = m_opts.get("target_loops").to_string();
+
+            m_opts.update_channel_config(config());
+        }
+
+    friend class SpotController;
+};
+
+const char* spot_timeseries_spec =
+    "{"
+    " \"name\"        : \"spot.timeseries\","
+    " \"description\" : \"Collect time-series information for loops\","
+    " \"categories\"  : [ \"metric\" ],"
+    " \"services\"    : [ \"loop_monitor\", \"timestamp\", \"trace\" ],"
+    " \"config\"      : "
+    "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
+    "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
+    "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
+    "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
+    "     \"CALI_TIMER_UNIT\"                 : \"sec\""
+    "   },"
+    " \"options\": "
+    " ["
+    "  {"
+    "   \"name\": \"iteration_interval\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Measure every N loop iterations\""
+    "  },"
+    "  {"
+    "   \"name\": \"time_interval\","
+    "   \"type\": \"double\","
+    "   \"description\": \"Measure after t seconds\""
+    "  },"
+    "  {"
+    "   \"name\": \"target_loops\","
+    "   \"type\": \"string\","
+    "   \"description\": \"List of loops to target. Default: any top-level loop.\""
+    "  }"
+    " ]"
+    "}";
+
+cali::ChannelController*
+make_timeseries_controller(const char* name, const config_map_t& cfg, const cali::ConfigManager::Options& opts)
+{
+    return new SpotTimeseriesController(name, cfg, opts);
+}
+
+ConfigManager::ConfigInfo spot_timeseries_info { spot_timeseries_spec, make_timeseries_controller, nullptr };
+
+
+//
+// Spot main
+//
 
 class SpotController : public cali::ChannelController
 {
     cali::ConfigManager::Options m_opts;
+
     bool m_use_mpi;
+    int  m_rank;
+#ifdef CALIPER_HAVE_MPI
+    MPI_Comm m_comm;
+#endif
 
-    /// \brief Perform intermediate aggregation of channel data into \a output_agg
-    void aggregate(const std::string& query, Caliper& c, CaliperMetadataDB& db, Aggregator& output_agg) {
-        QuerySpec spec =
-            CalQLParser(query.c_str()).spec();
+    std::string m_spot_metrics;
+    std::string m_spot_timeseries_metrics;
 
-        Aggregator agg(spec);
+    cali::ConfigManager m_timeseries_mgr;
 
-        c.flush(channel(), nullptr, [&db,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
-                   EntryList mrec = db.merge_snapshot(in_db, rec);
-                   agg.add(db, mrec);
-                });
+    void init_mpi() {
+#ifdef CALIPER_HAVE_MPI
+        int initialized = 0;
+        MPI_Initialized(&initialized);
 
-        // write intermediate results into output aggregator
-        agg.flush(db, output_agg);
+        if (!initialized)
+            m_use_mpi = false;
+
+        if (m_use_mpi) {
+            MPI_Comm_dup(MPI_COMM_WORLD, &m_comm);
+            MPI_Comm_rank(m_comm, &m_rank);
+        }
+#endif
     }
 
-public:
+    void finalize_mpi() {
+#ifdef CALIPER_HAVE_MPI
+        if (m_use_mpi)
+            MPI_Comm_free(&m_comm);
+#endif
+    }
 
-    void
-    flush() {
-        Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
+    void cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) {
+#ifdef CALIPER_HAVE_MPI
+        if (m_use_mpi)
+            aggregate_over_mpi(db, agg, m_comm);
+#endif
+    }
 
+    void process_timeseries(SpotTimeseriesController* tsc, Caliper& c, CaliperMetadataDB& db, CaliWriter& writer, const LoopInfo& info) {
+        int  iterations = 0;
+        int  rec_count = 0;
+        char namebuf[64];
+        memset(namebuf, 0, 64);
+
+        if (m_rank == 0) {
+            iterations = info.iterations;
+            rec_count  = info.count;
+
+            if (info.name.size() < 64) {
+                std::copy(info.name.begin(), info.name.end(), std::begin(namebuf));
+            } else {
+                Log(0).stream() << channel()->name() << ": Loop name too long (" << info.name << ")" << std::endl;
+                iterations = 0;
+            }
+        }
+
+#ifdef CALIPER_HAVE_MPI
+        if (m_use_mpi) {
+            MPI_Bcast(&iterations, 1,  MPI_INT,  0, m_comm);
+            MPI_Bcast(&rec_count,  1,  MPI_INT,  0, m_comm);
+            MPI_Bcast(namebuf,     64, MPI_CHAR, 0, m_comm);
+        }
+#endif
+
+        if (iterations > 0) {
+            int nblocks = 20;
+
+            if (m_opts.is_set("timeseries.maxrows"))
+                nblocks = m_opts.get("timeseries.maxrows").to_int();
+            if (nblocks <= 0)
+                nblocks = rec_count;
+
+            int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
+
+            Aggregator cross_agg(tsc->timeseries_spec());
+
+            tsc->timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1), cross_agg);
+            cross_aggregate(db, cross_agg);
+
+            if (m_rank == 0) {
+                cross_agg.flush(db, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                        writer.write_snapshot(db, rec);
+                    });
+            }
+        }
+    }
+
+    void flush_timeseries(Caliper& c, CaliperMetadataDB& db, CaliWriter& writer) {
+        auto p = m_timeseries_mgr.get_channel("spot.timeseries");
+
+        if (!p) {
+            Log(0).stream() << "[spot controller] Timeseries channel not found!" << std::endl;
+            return;
+        }
+
+        auto tsc = std::dynamic_pointer_cast<SpotTimeseriesController>(p);
+
+        const char* summary_local_query =
+            "aggregate count(),sum(loop.iterations) where loop group by loop";
+        const char* summary_cross_query =
+            "aggregate max(sum#loop.iterations),max(count) group by loop";
+
+        Aggregator summary_cross_agg(CalQLParser(summary_cross_query).spec());
+
+        local_aggregate(summary_local_query, c, tsc->channel(), db, summary_cross_agg);
+        cross_aggregate(db, summary_cross_agg);
+
+        std::vector<LoopInfo> infovec;
+
+        summary_cross_agg.flush(db, [this,&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
+                infovec.push_back(get_loop_info(db, rec));
+            });
+
+        if (!infovec.empty()) {
+            for (const LoopInfo& loopinfo : infovec)
+                if (loopinfo.iterations > 0)
+                    process_timeseries(tsc.get(), c, db, writer, loopinfo);
+        } else {
+            Log(1).stream() << channel()->name() << ": No instrumented loops found" << std::endl;
+        }
+    }
+
+    void flush_regionprofile(Caliper& c, CaliperMetadataDB& db, CaliWriter& writer) {
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
@@ -121,18 +401,13 @@ public:
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
             + " group by "
-            + m_opts.query_groupby("cross", "prop:nested")
-            + " format cali";
+            + m_opts.query_groupby("cross", "prop:nested");
 
-        QuerySpec output_spec(CalQLParser(cross_query.c_str()).spec());
+        QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
 
-        CaliperMetadataDB db;
-        Caliper c;
-
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
-        //     inclusive times
-
+        //     region profile inclusive times
         {
             std::string query = m_opts.query_let("local", "")
                 + " aggregate "
@@ -140,104 +415,109 @@ public:
                 + " group by "
                 + m_opts.query_groupby("local", "prop:nested");
 
-            aggregate(query, c, db, output_agg);
+            local_aggregate(query.c_str(), c, channel(), db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
+        cross_aggregate(db, output_agg);
 
-        int rank = 0;
-
-#ifdef CALIPER_HAVE_MPI
-        int initialized = 0;
-        MPI_Initialized(&initialized);
-
-        if (initialized != 0 && m_use_mpi) {
-            Log(2).stream() << "[spot controller]: Performing cross-process aggregation" << std::endl;
-
-            MPI_Comm comm;
-            MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-            MPI_Comm_rank(comm, &rank);
-
-            //   Do the global cross-process aggregation.
-            // aggregate_over_mpi() does all the magic.
-            // Result will be in output_agg on rank 0.
-            aggregate_over_mpi(db, output_agg, comm);
-
-            MPI_Comm_free(&comm);
-        }
-#endif
-
-        // --- Write output
-
-        if (rank == 0) {
-            Log(2).stream() << "[spot controller]: Writing output" << std::endl;
-
-            // import globals from Caliper runtime object
-            db.import_globals(c, c.get_globals(channel()));
-
-            std::string spot_metrics;
+        if (m_rank == 0) {
+            // --- Save the spot metrics
+            m_spot_metrics.clear();
 
             for (const auto &op : output_spec.aggregation_ops.list) {
-                if (!spot_metrics.empty())
-                    spot_metrics.append(",");
+                if (!m_spot_metrics.empty())
+                    m_spot_metrics.append(",");
 
-                spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
+                m_spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
             }
 
-            std::string spot_opts;
+            // --- Write region profile
+            output_agg.flush(db, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                    writer.write_snapshot(db, rec);
+                });
+        }
+    }
 
-            for (const auto &o : m_opts.enabled_options()) {
-                if (!spot_opts.empty())
-                    spot_opts.append(",");
-                spot_opts.append(o);
-            }
+    void save_spot_metadata(CaliperMetadataDB& db) {
+        std::string spot_opts = "";
 
-            Attribute mtr_attr =
-                db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
-            Attribute fmt_attr =
-                db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
-            Attribute opt_attr =
-                db.create_attribute("spot.options",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        for (const auto &o : m_opts.enabled_options()) {
+            if (!spot_opts.empty())
+                spot_opts.append(",");
+            spot_opts.append(o);
+        }
 
-            // set the spot.metrics value
-            db.set_global(mtr_attr, Variant(spot_metrics.c_str()));
-            db.set_global(fmt_attr, Variant(spot_format_version));
-            db.set_global(opt_attr, Variant(spot_opts.c_str()));
+        Attribute mtr_attr =
+            db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute fmt_attr =
+            db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
+        Attribute opt_attr =
+            db.create_attribute("spot.options",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
+        db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
+        db.set_global(fmt_attr, Variant(spot_format_version));
+        db.set_global(opt_attr, Variant(spot_opts.c_str()));
+    }
+
+    void on_create(Caliper*, Channel*) {
+        m_timeseries_mgr.start();
+    }
+
+
+public:
+
+    void
+    flush() {
+        Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
+
+        Caliper c;
+        OutputStream stream;
+
+        if (m_rank == 0) {
             std::string output = m_opts.get("output", "").to_string();
 
-            if (output == "adiak") {
-#ifdef CALIPER_HAVE_ADIAK
-                ::write_adiak(db, output_agg);
-#else
-                Log(0).stream() << "[spot controller]: cannot use adiak output: adiak is not enabled!" << std::endl;
-#endif
-            } else {
-                if (output.empty())
-                    output = ::make_filename();
+            if (output.empty())
+                output = ::make_filename();
 
-                OutputStream    stream;
-                stream.set_filename(output.c_str(), c, c.get_globals());
-
-                FormatProcessor formatter(output_spec, stream);
-
-                output_agg.flush(db, formatter);
-                formatter.flush(db);
-            }
+            stream.set_filename(output.c_str(), c, c.get_globals());
         }
+
+        init_mpi();
+
+        CaliperMetadataDB db;
+        CaliWriter writer(stream);
+
+        flush_regionprofile(c, db, writer);
+
+        if (m_opts.is_enabled("timeseries"))
+            flush_timeseries(c, db, writer);
+
+        if (m_rank == 0) {
+            db.import_globals(c, c.get_globals(channel()));
+            save_spot_metadata(db);
+            writer.write_globals(db, db.get_globals());
+        }
+
+        finalize_mpi();
     }
 
     SpotController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
         : ChannelController(name, 0, initial_cfg),
           m_opts(opts),
-          m_use_mpi(use_mpi)
+          m_use_mpi(use_mpi),
+          m_rank(0)
         {
 #ifdef CALIPER_HAVE_ADIAK
-            if (opts.get("output", "").to_string() != "adiak")
-                config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+            config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
             config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
                 opts.get("adiak.import_categories", "2,3").to_string();
 #endif
+            if (m_opts.is_enabled("timeseries")) {
+                m_timeseries_mgr.add_config_spec(spot_timeseries_info);
+                m_timeseries_mgr.add(get_timeseries_config_string(m_opts).c_str());
+            }
+
             m_opts.update_channel_config(config());
         }
 
@@ -279,6 +559,36 @@ const char* controller_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Collect time-series data for annotated loops\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.maxrows\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Max number of rows in timeseries output. Set to 0 to show all. Default: 20.\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.iteration_interval\","
+    "   \"type\": \"int\","
+    "   \"description\": \"Measure every N loop iterations in timeseries\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.time_interval\","
+    "   \"type\": \"double\","
+    "   \"description\": \"Measure after t seconds in timeseries\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.target_loops\","
+    "   \"type\": \"string\","
+    "   \"description\": \"List of loops to target for timeseries measurements. Default: any top-level loop.\""
+    "  },"
+    "  {"
+    "   \"name\": \"timeseries.metrics\","
+    "   \"type\": \"string\","
+    "   \"description\": \"Metrics to record for timeseries measurements.\""
     "  }"
     " ]"
     "}";
