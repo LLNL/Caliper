@@ -11,7 +11,6 @@
 #include <caliper/reader/CaliperMetadataDB.h>
 #include <caliper/reader/CaliWriter.h>
 #include <caliper/reader/CalQLParser.h>
-#include <caliper/reader/NestedExclusiveRegionProfile.h>
 #include <caliper/reader/Preprocessor.h>
 #include <caliper/reader/RecordSelector.h>
 
@@ -29,10 +28,6 @@
 #ifdef CALIPER_HAVE_MPI
 #include "caliper/cali-mpi.h"
 #include <mpi.h>
-#endif
-
-#ifdef CALIPER_HAVE_ADIAK
-#include <adiak.hpp>
 #endif
 
 using namespace cali;
@@ -361,7 +356,7 @@ class SpotController : public cali::ChannelController
         auto p = m_timeseries_mgr.get_channel("spot.timeseries");
 
         if (!p) {
-            Log(0).stream() << "[spot controller] Timeseries channel not found!" << std::endl;
+            Log(0).stream() << "[spot]: Timeseries channel not found!" << std::endl;
             return;
         }
 
@@ -388,7 +383,7 @@ class SpotController : public cali::ChannelController
                 if (loopinfo.iterations > 0)
                     process_timeseries(tsc.get(), c, db, writer, loopinfo);
         } else {
-            Log(1).stream() << channel()->name() << ": No instrumented loops found" << std::endl;
+            Log(1).stream() << "[spot]: No instrumented loops found" << std::endl;
         }
     }
 
@@ -463,6 +458,11 @@ class SpotController : public cali::ChannelController
     }
 
     void on_create(Caliper*, Channel*) {
+        if (m_timeseries_mgr.error())
+            Log(0).stream() << "[spot]: Timeseries config error: "
+                            << m_timeseries_mgr.error_msg()
+                            << std::endl;
+
         m_timeseries_mgr.start();
     }
 
@@ -471,7 +471,7 @@ public:
 
     void
     flush() {
-        Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
+        Log(1).stream() << "[spot]: Flushing Caliper data" << std::endl;
 
         Caliper c;
         OutputStream stream;
@@ -541,6 +541,34 @@ make_spot_controller(const char* name, const config_map_t& initial_cfg, const ca
     return new SpotController(use_mpi, name, initial_cfg, opts);
 }
 
+std::string
+check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
+    if (opts.is_enabled("timeseries")) {
+        // Check if the timeseries options are valid
+
+        cali::ConfigManager tmpmgr;
+
+        tmpmgr.add_config_spec(spot_timeseries_info);
+        return tmpmgr.check(get_timeseries_config_string(opts).c_str());
+    } else {
+        // Warn when a timeseries option is set but timeseries is disabled
+
+        const char* tsopts[] = {
+            "timeseries.maxrows",
+            "timeseries.iteration_interval",
+            "timeseries.time_interval",
+            "timeseries.target_loops",
+            "timeseries.metrics"
+        };
+
+        for (const char* opt : tsopts)
+            if (opts.is_set(opt))
+                return std::string(opt) + " is set but the timeseries option is not enabled";
+    }
+
+    return "";
+}
+
 const char* controller_spec =
     "{"
     " \"name\"        : \"spot\","
@@ -602,7 +630,7 @@ namespace cali
 
 ConfigManager::ConfigInfo spot_controller_info
 {
-    ::controller_spec, ::make_spot_controller, nullptr
+    ::controller_spec, ::make_spot_controller, ::check_spot_timeseries_args
 };
 
 }
