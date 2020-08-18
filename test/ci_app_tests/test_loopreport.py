@@ -1,5 +1,4 @@
-# MPI application tests
-# For simplicity, these tests only run on a single rank without mpiexec
+# Loop report tests
 
 import json
 import os
