@@ -88,7 +88,9 @@ if (CALIPER_HAVE_SAMPLER)
 endif()
 
 if (CALIPER_HAVE_MPI)
-  list(APPEND PYTHON_SCRIPTS test_loopreport.py)
+  list(APPEND PYTHON_SCRIPTS 
+    test_loopreport.py
+    test_spot.py)
 
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)

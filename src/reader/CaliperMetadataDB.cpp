@@ -416,6 +416,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (!attr.is_global())
             return;
 
+        Variant v_data = value;
+        if (attr.type() == CALI_TYPE_STRING)
+            v_data = make_string_variant(static_cast<const char*>(value.data()), value.size());
+
         std::lock_guard<std::mutex>
             g(m_globals_lock);
 
@@ -426,15 +430,15 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                                    } );
 
             if (it == m_globals.end())
-                m_globals.push_back(Entry(attr, value));
+                m_globals.push_back(Entry(attr, v_data));
             else
-                *it = Entry(attr, value);
+                *it = Entry(attr, v_data);
         } else {
             // check if we already have this value
             if (std::find_if(m_globals.begin(), m_globals.end(),
-                             [attr,value](const Entry& e) {
+                             [attr,v_data](const Entry& e) {
                                  for (const Node* node = e.node(); node; node = node->parent())
-                                     if (node->attribute() == attr.id() && node->data() == value)
+                                     if (node->equals(attr.id(), v_data))
                                          return true;
                                  return false;
                              } ) != m_globals.end())
@@ -446,9 +450,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                                    } );
 
             if (it == m_globals.end() || !attr.is_autocombineable())
-                m_globals.push_back(Entry(make_tree_entry(1, &attr, &value)));
+                m_globals.push_back(Entry(make_tree_entry(1, &attr, &v_data)));
             else
-                *it = Entry(make_tree_entry(1, &attr, &value, node(it->node()->id())));
+                *it = Entry(make_tree_entry(1, &attr, &v_data, node(it->node()->id())));
         }
     }
 
@@ -491,7 +495,7 @@ CaliperMetadataDB::CaliperMetadataDB()
 { }
 
 CaliperMetadataDB::~CaliperMetadataDB()
-{ 
+{
     if (Log::verbosity() >= 2)
         print_statistics( Log(2).stream() );
 }
@@ -628,8 +632,8 @@ CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db, const std:
 std::ostream&
 CaliperMetadataDB::print_statistics(std::ostream& os)
 {
-    os << "CaliperMetadataDB: stored " << mP->m_nodes.size() 
+    os << "CaliperMetadataDB: stored " << mP->m_nodes.size()
        << " nodes, " << mP->m_string_db.size() << " strings." << std::endl;
-    
+
     return os;
 }

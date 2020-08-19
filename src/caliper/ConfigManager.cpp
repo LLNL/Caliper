@@ -843,23 +843,25 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            if (!(key == "profile" || opts.contains(key))) {
-                set_error("Unknown option: " + key);
-                args.clear();
-                return args;
+            if (!key.empty()) {
+                if (!(key == "profile" || opts.contains(key))) {
+                    set_error("Unknown option: " + key);
+                    args.clear();
+                    return args;
+                }
+
+                std::string val = read_value(is, key);
+
+                if (m_error) {
+                    args.clear();
+                    return args;
+                }
+
+                if (val.empty())
+                    val = "true";
+
+                args[key] = val;
             }
-
-            std::string val = read_value(is, key);
-
-            if (m_error) {
-                args.clear();
-                return args;
-            }
-
-            if (val.empty())
-                val = "true";
-
-            args[key] = val;
 
             c = util::read_char(is);
         } while (is.good() && c == ',');

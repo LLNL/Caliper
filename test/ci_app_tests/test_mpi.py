@@ -167,32 +167,6 @@ class CaliperMPITest(unittest.TestCase):
             snapshots, { 'function', 'mpi.function', 'mpi.coll.type', 'mpi.call.id'
             }))
 
-    def test_spot_controller(self):
-        target_cmd = [ './ci_test_mpi_before_cali', 'spot(output=stdout)' ]
-        query_cmd = [ '../../src/tools/cali-query/cali-query', '-q', 'format json(object)' ]
-
-        caliper_config = {
-            'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
-        }
-
-        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config) )
-
-        self.assertTrue('globals' in obj)
-        self.assertTrue('records' in obj)
-
-        self.assertTrue('spot.format.version' in obj['globals'])
-        self.assertTrue('avg#inclusive#sum#time.duration' in obj['globals']['spot.metrics'])
-
-        r = None
-        for rec in obj['records']:
-            if 'path' in rec and rec['path'] == 'main':
-                r = rec
-                break
-
-        self.assertTrue(r is not None, 'No record with "path" entry found')
-        self.assertTrue('avg#inclusive#sum#time.duration' in r)
-
     def test_mpireport_controller(self):
         target_cmd = [ './ci_test_mpi_before_cali', 'mpi-report' ]
 
