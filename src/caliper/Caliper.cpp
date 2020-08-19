@@ -47,7 +47,7 @@ extern void init_api_attributes(Caliper* c);
 
 extern void init_submodules();
 
-extern void config_sanity_check(RuntimeConfig);
+extern void config_sanity_check(const char*, RuntimeConfig);
 
 }
 
@@ -213,7 +213,12 @@ struct Channel::ChannelImpl
         }
 
     ~ChannelImpl()
-        { }
+        {
+            if (Log::verbosity() >= 2) {
+                channel_blackboard.print_statistics( Log(2).stream() << name << " channel blackboard: " )
+                    << std::endl;
+            }
+        }
 };
 
 const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
@@ -314,7 +319,7 @@ struct Caliper::ThreadData
     void print_detailed_stats(std::ostream& os) {
         tree.print_statistics( os << "Releasing Caliper thread data: \n" )
             << std::endl;
-        thread_blackboard.print_statistics( os << "  Thread blackboard:\n    " )
+        thread_blackboard.print_statistics( os << "  Thread blackboard: " )
             << std::endl;
     }
 
@@ -417,6 +422,11 @@ struct Caliper::GlobalData
     ~GlobalData() {
         // prevent re-initialization
         s_init_lock = 2;
+
+        if (Log::verbosity() >= 2) {
+            process_blackboard.print_statistics( Log(2).stream() << "Process blackboard: " )
+                << std::endl;
+        }
 
         {
             std::lock_guard<std::mutex>
@@ -1378,6 +1388,8 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
     std::lock_guard<::siglock>
         g(sT->lock);
 
+    Log(1).stream() << "Creating channel " << name << std::endl;
+
     Channel* channel = new Channel(sG->channels.size(), name, cfg);
     sG->channels.emplace_back(channel);
 
@@ -1390,10 +1402,8 @@ Caliper::create_channel(const char* name, const RuntimeConfig& cfg)
 
     services::register_configured_services(this, channel);
 
-    Log(1).stream() << "Creating channel " << name << std::endl;
-
     if (channel->config().get("channel", "config_check").to_bool())
-        config_sanity_check(channel->config());
+        config_sanity_check(name, channel->config());
     if (Log::verbosity() >= 3)
         channel->config().print( Log(3).stream() << "Configuration:\n" );
 

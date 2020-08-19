@@ -121,13 +121,14 @@ void check_services(const std::vector<std::string>& services)
 namespace cali
 {
 
-void config_sanity_check(RuntimeConfig cfg)
+void config_sanity_check(const char* channel, RuntimeConfig cfg)
 {
     std::vector<std::string> services =
         cfg.get("services", "enable").to_stringlist(",:");
 
     if (services.empty()) {
-        Log(1).stream() << "Config check: No services enabled. Caliper will not record data."
+        Log(1).stream() << channel << ": No services enabled, "
+                        << channel << " channel will not record data."
                         << std::endl;
         return;
     }

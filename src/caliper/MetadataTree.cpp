@@ -68,14 +68,14 @@ struct MetadataTree::MetadataTreeImpl
                 };
 
                 for (const NodeInfo* info = bootstrap_nodes; info->id != CALI_INV_ID; ++info) {
-                    Node* node = new(chunk + info->id) 
+                    Node* node = new(chunk + info->id)
                         Node(info->id, info->attr_id, info->data);
 
                     if (info->parent != CALI_INV_ID)
                         chunk[info->parent].append(node);
                     else
                         root.append(node);
-            
+
                     if (info->attr_id == 9 /* type node */)
                         type_nodes[info->data.to_attr_type()] = node;
                 }
@@ -86,7 +86,7 @@ struct MetadataTree::MetadataTreeImpl
 
         ~GlobalData() {
             delete[] node_blocks;
-        }            
+        }
 
         static const ConfigSet::Entry s_configdata[];
 
@@ -112,7 +112,7 @@ struct MetadataTree::MetadataTreeImpl
 
     static std::atomic<GlobalData*> mG;
 
-    MemoryPool  m_mempool;    
+    MemoryPool  m_mempool;
     NodeBlock*  m_nodeblock;
 
     unsigned    m_num_nodes;
@@ -143,7 +143,7 @@ struct MetadataTree::MetadataTreeImpl
             if (!g) {
                 GlobalData* new_g = new GlobalData(m_mempool);
 
-                // Set mG. If mG != new_g, some other thread has set it, 
+                // Set mG. If mG != new_g, some other thread has set it,
                 // so just delete our new object.
                 if (mG.compare_exchange_strong(g, new_g)) {
                     m_nodeblock = new_g->node_blocks;
@@ -157,12 +157,12 @@ struct MetadataTree::MetadataTreeImpl
 
     ~MetadataTreeImpl() {
         GlobalData* g = mG.load();
-        
+
         std::lock_guard<util::spinlock>
             lock(g->orphaned_mempool_lock);
 
         g->orphaned_mempools.push_back(std::move(m_mempool));
-        
+
         // for ( auto& n : m_root )
         //     n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here
     }
@@ -203,7 +203,7 @@ struct MetadataTree::MetadataTreeImpl
     // --- Modifying tree operations
     //
 
-    /// \brief Creates \param n new nodes hierarchically under \param parent 
+    /// \brief Creates \param n new nodes hierarchically under \param parent
 
     Node*
     create_path(const Attribute& attr, size_t n, const Variant* data, Node* parent = nullptr) {
@@ -211,7 +211,7 @@ struct MetadataTree::MetadataTreeImpl
 
         if (!have_free_nodeblock(n))
             return 0;
-        
+
         // Calculate and allocate required memory
 
         const size_t align = 8;
@@ -238,7 +238,7 @@ struct MetadataTree::MetadataTreeImpl
 
         for (size_t i = 0; i < n; ++i) {
             const void* dptr { data[i].data() };
-            size_t size      { data[i].size() }; 
+            size_t size      { data[i].size() };
 
             if (copy) {
                 dptr = memcpy(ptr, dptr, size);
@@ -297,7 +297,7 @@ struct MetadataTree::MetadataTreeImpl
             bool   copy { attr[i].type() == CALI_TYPE_USR || attr[i].type() == CALI_TYPE_STRING };
 
             const void* dptr { data[i].data() };
-            size_t size      { data[i].size() }; 
+            size_t size      { data[i].size() };
 
             if (copy) {
                 dptr = memcpy(ptr, dptr, size);
@@ -306,7 +306,7 @@ struct MetadataTree::MetadataTreeImpl
 
             size_t index = m_nodeblock->index++;
 
-            node = new(m_nodeblock->chunk + index) 
+            node = new(m_nodeblock->chunk + index)
                 Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, attr[i].id(), Variant(attr[i].type(), dptr, size));
 
             if (parent)
@@ -334,7 +334,7 @@ struct MetadataTree::MetadataTreeImpl
 #ifdef METADATATREE_BENCHMARK
             unsigned num_ops = 1;
 #endif
-            
+
             for (node = parent->first_child(); node && !node->equals(attr.id(), data[i]); node = node->next_sibling())
 #ifdef METADATATREE_BENCHMARK
                 ++num_ops
@@ -346,7 +346,7 @@ struct MetadataTree::MetadataTreeImpl
             m_tot_lookup_ops += num_ops;
             m_max_lookup_ops  = std::max(m_max_lookup_ops, num_ops);
 #endif
-            
+
             if (!node)
                 break;
 
@@ -418,7 +418,7 @@ struct MetadataTree::MetadataTreeImpl
 
         if (!parent)
             parent = &(g->root);
-        
+
         Node* node = nullptr;
 
 #ifdef METADATATREE_BENCHMARK
@@ -443,9 +443,9 @@ struct MetadataTree::MetadataTreeImpl
 
             size_t index = m_nodeblock->index++;
 
-            node = new(m_nodeblock->chunk + index) 
+            node = new(m_nodeblock->chunk + index)
                 Node((m_nodeblock - g->node_blocks) * g->nodes_per_block + index, from->attribute(), from->data());
-            
+
             parent->append(node);
 
             ++m_num_nodes;
@@ -518,8 +518,8 @@ struct MetadataTree::MetadataTreeImpl
 
         return get_path(attr, n, data,  path);
     }
-    
-    Node* 
+
+    Node*
     node(cali_id_t id) const {
         GlobalData* g = mG.load();
 
@@ -536,10 +536,10 @@ struct MetadataTree::MetadataTreeImpl
     // --- I/O
     //
 
-    std::ostream& 
+    std::ostream&
     print_statistics(std::ostream& os) const {
         m_mempool.print_statistics(
-            os << "Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n      "
+            os << "  Metadata tree: " << m_num_blocks << " blocks, " << m_num_nodes << " nodes\n    "
 #ifdef METADATATREE_BENCHMARK
             << "  "
             << m_num_lookups << " lookups with "
@@ -559,14 +559,14 @@ std::atomic<MetadataTree::MetadataTreeImpl::GlobalData*> MetadataTree::MetadataT
 const ConfigSet::Entry MetadataTree::MetadataTreeImpl::GlobalData::s_configdata[] = {
     // key, type, value, short description, long description
     { "nodes_per_block", CALI_TYPE_UINT, "256",
-      "Number of context tree nodes in a node block", 
-      "Number of context tree nodes in a node block", 
+      "Number of context tree nodes in a node block",
+      "Number of context tree nodes in a node block",
     },
     { "num_blocks", CALI_TYPE_UINT, "16384",
       "Maximum number of context tree node blocks",
       "Maximum number of context tree node blocks"
     },
-    ConfigSet::Terminator 
+    ConfigSet::Terminator
 };
 
 
@@ -591,7 +591,7 @@ void MetadataTree::release()
 
 //
 // --- Modifying tree ops
-// 
+//
 
 Node*
 MetadataTree::get_path(size_t n, const Attribute attr[], const Variant data[], Node* parent)
@@ -665,7 +665,7 @@ MetadataTree::type_node(cali_attr_type type) const
 // --- I/O ---
 //
 
-std::ostream& 
+std::ostream&
 MetadataTree::print_statistics(std::ostream& os) const
 {
     return mP->print_statistics(os);

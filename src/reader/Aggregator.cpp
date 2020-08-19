@@ -929,10 +929,7 @@ public:
               m_target_attr(Attribute::invalid),
               m_total(0),
               m_is_inclusive(inclusive)
-        {
-            Log(2).stream() << "aggregate: creating percent_total kernel for attribute "
-                            << m_target_attr_name << std::endl;
-        }
+        { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
             return new Config(cfg, false);

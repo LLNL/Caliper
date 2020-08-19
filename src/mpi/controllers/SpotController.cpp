@@ -373,7 +373,7 @@ class SpotController : public cali::ChannelController
         auto p = m_timeseries_mgr.get_channel("spot.timeseries");
 
         if (!p) {
-            Log(0).stream() << "[spot]: Timeseries channel not found!" << std::endl;
+            Log(0).stream() << "[spot controller]: Timeseries channel not found!" << std::endl;
             return;
         }
 
@@ -400,7 +400,7 @@ class SpotController : public cali::ChannelController
                 if (loopinfo.iterations > 0)
                     process_timeseries(tsc.get(), c, db, writer, loopinfo);
         } else {
-            Log(1).stream() << "[spot]: No instrumented loops found" << std::endl;
+            Log(1).stream() << "[spot controller]: No instrumented loops found" << std::endl;
         }
     }
 
@@ -479,7 +479,7 @@ class SpotController : public cali::ChannelController
 
     void on_create(Caliper*, Channel*) {
         if (m_timeseries_mgr.error())
-            Log(0).stream() << "[spot]: Timeseries config error: "
+            Log(0).stream() << "[spot controller]: Timeseries config error: "
                             << m_timeseries_mgr.error_msg()
                             << std::endl;
 
@@ -491,7 +491,7 @@ public:
 
     void
     flush() {
-        Log(1).stream() << "[spot]: Flushing Caliper data" << std::endl;
+        Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
         Caliper c;
         OutputStream stream;
@@ -519,6 +519,10 @@ public:
             db.import_globals(c, c.get_globals(channel()));
             save_spot_metadata(db);
             writer.write_globals(db, db.get_globals());
+
+            Log(1).stream() << "[spot controller]: Wrote "
+                            << writer.num_written() << " records."
+                            << std::endl;
         }
 
         finalize_mpi();

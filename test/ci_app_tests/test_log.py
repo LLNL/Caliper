@@ -1,4 +1,4 @@
-# report / C config test
+# Logging tests
 
 import unittest
 
@@ -20,7 +20,8 @@ class CaliperLogTest(unittest.TestCase):
             '== CALIPER: default: snapshot scopes: process thread',
             '== CALIPER: Releasing channel default',
             '== CALIPER: Releasing Caliper thread data',
-            'Blackboard',
+            'Process blackboard',
+            'Thread blackboard',
             'Metadata tree',
             'Metadata memory pool'
         ]
