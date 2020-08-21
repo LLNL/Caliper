@@ -33,10 +33,11 @@ class CaliperSpotControllerTest(unittest.TestCase):
 
         self.assertTrue(r is not None, 'No record with "path" entry found')
         self.assertIn('avg#inclusive#sum#time.duration', r)
+        self.assertEqual(r['spot.channel'], 'regionprofile')
 
     def test_spot_timeseries(self):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries,timeseries.iteration_interval=15)', '75' ]
-        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'select * where cali.channel=spot.timeseries format json(object)' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'select * where spot.channel=timeseries format json(object)' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'      : '0',
@@ -51,6 +52,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
 
         self.assertIn('avg#loop.iterations/time.duration', obj['globals']['spot.timeseries.metrics'])
         self.assertIn('avg#loop.iterations/time.duration', obj['records'][0])
+        self.assertEqual(obj['records'][0]['spot.channel'], 'timeseries')
 
         blocks = []
         for rec in obj['records']:

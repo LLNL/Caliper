@@ -21,12 +21,12 @@ namespace cali
 
 class Node;
 class Variant;
-    
+
 typedef std::map<cali_id_t, cali_id_t> IdMap;
 
 /// \brief Maintains a context tree and provides metadata information.
 /// \ingroup ReaderAPI
-    
+
 class CaliperMetadataDB : public CaliperMetadataAccessInterface
 {
     struct CaliperMetadataDBImpl;
@@ -39,30 +39,30 @@ public:
     ~CaliperMetadataDB();
 
     //
-    // --- I/O API 
-    // 
+    // --- I/O API
+    //
 
-    const Node* merge_node    (cali_id_t       node_id, 
-                               cali_id_t       attr_id, 
-                               cali_id_t       prnt_id, 
-                               const Variant&  v_data, 
-                               IdMap&          idmap);
-    
-    const Node* merge_node    (cali_id_t       node_id, 
-                               cali_id_t       attr_id, 
-                               cali_id_t       prnt_id, 
-                               const std::string& data, 
+    const Node* merge_node    (cali_id_t       node_id,
+                               cali_id_t       attr_id,
+                               cali_id_t       prnt_id,
+                               const Variant&  v_data,
                                IdMap&          idmap);
 
-    EntryList   merge_snapshot(size_t          n_nodes, 
-                               const cali_id_t node_ids[], 
-                               size_t          n_imm,   
-                               const cali_id_t attr_ids[], 
+    const Node* merge_node    (cali_id_t       node_id,
+                               cali_id_t       attr_id,
+                               cali_id_t       prnt_id,
+                               const std::string& data,
+                               IdMap&          idmap);
+
+    EntryList   merge_snapshot(size_t          n_nodes,
+                               const cali_id_t node_ids[],
+                               size_t          n_imm,
+                               const cali_id_t attr_ids[],
                                const Variant   values[],
                                const IdMap&    idmap) const;
 
     /// \brief Merge snapshot record bound to metadata DB \a db
-    ///   into this metadata DB    
+    ///   into this metadata DB
     EntryList   merge_snapshot(const CaliperMetadataAccessInterface& db,
                                const std::vector<Entry>& rec);
 
@@ -71,32 +71,33 @@ public:
     Entry       merge_entry   (cali_id_t       attr_id,
                                const std::string& data,
                                const IdMap&    idmap);
-    
+
     void        merge_global  (cali_id_t       node_id,
                                const IdMap&    idmap);
     void        merge_global  (cali_id_t       attr_id,
                                const std::string& data,
                                const IdMap&    idmap);
-    
+
     //
     // --- Query API
     //
 
     Node*       node(cali_id_t id) const;
-    
+
     Attribute   get_attribute(cali_id_t id) const;
     Attribute   get_attribute(const std::string& name) const;
 
     std::vector<Attribute> get_all_attributes() const;
-    
+
     //
     // --- Manipulation
     //
 
     Node*       make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0);
+    Node*       make_tree_entry(std::size_t n, const Attribute attr[], const Variant data[], Node* parent = 0);
 
-    Attribute   create_attribute(const std::string& name, 
-                                 cali_attr_type     type, 
+    Attribute   create_attribute(const std::string& name,
+                                 cali_attr_type     type,
                                  int                prop,
                                  int                meta = 0,
                                  const Attribute*   meta_attr = nullptr,
@@ -105,7 +106,7 @@ public:
     // --- Globals
     //
 
-    /// \brief Get global entries (entries with the CALI_ATTR_GLOBAL flag) 
+    /// \brief Get global entries (entries with the CALI_ATTR_GLOBAL flag)
     std::vector<Entry> get_globals();
 
     /// \brief Set a global entry
