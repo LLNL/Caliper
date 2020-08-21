@@ -337,14 +337,19 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             if (attr[i].store_as_value())
                 continue;
 
+            Variant v_data(data[i]);
+
+            if (v_data.type() == CALI_TYPE_STRING)
+                v_data = make_string_variant(static_cast<const char*>(data[i].data()), data[i].size());
+
             std::lock_guard<std::mutex>
                 g(m_node_lock);
 
-            for (node = parent->first_child(); node && !node->equals(attr[i].id(), data[i]); node = node->next_sibling())
+            for (node = parent->first_child(); node && !node->equals(attr[i].id(), v_data); node = node->next_sibling())
                 ;
 
             if (!node)
-                node = create_node(attr[i].id(), data[i], parent);
+                node = create_node(attr[i].id(), v_data, parent);
 
             parent = node;
         }
@@ -416,10 +421,6 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (!attr.is_global())
             return;
 
-        Variant v_data = value;
-        if (attr.type() == CALI_TYPE_STRING)
-            v_data = make_string_variant(static_cast<const char*>(value.data()), value.size());
-
         std::lock_guard<std::mutex>
             g(m_globals_lock);
 
@@ -430,15 +431,15 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                                    } );
 
             if (it == m_globals.end())
-                m_globals.push_back(Entry(attr, v_data));
+                m_globals.push_back(Entry(attr, value));
             else
-                *it = Entry(attr, v_data);
+                *it = Entry(attr, value);
         } else {
             // check if we already have this value
             if (std::find_if(m_globals.begin(), m_globals.end(),
-                             [attr,v_data](const Entry& e) {
+                             [attr,value](const Entry& e) {
                                  for (const Node* node = e.node(); node; node = node->parent())
-                                     if (node->equals(attr.id(), v_data))
+                                     if (node->equals(attr.id(), value))
                                          return true;
                                  return false;
                              } ) != m_globals.end())
@@ -450,9 +451,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
                                    } );
 
             if (it == m_globals.end() || !attr.is_autocombineable())
-                m_globals.push_back(Entry(make_tree_entry(1, &attr, &v_data)));
+                m_globals.push_back(Entry(make_tree_entry(1, &attr, &value)));
             else
-                *it = Entry(make_tree_entry(1, &attr, &v_data, node(it->node()->id())));
+                *it = Entry(make_tree_entry(1, &attr, &value, node(it->node()->id())));
         }
     }
 
@@ -596,6 +597,12 @@ Node*
 CaliperMetadataDB::make_tree_entry(size_t n, const Node* nodelist[], Node* parent)
 {
     return mP->make_tree_entry(n, nodelist, parent);
+}
+
+Node*
+CaliperMetadataDB::make_tree_entry(size_t n, const Attribute attr[], const Variant data[], Node* parent)
+{
+    return mP->make_tree_entry(n, attr, data, parent);
 }
 
 Attribute

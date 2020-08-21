@@ -141,6 +141,17 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     return ret;
 }
 
+template<typename T>
+std::vector<T>
+augment_vector(const std::vector<T>& orig, std::initializer_list<T> ilist)
+{
+    std::vector<T> ret;
+    ret.reserve(orig.size() + ilist.size());
+    ret.assign(orig.begin(), orig.end());
+    ret.insert(ret.end(), ilist);
+    return ret;
+}
+
 class SpotTimeseriesController : public cali::ChannelController
 {
     cali::ConfigManager::Options m_opts;
@@ -225,7 +236,6 @@ const char* spot_timeseries_spec =
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
-    "     \"CALI_CHANNEL_SNAPSHOT_SCOPES\"    : \"process,thread,channel\","
     "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
     "     \"CALI_TIMER_UNIT\"                 : \"sec\""
@@ -265,18 +275,21 @@ ConfigManager::ConfigInfo spot_timeseries_info { spot_timeseries_spec, make_time
 
 class SpotController : public cali::ChannelController
 {
-    cali::ConfigManager::Options m_opts;
+    ConfigManager::Options m_opts;
 
-    bool m_use_mpi;
-    int  m_rank;
+    bool     m_use_mpi;
+    int      m_rank;
 #ifdef CALIPER_HAVE_MPI
     MPI_Comm m_comm;
 #endif
 
-    std::string m_spot_metrics;
-    std::string m_spot_timeseries_metrics;
+    std::string       m_spot_metrics;
+    std::string       m_spot_timeseries_metrics;
 
-    cali::ConfigManager m_timeseries_mgr;
+    ConfigManager     m_timeseries_mgr;
+
+    CaliperMetadataDB m_db;
+    Attribute         m_channel_attr;
 
     void init_mpi() {
 #ifdef CALIPER_HAVE_MPI
@@ -300,14 +313,14 @@ class SpotController : public cali::ChannelController
 #endif
     }
 
-    void cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) {
+    void cross_aggregate(Aggregator& agg) {
 #ifdef CALIPER_HAVE_MPI
         if (m_use_mpi)
-            aggregate_over_mpi(db, agg, m_comm);
+            aggregate_over_mpi(m_db, agg, m_comm);
 #endif
     }
 
-    void process_timeseries(SpotTimeseriesController* tsc, Caliper& c, CaliperMetadataDB& db, CaliWriter& writer, const LoopInfo& info) {
+    void process_timeseries(SpotTimeseriesController* tsc, Caliper& c, CaliWriter& writer, const LoopInfo& info) {
         int  iterations = 0;
         int  rec_count = 0;
         char namebuf[64];
@@ -346,8 +359,8 @@ class SpotController : public cali::ChannelController
             QuerySpec  spec = tsc->timeseries_spec();
             Aggregator cross_agg(spec);
 
-            tsc->timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1), cross_agg);
-            cross_aggregate(db, cross_agg);
+            tsc->timeseries_local_aggregation(c, m_db, namebuf, std::max(blocksize, 1), cross_agg);
+            cross_aggregate(cross_agg);
 
             if (m_rank == 0) {
                 // --- Save the timeseries metrics. Should be the same for each
@@ -361,15 +374,18 @@ class SpotController : public cali::ChannelController
                     m_spot_timeseries_metrics.append(Aggregator::get_aggregation_attribute_name(op));
                 }
 
+                Variant v_data("timeseries");
+                Entry   entry(m_db.make_tree_entry(1, &m_channel_attr, &v_data));
+
                 // --- Write data
-                cross_agg.flush(db, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                        writer.write_snapshot(db, rec);
+                cross_agg.flush(m_db, [&writer,entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                        writer.write_snapshot(in_db, augment_vector( rec, { entry } ));
                     });
             }
         }
     }
 
-    void flush_timeseries(Caliper& c, CaliperMetadataDB& db, CaliWriter& writer) {
+    void flush_timeseries(Caliper& c, CaliWriter& writer) {
         auto p = m_timeseries_mgr.get_channel("spot.timeseries");
 
         if (!p) {
@@ -386,25 +402,25 @@ class SpotController : public cali::ChannelController
 
         Aggregator summary_cross_agg(CalQLParser(summary_cross_query).spec());
 
-        local_aggregate(summary_local_query, c, tsc->channel(), db, summary_cross_agg);
-        cross_aggregate(db, summary_cross_agg);
+        local_aggregate(summary_local_query, c, tsc->channel(), m_db, summary_cross_agg);
+        cross_aggregate(summary_cross_agg);
 
         std::vector<LoopInfo> infovec;
 
-        summary_cross_agg.flush(db, [this,&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
-                infovec.push_back(get_loop_info(db, rec));
+        summary_cross_agg.flush(m_db, [&infovec](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
+                infovec.push_back(get_loop_info(in_db, rec));
             });
 
         if (!infovec.empty()) {
             for (const LoopInfo& loopinfo : infovec)
                 if (loopinfo.iterations > 0)
-                    process_timeseries(tsc.get(), c, db, writer, loopinfo);
+                    process_timeseries(tsc.get(), c, writer, loopinfo);
         } else {
             Log(1).stream() << "[spot controller]: No instrumented loops found" << std::endl;
         }
     }
 
-    void flush_regionprofile(Caliper& c, CaliperMetadataDB& db, CaliWriter& writer) {
+    void flush_regionprofile(Caliper& c, CaliWriter& writer) {
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
@@ -415,7 +431,7 @@ class SpotController : public cali::ChannelController
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
             + " group by "
-            + m_opts.query_groupby("cross", "cali.channel,prop:nested");
+            + m_opts.query_groupby("cross", "prop:nested");
 
         QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
@@ -427,13 +443,13 @@ class SpotController : public cali::ChannelController
                 + " aggregate "
                 + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
                 + " group by "
-                + m_opts.query_groupby("local", "cali.channel,prop:nested");
+                + m_opts.query_groupby("local", "prop:nested");
 
-            local_aggregate(query.c_str(), c, channel(), db, output_agg);
+            local_aggregate(query.c_str(), c, channel(), m_db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
-        cross_aggregate(db, output_agg);
+        cross_aggregate(output_agg);
 
         if (m_rank == 0) {
             // --- Save the spot metrics
@@ -446,14 +462,17 @@ class SpotController : public cali::ChannelController
                 m_spot_metrics.append(Aggregator::get_aggregation_attribute_name(op));
             }
 
+            Variant v_data("regionprofile");
+            Entry   entry(m_db.make_tree_entry(1, &m_channel_attr, &v_data));
+
             // --- Write region profile
-            output_agg.flush(db, [&writer](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                    writer.write_snapshot(db, rec);
+            output_agg.flush(m_db, [&writer,entry](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+                    writer.write_snapshot(in_db, augment_vector( rec, { entry } ));
                 });
         }
     }
 
-    void save_spot_metadata(CaliperMetadataDB& db) {
+    void save_spot_metadata() {
         std::string spot_opts = "";
 
         for (const auto &o : m_opts.enabled_options()) {
@@ -463,18 +482,18 @@ class SpotController : public cali::ChannelController
         }
 
         Attribute mtr_attr =
-            db.create_attribute("spot.metrics",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         Attribute tsm_attr =
-            db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         Attribute fmt_attr =
-            db.create_attribute("spot.format.version", CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.format.version",     CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
         Attribute opt_attr =
-            db.create_attribute("spot.options",        CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.options", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
-        db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
-        db.set_global(tsm_attr, Variant(m_spot_timeseries_metrics.c_str()));
-        db.set_global(fmt_attr, Variant(spot_format_version));
-        db.set_global(opt_attr, Variant(spot_opts.c_str()));
+        m_db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
+        m_db.set_global(tsm_attr, Variant(m_spot_timeseries_metrics.c_str()));
+        m_db.set_global(fmt_attr, Variant(spot_format_version));
+        m_db.set_global(opt_attr, Variant(spot_opts.c_str()));
     }
 
     void on_create(Caliper*, Channel*) {
@@ -507,18 +526,17 @@ public:
 
         init_mpi();
 
-        CaliperMetadataDB db;
         CaliWriter writer(stream);
 
-        flush_regionprofile(c, db, writer);
+        flush_regionprofile(c, writer);
 
         if (m_opts.is_enabled("timeseries"))
-            flush_timeseries(c, db, writer);
+            flush_timeseries(c, writer);
 
         if (m_rank == 0) {
-            db.import_globals(c, c.get_globals(channel()));
-            save_spot_metadata(db);
-            writer.write_globals(db, db.get_globals());
+            m_db.import_globals(c, c.get_globals(channel()));
+            save_spot_metadata();
+            writer.write_globals(m_db, m_db.get_globals());
 
             Log(1).stream() << "[spot controller]: Wrote "
                             << writer.num_written() << " records."
@@ -534,6 +552,9 @@ public:
           m_use_mpi(use_mpi),
           m_rank(0)
         {
+            m_channel_attr =
+                m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+
 #ifdef CALIPER_HAVE_ADIAK
             config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
             config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
@@ -602,7 +623,6 @@ const char* controller_spec =
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","
-    "     \"CALI_CHANNEL_SNAPSHOT_SCOPES\"    : \"process,thread,channel\","
     "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","
     "     \"CALI_TIMER_SNAPSHOT_DURATION\"    : \"true\","
     "     \"CALI_TIMER_INCLUSIVE_DURATION\"   : \"false\","
