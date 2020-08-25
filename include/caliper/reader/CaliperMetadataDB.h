@@ -120,6 +120,15 @@ public:
     ///   metadata DB
     std::vector<Entry> import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals);
 
+    /// \brief Add a set of attribute aliases
+    ///
+    /// This adds a "attribute.alias" meta-attribute for the aliased attribute
+    /// to export alias information in a cali data stream.
+    /// Currently this is limited to new attributes created with
+    /// create_attribute() in this database. It does not apply to imported
+    /// attributes.
+    void add_attribute_aliases(const std::map<std::string, std::string>& aliases);
+
     /// \brief print usage statistics
     std::ostream&
     print_statistics(std::ostream& os);
