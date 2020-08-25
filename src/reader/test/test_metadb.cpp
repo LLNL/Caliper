@@ -156,7 +156,7 @@ TEST(MetadataDBTest, StringDB) {
     std::ostringstream os;
     db.print_statistics(os);
 
-    // 18 nodes: 12 default nodes + 2 attribute nodes + 4 test nodes
-    // 4 strings: 1 attribute name + 3 different test node strings
-    EXPECT_EQ(os.str(), std::string("CaliperMetadataDB: stored 18 nodes, 4 strings.\n"));
+    // 20 nodes: 14 default nodes + 2 attribute nodes + 4 test nodes
+    // 5 strings: 2 attribute name + 3 different test node strings
+    EXPECT_EQ(os.str(), std::string("CaliperMetadataDB: stored 20 nodes, 5 strings.\n"));
 }
