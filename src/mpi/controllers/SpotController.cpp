@@ -426,9 +426,9 @@ class SpotController : public cali::ChannelController
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
-            ",min(inclusive#sum#time.duration)"
-            ",max(inclusive#sum#time.duration)"
-            ",avg(inclusive#sum#time.duration)";
+            ",min(inclusive#sum#time.duration) as \"Min time/rank\""
+            ",max(inclusive#sum#time.duration) as \"Max time/rank\""
+            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\"";
         std::string cross_query =
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
