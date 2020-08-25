@@ -188,7 +188,7 @@ struct JsonFormatter::JsonFormatterImpl
         if (noquote_kvs.size() + quote_kvs.size() > 0) {
             if (m_num_recs == 0)
                 begin_records_section(*real_os);
-            
+
             *real_os << (m_num_recs > 0 ? ",\n" : "") << "{";
 
             int count = 0;
@@ -213,7 +213,7 @@ struct JsonFormatter::JsonFormatterImpl
 
     std::ostream& write_attributes(CaliperMetadataAccessInterface& db, std::ostream& os) {
         std::vector<Attribute> attrs;
-        
+
         if (m_selected.empty())
             attrs = db.get_all_attributes();
         else
@@ -229,14 +229,14 @@ struct JsonFormatter::JsonFormatterImpl
         attrs.erase(std::remove_if(attrs.begin(), attrs.end(),
                                    [](const Attribute& a){ return a.is_hidden(); }),
                     attrs.end());
-        
+
         // write "attr1": { "prop": "value", ... } , "attr2" : ...
 
         int count = 0;
         for (const Attribute& a : attrs) {
             os << (count++ > 0 ? ",\n" : "\n") << (m_opt_pretty ? "\t" : "")
                << '\"' << a.name() << "\": {";
-            
+
             // encode some properties
             os << "\"is_global\": "  << (a.is_global() ? "true" : "false")
                << ",\"is_nested\": " << (a.is_nested() ? "true" : "false");
@@ -246,13 +246,13 @@ struct JsonFormatter::JsonFormatterImpl
                 util::write_esc_string(os << ",\"", db.get_attribute(node->attribute()).name()) << "\": ";
                 util::write_esc_string(os << "\"", node->data().to_string()) << '\"';
             }
-                                                   
+
             os << "}";
         }
 
         return os;
     }
-    
+
     std::ostream& write_globals(CaliperMetadataAccessInterface& db, std::ostream& os) {
         std::vector<Entry>               globals = db.get_globals();
         std::map<cali_id_t, std::string> global_vals;
@@ -286,7 +286,7 @@ struct JsonFormatter::JsonFormatterImpl
 
     void flush(CaliperMetadataAccessInterface& db) {
         std::ostream* real_os = m_os.stream();
-        
+
         // close records section
         if (m_num_recs == 0)
             begin_records_section(*real_os);

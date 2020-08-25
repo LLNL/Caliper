@@ -1,6 +1,6 @@
 # report / C config test
 
-import unittest
+import json,unittest
 
 import calipertest as cat
 
@@ -182,6 +182,28 @@ class CaliperReportTest(unittest.TestCase):
         snapshots = cat.get_snapshots_from_text(query_output)
 
         self.assertTrue(cat.has_snapshot_with_keys(snapshots, { 'my function alias', 'count'  }))
+
+    def test_report_attribute_aliases_in_cali(self):
+        """ Test json object layout """
+
+        target_cmd = [ './ci_test_macros' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'format json(object)' ]
+
+        caliper_config = {
+            'CALI_SERVICES_ENABLE'   : 'event,trace,report',
+            'CALI_REPORT_FILENAME'   : 'stdout',
+            'CALI_REPORT_CONFIG'     : 'select *,count() as CountAlias group by prop:nested format cali',
+            'CALI_LOG_VERBOSITY'     : '0'
+        }
+
+        obj = json.loads( cat.run_test_with_query(target_cmd, query_cmd, caliper_config ) )
+
+        self.assertTrue( { 'records', 'globals', 'attributes' }.issubset(set(obj.keys())) )
+
+        self.assertIn('count',           obj['attributes'])
+        self.assertIn('attribute.alias', obj['attributes']['count'])
+
+        self.assertEqual('CountAlias', obj['attributes']['count']['attribute.alias'])
 
     def test_report(self):
         target_cmd = [ './ci_test_report' ]

@@ -47,6 +47,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     vector<Entry>             m_globals;
     mutex                     m_globals_lock;
 
+    std::map<std::string, std::string> m_attr_aliases;
+    Attribute                 m_alias_attr;
+
     inline Node* node(cali_id_t id) const {
         std::lock_guard<std::mutex>
             g(m_node_lock);
@@ -398,6 +401,12 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (meta > 0)
             parent = make_tree_entry(meta, meta_attr, meta_data, parent);
 
+        auto alias_it = m_attr_aliases.find(name);
+        if (alias_it != m_attr_aliases.end()) {
+            Variant v_alias(static_cast<const char*>(alias_it->second.c_str()));
+            parent = make_tree_entry(1, &m_alias_attr, &v_alias, parent);
+        }
+
         Attribute n_attr[2] = { attribute(Attribute::meta_attribute_keys().prop_attr_id),
                                 attribute(Attribute::meta_attribute_keys().name_attr_id) };
         Variant   n_data[2] = { Variant(prop),
@@ -476,6 +485,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         : m_root { CALI_INV_ID, CALI_INV_ID, { } }
         {
             setup_bootstrap_nodes();
+
+            m_alias_attr =
+                create_attribute("attribute.alias", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS,
+                                 0, nullptr, nullptr);
         }
 
     ~CaliperMetadataDBImpl() {
@@ -634,6 +647,13 @@ std::vector<Entry>
 CaliperMetadataDB::import_globals(CaliperMetadataAccessInterface& db, const std::vector<Entry>& globals)
 {
     return mP->import_globals(db, globals);
+}
+
+void
+CaliperMetadataDB::add_attribute_aliases(const std::map<std::string, std::string>& aliases)
+{
+    for (const auto &p: aliases)
+        mP->m_attr_aliases[p.first] = p.second;
 }
 
 std::ostream&

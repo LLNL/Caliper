@@ -359,6 +359,8 @@ class SpotController : public cali::ChannelController
             QuerySpec  spec = tsc->timeseries_spec();
             Aggregator cross_agg(spec);
 
+            m_db.add_attribute_aliases(spec.aliases);
+
             tsc->timeseries_local_aggregation(c, m_db, namebuf, std::max(blocksize, 1), cross_agg);
             cross_aggregate(cross_agg);
 
@@ -424,9 +426,9 @@ class SpotController : public cali::ChannelController
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
-            ",min(inclusive#sum#time.duration)"
-            ",max(inclusive#sum#time.duration)"
-            ",avg(inclusive#sum#time.duration)";
+            ",min(inclusive#sum#time.duration) as \"Min time/rank\""
+            ",max(inclusive#sum#time.duration) as \"Max time/rank\""
+            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\"";
         std::string cross_query =
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
@@ -435,6 +437,8 @@ class SpotController : public cali::ChannelController
 
         QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
         Aggregator output_agg(output_spec);
+
+        m_db.add_attribute_aliases(output_spec.aliases);
 
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times

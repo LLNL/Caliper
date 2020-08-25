@@ -61,6 +61,7 @@ class Report {
         CaliperMetadataDB db;
         QueryProcessor queryP(spec, stream);
 
+        db.add_attribute_aliases(spec.aliases);
         db.import_globals(*c, c->get_globals(channel));
 
         c->flush(channel, flush_info, [&queryP,&db](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
