@@ -152,17 +152,20 @@ class AllocService
                             Channel* chn,
                             cali::Node*    label_node,
                             const Variant& v_size,
-                            const Variant& v_uid) {
+                            const Variant& v_uid,
+                            const Variant& v_addr) {
         cali_id_t attr[] = {
             alloc_total_size_attr.id(),
-            alloc_uid_attr.id()
+            alloc_uid_attr.id(),
+            alloc_addr_attr.id()
         };
         Variant   data[] = {
             v_size,
-            v_uid
+            v_uid,
+            v_addr
         };
 
-        SnapshotRecord trigger_info(1, &label_node, 2, attr, data);
+        SnapshotRecord trigger_info(1, &label_node, 3, attr, data);
         c->push_snapshot(chn, &trigger_info);
     }
 
@@ -199,7 +202,10 @@ class AllocService
         }
 
         if (g_track_allocations)
-            track_mem_snapshot(c, chn, info.alloc_label_node, Variant(static_cast<int>(total_size)), info.v_uid);
+            track_mem_snapshot(c, chn, info.alloc_label_node,
+                               Variant(static_cast<int>(total_size)),
+                               info.v_uid,
+                               Variant(CALI_TYPE_ADDR, &ptr, sizeof(void*)));
 
         {
             std::lock_guard<std::mutex>
@@ -242,7 +248,10 @@ class AllocService
         }
 
         if (g_track_allocations)
-            track_mem_snapshot(c, chn, info.free_label_node, Variant(-static_cast<int>(info.total_size)), info.v_uid);
+            track_mem_snapshot(c, chn, info.free_label_node,
+                               Variant(-static_cast<int>(info.total_size)),
+                               info.v_uid,
+                               Variant(CALI_TYPE_ADDR, &ptr, sizeof(void*)));
 
         {
             std::lock_guard<std::mutex>

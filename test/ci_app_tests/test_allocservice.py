@@ -25,6 +25,15 @@ class CaliperAllocServiceTest(unittest.TestCase):
         # test allocated.0
 
         self.assertTrue(cat.has_snapshot_with_keys(
+            snapshots, { 'mem.alloc', 'alloc.uid', 'alloc.address', 'alloc.total_size' }))
+        self.assertTrue(cat.has_snapshot_with_keys(
+            snapshots, { 'mem.free', 'alloc.uid', 'alloc.address', 'alloc.total_size' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'mem.alloc': 'test_alloc_A' }))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'mem.free': 'test_alloc_A'  }))
+
+        self.assertTrue(cat.has_snapshot_with_keys(
             snapshots, { 'test_alloc.allocated.0', 'ptr_in', 'ptr_out' }))
 
         self.assertTrue(cat.has_snapshot_with_attributes(
