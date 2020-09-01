@@ -90,7 +90,7 @@ class CaliperAllocServiceTest(unittest.TestCase):
         obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
         self.assertEqual(obj[1]['path'], 'main')
-        self.assertTrue(float(obj[1]['Allocated (MB)']) > 0.0)
+        self.assertTrue(float(obj[1]['Allocated MB']) > 0.0)
 
 if __name__ == "__main__":
     unittest.main()

@@ -130,10 +130,16 @@ join_stringlist(const std::vector<std::string>& list)
 
 class ConfigManager::OptionSpec
 {
+    struct select_expr_t {
+        std::string expression;
+        std::string alias;
+        std::string unit;
+    };
+
     struct query_arg_t {
-        std::vector< std::pair<std::string, std::string> > select;
-        std::vector< std::string > groupby;
-        std::vector< std::string > let;
+        std::vector< select_expr_t > select;
+        std::vector< std::string   > groupby;
+        std::vector< std::string   > let;
     };
 
     struct option_spec_t {
@@ -161,7 +167,11 @@ class ConfigManager::OptionSpec
     void parse_select(const std::vector<StringConverter>& list, query_arg_t& qarg) {
         for (const StringConverter& sc : list) {
             std::map<std::string, StringConverter> dict = sc.rec_dict();
-            qarg.select.push_back(std::make_pair(dict["expr"].to_string(), dict["as"].to_string()));
+            qarg.select.push_back( {
+                    dict["expr"].to_string(),
+                    dict["as"  ].to_string(),
+                    dict["unit"].to_string()
+                } );
         }
     }
 
@@ -446,13 +456,20 @@ struct ConfigManager::Options::OptionsImpl
                 continue;
 
             for (const auto &p : l_it->second.select) {
-                if (p.first.empty())
+                if (p.expression.empty())
                     break;
+
                 if (!ret.empty())
                     ret.append(",");
-                ret.append(p.first);
-                if (use_alias && !p.second.empty())
-                    ret.append(" as \"").append(p.second).append("\"");
+
+                ret.append(p.expression);
+
+                if (use_alias) {
+                    if (!p.alias.empty())
+                        ret.append(" as \"").append(p.alias).append("\"");
+                    if (!p.unit.empty())
+                        ret.append(" unit \"").append(p.unit).append("\"");
+                }
             }
         }
 

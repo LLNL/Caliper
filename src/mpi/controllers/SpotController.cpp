@@ -432,7 +432,7 @@ class SpotController : public cali::ChannelController
             ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec";
         std::string cross_query =
             std::string("select ")
-            + m_opts.query_select("cross", cross_select, false)
+            + m_opts.query_select("cross", cross_select)
             + " group by "
             + m_opts.query_groupby("cross", "prop:nested");
 
@@ -446,7 +446,7 @@ class SpotController : public cali::ChannelController
         //     region profile inclusive times
         {
             std::string query = m_opts.query_let("local", "")
-                + " aggregate "
+                + " select "
                 + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
                 + " group by "
                 + m_opts.query_groupby("local", "prop:nested");
