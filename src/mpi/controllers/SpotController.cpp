@@ -41,10 +41,22 @@ constexpr int spot_format_version = 2;
 // Helper functions
 //
 
+QuerySpec
+parse_spec(const char* query)
+{
+    CalQLParser parser(query);
+
+    if (parser.error())
+        Log(0).stream() << "[spot controller]: Internal query parse error: " << parser.error_msg()
+                        << std::endl;
+
+    return parser.spec();
+}
+
 /// \brief Perform process-local aggregation of channel data into \a output_agg
 void
 local_aggregate(const char* query, Caliper& c, Channel* channel, CaliperMetadataDB& db, Aggregator& output_agg) {
-    QuerySpec      spec(CalQLParser(query).spec());
+    QuerySpec      spec(parse_spec(query));
 
     RecordSelector filter(spec);
     Preprocessor   prp(spec);
@@ -197,12 +209,7 @@ public:
             + " group by "
             + m_opts.query_groupby("cross", "cali.channel,loop,block");
 
-        CalQLParser parser(query.c_str());
-
-        if (parser.error())
-            Log(0).stream() << parser.error_msg() << " " << query << std::endl;
-
-        return CalQLParser(query.c_str()).spec();
+        return parse_spec(query.c_str());
     }
 
     void flush() { }
@@ -436,7 +443,7 @@ class SpotController : public cali::ChannelController
             + " group by "
             + m_opts.query_groupby("cross", "prop:nested");
 
-        QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
+        QuerySpec  output_spec(parse_spec(cross_query.c_str()));
         Aggregator output_agg(output_spec);
 
         m_db.add_attribute_aliases(output_spec.aliases);
