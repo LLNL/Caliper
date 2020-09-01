@@ -9,23 +9,23 @@ using namespace cali;
 TEST(MetaDBTest, MergeSnapshotFromDB) {
     CaliperMetadataDB db1;
 
-    Attribute str_attr = 
+    Attribute str_attr =
         db1.create_attribute("str.attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
-    Attribute int_attr = 
+    Attribute int_attr =
         db1.create_attribute("int.attr", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
 
     IdMap idmap;
 
-    const Node* a_in = 
+    const Node* a_in =
         db1.merge_node(200, str_attr.id(), CALI_INV_ID, Variant("a"), idmap);
-    const Node* b_in = 
+    const Node* b_in =
         db1.merge_node(201, str_attr.id(), 200,         Variant("b"), idmap);
 
     EntryList list_in { Entry(b_in), Entry(int_attr, Variant(42)) };
 
     CaliperMetadataDB db2;
 
-    EntryList list_out = 
+    EntryList list_out =
         db2.merge_snapshot(db1, list_in);
 
     Attribute str_attr_out = db2.get_attribute("str.attr");
@@ -97,7 +97,7 @@ TEST(MetaDBTest, SetGlobal) {
     db.set_global(g_str_attr, v_str_a);
     db.set_global(g_int_attr, v_int  );
     db.set_global(g_val_attr, v_val  );
-    db.set_global(g_str_attr, v_str_a); // should be set only once 
+    db.set_global(g_str_attr, v_str_a); // should be set only once
     db.set_global(g_str_attr, v_str_b);
     db.set_global(no_g_attr,  v_no   );
 
@@ -132,18 +132,18 @@ TEST(MetaDBTest, SetGlobal) {
 TEST(MetadataDBTest, StringDB) {
     CaliperMetadataDB db;
 
-    Attribute attr = 
+    Attribute attr =
         db.create_attribute("string.attr", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     IdMap idmap;
-    
+
     const Node* n0 =
         db.merge_node(100, attr.id(), CALI_INV_ID, Variant("a.b"  ), idmap);
     const Node* n1 =
         db.merge_node(101, attr.id(), 100,         Variant("a"    ), idmap);
     const Node* n2 =
         db.merge_node(102, attr.id(), 101,         Variant("a.b.c"), idmap);
-    const Node* n3 = 
+    const Node* n3 =
         db.merge_node(103, attr.id(), 102,         Variant("a.b"  ), idmap);
 
     EXPECT_EQ(n0->data().to_string(), std::string("a.b"));
@@ -156,7 +156,26 @@ TEST(MetadataDBTest, StringDB) {
     std::ostringstream os;
     db.print_statistics(os);
 
-    // 20 nodes: 14 default nodes + 2 attribute nodes + 4 test nodes
-    // 5 strings: 2 attribute name + 3 different test node strings
-    EXPECT_EQ(os.str(), std::string("CaliperMetadataDB: stored 20 nodes, 5 strings.\n"));
+    // 21 nodes: 15 default nodes + 2 attribute nodes + 4 test nodes
+    // 6 strings: 3 attribute name + 3 different test node strings
+    EXPECT_EQ(os.str(), std::string("CaliperMetadataDB: stored 21 nodes, 6 strings.\n"));
+}
+
+TEST(MetadataDBTest, AliasesAndUnits) {
+    CaliperMetadataDB db;
+
+    std::map<std::string, std::string> aliases = { std::make_pair("x.attr", "x alias") };
+    std::map<std::string, std::string> units   = { std::make_pair("x.attr", "x unit")  };
+
+    db.add_attribute_aliases(aliases);
+    db.add_attribute_units(units);
+
+    Attribute attr =
+        db.create_attribute("x.attr", CALI_TYPE_INT, CALI_ATTR_DEFAULT);
+
+    Attribute alias_attr = db.get_attribute("attribute.alias");
+    Attribute unit_attr  = db.get_attribute("attribute.unit");
+
+    EXPECT_EQ(attr.get(alias_attr).to_string(), "x alias");
+    EXPECT_EQ(attr.get(unit_attr).to_string(),  "x unit");
 }

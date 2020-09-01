@@ -129,6 +129,15 @@ public:
     /// attributes.
     void add_attribute_aliases(const std::map<std::string, std::string>& aliases);
 
+    /// \brief Add a set of attribute units
+    ///
+    /// This adds a "attribute.unit" meta-attribute for the aliased attribute
+    /// to export alias information in a cali data stream.
+    /// Currently this is limited to new attributes created with
+    /// create_attribute() in this database. It does not apply to imported
+    /// attributes.
+    void add_attribute_units(const std::map<std::string, std::string>& aliases);
+
     /// \brief print usage statistics
     std::ostream&
     print_statistics(std::ostream& os);

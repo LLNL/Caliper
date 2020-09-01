@@ -48,7 +48,10 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
     mutex                     m_globals_lock;
 
     std::map<std::string, std::string> m_attr_aliases;
+    std::map<std::string, std::string> m_attr_units;
+
     Attribute                 m_alias_attr;
+    Attribute                 m_unit_attr;
 
     inline Node* node(cali_id_t id) const {
         std::lock_guard<std::mutex>
@@ -401,6 +404,11 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         if (meta > 0)
             parent = make_tree_entry(meta, meta_attr, meta_data, parent);
 
+        auto unit_it = m_attr_units.find(name);
+        if (unit_it != m_attr_units.end()) {
+            Variant v_unit(static_cast<const char*>(unit_it->second.c_str()));
+            parent = make_tree_entry(1, &m_unit_attr, &v_unit, parent);
+        }
         auto alias_it = m_attr_aliases.find(name);
         if (alias_it != m_attr_aliases.end()) {
             Variant v_alias(static_cast<const char*>(alias_it->second.c_str()));
@@ -488,6 +496,9 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
             m_alias_attr =
                 create_attribute("attribute.alias", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS,
+                                 0, nullptr, nullptr);
+            m_unit_attr =
+                create_attribute("attribute.unit",  CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS,
                                  0, nullptr, nullptr);
         }
 
@@ -654,6 +665,13 @@ CaliperMetadataDB::add_attribute_aliases(const std::map<std::string, std::string
 {
     for (const auto &p: aliases)
         mP->m_attr_aliases[p.first] = p.second;
+}
+
+void
+CaliperMetadataDB::add_attribute_units(const std::map<std::string, std::string>& units)
+{
+    for (const auto &p: units)
+        mP->m_attr_units[p.first] = p.second;
 }
 
 std::ostream&
