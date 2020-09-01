@@ -41,10 +41,22 @@ constexpr int spot_format_version = 2;
 // Helper functions
 //
 
+QuerySpec
+parse_spec(const char* query)
+{
+    CalQLParser parser(query);
+
+    if (parser.error())
+        Log(0).stream() << "[spot controller]: Internal query parse error: " << parser.error_msg()
+                        << std::endl;
+
+    return parser.spec();
+}
+
 /// \brief Perform process-local aggregation of channel data into \a output_agg
 void
 local_aggregate(const char* query, Caliper& c, Channel* channel, CaliperMetadataDB& db, Aggregator& output_agg) {
-    QuerySpec      spec(CalQLParser(query).spec());
+    QuerySpec      spec(parse_spec(query));
 
     RecordSelector filter(spec);
     Preprocessor   prp(spec);
@@ -186,9 +198,9 @@ public:
             " cali.channel"
             ",loop"
             ",block"
-            ",max(sum#loop.iterations) as \"Iterations\""
-            ",max(sum#time.duration) as \"Time (s)\""
-            ",avg(loop.iterations/time.duration) as \"Iter/s\"";
+            ",max(sum#loop.iterations) as \"Iterations\" unit iterations"
+            ",max(sum#time.duration) as \"Time (s)\" unit sec"
+            ",avg(loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
 
         std::string query =
             m_opts.query_let("cross", "")
@@ -197,12 +209,7 @@ public:
             + " group by "
             + m_opts.query_groupby("cross", "cali.channel,loop,block");
 
-        CalQLParser parser(query.c_str());
-
-        if (parser.error())
-            Log(0).stream() << parser.error_msg() << " " << query << std::endl;
-
-        return CalQLParser(query.c_str()).spec();
+        return parse_spec(query.c_str());
     }
 
     void flush() { }
@@ -360,6 +367,7 @@ class SpotController : public cali::ChannelController
             Aggregator cross_agg(spec);
 
             m_db.add_attribute_aliases(spec.aliases);
+            m_db.add_attribute_units(spec.units);
 
             tsc->timeseries_local_aggregation(c, m_db, namebuf, std::max(blocksize, 1), cross_agg);
             cross_aggregate(cross_agg);
@@ -426,25 +434,26 @@ class SpotController : public cali::ChannelController
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
-            ",min(inclusive#sum#time.duration) as \"Min time/rank\""
-            ",max(inclusive#sum#time.duration) as \"Max time/rank\""
-            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\"";
+            ",min(inclusive#sum#time.duration) as \"Min time/rank\" unit sec"
+            ",max(inclusive#sum#time.duration) as \"Max time/rank\" unit sec"
+            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec";
         std::string cross_query =
             std::string("select ")
-            + m_opts.query_select("cross", cross_select, false)
+            + m_opts.query_select("cross", cross_select)
             + " group by "
             + m_opts.query_groupby("cross", "prop:nested");
 
-        QuerySpec  output_spec(CalQLParser(cross_query.c_str()).spec());
+        QuerySpec  output_spec(parse_spec(cross_query.c_str()));
         Aggregator output_agg(output_spec);
 
         m_db.add_attribute_aliases(output_spec.aliases);
+        m_db.add_attribute_units(output_spec.units);
 
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times
         {
             std::string query = m_opts.query_let("local", "")
-                + " aggregate "
+                + " select "
                 + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
                 + " group by "
                 + m_opts.query_groupby("local", "prop:nested");

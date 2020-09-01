@@ -20,18 +20,18 @@ struct QuerySpec
     //
     // --- Types
     //
-    
+
     /// \brief Template type for list-style query options
     template<class T>
     struct SelectionList {
         enum SelectionOpt {
-            Default, ///< Take the default 
+            Default, ///< Take the default
             None,    ///< Take none
-            All,     ///< Take all available 
+            All,     ///< Take all available
             List     ///< User-defined list
         }              selection; ///< Selection specification
 
-        /// \brief User-defined list 
+        /// \brief User-defined list
         std::vector<T> list;
     };
 
@@ -45,7 +45,7 @@ struct QuerySpec
     };
 
     static const FunctionSignature FunctionSignatureTerminator;
-    
+
     /// \brief An aggregation function invocation in a query spec
     struct AggregationOp {
         FunctionSignature        op;    ///< The aggregation operator
@@ -61,7 +61,7 @@ struct QuerySpec
 
         AggregationOp(const FunctionSignature& s, const std::vector<std::string>& a)
             : op(s), args(a)
-        { } 
+        { }
     };
 
     /// \brief Sort description.
@@ -96,7 +96,7 @@ struct QuerySpec
         enum Opt {
             Default, User
         }                        opt;       ///< Default or user-defined formatter
-        FunctionSignature        formatter; ///< The formatter to use. Signatures provided by FormatProcessor. 
+        FunctionSignature        formatter; ///< The formatter to use. Signatures provided by FormatProcessor.
         std::vector<std::string> args;      ///< Arguments to the formatter.
     };
 
@@ -104,7 +104,7 @@ struct QuerySpec
         std::string   target;
         AggregationOp op;
     };
-    
+
     //
     // --- Data members
     //
@@ -133,6 +133,9 @@ struct QuerySpec
 
     /// \brief Output aliases for attributes (i.e., "select x AS y" )
     std::map<std::string, std::string> aliases;
+
+    /// \brief Units for attributes (i.e. SELECT x AS y UNIT z)
+    std::map<std::string, std::string> units;
 
     /// \brief List of preprocessing operations (i.e., "LET y=f(x)")
     std::vector<PreprocessSpec>  preprocess_ops;

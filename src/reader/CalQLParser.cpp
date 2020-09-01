@@ -272,27 +272,41 @@ struct CalQLParser::CalQLParserImpl
                 }
             }
 
+            // parse alias and unit (... AS ... UNIT ...)
+
             next_keyword.clear();
+            std::string tmp = util::read_word(is, ",;=<>()\n");
+            std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
 
-            // parse alias (... AS ...)
-            if (!error) {
-                std::string tmp = util::read_word(is, ",;=<>()\n");
+            if (!error && next_keyword == "as") {
+                std::string w = util::read_word(is, ",;=<>()\n");
+
+                if (w.empty())
+                    set_error("Expected alias at SELECT ... AS ", is);
+                else
+                    spec.aliases[selection_attr_name] = w;
+
+                next_keyword.clear();
+                tmp = util::read_word(is, ",;=<>()\n");
                 std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
+            }
 
-                if (next_keyword == "as") {
-                    std::string w = util::read_word(is, ",;=<>()\n");
+            if (!error && next_keyword == "unit") {
+                std::string w = util::read_word(is, ",;=()\n");
 
-                    if (w.empty())
-                        set_error("Expected alias at SELECT ... AS ", is);
-                    else {
-                        spec.aliases[selection_attr_name] = w;
-                    }
+                if (w.empty())
+                    set_error("Expected unit at SELECT ... UNIT ", is);
+                else
+                    spec.units[selection_attr_name] = w;
 
-                    next_keyword.clear();
-                } else if (!next_keyword.empty()) {
-                    c = 0;
-                    break;
-                }
+                next_keyword.clear();
+                tmp = util::read_word(is, ",;=<>()\n");
+                std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
+            }
+
+            if (!error && !next_keyword.empty()) {
+                c = 0;
+                break;
             }
 
             c = util::read_char(is);
@@ -469,7 +483,7 @@ struct CalQLParser::CalQLParserImpl
             if (defs[i].min_args > argsize || defs[i].max_args < argsize)
                 set_error(std::string("Invalid number of arguments for operator ") + opname, is);
             else {
-                auto it = std::find_if(spec.preprocess_ops.begin(), spec.preprocess_ops.end(), 
+                auto it = std::find_if(spec.preprocess_ops.begin(), spec.preprocess_ops.end(),
                                 [&target](QuerySpec::PreprocessSpec& s){
                                     return s.target == target;
                             });

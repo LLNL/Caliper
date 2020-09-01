@@ -322,6 +322,66 @@ TEST(CalQLParserTest, AliasAggregate) {
     EXPECT_STREQ(q1.aliases["percent_total#a"].c_str(), "my alias (for percent_total#a)");
 }
 
+TEST(CalQLParserTest, AttributeUnit) {
+    CalQLParser p1("select x,scale(a,1e-6) unit \"sec\" format table");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 2);
+
+    EXPECT_EQ(q1.attribute_selection.list[0], "x");
+    EXPECT_EQ(q1.attribute_selection.list[1], "scale#a");
+
+    EXPECT_EQ(q1.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
+    ASSERT_EQ(q1.aggregation_ops.list.size(), 1);
+    EXPECT_STREQ(q1.aggregation_ops.list[0].op.name, "scale");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[0], "a");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[1], "1e-6");
+
+    EXPECT_STREQ(q1.format.formatter.name, "table");
+
+    ASSERT_EQ(q1.units.size(), 1);
+    EXPECT_STREQ(q1.units["scale#a"].c_str(), "sec");
+}
+
+TEST(CalQLParserTest, AttributeAliasAndUnit) {
+    CalQLParser p1("select x,ratio(a,b,1e-6) As \"Read BW\" uNiT \"MB/s\" format table");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_EQ(q1.attribute_selection.selection, QuerySpec::AttributeSelection::List);
+    ASSERT_EQ(q1.attribute_selection.list.size(), 2);
+
+    EXPECT_EQ(q1.attribute_selection.list[0], "x");
+    EXPECT_EQ(q1.attribute_selection.list[1], "a/b");
+
+    EXPECT_EQ(q1.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
+    ASSERT_EQ(q1.aggregation_ops.list.size(), 1);
+    EXPECT_STREQ(q1.aggregation_ops.list[0].op.name, "ratio");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[0], "a");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[1], "b");
+    EXPECT_EQ(q1.aggregation_ops.list[0].args[2], "1e-6");
+
+    EXPECT_STREQ(q1.format.formatter.name, "table");
+
+    ASSERT_EQ(q1.units.size(), 1);
+    EXPECT_STREQ(q1.units["a/b"].c_str(), "MB/s");
+    ASSERT_EQ(q1.aliases.size(), 1);
+    EXPECT_STREQ(q1.aliases["a/b"].c_str(), "Read BW");
+}
+
+TEST(CalQLParserTest, AttributeDoubleAliasParseError) {
+    CalQLParser p1("select x,ratio(a,b,1e-6) As \"Read BW\" AS again format table");
+
+    EXPECT_TRUE(p1.error());
+    EXPECT_STREQ(p1.error_msg().c_str(), "Expected clause keyword, got as");
+}
+
 TEST(CalQLParserTest, FullStatement) {
     const char* s1 =
         "SELECT a,bb, cc, count() where bb< 42, NOT d=\"foo,\"\\ bar, c GROUP BY a, bb,d\n"
