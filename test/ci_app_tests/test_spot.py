@@ -26,8 +26,10 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertIn('avg#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
         self.assertIn('avg#inclusive#sum#time.duration', obj['attributes'])
         self.assertIn('attribute.alias', obj['attributes']['avg#inclusive#sum#time.duration'])
+        self.assertIn('attribute.unit',  obj['attributes']['avg#inclusive#sum#time.duration'])
 
         self.assertEqual('Avg time/rank', obj['attributes']['avg#inclusive#sum#time.duration']['attribute.alias'])
+        self.assertEqual('sec',           obj['attributes']['avg#inclusive#sum#time.duration']['attribute.unit'])
 
         r = None
         for rec in obj['records']:

@@ -186,9 +186,9 @@ public:
             " cali.channel"
             ",loop"
             ",block"
-            ",max(sum#loop.iterations) as \"Iterations\""
-            ",max(sum#time.duration) as \"Time (s)\""
-            ",avg(loop.iterations/time.duration) as \"Iter/s\"";
+            ",max(sum#loop.iterations) as \"Iterations\" unit iterations"
+            ",max(sum#time.duration) as \"Time (s)\" unit sec"
+            ",avg(loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
 
         std::string query =
             m_opts.query_let("cross", "")
@@ -360,6 +360,7 @@ class SpotController : public cali::ChannelController
             Aggregator cross_agg(spec);
 
             m_db.add_attribute_aliases(spec.aliases);
+            m_db.add_attribute_units(spec.units);
 
             tsc->timeseries_local_aggregation(c, m_db, namebuf, std::max(blocksize, 1), cross_agg);
             cross_aggregate(cross_agg);
@@ -426,9 +427,9 @@ class SpotController : public cali::ChannelController
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
-            ",min(inclusive#sum#time.duration) as \"Min time/rank\""
-            ",max(inclusive#sum#time.duration) as \"Max time/rank\""
-            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\"";
+            ",min(inclusive#sum#time.duration) as \"Min time/rank\" unit sec"
+            ",max(inclusive#sum#time.duration) as \"Max time/rank\" unit sec"
+            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec";
         std::string cross_query =
             std::string("select ")
             + m_opts.query_select("cross", cross_select, false)
@@ -439,6 +440,7 @@ class SpotController : public cali::ChannelController
         Aggregator output_agg(output_spec);
 
         m_db.add_attribute_aliases(output_spec.aliases);
+        m_db.add_attribute_units(output_spec.units);
 
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times
