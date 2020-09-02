@@ -160,6 +160,12 @@ struct TreeFormatter::TreeFormatterImpl
                 auto ait = m_aliases.find(name);
                 if (ait != m_aliases.end())
                     name = ait->second;
+                else {
+                    Variant v = p.first.get(db.get_attribute("attribute.alias"));
+
+                    if (!v.empty())
+                        name = v.to_string();
+                }
 
                 ColumnInfo ci { name, std::max<int>(len, name.size()) };
 

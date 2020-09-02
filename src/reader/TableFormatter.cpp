@@ -82,7 +82,7 @@ struct TableFormatter::TableImpl
     void configure(const QuerySpec& spec) {
         m_cols.clear();
         m_rows.clear();
-        
+
         m_auto_column = false;
 
         m_aliases = spec.aliases;
@@ -101,7 +101,7 @@ struct TableFormatter::TableImpl
         }
 
         // Fill header columns
-        
+
         switch (spec.attribute_selection.selection) {
         case QuerySpec::AttributeSelection::Default:
         case QuerySpec::AttributeSelection::All:
@@ -110,11 +110,11 @@ struct TableFormatter::TableImpl
         case QuerySpec::AttributeSelection::List:
             for (const std::string& s : spec.attribute_selection.list) {
                 std::string alias = s;
-                
+
                 auto it = m_aliases.find(s);
                 if (it != m_aliases.end())
                     alias = it->second;
-                    
+
                 m_cols.emplace_back(s, alias, alias.size(), Attribute::invalid, true);
             }
             break;
@@ -123,7 +123,7 @@ struct TableFormatter::TableImpl
             break;
         }
     }
-    
+
     void update_column_attribute(CaliperMetadataAccessInterface& db, cali_id_t attr_id) {
         auto it = std::find_if(m_cols.begin(), m_cols.end(),
                                [attr_id](const Column& c) {
@@ -140,13 +140,19 @@ struct TableFormatter::TableImpl
 
         std::string name  = attr.name();
         std::string alias = name;
-        
+
         {
             auto ait = m_aliases.find(name);
             if (ait != m_aliases.end())
                 alias = ait->second;
+            else {
+                Variant v = attr.get(db.get_attribute("attribute.alias"));
+
+                if (!v.empty())
+                    alias = v.to_string();
+            }
         }
-        
+
         m_cols.emplace_back(name, alias, alias.size(), attr, true);
     }
 
@@ -258,7 +264,7 @@ struct TableFormatter::TableImpl
                                          return lhs.size() > rhs.size();
                                      cali_attr_type type = this->m_cols[c].attr.type();
                                      return Variant::from_string(type, lhs[c].c_str()) > Variant::from_string(type, rhs[c].c_str());
-                                 });                
+                                 });
 
         // print header
 
