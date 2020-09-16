@@ -27,7 +27,10 @@ jobs:
       env: WITH_MPI=Off WITH_FORTRAN=On WITH_GOTCHA=On COVERAGE="-DCMAKE_C_FLAGS=-coverage -DCMAKE_CXX_FLAGS=-coverage"
     
 script:
-  - mkdir build && cd build
+  - basedir=$(pwd)
+  - cd $basedir/python/caliper-reader
+  - python -B -m unittest discover -s caliperreader/tests
+  - mkdir $basedir/build && cd $basedir/build
   - cmake -C ../cmake/hostconfig/travis.cmake ${COVERAGE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DWITH_FORTRAN=${WITH_FORTRAN} -DWITH_MPI=${WITH_MPI} -DWITH_GOTCHA=${WITH_GOTCHA} ..
   - make -j8
   - ctest --output-on-failure
