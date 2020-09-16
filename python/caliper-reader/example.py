@@ -68,5 +68,7 @@ print ("\n\nUsing CaliperStreamReader object:")
 
 from caliperreader.caliperstreamreader import CaliperStreamReader
 
+sr = CaliperStreamReader()
+
 print('\nMetrics:')
 sr.read('example-profile.cali', print_record)
