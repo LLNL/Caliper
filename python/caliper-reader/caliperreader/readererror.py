@@ -3,5 +3,6 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from .caliperreader import CaliperReader, read_caliper_globals, read_caliper_contents
-from .caliperstreamreader import CaliperStreamReader
+class ReaderError(Exception):
+    def __init__(self, message):
+        self.message = message
