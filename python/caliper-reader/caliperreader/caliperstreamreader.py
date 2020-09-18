@@ -28,8 +28,10 @@ class CaliperStreamReader:
     def read(self, filename_or_stream, process_record_fn = None):
         """ Read a .cali file or stream.
 
-        After reading, the file's contents are available in the CaliperReader
-        object's "records" and "globals" attributes.
+        Snapshot records being read are fed to the user-provided
+        process_record_fn callback function.
+        After reading, global (metadata) values are stored in the
+        globals attribute.
 
         Arguments:
             filename_or_stream : str or stream object
