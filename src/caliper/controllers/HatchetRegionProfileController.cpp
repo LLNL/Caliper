@@ -62,7 +62,7 @@ public:
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,sum(sum#time.duration) as time")
+                    + opts.query_select("local", "*,sum(sum#time.duration) as time unit sec")
                     + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
@@ -72,7 +72,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,sum(sum#time.duration) as time")
+                    + opts.query_select("local", "*,sum(sum#time.duration) as time unit sec")
                     + " group by "
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;

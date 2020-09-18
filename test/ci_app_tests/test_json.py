@@ -129,8 +129,13 @@ class CaliperJSONTest(unittest.TestCase):
         meta = obj['column_metadata']
 
         self.assertEqual(len(meta), 2)
-        self.assertTrue(meta[columns.index('time')]['is_value'])
-        self.assertFalse(meta[columns.index('path')]['is_value'])
+
+        time_idx = columns.index('time')
+        path_idx = columns.index('path')
+
+        self.assertTrue( meta[time_idx]['is_value'])
+        self.assertEqual(meta[time_idx]['attribute.unit'], 'sec')
+        self.assertFalse(meta[path_idx]['is_value'])
 
 
     def test_esc(self):

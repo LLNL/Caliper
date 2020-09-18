@@ -52,6 +52,7 @@ class MpiReport
         CaliperMetadataDB db;
 
         db.add_attribute_aliases(m_cross_spec.aliases);
+        db.add_attribute_units(m_cross_spec.units);
 
         Aggregator        cross_agg(m_cross_spec);
         Aggregator        local_agg(m_local_spec);

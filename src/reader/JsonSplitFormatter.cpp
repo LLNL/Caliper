@@ -156,7 +156,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         static Column make_column(const std::string& title, const Attribute& a) {
             Column c;
             c.title        = title;
-                c.attributes.push_back(a);
+            c.attributes.push_back(a);
             c.is_hierarchy = !(a.store_as_value());
             return c;
         }
@@ -364,6 +364,31 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         return os;
     }
 
+    std::ostream& write_column_metadata(std::ostream& os, const Column& column, CaliperMetadataAccessInterface& db) {
+        os << "\"is_value\": " << (column.is_hierarchy ? "false" : "true");
+
+        // for single-attribute columns (i.e. not "path"), write metadata
+        if (column.attributes.size() == 1) {
+            const Node* node = db.node(column.attributes.front().id());
+
+            if (node)
+                node = node->parent();
+
+            for ( ; node && node->id() != CALI_INV_ID; node = node->parent()) {
+                Attribute attr = db.get_attribute(node->attribute());
+
+                // skip bootstrap info and hidden attributes
+                if (attr.id() < 12 || attr.is_hidden())
+                    continue;
+
+                util::write_esc_string(os << ", \"", attr.name_c_str())        << "\": ";
+                util::write_esc_string(os << "\"",   node->data().to_string()) << "\"";
+            }
+        }
+
+        return os;
+    }
+
     void write_metadata(CaliperMetadataAccessInterface& db) {
         std::ostream* real_os = m_os.stream();
 
@@ -383,8 +408,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
             int count = 0;
 
             for (const Column& c : m_columns)
-                *real_os << (count++ > 0 ? " }, { " : " { ")
-                              << "\"is_value\": " << (c.is_hierarchy ? "false" : "true");
+                write_column_metadata(*real_os << (count++ > 0 ? " }, { " : " { "), c, db);
 
             if (count > 0)
                 *real_os << " } ";
