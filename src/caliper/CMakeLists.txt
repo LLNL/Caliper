@@ -10,6 +10,7 @@ set(CALIPER_RUNTIME_SOURCES
   RegionProfile.cpp
   SnapshotRecord.cpp
   api.cpp
+  builtin_configmanager.cpp
   cali.cpp
   cali_datatracker.cpp
   config_sanity_check.cpp)

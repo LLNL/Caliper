@@ -30,6 +30,29 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
 
+    def test_cali_config(self):
+        # Test the builtin ConfigManager (CALI_CONFIG env var)
+
+        target_cmd = [ './ci_test_basic' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY'     : '0',
+            'CALI_CONFIG'            : 'event-trace,output=stdout'
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(len(snapshots) > 10)
+
+        self.assertTrue(cat.has_snapshot_with_keys(
+            snapshots, {'iteration', 'phase', 'time.inclusive.duration'}))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, {'event.end#phase': 'initialization', 'phase': 'initialization'}))
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, {'event.end#iteration': '3', 'iteration': '3', 'phase': 'loop'}))
+
     def test_ann_metadata(self):
         target_cmd = [ './ci_test_basic' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '--list-attributes', '-e', '--print-attributes', 'cali.attribute.name,meta.int,cali.attribute.prop' ]
