@@ -8,7 +8,6 @@
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/ConfigManager.h"
 #include "caliper/SnapshotRecord.h"
 
 #include "Blackboard.h"
@@ -48,6 +47,13 @@ extern void init_api_attributes(Caliper* c);
 extern void init_submodules();
 
 extern void config_sanity_check(const char*, RuntimeConfig);
+
+namespace internal
+{
+
+extern void init_builtin_configmanager(Caliper* c, Channel* channel);
+
+}
 
 }
 
@@ -176,6 +182,18 @@ get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
             ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
 
     return ret;
+}
+
+void make_default_channel()
+{
+    //   Creates default channel and initializes builtin ConfigManager during
+    // initialization
+
+    Caliper  c;
+    Channel* channel =
+        c.create_channel("default", RuntimeConfig::get_default_config());
+
+    internal::init_builtin_configmanager(&c, channel);
 }
 
 } // namespace [anonymous]
@@ -495,8 +513,6 @@ struct Caliper::GlobalData
         c.set(c.create_attribute("cali.caliper.version", CALI_TYPE_STRING,
                                  CALI_ATTR_SKIP_EVENTS | CALI_ATTR_GLOBAL),
               Variant(CALIPER_VERSION));
-
-        c.create_channel("default", RuntimeConfig::get_default_config());
 
         Log(1).stream() << "Initialized" << std::endl;
     }
@@ -1533,6 +1549,10 @@ Caliper::instance()
             gPtr->init();
 
             GlobalData::s_init_lock = 0;
+
+            // now we can use Caliper::instance()
+
+            ::make_default_channel();
         }
     }
 
