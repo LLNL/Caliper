@@ -36,6 +36,29 @@ class CaliperLogTest(unittest.TestCase):
             else:
                 self.fail('%s not found in log' % target)
 
+    def test_cali_config_error_msg(self):
+        target_cmd = [ './ci_test_basic' ]
+
+        env = {
+            'CALI_LOG_VERBOSITY' : '0',
+            'CALI_LOG_LOGFILE'   : 'stdout',
+            'CALI_CONFIG'        : 'blagarbl'
+        }
+
+        log_targets = [
+            '== CALIPER: CALI_CONFIG: error: Unknown config or parameter: blagarbl'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, env)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
     def test_scope_parse_error_msgs(self):
         target_cmd = [ './ci_test_basic' ]
 
