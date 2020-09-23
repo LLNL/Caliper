@@ -436,7 +436,8 @@ class SpotController : public cali::ChannelController
             " *"
             ",min(inclusive#sum#time.duration) as \"Min time/rank\" unit sec"
             ",max(inclusive#sum#time.duration) as \"Max time/rank\" unit sec"
-            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec";
+            ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec"
+            ",sum(inclusive#sum#time.duration) as \"Total time\"    unit sec";
         std::string cross_query =
             std::string("select ")
             + m_opts.query_select("cross", cross_select)

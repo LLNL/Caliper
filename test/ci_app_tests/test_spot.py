@@ -24,7 +24,13 @@ class CaliperSpotControllerTest(unittest.TestCase):
 
         self.assertIn('spot.format.version', obj['globals'])
         self.assertIn('avg#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
+        self.assertIn('min#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
+        self.assertIn('max#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
+        self.assertIn('sum#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
         self.assertIn('avg#inclusive#sum#time.duration', obj['attributes'])
+        self.assertIn('min#inclusive#sum#time.duration', obj['attributes'])
+        self.assertIn('max#inclusive#sum#time.duration', obj['attributes'])
+        self.assertIn('sum#inclusive#sum#time.duration', obj['attributes'])
         self.assertIn('attribute.alias', obj['attributes']['avg#inclusive#sum#time.duration'])
         self.assertIn('attribute.unit',  obj['attributes']['avg#inclusive#sum#time.duration'])
 
@@ -39,6 +45,9 @@ class CaliperSpotControllerTest(unittest.TestCase):
 
         self.assertTrue(r is not None, 'No record with "path" entry found')
         self.assertIn('avg#inclusive#sum#time.duration', r)
+        self.assertIn('min#inclusive#sum#time.duration', r)
+        self.assertIn('max#inclusive#sum#time.duration', r)
+        self.assertIn('sum#inclusive#sum#time.duration', r)
         self.assertEqual(r['spot.channel'], 'regionprofile')
 
     def test_spot_timeseries(self):
