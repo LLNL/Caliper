@@ -194,6 +194,21 @@ if (WITH_DYNINST)
   # CMake already provides useful error message if DyninstConfig.cmake isn't found
 endif()
 
+if (WITH_LIBDW)
+# For some reason Dyninst crashes when libdw is linked.
+# Detect this here and disable libdw.
+  if (Dyninst_FOUND)
+    message(WARNING "Libdw option is incompatible with dyninst -- disabling libdw.")
+  else()
+    include(FindLibDw)
+    if (LIBDW_FOUND)
+      list(APPEND CALIPER_EXTERNAL_LIBS ${LIBDW_LIBRARY})
+      set(CALIPER_HAVE_LIBDW TRUE)
+      set(CALIPER_Libdw_CMAKE_MSG "Yes, using ${LIBDW_LIBRARY}")
+    endif()
+  endif()
+endif()
+
 # Find libunwind
 if (WITH_CALLPATH)
   include(FindLibunwind)
@@ -203,20 +218,6 @@ if (WITH_CALLPATH)
     list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARIES})
   else()
     message(WARNING "Callpath support was requested but libunwind was not found!")
-  endif()
-  if (WITH_LIBDW)
-    # For some reason Dyninst crashes when libdw is linked.
-    # Detect this here and disable libdw.
-    if (Dyninst_FOUND)
-      message(WARNING "Libdw option is incompatible with dyninst -- disabling libdw.")
-    else()
-      include(FindLibDw)
-      if (LIBDW_FOUND)
-        message(STATUS "Found libdw in " ${LIBDW_LIBRARY})
-        list(APPEND CALIPER_EXTERNAL_LIBS ${LIBDW_LIBRARY})
-        set(CALIPER_HAVE_LIBDW TRUE)
-      endif()
-    endif()
   endif()
 endif()
 
@@ -357,6 +358,9 @@ if (WITH_SYMBOLLOOKUP)
   if (CALIPER_HAVE_DYNINST)
     set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
     set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using Dyninst")
+  elseif(CALIPER_HAVE_LIBDW)
+    set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
+    set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using libdw")
   else()
     find_library(DL_LIBRARY
       dl)
@@ -472,6 +476,7 @@ set(CALIPER_MODULES
   adiak
   GOTCHA
   PAPI
+  Libdw
   Libpfm
   Libunwind
   Dyninst

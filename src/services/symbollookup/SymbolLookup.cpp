@@ -66,19 +66,19 @@ class SymbolLookup
 
         sym_attribs.file_attr =
             c->create_attribute("source.file#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         sym_attribs.line_attr =
             c->create_attribute("source.line#" + attr.name(),
-                                CALI_TYPE_UINT,   CALI_ATTR_DEFAULT);
+                                CALI_TYPE_UINT,   CALI_ATTR_SKIP_EVENTS);
         sym_attribs.func_attr =
             c->create_attribute("source.function#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         sym_attribs.loc_attr  =
             c->create_attribute("sourceloc#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
         sym_attribs.mod_attr  =
             c->create_attribute("module#" + attr.name(),
-                                CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+                                CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
         std::lock_guard<std::mutex>
             g(m_sym_attr_mutex);
