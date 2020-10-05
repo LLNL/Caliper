@@ -17,8 +17,6 @@ using namespace symbollookup;
 namespace
 {
 
-char* debuginfopath = nullptr;
-
 std::string demangle(const char* name)
 {
     std::string result;
@@ -40,6 +38,23 @@ std::string demangle(const char* name)
     free(demangled);
 
     return result;
+}
+
+Dwfl_Callbacks* get_dwfl_callbacks()
+{
+    static char* debuginfopath = nullptr;
+
+    static bool initialized = false;
+    static Dwfl_Callbacks callbacks;
+
+    if (!initialized) {
+        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
+        callbacks.debuginfo_path = &debuginfopath;
+        initialized = true;
+    }
+
+    return &callbacks;
 }
 
 } // namespace [anonymous]
@@ -93,12 +108,7 @@ struct Lookup::LookupImpl
     LookupImpl() {
         Log(2).stream() << "symbollookup: Loading debug info" << std::endl;
 
-        Dwfl_Callbacks callbacks;
-        callbacks.find_elf = dwfl_linux_proc_find_elf;
-        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
-        callbacks.debuginfo_path = &debuginfopath;
-
-        dwfl = dwfl_begin(&callbacks);
+        dwfl = dwfl_begin(get_dwfl_callbacks());
 
         if (dwfl_linux_proc_report(dwfl, getpid()) != 0) {
             Log(0).stream() << "symbollookup: dwfl_linux_proc_report() error: "
