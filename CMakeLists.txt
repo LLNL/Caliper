@@ -202,9 +202,9 @@ if (WITH_LIBDW)
   else()
     include(FindLibDw)
     if (LIBDW_FOUND)
-      message(STATUS "Found libdw in " ${LIBDW_LIBRARY})
       list(APPEND CALIPER_EXTERNAL_LIBS ${LIBDW_LIBRARY})
       set(CALIPER_HAVE_LIBDW TRUE)
+      set(CALIPER_Libdw_CMAKE_MSG "Yes, using ${LIBDW_LIBRARY}")
     endif()
   endif()
 endif()
@@ -476,6 +476,7 @@ set(CALIPER_MODULES
   adiak
   GOTCHA
   PAPI
+  Libdw
   Libpfm
   Libunwind
   Dyninst
