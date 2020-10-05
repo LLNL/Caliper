@@ -35,6 +35,7 @@ using namespace std;
 namespace
 {
 
+#ifdef CALIPER_HAVE_LIBDW
 Dwfl_Callbacks* get_dwfl_callbacks()
 {
     static char* debuginfopath = nullptr;
@@ -51,6 +52,7 @@ Dwfl_Callbacks* get_dwfl_callbacks()
 
     return &callbacks;
 }
+#endif
 
 
 class Callpath
