@@ -10,6 +10,7 @@ addons:
       - openmpi-bin
       - libopenmpi-dev
       - libunwind-dev
+      - libdw-dev
       - gfortran
 
 # The base build matrix
