@@ -35,26 +35,6 @@ using namespace std;
 namespace
 {
 
-#ifdef CALIPER_HAVE_LIBDW
-Dwfl_Callbacks* get_dwfl_callbacks()
-{
-    static char* debuginfopath = nullptr;
-
-    static bool initialized = false;
-    static Dwfl_Callbacks callbacks;
-
-    if (!initialized) {
-        callbacks.find_elf = dwfl_linux_proc_find_elf;
-        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
-        callbacks.debuginfo_path = &debuginfopath;
-        initialized = true;
-    }
-
-    return &callbacks;
-}
-#endif
-
-
 class Callpath
 {
     static const ConfigSet::Entry s_configdata[];
@@ -141,8 +121,14 @@ class Callpath
     void get_caliper_module_addresses() {
 #ifdef CALIPER_HAVE_LIBDW
         // initialize dwarf
+        char* debuginfopath = nullptr;
+        Dwfl_Callbacks callbacks;
 
-        Dwfl* dwfl = dwfl_begin(get_dwfl_callbacks());
+        callbacks.find_elf = dwfl_linux_proc_find_elf;
+        callbacks.find_debuginfo = dwfl_standard_find_debuginfo;
+        callbacks.debuginfo_path = &debuginfopath;
+
+        Dwfl* dwfl = dwfl_begin(&callbacks);
 
         dwfl_linux_proc_report(dwfl, getpid());
         dwfl_report_end(dwfl, nullptr, nullptr);
