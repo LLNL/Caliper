@@ -1,4 +1,4 @@
-# CpuInfo tests
+# MemUsage tests
 
 import unittest
 
