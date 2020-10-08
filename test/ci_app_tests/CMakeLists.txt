@@ -54,6 +54,7 @@ set(PYTHON_SCRIPTS
   test_monitor.py
   test_multichannel.py
   test_report.py
+  test_templateservices.py
   test_textlog.py
   test_thread.py
   test_validator.py

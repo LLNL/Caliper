@@ -389,6 +389,10 @@ else()
   set(CALIPER_REDUCED_CONSTEXPR_USAGE FALSE)
 endif()
 
+if (BUILD_TESTING)
+  set(CALIPER_BUILD_TESTING TRUE)
+endif()
+
 # Create a config header file
 configure_file(
   ${PROJECT_SOURCE_DIR}/caliper-config.h.in

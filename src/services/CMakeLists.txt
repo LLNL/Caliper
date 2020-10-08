@@ -109,6 +109,10 @@ if (CALIPER_HAVE_PCP)
   add_subdirectory(pcp)
 endif()
 
+if (CALIPER_BUILD_TESTING)
+  add_subdirectory(templates)
+endif()
+
 add_service_sources(Services.cpp)
 
 configure_file(

@@ -101,6 +101,10 @@ public:
         }
     }
 
+    void append(const cali::Attribute& attr, const cali::Variant& data) {
+        append(attr.id(), data);
+    }
+
     Sizes capacity() const { 
         return { m_capacity.n_nodes     - m_sizes.n_nodes,
                  m_capacity.n_immediate - m_sizes.n_immediate };
