@@ -142,12 +142,13 @@ struct TreeFormatter::TreeFormatterImpl
         // update column widths
 
         {
-            int len = node->label_value().to_string().size();
+            int len = 0;
 
-            for (const SnapshotTreeNode* n = node; n && n->label_key() != Attribute::invalid; n = n->parent())
+            for (const SnapshotTreeNode* n = node; n && n->label_key() != Attribute::invalid; n = n->parent()) {
+                m_path_column_width =
+                    std::max<int>(m_path_column_width, len + n->label_value().to_string().length());
                 len += 2;
-
-            m_path_column_width = std::max(m_path_column_width, len);
+            }
         }
 
         for (auto &p : node->attributes()) {
