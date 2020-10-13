@@ -141,16 +141,6 @@ struct TreeFormatter::TreeFormatterImpl
 
         // update column widths
 
-        {
-            int len = 0;
-
-            for (const SnapshotTreeNode* n = node; n && n->label_key() != Attribute::invalid; n = n->parent()) {
-                m_path_column_width =
-                    std::max<int>(m_path_column_width, len + n->label_value().to_string().length());
-                len += 2;
-            }
-        }
-
         for (auto &p : node->attributes()) {
             int len = p.second.to_string().size();
             auto it = m_column_info.find(p.first);
@@ -232,6 +222,15 @@ struct TreeFormatter::TreeFormatterImpl
             recursive_print_nodes(node, level+1, attributes, os);
     }
 
+    int recursive_max_path_label_width(const SnapshotTreeNode* node, int level) {
+        int len = 2 * level + node->label_value().to_string().length();
+
+        for (node = node->first_child(); node; node = node->next_sibling())
+            len = std::max(len, recursive_max_path_label_width(node, level + 1));
+
+        return len;
+    }
+
     void flush(const CaliperMetadataAccessInterface& db, std::ostream& os) {
         //
         // establish order of attribute columns
@@ -267,6 +266,20 @@ struct TreeFormatter::TreeFormatterImpl
         case QuerySpec::AttributeSelection::None:
             // keep empty list
             break;
+        }
+
+        //
+        // get the maximum path column width
+        //
+
+        m_path_column_width = 4;
+
+        {
+            const SnapshotTreeNode* node = m_tree.root();
+
+            if (node)
+                for (node = node->first_child(); node; node = node->next_sibling())
+                    m_path_column_width = std::max(m_path_column_width, recursive_max_path_label_width(node, 0));
         }
 
         //

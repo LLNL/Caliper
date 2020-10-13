@@ -131,11 +131,14 @@ class CaliperReportTest(unittest.TestCase):
         }
 
         report_targets = [
-            'Path           Count',
-            'main               1',
-            '  mainloop         5',
-            '    foo            4',
-            '      fooloop     20'
+            'Path             Count',
+            'main                 1',
+            '  mainloop           5',
+            '    foo              4',
+            '      fooloop       20',
+            '      pre-loop       4',
+            '        foo.init     4',
+            '  before_loop        1'
         ]
 
         report_output,_ = cat.run_test(target_cmd, caliper_config)
