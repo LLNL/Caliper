@@ -45,10 +45,6 @@ int main(int argc, char* argv[])
     // configurations, and provides an API to control performance profiling.
     cali::ConfigManager mgr;
 
-    //   We can set default parameters for the Caliper configurations.
-    // These can be overridden in the user-provided configuration string.
-    mgr.set_default_parameter("aggregate_across_ranks", "false");
-
     //   Use the "runtime-report" configuration by default to print a
     // runtime summary for all annotated regions. Let users overwrite
     // the default configuration with their own on the command line.

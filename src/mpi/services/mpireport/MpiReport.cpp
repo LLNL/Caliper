@@ -46,7 +46,7 @@ class MpiReport
         PMPI_Initialized(&initialized);
         PMPI_Finalized(&finalized);
 
-        if (!initialized || finalized)
+        if (finalized)
             return;
 
         CaliperMetadataDB db;
@@ -80,16 +80,20 @@ class MpiReport
                     cross_agg.add(db, cross_pp.process(db, rec));
                 });
 
-        MPI_Comm comm;
-        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-        int rank;
-        MPI_Comm_rank(comm, &rank);
+        int rank = 0;
 
-        // do the global cross-process aggregation:
-        //   aggregate_over_mpi() does all the magic
-        aggregate_over_mpi(db, cross_agg, comm);
+        // cross-process aggregation, if we have MPI
+        if (initialized) {
+            MPI_Comm comm;
+            MPI_Comm_dup(MPI_COMM_WORLD, &comm);
+            MPI_Comm_rank(comm, &rank);
 
-        MPI_Comm_free(&comm);
+            // do the global cross-process aggregation:
+            //   aggregate_over_mpi() does all the magic
+            aggregate_over_mpi(db, cross_agg, comm);
+
+            MPI_Comm_free(&comm);
+        }
 
         // rank 0's aggregator contains the global result:
         //   create a formatter and print it out
