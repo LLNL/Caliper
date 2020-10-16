@@ -1,7 +1,8 @@
-Manual runtime configuration
+Manual configuration
 ================================
 
-When not using the ConfigManager API (:doc:`ConfigManagerAPI`),
+When not using built-in performance measurement configurations (:doc:`BuiltinConfigurations`),
+through the ConfigManager API or the `CALI_CONFIG` environment variable,
 Caliper can be configured manually by setting configuration
 variables through the environment or configuration files.
 
@@ -119,11 +120,10 @@ Many Caliper services define additional configuration variables. See
 :doc:`services` for a list of Caliper services and their
 configuration.
 
-CALI_CONFIG_PROFILE
-   A configuration profile name. This can be a profile defined in a
-   configuration file, or one of Caliper's pre-defined configuration
-   profiles. E.g. ``CALI_CONFIG_PROFILE=runtime-report`` selects the
-   built-in runtime-report config profile.
+.. envvar:: CALI_CONFIG
+
+   A configuration string to enable one (or more) of Caliper's built-in
+   performance profiling configurations. See :doc:`BuiltinConfigurations`.
 
 CALI_CONFIG_FILE
    Comma-separated list of configuration files. The provided

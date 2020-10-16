@@ -3,12 +3,14 @@
 
 // A C++ Caliper instrumentation and ConfigManager example
 
-//   Usage: $ cali-basic-annotations <configuration-string>
-// For example, "$ cali-basic-annotations runtime-report" will print a
+//   Usage: $ cxx-example [-P <configuration-string>] <iterations>
+// For example, "$ cxx-example -P runtime-report" will print a
 // hierarchical runtime summary for all annotated regions.
 
 #include <caliper/cali.h>
 #include <caliper/cali-manager.h>
+
+#include <time.h>
 
 #include <cstring>
 #include <iostream>
@@ -16,9 +18,7 @@
 
 void print_help(const cali::ConfigManager& mgr)
 {
-    std::cerr << "Usage: cxx-example [caliper-config(arg=...,),...]."
-              << "\nRuns \"runtime-report\" configuration by default."
-              << "\nUse \"none\" to run without a ConfigManager configuration."
+    std::cerr << "Usage: cxx-example [-P caliper-config(arg=...,),...] [iterations]."
               << "\nAvailable configurations: ";
 
     auto configs = mgr.available_config_specs();
@@ -36,6 +36,9 @@ double foo(int i)
     // and automatically closes it at the end of the function.
     CALI_CXX_MARK_FUNCTION;
 
+    struct timespec sleeptime { 0, std::max<time_t>(i * 500, 100000) };
+    nanosleep(&sleeptime, nullptr);
+
     return 0.5*i;
 }
 
@@ -45,22 +48,34 @@ int main(int argc, char* argv[])
     // configurations, and provides an API to control performance profiling.
     cali::ConfigManager mgr;
 
-    //   Use the "runtime-report" configuration by default to print a
-    // runtime summary for all annotated regions. Let users overwrite
-    // the default configuration with their own on the command line.
-    std::string configstr = "runtime-report";
+    //   Parse command-line arguments. Let users choose a Caliper performance
+    // profiling configuration via the "-P" command-line argument.
+    std::string configstr;
+    int iterations = 4;
 
-    if (argc > 1) {
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+    for (int a = 1; a < argc; ++a) {
+        if (strcmp(argv[a], "-h") == 0 || strcmp(argv[a], "--help") == 0) {
             print_help(mgr);
             return 0;
+        } else if (strcmp(argv[a], "-P") == 0) {
+            ++a;
+            if (argc > a)
+                configstr = argv[a];
+            else {
+                std::cerr << "Expected config string after \"-P\"";
+                return 1;
+            }
         } else {
-            configstr = argv[1];
+            try {
+                iterations = std::stoi(argv[a]);
+            } catch (std::invalid_argument) {
+                std::cerr << "Invalid argument: \"" << argv[a] 
+                          << "\". Expected a number."
+                          << std::endl;
+                return 2;
+            }
         }
     }
-
-    if (configstr == "none")
-        configstr.clear();
 
     //   Enable the requested performance measurement channels and start
     // profiling.
@@ -77,14 +92,13 @@ int main(int argc, char* argv[])
 
     // Mark a code region. Opens region "annotation=init" in Caliper.
     CALI_MARK_BEGIN("init");
-    int count = 4;
-    double  t = 0;
+    double t = 0;
     CALI_MARK_END("init");
 
     // Mark a loop. Opens region "loop=mainloop" in Caliper.
     CALI_CXX_MARK_LOOP_BEGIN(loop_ann, "mainloop");
 
-    for (int i = 0; i < count; ++i) {
+    for (int i = 0; i < iterations; ++i) {
         //   Mark loop iterations of an annotated loop.
         // Sets "iteration#main loop=<i> in Caliper.
         CALI_CXX_MARK_LOOP_ITERATION(loop_ann, i);

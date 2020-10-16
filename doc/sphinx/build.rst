@@ -1,4 +1,4 @@
-Build and link
+Building Caliper
 ================================
 
 Building and installing Caliper requires cmake, a current C++11-compatible

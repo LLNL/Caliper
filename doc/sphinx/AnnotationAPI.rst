@@ -1,4 +1,4 @@
-Source-code annotations
+Annotation API
 ================================
 
 Caliper provides source-code annotation APIs to mark and name code
