@@ -29,9 +29,6 @@ public:
         {
             config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sample.frequency", "200").to_string();
 
-            std::string select  = "*,count()";
-            std::string groupby = "prop:nested";
-
             std::string output(opts.get("output", "sample_profile").to_string());
 
             if (output != "stdout" && output != "stderr") {
@@ -60,8 +57,6 @@ public:
             }
 
             if (use_mpi) {
-                groupby += ",mpi.rank";
-
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
@@ -161,7 +156,6 @@ const char* controller_spec =
     "    \"type\": \"bool\","
     "    \"description\": \"Perform call-stack unwinding\","
     "    \"services\": [ \"callpath\", \"symbollookup\" ],"
-    "    \"config\": { \"CALI_CALLPATH_SKIP_FRAMES\": \"4\" },"
     "    \"query args\": [ { \"level\": \"local\", \"group by\": source.function#callpath.address } ]"
     "  },"
     "  { "
