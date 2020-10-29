@@ -85,31 +85,6 @@ the profile selection by setting a different value in the
 variables always override values set in a configuration file,
 regardless of the selected profile.
 
-Built-in configuration profiles
---------------------------------
-
-Caliper provides built-in configuration profiles for common use
-cases. Currently, the following profiles are defined:
-
-event-trace
-   Records and writes a trace of begin/end records in .cali format
-
-runtime-report
-   Prints time spent in annotated regions for a non-MPI program
-
-mpi-runtime-report
-   Prints time spent in annotated regions for MPI programs.
-   Results are aggregated across MPI ranks.
-
-Configuration profiles, including built-in profiles, can be
-extended. For example, the following configuration file ::
-
-  # [mpi-trace]
-  CALI_MPI_WHITELIST=MPI_Allreduce
-
-adds the ``CALI_MPI_WHITELIST`` entry to the built-in `mpi-runtime-report`
-profile.
-
 Configuration variables reference
 ----------------------------------------
 

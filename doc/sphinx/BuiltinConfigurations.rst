@@ -3,7 +3,7 @@ Built-in profiling configurations
 
 Caliper includes built-in configurations for many common performance analysis
 tasks. These configurations can be enabled through the :doc:`ConfigManagerAPI`
-or the ``CALI_CONFIG`` environment variable.
+or the :doc:envvar:`CALI_CONFIG` environment variable.
 
 Configuration String Syntax
 -----------------------------------------
@@ -16,7 +16,7 @@ e.g. `runtime-report` or `event-trace`. Multiple configs can be specified,
 separated by comma.
 
 Most configs have optional parameters, e.g. `output` to name an output file.
-Parameters can be specified as a list of key-value pairs in parantheses after the
+Parameters can be specified as a list of key-value pairs in parentheses after the
 config name, e.g. ``runtime-report(output=report.txt,io.bytes=true)``. For boolean
 parameters, only the key needs to be added to enable it; for example,
 `io.bytes` is equal to `io.bytes=true`.
