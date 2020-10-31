@@ -54,7 +54,15 @@ const char* nvprof_spec =
     "{"
     " \"name\"        : \"nvprof\","
     " \"services\"    : [ \"nvprof\" ],"
-    " \"description\" : \"Forward Caliper enter/exit events to NVidia nvprof (nvtx)\","
+    " \"description\" : \"Forward Caliper regions to NVidia nvprof (deprecated; use nvtx)\","
+    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
+    "}";
+
+const char* nvtx_spec =
+    "{"
+    " \"name\"        : \"nvtx\","
+    " \"services\"    : [ \"nvprof\" ],"
+    " \"description\" : \"Forward Caliper regions to NVidia NSight/NVprof\","
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
 
@@ -95,6 +103,7 @@ const char* mpireport_spec =
 
 cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
 cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
+cali::ConfigManager::ConfigInfo nvtx_controller_info        { nvtx_spec,        nullptr, nullptr };
 cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   nullptr, nullptr };
 
 }
@@ -113,6 +122,7 @@ ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &cuda_activity_controller_info,
     &::event_trace_controller_info,
     &::nvprof_controller_info,
+    &::nvtx_controller_info,
     &::mpireport_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,

@@ -86,6 +86,8 @@ For more details, including C and Fortran examples, refer to the annotation
 API reference: :doc:`AnnotationAPI`.
 
 With the source-code annotations in place, we can run performance measurements.
+By default, Caliper does not record data - we have to activate performance
+profiling at runtime.
 An easy way to do this is to use one of Caliper's built-in measurement
 configurations. For example, the `runtime-report` config prints out the time
 spent in the annotated regions. You can activate built-in measurement
@@ -137,12 +139,13 @@ Notes on multi-threading
 
 Some care must be taken when annotating multi-threaded programs. Regions are
 *either* visible only on the thread that creates them, *or* shared by all
-threads. The visibility scope (``thread`` or ``process``) can be set with the
+threads. You can set the visibility scope (``thread`` or ``process``) with the
 ``CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE`` configuration variable. It is set to
 ``thread`` by default.
 
 A common practice is to mark code regions only on the master thread, outside
-of multi-threaded regions:
+of multi-threaded regions. In this case, it is useful to set the visibility
+scope to ``process``:
 
 .. code-block:: c++
 
@@ -167,14 +170,14 @@ of multi-threaded regions:
 The annotation placement inside or outside of threads also affects performance
 measurements: in event-based measurement configurations (e.g., `runtime-report`),
 measurements are taken when entering and exiting annotated regions. Therefore,
-in the example above, the reported metrics (such as time per region) are only
-for the master thread. However, sampling-based configurations can take
-measurements on all threads, regardless of region markers. In that case, the
-``process`` visibility scope allows us to associate these measurements with
-the "parallel" and "main" regions on any thread.
+in the example above, the reported performance metrics (such as time per region) are
+only for the master thread. However, sampling-based configurations can take
+measurements on all threads, regardless of region markers. The
+``process`` visibility scope then allows us to associate these measurements
+with the "parallel" and "main" regions on any thread.
 
 In contrast, in the example below, we enter and exit the "parallel" region on
-every thread, and the metrics reported by `runtime-report` therefore cover all
+every thread, and metrics reported by `runtime-report` therefore cover all
 threads. However, the "main" region is only visible on the master thread.
 
 .. code-block:: c++
@@ -201,7 +204,7 @@ threads. However, the "main" region is only visible on the master thread.
 ConfigManager API
 --------------------------------
 
-One of Caliper's main features is the ability to enable performance
+A distinctive Caliper feature is the ability to enable performance
 measurements programmatically with the ConfigManager API. For example, we often
 let users activate performance measurements with a command-line argument.
 
@@ -363,6 +366,10 @@ The ``CALI_CXX_MARK_LOOP_BEGIN`` macro gets a unique identifier (`mainloop_id`
 in the example) that is referenced in the subsequent iteration marker and loop
 end macros, as well as a user-defined name for the loop (here: "mainloop").
 
+Like other region annotations, loop and iteration annotations are meant for
+high-level regions, not small, frequently executed loops inside kernels.
+We recommend to only annotate top-level loops, such as the main timestepping
+loop in a simulation code.
 With the loop annotations in place, we can use the loop-report config to print
 loop performance information:
 
@@ -397,8 +404,9 @@ loop performance information:
 Here, we run the cxx-example program with 5000 loop iterations. The loop-report
 config prints an overall performance summary ("Loop summary") and a time-series
 summary ("Iteration summary") for each instrumented top-level loop. The
-iteration summary shows loop performance grouped by iteration blocks that cover
-the entire loop. By default, the loop-report shows at most 20 iteration blocks.
+iteration summary shows loop performance grouped by iteration blocks.
+By default, the report shows at most 20 iteration blocks. The block size adapts
+to cover the entire loop.
 
 Caliper's loop profiling typically does not measure every single iteration.
 By default, we take measurements at iteration boundaries after at least 0.5
@@ -436,14 +444,14 @@ Now, the iterations per block remain at 500, whereas the time for
 each block increases. The iterations per second ("Iter/s") column provides
 a useful performance metric independent of the measurement mode.
 
-The report still aggregates the data into a maximum number of iteration blocks
+The report aggregates the data into a maximum number of iteration blocks
 (20 by default) to avoid visual clutter in programs with long-running loops.
 We can change this number with the `timeseries.maxrows` option. For example,
 we can choose a maximum of 3 blocks:
 
 .. code-block:: sh
 
-    $ ./examples/apps/cxx-example -P loop-report,iteration_interval=500,timeseries.maxrows=3
+    $ ./examples/apps/cxx-example -P loop-report,iteration_interval=500,timeseries.maxrows=3 5000
     Iteration summary (mainloop):
     -----------------
 
@@ -491,8 +499,85 @@ performance visualization web framework.
 Recording program metadata
 --------------------------------
 
-NVidia NVProf/NSight and VTune
---------------------------------
+Caliper can record and store program metadata, such as the system and program
+configuration, in its output files. This is useful for studies that compare
+data from multiple runs, such as scaling studies.
+
+The Caliper annotation API provides the
+``cali_set_global_(double|int|string|uint)_byname()`` family of functions to
+save global attributes in the form of key-value pairs:
+
+.. code-block:: c++
+
+    cali_set_global_int_byname("iterations", iterations);
+    cali_set_global_string_byname("caliper.config", configstr.c_str());
+
+Most machine-readable output formats, e.g. the hatchet JSON format written by the
+hatchet-region-profile config, include this data:
+
+.. code-block:: sh
+
+    $ ./examples/apps/cxx-example -P hatchet-region-profile,output=stdout
+    {
+    "data": [
+        ...
+    ],
+    ...
+    "caliper.config": "hatchet-region-profile,output=stdout",
+    "iterations": "4",
+    "cali.caliper.version": "2.5.0-dev",
+    "cali.channel": "hatchet-region-profile"
+    }
+
+Note how the "iterations" and "caliper.config" attributes are stored as
+top-level attributes in the JSON output. Caliper adds some built-in metadata
+attributes as well, such as the Caliper version ("cali.caliper.version").
+
+An even better way to record metadata is the `Adiak <https://github.com/LLNL/Adiak>`_
+library. Adiak makes metadata attributes accessible to multiple tools, and
+provides built-in functionality to record common information such as user
+name, executable name, command-line arguments, etc. The example below uses
+Adiak to record the "iterations" and "caliper.config" attributes as shown
+above, and also the user name, launch date, and MPI job size:
+
+.. code-block:: c++
+
+    adiak::user();
+    adiak::launchdate();
+    adiak::jobsize();
+
+    adiak::value("iterations", iterations);
+    adiak::value("caliper.config", configstr.c_str());
+
+Most Caliper configs automatically import metadata attributes set through
+Adiak (Adiak support must be enabled in the Caliper build configuration). The
+spot config for the Spot web visualization framework requires that metadata
+attributes are recorded through Adiak.
+
+Third-party tool support (NVidia NSight, Intel VTune)
+-----------------------------------------------------
+
+Caliper provides bindings to export Caliper-annotated source code regions to
+third-party tools. Currently, Nvidia's NVTX API for the NVProf/NSight
+profilers and Intel's ITT API for Intel VTune Amplifier are supported.
+
+To use the NVTX forwarding, activate the "nvprof" Caliper config when
+recording data with nvprof or ncu, either with the :doc:envvar:`CALI_CONFIG`
+environment variable, or the ConfigManager API. Be sure to enable NVTX support
+in NSight Compute.
+
+To use the vtune bindings, run the target application in VTune with
+the `vtune` service enabled. To do so in the VTune GUI, do the
+following:
+
+* In the "Analysis Target" tab, go to the "User-defined environment
+  variables" section, and add an entry setting "CALI_SERVICES_ENABLE"
+  to "vtune"
+* In the "Analysis Type" tab, check the "Analyze user tasks, events,
+  and counters" checkbox.
+
+Caliper-annotated regions will then be visible as "tasks" in the VTune
+analysis views.
 
 .. _cxx-example:
 

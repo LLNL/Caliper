@@ -8,7 +8,7 @@ or the :doc:envvar:`CALI_CONFIG` environment variable.
 Configuration String Syntax
 -----------------------------------------
 
-A configuration string for the `ConfigManager` class or `CALI_CONFIG` environment 
+A configuration string for the `ConfigManager` class or `CALI_CONFIG` environment
 variable is a comma-separated list of *configs* and *parameters*.
 
 A *config* is the name of one of Caliper's built-in measurement configurations,

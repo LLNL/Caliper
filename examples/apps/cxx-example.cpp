@@ -69,7 +69,7 @@ int main(int argc, char* argv[])
             try {
                 iterations = std::stoi(argv[a]);
             } catch (std::invalid_argument) {
-                std::cerr << "Invalid argument: \"" << argv[a] 
+                std::cerr << "Invalid argument: \"" << argv[a]
                           << "\". Expected a number."
                           << std::endl;
                 return 2;
@@ -85,6 +85,11 @@ int main(int argc, char* argv[])
         std::cerr << "Caliper config error: " << mgr.error_msg() << std::endl;
 
     mgr.start();
+
+    //   Add some run metadata information to be stored in the
+    // performance profiles.
+    cali_set_global_int_byname("iterations", iterations);
+    cali_set_global_string_byname("caliper.config", configstr.c_str());
 
     //   Mark begin of the current function. Must be manually closed.
     // Opens region "function=main" in Caliper.
