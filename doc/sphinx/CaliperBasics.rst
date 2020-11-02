@@ -311,6 +311,12 @@ maximum amount of memory that was allocated in each region:
         foo         0.000778      0.000778      0.000778 8.930211     0.000016
       init          0.000020      0.000020      0.000020 0.229568     0.000000
 
+You can use the cali-query and mpi-caliquery programs to list available
+configs and their parameters (note that cali-query does not list MPI-dependent
+options and configs). For example, ``mpi-caliquery --help=configs`` lists all
+configs and their options. You can also query parameters for a specific config,
+e.g. ``mpi-caliquery --help=runtime-report``.
+
 Some available performance measurement configs include:
 
 runtime-report
@@ -338,11 +344,8 @@ We discuss some of these configurations below. For a complete reference of the
 configuration string syntax and available configs and parameters, see
 :doc:`BuiltinConfigurations`.
 
-You can use the cali-query and mpi-caliquery programs to list available
-configs and their parameters (note that cali-query does not list MPI-dependent
-options and configs). For example, ``mpi-caliquery --help=configs`` lists all
-configs and their options. You can also query parameters for a specific config,
-e.g. ``mpi-caliquery --help=runtime-report``.
+You can also create entirely custom measurement configurations by selecting and
+configuring Caliper services manually. See :doc:`configuration` to learn more. 
 
 Loop profiling
 --------------------------------

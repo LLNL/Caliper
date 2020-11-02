@@ -1,4 +1,4 @@
-Configuration manager API
+ConfigManager API reference
 ===============================
 
 Caliper provides several built-in performance measurement and reporting

@@ -38,8 +38,6 @@ Features include:
 Caliper is available for download on `GitHub
 <https://github.com/LLNL/Caliper>`_.
 
-
-
 .. toctree::
    :maxdepth: 2
 
