@@ -27,10 +27,18 @@ public:
     HatchetSampleProfileController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts, const std::string& format)
         : ChannelController(name, 0, initial_cfg)
         {
-            config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sample.frequency", "200").to_string();
+            std::string freqstr = opts.get("sample.frequency", "200").to_string();
+
+            config()["CALI_SAMPLER_FREQUENCY"] = freqstr;
 
             std::string select  = "*,count()";
-            std::string groupby = "prop:nested";
+            double freq = std::stod(freqstr);
+
+            if (freq > 0) {
+                select.append(",scale_count(");
+                select.append(std::to_string(1.0/freq));
+                select.append(") as time unit sec");
+            }
 
             std::string output(opts.get("output", "sample_profile").to_string());
 
@@ -60,15 +68,13 @@ public:
             }
 
             if (use_mpi) {
-                groupby += ",mpi.rank";
-
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,count()")
+                    + opts.query_select("local", select.c_str())
                     + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
@@ -78,7 +84,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,count()")
+                    + opts.query_select("local", select.c_str())
                     + " group by "
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;
