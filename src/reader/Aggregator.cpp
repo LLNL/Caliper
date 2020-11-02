@@ -126,6 +126,93 @@ private:
     Config*  m_config;
 };
 
+class ScaledCountKernel : public AggregateKernel {
+public:
+
+    class Config : public AggregateKernelConfig {
+        Attribute   m_count_attr;
+        Attribute   m_res_attr;
+
+        double      m_scale;
+        std::string m_scale_str;
+
+    public:
+
+        Attribute get_count_attr(CaliperMetadataAccessInterface& db) {
+            if (m_count_attr == Attribute::invalid) {
+                m_count_attr =
+                    db.create_attribute(std::string("scount#")+m_scale_str, CALI_TYPE_UINT,
+                                        CALI_ATTR_ASVALUE |
+                                        CALI_ATTR_HIDDEN);
+            }
+
+            return m_count_attr;
+        }
+
+        Attribute get_result_attr(CaliperMetadataAccessInterface& db) {
+            if (m_res_attr == Attribute::invalid)
+                m_res_attr =
+                    db.create_attribute(std::string("scount"), CALI_TYPE_DOUBLE,
+                                        CALI_ATTR_ASVALUE);
+
+            return m_res_attr;
+        }
+
+        double get_scale()    const { return m_scale;     }
+
+        AggregateKernel* make_kernel() {
+            return new ScaledCountKernel(this);
+        }
+
+        explicit Config(const std::vector<std::string>& cfg)
+            : m_count_attr(Attribute::invalid),
+              m_res_attr(Attribute::invalid),
+              m_scale(0.0),
+              m_scale_str(cfg[0])
+            {
+                m_scale = std::stod(m_scale_str);
+            }
+
+        static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
+            return new Config(cfg);
+        }
+    };
+
+    ScaledCountKernel(Config* config)
+        : m_count(0), m_config(config)
+        { }
+
+    const AggregateKernelConfig* config() { return m_config; }
+
+    virtual void aggregate(CaliperMetadataAccessInterface& db, const EntryList& list) {
+        std::lock_guard<std::mutex>
+            g(m_lock);
+
+        Attribute count_attr = m_config->get_count_attr(db);
+
+        for (const Entry& e : list)
+            if (e.attribute() == count_attr.id()) {
+                m_count += e.value().to_uint();
+                return;
+            }
+
+        ++m_count;
+    }
+
+    virtual void append_result(CaliperMetadataAccessInterface& db, EntryList& list) {
+        if (m_count > 0) {
+            list.push_back(Entry(m_config->get_count_attr(db),  Variant(m_count)));
+            list.push_back(Entry(m_config->get_result_attr(db), Variant(m_config->get_scale() * m_count)));
+        }
+    }
+
+private:
+
+    uint64_t   m_count;
+    std::mutex m_lock;
+
+    Config*    m_config;
+};
 
 //
 // --- SumKernel
@@ -1122,14 +1209,16 @@ enum KernelID {
     ScaledSum     = 8,
     IScaledSum    = 9,
     IPercentTotal = 10,
-    Any           = 11
+    Any           = 11,
+    ScaledCount   = 12
 };
 
-#define MAX_KERNEL_ID 11
+#define MAX_KERNEL_ID 12
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
 const char* scale_args[]   = { "attribute", "scale" };
+const char* scount_args[]  = { "scale" };
 
 const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Count,         "count",         0, 0, nullptr      },
@@ -1144,6 +1233,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::IScaledSum,    "inclusive_scale", 2, 2, scale_args   },
     { KernelID::IPercentTotal, "inclusive_percent_total", 1, 1, kernel_args },
     { KernelID::Any,           "any",           1, 1, kernel_args  },
+    { KernelID::ScaledCount,   "scale_count",   1, 1, scount_args  },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1164,6 +1254,7 @@ const struct KernelInfo {
     { "inclusive_scale", ScaledSumKernel::Config::create_inclusive },
     { "inclusive_percent_total", PercentTotalKernel::Config::create_inclusive },
     { "any",           AnyKernel::Config::create           },
+    { "scale_count",   ScaledCountKernel::Config::create   },
     { 0, 0 }
 };
 
@@ -1610,6 +1701,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("ipercent_total#") + op.args[0];
     case KernelID::Any:
         return std::string("any#") + op.args[0];
+    case KernelID::ScaledCount:
+        return std::string("scount");
     }
 
     return std::string();

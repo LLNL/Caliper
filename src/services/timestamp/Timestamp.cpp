@@ -158,6 +158,9 @@ class Timestamp
 
             record_inclusive_duration = false;
         }
+
+        // Initialize timer info on this thread
+        acquire_timerinfo(c);
     }
 
     void finish_cb(Caliper*, Channel* chn) {

@@ -5,6 +5,16 @@
 cmake_minimum_required(VERSION 3.1)
 project (caliper C CXX)
 
+if(NOT CMAKE_VERSION VERSION_LESS 3.3)
+    # ensure visibility gets honored for all targets
+    cmake_policy(SET CMP0063 NEW)
+endif()
+
+# set the default visibility settings
+set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
+set(CMAKE_C_VISIBILITY_PRESET "default")
+set(CMAKE_CXX_VISIBILITY_PRESET "default")
+
 # Version information
 set(CALIPER_MAJOR_VERSION 2)
 set(CALIPER_MINOR_VERSION 5)
