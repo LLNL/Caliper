@@ -55,6 +55,8 @@ public:
                 std::find(avail_services.begin(), avail_services.end(), "mpireport")    != avail_services.end();
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
+            bool have_pthread =
+                std::find(avail_services.begin(), avail_services.end(), "pthread")      != avail_services.end();
 
             bool use_mpi = have_mpi;
 
@@ -66,6 +68,9 @@ public:
                 config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
                     opts.get("adiak.import_categories", "2,3").to_string();
             }
+
+            if (have_pthread)
+                config()["CALI_SERVICES_ENABLE"].append(",pthread");
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
@@ -144,6 +149,7 @@ const char* controller_spec =
     " \"services\"    : [ \"sampler\", \"trace\" ],"
     " \"categories\"  : [ \"adiak\", \"output\" ],"
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" },"
+    " \"defaults\"    : { \"sample.callpath\": \"true\", \"lookup.module\": \"true\" },"
     " \"options\": "
     " ["
     "  { "
@@ -155,12 +161,6 @@ const char* controller_spec =
     "    \"name\": \"sample.frequency\","
     "    \"type\": \"int\","
     "    \"description\": \"Sampling frequency in Hz. Default: 200\""
-    "  },"
-    "  { "
-    "    \"name\": \"sample.threads\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Profile all threads.\","
-    "    \"services\": [ \"pthread\" ]"
     "  },"
     "  { "
     "    \"name\": \"sample.callpath\","

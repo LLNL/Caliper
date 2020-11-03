@@ -29,7 +29,7 @@ public:
             config()["CALI_SAMPLER_FREQUENCY"] = std::to_string(freq);
 
             // Config for first aggregation step in MPI mode (process-local aggregation)
-            std::string local_select = std::string("scale_count(")
+            std::string local_select = std::string("count() as \"Samples\",scale_count(")
                 + std::to_string(1.0/freq)
                 + ") as \"Time (sec)\" unit sec";
 
@@ -44,6 +44,13 @@ public:
                   ",avg(scount) as \"Avg time/rank\" unit sec"
                   ",sum(scount) as \"Total time\" unit sec"
                   ",percent_total(scount) as \"Time %\"";
+
+            auto avail_services = services::get_available_services();
+            bool have_pthread =
+                std::find(avail_services.begin(), avail_services.end(), "pthread")      != avail_services.end();
+
+            if (have_pthread)
+                config()["CALI_SERVICES_ENABLE"].append(",pthread");
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
@@ -125,12 +132,6 @@ const char* callpath_sample_report_spec =
     "    \"name\": \"sample.frequency\","
     "    \"type\": \"int\","
     "    \"description\": \"Sampling frequency in Hz. Default: 200\""
-    "  },"
-    "  { "
-    "    \"name\": \"sample.threads\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Profile all threads.\","
-    "    \"services\": [ \"pthread\" ]"
     "  },"
     "  {"
     "   \"name\": \"aggregate_across_ranks\","
