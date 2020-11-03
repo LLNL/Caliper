@@ -1,4 +1,5 @@
 set(CALIPER_CONTROLLERS_SOURCES
+  controllers/CallpathSampleReportController.cpp
   controllers/CudaActivityController.cpp
   controllers/HatchetRegionProfileController.cpp
   controllers/HatchetSampleProfileController.cpp
