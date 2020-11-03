@@ -54,6 +54,7 @@ set(PYTHON_SCRIPTS
   test_monitor.py
   test_multichannel.py
   test_report.py
+  test_runtimereport.py
   test_templateservices.py
   test_textlog.py
   test_thread.py
@@ -85,6 +86,9 @@ if (CALIPER_HAVE_SAMPLER)
   list(APPEND PYTHON_SCRIPTS test_sampler.py)
   if (CALIPER_HAVE_SYMBOLLOOKUP)
     list(APPEND PYTHON_SCRIPTS test_symbollookup.py)
+    if (CALIPER_HAVE_LIBUNWIND)
+      list(APPEND PYTHON_SCRIPTS test_samplereport.py)
+    endif()
   endif()
 endif()
 
