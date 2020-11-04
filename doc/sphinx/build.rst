@@ -2,24 +2,15 @@ Building Caliper
 ================================
 
 Building and installing Caliper requires cmake, a current C++11-compatible
-compiler, and a Python interpreter.
-
-Building Caliper
---------------------------------
-
-To build Caliper manually, clone it from the
+compiler, and a Python interpreter. To build Caliper manually, clone it from the
 `github repository <https://github.com/LLNL/Caliper>`_.
-
 Next, configure and build Caliper, e.g.:
 
 .. code-block:: sh
 
      $ cd <path to caliper root directory>
      $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \
-         -DCMAKE_C_COMPILER=<path to c-compiler> \
-         -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
-         ..
+     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> ..
      $ make
      $ make install
 
@@ -43,8 +34,9 @@ BUILD_TESTING
   Build unit tests.
 
 WITH_ADIAK
-  Enable Adiak support. Point CMake to adiak CMake module, e.g. with
-  ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
+  Enable support for recording program metadata with the 
+  `Adiak <https://github.com/LLNL/Adiak>`_ library. Point CMake to adiak CMake 
+  module, e.g. with ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
 
 WITH_CUPTI
   Enable support for CUDA performance analysis (wrapping of driver/runtime API

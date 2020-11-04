@@ -39,13 +39,22 @@ Features include:
 Caliper is available for download on `GitHub
 <https://github.com/LLNL/Caliper>`_.
 
+Caliper Basics
+-------------------------------
+
+This section covers basic Caliper usage, including source-code annotations and
+using Caliper's built-in performance measurement configurations:
+
 .. toctree::
    :maxdepth: 2
 
    CaliperBasics
 
+Reference documentation
+-------------------------------
+
 The reference documentation below covers Caliper user APIs and specific usage
-aspects in detail.
+aspects in detail:
 
 .. toctree::
    :maxdepth: 1
@@ -63,6 +72,34 @@ aspects in detail.
    OutputFormats
    tools
    DeveloperGuide
+
+About
+--------------------------------
+
+Caliper was created by `David Boehme <https://github.com/daboehme>`_.
+
+A complete `list of contributors <https://github.com/LLNL/Caliper/graphs/contributors>`_ is available on GitHub.
+
+Major contributors include:
+
+* `Alfredo Gimenez <https://github.com/alfredo-gimenez>`_ (libpfm support, memory allocation tracking)
+* `David Poliakoff <https://github.com/DavidPoliakoff>`_ (GOTCHA support)
+
+To reference Caliper in a publication, please cite the following
+`paper <http://ieeexplore.ieee.org/abstract/document/7877125/>`_:
+
+* David Boehme, Todd Gamblin, David Beckingsale, Peer-Timo Bremer,
+  Alfredo Gimenez, Matthew LeGendre, Olga Pearce, and Martin
+  Schulz.
+  **Caliper: Performance Introspection for HPC Software Stacks**.
+  In *Supercomputing 2016 (SC16)*, Salt Lake City, Utah,
+  November 13-18, 2016. LLNL-CONF-699263.
+
+Caliper is released under a BSD 3-clause license.
+See `LICENSE <https://github.com/LLNL/Caliper/blob/master/LICENSE>`_
+for details.
+
+LLNL Software release ID LLNL-CODE-678900.
 
 Index
 --------------------------------

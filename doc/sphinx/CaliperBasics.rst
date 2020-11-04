@@ -281,7 +281,7 @@ Notes:
 More on configurations
 --------------------------------
 
-A configuration string for the :doc:`ConfigManagerAPI` or the
+A configuration string for the ConfigManager API or the
 :doc:envvar:`CALI_CONFIG` environment variable is a comma-separated list of
 *configs* and *parameters*.
 
@@ -329,7 +329,7 @@ mpi-report
    Print time spent in MPI functions.
 
 callpath-sample-report
-   Print a time spent in functions using call-path sampling.
+   Print time spent in functions using call-path sampling.
 
 event-trace
    Record a trace of region enter/exit events in .cali format.
