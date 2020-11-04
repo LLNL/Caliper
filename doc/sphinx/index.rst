@@ -22,6 +22,7 @@ Features include:
 * Low-overhead source-code annotation API
 * Configuration API to control performance measurements from
   within an application
+* Recording program metadata for analyzing collections of runs
 * Flexible key:value data model -- capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming

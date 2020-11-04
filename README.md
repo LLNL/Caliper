@@ -4,10 +4,12 @@ Caliper: A Performance Analysis Toolbox in a Library
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 [![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
-Caliper is a program instrumentation and performance measurement
-framework. It is a performance analysis toolbox in a library,
-allowing one to bake performance analysis capabilities
-directly into applications and activate them at runtime.
+Caliper is a library to integrate performance profiling capabilities
+into applications. To use Caliper, developers mark code regions of
+interest using Caliper's annotation API. Applications can then enable
+performance profiling at runtime with Caliper's configuration API.
+Alternatively, you can configure Caliper through environment variables
+or config files.
 
 Caliper can be used for lightweight always-on profiling or advanced
 performance engineering use cases, such as tracing, monitoring,
@@ -19,7 +21,8 @@ Features include:
 * Low-overhead source-code annotation API
 * Configuration API to control performance measurements from
   within an application
-* Flexible key:value data model: capture application-specific
+* Recording program metadata for analyzing collections of runs
+* Flexible key:value data model to capture application-specific
   features for performance analysis
 * Fully threadsafe implementation, support for parallel programming
   models like MPI
@@ -125,8 +128,6 @@ spent in the annotated regions. You can activate built-in measurement
 configurations with the ConfigManager API or with the `CALI_CONFIG`
 environment variable. Let's try this on Caliper's cxx-example program:
 
-.. code-block:: sh
-
     $ cd Caliper/build
     $ make cxx-example
     $ CALI_CONFIG=runtime-report ./examples/apps/cxx-example
@@ -150,7 +151,7 @@ Other measurement configurations besides runtime-report include:
 * callpath-sample-report: Print a time spent in functions using call-path sampling.
 * event-trace: Record a trace of region enter/exit events in .cali format.
 * hatchet-region-profile: Record a region time profile for processing with the
-  ['hatchet'](https://github.com/LLNL/hatchet) library or cali-query.
+  [hatchet](https://github.com/LLNL/hatchet) library or cali-query.
 
 See the "Builtin configurations" section in the documentation to learn more
 about different configurations and their options.
@@ -190,14 +191,12 @@ The `cxx-example` program uses the ConfigManager API to let users specify a
 Caliper configuration with the `-P` command-line argument, e.g.
 ``-P runtime-report``:
 
-```
     $ ./examples/apps/cxx-example -P runtime-report
     Path       Min time/rank Max time/rank Avg time/rank Time %
     main            0.000129      0.000129      0.000129  5.952930
       mainloop      0.000080      0.000080      0.000080  3.691740
         foo         0.000719      0.000719      0.000719 33.179511
       init          0.000021      0.000021      0.000021  0.969082
-```
 
 See the [Caliper documentation](https://llnl.github.io/Caliper/) for more
 examples and the full API and configuration reference.
