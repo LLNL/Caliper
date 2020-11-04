@@ -12,11 +12,6 @@ set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
 
 set(adiak_DIR "/g/g90/boehme3/local/adiak/toss3-0.1.1/lib/cmake/adiak" CACHE PATH "")
 
-# DBO 2019-02-28: dyninst-10/boost installation on toss3 is broken, leading to
-# undefined references or non-existing include files. Turn it off for now.
-# Build with spack if dyninst is needed.
-#set(CMAKE_PREFIX_PATH "/usr/tce/packages/dyninst/dyninst-10.0.0/lib/cmake" CACHE PATH "")
-
 set(WITH_FORTRAN  On  CACHE BOOL "")
 set(WITH_ADIAK    On  CACHE BOOL "")
 set(WITH_LIBUNWIND On  CACHE BOOL "")
