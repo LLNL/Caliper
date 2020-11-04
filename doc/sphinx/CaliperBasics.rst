@@ -170,11 +170,11 @@ scope to ``process``:
 The annotation placement inside or outside of threads also affects performance
 measurements: in event-based measurement configurations (e.g., `runtime-report`),
 measurements are taken when entering and exiting annotated regions. Therefore,
-in the example above, the reported performance metrics (such as time per region) are
-only for the master thread. However, sampling-based configurations can take
-measurements on all threads, regardless of region markers. The
-``process`` visibility scope then allows us to associate these measurements
-with the "parallel" and "main" regions on any thread.
+in the example above, the reported performance metrics (such as time per region)
+are only for the master thread. However, sampling-based configurations like
+callpath-sample-report can take measurements on all threads, regardless of
+region markers. The ``process`` visibility scope then allows us to associate
+these measurements with the "parallel" and "main" regions on any thread.
 
 In contrast, in the example below, we enter and exit the "parallel" region on
 every thread, and metrics reported by `runtime-report` therefore cover all
@@ -328,6 +328,9 @@ loop-report
 mpi-report
    Print time spent in MPI functions.
 
+callpath-sample-report
+   Print a time spent in functions using call-path sampling.
+
 event-trace
    Record a trace of region enter/exit events in .cali format.
 
@@ -345,7 +348,7 @@ configuration string syntax and available configs and parameters, see
 :doc:`BuiltinConfigurations`.
 
 You can also create entirely custom measurement configurations by selecting and
-configuring Caliper services manually. See :doc:`configuration` to learn more. 
+configuring Caliper services manually. See :doc:`configuration` to learn more.
 
 Loop profiling
 --------------------------------

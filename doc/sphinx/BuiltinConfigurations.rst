@@ -109,10 +109,40 @@ hatchet-sample-profile
       Perform call-stack unwinding
    sample.frequency
       Sampling frequency in Hz. Default: 200
-   sample.threads
-      Profile all threads.
    use.mpi
       Merge results into a single output stream in MPI programs
+
+callpath-sample-report
+   Print a call-path sampling profile for the program
+
+   aggregate_across_ranks
+      Aggregate results across MPI ranks
+   io.bytes
+      Report I/O bytes written and read
+   io.bytes.read
+      Report I/O bytes read
+   io.bytes.written
+      Report I/O bytes written
+   io.read.bandwidth
+      Report I/O read bandwidth
+   io.write.bandwidth
+      Report I/O write bandwidth
+   max_column_width
+      Maximum column width in the tree display
+   mem.highwatermark
+      Record memory high-water mark for regions
+   output
+      Output location ('stdout', 'stderr', or filename)
+   sample.frequency
+      Sampling frequency in Hz. Default: 200
+   topdown-counters.all
+      Raw counter values for Intel top-down analysis (all levels)
+   topdown-counters.toplevel
+      Raw counter values for Intel top-down analysis (top level)
+   topdown.all
+      Top-down analysis for Intel CPUs (all levels)
+   topdown.toplevel
+      Top-down analysis for Intel CPUs (top level)
 
 loop-report
    Print summary and time-series information for loops. Options:

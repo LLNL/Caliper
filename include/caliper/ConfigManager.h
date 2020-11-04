@@ -219,6 +219,7 @@ public:
     ///   "    \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\" "
     ///   "  },"
     ///   " \"categories\"  : [ \"output\" ],"
+    ///   " \"defaults\"    : { \"sample.threads\": \"true\" }, "
     ///   " \"options\"     : "
     ///   " [ "
     ///   "  { \"name\"        : \"sample.threads\","
@@ -256,6 +257,8 @@ public:
     ///   apply to this config. The example above
     ///   uses the "output" category, which makes the built-in \a output
     ///   option for setting output file names available.
+    /// \li \a defaults: A dict with default values for any of the
+    ///   config's options. Options not listed here default to empty/not set.
     /// \li \a options: A list of custom options for this config.
     ///
     /// \see add_option_spec()

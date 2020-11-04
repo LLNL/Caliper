@@ -46,18 +46,10 @@ WITH_ADIAK
   Enable Adiak support. Point CMake to adiak CMake module, e.g. with
   ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
 
-WITH_CALLPATH
-  Enables callpath unwinding support. Requires libunwind.
-
 WITH_CUPTI
   Enable support for CUDA performance analysis (wrapping of driver/runtime API
   calls and CUDA activity tracing). Set CUpti installation dir
   with CUPTI_PREFIX.
-
-WITH_DYNINST
-  Enable address-to-symbol lookup using Dyninst.
-  Point CMake to the Dyninst CMake module, e.g. with
-  ``-DDyninst_PREFIX=<path-to-dyninst>/lib/cmake/Dyninst``.
 
 WITH_FORTRAN
   Build the Fortran wrappers.
@@ -68,9 +60,16 @@ WITH_GOTCHA
   If Gotcha is disabled, MPI wrappers use the PMPI interface.
   Requires Linux.
 
+WITH_LIBDW
+  Enables libdw support for DWARF symbol lookup. Required for most 
+  sampling-based configurations.
+
 WITH_LIBPFM
   Enable Linux perf_event sampling. Set libpfm installation dir
   in LIBPFM_INSTALL.
+
+WITH_LIBUNWIND
+  Enables libunwind support for call-path unwinding.
 
 WITH_MPI
   Build with MPI support.
