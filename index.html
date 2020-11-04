@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Caliper: A Performance Analysis Toolbox in a Library &#8212; Caliper 2.4.0 documentation</title>
+    <title>Caliper: A Performance Analysis Toolbox in a Library &#8212; Caliper 2.5.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -16,7 +16,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Build and link" href="build.html" /> 
+    <link rel="next" title="Caliper Basics" href="CaliperBasics.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -25,9 +25,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="build.html" title="Build and link"
+          <a href="CaliperBasics.html" title="Caliper Basics"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -52,13 +52,14 @@ performance profiling, tracing, monitoring, and auto-tuning.</p>
 <li><p>Low-overhead source-code annotation API</p></li>
 <li><p>Configuration API to control performance measurements from
 within an application</p></li>
+<li><p>Recording program metadata for analyzing collections of runs</p></li>
 <li><p>Flexible key:value data model – capture application-specific
 features for performance analysis</p></li>
 <li><p>Fully threadsafe implementation, support for parallel programming
 models like MPI</p></li>
 <li><p>Trace and profile recording with flexible online and offline
 data aggregation</p></li>
-<li><p>Connection to third-party tools, e.g., NVidia NVProf and
+<li><p>Connection to third-party tools, e.g., NVidia Nsight/NVProf and
 Intel(R) VTune(tm)</p></li>
 <li><p>Measurement and profiling functionality, such as timers, PAPI
 hardware counters, and Linux perf_events</p></li>
@@ -66,210 +67,71 @@ hardware counters, and Linux perf_events</p></li>
 with named memory regions</p></li>
 </ul>
 <p>Caliper is available for download on <a class="reference external" href="https://github.com/LLNL/Caliper">GitHub</a>.</p>
-<div class="section" id="contents">
-<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="caliper-basics">
+<h2>Caliper Basics<a class="headerlink" href="#caliper-basics" title="Permalink to this headline">¶</a></h2>
+<p>This section covers basic Caliper usage, including source-code annotations and
+using Caliper’s built-in performance measurement configurations:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="build.html">Build and link</a></li>
-<li class="toctree-l1"><a class="reference internal" href="AnnotationAPI.html">Source-code annotations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ConfigManagerAPI.html">Configuration manager API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CaliperBasics.html">Caliper Basics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#build-and-install">Build and install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#region-profiling">Region profiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#configmanager-api">ConfigManager API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#more-on-configurations">More on configurations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#loop-profiling">Loop profiling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#recording-program-metadata">Recording program metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#third-party-tool-support-nvidia-nsight-intel-vtune">Third-party tool support (NVidia NSight, Intel VTune)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CaliperBasics.html#c-example-program">C++ example program</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="reference-documentation">
+<h2>Reference documentation<a class="headerlink" href="#reference-documentation" title="Permalink to this headline">¶</a></h2>
+<p>The reference documentation below covers Caliper user APIs and specific usage
+aspects in detail:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build.html">Building Caliper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="AnnotationAPI.html">Annotation API reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ConfigManagerAPI.html">ConfigManager API reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="FortranSupport.html">Fortran support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Manual runtime configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ThirdPartyTools.html">Connection to third-party tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="BuiltinConfigurations.html">Built-in profiling configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Manual configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">Architecture and workflow</a></li>
 <li class="toctree-l1"><a class="reference internal" href="services.html">Caliper services</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ThirdPartyTools.html">Connection to third-party tools</a></li>
-<li class="toctree-l1"><a class="reference internal" href="calql.html">The Caliper query language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="calql.html">The CalQL query language</a></li>
 <li class="toctree-l1"><a class="reference internal" href="OutputFormats.html">Output formatting</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tools.html">Caliper tools</a></li>
 <li class="toctree-l1"><a class="reference internal" href="DeveloperGuide.html">Developer guide</a></li>
 </ul>
 </div>
 </div>
-<div class="section" id="getting-started">
-<h2>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
-<p>Unlike traditional performance-analysis tools, Caliper integrates directly
-with applications. This makes performance-analysis functionality accessible
-at any time and configurable at runtime through a configuration API.</p>
-<p>Typically, we integrate Caliper into a program by marking source-code
-sections of interest with descriptive annotations. Performance
-measurements, trace or profile collection, and reporting functionality
-can then be enabled with runtime configuration options. Alternatively,
-third-party tools can connect to Caliper and access information
-provided by the source-code annotations.</p>
-<div class="section" id="building-and-installing">
-<h3>Building and installing<a class="headerlink" href="#building-and-installing" title="Permalink to this headline">¶</a></h3>
-<p>Download Caliper from <a class="reference external" href="https://github.com/LLNL/Caliper">GitHub</a>.</p>
-<p>Building and installing Caliper requires cmake 3.1+ and a current
-C++11-compatible compiler. See <a class="reference internal" href="build.html"><span class="doc">Build and link</span></a> for details.</p>
-<p>You can also install Caliper through <a class="reference external" href="https://github.com/spack/spack">Spack</a>.</p>
-<p>To use Caliper, add annotation statements to your program and link it
-against the Caliper library. Programs must be linked with the Caliper
-runtime (libcaliper.so), as shown in the example link command:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>g++ -o app app.o -L&lt;path to caliper installation&gt;/lib64 -lcaliper
-</pre></div>
-</div>
-</div>
-<div class="section" id="source-code-annotations">
-<h3>Source-code annotations<a class="headerlink" href="#source-code-annotations" title="Permalink to this headline">¶</a></h3>
-<p>Caliper source-code annotations let us associate performance measurements
-with user-defined, high-level context information. We can also
-trigger user-defined actions at the instrumentation points, e.g. to measure
-the time spent in annotated regions. Measurement actions can be defined at
-runtime and are disabled by default; generally, the source-code annotations
-are lightweight enough to be left in production code.</p>
-<p>The annotation APIs are available for C, C++, and Fortran. There are
-high-level annotation macros for common scenarios such as marking
-functions, loops, or sections of source-code. In addition, users can
-export arbitrary key:value pairs to express application-specific
-concepts.</p>
-<p>The following example marks “initialization” and “main loop” phases in
-a C++ code, and exports the main loop’s current iteration counter
-using the high-level annotation macros:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
-
-<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
-<span class="p">{</span>
-    <span class="c1">// Mark this function</span>
-    <span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
-
-    <span class="c1">// Mark the &quot;intialization&quot; phase</span>
-    <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
-    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-    <span class="kt">double</span> <span class="n">t</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">delta_t</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">;</span>
-    <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
-
-    <span class="c1">// Mark the loop</span>
-    <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="s">&quot;main loop&quot;</span><span class="p">);</span>
-
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// Mark each loop iteration</span>
-        <span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
-
-        <span class="c1">// A Caliper snapshot taken at this point will contain</span>
-        <span class="c1">// { &quot;function&quot;=&quot;main&quot;, &quot;loop&quot;=&quot;main loop&quot;, &quot;iteration#main loop&quot;=&lt;i&gt; }</span>
-
-        <span class="c1">// ...</span>
-    <span class="p">}</span>
-
-    <span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop</span><span class="p">);</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>See the <a class="reference internal" href="AnnotationAPI.html"><span class="doc">Source-code annotations</span></a> chapter for a complete reference to the C,
-C++, and Fortran annotation APIs.</p>
-</div>
-<div class="section" id="recording-performance-data">
-<h3>Recording Performance Data<a class="headerlink" href="#recording-performance-data" title="Permalink to this headline">¶</a></h3>
-<p>Performance measuremens can be controlled most conveniently via the
-ConfigManager API. The ConfigManager covers many common use cases,
-such as recording traces or printing time reports. For custom analysis
-tasks or when not using the ConfigManager API, Caliper can be configured
-manually by setting configuration variables via the environment or
-in config files.</p>
-<div class="section" id="configmanager-api">
-<h4>ConfigManager API<a class="headerlink" href="#configmanager-api" title="Permalink to this headline">¶</a></h4>
-<p>With the C++ ConfigManager API, built-in performance measurement and
-reporting configurations can be activated within a program using a short
-configuration string. This configuration string can be hard-coded in the
-program or provided by the user in some form, e.g. as a command-line
-parameter or in the programs’s configuration file.</p>
-<p>To use the ConfigManager API, create a <cite>cali::ConfigManager</cite> object, add a
-configuration string with <cite>add()</cite>, start the requested configuration
-channels with <cite>start()</cite>, and trigger output with <cite>flush()</cite>:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali-manager.h&gt;</span><span class="cp"></span>
-<span class="c1">// ...</span>
-<span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span> <span class="n">mgr</span><span class="p">;</span>
-<span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;runtime-report&quot;</span><span class="p">);</span>
-<span class="c1">// ...</span>
-<span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span> <span class="c1">// start requested performance measurement channels</span>
-<span class="c1">// ... (program execution)</span>
-<span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span> <span class="c1">// write performance results</span>
-</pre></div>
-</div>
-<p>A complete code example where users can provide a configuration string
-on the command line is [here](examples/apps/cxx-example.cpp). Built-in
-configs include</p>
-<dl class="simple">
-<dt>runtime-report</dt><dd><p>Prints a time profile for annotated code regions.</p>
-</dd>
-<dt>event-trace</dt><dd><p>Records a trace of region begin/end events.</p>
-</dd>
-</dl>
-<p>See <a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">Configuration manager API</span></a> to learn more.</p>
-</div>
-<div class="section" id="manual-runtime-configuration">
-<h4>Manual runtime configuration<a class="headerlink" href="#manual-runtime-configuration" title="Permalink to this headline">¶</a></h4>
-<p>The ConfigManager API is not required to run Caliper - performance
-measurements can also be configured with environment variables or
-a config file.
-For starters, there are a set of pre-defined configuration
-profiles that can be activated with the <cite>CALI_CONFIG_PROFILE</cite>.
-For example, the <cite>runtime-report</cite> configuration profile prints
-the total time spent in each code path based on the nesting of
-annotated code regions:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cxx-example
-Path          Inclusive time Exclusive time Time %
-main                0.000099       0.000070 5.751849
-  main loop         0.000013       0.000013 1.068200
-  init              0.000016       0.000016 1.314708
-</pre></div>
-</div>
-<p>For complete control, users can select and configure Caliper
-<em>services</em> (<a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a>) manually. See <a class="reference internal" href="configuration.html"><span class="doc">Manual runtime configuration</span></a>
-to learn more. For example, this configuration records an event
-trace for each annotation event:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_SERVICES_ENABLE=event,recorder,timestamp,trace ./examples/apps/cxx-example
-</pre></div>
-</div>
-</div>
-<div class="section" id="post-processing">
-<h4>Post-processing<a class="headerlink" href="#post-processing" title="Permalink to this headline">¶</a></h4>
-<p>The trace data is stored in a <code class="docutils literal notranslate"><span class="pre">.cali</span></code> file in a text-based,
-Caliper-specific file format. Use the <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> tool to filter,
-aggregate, or print the recorded data. Here we use <code class="docutils literal notranslate"><span class="pre">cali-query</span></code> to
-print the recorded trace data as json text:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ ls *.cali
-<span class="m">171120</span>-181836_40337_7LOlCN5RchWV.cali
-$ cali-query <span class="m">171120</span>-181836_40337_7LOlCN5RchWV.cali -q <span class="s2">&quot;SELECT * FORMAT json(pretty)&quot;</span>
-<span class="o">[</span>
-<span class="o">{</span>
-        <span class="s2">&quot;event.begin#function&quot;</span>:<span class="s2">&quot;main&quot;</span>
-<span class="o">}</span>,
-<span class="o">{</span>
-        <span class="s2">&quot;event.begin#annotation&quot;</span>:<span class="s2">&quot;init&quot;</span>,
-        <span class="s2">&quot;function&quot;</span>:<span class="s2">&quot;main&quot;</span>
-<span class="o">}</span>,
-<span class="o">{</span>
-        <span class="s2">&quot;event.end#annotation&quot;</span>:<span class="s2">&quot;init&quot;</span>,
-        <span class="s2">&quot;annotation&quot;</span>:<span class="s2">&quot;init&quot;</span>,
-        <span class="s2">&quot;function&quot;</span>:<span class="s2">&quot;main&quot;</span>,
-        <span class="s2">&quot;time.inclusive.duration&quot;</span>:14
-<span class="o">}</span>,
-<span class="o">{</span>
-        <span class="s2">&quot;event.begin#loop&quot;</span>:<span class="s2">&quot;main loop&quot;</span>,
-        <span class="s2">&quot;function&quot;</span>:<span class="s2">&quot;main&quot;</span>
-<span class="o">}</span>,
-<span class="o">{</span>
-        <span class="s2">&quot;loop&quot;</span>:<span class="s2">&quot;main loop&quot;</span>,
-        <span class="s2">&quot;function&quot;</span>:<span class="s2">&quot;main&quot;</span>,
-        <span class="s2">&quot;event.begin#iteration#main loop&quot;</span>:0
-<span class="o">}</span>,
-...
-</pre></div>
-</div>
-</div>
-</div>
-<div class="section" id="where-to-go-from-here">
-<h3>Where to go from here<a class="headerlink" href="#where-to-go-from-here" title="Permalink to this headline">¶</a></h3>
-<p>Caliper’s performance-measurement and data-collection functionality is
-provided by independent building blocks called <em>services</em>, each
-implementing a specific functionality (e.g., tracing, I/O, timing,
-report formatting, or sampling). The services can be enabled at
-runtime in any combination. This makes Caliper highly flexible, but
-the runtime configuration can be complex. The <a class="reference internal" href="workflow.html"><span class="doc">Architecture and workflow</span></a> section
-explains more about Caliper’s internal dataflow and how services
-interact.</p>
-</div>
+<div class="section" id="about">
+<h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
+<p>Caliper was created by <a class="reference external" href="https://github.com/daboehme">David Boehme</a>.</p>
+<p>A complete <a class="reference external" href="https://github.com/LLNL/Caliper/graphs/contributors">list of contributors</a> is available on GitHub.</p>
+<p>Major contributors include:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/alfredo-gimenez">Alfredo Gimenez</a> (libpfm support, memory allocation tracking)</p></li>
+<li><p><a class="reference external" href="https://github.com/DavidPoliakoff">David Poliakoff</a> (GOTCHA support)</p></li>
+</ul>
+<p>To reference Caliper in a publication, please cite the following
+<a class="reference external" href="http://ieeexplore.ieee.org/abstract/document/7877125/">paper</a>:</p>
+<ul class="simple">
+<li><p>David Boehme, Todd Gamblin, David Beckingsale, Peer-Timo Bremer,
+Alfredo Gimenez, Matthew LeGendre, Olga Pearce, and Martin
+Schulz.
+<strong>Caliper: Performance Introspection for HPC Software Stacks</strong>.
+In <em>Supercomputing 2016 (SC16)</em>, Salt Lake City, Utah,
+November 13-18, 2016. LLNL-CONF-699263.</p></li>
+</ul>
+<p>Caliper is released under a BSD 3-clause license.
+See <a class="reference external" href="https://github.com/LLNL/Caliper/blob/master/LICENSE">LICENSE</a>
+for details.</p>
+<p>LLNL Software release ID LLNL-CODE-678900.</p>
 </div>
 <div class="section" id="index">
 <h2>Index<a class="headerlink" href="#index" title="Permalink to this headline">¶</a></h2>
@@ -291,27 +153,17 @@ interact.</p>
   <h3><a href="#">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Caliper: A Performance Analysis Toolbox in a Library</a><ul>
-<li><a class="reference internal" href="#contents">Contents</a></li>
-<li><a class="reference internal" href="#getting-started">Getting started</a><ul>
-<li><a class="reference internal" href="#building-and-installing">Building and installing</a></li>
-<li><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
-<li><a class="reference internal" href="#recording-performance-data">Recording Performance Data</a><ul>
-<li><a class="reference internal" href="#configmanager-api">ConfigManager API</a></li>
-<li><a class="reference internal" href="#manual-runtime-configuration">Manual runtime configuration</a></li>
-<li><a class="reference internal" href="#post-processing">Post-processing</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#where-to-go-from-here">Where to go from here</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#caliper-basics">Caliper Basics</a></li>
+<li><a class="reference internal" href="#reference-documentation">Reference documentation</a></li>
+<li><a class="reference internal" href="#about">About</a></li>
 <li><a class="reference internal" href="#index">Index</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Next topic</h4>
-  <p class="topless"><a href="build.html"
-                        title="next chapter">Build and link</a></p>
+  <p class="topless"><a href="CaliperBasics.html"
+                        title="next chapter">Caliper Basics</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -340,9 +192,9 @@ interact.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="build.html" title="Build and link"
+          <a href="CaliperBasics.html" title="Caliper Basics"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="#">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

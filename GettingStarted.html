@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Getting Started &#8212; Caliper 2.5.0-dev documentation</title>
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>Caliper is a library to integrate performance profiling capabilities
+into applications. Applications can enable performance profiling
+at runtime through a configuration API, or users can configure
+profiling through environment variables or config files.</p>
+<p>The basic steps to use Caliper are:</p>
+<ul class="simple">
+<li><p>Add source-code annotations around code regions of interest</p></li>
+<li><p>(Optional) Use the ConfigManager API to enable profiling from
+within the program</p></li>
+<li><p>Link the Caliper runtime library (libcaliper) to the target program</p></li>
+<li><p>Choose a performance measurement configuration at runtime</p></li>
+</ul>
+<div class="section" id="build-and-install">
+<h2>Build and install<a class="headerlink" href="#build-and-install" title="Permalink to this headline">¶</a></h2>
+<p>You can install Caliper with <a class="reference external" href="https://github.com/spack/spack">Spack</a>, or
+clone it directly from Github:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/LLNL/Caliper.git
+</pre></div>
+</div>
+<p>Caliper uses CMake and C++11. To build it, run cmake:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> build
+$ cmake ..
+$ make <span class="o">&amp;&amp;</span> make install
+</pre></div>
+</div>
+<p>There are many build flags to enable optional features, such as <cite>-DWITH_MPI</cite>
+for MPI support. See <a class="reference internal" href="build.html"><span class="doc">Building Caliper</span></a> for details.</p>
+<p>Caliper installs files into the <code class="docutils literal notranslate"><span class="pre">lib64</span></code>, <code class="docutils literal notranslate"><span class="pre">include</span></code>, and <code class="docutils literal notranslate"><span class="pre">bin</span></code> directories
+under <cite>CMAKE_INSTALL_PREFIX</cite>. To use Caliper, link <code class="docutils literal notranslate"><span class="pre">libcaliper</span></code> to the
+target program:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ g++ -o app app.o -L&lt;path to caliper installation&gt;/lib64 -lcaliper
+</pre></div>
+</div>
+</div>
+<div class="section" id="source-code-annotations">
+<h2>Source-code annotations<a class="headerlink" href="#source-code-annotations" title="Permalink to this headline">¶</a></h2>
+<p>Caliper provides source-code annotation APIs for C, C++, and Fortran to mark
+functions, loops, or sections of source-code. Most Caliper performance
+measurement configurations map performance measurements to the annotated
+source-code regions.</p>
+<p>The example below demonstrates Caliper source-code annotations in C++:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">argv</span><span class="p">[])</span>
+<span class="p">{</span>
+    <span class="c1">// Mark this function</span>
+    <span class="n">CALI_CXX_MARK_FUNCTION</span><span class="p">;</span>
+
+    <span class="c1">// Mark a region</span>
+    <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
+    <span class="c1">// ...</span>
+    <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">);</span>
+
+    <span class="c1">// Mark a loop</span>
+    <span class="n">CALI_CXX_MARK_LOOP_BEGIN</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="s">&quot;main loop&quot;</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Mark loop iterations</span>
+        <span class="n">CALI_CXX_MARK_LOOP_ITERATION</span><span class="p">(</span><span class="n">mainloop</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+        <span class="c1">// ...</span>
+    <span class="p">}</span>
+
+    <span class="n">CALI_CXX_MARK_LOOP_END</span><span class="p">(</span><span class="n">mainloop</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="AnnotationAPI.html"><span class="doc">Annotation API</span></a> chapter for a complete reference to the C,
+C++, and Fortran annotation APIs.</p>
+</div>
+<div class="section" id="performance-measurements">
+<h2>Performance measurements<a class="headerlink" href="#performance-measurements" title="Permalink to this headline">¶</a></h2>
+<p>With the source-code annotations in place, we can run performance measurements.
+Caliper includes many built-in measurement configurations - see
+<a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>. Use the <code class="docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code> environment variable to
+enable a measurement configuration, e.g. <cite>runtime-report</cite> to print the time
+spent in the annotated regions:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ make cxx-example
+$ <span class="nv">CALI_CONFIG</span><span class="o">=</span>runtime-report ./examples/apps/cxx-example
+Path       Min time/rank Max time/rank Avg time/rank Time %
+main            <span class="m">0</span>.000110      <span class="m">0</span>.000110      <span class="m">0</span>.000110  <span class="m">6</span>.428989
+  mainloop      <span class="m">0</span>.000093      <span class="m">0</span>.000093      <span class="m">0</span>.000093  <span class="m">5</span>.435418
+    foo         <span class="m">0</span>.000647      <span class="m">0</span>.000647      <span class="m">0</span>.000647 <span class="m">37</span>.814144
+  init          <span class="m">0</span>.000017      <span class="m">0</span>.000017      <span class="m">0</span>.000017  <span class="m">0</span>.993571
+</pre></div>
+</div>
+<p>Alternatively, use the <a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">Configuration manager API</span></a> to enable measurement
+configurations directly within the program.
+To use the ConfigManager API, create a <cite>cali::ConfigManager</cite> object, add a
+configuration string with <cite>add()</cite>, start the requested configuration
+channels with <cite>start()</cite>, and trigger output with <cite>flush()</cite>:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali-manager.h&gt;</span><span class="cp"></span>
+<span class="c1">// ...</span>
+<span class="n">cali</span><span class="o">::</span><span class="n">ConfigManager</span> <span class="n">mgr</span><span class="p">;</span>
+<span class="n">mgr</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="s">&quot;runtime-report&quot;</span><span class="p">);</span>
+<span class="c1">// ...</span>
+<span class="n">mgr</span><span class="p">.</span><span class="n">start</span><span class="p">();</span> <span class="c1">// start requested performance measurement channels</span>
+<span class="c1">// ... (program execution)</span>
+<span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span> <span class="c1">// write performance results</span>
+</pre></div>
+</div>
+<p>The example in examples/apps/cxx-example.cpp demonstrates how users can provide
+a configuration string on the command line. For complete control, you can also
+select and configure Caliper <em>services</em> (<a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a>) manually. See
+<a class="reference internal" href="configuration.html"><span class="doc">Manual configuration</span></a> to learn more.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#build-and-install">Build and install</a></li>
+<li><a class="reference internal" href="#source-code-annotations">Source-code annotations</a></li>
+<li><a class="reference internal" href="#performance-measurements">Performance measurements</a></li>
+</ul>
+</li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/GettingStarted.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+    </div>
+  </body>
+</html>

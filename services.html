@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Caliper services &#8212; Caliper 2.4.0 documentation</title>
+    <title>Caliper services &#8212; Caliper 2.5.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -16,7 +16,7 @@
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Connection to third-party tools" href="ThirdPartyTools.html" />
+    <link rel="next" title="The CalQL query language" href="calql.html" />
     <link rel="prev" title="Architecture and workflow" href="workflow.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -26,12 +26,12 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="calql.html" title="The CalQL query language"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -59,19 +59,13 @@ their configuration.</p>
 <span id="aggregate-service"></span><h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this headline">¶</a></h2>
 <p>The <cite>aggregate</cite> service accumulates aggregation attributes (e.g., time
 durations) of snapshots with a similar <cite>key</cite>, creating a profile.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_AGGREGATE_KEY">
-<code class="sig-name descname">CALI_AGGREGATE_KEY</code><a class="headerlink" href="#envvar-CALI_AGGREGATE_KEY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Colon-separated list of attributes that form the aggregation key
+<dl>
+<dt>CALI_AGGREGATE_KEY</dt><dd><p>Colon-separated list of attributes that form the aggregation key
 (see below).</p>
 <p>Default: Empty (all attributes without the <code class="docutils literal notranslate"><span class="pre">ASVALUE</span></code> storage
 property are key attributes).</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_AGGREGATE_ATTRIBUTES">
-<code class="sig-name descname">CALI_AGGREGATE_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_AGGREGATE_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
-<dd><p>Colon-separated list of aggregation attributes. The <cite>aggregate</cite>
+</dd>
+<dt>CALI_AGGREGATE_ATTRIBUTES</dt><dd><p>Colon-separated list of aggregation attributes. The <cite>aggregate</cite>
 service aggregates values of aggregation attributes from all input
 snapshots with similar aggregation keys. Note that only attributes
 with the <code class="docutils literal notranslate"><span class="pre">ASVALUE</span></code> storage property can be aggregation
@@ -83,8 +77,8 @@ select a subset). When set to <cite>none</cite>, the <cite>aggregate</cite> serv
 will not aggregate any attributes, and only count the number of
 snapshots with similar keys.</p>
 <p>Default: Empty (determine aggregation attributes automatically).</p>
-</dd></dl>
-
+</dd>
+</dl>
 <div class="section" id="aggregation-key">
 <h3>Aggregation key<a class="headerlink" href="#aggregation-key" title="Permalink to this headline">¶</a></h3>
 <p>The aggregation key defines for which attributes separate (aggregate)
@@ -214,21 +208,15 @@ the Caliper data tracking API, but in conjunction with the
 hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when
 recording/tracking frequent allocations/deallocations.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_ALLOC_TRACK_ALLOCATIONS">
-<code class="sig-name descname">CALI_ALLOC_TRACK_ALLOCATIONS</code><a class="headerlink" href="#envvar-CALI_ALLOC_TRACK_ALLOCATIONS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Records snapshots when memory regions are being tracked or
+<dl>
+<dt>CALI_ALLOC_TRACK_ALLOCATIONS</dt><dd><p>Records snapshots when memory regions are being tracked or
 untracked, storing the given label in the <cite>mem.alloc</cite> or
 <cite>mem.free</cite> attribute, respectively. The snapshots also contain a
 unique ID for the allocation in the <cite>alloc.uid</cite> attribute, and the
 size of the allocated region in the <cite>alloc.total_size</cite> attribute.</p>
 <p>Default: true</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_ALLOC_RESOLVE_ADDRESSES">
-<code class="sig-name descname">CALI_ALLOC_RESOLVE_ADDRESSES</code><a class="headerlink" href="#envvar-CALI_ALLOC_RESOLVE_ADDRESSES" title="Permalink to this definition">¶</a></dt>
-<dd><p>When set, snapshots with memory addresses produced by other
+</dd>
+<dt>CALI_ALLOC_RESOLVE_ADDRESSES</dt><dd><p>When set, snapshots with memory addresses produced by other
 services (e.g., Libpfm) will be appended with the allocations that
 contain them. The snapshots then contain
 <cite>alloc.label#address_attribute</cite>, <cite>alloc.uid#address_attribute</cite>,
@@ -236,16 +224,12 @@ and <cite>alloc.index#address_attribute</cite> attributes with the memory
 region label, allocation ID, and array index for the memory
 address attributes found in the snapshot.</p>
 <p>Default: false</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_ALLOC_RECORD_ACTIVE_MEM">
-<code class="sig-name descname">CALI_ALLOC_RECORD_ACTIVE_MEM</code><a class="headerlink" href="#envvar-CALI_ALLOC_RECORD_ACTIVE_MEM" title="Permalink to this definition">¶</a></dt>
-<dd><p>Records the amount of active allocated memory, in bytes, at each
+</dd>
+<dt>CALI_ALLOC_RECORD_ACTIVE_MEM</dt><dd><p>Records the amount of active allocated memory, in bytes, at each
 snapshot, in the <cite>mem.active</cite> attribute.</p>
 <p>Default: false</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="callpath">
 <span id="callpath-service"></span><h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
@@ -265,29 +249,19 @@ $ callpath.address<span class="o">=</span><span class="m">401207</span>/2aaaac05
 </div>
 <p>The example shows the <code class="docutils literal notranslate"><span class="pre">callpath.address</span></code> and <code class="docutils literal notranslate"><span class="pre">callpath.regname</span></code>
 attributes in Caliper context records.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_CALLPATH_USE_NAME-true-false">
-<span id="envvar-CALI_CALLPATH_USE_NAME=(true|false)"></span><code class="sig-name descname">CALI_CALLPATH_USE_NAME=(true|false)</code><a class="headerlink" href="#envvar-CALI_CALLPATH_USE_NAME-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provide region names for call paths. Incurs higher overhead. Note
+<dl>
+<dt>CALI_CALLPATH_USE_NAME</dt><dd><p>Provide region names for call paths. Incurs higher overhead. Note
 that region names for C++ and Fortran functions are not demangled.</p>
 <p>Default: false.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CALLPATH_USE_ADDRESS-true-false">
-<span id="envvar-CALI_CALLPATH_USE_ADDRESS=(true|false)"></span><code class="sig-name descname">CALI_CALLPATH_USE_ADDRESS=(true|false)</code><a class="headerlink" href="#envvar-CALI_CALLPATH_USE_ADDRESS-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Record region addresses for call paths.</p>
+</dd>
+<dt>CALI_CALLPATH_USE_ADDRESS</dt><dd><p>Record region addresses for call paths.</p>
 <p>Default: true.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CALLPATH_SKIP_FRAMES-number-of-frames">
-<span id="envvar-CALI_CALLPATH_SKIP_FRAMES=<number of frames>"></span><code class="sig-name descname">CALI_CALLPATH_SKIP_FRAMES=&lt;number of frames&gt;</code><a class="headerlink" href="#envvar-CALI_CALLPATH_SKIP_FRAMES-number-of-frames" title="Permalink to this definition">¶</a></dt>
-<dd><p>Skip a number of stack frames. This avoids recording stack frames
+</dd>
+<dt>CALI_CALLPATH_SKIP_FRAMES</dt><dd><p>Skip a number of stack frames. This avoids recording stack frames
 within the Caliper library.</p>
 <p>Default: 10</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="cupti">
 <span id="cupti-service"></span><h2>CUpti<a class="headerlink" href="#cupti" title="Permalink to this headline">¶</a></h2>
@@ -296,10 +270,8 @@ through the CUpti interface. Specifically, it can intercept runtime
 API calls, driver API calls, resource creation and destruction events
 (contexts and streams), and synchronization events. It can also
 interpret NVTX source-code annotations as Caliper annotations.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTI_CALLBACK_DOMAINS">
-<code class="sig-name descname">CALI_CUPTI_CALLBACK_DOMAINS</code><a class="headerlink" href="#envvar-CALI_CUPTI_CALLBACK_DOMAINS" title="Permalink to this definition">¶</a></dt>
-<dd><p>String. A comma-separated list of CUpti callback domains to
+<dl>
+<dt>CALI_CUPTI_CALLBACK_DOMAINS</dt><dd><p>String. A comma-separated list of CUpti callback domains to
 intercept.  Values:</p>
 <ul class="simple">
 <li><p><cite>runtime</cite>: The CUDA runtime API, e.g. <code class="docutils literal notranslate"><span class="pre">cudaDeviceSynchronize</span></code>.</p></li>
@@ -311,21 +283,13 @@ tends to have significant overheads.</p></li>
 <li><p><cite>none</cite>: Don’t capture callbacks.</p></li>
 </ul>
 <p>Default: <cite>runtime,sync</cite></p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTI_RECORD_SYMBOL">
-<code class="sig-name descname">CALI_CUPTI_RECORD_SYMBOL</code><a class="headerlink" href="#envvar-CALI_CUPTI_RECORD_SYMBOL" title="Permalink to this definition">¶</a></dt>
-<dd><p>Boolean. Record the kernel symbol name for callbacks (typically
+</dd>
+<dt>CALI_CUPTI_RECORD_SYMBOL</dt><dd><p>Boolean. Record the kernel symbol name for callbacks (typically
 when launching kernels). Default: <cite>true</cite>.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTI_RECORD_CONTEXT">
-<code class="sig-name descname">CALI_CUPTI_RECORD_CONTEXT</code><a class="headerlink" href="#envvar-CALI_CUPTI_RECORD_CONTEXT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Boolean. Record CUDA context ID. Default: <cite>true</cite>.</p>
-</dd></dl>
-
+</dd>
+<dt>CALI_CUPTI_RECORD_CONTEXT</dt><dd><p>Boolean. Record CUDA context ID. Default: <cite>true</cite>.</p>
+</dd>
+</dl>
 <div class="section" id="cupti-attributes">
 <h3>CUpti Attributes<a class="headerlink" href="#cupti-attributes" title="Permalink to this headline">¶</a></h3>
 <p>The <cite>cupti</cite> service adds the following attributes:</p>
@@ -437,10 +401,8 @@ timestamps between the CUDA activity records and host-side Caliper
 events. With <code class="docutils literal notranslate"><span class="pre">CALI_CUPTITRACE_SNAPSHOT_DURATION</span></code>, cuptitrace will
 also calculate the time duration of host-side events based on CUpti
 timestamps.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTITRACE_ACTIVITIES">
-<code class="sig-name descname">CALI_CUPTITRACE_ACTIVITIES</code><a class="headerlink" href="#envvar-CALI_CUPTITRACE_ACTIVITIES" title="Permalink to this definition">¶</a></dt>
-<dd><p>The CUpti activity kinds to record. Comma-separated list.
+<dl>
+<dt>CALI_CUPTITRACE_ACTIVITIES</dt><dd><p>The CUpti activity kinds to record. Comma-separated list.
 Possible values:</p>
 <blockquote>
 <div><p>device:       Device info
@@ -448,36 +410,32 @@ correlation:  Correlation records
 driver:       Driver API
 runtime:      Runtime API
 kernel:       CUDA Kernels being executed
-memcpy:       CUDA memory copies</p>
+memcpy:       CUDA memory copies
+uvm:          Unified memory events</p>
 </div></blockquote>
 <p>Default: correlation,device,kernel,memcpy,runtime</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTITRACE_CORRELATE_CONTEXT">
-<code class="sig-name descname">CALI_CUPTITRACE_CORRELATE_CONTEXT</code><a class="headerlink" href="#envvar-CALI_CUPTITRACE_CORRELATE_CONTEXT" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add the Caliper context (annotations) from the point where a CUDA
+</dd>
+<dt>CALI_CUPTITRACE_CORRELATE_CONTEXT</dt><dd><p>Add the Caliper context (annotations) from the point where a CUDA
 activity was launched to the CUDA activity records. Boolean.</p>
 <p>Default: true.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS">
-<code class="sig-name descname">CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS</code><a class="headerlink" href="#envvar-CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add CUpti timestamps to all Caliper snapshot records. Allows one
+</dd>
+<dt>CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS</dt><dd><p>Add CUpti timestamps to all Caliper snapshot records. Allows one
 to compare timestamps from CUDA activity records with host-side
 Caliper events. Boolean.</p>
 <p>Default: false</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_CUPTITRACE_SNAPSHOT_DURATION">
-<code class="sig-name descname">CALI_CUPTITRACE_SNAPSHOT_DURATION</code><a class="headerlink" href="#envvar-CALI_CUPTITRACE_SNAPSHOT_DURATION" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calculate duration of host-side events using CUpti timestamps. Useful
+</dd>
+<dt>CALI_CUPTITRACE_SNAPSHOT_DURATION</dt><dd><p>Calculate duration of host-side events using CUpti timestamps. Useful
 to compare duration of GPU and Host activities. Boolean.</p>
 <p>Default: false</p>
-</dd></dl>
-
+</dd>
+<dt>CALI_CUPTITRACE_UVM_TRANSFERS</dt><dd><p>If uvm memory events are enabled, record host-to-device and
+device-to-host transfers.</p>
+<p>Default: true</p>
+</dd>
+<dt>CALI_CUPTITRACE_UVM_PAGEFAULTS</dt><dd><p>If uvm memory events are enabled, record CPU and GPU pagefaults.</p>
+<p>Default: true</p>
+</dd>
+</dl>
 <p>CUptiTrace records contain the following attributes:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -522,6 +480,25 @@ snapshot records.</p></td>
 <td><p>A globally unique ID of the CUDA device the
 activity is running on.</p></td>
 </tr>
+<tr class="row-odd"><td><p>cupti.device.uuid</p></td>
+<td><p>A globally unique ID of the CUDA device the
+activity is running on.</p></td>
+</tr>
+<tr class="row-even"><td><p>cupti.uvm.kind</p></td>
+<td><p>The kind of unified memory event.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cupti.fault.addr</p></td>
+<td><p>Pagefault address for unified memory events.</p></td>
+</tr>
+<tr class="row-even"><td><p>cupti.uvm.bytes</p></td>
+<td><p>Bytes transferred in a unified memory event.</p></td>
+</tr>
+<tr class="row-odd"><td colspan="2"><p>cupti.uvm.migration.cause | Cause of a unified memory page migration.</p></td>
+</tr>
+<tr class="row-even"><td><p>cupti.uvm.access.type</p></td>
+<td><p>Access type that caused a unified memory page
+fault.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -541,13 +518,11 @@ version</p></li>
 </div></blockquote>
 <p>Moreover, the environment information service can put any environment
 variable defined at program start on the Caliper blackboard.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_ENV_EXTRA-variable1-variable2-...">
-<span id="envvar-CALI_ENV_EXTRA=(variable1:variable2:...)"></span><code class="sig-name descname">CALI_ENV_EXTRA=(variable1:variable2:...)</code><a class="headerlink" href="#envvar-CALI_ENV_EXTRA-variable1-variable2-..." title="Permalink to this definition">¶</a></dt>
-<dd><p>List of extra environment variables to import.</p>
+<dl>
+<dt>CALI_ENV_EXTRA=(variable1:variable2:…)</dt><dd><p>List of extra environment variables to import.</p>
 <p>Default: empty</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="event">
 <span id="event-service"></span><h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
@@ -593,22 +568,16 @@ event.set#iteration<span class="o">=</span><span class="m">3</span>,cali.snapsho
 event.end#iteration<span class="o">=</span><span class="m">3</span>,cali.snapshot.event.end<span class="o">=</span><span class="m">63</span>,iteration<span class="o">=</span><span class="m">3</span>,loop<span class="o">=</span><span class="nb">true</span>
 </pre></div>
 </div>
-<dl class="std envvar">
-<dt id="envvar-CALI_EVENT_TRIGGER-attribute1-attribute2-...">
-<span id="envvar-CALI_EVENT_TRIGGER=(attribute1:attribute2:...)"></span><code class="sig-name descname">CALI_EVENT_TRIGGER=(attribute1:attribute2:...)</code><a class="headerlink" href="#envvar-CALI_EVENT_TRIGGER-attribute1-attribute2-..." title="Permalink to this definition">¶</a></dt>
-<dd><p>List of attributes that trigger measurement snapshots.
+<dl>
+<dt>CALI_EVENT_TRIGGER</dt><dd><p>List of attributes that trigger measurement snapshots.
 If empty, all user attributes trigger snapshots.</p>
 <p>Default: empty</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_EVENT_ENABLE_SNAPSHOT_INFO">
-<code class="sig-name descname">CALI_EVENT_ENABLE_SNAPSHOT_INFO</code><a class="headerlink" href="#envvar-CALI_EVENT_ENABLE_SNAPSHOT_INFO" title="Permalink to this definition">¶</a></dt>
-<dd><p>Boolean. Generate the event.begin#attr etc. attributes for each event snapshot.
+</dd>
+<dt>CALI_EVENT_ENABLE_SNAPSHOT_INFO</dt><dd><p>Boolean. Generate the event.begin#attr etc. attributes for each event snapshot.
 Turning this off can decrease runtime overheads.</p>
 <p>Default: true</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="debug">
 <h2>Debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h2>
@@ -679,39 +648,25 @@ and end events. It provides the following attributes:</p>
 <p>The libpfm service performs per-thread event-based sampling. The user
 may configure the event upon which to sample, the values to record for
 each sample, and the sampling period.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_EVENTS">
-<code class="sig-name descname">CALI_LIBPFM_EVENTS</code><a class="headerlink" href="#envvar-CALI_LIBPFM_EVENTS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of events to sample. Event names are resolved
+<dl>
+<dt>CALI_LIBPFM_EVENTS</dt><dd><p>Comma-separated list of events to sample. Event names are resolved
 through libpfm, and may include software and hardware events (see
 libpfm’s showevtinfo tool
 <a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
 to obtain a list of events available on a particular system).</p>
 <p>Default: cycles</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_ENABLE_SAMPLING">
-<code class="sig-name descname">CALI_LIBPFM_ENABLE_SAMPLING</code><a class="headerlink" href="#envvar-CALI_LIBPFM_ENABLE_SAMPLING" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether to record event samples. If set, will trigger a snapshot
+</dd>
+<dt>CALI_LIBPFM_ENABLE_SAMPLING</dt><dd><p>Whether to record event samples. If set, will trigger a snapshot
 containing all sampled attributes listed in
 CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have
 occurred.</p>
 <p>Default: true</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_RECORD_COUNTERS">
-<code class="sig-name descname">CALI_LIBPFM_RECORD_COUNTERS</code><a class="headerlink" href="#envvar-CALI_LIBPFM_RECORD_COUNTERS" title="Permalink to this definition">¶</a></dt>
-<dd><p>If set, counter values of all active events will be recorded
+</dd>
+<dt>CALI_LIBPFM_RECORD_COUNTERS</dt><dd><p>If set, counter values of all active events will be recorded
 at every Caliper snapshot.</p>
 <p>Default: true</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_SAMPLE_ATTRIBUTES">
-<code class="sig-name descname">CALI_LIBPFM_SAMPLE_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_LIBPFM_SAMPLE_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of attributes to record for each sample.</p>
+</dd>
+<dt>CALI_LIBPFM_SAMPLE_ATTRIBUTES</dt><dd><p>Comma-separated list of attributes to record for each sample.</p>
 <p>Available entries are:</p>
 <blockquote>
 <div><p>ip             Instruction pointer
@@ -728,23 +683,15 @@ data_src       Encoding for memory resource (L1, L2, DRAM etc.)*</p>
 <p>*available only for certain events.</p>
 </div></blockquote>
 <p>Default: ip,time,tid,cpu</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_PERIOD">
-<code class="sig-name descname">CALI_LIBPFM_PERIOD</code><a class="headerlink" href="#envvar-CALI_LIBPFM_PERIOD" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sampling period for each event (valid when sampling is enabled).
+</dd>
+<dt>CALI_LIBPFM_PERIOD</dt><dd><p>Sampling period for each event (valid when sampling is enabled).
 When set to a value N, a sample will  be recorded after every N
 number of events has occurred.</p>
 <p>For multiple events, this should be a comma-separated list for the
 periods of respective events.</p>
 <p>Default: 20000000</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_PRECISE_IP">
-<code class="sig-name descname">CALI_LIBPFM_PRECISE_IP</code><a class="headerlink" href="#envvar-CALI_LIBPFM_PRECISE_IP" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether to set (precise) for events that support precise ip. Some
+</dd>
+<dt>CALI_LIBPFM_PRECISE_IP</dt><dd><p>Whether to set (precise) for events that support precise ip. Some
 events require (precise) to be set, for others it is optional (see
 output of libpfm’s showevtinfo tool
 <a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
@@ -753,12 +700,8 @@ to determine when it is available or required).</p>
 precise_ip values of respective events.</p>
 <p>May be set to either 0, 1, or 2.</p>
 <p>Default: 0</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_LIBPFM_CONFIG1">
-<code class="sig-name descname">CALI_LIBPFM_CONFIG1</code><a class="headerlink" href="#envvar-CALI_LIBPFM_CONFIG1" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extra event configuration. Some events require an additional
+</dd>
+<dt>CALI_LIBPFM_CONFIG1</dt><dd><p>Extra event configuration. Some events require an additional
 parameter to configure behavior, such as latency threshold (see
 output of libpfm’s showevtinfo tool
 <a class="reference external" href="https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/">https://sourceforge.net/p/perfmon2/libpfm4/ci/master/tree/examples/</a>
@@ -766,8 +709,8 @@ to determine when it is available or required).</p>
 <p>For multiple events, this should be a comma-separated list for the
 config1 values of respective events.</p>
 <p>Default: 0</p>
-</dd></dl>
-
+</dd>
+</dl>
 <p>The following example shows how to configure PEBS memory access sampling
 with a latency threshold (available on SandyBridge, IvyBridge,
 Haswell):</p>
@@ -788,26 +731,17 @@ MPI functions to track by setting <code class="docutils literal notranslate"><sp
 instrumented.</p>
 <p>MPI function names are stored in the <code class="docutils literal notranslate"><span class="pre">mpi.function</span></code> attribute, and
 the MPI rank in the <code class="docutils literal notranslate"><span class="pre">mpi.rank</span></code> attribute.</p>
-<p>Note that you have to link the <cite>libcaliper-mpi</cite> library with the
-application in addition to the regular Caliper libraries to obtain MPI
-information.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_MPI_WHITELIST">
-<code class="sig-name descname">CALI_MPI_WHITELIST</code><a class="headerlink" href="#envvar-CALI_MPI_WHITELIST" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of MPI functions to instrument. Only
+<dl class="simple">
+<dt>CALI_MPI_WHITELIST</dt><dd><p>Comma-separated list of MPI functions to instrument. Only
 whitelisted functions will be instrumented.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_MPI_BLACKLIST">
-<code class="sig-name descname">CALI_MPI_BLACKLIST</code><a class="headerlink" href="#envvar-CALI_MPI_BLACKLIST" title="Permalink to this definition">¶</a></dt>
-<dd><p>Comma-separated list of MPI functions that fill be filtered. If a
+</dd>
+<dt>CALI_MPI_BLACKLIST</dt><dd><p>Comma-separated list of MPI functions that fill be filtered. If a
 blacklist has been set, all functions except for the ones in the
 blacklist will be instrumented.  If both whitelist and blacklist
 are set, only whitelisted functions will be instrumented, and the
 blacklist will be applied to the whitelisted functions.</p>
-</dd></dl>
-
+</dd>
+</dl>
 <div class="section" id="mpi-message-tracing-experimental">
 <h3>MPI message tracing (EXPERIMENTAL)<a class="headerlink" href="#mpi-message-tracing-experimental" title="Permalink to this headline">¶</a></h3>
 <p>The MPI service can record communication information about
@@ -815,12 +749,10 @@ point-to-point messages being sent and received, as well as collective
 communications. When enabled, message tracing will create snapshot
 records for individual point-to-point messages sent or received
 and for collective operations a process participates in.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_MPI_MSG_TRACING">
-<code class="sig-name descname">CALI_MPI_MSG_TRACING</code><a class="headerlink" href="#envvar-CALI_MPI_MSG_TRACING" title="Permalink to this definition">¶</a></dt>
-<dd><p>Enable message tracing. Default: false</p>
-</dd></dl>
-
+<dl class="simple">
+<dt>CALI_MPI_MSG_TRACING</dt><dd><p>Enable message tracing. Default: false</p>
+</dd>
+</dl>
 <p>Notes:</p>
 <ul class="simple">
 <li><p>Communication records will only be created for MPI functions
@@ -995,40 +927,32 @@ Enabling the mpireport service will trigger a flush during
 MPI_Finalize.</p>
 <p>The <a class="reference internal" href="#mpi-service"><span class="std std-ref">mpi</span></a> service must be enabled for mpireport
 to work.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_MPIREPORT_FILENAME">
-<code class="sig-name descname">CALI_MPIREPORT_FILENAME</code><a class="headerlink" href="#envvar-CALI_MPIREPORT_FILENAME" title="Permalink to this definition">¶</a></dt>
-<dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
+<dl>
+<dt>CALI_MPIREPORT_FILENAME</dt><dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
 to print to the standard output or error streams, respectively.</p>
 <p>Similar to the <cite>recorder</cite> service, the file name may contain fields
 which will be substituted by attribute values (see <cite>recorder</cite>
 service description).</p>
 <p>Default: stdout</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_MPIREPORT_CONFIG">
-<code class="sig-name descname">CALI_MPIREPORT_CONFIG</code><a class="headerlink" href="#envvar-CALI_MPIREPORT_CONFIG" title="Permalink to this definition">¶</a></dt>
-<dd><p>An aggregation and formatting specification in CalQL syntax
-(<a class="reference internal" href="calql.html"><span class="doc">The Caliper query language</span></a>).</p>
+</dd>
+<dt>CALI_MPIREPORT_CONFIG</dt><dd><p>An aggregation and formatting specification in CalQL syntax
+(<a class="reference internal" href="calql.html"><span class="doc">The CalQL query language</span></a>).</p>
 <p>Default: empty; all attributes in the snapshots will be printed.</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="papi">
 <span id="papi-service"></span><h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this headline">¶</a></h2>
 <p>The PAPI service collects hardware counter information through the
 PAPI library.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_PAPI_COUNTERS">
-<code class="sig-name descname">CALI_PAPI_COUNTERS</code><a class="headerlink" href="#envvar-CALI_PAPI_COUNTERS" title="Permalink to this definition">¶</a></dt>
-<dd><p>The PAPI counters to read as comma-separated list.
+<dl class="simple">
+<dt>CALI_PAPI_COUNTERS</dt><dd><p>The PAPI counters to read as comma-separated list.
 Available counters can be found with the <cite>papi_avail</cite> command
 provided by PAPI. If successfull, snapshots will contain
 attributes named <code class="docutils literal notranslate"><span class="pre">papi.COUNTER_NAME</span></code>. Their value represents the
 increase of that counter since the previous snapshot.</p>
-</dd></dl>
-
+</dd>
+</dl>
 <p>Example:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>event,papi,trace,report
 $ <span class="nv">CALI_PAPI_COUNTERS</span><span class="o">=</span>PAPI_TOT_CYC,PAPI_L1_DCM
@@ -1066,10 +990,8 @@ execution.</p>
 <p>You can also set the directory and filename that should be used;
 by default, the recorder service will auto-generate a
 file name.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_RECORDER_FILENAME-stdout-stderr-filename-pattern">
-<span id="envvar-CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)"></span><code class="sig-name descname">CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)</code><a class="headerlink" href="#envvar-CALI_RECORDER_FILENAME-stdout-stderr-filename-pattern" title="Permalink to this definition">¶</a></dt>
-<dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
+<dl>
+<dt>CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)</dt><dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
 to print to the standard output or error streams, respectively.</p>
 <p>The file name string can contain fields, denoted by <code class="docutils literal notranslate"><span class="pre">%attribute_name%</span></code>,
 which will be replaced with attribute values. For example, in an MPI
@@ -1078,16 +1000,12 @@ will create files <code class="docutils literal notranslate"><span class="pre">c
 mpi rank. For this to work, the attributes named in the fields need to
 be set on the blackboard during the flush phase.</p>
 <p>Default: not set, auto-generates a unique file name.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_RECORDER_DIRECTORY-directory-name">
-<span id="envvar-CALI_RECORDER_DIRECTORY=(directory name)"></span><code class="sig-name descname">CALI_RECORDER_DIRECTORY=(directory name)</code><a class="headerlink" href="#envvar-CALI_RECORDER_DIRECTORY-directory-name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Directory to write context trace files to. The directory must exist,
+</dd>
+<dt>CALI_RECORDER_DIRECTORY=(directory name)</dt><dd><p>Directory to write context trace files to. The directory must exist,
 Caliper does not create it. Default: not set, use current working
 directory.</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="report">
 <span id="report-service"></span><h2>Report<a class="headerlink" href="#report" title="Permalink to this headline">¶</a></h2>
@@ -1097,10 +1015,8 @@ program end). By default, the report service prints a tabular,
 human-readable report of the collected snapshots. Users can provide a
 query specification in CalQL syntax to define filter, aggregation, and
 formatting options.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_REPORT_FILENAME">
-<code class="sig-name descname">CALI_REPORT_FILENAME</code><a class="headerlink" href="#envvar-CALI_REPORT_FILENAME" title="Permalink to this definition">¶</a></dt>
-<dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
+<dl>
+<dt>CALI_REPORT_FILENAME</dt><dd><p>File name of the output file. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
 to print to the standard output or error streams, respectively.</p>
 <p>Similar to the <cite>recorder</cite> service, the file name may contain fields
 which will be substituted by attribute values (see <cite>recorder</cite>
@@ -1108,15 +1024,11 @@ service description), for example to create individual
 <code class="docutils literal notranslate"><span class="pre">report-0.txt</span></code>, <code class="docutils literal notranslate"><span class="pre">report-1.txt</span></code> etc. files for each rank in a
 multi-process program.</p>
 <p>Default: stdout</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_REPORT_CONFIG">
-<code class="sig-name descname">CALI_REPORT_CONFIG</code><a class="headerlink" href="#envvar-CALI_REPORT_CONFIG" title="Permalink to this definition">¶</a></dt>
-<dd><p>A formatting specification in CalQL syntax (<a class="reference internal" href="calql.html"><span class="doc">The Caliper query language</span></a>).</p>
+</dd>
+<dt>CALI_REPORT_CONFIG</dt><dd><p>A formatting specification in CalQL syntax (<a class="reference internal" href="calql.html"><span class="doc">The CalQL query language</span></a>).</p>
 <p>Default: empty; all attributes in the snapshots will be printed.</p>
-</dd></dl>
-
+</dd>
+</dl>
 <p>Example: Consider the following report configuration and list of
 flushed snapshots:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_REPORT_CONFIG</span><span class="o">=</span><span class="s2">&quot;SELECT function,time.duration WHERE phase=loop ORDER BY time.duration FORMAT table&quot;</span>
@@ -1148,12 +1060,10 @@ annotations.</p>
 <p>Caliper must be initialized on each thread that should be
 sampled. This can be done explicitly via the annotation API, or via
 the <a class="reference internal" href="#pthread-service"><span class="std std-ref">pthread</span></a> service for child threads.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_SAMPLER_FREQUENCY">
-<code class="sig-name descname">CALI_SAMPLER_FREQUENCY</code><a class="headerlink" href="#envvar-CALI_SAMPLER_FREQUENCY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sampling frequency in Hz. Default: 10</p>
-</dd></dl>
-
+<dl class="simple">
+<dt>CALI_SAMPLER_FREQUENCY</dt><dd><p>Sampling frequency in Hz. Default: 10</p>
+</dd>
+</dl>
 <p>When active, the sampler service regularly triggers snapshots with the
 specified frequency. Each snapshot triggered by the sampler service
 contains a <code class="docutils literal notranslate"><span class="pre">cali.sampler.pc</span></code> attribute with the program address
@@ -1180,53 +1090,31 @@ attribute <code class="docutils literal notranslate"><span class="pre">address</
 added in the <code class="docutils literal notranslate"><span class="pre">source.function#address</span></code> and <code class="docutils literal notranslate"><span class="pre">sourceloc#address</span></code>
 attributes, respectively. If a symbol lookup
 was unsuccessful for any reason, the value is set to <cite>UNKNOWN</cite>.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_ATTRIBUTES">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_ATTRIBUTES</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_ATTRIBUTES" title="Permalink to this definition">¶</a></dt>
-<dd><p>Explicitly select address attributes for which to perform symbol
+<dl class="simple">
+<dt>CALI_SYMBOLLOOKUP_ATTRIBUTES</dt><dd><p>Explicitly select address attributes for which to perform symbol
 lookups. Colon-separated list. Default: empty, selects address
 attributes automatically via <cite>class.symboladdress</cite> attribute class.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform function name lookup. <cite>TRUE</cite> or <cite>FALSE</cite>, default <cite>TRUE</cite>.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform source file and line number lookup. <cite>TRUE</cite> or <cite>FALSE</cite>,
+</dd>
+<dt>CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS</dt><dd><p>Perform function name lookup. <cite>TRUE</cite> or <cite>FALSE</cite>, default <cite>TRUE</cite>.</p>
+</dd>
+<dt>CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC</dt><dd><p>Perform source file and line number lookup. <cite>TRUE</cite> or <cite>FALSE</cite>,
 default <cite>TRUE</cite>. Combines file and line information in the
 <code class="docutils literal notranslate"><span class="pre">sourceloc#address</span></code> attribute, e.g. <code class="docutils literal notranslate"><span class="pre">mysource.cpp:42</span></code> for file
 “mysource.cpp” and line number 42.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_FILE">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_LOOKUP_FILE</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_FILE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform source file lookup, and writes the file name in the
+</dd>
+<dt>CALI_SYMBOLLOOKUP_LOOKUP_FILE</dt><dd><p>Perform source file lookup, and writes the file name in the
 <code class="docutils literal notranslate"><span class="pre">source.file#address</span></code> attribute. <cite>TRUE</cite> or <cite>FALSE</cite>,
 default <cite>FALSE</cite>.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_LINE">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_LOOKUP_LINE</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_LINE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform source line lookup, and writes the line number in the
+</dd>
+<dt>CALI_SYMBOLLOOKUP_LOOKUP_LINE</dt><dd><p>Perform source line lookup, and writes the line number in the
 <code class="docutils literal notranslate"><span class="pre">source.line#address</span></code> attribute. <cite>TRUE</cite> or <cite>FALSE</cite>,
 default <cite>FALSE</cite>.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_SYMBOLLOOKUP_LOOKUP_MODULE">
-<code class="sig-name descname">CALI_SYMBOLLOOKUP_LOOKUP_MODULE</code><a class="headerlink" href="#envvar-CALI_SYMBOLLOOKUP_LOOKUP_MODULE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Perform module name lookup, and writes the module number in the
+</dd>
+<dt>CALI_SYMBOLLOOKUP_LOOKUP_MODULE</dt><dd><p>Perform module name lookup, and writes the module number in the
 <code class="docutils literal notranslate"><span class="pre">module#address</span></code> attribute. <cite>TRUE</cite> or <cite>FALSE</cite>,
 default <cite>FALSE</cite>.</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="sysalloc">
 <h2>Sysalloc<a class="headerlink" href="#sysalloc" title="Permalink to this headline">¶</a></h2>
@@ -1258,19 +1146,13 @@ $ ./test/cali-basic
 <span class="o">==</span> CALIPER: Finished
 </pre></div>
 </div>
-<dl class="std envvar">
-<dt id="envvar-CALI_TEXTLOG_TRIGGER-attr1-attr2-...">
-<span id="envvar-CALI_TEXTLOG_TRIGGER=attr1:attr2:..."></span><code class="sig-name descname">CALI_TEXTLOG_TRIGGER=attr1:attr2:...</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_TRIGGER-attr1-attr2-..." title="Permalink to this definition">¶</a></dt>
-<dd><p>Select attributes which trigger a text log output. Note that the <cite>event</cite>
+<dl>
+<dt>CALI_TEXTLOG_TRIGGER</dt><dd><p>Select attributes which trigger a text log output. Note that the <cite>event</cite>
 service must be active in order to trigger snapshots in the first place,
 and the attributes selected here must be in the list of attributes that
 trigger snapshots (defined by <cite>CALI_EVENT_TRIGGER</cite>).</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TEXTLOG_FORMATSTRING-formatstring">
-<span id="envvar-CALI_TEXTLOG_FORMATSTRING=(formatstring)"></span><code class="sig-name descname">CALI_TEXTLOG_FORMATSTRING=(formatstring)</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_FORMATSTRING-formatstring" title="Permalink to this definition">¶</a></dt>
-<dd><p>Define what to print. The formatstring can contain fields, denoted by
+</dd>
+<dt>CALI_TEXTLOG_FORMATSTRING</dt><dd><p>Define what to print. The formatstring can contain fields, denoted by
 <code class="docutils literal notranslate"><span class="pre">%attribute_name%</span></code>, which prints the value of an attribute. Optionally,
 a field can contain a width specification, denoted by <code class="docutils literal notranslate"><span class="pre">[width]</span></code>, to set
 the minimum width of a field. Any other text is printed verbatim.
@@ -1284,65 +1166,43 @@ log entry might look like this:</p>
 </div>
 <p>Default: empty; Caliper will automatically create a format string based on
 the selected trigger attributes.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TEXTLOG_FILENAME-stdout-stderr-filename">
-<span id="envvar-CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)"></span><code class="sig-name descname">CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)</code><a class="headerlink" href="#envvar-CALI_TEXTLOG_FILENAME-stdout-stderr-filename" title="Permalink to this definition">¶</a></dt>
-<dd><p>File name for the text log. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
+</dd>
+<dt>CALI_TEXTLOG_FILENAME</dt><dd><p>File name for the text log. May be set to <code class="docutils literal notranslate"><span class="pre">stdout</span></code> or <code class="docutils literal notranslate"><span class="pre">stderr</span></code>
 to print to the standard output or error streams, respectively.</p>
 <p>Default: stdout</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="timestamp">
 <span id="timestamp-service"></span><h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
 <p>The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
-<dl class="std envvar">
-<dt id="envvar-CALI_TIMER_SNAPSHOT_DURATION-true-false">
-<span id="envvar-CALI_TIMER_SNAPSHOT_DURATION=(true|false)"></span><code class="sig-name descname">CALI_TIMER_SNAPSHOT_DURATION=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_SNAPSHOT_DURATION-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Measure duration (in microseconds) of the context epoch (i.e., the
+<dl>
+<dt>CALI_TIMER_SNAPSHOT_DURATION</dt><dd><p>Measure duration (in microseconds) of the context epoch (i.e., the
 time between two consecutive context snapshots). The value will be
 saved in the snapshot record as attribute <code class="docutils literal notranslate"><span class="pre">time.duration</span></code>.</p>
 <p>Default: true</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TIMER_OFFSET-true-false">
-<span id="envvar-CALI_TIMER_OFFSET=(true|false)"></span><code class="sig-name descname">CALI_TIMER_OFFSET=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_OFFSET-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Include the time offset (time since program start, in microseconds)
+</dd>
+<dt>CALI_TIMER_OFFSET</dt><dd><p>Include the time offset (time since program start, in microseconds)
 with each context snapshot. The value will be saved in the snapshot
 record as attribute <code class="docutils literal notranslate"><span class="pre">time.offset</span></code>.</p>
 <p>Default: false</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TIMER_TIMESTAMP-true-false">
-<span id="envvar-CALI_TIMER_TIMESTAMP=(true|false)"></span><code class="sig-name descname">CALI_TIMER_TIMESTAMP=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_TIMESTAMP-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Include absolute timestamp (time since UNIX epoch, in seconds) with
+</dd>
+<dt>CALI_TIMER_TIMESTAMP</dt><dd><p>Include absolute timestamp (time since UNIX epoch, in seconds) with
 each context snapshot. The value will be saved in the snapshot record
 as attribute <code class="docutils literal notranslate"><span class="pre">time.timestamp</span></code>.</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TIMER_INCLUSIVE_DURATION-true-false">
-<span id="envvar-CALI_TIMER_INCLUSIVE_DURATION=(true|false)"></span><code class="sig-name descname">CALI_TIMER_INCLUSIVE_DURATION=(true|false)</code><a class="headerlink" href="#envvar-CALI_TIMER_INCLUSIVE_DURATION-true-false" title="Permalink to this definition">¶</a></dt>
-<dd><p>Calulates inclusive times for nested regions. The value will be saved
+</dd>
+<dt>CALI_TIMER_INCLUSIVE_DURATION</dt><dd><p>Calulates inclusive times for nested regions. The value will be saved
 in the snapshot record as attribute <code class="docutils literal notranslate"><span class="pre">time.inclusive.duration</span></code>.</p>
 <p>The event service with event trigger information generation needs
 to be enabled for this feature.</p>
 <p>Default: true</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TIMER_UNIT-sec-usec">
-<span id="envvar-CALI_TIMER_UNIT=(sec|usec)"></span><code class="sig-name descname">CALI_TIMER_UNIT=(sec|usec)</code><a class="headerlink" href="#envvar-CALI_TIMER_UNIT-sec-usec" title="Permalink to this definition">¶</a></dt>
-<dd><p>The unit for time duration values (seconds or microseconds).</p>
+</dd>
+<dt>CALI_TIMER_UNIT=(sec|usec)</dt><dd><p>The unit for time duration values (seconds or microseconds).</p>
 <p>Default: sec</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 <div class="section" id="trace">
 <span id="trace-service"></span><h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
@@ -1351,7 +1211,7 @@ to be enabled for this feature.</p>
 <p>The trace service maintains per-thread snapshot buffers. By default,
 trace buffers will grow automatically. This behavior can be changed by
 setting a <em>buffer policy</em>. There are three options:</p>
-<dl class="simple">
+<dl>
 <dt>Grow</dt><dd><p>Grow the buffer when it is full. This is the default.</p>
 </dd>
 <dt>Stop</dt><dd><p>Stop recording when the buffer is full.</p>
@@ -1360,24 +1220,16 @@ setting a <em>buffer policy</em>. There are three options:</p>
 buffer flushes can significantly perturb the program’s
 performance.</p>
 </dd>
-</dl>
-<dl class="std envvar">
-<dt id="envvar-CALI_TRACE_BUFFER_SIZE">
-<code class="sig-name descname">CALI_TRACE_BUFFER_SIZE</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_SIZE" title="Permalink to this definition">¶</a></dt>
-<dd><p>Size of the trace buffer, in Megabytes. With the <cite>grow</cite> buffer
+<dt>CALI_TRACE_BUFFER_SIZE</dt><dd><p>Size of the trace buffer, in Megabytes. With the <cite>grow</cite> buffer
 policy, this is the size of a trace buffer <em>chunk</em>: When the buffer
 is full, another chunk of this size is added.</p>
 <p>Default: 2 (MiB).</p>
-</dd></dl>
-
-<dl class="std envvar">
-<dt id="envvar-CALI_TRACE_BUFFER_POLICY">
-<code class="sig-name descname">CALI_TRACE_BUFFER_POLICY</code><a class="headerlink" href="#envvar-CALI_TRACE_BUFFER_POLICY" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the trace buffer policy (see above). Either <cite>grow</cite>, <cite>stop</cite>, or
+</dd>
+<dt>CALI_TRACE_BUFFER_POLICY</dt><dd><p>Sets the trace buffer policy (see above). Either <cite>grow</cite>, <cite>stop</cite>, or
 <cite>flush</cite>.</p>
 <p>Default: <cite>grow</cite>.</p>
-</dd></dl>
-
+</dd>
+</dl>
 </div>
 </div>
 
@@ -1435,8 +1287,8 @@ is full, another chunk of this size is added.</p>
   <p class="topless"><a href="workflow.html"
                         title="previous chapter">Architecture and workflow</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="ThirdPartyTools.html"
-                        title="next chapter">Connection to third-party tools</a></p>
+  <p class="topless"><a href="calql.html"
+                        title="next chapter">The CalQL query language</a></p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -1465,12 +1317,12 @@ is full, another chunk of this size is added.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="calql.html" title="The CalQL query language"
              >next</a> |</li>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

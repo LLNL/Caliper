@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>The Caliper query language &#8212; Caliper 2.4.0 documentation</title>
+    <title>The CalQL query language &#8212; Caliper 2.5.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Output formatting" href="OutputFormats.html" />
-    <link rel="prev" title="Connection to third-party tools" href="ThirdPartyTools.html" /> 
+    <link rel="prev" title="Caliper services" href="services.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,9 +29,9 @@
           <a href="OutputFormats.html" title="Output formatting"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="services.html" title="Caliper services"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -40,8 +40,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="the-caliper-query-language">
-<h1>The Caliper query language<a class="headerlink" href="#the-caliper-query-language" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="the-calql-query-language">
+<h1>The CalQL query language<a class="headerlink" href="#the-calql-query-language" title="Permalink to this headline">¶</a></h1>
 <p>The Caliper Query Language (CalQL) is used to filter, aggregate, and
 create reports from Caliper data in Caliper’s data processing tools
 (cali-query) and report services. Its syntax is very similar to SQL.</p>
@@ -62,6 +62,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">ratio</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">c</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>     <span class="c1"># computes a = &lt;b&gt;/&lt;c&gt;*S</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># computes &lt;a&gt; = &lt;b&gt;*S</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">truncate</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>      <span class="c1"># computes &lt;a&gt; = &lt;b&gt; - mod(&lt;b&gt;, S)</span>
+  <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">first</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># &lt;a&gt; is the first of &lt;a0&gt;, &lt;a1&gt;, ... found in the input record</span>
 
 <span class="n">SELECT</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                <span class="c1"># Select attributes and define aggregations (i.e., select columns)</span>
   <span class="o">*</span>                          <span class="c1"># select all attributes</span>
@@ -77,7 +78,9 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>             <span class="c1"># computes sum of &lt;a&gt; multiplied by scaling factor S</span>
   <span class="n">inclusive_scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>   <span class="c1"># computes inclusive scaled sum of &lt;a&gt; in a nested hierarchy</span>
   <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;</span><span class="p">)</span> <span class="c1"># computes inclusive percent-of-total of &lt;a&gt; in a nested hierarchy</span>
+  <span class="nb">any</span><span class="p">(</span><span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span><span class="p">)</span>           <span class="c1"># pick one value for &lt;attribute&gt; out of all records in grouping</span>
   <span class="o">...</span> <span class="n">AS</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>              <span class="c1"># use &lt;name&gt; as column header in tree or table formatter</span>
+  <span class="o">...</span> <span class="n">UNIT</span> <span class="o">&lt;</span><span class="n">unit</span><span class="o">&gt;</span>            <span class="c1"># use &lt;unit&gt; as unit name</span>
 
 <span class="n">GROUP</span> <span class="n">BY</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>              <span class="c1"># Define aggregation grouping (what to aggregate over, e.g. &quot;function,mpi.rank&quot;)</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># include &lt;attribute&gt; in grouping</span>
@@ -85,7 +88,9 @@ table, sorted by time, is accomplished with the following statement:</p>
 
 <span class="n">WHERE</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                 <span class="c1"># define filter (i.e., select records/rows)</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>                <span class="c1"># records where &lt;attribute&gt; exists</span>
-  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;=&lt;</span><span class="n">value</span><span class="o">&gt;</span>        <span class="c1"># records where &lt;attribute&gt;=&lt;value&gt;</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; = &lt;value&gt;</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">&lt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; &gt; &lt;value&gt;</span>
+  <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; &lt; &lt;value&gt;</span>
   <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>            <span class="c1"># records where &lt;attribute&gt; does not exist</span>
   <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;=&lt;</span><span class="n">value</span><span class="o">&gt;</span>    <span class="c1"># records where &lt;attribute&gt;!=&lt;value&gt;</span>
 
@@ -119,6 +124,11 @@ subsequent aggregations:</p>
 <p>For example, we can use the truncate() operator on an iteration counter to
 aggregate blocks of 10 iterations in a time-series profile:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">block</span><span class="o">=</span><span class="n">truncate</span><span class="p">(</span><span class="n">iteration</span><span class="c1">#mainloop,10) SELECT block,sum(time.duration) GROUP BY block</span>
+</pre></div>
+</div>
+<p>The first() operator returns the first attribute out of a list of attribute
+names found in an input record. It can also be used to rename attributes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">time</span><span class="o">=</span><span class="n">first</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="nb">sum</span><span class="c1">#time.duration) SELECT sum(time) AS Time GROUP BY prop:nested</span>
 </pre></div>
 </div>
 <p>LET terms have the general form</p>
@@ -276,7 +286,7 @@ attribute name and not an alias assigned with <code class="docutils literal notr
             </a></p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">The Caliper query language</a><ul>
+<li><a class="reference internal" href="#">The CalQL query language</a><ul>
 <li><a class="reference internal" href="#quick-reference">Quick reference</a></li>
 <li><a class="reference internal" href="#let">LET</a></li>
 <li><a class="reference internal" href="#select">SELECT</a></li>
@@ -289,8 +299,8 @@ attribute name and not an alias assigned with <code class="docutils literal notr
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="ThirdPartyTools.html"
-                        title="previous chapter">Connection to third-party tools</a></p>
+  <p class="topless"><a href="services.html"
+                        title="previous chapter">Caliper services</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="OutputFormats.html"
                         title="next chapter">Output formatting</a></p>
@@ -325,9 +335,9 @@ attribute name and not an alias assigned with <code class="docutils literal notr
           <a href="OutputFormats.html" title="Output formatting"
              >next</a> |</li>
         <li class="right" >
-          <a href="ThirdPartyTools.html" title="Connection to third-party tools"
+          <a href="services.html" title="Caliper services"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

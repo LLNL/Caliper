@@ -1,25 +1,16 @@
-Build and link
+Building Caliper
 ================================
 
 Building and installing Caliper requires cmake, a current C++11-compatible
-compiler, and a Python interpreter.
-
-Building Caliper
---------------------------------
-
-To build Caliper manually, clone it from the
+compiler, and a Python interpreter. To build Caliper manually, clone it from the
 `github repository <https://github.com/LLNL/Caliper>`_.
-
 Next, configure and build Caliper, e.g.:
 
 .. code-block:: sh
 
      $ cd <path to caliper root directory>
      $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \
-         -DCMAKE_C_COMPILER=<path to c-compiler> \
-         -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
-         ..
+     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> ..
      $ make
      $ make install
 
@@ -43,21 +34,14 @@ BUILD_TESTING
   Build unit tests.
 
 WITH_ADIAK
-  Enable Adiak support. Point CMake to adiak CMake module, e.g. with
-  ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
-
-WITH_CALLPATH
-  Enables callpath unwinding support. Requires libunwind.
+  Enable support for recording program metadata with the 
+  `Adiak <https://github.com/LLNL/Adiak>`_ library. Point CMake to adiak CMake 
+  module, e.g. with ``-Dadiak_PREFIX=<path-to-adiak>/lib/cmake/adiak``.
 
 WITH_CUPTI
   Enable support for CUDA performance analysis (wrapping of driver/runtime API
   calls and CUDA activity tracing). Set CUpti installation dir
   with CUPTI_PREFIX.
-
-WITH_DYNINST
-  Enable address-to-symbol lookup using Dyninst.
-  Point CMake to the Dyninst CMake module, e.g. with
-  ``-DDyninst_PREFIX=<path-to-dyninst>/lib/cmake/Dyninst``.
 
 WITH_FORTRAN
   Build the Fortran wrappers.
@@ -68,9 +52,16 @@ WITH_GOTCHA
   If Gotcha is disabled, MPI wrappers use the PMPI interface.
   Requires Linux.
 
+WITH_LIBDW
+  Enables libdw support for DWARF symbol lookup. Required for most 
+  sampling-based configurations.
+
 WITH_LIBPFM
   Enable Linux perf_event sampling. Set libpfm installation dir
   in LIBPFM_INSTALL.
+
+WITH_LIBUNWIND
+  Enables libunwind support for call-path unwinding.
 
 WITH_MPI
   Build with MPI support.

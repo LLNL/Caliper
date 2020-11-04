@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Manual runtime configuration &#8212; Caliper 2.4.0 documentation</title>
+    <title>Manual configuration &#8212; Caliper 2.5.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Architecture and workflow" href="workflow.html" />
-    <link rel="prev" title="Fortran support" href="FortranSupport.html" /> 
+    <link rel="prev" title="Built-in profiling configurations" href="BuiltinConfigurations.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,9 +29,9 @@
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="FortranSupport.html" title="Fortran support"
+          <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -40,9 +40,10 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="manual-runtime-configuration">
-<h1>Manual runtime configuration<a class="headerlink" href="#manual-runtime-configuration" title="Permalink to this headline">¶</a></h1>
-<p>When not using the ConfigManager API (<a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">Configuration manager API</span></a>),
+  <div class="section" id="manual-configuration">
+<h1>Manual configuration<a class="headerlink" href="#manual-configuration" title="Permalink to this headline">¶</a></h1>
+<p>When not using built-in performance measurement configurations (<a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>),
+through the ConfigManager API or the <cite>CALI_CONFIG</cite> environment variable,
 Caliper can be configured manually by setting configuration
 variables through the environment or configuration files.</p>
 <p>Configuration variables have the form</p>
@@ -116,28 +117,6 @@ the profile selection by setting a different value in the
 variables always override values set in a configuration file,
 regardless of the selected profile.</p>
 </div>
-<div class="section" id="built-in-configuration-profiles">
-<h2>Built-in configuration profiles<a class="headerlink" href="#built-in-configuration-profiles" title="Permalink to this headline">¶</a></h2>
-<p>Caliper provides built-in configuration profiles for common use
-cases. Currently, the following profiles are defined:</p>
-<dl class="simple">
-<dt>event-trace</dt><dd><p>Records and writes a trace of begin/end records in .cali format</p>
-</dd>
-<dt>runtime-report</dt><dd><p>Prints time spent in annotated regions for a non-MPI program</p>
-</dd>
-<dt>mpi-runtime-report</dt><dd><p>Prints time spent in annotated regions for MPI programs.
-Results are aggregated across MPI ranks.</p>
-</dd>
-</dl>
-<p>Configuration profiles, including built-in profiles, can be
-extended. For example, the following configuration file</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># [mpi-trace]</span>
-<span class="n">CALI_MPI_WHITELIST</span><span class="o">=</span><span class="n">MPI_Allreduce</span>
-</pre></div>
-</div>
-<p>adds the <code class="docutils literal notranslate"><span class="pre">CALI_MPI_WHITELIST</span></code> entry to the built-in <cite>mpi-runtime-report</cite>
-profile.</p>
-</div>
 <div class="section" id="configuration-variables-reference">
 <h2>Configuration variables reference<a class="headerlink" href="#configuration-variables-reference" title="Permalink to this headline">¶</a></h2>
 <p>This section describes the configuration variables of the Caliper
@@ -145,12 +124,14 @@ runtime system.</p>
 <p>Many Caliper services define additional configuration variables. See
 <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for a list of Caliper services and their
 configuration.</p>
+<dl class="std envvar">
+<dt id="envvar-CALI_CONFIG">
+<code class="sig-name descname">CALI_CONFIG</code><a class="headerlink" href="#envvar-CALI_CONFIG" title="Permalink to this definition">¶</a></dt>
+<dd><p>A configuration string to enable one (or more) of Caliper’s built-in
+performance profiling configurations. See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>.</p>
+</dd></dl>
+
 <dl>
-<dt>CALI_CONFIG_PROFILE</dt><dd><p>A configuration profile name. This can be a profile defined in a
-configuration file, or one of Caliper’s pre-defined configuration
-profiles. E.g. <code class="docutils literal notranslate"><span class="pre">CALI_CONFIG_PROFILE=runtime-report</span></code> selects the
-built-in runtime-report config profile.</p>
-</dd>
 <dt>CALI_CONFIG_FILE</dt><dd><p>Comma-separated list of configuration files. The provided
 configuration files are read in order. Note: this variable can only
 be set as an environment variable or through the configuration API.</p>
@@ -193,18 +174,17 @@ is enabled but no output service.</p>
             </a></p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Manual runtime configuration</a><ul>
+<li><a class="reference internal" href="#">Manual configuration</a><ul>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#configuration-profiles">Configuration profiles</a></li>
-<li><a class="reference internal" href="#built-in-configuration-profiles">Built-in configuration profiles</a></li>
 <li><a class="reference internal" href="#configuration-variables-reference">Configuration variables reference</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="FortranSupport.html"
-                        title="previous chapter">Fortran support</a></p>
+  <p class="topless"><a href="BuiltinConfigurations.html"
+                        title="previous chapter">Built-in profiling configurations</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="workflow.html"
                         title="next chapter">Architecture and workflow</a></p>
@@ -239,9 +219,9 @@ is enabled but no output service.</p>
           <a href="workflow.html" title="Architecture and workflow"
              >next</a> |</li>
         <li class="right" >
-          <a href="FortranSupport.html" title="Fortran support"
+          <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

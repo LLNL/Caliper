@@ -1,0 +1,124 @@
+Getting Started
+================================
+
+Caliper is a library to integrate performance profiling capabilities
+into applications. Applications can enable performance profiling
+at runtime through a configuration API, or users can configure
+profiling through environment variables or config files.
+
+The basic steps to use Caliper are:
+
+* Add source-code annotations around code regions of interest
+* (Optional) Use the ConfigManager API to enable profiling from
+  within the program
+* Link the Caliper runtime library (libcaliper) to the target program
+* Choose a performance measurement configuration at runtime
+
+Build and install
+--------------------------------
+
+You can install Caliper with `Spack <https://github.com/spack/spack>`_, or
+clone it directly from Github:
+
+.. code-block:: sh
+
+    $ git clone https://github.com/LLNL/Caliper.git
+
+Caliper uses CMake and C++11. To build it, run cmake:
+
+.. code-block:: sh
+
+    $ mkdir build && cd build
+    $ cmake ..
+    $ make && make install
+
+There are many build flags to enable optional features, such as `-DWITH_MPI`
+for MPI support. See :doc:`build` for details.
+
+Caliper installs files into the ``lib64``, ``include``, and ``bin`` directories
+under `CMAKE_INSTALL_PREFIX`. To use Caliper, link ``libcaliper`` to the
+target program:
+
+.. code-block:: sh
+
+    $ g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
+
+Source-code annotations
+--------------------------------
+
+Caliper provides source-code annotation APIs for C, C++, and Fortran to mark
+functions, loops, or sections of source-code. Most Caliper performance 
+measurement configurations map performance measurements to the annotated 
+source-code regions.
+
+The example below demonstrates Caliper source-code annotations in C++:
+
+.. code-block:: c++
+
+    #include <caliper/cali.h>
+
+    int main(int argc, char* argv[])
+    {
+        // Mark this function
+        CALI_CXX_MARK_FUNCTION;
+
+        // Mark a region
+        CALI_MARK_BEGIN("init");
+        // ...
+        CALI_MARK_END("init");
+
+        // Mark a loop
+        CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
+
+        for (int i = 0; i < 4; ++i) {
+            // Mark loop iterations
+            CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
+            // ...
+        }
+
+        CALI_CXX_MARK_LOOP_END(mainloop);
+    }
+
+See :doc:`AnnotationAPI` chapter for a complete reference to the C,
+C++, and Fortran annotation APIs.
+
+Performance measurements
+--------------------------------
+
+With the source-code annotations in place, we can run performance measurements.
+Caliper includes many built-in measurement configurations - see 
+:doc:`BuiltinConfigurations`. Use the ``CALI_CONFIG`` environment variable to
+enable a measurement configuration, e.g. `runtime-report` to print the time 
+spent in the annotated regions:
+
+.. code-block:: sh
+
+    $ make cxx-example
+    $ CALI_CONFIG=runtime-report ./examples/apps/cxx-example
+    Path       Min time/rank Max time/rank Avg time/rank Time %    
+    main            0.000110      0.000110      0.000110  6.428989 
+      mainloop      0.000093      0.000093      0.000093  5.435418 
+        foo         0.000647      0.000647      0.000647 37.814144 
+      init          0.000017      0.000017      0.000017  0.993571
+
+Alternatively, use the :doc:`ConfigManagerAPI` to enable measurement 
+configurations directly within the program.
+To use the ConfigManager API, create a `cali::ConfigManager` object, add a
+configuration string with `add()`, start the requested configuration
+channels with `start()`, and trigger output with `flush()`:
+
+.. code-block:: c++
+
+    #include <caliper/cali-manager.h>
+    // ...
+    cali::ConfigManager mgr;
+    mgr.add("runtime-report");
+    // ...
+    mgr.start(); // start requested performance measurement channels
+    // ... (program execution)
+    mgr.flush(); // write performance results
+
+The example in examples/apps/cxx-example.cpp demonstrates how users can provide
+a configuration string on the command line. For complete control, you can also
+select and configure Caliper *services* (:doc:`services`) manually. See 
+:doc:`configuration` to learn more.

@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Configuration manager API &#8212; Caliper 2.4.0 documentation</title>
+    <title>ConfigManager API reference &#8212; Caliper 2.5.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Fortran support" href="FortranSupport.html" />
-    <link rel="prev" title="Source-code annotations" href="AnnotationAPI.html" /> 
+    <link rel="prev" title="Annotation API reference" href="AnnotationAPI.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,9 +29,9 @@
           <a href="FortranSupport.html" title="Fortran support"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code annotations"
+          <a href="AnnotationAPI.html" title="Annotation API reference"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -40,8 +40,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="configuration-manager-api">
-<h1>Configuration manager API<a class="headerlink" href="#configuration-manager-api" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="configmanager-api-reference">
+<h1>ConfigManager API reference<a class="headerlink" href="#configmanager-api-reference" title="Permalink to this headline">¶</a></h1>
 <p>Caliper provides several built-in performance measurement and reporting
 configurations. These can be activated from within a program with the
 <cite>ConfigManager</cite> API using a short configuration string. Configuration
@@ -68,215 +68,6 @@ output with <cite>flush()</cite>:</p>
    <span class="n">mgr</span><span class="p">.</span><span class="n">flush</span><span class="p">();</span> <span class="c1">// write performance results</span>
 <span class="p">}</span>
 </pre></div>
-</div>
-<div class="section" id="configmanager-configuration-string-syntax">
-<h2>ConfigManager Configuration String Syntax<a class="headerlink" href="#configmanager-configuration-string-syntax" title="Permalink to this headline">¶</a></h2>
-<p>A configuration string for the <cite>ConfigManager</cite> class is a comma-separated list
-of <em>configs</em> and <em>parameters</em>.</p>
-<p>A <em>config</em> is the name of one of Caliper’s built-in measurement configurations,
-e.g. <cite>runtime-report</cite> or <cite>event-trace</cite>. Multiple configs can be specified,
-separated by comma.</p>
-<p>Most configs have optional parameters, e.g. <cite>output</cite> to name an output file.
-Parameters can be specified as a list of key-value pairs in parantheses after the
-config name, e.g. <code class="docutils literal notranslate"><span class="pre">runtime-report(output=report.txt,io.bytes=true)</span></code>. For boolean
-parameters, only the key needs to be added to enable it; for example,
-<cite>io.bytes</cite> is equal to <cite>io.bytes=true</cite>.</p>
-<p>Parameters can also be listed separately in the config string, outside of parentheses.
-In that case, the parameter applies to <em>all</em> configs, whereas parameters inside
-parentheses only apply to the  config where they are listed. For example, in
-<code class="docutils literal notranslate"><span class="pre">runtime-report(io.bytes),spot,mem.highwatermark</span></code>, the <cite>mem.highwatermark</cite> option
-will be active in both the runtime-report and spot config, whereas <cite>io.bytes</cite>
-will only be active for runtime-report. Configs and parameters can be listed in
-any order.</p>
-<p>Here is a more complex example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">runtime</span><span class="o">-</span><span class="n">report</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">stdout</span><span class="p">),</span><span class="n">profile</span><span class="o">.</span><span class="n">cuda</span><span class="p">,</span><span class="n">mem</span><span class="o">.</span><span class="n">highwatermark</span><span class="p">,</span><span class="n">event</span><span class="o">-</span><span class="n">trace</span><span class="p">(</span><span class="n">output</span><span class="o">=</span><span class="n">trace</span><span class="o">.</span><span class="n">cali</span><span class="p">,</span><span class="n">trace</span><span class="o">.</span><span class="n">io</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>This will print a runtime profile to stdout, including CUDA API calls and memory
-high-water marks in the profile, and write an event trace with region begin/end and I/O
-operations into the trace.cali file.</p>
-</div>
-<div class="section" id="built-in-configs">
-<h2>Built-in configs<a class="headerlink" href="#built-in-configs" title="Permalink to this headline">¶</a></h2>
-<p>The following list describes the ConfigManager’s built-in configs and their
-parameters. Note that depending on the Caliper build configuration, not all
-configs or options may be available in a particular Caliper installation.</p>
-<dl>
-<dt>event-trace</dt><dd><p>Record a trace of region enter/exit events in .cali format. Options:</p>
-<dl class="simple">
-<dt>event.timestamps</dt><dd><p>Record event timestamps</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>trace.io</dt><dd><p>Trace I/O events</p>
-</dd>
-<dt>trace.mpi</dt><dd><p>Trace I/O events</p>
-</dd>
-</dl>
-</dd>
-<dt>hatchet-region-profile</dt><dd><p>Record a region time profile for processing with hatchet. Options:</p>
-<dl class="simple">
-<dt>adiak.import_categories</dt><dd><p>Adiak import categories. Comma-separated list of integers.</p>
-</dd>
-<dt>io.bytes</dt><dd><p>Report I/O bytes written and read</p>
-</dd>
-<dt>io.bytes.read</dt><dd><p>Report I/O bytes read</p>
-</dd>
-<dt>io.bytes.written</dt><dd><p>Report I/O bytes written</p>
-</dd>
-<dt>io.read.bandwidth</dt><dd><p>Report I/O read bandwidth</p>
-</dd>
-<dt>io.write.bandwidth</dt><dd><p>Report I/O write bandwidth</p>
-</dd>
-<dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>output.format</dt><dd><p>Output format (‘hatchet’, ‘cali’, ‘json’)</p>
-</dd>
-<dt>profile.cuda</dt><dd><p>Profile CUDA API functions</p>
-</dd>
-<dt>profile.mpi</dt><dd><p>Profile MPI functions</p>
-</dd>
-<dt>topdown-counters.all</dt><dd><p>Raw counter values for Intel top-down analysis (all levels)</p>
-</dd>
-<dt>topdown-counters.toplevel</dt><dd><p>Raw counter values for Intel top-down analysis (top level)</p>
-</dd>
-<dt>topdown.all</dt><dd><p>Top-down analysis for Intel CPUs (all levels)</p>
-</dd>
-<dt>topdown.toplevel</dt><dd><p>Top-down analysis for Intel CPUs (top level)</p>
-</dd>
-<dt>use.mpi</dt><dd><p>Merge results into a single output stream in MPI programs</p>
-</dd>
-</dl>
-</dd>
-<dt>hatchet-sample-profile</dt><dd><p>Record a sampling profile for processing with hatchet. Options:</p>
-<dl class="simple">
-<dt>adiak.import_categories</dt><dd><p>Adiak import categories. Comma-separated list of integers.</p>
-</dd>
-<dt>lookup.module</dt><dd><p>Lookup source module (.so/.exe)</p>
-</dd>
-<dt>lookup.sourceloc</dt><dd><p>Lookup source location (file+line)</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>output.format</dt><dd><p>Output format (‘hatchet’, ‘cali’, ‘json’)</p>
-</dd>
-<dt>sample.callpath</dt><dd><p>Perform call-stack unwinding</p>
-</dd>
-<dt>sample.frequency</dt><dd><p>Sampling frequency in Hz. Default: 200</p>
-</dd>
-<dt>sample.threads</dt><dd><p>Profile all threads.</p>
-</dd>
-<dt>use.mpi</dt><dd><p>Merge results into a single output stream in MPI programs</p>
-</dd>
-</dl>
-</dd>
-<dt>loop-report</dt><dd><p>Print summary and time-series information for loops. Options:</p>
-<dl class="simple">
-<dt>aggregate_across_ranks</dt><dd><p>Aggregate results across MPI ranks</p>
-</dd>
-<dt>io.bytes</dt><dd><p>Report I/O bytes written and read</p>
-</dd>
-<dt>io.bytes.read</dt><dd><p>Report I/O bytes read</p>
-</dd>
-<dt>io.bytes.written</dt><dd><p>Report I/O bytes written</p>
-</dd>
-<dt>io.read.bandwidth</dt><dd><p>Report I/O read bandwidth</p>
-</dd>
-<dt>io.write.bandwidth</dt><dd><p>Report I/O write bandwidth</p>
-</dd>
-<dt>iteration_interval</dt><dd><p>Measure every N loop iterations</p>
-</dd>
-<dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>summary</dt><dd><p>Print loop summary</p>
-</dd>
-<dt>target_loops</dt><dd><p>List of loops to target. Default: any top-level loop.</p>
-</dd>
-<dt>time_interval</dt><dd><p>Measure after t seconds</p>
-</dd>
-<dt>timeseries</dt><dd><p>Print time series</p>
-</dd>
-<dt>timeseries.maxrows</dt><dd><p>Max number of rows in timeseries display. Set to 0 to show all. Default: 20.</p>
-</dd>
-<dt>topdown.all</dt><dd><p>Top-down analysis for Intel CPUs (all levels)</p>
-</dd>
-<dt>topdown.toplevel</dt><dd><p>Top-down analysis for Intel CPUs (top level)</p>
-</dd>
-</dl>
-</dd>
-<dt>mpi-report</dt><dd><p>Print time spent in MPI functions</p>
-</dd>
-<dt>runtime-report</dt><dd><p>Print a time profile for annotated regions. Options:</p>
-<dl class="simple">
-<dt>aggregate_across_ranks</dt><dd><p>Aggregate results across MPI ranks</p>
-</dd>
-<dt>calc.inclusive</dt><dd><p>Report inclusive instead of exclusive times</p>
-</dd>
-<dt>io.bytes</dt><dd><p>Report I/O bytes written and read</p>
-</dd>
-<dt>io.bytes.read</dt><dd><p>Report I/O bytes read</p>
-</dd>
-<dt>io.bytes.written</dt><dd><p>Report I/O bytes written</p>
-</dd>
-<dt>io.read.bandwidth</dt><dd><p>Report I/O read bandwidth</p>
-</dd>
-<dt>io.write.bandwidth</dt><dd><p>Report I/O write bandwidth</p>
-</dd>
-<dt>max_column_width</dt><dd><p>Maximum column width in the tree display</p>
-</dd>
-<dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>profile.cuda</dt><dd><p>Profile CUDA API functions</p>
-</dd>
-<dt>profile.mpi</dt><dd><p>Profile MPI functions</p>
-</dd>
-<dt>topdown.all</dt><dd><p>Top-down analysis for Intel CPUs (all levels)</p>
-</dd>
-<dt>topdown.toplevel</dt><dd><p>Top-down analysis for Intel CPUs (top level)</p>
-</dd>
-</dl>
-</dd>
-<dt>spot</dt><dd><p>Record a time profile for the Spot web visualization framework. Options:</p>
-<dl class="simple">
-<dt>adiak.import_categories</dt><dd><p>Adiak import categories. Comma-separated list of integers.</p>
-</dd>
-<dt>aggregate_across_ranks</dt><dd><p>Aggregate results across MPI ranks</p>
-</dd>
-<dt>io.bytes</dt><dd><p>Report I/O bytes written and read</p>
-</dd>
-<dt>io.bytes.read</dt><dd><p>Report I/O bytes read</p>
-</dd>
-<dt>io.bytes.written</dt><dd><p>Report I/O bytes written</p>
-</dd>
-<dt>io.read.bandwidth</dt><dd><p>Report I/O read bandwidth</p>
-</dd>
-<dt>io.write.bandwidth</dt><dd><p>Report I/O write bandwidth</p>
-</dd>
-<dt>mem.highwatermark</dt><dd><p>Record memory high-water mark for regions</p>
-</dd>
-<dt>output</dt><dd><p>Output location (‘stdout’, ‘stderr’, or filename)</p>
-</dd>
-<dt>profile.cuda</dt><dd><p>Profile CUDA API functions</p>
-</dd>
-<dt>profile.mpi</dt><dd><p>Profile MPI functions</p>
-</dd>
-<dt>topdown-counters.all</dt><dd><p>Raw counter values for Intel top-down analysis (all levels)</p>
-</dd>
-<dt>topdown-counters.toplevel</dt><dd><p>Raw counter values for Intel top-down analysis (top level)</p>
-</dd>
-<dt>topdown.all</dt><dd><p>Top-down analysis for Intel CPUs (all levels)</p>
-</dd>
-<dt>topdown.toplevel</dt><dd><p>Top-down analysis for Intel CPUs (top level)</p>
-</dd>
-</dl>
-</dd>
-</dl>
 </div>
 <div class="section" id="api-reference">
 <h2>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h2>
@@ -448,6 +239,7 @@ configs or options may be available in a particular Caliper installation.</p>
   <span class="s2">&quot;    </span><span class="se">\&quot;</span><span class="s2">CALI_CHANNEL_FLUSH_ON_EXIT</span><span class="se">\&quot;</span><span class="s2"> : </span><span class="se">\&quot;</span><span class="s2">false</span><span class="se">\&quot;</span><span class="s2"> &quot;</span>
   <span class="s2">&quot;  },&quot;</span>
   <span class="s2">&quot; </span><span class="se">\&quot;</span><span class="s2">categories</span><span class="se">\&quot;</span><span class="s2">  : [ </span><span class="se">\&quot;</span><span class="s2">output</span><span class="se">\&quot;</span><span class="s2"> ],&quot;</span>
+  <span class="s2">&quot; </span><span class="se">\&quot;</span><span class="s2">defaults</span><span class="se">\&quot;</span><span class="s2">    : { </span><span class="se">\&quot;</span><span class="s2">sample.threads</span><span class="se">\&quot;</span><span class="s2">: </span><span class="se">\&quot;</span><span class="s2">true</span><span class="se">\&quot;</span><span class="s2"> }, &quot;</span>
   <span class="s2">&quot; </span><span class="se">\&quot;</span><span class="s2">options</span><span class="se">\&quot;</span><span class="s2">     : &quot;</span>
   <span class="s2">&quot; [ &quot;</span>
   <span class="s2">&quot;  { </span><span class="se">\&quot;</span><span class="s2">name</span><span class="se">\&quot;</span><span class="s2">        : </span><span class="se">\&quot;</span><span class="s2">sample.threads</span><span class="se">\&quot;</span><span class="s2">,&quot;</span>
@@ -477,6 +269,7 @@ configs or options may be available in a particular Caliper installation.</p>
 <li><p><em>services:</em> List of Caliper services this config requires. Note that the config will only be available if all required services are present in Caliper. </p></li>
 <li><p><em>config:</em> A dictionary with Caliper configuration variables required for this config. Note that services will be added automatically based on the <em>services</em> entry. </p></li>
 <li><p><em>categories:</em> A list of option categories. Defines which options, in addition to the ones defined inside the config spec, apply to this config. The example above uses the “output” category, which makes the built-in <em>output</em> option for setting output file names available. </p></li>
+<li><p><em>defaults:</em> A dict with default values for any of the config’s options. <a class="reference internal" href="#classcali_1_1ConfigManager_1_1Options"><span class="std std-ref">Options</span></a> not listed here default to empty/not set. </p></li>
 <li><p><em>options:</em> A list of custom options for this config.</p></li>
 </ul>
 </p>
@@ -917,9 +710,7 @@ configs or options may be available in a particular Caliper installation.</p>
             </a></p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
-<li><a class="reference internal" href="#">Configuration manager API</a><ul>
-<li><a class="reference internal" href="#configmanager-configuration-string-syntax">ConfigManager Configuration String Syntax</a></li>
-<li><a class="reference internal" href="#built-in-configs">Built-in configs</a></li>
+<li><a class="reference internal" href="#">ConfigManager API reference</a><ul>
 <li><a class="reference internal" href="#api-reference">API Reference</a></li>
 </ul>
 </li>
@@ -927,7 +718,7 @@ configs or options may be available in a particular Caliper installation.</p>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="AnnotationAPI.html"
-                        title="previous chapter">Source-code annotations</a></p>
+                        title="previous chapter">Annotation API reference</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="FortranSupport.html"
                         title="next chapter">Fortran support</a></p>
@@ -962,9 +753,9 @@ configs or options may be available in a particular Caliper installation.</p>
           <a href="FortranSupport.html" title="Fortran support"
              >next</a> |</li>
         <li class="right" >
-          <a href="AnnotationAPI.html" title="Source-code annotations"
+          <a href="AnnotationAPI.html" title="Annotation API reference"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
