@@ -207,7 +207,7 @@ struct CalQLParser::CalQLParserImpl
     parse_select(std::istream& is) {
         // SELECT selection, selection, ...
         // selection : label [AS alias]
-        //             | aggregation_function(parameters) [AS alias]
+        //             | aggregation_function(parameters) [AS alias] [UNIT unit]
         //             | *
 
         const QuerySpec::FunctionSignature* defs = Aggregator::aggregation_defs();

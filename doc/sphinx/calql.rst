@@ -1,4 +1,4 @@
-The Caliper query language
+The CalQL query language
 ================================
 
 The Caliper Query Language (CalQL) is used to filter, aggregate, and
@@ -27,6 +27,7 @@ This table contains a quick reference of all CalQL statements:
     <a>=ratio(<b>,<c>,<S>)     # computes a = <b>/<c>*S
     <a>=scale(<b>,<S>)         # computes <a> = <b>*S
     <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
+    <a>=first(<a0>,<a1>, ...)  # <a> is the first of <a0>, <a1>, ... found in the input record
 
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
     *                          # select all attributes
@@ -42,7 +43,9 @@ This table contains a quick reference of all CalQL statements:
     scale(<a>,<S>)             # computes sum of <a> multiplied by scaling factor S
     inclusive_scale(<a>,<S>)   # computes inclusive scaled sum of <a> in a nested hierarchy
     inclusive_percent_total(<a>) # computes inclusive percent-of-total of <a> in a nested hierarchy
+    any(<attribute>)           # pick one value for <attribute> out of all records in grouping
     ... AS <name>              # use <name> as column header in tree or table formatter
+    ... UNIT <unit>            # use <unit> as unit name
 
   GROUP BY <list>              # Define aggregation grouping (what to aggregate over, e.g. "function,mpi.rank")
     <attribute>                # include <attribute> in grouping
@@ -50,7 +53,9 @@ This table contains a quick reference of all CalQL statements:
 
   WHERE <list>                 # define filter (i.e., select records/rows)
     <attribute>                # records where <attribute> exists
-    <attribute>=<value>        # records where <attribute>=<value>
+    <attribute> = <value>      # records where <attribute> = <value>
+    <attribute> < <value>      # records where <attribute> > <value>
+    <attribute> > <value>      # records where <attribute> < <value>
     NOT <attribute>            # records where <attribute> does not exist
     NOT <attribute>=<value>    # records where <attribute>!=<value>
 
@@ -84,6 +89,11 @@ For example, we can use the truncate() operator on an iteration counter to
 aggregate blocks of 10 iterations in a time-series profile::
 
   LET block=truncate(iteration#mainloop,10) SELECT block,sum(time.duration) GROUP BY block
+
+The first() operator returns the first attribute out of a list of attribute
+names found in an input record. It can also be used to rename attributes::
+
+  LET time=first(time.duration,sum#time.duration) SELECT sum(time) AS Time GROUP BY prop:nested
 
 LET terms have the general form
 

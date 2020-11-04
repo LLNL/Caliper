@@ -34,6 +34,7 @@ script:
   - mkdir $basedir/build && cd $basedir/build
   - cmake -C ../cmake/hostconfig/travis.cmake ${COVERAGE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DWITH_FORTRAN=${WITH_FORTRAN} -DWITH_MPI=${WITH_MPI} -DWITH_GOTCHA=${WITH_GOTCHA} ..
   - make -j8
+  - export OMPI_MCA_btl_base_warn_component_unused=0
   - ctest --output-on-failure
 
 after_success:

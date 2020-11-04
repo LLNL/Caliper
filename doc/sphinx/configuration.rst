@@ -1,7 +1,8 @@
-Manual runtime configuration
+Manual configuration
 ================================
 
-When not using the ConfigManager API (:doc:`ConfigManagerAPI`),
+When not using built-in performance measurement configurations (:doc:`BuiltinConfigurations`),
+through the ConfigManager API or the `CALI_CONFIG` environment variable,
 Caliper can be configured manually by setting configuration
 variables through the environment or configuration files.
 
@@ -84,31 +85,6 @@ the profile selection by setting a different value in the
 variables always override values set in a configuration file,
 regardless of the selected profile.
 
-Built-in configuration profiles
---------------------------------
-
-Caliper provides built-in configuration profiles for common use
-cases. Currently, the following profiles are defined:
-
-event-trace
-   Records and writes a trace of begin/end records in .cali format
-
-runtime-report
-   Prints time spent in annotated regions for a non-MPI program
-
-mpi-runtime-report
-   Prints time spent in annotated regions for MPI programs.
-   Results are aggregated across MPI ranks.
-
-Configuration profiles, including built-in profiles, can be
-extended. For example, the following configuration file ::
-
-  # [mpi-trace]
-  CALI_MPI_WHITELIST=MPI_Allreduce
-
-adds the ``CALI_MPI_WHITELIST`` entry to the built-in `mpi-runtime-report`
-profile.
-
 Configuration variables reference
 ----------------------------------------
 
@@ -119,11 +95,10 @@ Many Caliper services define additional configuration variables. See
 :doc:`services` for a list of Caliper services and their
 configuration.
 
-CALI_CONFIG_PROFILE
-   A configuration profile name. This can be a profile defined in a
-   configuration file, or one of Caliper's pre-defined configuration
-   profiles. E.g. ``CALI_CONFIG_PROFILE=runtime-report`` selects the
-   built-in runtime-report config profile.
+.. envvar:: CALI_CONFIG
+
+   A configuration string to enable one (or more) of Caliper's built-in
+   performance profiling configurations. See :doc:`BuiltinConfigurations`.
 
 CALI_CONFIG_FILE
    Comma-separated list of configuration files. The provided

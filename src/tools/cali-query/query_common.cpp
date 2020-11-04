@@ -234,29 +234,30 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
     if (helpopt == "configs") {
         auto list = mgr.available_config_specs();
         for (const auto &s : list)
-            std::cerr << mgr.get_documentation_for_spec(s.c_str()) << "\n";
+            std::cout << mgr.get_documentation_for_spec(s.c_str()) << "\n";
     } else if (helpopt == "services") {
         services::add_default_service_specs();
 
         int i = 0;
         for (const auto& s : services::get_available_services())
-            std::cerr << (i++ > 0 ? "," : "") << s;
-        std::cerr << std::endl;
+            std::cout << (i++ > 0 ? "," : "") << s;
+        std::cout << std::endl;
     } else if (!helpopt.empty()) {
         auto list = mgr.available_config_specs();
 
         if (std::find(list.begin(), list.end(), helpopt) == list.end()) {
             std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
                       << "\n  [none]:   Describe cali-query usage (default)"
-                      << "\n  configs:  Describe Caliper profiling configurations"
+                      << "\n  configs:  Describe all Caliper profiling configurations"
+                      << "\n  [configname]: Describe profiling configuration [configname]"
                       << "\n  services: List available services"
                       << std::endl;
         } else {
-            std::cerr << mgr.get_documentation_for_spec(helpopt.c_str()) << std::endl;
+            std::cout << mgr.get_documentation_for_spec(helpopt.c_str()) << std::endl;
         }
     } else {
-        std::cerr << usage << "\n\n";
-        args.print_available_options(std::cerr);
+        std::cout << usage << "\n\n";
+        args.print_available_options(std::cout);
     }
 }
 

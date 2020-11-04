@@ -31,8 +31,7 @@ etc.). Alternatively, the region attributes to export can be specified
 explicitly in the `CALI_NVPROF_TRIGGER_ATTRIBUTES` configuration
 variable.
 
-.. envvar:: CALI_NVPROF_TRIGGER_ATTRIBUTES
-
+CALI_NVPROF_TRIGGER_ATTRIBUTES
     Specify which attributes should be exported as NVTX
     ranges. Comma-separated list.
 

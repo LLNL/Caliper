@@ -25,16 +25,14 @@ Aggregate
 The `aggregate` service accumulates aggregation attributes (e.g., time
 durations) of snapshots with a similar `key`, creating a profile.
 
-.. envvar:: CALI_AGGREGATE_KEY
-
+CALI_AGGREGATE_KEY
    Colon-separated list of attributes that form the aggregation key
    (see below).
 
    Default: Empty (all attributes without the ``ASVALUE`` storage
    property are key attributes).
 
-.. envvar:: CALI_AGGREGATE_ATTRIBUTES
-
+CALI_AGGREGATE_ATTRIBUTES
    Colon-separated list of aggregation attributes. The `aggregate`
    service aggregates values of aggregation attributes from all input
    snapshots with similar aggregation keys. Note that only attributes
@@ -189,8 +187,7 @@ hooking system allocation calls.
 This service may potentially incur significant amounts of overhead when
 recording/tracking frequent allocations/deallocations.
 
-.. envvar:: CALI_ALLOC_TRACK_ALLOCATIONS
-
+CALI_ALLOC_TRACK_ALLOCATIONS
     Records snapshots when memory regions are being tracked or
     untracked, storing the given label in the `mem.alloc` or
     `mem.free` attribute, respectively. The snapshots also contain a
@@ -199,8 +196,7 @@ recording/tracking frequent allocations/deallocations.
 
     Default: true
 
-.. envvar:: CALI_ALLOC_RESOLVE_ADDRESSES
-
+CALI_ALLOC_RESOLVE_ADDRESSES
     When set, snapshots with memory addresses produced by other
     services (e.g., Libpfm) will be appended with the allocations that
     contain them. The snapshots then contain
@@ -211,8 +207,7 @@ recording/tracking frequent allocations/deallocations.
 
     Default: false
 
-.. envvar:: CALI_ALLOC_RECORD_ACTIVE_MEM
-
+CALI_ALLOC_RECORD_ACTIVE_MEM
     Records the amount of active allocated memory, in bytes, at each
     snapshot, in the `mem.active` attribute.
 
@@ -242,21 +237,18 @@ function names on-line. Call-path addresses are provided in the
 The example shows the ``callpath.address`` and ``callpath.regname``
 attributes in Caliper context records.
 
-.. envvar:: CALI_CALLPATH_USE_NAME=(true|false)
-
+CALI_CALLPATH_USE_NAME
    Provide region names for call paths. Incurs higher overhead. Note
    that region names for C++ and Fortran functions are not demangled.
 
    Default: false.
 
-.. envvar:: CALI_CALLPATH_USE_ADDRESS=(true|false)
-
+CALI_CALLPATH_USE_ADDRESS
    Record region addresses for call paths.
 
    Default: true.
 
-.. envvar:: CALI_CALLPATH_SKIP_FRAMES=<number of frames>
-
+CALI_CALLPATH_SKIP_FRAMES
    Skip a number of stack frames. This avoids recording stack frames
    within the Caliper library.
 
@@ -273,8 +265,7 @@ API calls, driver API calls, resource creation and destruction events
 (contexts and streams), and synchronization events. It can also
 interpret NVTX source-code annotations as Caliper annotations.
 
-.. envvar:: CALI_CUPTI_CALLBACK_DOMAINS
-
+CALI_CUPTI_CALLBACK_DOMAINS
    String. A comma-separated list of CUpti callback domains to
    intercept.  Values:
 
@@ -288,13 +279,11 @@ interpret NVTX source-code annotations as Caliper annotations.
 
    Default: `runtime,sync`
 
-.. envvar:: CALI_CUPTI_RECORD_SYMBOL
-
+CALI_CUPTI_RECORD_SYMBOL
    Boolean. Record the kernel symbol name for callbacks (typically
    when launching kernels). Default: `true`.
 
-.. envvar:: CALI_CUPTI_RECORD_CONTEXT
-
+CALI_CUPTI_RECORD_CONTEXT
    Boolean. Record CUDA context ID. Default: `true`.
 
 CUpti Attributes
@@ -506,8 +495,7 @@ Specifically, it collects
 Moreover, the environment information service can put any environment
 variable defined at program start on the Caliper blackboard.
 
-.. envvar:: CALI_ENV_EXTRA=(variable1:variable2:...)
-
+CALI_ENV_EXTRA=(variable1:variable2:...)
    List of extra environment variables to import.
 
    Default: empty
@@ -564,15 +552,13 @@ only trigger snapshot for "iteration" attribute updates:
                 event.set#iteration=3,cali.snapshot.event.set=63,iteration=2,loop=true
                 event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
 
-.. envvar:: CALI_EVENT_TRIGGER=(attribute1:attribute2:...)
-
+CALI_EVENT_TRIGGER
    List of attributes that trigger measurement snapshots.
    If empty, all user attributes trigger snapshots.
 
    Default: empty
 
-.. envvar:: CALI_EVENT_ENABLE_SNAPSHOT_INFO
-
+CALI_EVENT_ENABLE_SNAPSHOT_INFO
    Boolean. Generate the event.begin#attr etc. attributes for each event snapshot.
    Turning this off can decrease runtime overheads.
 
@@ -646,8 +632,7 @@ The libpfm service performs per-thread event-based sampling. The user
 may configure the event upon which to sample, the values to record for
 each sample, and the sampling period.
 
-.. envvar:: CALI_LIBPFM_EVENTS
-
+CALI_LIBPFM_EVENTS
    Comma-separated list of events to sample. Event names are resolved
    through libpfm, and may include software and hardware events (see
    libpfm's showevtinfo tool
@@ -656,8 +641,7 @@ each sample, and the sampling period.
 
    Default: cycles
 
-.. envvar:: CALI_LIBPFM_ENABLE_SAMPLING
-
+CALI_LIBPFM_ENABLE_SAMPLING
    Whether to record event samples. If set, will trigger a snapshot
    containing all sampled attributes listed in
    CALI_LIBPFM_SAMPLE_ATTRIBUTES after CALI_SAMPLE_PERIOD events have
@@ -665,15 +649,13 @@ each sample, and the sampling period.
 
    Default: true
 
-.. envvar:: CALI_LIBPFM_RECORD_COUNTERS
-
+CALI_LIBPFM_RECORD_COUNTERS
     If set, counter values of all active events will be recorded
     at every Caliper snapshot.
 
     Default: true
 
-.. envvar:: CALI_LIBPFM_SAMPLE_ATTRIBUTES
-
+CALI_LIBPFM_SAMPLE_ATTRIBUTES
    Comma-separated list of attributes to record for each sample.
 
    Available entries are:
@@ -694,8 +676,7 @@ each sample, and the sampling period.
 
    Default: ip,time,tid,cpu
 
-.. envvar:: CALI_LIBPFM_PERIOD
-
+CALI_LIBPFM_PERIOD
    Sampling period for each event (valid when sampling is enabled).
    When set to a value N, a sample will  be recorded after every N
    number of events has occurred.
@@ -705,8 +686,7 @@ each sample, and the sampling period.
 
    Default: 20000000
 
-.. envvar:: CALI_LIBPFM_PRECISE_IP
-
+CALI_LIBPFM_PRECISE_IP
    Whether to set (precise) for events that support precise ip. Some
    events require (precise) to be set, for others it is optional (see
    output of libpfm's showevtinfo tool
@@ -720,8 +700,7 @@ each sample, and the sampling period.
 
    Default: 0
 
-.. envvar:: CALI_LIBPFM_CONFIG1
-
+CALI_LIBPFM_CONFIG1
    Extra event configuration. Some events require an additional
    parameter to configure behavior, such as latency threshold (see
    output of libpfm's showevtinfo tool
@@ -759,13 +738,11 @@ instrumented.
 MPI function names are stored in the ``mpi.function`` attribute, and
 the MPI rank in the ``mpi.rank`` attribute.
 
-.. envvar:: CALI_MPI_WHITELIST
-
+CALI_MPI_WHITELIST
    Comma-separated list of MPI functions to instrument. Only
    whitelisted functions will be instrumented.
 
-.. envvar:: CALI_MPI_BLACKLIST
-
+CALI_MPI_BLACKLIST
    Comma-separated list of MPI functions that fill be filtered. If a
    blacklist has been set, all functions except for the ones in the
    blacklist will be instrumented.  If both whitelist and blacklist
@@ -781,8 +758,7 @@ communications. When enabled, message tracing will create snapshot
 records for individual point-to-point messages sent or received
 and for collective operations a process participates in.
 
-.. envvar:: CALI_MPI_MSG_TRACING
-
+CALI_MPI_MSG_TRACING
    Enable message tracing. Default: false
 
 Notes:
@@ -921,7 +897,7 @@ We do currently *not* cover:
 .. (`libcaliper-mpiwrap`), which must be linked to the application in
 .. addition to the regular Caliper runtime library.
 
-.. .. envvar:: CALI_MPIT_PVARS
+.. CALI_MPIT_PVARS
 
 ..    A comma-separated list of PVARs to export. PVAR names are defined
 ..    by the MPI implementation. Default: empty, records all available
@@ -950,8 +926,7 @@ MPI_Finalize.
 The :ref:`mpi <mpi-service>` service must be enabled for mpireport
 to work.
 
-.. envvar:: CALI_MPIREPORT_FILENAME
-
+CALI_MPIREPORT_FILENAME
    File name of the output file. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
 
@@ -961,8 +936,7 @@ to work.
 
    Default: stdout
 
-.. envvar:: CALI_MPIREPORT_CONFIG
-
+CALI_MPIREPORT_CONFIG
    An aggregation and formatting specification in CalQL syntax
    (:doc:`calql`).
 
@@ -976,8 +950,7 @@ PAPI
 The PAPI service collects hardware counter information through the
 PAPI library.
 
-.. envvar:: CALI_PAPI_COUNTERS
-
+CALI_PAPI_COUNTERS
    The PAPI counters to read as comma-separated list.
    Available counters can be found with the `papi_avail` command
    provided by PAPI. If successfull, snapshots will contain
@@ -1031,8 +1004,7 @@ You can also set the directory and filename that should be used;
 by default, the recorder service will auto-generate a
 file name.
 
-.. envvar:: CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)
-
+CALI_RECORDER_FILENAME=(stdout|stderr|filename pattern)
    File name of the output file. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
 
@@ -1045,8 +1017,7 @@ file name.
 
    Default: not set, auto-generates a unique file name.
 
-.. envvar:: CALI_RECORDER_DIRECTORY=(directory name)
-
+CALI_RECORDER_DIRECTORY=(directory name)
    Directory to write context trace files to. The directory must exist,
    Caliper does not create it. Default: not set, use current working
    directory.
@@ -1064,8 +1035,7 @@ query specification in CalQL syntax to define filter, aggregation, and
 formatting options.
 
 
-.. envvar:: CALI_REPORT_FILENAME
-
+CALI_REPORT_FILENAME
    File name of the output file. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
 
@@ -1077,8 +1047,7 @@ formatting options.
 
    Default: stdout
 
-.. envvar:: CALI_REPORT_CONFIG
-
+CALI_REPORT_CONFIG
    A formatting specification in CalQL syntax (:doc:`calql`).
 
    Default: empty; all attributes in the snapshots will be printed.
@@ -1119,8 +1088,7 @@ Caliper must be initialized on each thread that should be
 sampled. This can be done explicitly via the annotation API, or via
 the :ref:`pthread <pthread-service>` service for child threads.
 
-.. envvar:: CALI_SAMPLER_FREQUENCY
-
+CALI_SAMPLER_FREQUENCY
    Sampling frequency in Hz. Default: 10
 
 When active, the sampler service regularly triggers snapshots with the
@@ -1153,37 +1121,31 @@ added in the ``source.function#address`` and ``sourceloc#address``
 attributes, respectively. If a symbol lookup
 was unsuccessful for any reason, the value is set to `UNKNOWN`.
 
-.. envvar:: CALI_SYMBOLLOOKUP_ATTRIBUTES
-
+CALI_SYMBOLLOOKUP_ATTRIBUTES
    Explicitly select address attributes for which to perform symbol
    lookups. Colon-separated list. Default: empty, selects address
    attributes automatically via `class.symboladdress` attribute class.
 
-.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS
-
+CALI_SYMBOLLOOKUP_LOOKUP_FUNCTIONS
    Perform function name lookup. `TRUE` or `FALSE`, default `TRUE`.
 
-.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
-
+CALI_SYMBOLLOOKUP_LOOKUP_SOURCELOC
    Perform source file and line number lookup. `TRUE` or `FALSE`,
    default `TRUE`. Combines file and line information in the
    ``sourceloc#address`` attribute, e.g. ``mysource.cpp:42`` for file
    "mysource.cpp" and line number 42.
 
-.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_FILE
-
+CALI_SYMBOLLOOKUP_LOOKUP_FILE
    Perform source file lookup, and writes the file name in the
    ``source.file#address`` attribute. `TRUE` or `FALSE`,
    default `FALSE`.
 
-.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_LINE
-
+CALI_SYMBOLLOOKUP_LOOKUP_LINE
    Perform source line lookup, and writes the line number in the
    ``source.line#address`` attribute. `TRUE` or `FALSE`,
    default `FALSE`.
 
-.. envvar:: CALI_SYMBOLLOOKUP_LOOKUP_MODULE
-
+CALI_SYMBOLLOOKUP_LOOKUP_MODULE
    Perform module name lookup, and writes the module number in the
    ``module#address`` attribute. `TRUE` or `FALSE`,
    default `FALSE`.
@@ -1225,15 +1187,13 @@ test application with Caliper's auto-generated format string:
       == CALIPER: Finished
 
 
-.. envvar:: CALI_TEXTLOG_TRIGGER=attr1:attr2:...
-
+CALI_TEXTLOG_TRIGGER
    Select attributes which trigger a text log output. Note that the `event`
    service must be active in order to trigger snapshots in the first place,
    and the attributes selected here must be in the list of attributes that
    trigger snapshots (defined by `CALI_EVENT_TRIGGER`).
 
-.. envvar:: CALI_TEXTLOG_FORMATSTRING=(formatstring)
-
+CALI_TEXTLOG_FORMATSTRING
    Define what to print. The formatstring can contain fields, denoted by
    ``%attribute_name%``, which prints the value of an attribute. Optionally,
    a field can contain a width specification, denoted by ``[width]``, to set
@@ -1251,8 +1211,7 @@ test application with Caliper's auto-generated format string:
    Default: empty; Caliper will automatically create a format string based on
    the selected trigger attributes.
 
-.. envvar:: CALI_TEXTLOG_FILENAME=(stdout|stderr|filename)
-
+CALI_TEXTLOG_FILENAME
    File name for the text log. May be set to ``stdout`` or ``stderr``
    to print to the standard output or error streams, respectively.
 
@@ -1267,30 +1226,26 @@ The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are *not* synchronized between
 nodes in a distributed-memory program.
 
-.. envvar:: CALI_TIMER_SNAPSHOT_DURATION=(true|false)
-
+CALI_TIMER_SNAPSHOT_DURATION
    Measure duration (in microseconds) of the context epoch (i.e., the
    time between two consecutive context snapshots). The value will be
    saved in the snapshot record as attribute ``time.duration``.
 
    Default: true
 
-.. envvar:: CALI_TIMER_OFFSET=(true|false)
-
+CALI_TIMER_OFFSET
    Include the time offset (time since program start, in microseconds)
    with each context snapshot. The value will be saved in the snapshot
    record as attribute ``time.offset``.
 
    Default: false
 
-.. envvar:: CALI_TIMER_TIMESTAMP=(true|false)
-
+CALI_TIMER_TIMESTAMP
    Include absolute timestamp (time since UNIX epoch, in seconds) with
    each context snapshot. The value will be saved in the snapshot record
    as attribute ``time.timestamp``.
 
-.. envvar:: CALI_TIMER_INCLUSIVE_DURATION=(true|false)
-
+CALI_TIMER_INCLUSIVE_DURATION
    Calulates inclusive times for nested regions. The value will be saved
    in the snapshot record as attribute ``time.inclusive.duration``.
 
@@ -1299,8 +1254,7 @@ nodes in a distributed-memory program.
 
    Default: true
 
-.. envvar:: CALI_TIMER_UNIT=(sec|usec)
-
+CALI_TIMER_UNIT=(sec|usec)
    The unit for time duration values (seconds or microseconds).
 
    Default: sec
@@ -1328,16 +1282,14 @@ Flush
     buffer flushes can significantly perturb the program's
     performance.
 
-.. envvar:: CALI_TRACE_BUFFER_SIZE
-
+CALI_TRACE_BUFFER_SIZE
    Size of the trace buffer, in Megabytes. With the `grow` buffer
    policy, this is the size of a trace buffer *chunk*: When the buffer
    is full, another chunk of this size is added.
 
    Default: 2 (MiB).
 
-.. envvar:: CALI_TRACE_BUFFER_POLICY
-
+CALI_TRACE_BUFFER_POLICY
    Sets the trace buffer policy (see above). Either `grow`, `stop`, or
    `flush`.
 
