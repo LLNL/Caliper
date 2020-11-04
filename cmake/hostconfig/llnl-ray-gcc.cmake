@@ -8,11 +8,10 @@ set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda" CACHE PATH "")
 
 set(CUPTI_PREFIX "/usr/local/cuda/extras/CUPTI" CACHE PATH "")
 
-set(WITH_CALLPATH Off CACHE BOOL "")
+set(WITH_LIBUNWIND Off CACHE BOOL "")
 set(WITH_NVPROF   On  CACHE BOOL "")
 set(WITH_CUPTI    On  CACHE BOOL "")
 set(WITH_PAPI     Off CACHE BOOL "")
-set(WITH_DYNINST  Off CACHE BOOL "")
 set(WITH_SAMPLER  On  CACHE BOOL "")
 set(WITH_LIBPFM   Off CACHE BOOL "")
 set(WITH_MPI      On  CACHE BOOL "")

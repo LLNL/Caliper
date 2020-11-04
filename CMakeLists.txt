@@ -45,8 +45,8 @@ option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" FALSE)
 option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" FALSE)
-option(WITH_LIBDW     "Enable libdw support (for module detection in callpath service)" FALSE)
-option(WITH_CALLPATH  "Enable callpath service (requires libunwind)" FALSE)
+option(WITH_LIBDW     "Enable libdw support (for symbollookup service)" FALSE)
+option(WITH_LIBUNWIND "Enable libunwind support (for callpath service)" FALSE)
 option(WITH_MPI       "Enable MPI" FALSE)
 # option(WITH_MPIT      "Enable MPI-T" FALSE)
 # option(WITH_OMPT      "Enable OMPT" FALSE)
@@ -58,7 +58,6 @@ option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 option(WITH_ADIAK     "Enable adiak support" FALSE)
 option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
-option(WITH_SYMBOLLOOKUP "Enable symbollookup service using either Dyninst or libdl" FALSE)
 option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 
 option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
@@ -190,44 +189,24 @@ if (WITH_LIBPFM)
   endif()
 endif()
 
-# Find dyninst
-if (WITH_DYNINST)
-  find_package(Dyninst)
-  if (Dyninst_FOUND)
-    message(STATUS "Found Dyninst in " ${Dyninst_DIR})
-    set(CALIPER_HAVE_DYNINST TRUE)
-    set(CALIPER_Dyninst_CMAKE_MSG "Yes, using installation in ${Dyninst_DIR}")
-    list(APPEND CALIPER_EXTERNAL_LIBS symtabAPI)
-    list(APPEND CALIPER_EXTERNAL_LIBS instructionAPI)
-    list(APPEND CALIPER_EXTERNAL_LIBS parseAPI)
-  endif()
-  # CMake already provides useful error message if DyninstConfig.cmake isn't found
-endif()
-
 if (WITH_LIBDW)
-# For some reason Dyninst crashes when libdw is linked.
-# Detect this here and disable libdw.
-  if (Dyninst_FOUND)
-    message(WARNING "Libdw option is incompatible with dyninst -- disabling libdw.")
-  else()
-    include(FindLibDw)
-    if (LIBDW_FOUND)
-      list(APPEND CALIPER_EXTERNAL_LIBS ${LIBDW_LIBRARY})
-      set(CALIPER_HAVE_LIBDW TRUE)
-      set(CALIPER_Libdw_CMAKE_MSG "Yes, using ${LIBDW_LIBRARY}")
-    endif()
+  include(FindLibDw)
+  if (LIBDW_FOUND)
+    list(APPEND CALIPER_EXTERNAL_LIBS ${LIBDW_LIBRARY})
+    set(CALIPER_HAVE_LIBDW TRUE)
+    set(CALIPER_Libdw_CMAKE_MSG "Yes, using ${LIBDW_LIBRARY}")
   endif()
 endif()
 
 # Find libunwind
-if (WITH_CALLPATH)
+if (WITH_LIBUNWIND)
   include(FindLibunwind)
   if (LIBUNWIND_FOUND)
     set(CALIPER_HAVE_LIBUNWIND TRUE)
     set(CALIPER_Libunwind_CMAKE_MSG "Yes, using ${LIBUNWIND_LIBRARIES}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${LIBUNWIND_LIBRARIES})
   else()
-    message(WARNING "Callpath support was requested but libunwind was not found!")
+    message(WARNING "Libunwind support was requested but libunwind was not found!")
   endif()
 endif()
 
@@ -364,24 +343,6 @@ if (WITH_SAMPLER)
   endif()
 endif()
 
-if (WITH_SYMBOLLOOKUP)
-  if (CALIPER_HAVE_DYNINST)
-    set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
-    set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using Dyninst")
-  elseif(CALIPER_HAVE_LIBDW)
-    set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
-    set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using libdw")
-  else()
-    find_library(DL_LIBRARY
-      dl)
-    if (NOT ${DL_LIBRARY} MATCHES DL_LIBRARY-NOTFOUND)
-      set(CALIPER_HAVE_SYMBOLLOOKUP TRUE)
-      set(CALIPER_SymbolLookup_CMAKE_MSG "Yes, using ${DL_LIBRARY}")
-      list(APPEND CALIPER_EXTERNAL_LIBS ${DL_LIBRARY})
-    endif()
-  endif()
-endif()
-
 if (WITH_PCP)
   find_library(PCP_LIBRARY
     pcp)
@@ -493,10 +454,8 @@ set(CALIPER_MODULES
   Libdw
   Libpfm
   Libunwind
-  Dyninst
   Sampler
   SOSFlow
-  SymbolLookup
   MPI
   MPIWRAP
   MPIT

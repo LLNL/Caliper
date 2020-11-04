@@ -10,17 +10,16 @@ set(CUPTI_PREFIX "/usr/tce/packages/cuda/cuda-10.1.243/extras/CUPTI" CACHE PATH 
 
 # Our f2003 requires some extra options for xlf. Skip it for now. 
 set(WITH_FORTRAN  Off CACHE BOOL "")
-set(WITH_CALLPATH On  CACHE BOOL "")
+set(WITH_LIBUNWIND On  CACHE BOOL "")
 set(WITH_NVPROF   On  CACHE BOOL "")
 set(WITH_CUPTI    On  CACHE BOOL "")
 set(WITH_PAPI     Off CACHE BOOL "")
+set(WITH_LIBDW    On  CACHE BOOL "")
 set(WITH_LIBPFM   Off CACHE BOOL "")
-set(WITH_DYNINST  Off CACHE BOOL "") # turn off for now
 set(WITH_SAMPLER  On  CACHE BOOL "")
 set(WITH_MPI      On  CACHE BOOL "")
 set(WITH_GOTCHA   On  CACHE BOOL "")
 set(WITH_VTUNE    Off CACHE BOOL "")
-set(WITH_SYMBOLLOOKUP On CACHE BOOL "")
 
 set(WITH_DOCS     Off CACHE BOOL "")
 set(BUILD_TESTING On  CACHE BOOL "")
