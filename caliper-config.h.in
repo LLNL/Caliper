@@ -12,14 +12,12 @@
 #cmakedefine CALIPER_HAVE_NVPROF
 #cmakedefine CALIPER_HAVE_TAU
 #cmakedefine CALIPER_HAVE_VTUNE
-#cmakedefine CALIPER_HAVE_DYNINST
 #cmakedefine CALIPER_HAVE_GOTCHA
 #cmakedefine CALIPER_HAVE_SOS
 #cmakedefine CALIPER_HAVE_CUPTI
 #cmakedefine CALIPER_HAVE_LIBDW
 #cmakedefine CALIPER_HAVE_VTUNE
 #cmakedefine CALIPER_HAVE_ADIAK
-#cmakedefine CALIPER_HAVE_SYMBOLLOOKUP
 #cmakedefine CALIPER_HAVE_PCP
 
 #cmakedefine CALIPER_REDUCED_CONSTEXPR_USAGE
