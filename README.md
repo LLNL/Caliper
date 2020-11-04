@@ -54,13 +54,16 @@ as follows:
      $ git clone https://github.com/LLNL/Caliper.git
      $ cd Caliper
      $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> \
-         -DCMAKE_C_COMPILER=<path to c-compiler> \
-         -DCMAKE_CXX_COMPILER=<path to c++-compiler> \
-         ..
+     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> ..
      $ make
      $ make install
 
+Link Caliper to a program by adding `libcaliper`:
+
+    g++ -o app app.o -L<path install location>/lib64 -lcaliper
+
+There are many build flags to enable optional features, such as `-DWITH_MPI`
+for MPI support.
 See the "Build and install" section in the documentation for further
 information.
 
@@ -68,80 +71,99 @@ Getting started
 ------------------------------------------
 
 Typically, we integrate Caliper into a program by marking source-code
-sections of interest with descriptive annotations. Performance
-measurements, trace or profile collection, and reporting functionality
-can then be enabled with runtime configuration options. Alternatively,
-third-party tools can connect to Caliper and access information
-provided by the source-code annotations.
+sections of interest with descriptive annotations. Performance profiling can
+then be enabled through the Caliper ConfigManager API or environment
+variables. Alternatively, third-party tools can connect to Caliper and access
+information provided by the source-code annotations.
 
 ### Source-code annotations
 
-Caliper source-code annotations let us associate performance measurements
-with user-defined, high-level context information. We can also
-trigger user-defined actions at the instrumentation points, e.g. to measure
-the time spent in annotated regions. Measurement actions can be defined at
-runtime and are disabled by default; generally, the source-code annotations
-are lightweight enough to be left in production code.
+Caliper's source-code annotation API allows you to mark source-code regions
+of interest in your program. Much of Caliper's functionality depends on these
+region annotations.
 
-The annotation APIs are available for C, C++, and Fortran. There are
-high-level annotation macros for common scenarios such as marking
-functions, loops, or sections of source-code. In addition, users can
-export arbitrary key:value pairs to express application-specific
-concepts.
-
-The following example marks "initialization" and "main loop" phases in
-a C++ code, and exports the main loop's current iteration counter
-using the high-level annotation macros:
+Caliper provides macros and functions for C, C++, and Fortran to mark
+functions, loops, or sections of source-code. For example, use
+`CALI_CXX_MARK_FUNCTION` to mark a function in C++:
 
 ```C++
 #include <caliper/cali.h>
 
-int main(int argc, char* argv[])
+void foo()
 {
-    // Mark this function
     CALI_CXX_MARK_FUNCTION;
-
-    // Mark the "intialization" phase
-    CALI_MARK_BEGIN("initialization");
-    int count = 4;
-    double t = 0.0, delta_t = 1e-6;
-    CALI_MARK_END("initialization");
-
-    // Mark the loop
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
-
-    for (int i = 0; i < count; ++i) {
-        // Mark each loop iteration
-        CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);
-
-        // A Caliper snapshot taken at this point will contain
-        // { "function"="main", "loop"="main loop", "iteration#main loop"=<i> }
-
-        // ...
-    }
-
-    CALI_CXX_MARK_LOOP_END(mainloop);
+    // ...
 }
 ```
 
-### Linking the Caliper library
+You can mark arbitrary code regions with the `CALI_MARK_BEGIN` and
+`CALI_MARK_END` macros or the corresponding `cali_begin_region()`
+and `cali_end_region()` functions:
 
-To use Caliper, add annotation statements to your program and link it
-against the Caliper library. Programs must be linked with the Caliper
-runtime (libcaliper.so), as shown in the example link command:
+```C++
+#include <caliper/cali.h>
 
-    g++ -o app app.o -L<path to caliper installation>/lib64 -lcaliper
+// ...
+CALI_MARK_BEGIN("my region");
+// ...
+CALI_MARK_END("my region");
+```
+
+The [cxx-example](examples/apps/cxx-example.cpp),
+[c-example](examples/apps/c-example.c), and
+[fortran-example](examples/apps/fortran-example.f) example apps show how to use
+Caliper in C++, C, and Fortran, respectively.
 
 ### Recording performance data
 
-Performance measuremens can be controlled most conveniently via the
-ConfigManager API. The ConfigManager covers many common use cases,
-such as recording traces or printing time reports. For custom analysis
-tasks or when not using the ConfigManager API, Caliper can be configured
-manually by setting configuration variables via the environment or
-in config files.
+With the source-code annotations in place, we can run performance measurements.
+By default, Caliper does not record data - we have to activate performance
+profiling at runtime.
+An easy way to do this is to use one of Caliper's built-in measurement
+configurations. For example, the `runtime-report` config prints out the time
+spent in the annotated regions. You can activate built-in measurement
+configurations with the ConfigManager API or with the `CALI_CONFIG`
+environment variable. Let's try this on Caliper's cxx-example program:
+
+.. code-block:: sh
+
+    $ cd Caliper/build
+    $ make cxx-example
+    $ CALI_CONFIG=runtime-report ./examples/apps/cxx-example
+    Path       Min time/rank Max time/rank Avg time/rank Time %
+    main            0.000119      0.000119      0.000119  7.079120
+      mainloop      0.000067      0.000067      0.000067  3.985723
+        foo         0.000646      0.000646      0.000646 38.429506
+      init          0.000017      0.000017      0.000017  1.011303
+
+The runtime-report config works for MPI and non-MPI programs. It reports the
+minimum, maximum, and average exclusive time (seconds) spent in each marked
+code region across MPI ranks (the values are identical in non-MPI programs).
+
+You can customize the report with additional options. Some options enable
+additional Caliper functionality, such as profiling MPI and CUDA functions in
+addition to the user-defined regions, or additional metrics like memory usage.
+Other measurement configurations besides runtime-report include:
+
+* loop-report: Print summary and time-series information for loops.
+* mpi-report: Print time spent in MPI functions.
+* callpath-sample-report: Print a time spent in functions using call-path sampling.
+* event-trace: Record a trace of region enter/exit events in .cali format.
+* hatchet-region-profile: Record a region time profile for processing with the
+  ['hatchet'](https://github.com/LLNL/hatchet) library or cali-query.
+
+See the "Builtin configurations" section in the documentation to learn more
+about different configurations and their options.
+
+You can also create entirely custom measurement configurations by selecting and
+configuring Caliper services manually. See the "Manual configuration" section
+in the documentation to learn more.
 
 #### ConfigManager API
+
+A distinctive Caliper feature is the ability to enable performance
+measurements programmatically with the ConfigManager API. For example, we often
+let users activate performance measurements with a command-line argument.
 
 With the C++ ConfigManager API, built-in performance measurement and
 reporting configurations can be activated within a program using a short
@@ -164,75 +186,21 @@ mgr.start(); // start requested performance measurement channels
 mgr.flush(); // write performance results
 ```
 
-A complete code example where users can provide a configuration string
-on the command line is [here](examples/apps/cxx-example.cpp). Built-in
-configs include
+The `cxx-example` program uses the ConfigManager API to let users specify a
+Caliper configuration with the `-P` command-line argument, e.g.
+``-P runtime-report``:
 
-* runtime-report: Prints a time profile for annotated code regions.
-* event-trace: Records a trace of region begin/end events.
+```
+    $ ./examples/apps/cxx-example -P runtime-report
+    Path       Min time/rank Max time/rank Avg time/rank Time %
+    main            0.000129      0.000129      0.000129  5.952930
+      mainloop      0.000080      0.000080      0.000080  3.691740
+        foo         0.000719      0.000719      0.000719 33.179511
+      init          0.000021      0.000021      0.000021  0.969082
+```
 
-Complete documentation on the ConfigManager configurations can be found
-[here](doc/ConfigManagerAPI.md).
-
-#### Manual configuration through environment variables
-
-The ConfigManager API is not required to run Caliper - performance
-measurements can also be configured with environment variables or a config
-file. For starters, there are a set of pre-defined configuration
-profiles that can be activated with the
-`CALI_CONFIG_PROFILE` environment variable. For example, the
-`runtime-report` configuration profile prints the total time (in
-microseconds) spent in each code path based on the nesting of
-annotated code regions:
-
-    $ CALI_CONFIG_PROFILE=runtime-report ./examples/apps/cxx-example
-    Path         Inclusive time (usec) Exclusive time (usec) Time %
-    main                     38.000000             20.000000   52.6
-      main loop               8.000000              8.000000   21.1
-      init                   10.000000             10.000000   26.3
-
-The example shows Caliper output for the `runtime-report`
-configuration profile for the source-code annotation example above.
-
-For complete control, users can select and configure Caliper *services*
-manually. For example, this configuration records an event trace
-recording all enter and leave events for annotated code regions:
-
-    $ CALI_SERVICES_ENABLE=event,recorder,timestamp,trace ./examples/apps/cxx-example
-    == CALIPER: Registered event trigger service
-    == CALIPER: Registered recorder service
-    == CALIPER: Registered timestamp service
-    == CALIPER: Registered trace service
-    == CALIPER: Initialized
-    == CALIPER: Flushing Caliper data
-    == CALIPER: Trace: Flushed 14 snapshots.
-    == CALIPER: Recorder: Wrote 71 records.
-
-The trace data is stored in a `.cali` file in a text-based
-Caliper-specific file format. Use the `cali-query` tool to filter,
-aggregate, or print the recorded data. Here, we use `cali-query` to
-print the recorded trace data in a human-readable json format:
-
-    $ ls *.cali
-    171120-181836_40337_7LOlCN5RchWV.cali
-    $ cali-query 171120-181836_40337_7LOlCN5RchWV.cali -q "SELECT * FORMAT json(pretty)"
-    [
-    {
-            "event.begin#function":"main"
-    },
-    {
-            "event.begin#annotation":"init",
-            "function":"main"
-    },
-    {
-            "event.end#annotation":"init",
-            "annotation":"init",
-            "function":"main",
-            "time.inclusive.duration":14
-    },
-    ...
-
-More information can be found in the [Caliper documentation](https://llnl.github.io/Caliper/).
+See the [Caliper documentation](https://llnl.github.io/Caliper/) for more
+examples and the full API and configuration reference.
 
 Authors
 ------------------------------------------
