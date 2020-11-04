@@ -35,8 +35,8 @@ class CaliperCaliQueryTest(unittest.TestCase):
             'aggregate', 'event', 'recorder', 'report', 'timestamp', 'trace'
         ]
 
-        _,report_err = cat.run_test(target_cmd, env)
-        res = report_err.decode().split(',')
+        report_out,_ = cat.run_test(target_cmd, env)
+        res = report_out.decode().split(',')
 
         for target in service_targets:
             if not target in res:
