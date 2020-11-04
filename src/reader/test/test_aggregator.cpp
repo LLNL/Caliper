@@ -748,6 +748,46 @@ TEST(AggregatorTest, ScaledSumKernel) {
     EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 15.0);
 }
 
+
+TEST(AggregatorTest, ScaledCountKernel) {
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute x_attr =
+        db.create_attribute("x", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::None;
+
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("scale_count", "2.5"));
+
+    Aggregator a(spec);
+
+    Variant    v_ints[2] = { Variant(10), Variant(20) };
+    cali_id_t  attr_id   = x_attr.id();
+
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+0, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr, 1, &attr_id, v_ints+1, idmap));
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    ASSERT_EQ(resdb.size(), 1);
+
+    Attribute attr_scale = db.get_attribute("scount");
+
+    ASSERT_NE(attr_scale, Attribute::invalid);
+
+    auto dict = make_dict_from_entrylist(resdb.front());
+
+    EXPECT_DOUBLE_EQ(dict[attr_scale.id()].value().to_double(), 5.0);
+}
+
 TEST(AggregatorTest, AnyKernel) {
     CaliperMetadataDB db;
     IdMap             idmap;

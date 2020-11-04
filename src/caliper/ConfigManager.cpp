@@ -705,6 +705,7 @@ struct ConfigManager::ConfigManagerImpl
         std::string    description;
         config_map_t   initial_cfg;
         OptionSpec     opts;
+        argmap_t       defaults; // default options, if any
     };
 
     std::map< std::string, std::shared_ptr<config_spec_t> >
@@ -723,11 +724,6 @@ struct ConfigManager::ConfigManagerImpl
             return;
 
         set_error(err);
-    }
-
-    void
-    add_option_spec(const char* jsonspec) {
-
     }
 
     void
@@ -797,6 +793,12 @@ struct ConfigManager::ConfigManagerImpl
 
         spec.opts.add(m_global_opts, spec.categories);
         spec.opts.filter_unavailable_options(slist);
+
+        it = dict.find("defaults");
+        if (ok && !m_error && it != dict.end())
+            for (const auto &p : it->second.rec_dict(&ok))
+                if (spec.opts.contains(p.first))
+                    spec.defaults[p.first] = p.second.to_string();
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
@@ -967,7 +969,8 @@ struct ConfigManager::ConfigManagerImpl
             return false;
 
         for (auto cfg : configs) {
-            Options opts(cfg.first->opts, merge_new_elements(cfg.second, m_default_parameters));
+            merge_new_elements(cfg.second, m_default_parameters);
+            Options opts(cfg.first->opts, merge_new_elements(cfg.second, cfg.first->defaults));
 
             check_error(opts.check());
 
@@ -1152,7 +1155,8 @@ ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
     auto configs = tmpP.parse_configstring(configstr);
 
     for (auto cfg : configs) {
-        Options opts(cfg.first->opts, merge_new_elements(cfg.second, tmpP.m_default_parameters));
+        merge_new_elements(cfg.second, tmpP.m_default_parameters);
+        Options opts(cfg.first->opts, merge_new_elements(cfg.second, cfg.first->defaults));
 
         if (cfg.first->check_args)
             tmpP.check_error((cfg.first->check_args)(opts));

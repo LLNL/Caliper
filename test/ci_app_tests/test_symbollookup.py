@@ -44,7 +44,7 @@ class CaliperSamplerTest(unittest.TestCase):
 
         obj = json.loads( cat.run_test(target_cmd, caliper_config)[0] )
 
-        self.assertEqual(set(obj['columns']), { 'count', 'sourceloc#cali.sampler.pc', 'module#cali.sampler.pc', 'path' } )
+        self.assertEqual(set(obj['columns']), { 'count', 'time', 'sourceloc#cali.sampler.pc', 'module#cali.sampler.pc', 'path' } )
 
 if __name__ == "__main__":
     unittest.main()

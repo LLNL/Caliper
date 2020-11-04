@@ -27,10 +27,18 @@ public:
     HatchetSampleProfileController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts, const std::string& format)
         : ChannelController(name, 0, initial_cfg)
         {
-            config()["CALI_SAMPLER_FREQUENCY"] = opts.get("sample.frequency", "200").to_string();
+            std::string freqstr = opts.get("sample.frequency", "200").to_string();
+
+            config()["CALI_SAMPLER_FREQUENCY"] = freqstr;
 
             std::string select  = "*,count()";
-            std::string groupby = "prop:nested";
+            double freq = std::stod(freqstr);
+
+            if (freq > 0) {
+                select.append(",scale_count(");
+                select.append(std::to_string(1.0/freq));
+                select.append(") as time unit sec");
+            }
 
             std::string output(opts.get("output", "sample_profile").to_string());
 
@@ -47,6 +55,8 @@ public:
                 std::find(avail_services.begin(), avail_services.end(), "mpireport")    != avail_services.end();
             bool have_adiak =
                 std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
+            bool have_pthread =
+                std::find(avail_services.begin(), avail_services.end(), "pthread")      != avail_services.end();
 
             bool use_mpi = have_mpi;
 
@@ -59,16 +69,17 @@ public:
                     opts.get("adiak.import_categories", "2,3").to_string();
             }
 
-            if (use_mpi) {
-                groupby += ",mpi.rank";
+            if (have_pthread)
+                config()["CALI_SERVICES_ENABLE"].append(",pthread");
 
+            if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,count()")
+                    + opts.query_select("local", select.c_str())
                     + " group by "
                     + opts.query_groupby("local", "prop:nested,mpi.rank")
                     + " format " + format;
@@ -78,7 +89,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.query_let("local", "")
                     + " select "
-                    + opts.query_select("local", "*,count()")
+                    + opts.query_select("local", select.c_str())
                     + " group by "
                     + opts.query_groupby("local", "prop:nested")
                     + " format " + format;
@@ -138,6 +149,7 @@ const char* controller_spec =
     " \"services\"    : [ \"sampler\", \"trace\" ],"
     " \"categories\"  : [ \"adiak\", \"output\" ],"
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" },"
+    " \"defaults\"    : { \"sample.callpath\": \"true\", \"lookup.module\": \"true\" },"
     " \"options\": "
     " ["
     "  { "
@@ -151,17 +163,10 @@ const char* controller_spec =
     "    \"description\": \"Sampling frequency in Hz. Default: 200\""
     "  },"
     "  { "
-    "    \"name\": \"sample.threads\","
-    "    \"type\": \"bool\","
-    "    \"description\": \"Profile all threads.\","
-    "    \"services\": [ \"pthread\" ]"
-    "  },"
-    "  { "
     "    \"name\": \"sample.callpath\","
     "    \"type\": \"bool\","
     "    \"description\": \"Perform call-stack unwinding\","
     "    \"services\": [ \"callpath\", \"symbollookup\" ],"
-    "    \"config\": { \"CALI_CALLPATH_SKIP_FRAMES\": \"4\" },"
     "    \"query args\": [ { \"level\": \"local\", \"group by\": source.function#callpath.address } ]"
     "  },"
     "  { "

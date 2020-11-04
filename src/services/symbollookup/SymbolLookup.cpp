@@ -20,6 +20,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 
 using namespace cali;
 using namespace symbollookup;
@@ -54,7 +55,11 @@ class SymbolLookup
 
     Lookup   m_lookup;
 
+    std::unordered_map<uintptr_t, Lookup::Result> m_lookup_cache;
+    std::mutex m_lookup_cache_mutex;
+
     unsigned m_num_lookups;
+    unsigned m_num_cached;
     unsigned m_num_failed;
 
     //
@@ -128,7 +133,32 @@ class SymbolLookup
         if (m_lookup_mod)
             what |= Lookup::Module;
 
-        Lookup::Result result = m_lookup.lookup(e.value().to_uint(), what);
+        uintptr_t addr = e.value().to_uint();
+
+        Lookup::Result result;
+        bool found_in_cache = false;
+
+        {
+            std::lock_guard<std::mutex>
+                g(m_lookup_cache_mutex);
+
+            auto it = m_lookup_cache.find(addr);
+            if (it != m_lookup_cache.end()) {
+                found_in_cache = true;
+                result = it->second;
+                ++m_num_cached;
+            }
+        }
+
+        if (!found_in_cache) {
+            result = m_lookup.lookup(e.value().to_uint(), what);
+
+            std::lock_guard<std::mutex>
+                g(m_lookup_cache_mutex);
+
+            m_lookup_cache.insert(std::make_pair(addr, result));
+        }
+
         ++m_num_lookups;
 
         if (!result.success)
@@ -238,6 +268,7 @@ class SymbolLookup
     void finish_log(Caliper* c, Channel* chn) {
         Log(1).stream() << chn->name()   << ": Symbollookup: Performed "
                         << m_num_lookups << " address lookups, "
+                        << m_num_cached  << " cached, "
                         << m_num_failed  << " failed."
                         << std::endl;
     }
@@ -248,7 +279,7 @@ class SymbolLookup
     }
 
     SymbolLookup(Caliper* c, Channel* chn)
-        : m_num_lookups(0), m_num_failed(0)
+        : m_num_lookups(0), m_num_cached(0), m_num_failed(0)
         {
             ConfigSet config =
                 chn->config().init("symbollookup", s_configdata);
