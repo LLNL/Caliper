@@ -41,7 +41,7 @@ option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
 option(WITH_TOOLS     "Build Caliper tools" TRUE)
 
-option(WITH_NVPROF    "Enable NVidia profiler bindings (requires CUDA)" FALSE)
+option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
 option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
 option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" FALSE)
 option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" FALSE)
@@ -137,7 +137,7 @@ if(WITH_VTUNE)
   endif()
 endif()
 
-if(WITH_NVPROF)
+if(WITH_NVTX)
    find_package(CUDA REQUIRED)
 
    find_library(NVTX_LIBRARY
@@ -145,8 +145,8 @@ if(WITH_NVPROF)
      PATHS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib)
 
    message(STATUS "NVidia tools extension library found in " ${NVTX_LIBRARY})
-   set(CALIPER_HAVE_NVPROF ON)
-   set(CALIPER_NVProf_CMAKE_MSG "Yes, using ${NVTX_LIBRARY}")
+   set(CALIPER_HAVE_NVTX ON)
+   set(CALIPER_Nvtx_CMAKE_MSG "Yes, using ${NVTX_LIBRARY}")
    list(APPEND CALIPER_EXTERNAL_LIBS ${NVTX_LIBRARY})
 endif()
 
@@ -460,7 +460,7 @@ set(CALIPER_MODULES
   MPIWRAP
   MPIT
   OMPT
-  NVProf
+  Nvtx
   CUpti
   Kokkos
   TAU

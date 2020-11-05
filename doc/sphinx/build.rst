@@ -66,7 +66,7 @@ WITH_LIBUNWIND
 WITH_MPI
   Build with MPI support.
 
-WITH_NVPROF
+WITH_NVTX
   Build adapters to forward Caliper annotations to NVidia's nvtx annotation API.
   Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.
 

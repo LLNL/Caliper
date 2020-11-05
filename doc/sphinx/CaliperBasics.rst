@@ -567,7 +567,7 @@ Caliper provides bindings to export Caliper-annotated source code regions to
 third-party tools. Currently, Nvidia's NVTX API for the NVProf/NSight
 profilers and Intel's ITT API for Intel VTune Amplifier are supported.
 
-To use the NVTX forwarding, activate the "nvprof" Caliper config when
+To use the NVTX forwarding, activate the "nvtx" Caliper config when
 recording data with nvprof or ncu, either with the :doc:envvar:`CALI_CONFIG`
 environment variable, or the ConfigManager API. Be sure to enable NVTX support
 in NSight Compute.
