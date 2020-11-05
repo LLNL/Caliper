@@ -6,20 +6,20 @@ tools. Currently, Nvidia's NVProf/NSight and Intel VTune Amplifier are
 supported.
 
 
-NVProf
+NVidia NVProf/NSight
 --------------------------------
 
-The `nvprof` service translates Caliper annotations into NVTX ranges
+The `nvtx` service translates Caliper annotations into NVTX ranges
 (Nvidia's source-code annoatation interface). Caliper-annotated
 regions will then be visible in the "Markers and Ranges" section of
 the NVprof or NSight timeline display.
 
-To use the NVprof bindings, enable the `nvprof` service and run the
+To use the NVprof bindings, enable the `nvtx` service and run the
 target application under nvprof:
 
 .. code-block:: sh
 
-    $ CALI_SERVICES_ENABLE=nvprof nvprof <nvprof-options> app <app-options>
+    $ CALI_SERVICES_ENABLE=nvtx nvprof <nvprof-options> app <app-options>
 
 Then, load the measurement result file created by nvprof in nvvp (use
 the -o flag for nvprof to write output into a file).
@@ -28,10 +28,10 @@ By default, Caliper exports all regions with the NESTED attribute
 property. This includes the regions created by Caliper's annotation
 macros (CALI_CXX_MARK_FUNCTION, CALI_MARK_BEGIN/END
 etc.). Alternatively, the region attributes to export can be specified
-explicitly in the `CALI_NVPROF_TRIGGER_ATTRIBUTES` configuration
+explicitly in the `CALI_NVTX_TRIGGER_ATTRIBUTES` configuration
 variable.
 
-CALI_NVPROF_TRIGGER_ATTRIBUTES
+CALI_NVTX_TRIGGER_ATTRIBUTES
     Specify which attributes should be exported as NVTX
     ranges. Comma-separated list.
 

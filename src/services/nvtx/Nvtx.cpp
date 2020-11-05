@@ -20,7 +20,7 @@
 namespace cali
 {
 
-class NVProfBinding : public AnnotationBinding
+class NvtxBinding : public AnnotationBinding
 {
     static const ConfigSet::Entry s_configdata[];
 
@@ -87,10 +87,10 @@ public:
                                 CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
 
         m_cycle_colors =
-            chn->config().init("nvprof", s_configdata).get("cycle_colors").to_bool();
+            chn->config().init("nvtx", s_configdata).get("cycle_colors").to_bool();
     }
 
-    const char* service_tag() const { return "nvprof"; }
+    const char* service_tag() const { return "nvtx"; }
 
     void on_mark_attribute(Caliper* c, Channel*, const Attribute& attr) {
         if (m_cycle_colors)
@@ -158,7 +158,7 @@ public:
                 auto it = m_domain_map.find(attr.id());
 
                 if (it == m_domain_map.end()) {
-                    Log(0).stream() << "nvprof: on_end(): error: domain for attribute "
+                    Log(0).stream() << "nvtx: on_end(): error: domain for attribute "
                                     << attr.name()
                                     << " not found!" << std::endl;
                     return;
@@ -172,7 +172,7 @@ public:
     }
 };
 
-const uint32_t NVProfBinding::s_colors[] = {
+const uint32_t NvtxBinding::s_colors[] = {
     0x0000cc00, 0x000000cc, 0x00cccc00, 0x00cc00cc,
     0x0000cccc, 0x00cc0000, 0x00cccccc,
     0x00008800, 0x00000088, 0x00888800, 0x00880088,
@@ -180,7 +180,7 @@ const uint32_t NVProfBinding::s_colors[] = {
 };
 
 
-const ConfigSet::Entry NVProfBinding::s_configdata[] = {
+const ConfigSet::Entry NvtxBinding::s_configdata[] = {
     { "cycle_colors", CALI_TYPE_BOOL, "true",
       "Use a different color for each annotation entry",
       "Use a different color for each annotation entry"
@@ -188,6 +188,9 @@ const ConfigSet::Entry NVProfBinding::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-CaliperService nvprof_service { "nvprof", &AnnotationBinding::make_binding<NVProfBinding> };
+CaliperService nvtx_service { "nvtx", &AnnotationBinding::make_binding<NvtxBinding> };
+
+// Keep deprecated "nvprof" alias for nvtx service 
+CaliperService nvprof_service { "nvprof", &AnnotationBinding::make_binding<NvtxBinding> };
 
 } // namespace cali

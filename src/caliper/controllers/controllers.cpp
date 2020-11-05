@@ -53,7 +53,7 @@ const char* event_trace_spec =
 const char* nvprof_spec =
     "{"
     " \"name\"        : \"nvprof\","
-    " \"services\"    : [ \"nvprof\" ],"
+    " \"services\"    : [ \"nvtx\" ],"
     " \"description\" : \"Forward Caliper regions to NVidia nvprof (deprecated; use nvtx)\","
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
@@ -61,7 +61,7 @@ const char* nvprof_spec =
 const char* nvtx_spec =
     "{"
     " \"name\"        : \"nvtx\","
-    " \"services\"    : [ \"nvprof\" ],"
+    " \"services\"    : [ \"nvtx\" ],"
     " \"description\" : \"Forward Caliper regions to NVidia NSight/NVprof\","
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
