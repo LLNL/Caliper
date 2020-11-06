@@ -34,7 +34,7 @@ typedef struct {
         uint64_t       v_uint; // let largest member be the first
         bool           v_bool;
         double         v_double;
-        int            v_int;
+        int64_t        v_int;
         cali_attr_type v_type;
         void*          unmanaged_ptr;
         const void*    unmanaged_const_ptr;
@@ -96,7 +96,15 @@ cali_make_variant_from_int(int value)
 {
     cali_variant_t v;
     v.type_and_size = CALI_TYPE_INT;
-    v.value.v_uint = 0;
+    v.value.v_int = value;
+    return v;
+}
+
+inline cali_variant_t
+cali_make_variant_from_int64(int64_t value)
+{
+    cali_variant_t v;
+    v.type_and_size = CALI_TYPE_INT;
     v.value.v_int = value;
     return v;
 }
@@ -157,6 +165,9 @@ cali_variant_get_ptr(cali_variant_t v)
  */
 int
 cali_variant_to_int(cali_variant_t v, bool* okptr);
+
+int64_t
+cali_variant_to_int64(cali_variant_t v, bool* okptr);
 
 uint64_t
 cali_variant_to_uint(cali_variant_t v, bool* okptr);

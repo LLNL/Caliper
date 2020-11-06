@@ -306,7 +306,10 @@ public:
                     m_sum = Variant(m_sum.to_double() + e.value().to_double());
                     break;
                 case CALI_TYPE_INT:
-                    m_sum = Variant(m_sum.to_int()    + e.value().to_int()   );
+                    {
+                        int64_t s = m_sum.to_int64()  + e.value().to_int64();
+                        m_sum = Variant(cali_make_variant_from_int64(s));
+                    }
                     break;
                 case CALI_TYPE_UINT:
                     m_sum = Variant(m_sum.to_uint()   + e.value().to_uint()  );
@@ -527,7 +530,10 @@ public:
                 } else {
                     switch (target_attr.type()) {
                     case CALI_TYPE_INT:
-                        m_min = Variant(std::min(m_min.to_int(),    e.value().to_int()));
+                        {
+                            int64_t m = std::min(m_min.to_int64(), e.value().to_int64());
+                            m_min = Variant(cali_make_variant_from_int64(m));
+                        }
                         break;
                     case CALI_TYPE_DOUBLE:
                         m_min = Variant(std::min(m_min.to_double(), e.value().to_double()));
@@ -646,7 +652,10 @@ public:
                 } else {
                     switch (target_attr.type()) {
                     case CALI_TYPE_INT:
-                        m_max = Variant(std::max(m_max.to_int(),    e.value().to_int()));
+                        {
+                            int64_t m = std::max(m_max.to_int64(), e.value().to_int64());
+                            m_max = Variant(cali_make_variant_from_int64(m));
+                        }
                         break;
                     case CALI_TYPE_DOUBLE:
                         m_max = Variant(std::max(m_max.to_double(), e.value().to_double()));

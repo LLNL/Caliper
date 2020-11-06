@@ -32,9 +32,10 @@ public:
 
     cali_id_t     to_id() const;
 
-    bool          to_bool(bool* okptr = nullptr) const;
+    bool          to_bool(bool* okptr = nullptr)   const;
 
-    int           to_int(bool* okptr = nullptr)  const;
+    int           to_int(bool* okptr = nullptr)    const;
+    int64_t       to_int64(bool* okptr = nullptr)  const;
     uint64_t      to_uint(bool* okptr = nullptr, int base = 10) const;
 
     double        to_double(bool* okptr = nullptr) const;

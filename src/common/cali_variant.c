@@ -10,6 +10,7 @@
 
 #include "caliper/common/c-util/vlenc.h"
 
+#include <limits.h>
 #include <string.h>
 
 #define _EXTRACT_TYPE(type_and_size) ((type_and_size) & CALI_VARIANT_TYPE_MASK)
@@ -41,7 +42,6 @@ cali_variant_get_size(cali_variant_t v)
     case CALI_TYPE_STRING:
         return _EXTRACT_SIZE(v.type_and_size);
     case CALI_TYPE_INT:
-        return sizeof(int);
     case CALI_TYPE_UINT:
     case CALI_TYPE_ADDR:
         return sizeof(uint64_t);
@@ -104,7 +104,7 @@ cali_make_variant(cali_attr_type type, const void* ptr, size_t size)
         v.value.unmanaged_const_ptr = ptr;
         break;
     case CALI_TYPE_INT:
-        v.value.v_int    = *((const int*) ptr);
+        v.value.v_int    = *((const int64_t*) ptr);
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
@@ -132,6 +132,9 @@ cali_make_variant_from_bool(bool value);
 
 extern inline cali_variant_t
 cali_make_variant_from_int(int value);
+
+extern inline cali_variant_t
+cali_make_variant_from_int64(int64_t value);
 
 extern inline cali_variant_t
 cali_make_variant_from_uint(uint64_t value);
@@ -180,11 +183,17 @@ cali_variant_to_int(cali_variant_t v, bool* okptr)
         ok  = false;
         break;
     case CALI_TYPE_INT:
-        ret = v.value.v_int;
+        if (v.value.v_int >= INT_MIN && v.value.v_int <= INT_MAX)
+            ret = (int) v.value.v_int;
+        else
+            ok = false;
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
-        ret = (int) v.value.v_uint;
+        if (v.value.v_uint <= INT_MAX)
+            ret = (int) v.value.v_uint;
+        else
+            ok = false;
         break;
     case CALI_TYPE_DOUBLE:
         ret = (int) v.value.v_double;
@@ -194,6 +203,61 @@ cali_variant_to_int(cali_variant_t v, bool* okptr)
         break;
     case CALI_TYPE_TYPE:
         ret = (int) v.value.v_type;
+        break;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return ret;
+}
+
+/** \brief Return the variant's value as 64-bit integer
+ *
+ *  This function returns the variant's value as 64-bit integer.
+ *  Numeric types (bool, int, uint, double, type) will be converted to int,
+ *  and value pointed to by \a okptr is set to `true`.
+ *  For other types (blobs and strings) the function returns zero, and the
+ *  value pointed to by \a okptr is set to `false`.
+ *
+ *  \param v     The input variant
+ *  \param okptr If non-NULL, indicate success or failure int the referenced variable.
+ *  \return The integer value. Zero if the conversion was unsuccesful.
+ */
+int64_t
+cali_variant_to_int64(cali_variant_t v, bool* okptr)
+{
+    bool    ok  = true;
+    int64_t ret = 0;
+
+    uint64_t       t    = _EXTRACT_TYPE(v.type_and_size);
+    cali_attr_type type = (t <= CALI_MAXTYPE ? (cali_attr_type) t : CALI_TYPE_INV);
+
+    switch (type) {
+    case CALI_TYPE_INV:
+    case CALI_TYPE_USR:
+    case CALI_TYPE_STRING:
+    case CALI_TYPE_PTR:
+        ok  = false;
+        break;
+    case CALI_TYPE_INT:
+        ret = v.value.v_int;
+        break;
+    case CALI_TYPE_ADDR:
+    case CALI_TYPE_UINT:
+        if (v.value.v_uint <= LLONG_MAX)
+            ret = (int64_t) v.value.v_uint;
+        else
+            ok = false;
+        break;
+    case CALI_TYPE_DOUBLE:
+        ret = (int64_t) v.value.v_double;
+        break;
+    case CALI_TYPE_BOOL:
+        ret = (int64_t) v.value.v_bool;
+        break;
+    case CALI_TYPE_TYPE:
+        ret = (int64_t) v.value.v_type;
         break;
     }
 
@@ -232,7 +296,10 @@ cali_variant_to_uint(cali_variant_t v, bool* okptr)
         ok  = false;
         break;
     case CALI_TYPE_INT:
-        ret = (uint64_t) v.value.v_int;
+        if (v.value.v_int >= 0)
+            ret = (uint64_t) v.value.v_int;
+        else
+            ok = false;
         break;
     case CALI_TYPE_ADDR:
     case CALI_TYPE_UINT:
@@ -330,11 +397,11 @@ cali_variant_to_bool(cali_variant_t v, bool* okptr)
 
     switch (type) {
     case CALI_TYPE_INT:
-        ret = (v.value.v_int  != 0);
+        ret = (v.value.v_int   != 0);
         break;
     case CALI_TYPE_UINT:
     case CALI_TYPE_ADDR:
-        ret = (v.value.v_uint != 0);
+        ret = (v.value.v_uint  != 0);
         break;
     case CALI_TYPE_BOOL:
         ret = v.value.v_bool;

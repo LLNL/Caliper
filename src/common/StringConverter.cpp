@@ -83,6 +83,25 @@ cali::StringConverter::to_int(bool* okptr) const
     return res;
 }
 
+int64_t
+cali::StringConverter::to_int64(bool* okptr) const
+{
+    bool    ok  = false;
+    int64_t res = 0;
+
+    try {
+        res = std::stoll(m_str);
+        ok  = true;
+    } catch (...) {
+        ok  = false;
+    }
+
+    if (okptr)
+        *okptr = ok;
+
+    return res;
+}
+
 uint64_t
 cali::StringConverter::to_uint(bool* okptr, int base) const
 {
