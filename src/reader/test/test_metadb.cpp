@@ -91,7 +91,7 @@ TEST(MetaDBTest, SetGlobal) {
     Variant v_str_a(CALI_TYPE_STRING, "a", 1);
     Variant v_str_b(CALI_TYPE_STRING, "b", 1);
     Variant v_int(42);
-    Variant v_val(1337);
+    Variant v_val(cali_make_variant_from_int64(-9876543210));
     Variant v_no(-42);
 
     db.set_global(g_str_attr, v_str_a);

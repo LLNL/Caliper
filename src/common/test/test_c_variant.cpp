@@ -25,7 +25,7 @@ TEST(C_Variant_Test, CreateIntVariant) {
 
     EXPECT_EQ(cali_variant_get_type(v), CALI_TYPE_INT);
     EXPECT_EQ(cali_variant_to_int(v, NULL), val);
-    EXPECT_EQ(cali_variant_get_size(v), sizeof(int));
+    EXPECT_EQ(cali_variant_get_size(v), sizeof(int64_t));
 
     cali_variant_t vz = cali_make_variant_from_uint(0);
 
@@ -39,7 +39,9 @@ TEST(C_Variant_Test, CreateIntVariant) {
     EXPECT_EQ(cali_variant_to_type(v, &ok), CALI_TYPE_INV);
     EXPECT_FALSE(ok);
 
-    cali_variant_t v2 = cali_make_variant(CALI_TYPE_INT, &val, sizeof(int));
+    int64_t v64 = val;
+
+    cali_variant_t v2 = cali_make_variant(CALI_TYPE_INT, &v64, sizeof(int64_t));
     EXPECT_EQ(cali_variant_compare(v, v2), 0);
 }
 

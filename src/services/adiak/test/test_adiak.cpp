@@ -10,6 +10,14 @@
 
 using namespace cali;
 
+#if ADIAK_MAJOR_VERSION > 0
+    #define CALI_HAVE_ADIAK_LONGLONG 1
+#else
+    #if ADIAK_MINOR_VERSION > 2
+        #define CALI_HAVE_ADIAK_LONGLONG 1
+    #endif
+#endif
+
 namespace
 {
 
@@ -43,6 +51,11 @@ TEST(AdiakServiceTest, AdiakImport)
     std::vector<int> vec { 1, 4, 16 };
     adiak::value("import.vec", vec);
 
+#ifdef CALI_HAVE_ADIAK_LONGLONG
+    long long llv = -9876543210;
+    adiak::value("import.i64", llv);
+#endif
+
     Caliper  c;
     Channel* chn = c.get_channel(import_chn_id);
 
@@ -69,6 +82,13 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(c.get(chn, int_attr).value().to_int(), 42);
     EXPECT_EQ(c.get(chn, str_attr).value().to_string(), std::string("import"));
     EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
+
+#ifdef CALI_HAVE_ADIAK_LONGLONG
+    Attribute i64_attr = c.get_attribute("import.i64");
+    EXPECT_EQ(i64_attr.type(), CALI_TYPE_INT);
+    EXPECT_EQ(i64_attr.get(adk_type_attr).to_string(), std::string("long long"));
+    EXPECT_EQ(c.get(chn, i64_attr).value().to_int64(), llv);
+#endif
 }
 
 TEST(AdiakServiceTest, AdiakImportCategoryFilter)

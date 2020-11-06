@@ -52,7 +52,7 @@ Variant::to_string() const
     }
         break;
     case CALI_TYPE_INT:
-        ret = std::to_string(to_int());
+        ret = std::to_string(to_int64());
         break;
     case CALI_TYPE_UINT:
         ret = std::to_string(to_uint());
@@ -113,10 +113,10 @@ Variant::from_string(cali_attr_type type, const char* str, bool* okptr)
         break;
     case CALI_TYPE_INT:
         {
-            int i = StringConverter(str).to_int(&ok);
+            int64_t i = StringConverter(str).to_int64(&ok);
 
             if (ok)
-                ret = Variant(i);
+                ret = Variant(cali_make_variant_from_int64(i));
         }
         break;
     case CALI_TYPE_ADDR:

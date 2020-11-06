@@ -80,6 +80,9 @@ public:
     int            to_int(bool* okptr = nullptr) const {
         return cali_variant_to_int(m_v, okptr);
     }
+    int64_t        to_int64(bool* okptr = nullptr) const {
+        return cali_variant_to_int64(m_v, okptr);
+    }
     uint64_t       to_uint(bool* okptr = nullptr) const {
         return cali_variant_to_uint(m_v, okptr);
     }

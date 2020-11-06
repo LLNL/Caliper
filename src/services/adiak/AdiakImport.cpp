@@ -19,6 +19,14 @@
 
 using namespace cali;
 
+#if ADIAK_VERSION > 0
+    #define CALI_HAVE_ADIAK_LONGLONG 1
+#else
+    #if ADIAK_MINOR_VERSION > 2
+        #define CALI_HAVE_ADIAK_LONGLONG 1
+    #endif
+#endif
+
 namespace
 {
 
@@ -46,6 +54,14 @@ recursive_unpack(std::ostream& os, adiak_value_t *val, adiak_datatype_t* t)
     case adiak_double:
         os << val->v_double;
         break;
+#ifdef CALI_HAVE_ADIAK_LONGLONG
+    case adiak_longlong:
+        os << val->v_longlong;
+        break;
+    case adiak_ulonglong:
+        os << static_cast<unsigned long long>(val->v_longlong);
+        break;
+#endif
     case adiak_timeval:
     {
         struct timeval *tval = static_cast<struct timeval*>(val->v_ptr);
@@ -173,6 +189,16 @@ nameval_cb(const char *name, adiak_category_t category, const char *subcategory,
         set_val(channel, name, Variant(static_cast<uint64_t>(val->v_long)), t, category, subcategory);
         ++args->count;
         break;
+#ifdef CALI_HAVE_ADIAK_LONGLONG
+    case adiak_longlong:
+        set_val(channel, name, Variant(cali_make_variant_from_int64(val->v_longlong)), t, category, subcategory);
+        ++args->count;
+        break;
+    case adiak_ulonglong:
+        set_val(channel, name, Variant(cali_make_variant_from_uint(static_cast<uint64_t>(val->v_longlong))), t, category, subcategory);
+        ++args->count;
+        break;
+#endif
     case adiak_uint:
         set_val(channel, name, Variant(static_cast<uint64_t>(val->v_int)), t, category, subcategory);
         ++args->count;
