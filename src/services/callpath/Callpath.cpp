@@ -63,7 +63,11 @@ class Callpath
         unw_context_t unw_ctx;
         unw_cursor_t  unw_cursor;
 
+#ifdef __aarch64__
+        unw_getcontext(unw_ctx);
+#else
         unw_getcontext(&unw_ctx);
+#endif
 
         if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
             Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
