@@ -789,15 +789,15 @@ cali_channel_is_active(cali_id_t chn_id)
 void
 cali_flush(int flush_opts)
 {
-    Caliper c;
+    Caliper  c;
+    Channel* channel = c.get_channel(0); // channel 0 should be the default channel
 
-    for (auto chn : c.get_all_channels())
-        if (chn->is_active()) {
-            c.flush_and_write(chn, nullptr);
+    if (channel && channel->is_active()) {
+        c.flush_and_write(channel, nullptr);
 
-            if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
-                c.clear(chn);
-        }
+        if (flush_opts & CALI_FLUSH_CLEAR_BUFFERS)
+            c.clear(channel);
+    }
 }
 
 void
