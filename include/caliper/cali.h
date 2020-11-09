@@ -657,17 +657,17 @@ cali_channel_is_active(cali_id_t chn_id);
  */
 
 /**
- * \brief Forward aggregation or trace buffer contents to output
- *   services on all active channels.
- *
- * Use with caution: this call flushes all active channels. Programs
- * that explicitly flush Caliper data should preferrably use
- * dedicated channels.
+ * \brief Forward the default channel's aggregation or trace buffer
+ *   contents to output services.
  *
  * Flushes trace buffers and/or aggreation database in the trace and
  * aggregation services, respectively. This will forward all buffered
  * snapshot records to output services, e.g., recorder, report, or
  * mpireport.
+ *
+ * This call only flushes the default channel (the channel configured
+ * through environment variables or the caliper.config file). To flush
+ * other channels, use cali_channel_flush().
  *
  * By default, the trace/aggregation buffers will not be cleared after
  * the flush. This can be changed by adding \a

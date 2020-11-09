@@ -42,6 +42,12 @@ declarations:
       }
     options:
       wrap_c: false
+  - decl: |
+      enum cali_flush_opts {
+        CALI_FLUSH_CLEAR_BUFFERS = 1
+      }
+    options:
+      wrap_c: false
   - decl: typedef uint64_t cali_id_t
     options:
       C_extern_C: true
@@ -57,6 +63,9 @@ declarations:
     options:
       C_extern_C: true
   - decl: void cali_config_set(const char* key, const char* value)
+    options:
+      C_extern_C: true
+  - decl: void cali_flush(int flush_opts)
     options:
       C_extern_C: true
 
@@ -88,6 +97,9 @@ declarations:
     options:
       C_extern_C: true
   - decl: void cali_end_region(const char* name)
+    options:
+      C_extern_C: true
+  - decl: cali_id_t cali_make_loop_iteration_attribute(const char* name)
     options:
       C_extern_C: true
 
