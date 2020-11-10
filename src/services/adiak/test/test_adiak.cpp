@@ -10,14 +10,6 @@
 
 using namespace cali;
 
-#if ADIAK_MAJOR_VERSION > 0
-    #define CALI_HAVE_ADIAK_LONGLONG 1
-#else
-    #if ADIAK_MINOR_VERSION > 2
-        #define CALI_HAVE_ADIAK_LONGLONG 1
-    #endif
-#endif
-
 namespace
 {
 
@@ -51,11 +43,6 @@ TEST(AdiakServiceTest, AdiakImport)
     std::vector<int> vec { 1, 4, 16 };
     adiak::value("import.vec", vec);
 
-#ifdef CALI_HAVE_ADIAK_LONGLONG
-    long long llv = -9876543210;
-    adiak::value("import.i64", llv);
-#endif
-
     Caliper  c;
     Channel* chn = c.get_channel(import_chn_id);
 
@@ -82,14 +69,50 @@ TEST(AdiakServiceTest, AdiakImport)
     EXPECT_EQ(c.get(chn, int_attr).value().to_int(), 42);
     EXPECT_EQ(c.get(chn, str_attr).value().to_string(), std::string("import"));
     EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,16}"));
-
-#ifdef CALI_HAVE_ADIAK_LONGLONG
-    Attribute i64_attr = c.get_attribute("import.i64");
-    EXPECT_EQ(i64_attr.type(), CALI_TYPE_INT);
-    EXPECT_EQ(i64_attr.get(adk_type_attr).to_string(), std::string("long long"));
-    EXPECT_EQ(c.get(chn, i64_attr).value().to_int64(), llv);
-#endif
 }
+
+
+#ifdef ADIAK_HAVE_LONGLONG
+TEST(AdiakServiceTest, AdiakImportLonglong)
+{
+    cali_id_t import_chn_id =
+        cali::create_channel("adiak_import", 0, {
+                { "CALI_SERVICES_ENABLE", "adiak_import" }
+            });
+
+    long long llv = -9876543210;
+
+    adiak::value("import.i64", llv);
+
+    unsigned long long ullv = 0xFFFFFFFFFFAA;
+
+    std::vector<unsigned long long> vec { 1, 4, ullv };
+    adiak::value("import.vec", vec);
+
+    Caliper  c;
+    Channel* chn = c.get_channel(import_chn_id);
+
+    ASSERT_NE(chn, nullptr);
+
+    chn->events().pre_flush_evt(&c, chn, nullptr);
+
+    Attribute i64_attr = c.get_attribute("import.i64");
+    Attribute vec_attr = c.get_attribute("import.vec");
+
+    EXPECT_EQ(i64_attr.type(), CALI_TYPE_INT);
+    EXPECT_EQ(vec_attr.type(), CALI_TYPE_STRING);
+
+    EXPECT_TRUE(i64_attr.is_global());
+
+    Attribute adk_type_attr = c.get_attribute("adiak.type");
+
+    EXPECT_EQ(i64_attr.get(adk_type_attr).to_string(), std::string("long long"));
+    EXPECT_EQ(vec_attr.get(adk_type_attr).to_string(), std::string("list of int"));
+
+    EXPECT_EQ(c.get(chn, i64_attr).value().to_int64(), llv);
+    EXPECT_EQ(c.get(chn, vec_attr).value().to_string(), std::string("{1,4,281474976710570}"));
+}
+#endif
 
 TEST(AdiakServiceTest, AdiakImportCategoryFilter)
 {
