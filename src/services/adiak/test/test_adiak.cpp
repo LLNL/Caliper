@@ -10,14 +10,6 @@
 
 using namespace cali;
 
-#if ADIAK_MAJOR_VERSION > 0
-    #define CALI_HAVE_ADIAK_LONGLONG 1
-#else
-    #if ADIAK_MINOR_VERSION > 2
-        #define CALI_HAVE_ADIAK_LONGLONG 1
-    #endif
-#endif
-
 namespace
 {
 
