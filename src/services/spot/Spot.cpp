@@ -60,7 +60,7 @@ namespace
 
         template<typename T>
         using List = std::vector<T>;
-        
+
         using AggregationHandler = cali::Aggregator;
         using SelectionHandler = cali::RecordSelector;
 
@@ -82,9 +82,9 @@ namespace
             AggregationHandler aggregator;
             SelectionHandler   selector;
         };
-        
+
         List<QueryProcessingPipeline> m_queries;
-        
+
         std::vector<std::string> y_axes;
 
         AggregationDescriptorList m_annotations_and_places;
@@ -92,7 +92,7 @@ namespace
         std::string code_version;
         std::string recorded_time;
         std::vector<std::string> title;
-        
+
         void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
             int num_queries = m_queries.size();
             for (int i = 0; i < num_queries; ++i) {
@@ -100,7 +100,7 @@ namespace
 
                 auto &query = m_queries[i];
 
-                c->flush(chn, flush_info, 
+                c->flush(chn, flush_info,
                     [&query](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
                         if (query.selector.pass(db, rec)) {
                             query.aggregator.add(db, rec);
@@ -144,8 +144,8 @@ namespace
              std::ifstream ifs(place);
              std::string str(std::istreambuf_iterator<char>{ifs}, {});
              cali_rapidjson::Document doc;
-             cali_rapidjson::Value xtic_value; 
-             cali_rapidjson::Value commit_value; 
+             cali_rapidjson::Value xtic_value;
+             cali_rapidjson::Value commit_value;
              xtic_value.SetString(recorded_time.c_str(),doc.GetAllocator());
              commit_value.SetString(code_version.c_str(),doc.GetAllocator());
              if(str.size() > 0){
@@ -162,7 +162,7 @@ namespace
                        arrarr.PushBack(0,doc.GetAllocator());
                        arrarr.PushBack(((float)datum.second)/(1.0*divisor),doc.GetAllocator());
                        series_data.PushBack(arrarr,doc.GetAllocator());
-               } 
+               }
              }
              else {
                const char* json_string = "{\"show_exclusive\" : false}";
@@ -187,11 +187,11 @@ namespace
                auto& json_times = doc["XTics"];
                json_commits.GetArray().PushBack(commit_value,doc.GetAllocator());
                json_times.GetArray().PushBack(xtic_value,doc.GetAllocator());
-               cali_rapidjson::Value& series_array = doc["series"]; 
+               cali_rapidjson::Value& series_array = doc["series"];
                for(auto datum : json) {
                   std::string series_name = datum.first;
                   if(series_name.size()>1){
-                    cali_rapidjson::Value value_series_name; 
+                    cali_rapidjson::Value value_series_name;
                     value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                     series_array.GetArray().PushBack(value_series_name,doc.GetAllocator());
                     cali_rapidjson::Value outarr;
@@ -204,7 +204,7 @@ namespace
                     value_series_name.SetString(series_name.c_str(),doc.GetAllocator());
                     doc.AddMember(value_series_name,outarr,doc.GetAllocator());
                   }
-               } 
+               }
              }
 
              std::ofstream ofs(place.c_str());
@@ -213,7 +213,7 @@ namespace
              doc.Accept(writer);
           }
         }
-        
+
         Spot(Caliper* c, Channel* chn) {
             ConfigSet    config = chn->config().init("spot", s_configdata);
             std::string  config_string = config.get("config").to_string().c_str();
@@ -225,7 +225,7 @@ namespace
               struct tm * timeinfo;
               time (&rawtime);
               timeinfo = localtime (&rawtime);
-              recorded_time = std::string(asctime(timeinfo)); 
+              recorded_time = std::string(asctime(timeinfo));
             }
             std::string title_string = config.get("title").to_string();
             bool use_default_title = (title_string.size() == 0);
@@ -236,7 +236,7 @@ namespace
             util::split(y_axes_string,':',std::back_inserter(y_axes));
             std::vector<std::string> logging_configurations;
             util::split(config_string,',',std::back_inserter(logging_configurations));
-            for(const auto log_config : logging_configurations){
+            for(const auto& log_config : logging_configurations){
               m_jsons.emplace_back(std::vector<std::pair<std::string,TimeType>>());
               std::vector<std::string> annotation_and_place;
               util::split(log_config,':',std::back_inserter(annotation_and_place));
@@ -257,9 +257,9 @@ namespace
         }
 
         QueryProcessingPipeline create_query_processor(std::string query){
-           CalQLParser parser(query.c_str()); 
+           CalQLParser parser(query.c_str());
            if (parser.error()) {
-               CalQLParser default_parser("SELECT *"); 
+               CalQLParser default_parser("SELECT *");
                QuerySpec default_spec(default_parser.spec());
                Log(0).stream() << "spot: config parse error: " << parser.error_msg() << std::endl;
                return QueryProcessingPipeline(Aggregator(default_spec),RecordSelector(default_spec));
@@ -267,7 +267,7 @@ namespace
            QuerySpec    spec(parser.spec());
            return { Aggregator(spec), RecordSelector(spec) };
         }
-               
+
         static std::string query_for_annotation(std::string grouping, std::string metric = "inclusive_sum(sum#time.duration)"){
           std::string end_grouping = "event.end#"+grouping;
           return "SELECT " + grouping+","+metric+",* WHERE " +grouping;
@@ -276,12 +276,12 @@ namespace
     public:
 
         ~Spot()
-            { 
+            {
             }
 
         static void create(Caliper* c, Channel* chn) {
             Spot* instance = new Spot(c, chn);
-            
+
             chn->events().write_output_evt.connect(
                 [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
                     instance->write_output_cb(c, chn, info);
@@ -324,7 +324,7 @@ namespace
         ConfigSet::Terminator
     };
 
-} // namespace 
+} // namespace
 
 namespace cali
 {

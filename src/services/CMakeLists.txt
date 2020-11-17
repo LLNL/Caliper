@@ -1,6 +1,13 @@
 # A macro to include service module source files in the caliper runtime lib
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+include(CheckCXXCompilerFlag)
+set(Wall_flag)
+check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
+if(Supports_Wall_Flag)
+    set(Wall_flag "-Wall")
+endif()
+
 set(CALIPER_SERVICES_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 macro(add_service_sources)
@@ -31,8 +38,7 @@ macro(add_service_objlib)
   if(${BUILD_SHARED_LIBS})
     set_property(TARGET "${ARGN}" PROPERTY POSITION_INDEPENDENT_CODE TRUE)
   endif()
-  target_compile_options("${ARGN}" PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+  target_compile_options("${ARGN}" PRIVATE ${Wall_flag})
   list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
@@ -133,8 +139,7 @@ add_custom_target(
 
 add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 
-target_compile_options(caliper-services PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+target_compile_options(caliper-services PRIVATE ${Wall_flag})
 
 add_dependencies(caliper-services gen-services)
 

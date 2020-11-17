@@ -39,7 +39,7 @@ copyrightNotice="""
 
 initial_service_string = "@CALIPER_SERVICE_NAMES@"
 def insert_magic_here(service_string):
-    service_list=[x for x in service_string.split(";") if x is not '']
+    service_list=[x for x in service_string.split(";") if x]
     # print service_list
     service_ret = []
     for service in service_list:
@@ -66,10 +66,10 @@ service_declaration_text=""
 for service in services_list:
     service_name = service[0]
     service_condition = service[1]
-    if service_condition is not "":
+    if service_condition:
         service_declaration_text += "#ifdef "+service_condition+"\n"
     service_declaration_text += "extern CaliperService "+service_name+";\n"
-    if service_condition is not "":
+    if service_condition:
         service_declaration_text += "#endif\n"
 
 service_list_definition_text = """
@@ -84,10 +84,10 @@ service_list_definition_text = """
 for service in services_list:
     service_name = service[0]
     service_condition = service[1]
-    if service_condition is not "":
+    if service_condition:
         service_list_definition_text += "#ifdef "+service_condition+"\n"
     service_list_definition_text += "        "+service_name+",\n"
-    if service_condition is not "":
+    if service_condition:
         service_list_definition_text += "#endif\n"
 
 service_list_definition_text += """
