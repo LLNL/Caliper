@@ -1,13 +1,6 @@
 # A macro to include service module source files in the caliper runtime lib
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-include(CheckCXXCompilerFlag)
-set(Wall_flag)
-check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
-if(Supports_Wall_Flag)
-    set(Wall_flag "-Wall")
-endif()
-
 set(CALIPER_SERVICES_SRC_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 macro(add_service_sources)

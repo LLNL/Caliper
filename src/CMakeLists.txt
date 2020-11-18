@@ -4,6 +4,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD   99)
 
+include(CheckCXXCompilerFlag)
+set(Wall_flag)
+check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
+if(Supports_Wall_Flag)
+    set(Wall_flag "-Wall")
+endif()
+
 include_directories(${PROJECT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/interface/c_fortran)

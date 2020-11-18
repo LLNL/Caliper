@@ -189,10 +189,9 @@ void make_default_channel()
     //   Creates default channel (which reads env vars and/or caliper.config)
     // and initializes builtin ConfigManager during initialization
 
-    Caliper  c;
-    Channel* channel =
-        c.create_channel("default", RuntimeConfig::get_default_config());
+    Caliper c;
 
+    c.create_channel("default", RuntimeConfig::get_default_config());
     internal::init_builtin_configmanager(&c);
 }
 

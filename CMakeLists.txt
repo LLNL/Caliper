@@ -479,6 +479,3 @@ foreach(_caliper_module ${CALIPER_MODULES})
     message(STATUS "${_prefix} : No")
   endif()
 endforeach()
-
-# Install exports
-#install(EXPORT caliper DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake)
