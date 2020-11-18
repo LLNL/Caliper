@@ -22,6 +22,7 @@ namespace cali
 
 extern CaliperService mpiwrap_service;
 extern CaliperService mpireport_service;
+extern CaliperService mpiflush_service;
 #ifdef CALIPER_HAVE_MPIT
 extern CaliperService mpit_service;
 #endif
@@ -79,6 +80,7 @@ add_mpi_controllers_and_services()
     CaliperService services[] = {
         mpiwrap_service,
         mpireport_service,
+        mpiflush_service,
 #ifdef CALIPER_HAVE_MPIT
         mpit_service,
 #endif

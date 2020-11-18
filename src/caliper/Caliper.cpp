@@ -51,7 +51,7 @@ extern void config_sanity_check(const char*, RuntimeConfig);
 namespace internal
 {
 
-extern void init_builtin_configmanager(Caliper* c, Channel* channel);
+extern void init_builtin_configmanager(Caliper* c);
 
 }
 
@@ -186,14 +186,14 @@ get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
 
 void make_default_channel()
 {
-    //   Creates default channel and initializes builtin ConfigManager during
-    // initialization
+    //   Creates default channel (which reads env vars and/or caliper.config)
+    // and initializes builtin ConfigManager during initialization
 
     Caliper  c;
     Channel* channel =
         c.create_channel("default", RuntimeConfig::get_default_config());
 
-    internal::init_builtin_configmanager(&c, channel);
+    internal::init_builtin_configmanager(&c);
 }
 
 } // namespace [anonymous]
