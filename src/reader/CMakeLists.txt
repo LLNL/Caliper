@@ -24,8 +24,7 @@ set(CALIPER_READER_SOURCES
 add_library(caliper-reader OBJECT
   ${CALIPER_READER_SOURCES})
 
-  target_compile_options(caliper-reader PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+target_compile_options(caliper-reader PRIVATE ${Wall_flag})
 
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-reader PROPERTY POSITION_INDEPENDENT_CODE TRUE)

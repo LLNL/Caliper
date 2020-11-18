@@ -19,8 +19,7 @@ add_subdirectory(controllers)
 
 add_library(caliper-runtime OBJECT ${CALIPER_RUNTIME_SOURCES})
 
-target_compile_options(caliper-runtime PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+target_compile_options(caliper-runtime PRIVATE ${Wall_flag})
 
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-runtime PROPERTY POSITION_INDEPENDENT_CODE TRUE)

@@ -101,7 +101,7 @@ Using Caliper in CMake projects
 ................................
 
 Caliper creates a CMake package file (caliper-config.cmake) and
-installs it in <caliper-installation-dir>/share/cmake/caliper. The
+installs it in <caliper-installation-dir>/lib64/cmake/caliper. The
 package file defines Caliper's include directories and exports targets
 for the Caliper libraries. Projects using CMake can use find_package()
 and target_link_libraries() to integrate Caliper as a dependency.
@@ -125,7 +125,7 @@ This example CMakeLists.txt builds a program which depends on Caliper: ::
 When configuring the target program, point CMake to the desired
 Caliper installation with `caliper_DIR`: ::
 
-  cmake -Dcaliper_DIR=<caliper-installation-dir>/share/cmake/caliper ..
+  cmake -Dcaliper_DIR=<caliper-installation-dir>/lib64/cmake/caliper ..
 
 The CMake package defines the following variables and targets:
 

@@ -20,8 +20,7 @@ add_subdirectory(util)
 add_library(caliper-common OBJECT
   ${CALIPER_COMMON_SOURCES})
 
-target_compile_options(caliper-common PRIVATE
-  $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:-Wall>)
+target_compile_options(caliper-common PRIVATE ${Wall_flag})
 
 if (${BUILD_SHARED_LIBS})
   set_property(TARGET caliper-common PROPERTY POSITION_INDEPENDENT_CODE TRUE)
