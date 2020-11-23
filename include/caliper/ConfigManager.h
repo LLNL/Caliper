@@ -377,7 +377,7 @@ public:
     void set_default_parameter(const char* key, const char* value);
 
     /// \brief Pre-set parameter \a key to \a value for \a config
-    void set_default_parameter_for(const char* config, const char* key, const char* value);
+    void set_default_parameter_for_config(const char* config, const char* key, const char* value);
 
     /// \brief Returns \a true if there was an error parsing configuration
     ///   strings

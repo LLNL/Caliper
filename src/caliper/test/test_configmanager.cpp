@@ -279,7 +279,7 @@ TEST(ConfigManagerTest, Options)
 
         mgr.set_default_parameter("stringopt", "set_default_parameter");
         mgr.set_default_parameter("intopt", "4242");
-        mgr.set_default_parameter_for("testcontroller", "defaultopt", "false");
+        mgr.set_default_parameter_for_config("testcontroller", "defaultopt", "false");
 
         mgr.add("testcontroller (intopt=42), boolopt");
 

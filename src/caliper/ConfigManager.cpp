@@ -1125,7 +1125,7 @@ ConfigManager::set_default_parameter(const char* key, const char* value)
 }
 
 void
-ConfigManager::set_default_parameter_for(const char* config, const char* key, const char* value)
+ConfigManager::set_default_parameter_for_config(const char* config, const char* key, const char* value)
 {
     mP->m_default_parameters_for_spec[config][key] = value;
 }
