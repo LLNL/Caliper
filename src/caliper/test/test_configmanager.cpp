@@ -194,6 +194,11 @@ const char* testcontroller_spec =
     "   \"name\": \"stringopt\","
     "   \"type\": \"string\","
     "   \"description\": \"A string option\""
+    "  },"
+    "  {"
+    "   \"name\": \"intopt\","
+    "   \"type\": \"int\","
+    "   \"description\": \"An integer option\""
     "  }"
     " ]"
     "}";
@@ -265,5 +270,29 @@ TEST(ConfigManagerTest, Options)
 
         std::vector<std::string> list { "boolopt", "global_boolopt", "defaultopt" };
         EXPECT_TRUE(tP->enabled_opts_list_matches(list));
+    }
+
+    {
+        ConfigManager mgr;
+        mgr.add_option_spec(test_option_spec);
+        mgr.add_config_spec(testcontroller_info);
+
+        mgr.set_default_parameter("stringopt", "set_default_parameter");
+        mgr.set_default_parameter("intopt", "4242");
+        mgr.set_default_parameter_for("testcontroller", "defaultopt", "false");
+
+        mgr.add("testcontroller (intopt=42), boolopt");
+
+        EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+        auto cP = mgr.get_channel("testcontroller");
+        ASSERT_TRUE(cP);
+        auto tP = std::dynamic_pointer_cast<TestController>(cP);
+        ASSERT_TRUE(tP);
+
+        EXPECT_TRUE(tP->is_enabled("boolopt"));
+
+        EXPECT_FALSE(tP->is_enabled("defaultopt"));
+        EXPECT_EQ(tP->get_opt("intopt"),    std::string("42"));
+        EXPECT_EQ(tP->get_opt("stringopt"), std::string("set_default_parameter"));
     }
 }

@@ -691,6 +691,9 @@ struct ConfigManager::ConfigManagerImpl
     bool        m_error = false;
     std::string m_error_msg = "";
 
+    std::map< std::string, argmap_t >
+        m_default_parameters_for_spec;
+
     argmap_t    m_default_parameters;
     argmap_t    m_extra_vars;
 
@@ -962,6 +965,18 @@ struct ConfigManager::ConfigManagerImpl
         return ret;
     }
 
+    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) {
+        auto it = m_default_parameters_for_spec.find(spec.name);
+
+        if (it != m_default_parameters_for_spec.end())
+            merge_new_elements(args, it->second);
+
+        merge_new_elements(args, m_default_parameters);
+        merge_new_elements(args, spec.defaults);
+
+        return args;
+    }
+
     bool add(const char* config_string) {
         auto configs = parse_configstring(config_string);
 
@@ -969,8 +984,7 @@ struct ConfigManager::ConfigManagerImpl
             return false;
 
         for (auto cfg : configs) {
-            merge_new_elements(cfg.second, m_default_parameters);
-            Options opts(cfg.first->opts, merge_new_elements(cfg.second, cfg.first->defaults));
+            Options opts(cfg.first->opts, add_default_parameters(cfg.second, *cfg.first));
 
             check_error(opts.check());
 
@@ -1110,6 +1124,12 @@ ConfigManager::set_default_parameter(const char* key, const char* value)
     mP->m_default_parameters[key] = value;
 }
 
+void
+ConfigManager::set_default_parameter_for(const char* config, const char* key, const char* value)
+{
+    mP->m_default_parameters_for_spec[config][key] = value;
+}
+
 ConfigManager::ChannelList
 ConfigManager::get_all_channels()
 {
@@ -1155,8 +1175,7 @@ ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
     auto configs = tmpP.parse_configstring(configstr);
 
     for (auto cfg : configs) {
-        merge_new_elements(cfg.second, tmpP.m_default_parameters);
-        Options opts(cfg.first->opts, merge_new_elements(cfg.second, cfg.first->defaults));
+        Options opts(cfg.first->opts, tmpP.add_default_parameters(cfg.second, *cfg.first));
 
         if (cfg.first->check_args)
             tmpP.check_error((cfg.first->check_args)(opts));
