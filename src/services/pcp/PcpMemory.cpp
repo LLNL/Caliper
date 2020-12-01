@@ -76,8 +76,6 @@ sum_attributes(const std::vector<Entry>& rec, const std::vector<Attribute>& attr
 
 class PcpMemory
 {
-    static const ConfigSet::Entry s_configdata[];
-
     std::vector<Attribute> rd_counter_attrs;
     std::vector<Attribute> wr_counter_attrs;
 

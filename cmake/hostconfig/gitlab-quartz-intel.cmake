@@ -8,7 +8,7 @@ set(MPI_CXX_COMPILER   "/usr/tce/packages/mvapich2/mvapich2-2.3-intel-19.0.4/bin
 set(PAPI_PREFIX "/usr/tce/packages/papi/papi-5.5.1" CACHE PATH "")
 set(ITT_PREFIX  "/usr/tce/packages/vtune/default" CACHE PATH "")
 
-set(adiak_DIR "/g/g90/boehme3/local/adiak/toss3-0.1.1/lib/cmake/adiak" CACHE PATH "")
+set(adiak_DIR "/usr/workspace/boehme3/install/adiak/v0.3.0-quartz/lib/cmake/adiak" CACHE PATH "")
 
 set(WITH_FORTRAN  On  CACHE BOOL "")
 set(WITH_ADIAK    On  CACHE BOOL "")

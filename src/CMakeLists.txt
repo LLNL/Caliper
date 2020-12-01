@@ -8,7 +8,7 @@ include(CheckCXXCompilerFlag)
 set(Wall_flag)
 check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
 if(Supports_Wall_Flag)
-    set(Wall_flag "-Wall")
+  set(Wall_flag "-Wall")
 endif()
 
 include_directories(${PROJECT_BINARY_DIR})
