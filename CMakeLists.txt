@@ -53,6 +53,7 @@ option(WITH_MPI       "Enable MPI" FALSE)
 option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
+option(WITH_ROCM      "Enable AMD ROCtracer/RocTX support" FALSE)
 option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
@@ -306,6 +307,17 @@ if (WITH_MPI)
   endif()
 endif()
 
+if (WITH_ROCM)
+  include(FindRoctracer)
+  if (ROCM_FOUND)
+    set(CALIPER_HAVE_ROCM TRUE)
+    set(CALIPER_ROCm_CMAKE_MSG "Yes, using ${ROCM_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCM_LIBRARIES})
+  else()
+    message(WARNING "ROCm support requested but ROCm was not found!\n"
+      "Set ROCM_PREFIX to installation path and re-run cmake.")
+  endif()
+endif()
 
 if(WITH_TAU)
   if (CALIPER_HAVE_MPI)
@@ -463,6 +475,7 @@ set(CALIPER_MODULES
   Nvtx
   CUpti
   Kokkos
+  ROCm
   TAU
   VTune
   PCP

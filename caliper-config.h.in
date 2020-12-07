@@ -19,6 +19,7 @@
 #cmakedefine CALIPER_HAVE_VTUNE
 #cmakedefine CALIPER_HAVE_ADIAK
 #cmakedefine CALIPER_HAVE_PCP
+#cmakedefine CALIPER_HAVE_ROCM
 
 #cmakedefine CALIPER_REDUCED_CONSTEXPR_USAGE
 
