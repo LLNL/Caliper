@@ -24,7 +24,7 @@ namespace
 QuerySpec::Condition
 parse_clause(const std::string& str)
 {
-    QuerySpec::Condition clause { QuerySpec::Condition::None, "", "" };
+    QuerySpec::Condition clause;
 
     // parse "[-]attribute[(<>=)value]" string
 

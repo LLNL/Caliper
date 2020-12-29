@@ -89,6 +89,14 @@ struct QuerySpec
         }           op;
         std::string attr_name;
         std::string value;
+
+        Condition()
+            : op(Op::None)
+        { }
+
+        Condition(Condition::Op o, const std::string& name, const std::string& val)
+            : op(o), attr_name(name), value(val)
+        { }
     };
 
     /// \brief Output formatter specification.
