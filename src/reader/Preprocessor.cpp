@@ -6,6 +6,7 @@
 #include "caliper/reader/Preprocessor.h"
 
 #include "caliper/reader/QuerySpec.h"
+#include "caliper/reader/RecordSelector.h"
 
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
@@ -14,13 +15,9 @@
 
 #include "caliper/common/cali_types.h"
 
-#include <algorithm>
-#include <cassert>
-#include <cstring>
 #include <cmath>
-#include <iostream>
-#include <iterator>
-#include <mutex>
+#include <vector>
+#include <utility>
 
 using namespace cali;
 
@@ -221,14 +218,14 @@ public:
         {
             m_tgt_attrs.assign(args.size(), Attribute::invalid);
         }
-    
+
     void process(CaliperMetadataAccessInterface& db, EntryList& rec) {
         for (size_t i = 0; i < m_tgt_attrs.size(); ++i) {
             Variant v_tgt = get_value(db, m_tgt_attr_names[i], m_tgt_attrs[i], rec);
 
             if (v_tgt.empty())
                 continue;
-                        
+
             cali_attr_type type = m_tgt_attrs[i].type();
 
             if (m_res_attr == Attribute::invalid)
@@ -257,9 +254,9 @@ enum KernelID {
 
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
 const char* scale_args[]   = { "attribute", "scale" };
-const char* first_args[]   = { 
-    "attribute0", "attribute1", "attribute2", 
-    "attribute3", "attribute4", "attribute5", 
+const char* first_args[]   = {
+    "attribute0", "attribute1", "attribute2",
+    "attribute3", "attribute4", "attribute5",
     "attribute6", "attribute7", "attribute8"
 };
 
@@ -267,7 +264,7 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::ScaledRatio,   "ratio",         2, 3, sratio_args  },
     { KernelID::Scale,         "scale",         2, 2, scale_args   },
     { KernelID::Truncate,      "truncate",      1, 2, scale_args   },
-    { KernelID::First,         "first",         2, 8, first_args   },
+    { KernelID::First,         "first",         1, 8, first_args   },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -287,14 +284,20 @@ constexpr int MAX_KERNEL_ID = 3;
 
 struct Preprocessor::PreprocessorImpl
 {
-    std::vector<Kernel*> kernels;
+    std::vector< std::pair<RecordSelector, Kernel*> > kernels;
 
     void configure(const QuerySpec& spec) {
         for (const auto &pspec : spec.preprocess_ops) {
             int index = pspec.op.op.id;
 
-            if (index >= 0 && index <= MAX_KERNEL_ID)
-                kernels.push_back((*::kernel_create_fn[index])(pspec.target, pspec.op.args));
+            if (index >= 0 && index <= MAX_KERNEL_ID) {
+                kernels.push_back(
+                        std::make_pair(
+                            RecordSelector(pspec.cond),
+                            (*::kernel_create_fn[index])(pspec.target, pspec.op.args)
+                        )
+                    );
+            }
         }
     }
 
@@ -302,7 +305,8 @@ struct Preprocessor::PreprocessorImpl
         EntryList ret = rec;
 
         for (auto &k : kernels)
-            k->process(db, ret);
+            if (k.first.pass(db, ret))
+                k.second->process(db, ret);
 
         return ret;
     }
@@ -313,7 +317,7 @@ struct Preprocessor::PreprocessorImpl
 
     ~PreprocessorImpl() {
         for (auto &k : kernels)
-            delete k;
+            delete k.second;
     }
 };
 

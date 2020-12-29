@@ -25,12 +25,12 @@ QuerySpec::Condition
 parse_clause(const std::string& str)
 {
     QuerySpec::Condition clause { QuerySpec::Condition::None, "", "" };
-    
+
     // parse "[-]attribute[(<>=)value]" string
 
     if (str.empty())
         return clause;
-        
+
     std::string::size_type spos = 0;
     bool negate = false;
 
@@ -74,7 +74,7 @@ parse_clause(const std::string& str)
     } else {
         clause.op = (negate ? QuerySpec::Condition::Op::NotExist : QuerySpec::Condition::Op::Exist);
     }
-    
+
     if (clause.attr_name.empty() || (opos < std::string::npos && clause.value.empty()))
         clause.op = QuerySpec::Condition::Op::None;
 
@@ -87,19 +87,26 @@ using namespace cali;
 
 struct RecordSelector::RecordSelectorImpl
 {
-    std::vector<QuerySpec::Condition> m_filters;    
+    std::vector<QuerySpec::Condition> m_filters;
 
     struct Clause {
         QuerySpec::Condition::Op op;
         Attribute attr;
         Variant   value;
-    };    
+    };
 
     void configure(const QuerySpec& spec) {
         m_filters.clear();
-        
+
         if (spec.filter.selection == QuerySpec::FilterSelection::List)
             m_filters = spec.filter.list;
+    }
+
+    void configure(const QuerySpec::Condition& cond) {
+        m_filters.clear();
+
+        if (cond.op != QuerySpec::Condition::None)
+            m_filters.push_back(cond);
     }
 
     Clause make_clause(const CaliperMetadataAccessInterface& db, const QuerySpec::Condition& f) {
@@ -109,7 +116,7 @@ struct RecordSelector::RecordSelectorImpl
 
         if (clause.attr != Attribute::invalid)
             clause.value = Variant::from_string(clause.attr.type(), f.value.c_str(), nullptr);
-        
+
         return clause;
     }
 
@@ -124,7 +131,7 @@ struct RecordSelector::RecordSelectorImpl
         } else if  (match(entry.attribute(), entry.value()))
             return true;
 
-        return false;        
+        return false;
     }
 
     bool pass(const CaliperMetadataAccessInterface& db, const EntryList& list) {
@@ -135,7 +142,7 @@ struct RecordSelector::RecordSelectorImpl
             case QuerySpec::Condition::Op::Exist:
                 {
                     bool m = false;
-                    
+
                     for (const Entry& e : list)
                         if (have_match(e, [&clause](cali_id_t attr_id, const Variant&){
                                     return attr_id == clause.attr.id();
@@ -152,11 +159,11 @@ struct RecordSelector::RecordSelectorImpl
                                 return attr_id == clause.attr.id();
                             }))
                         return false;
-                break;                
+                break;
             case QuerySpec::Condition::Op::Equal:
                 {
                     bool m = false;
-                    
+
                     for (const Entry& e : list)
                         if (have_match(e, [&clause](cali_id_t attr_id, const Variant& val){
                                     return attr_id == clause.attr.id() && val == clause.value;
@@ -232,7 +239,7 @@ struct RecordSelector::RecordSelectorImpl
             break;
             case QuerySpec::Condition::Op::None:
                 break;
-            }   
+            }
         }
 
         return true;
@@ -252,6 +259,12 @@ RecordSelector::RecordSelector(const QuerySpec& spec)
     mP->configure(spec);
 }
 
+RecordSelector::RecordSelector(const QuerySpec::Condition& cond)
+    : mP { new RecordSelectorImpl }
+{
+    mP->configure(cond);
+}
+
 RecordSelector::~RecordSelector()
 {
     mP.reset();
@@ -263,7 +276,7 @@ RecordSelector::pass(const CaliperMetadataAccessInterface& db, const EntryList& 
     return mP->pass(db, list);
 }
 
-void 
+void
 RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& list, SnapshotProcessFn push) const
 {
     if (mP->pass(db, list))
@@ -273,7 +286,7 @@ RecordSelector::operator()(CaliperMetadataAccessInterface& db, const EntryList& 
 std::vector<QuerySpec::Condition>
 RecordSelector::parse(const std::string& str)
 {
-    std::vector<QuerySpec::Condition> clauses;    
+    std::vector<QuerySpec::Condition> clauses;
     std::vector<std::string> clause_strings;
 
     util::split(str, ',', std::back_inserter(clause_strings));
