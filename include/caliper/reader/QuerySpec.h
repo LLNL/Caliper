@@ -103,6 +103,7 @@ struct QuerySpec
     struct PreprocessSpec {
         std::string   target;
         AggregationOp op;
+        Condition     cond;
     };
 
     //
