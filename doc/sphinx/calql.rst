@@ -28,6 +28,7 @@ This table contains a quick reference of all CalQL statements:
     <a>=scale(<b>,<S>)         # computes <a> = <b>*S
     <a>=truncate(<b>,<S>)      # computes <a> = <b> - mod(<b>, S)
     <a>=first(<a0>,<a1>, ...)  # <a> is the first of <a0>, <a1>, ... found in the input record
+    ... IF <condition>         # apply only if input record meets condition
 
   SELECT <list>                # Select attributes and define aggregations (i.e., select columns)
     *                          # select all attributes
@@ -56,8 +57,7 @@ This table contains a quick reference of all CalQL statements:
     <attribute> = <value>      # records where <attribute> = <value>
     <attribute> < <value>      # records where <attribute> > <value>
     <attribute> > <value>      # records where <attribute> < <value>
-    NOT <attribute>            # records where <attribute> does not exist
-    NOT <attribute>=<value>    # records where <attribute>!=<value>
+    NOT <clause>               # negate the filter clause
 
   FORMAT <formatter>           # Define output format
     cali                       # .cali format
@@ -83,25 +83,55 @@ can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
 For example, we can use the scale() operator to scale a value before
 subsequent aggregations::
 
-  LET sec=scale(time.duration,1e-6) SELECT prop:nested,sum(sec)
+  LET
+    sec=scale(time.duration,1e-6)
+  SELECT
+    prop:nested,sum(sec)
 
-For example, we can use the truncate() operator on an iteration counter to
+We can use the truncate() operator on an iteration counter to
 aggregate blocks of 10 iterations in a time-series profile::
 
-  LET block=truncate(iteration#mainloop,10) SELECT block,sum(time.duration) GROUP BY block
+  LET
+    block=truncate(iteration#mainloop,10)
+  SELECT
+    block,sum(time.duration)
+  GROUP BY
+    block
 
 The first() operator returns the first attribute out of a list of attribute
 names found in an input record. It can also be used to rename attributes::
 
-  LET time=first(time.duration,sum#time.duration) SELECT sum(time) AS Time GROUP BY prop:nested
+  LET
+    time=first(time.duration,sum#time.duration)
+  SELECT
+    sum(time) AS Time
+  GROUP BY
+    prop:nested
 
 LET terms have the general form
 
-  a = f(...)
+  a = f(...) [IF <condition>]
 
 where f is one of the operators and `a` is the name of the result attribute.
 The result is added to the input records before the record is processed further.
-Result entries are only added to a record if all required input operands are present.
+Result entries are only added to a record if all required input operands are
+present.
+
+With the optional IF condition, the operation is only applied for input records
+that meet a condition. One can use this to compute values for a specific
+subset of records. The condition clauses use the same syntax as WHERE filter
+clauses. The example below defines a "work" attribute with the time in
+records that contain "omp.work" regions, and then uses that to compute
+efficiency from the total and "work" time:
+
+  LET
+    work=first(time.duration) IF omp.work
+  SELECT
+    sum(time.duration)        AS Total,
+    sum(work)                 AS Work,
+    ratio(work,time.duration) AS Efficiency
+  GROUP BY
+    prop:nested
 
 SELECT
 --------------------------------
@@ -140,7 +170,14 @@ applies to the hierarchy defined by attributes with the
 
 A more complex example::
 
-  SELECT *, scale(time.duration,1e-6) AS Time, inclusive_percent_total(time.duration) AS "Time %" GROUP BY prop:nested FORMAT tree
+  SELECT
+    *,
+    scale(time.duration,1e-6) AS Time,
+    inclusive_percent_total(time.duration) AS "Time %"
+  GROUP BY
+    prop:nested
+  FORMAT
+    tree
 
 The computes the (exclusive) sum of `time.duration` divided by 100000 and the inclusive
 percent-of-total for `time.duration`. Example output::
@@ -234,8 +271,14 @@ The following example prints a iteration/function profile ordered by
 time and iteration number. Note that one must use the original
 attribute name and not an alias assigned with ``AS``: ::
 
-  SELECT *, sum(time.inclusive.duration) AS Time FORMAT table \
-    ORDER BY sum#time.inclusive.duration DESC, iteration#mainloop
+  SELECT
+    *,
+    sum(time.inclusive.duration) AS Time
+  FORMAT
+    table
+  ORDER BY
+    sum#time.inclusive.duration DESC,
+    iteration#mainloop
 
   function loop     iteration#mainloop     Time
   main                                   100000
