@@ -41,6 +41,23 @@ make_spec(const std::string& target, const QuerySpec::AggregationOp& op)
 
     spec.target = target;
     spec.op = op;
+    spec.cond.op = QuerySpec::Condition::None;
+
+    return spec;
+}
+
+QuerySpec::PreprocessSpec
+make_spec_with_cond(const std::string& target, const QuerySpec::AggregationOp& op, const QuerySpec::Condition::Op cond, const char* cond_attr, const char* cond_val = nullptr)
+{
+    QuerySpec::PreprocessSpec spec;
+
+    spec.target = target;
+    spec.op = op;
+    spec.cond.op = cond;
+    if (cond_attr)
+        spec.cond.attr_name = cond_attr;
+    if (cond_val)
+        spec.cond.value = cond_val;
 
     return spec;
 }
@@ -318,4 +335,52 @@ TEST(PreprocessorTest, Chain) {
 
     EXPECT_DOUBLE_EQ(d_it->second.value().to_double(), 11.0);
     EXPECT_DOUBLE_EQ(t_it->second.value().to_double(), 10.0);
+}
+
+TEST(PreprocessorTest, Conditions) {
+    //
+    // --- setup
+    //
+
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    Attribute ctx_a =
+        db.create_attribute("ctx.1", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    Attribute val_a =
+        db.create_attribute("val.a", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+    Attribute val_b =
+        db.create_attribute("val.b", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
+
+    EntryList rec;
+
+    rec.push_back(Entry(db.merge_node(100, ctx_a.id(), CALI_INV_ID, Variant("test.preprocessor.first"), idmap)));
+    rec.push_back(Entry(val_a, Variant(42)));
+    rec.push_back(Entry(val_b, Variant(24)));
+
+    QuerySpec spec;
+
+    spec.preprocess_ops.push_back(::make_spec_with_cond("val.a.out", ::make_op("first", "val.a"), QuerySpec::Condition::Exist, "ctx.1"));
+    spec.preprocess_ops.push_back(::make_spec_with_cond("val.b.out", ::make_op("first", "val.b"), QuerySpec::Condition::NotExist, "ctx.1"));
+
+    //
+    // --- run
+    //
+
+    Preprocessor pp(spec);
+    EntryList out = pp.process(db, rec);
+
+    Attribute vao_attr = db.get_attribute("val.a.out");
+    Attribute vbo_attr = db.get_attribute("val.b.out");
+
+    EXPECT_NE(vao_attr, Attribute::invalid);
+    EXPECT_EQ(vbo_attr, Attribute::invalid);
+    EXPECT_EQ(vao_attr.type(), CALI_TYPE_INT);
+
+    auto res  = ::make_dict_from_entrylist(out);
+    auto a_it = res.find(vao_attr.id());
+
+    ASSERT_NE(a_it, res.end()) << "val.a.out attribute not found\n";
+
+    EXPECT_EQ(a_it->second.value().to_int(), 42);
 }

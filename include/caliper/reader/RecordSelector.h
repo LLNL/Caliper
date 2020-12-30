@@ -29,6 +29,7 @@ public:
 
     RecordSelector(const std::string& filter_string);
     RecordSelector(const QuerySpec& spec);
+    RecordSelector(const QuerySpec::Condition& cond);
     
     ~RecordSelector();
 

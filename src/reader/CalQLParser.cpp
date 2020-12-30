@@ -362,7 +362,7 @@ struct CalQLParser::CalQLParserImpl
             parse_clause_from_word(next_keyword, is);
     }
 
-    void
+    QuerySpec::Condition
     parse_filter_clause(std::istream& is) {
         std::string w = util::read_word(is, ",;=<>()\n");
         std::string wl(w);
@@ -376,15 +376,14 @@ struct CalQLParser::CalQLParserImpl
             w = util::read_word(is, ",;=<>()\n");
         }
 
-        if (w.empty()) {
-            set_error("Condition term expected", is);
-            return;
-        }
-
         QuerySpec::Condition cond;
-
         cond.op        = QuerySpec::Condition::None;
         cond.attr_name = w;
+
+        if (w.empty()) {
+            set_error("Condition term expected", is);
+            return cond;
+        }
 
         char c = util::read_char(is);
 
@@ -427,12 +426,11 @@ struct CalQLParser::CalQLParserImpl
             cond.op = (negate ? QuerySpec::Condition::NotExist : QuerySpec::Condition::Exist);
         }
 
-        if (cond.op != QuerySpec::Condition::None) {
-            spec.filter.selection = QuerySpec::FilterSelection::List;
-            spec.filter.list.push_back(cond);
-        } else {
+        if (cond.op == QuerySpec::Condition::None) {
             set_error("Condition term expected", is);
         }
+
+        return cond;
     }
 
     void
@@ -440,7 +438,13 @@ struct CalQLParser::CalQLParserImpl
         char c = '\0';
 
         do {
-            parse_filter_clause(is);
+            QuerySpec::Condition cond = parse_filter_clause(is);
+
+            if (!error && cond.op != QuerySpec::Condition::None) {
+                spec.filter.selection = QuerySpec::FilterSelection::List;
+                spec.filter.list.push_back(cond);
+            }
+
             c = util::read_char(is);
         } while (!error && is.good() && c == ',');
 
@@ -450,10 +454,12 @@ struct CalQLParser::CalQLParserImpl
 
     void
     parse_let(std::istream& is) {
+        std::string next_keyword;
         char c = 0;
 
         do {
             const QuerySpec::FunctionSignature* defs = Preprocessor::preprocess_defs();
+            QuerySpec::PreprocessSpec pspec;
 
             std::string target = util::read_word(is, ",;=<>()\n");
 
@@ -489,14 +495,32 @@ struct CalQLParser::CalQLParserImpl
                             });
 
                 if (it == spec.preprocess_ops.end()) {
-                    QuerySpec::PreprocessSpec pspec;
-
                     pspec.target = target;
                     pspec.op = QuerySpec::AggregationOp(defs[i], args);
-
-                    spec.preprocess_ops.emplace_back(std::move(pspec));
-                } else
+                } else {
                     set_error(target + " defined twice", is);
+                    return;
+                }
+            }
+
+            // parse condition (... IF ... )
+
+            next_keyword.clear();
+            std::string tmp = util::read_word(is, ",;=<>()\n");
+            std::transform(tmp.begin(), tmp.end(), std::back_inserter(next_keyword), ::tolower);
+
+            if (next_keyword == "if") {
+                pspec.cond = parse_filter_clause(is);
+                next_keyword.clear();
+            }
+
+            if (!error) {
+                spec.preprocess_ops.emplace_back(std::move(pspec));
+
+                if (!next_keyword.empty()) {
+                    c = 0;
+                    break;
+                }
             }
 
             c = util::read_char(is);
@@ -504,6 +528,8 @@ struct CalQLParser::CalQLParserImpl
 
         if (c)
             is.unget();
+        if (!next_keyword.empty())
+            parse_clause_from_word(next_keyword, is);
     }
 
     void

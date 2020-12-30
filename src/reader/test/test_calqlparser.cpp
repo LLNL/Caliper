@@ -489,17 +489,47 @@ TEST(CalQLParserTest, LetClause) {
     ASSERT_EQ(q1.preprocess_ops[0].op.args.size(), 2);
     EXPECT_STREQ(q1.preprocess_ops[0].op.args[0].c_str(), "a");
     EXPECT_STREQ(q1.preprocess_ops[0].op.args[1].c_str(), "b");
+    EXPECT_EQ(q1.preprocess_ops[0].cond.op, QuerySpec::Condition::None);
 
     EXPECT_STREQ(q1.preprocess_ops[1].target.c_str(), "y");
     EXPECT_STREQ(q1.preprocess_ops[1].op.op.name, "scale");
     ASSERT_EQ(q1.preprocess_ops[1].op.args.size(), 2);
     EXPECT_STREQ(q1.preprocess_ops[1].op.args[0].c_str(), "c");
     EXPECT_STREQ(q1.preprocess_ops[1].op.args[1].c_str(), "42");
+    EXPECT_EQ(q1.preprocess_ops[1].cond.op, QuerySpec::Condition::None);
 
     EXPECT_STREQ(q1.preprocess_ops[2].target.c_str(), "z");
     EXPECT_STREQ(q1.preprocess_ops[2].op.op.name, "truncate");
     ASSERT_EQ(q1.preprocess_ops[2].op.args.size(), 1);
     EXPECT_STREQ(q1.preprocess_ops[2].op.args[0].c_str(), "yy");
+    EXPECT_EQ(q1.preprocess_ops[2].cond.op, QuerySpec::Condition::None);
+}
+
+TEST(CalQLParserTest, LetIfClause) {
+    CalQLParser p1("let x=  ratio( a,   \"b\" ) if not X, y=scale(c,42) if Y =  foo let z=truncate (  yy ) if not Z>1");
+
+    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+
+    QuerySpec q1 = p1.spec();
+
+    EXPECT_STREQ(q1.preprocess_ops[0].target.c_str(), "x");
+    EXPECT_STREQ(q1.preprocess_ops[0].op.op.name, "ratio");
+    EXPECT_EQ(q1.preprocess_ops[0].cond.op, QuerySpec::Condition::NotExist);
+    EXPECT_STREQ(q1.preprocess_ops[0].cond.attr_name.c_str(), "X");
+
+    EXPECT_STREQ(q1.preprocess_ops[1].target.c_str(), "y");
+    EXPECT_STREQ(q1.preprocess_ops[1].op.op.name, "scale");
+    EXPECT_EQ(q1.preprocess_ops[1].cond.op, QuerySpec::Condition::Equal);
+    EXPECT_STREQ(q1.preprocess_ops[1].cond.attr_name.c_str(), "Y");
+    EXPECT_STREQ(q1.preprocess_ops[1].cond.value.c_str(), "foo");
+
+    EXPECT_STREQ(q1.preprocess_ops[2].target.c_str(), "z");
+    EXPECT_STREQ(q1.preprocess_ops[2].op.op.name, "truncate");
+    ASSERT_EQ(q1.preprocess_ops[2].op.args.size(), 1);
+    EXPECT_STREQ(q1.preprocess_ops[2].op.args[0].c_str(), "yy");
+    EXPECT_EQ(q1.preprocess_ops[2].cond.op, QuerySpec::Condition::LessOrEqual);
+    EXPECT_STREQ(q1.preprocess_ops[2].cond.attr_name.c_str(), "Z");
+    EXPECT_STREQ(q1.preprocess_ops[2].cond.value.c_str(), "1");
 }
 
 TEST(CalQLParserTest, LetClauseErrors) {
