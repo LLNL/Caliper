@@ -7,7 +7,7 @@ library.
 
 You can install caliper-reader with pip:
 
-  $ pip install caliper-reader
+    $ pip install caliper-reader
 
 Alternatively, add the `python/caliper-reader` path in the cloned
 Caliper repository to `PYTHONPATH`.
