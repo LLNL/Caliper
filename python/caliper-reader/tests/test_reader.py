@@ -5,7 +5,7 @@
 
 import unittest
 
-import caliperreader.caliperreader as cr
+import caliperreader as cr
 
 class CaliperReaderBasic(unittest.TestCase):
     """ Basic test cases for the Caliper reader """
@@ -15,11 +15,11 @@ class CaliperReaderBasic(unittest.TestCase):
 
         r.read('example-profile.cali')
 
-        self.assertEqual(len(r.records), 23)
-        self.assertEqual(len(r.globals), 21)
+        self.assertEqual(len(r.records), 25)
+        self.assertEqual(len(r.globals), 22)
 
-        self.assertEqual(r.globals['spot.format.version'], '1')
-        self.assertEqual(r.globals['threads'], '4')
+        self.assertEqual(r.globals['spot.format.version'], '2')
+        self.assertEqual(r.globals['threads'], '2')
 
         self.assertIn('path', r.records[4])
         self.assertIn('function', r.records[5])
@@ -37,8 +37,8 @@ class CaliperReaderBasic(unittest.TestCase):
     def test_read_contents(self):
         records, globals = cr.read_caliper_contents('example-profile.cali')
 
-        self.assertEqual(len(records), 23)
-        self.assertEqual(len(globals), 21)
+        self.assertEqual(len(records), 25)
+        self.assertEqual(len(globals), 22)
 
         self.assertEqual(globals['cali.channel'],   'spot')
         self.assertEqual(globals['mpi.world.size'], '1')
@@ -51,7 +51,7 @@ class CaliperReaderBasic(unittest.TestCase):
     def test_read_globals(self):
         globals = cr.read_caliper_globals('example-profile.cali')
 
-        self.assertEqual(len(globals), 21)
+        self.assertEqual(len(globals), 22)
 
         self.assertIn('libraries', globals)
         self.assertIn('elapsed_time', globals)

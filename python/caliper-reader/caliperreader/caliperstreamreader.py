@@ -49,7 +49,7 @@ class CaliperStreamReader:
                 self._process(line, process_record_fn)
 
 
-    def attribute_list(self):
+    def attributes(self):
         """ Return the attribute keys.
 
         A file must have been read with read().

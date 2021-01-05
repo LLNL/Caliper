@@ -50,7 +50,7 @@ class CaliperReader:
         self.num_records = sr.num_records
 
 
-    def attribute_list(self):
+    def attributes(self):
         """ Return the attribute keys.
 
         A file must have been read with read().
