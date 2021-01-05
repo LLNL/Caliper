@@ -24,7 +24,7 @@ Caliper attribute name; the value is a string or list of strings.
 The example below prints the `avg#inclusive#sum#time.duration` metric
 for every region path in the provided example profile data file:
 
-```Python:
+```Python
 import caliperreader as cr
 
 r = cr.CaliperReader()
@@ -46,7 +46,7 @@ The CaliperReader `attributes()` function returns the list of Caliper
 attributes. The `attribute()` function returns an `Attribute` object
 to query metadata for a given Caliper attribute name:
 
-```Python:
+```Python
 >>> a = r.attribute('avg#inclusive#sum#time.duration')
 >>> a.get('attribute.unit')
 'sec'

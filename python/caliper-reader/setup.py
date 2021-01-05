@@ -16,7 +16,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Get the version in a safe way which does not refrence the `__init__` file
 # per python docs: https://packaging.python.org/guides/single-sourcing-package-version/
 version = {}
-with open("./hatchet/version.py") as fp:
+with open("./caliperreader/version.py") as fp:
     exec(fp.read(), version)
 
 setuptools.setup(
