@@ -6,12 +6,18 @@ find_path(CUPTI_PREFIX
 
 find_library(CUPTI_LIBRARY 
   NAMES cupti
-  HINTS ${CUPTI_PREFIX}/lib
+  HINTS
+    ${CUPTI_PREFIX}/lib
+    ${CUDA_TOOLKIT_ROOT_DIR}/lib
+    ${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/lib
 )
 
 find_path(CUPTI_INCLUDE_DIR 
   NAMES cupti.h
-  HINTS ${CUPTI_PREFIX}/include
+  HINTS
+    ${CUPTI_PREFIX}/include
+    ${CUDA_TOOLKIT_ROOT_DIR}/include
+    ${CUDA_TOOLKIT_ROOT_DIR}/extras/CUPTI/include
 )
 
 include(FindPackageHandleStandardArgs)
