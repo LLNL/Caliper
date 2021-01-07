@@ -28,19 +28,22 @@ class Node:
 
     def get(self, attribute_id_or_name):
         """ Iterate through parents and return the data element for the first
-        node with the given attribute.
+        node with the given attribute, or None when no such element exists.
         """
 
         if isinstance(attribute_id_or_name, str):
+            if not attribute_id_or_name in self.metadb.attributes:
+                return None
+
             attribute_id = self.metadb.attributes[attribute_id_or_name].id()
         else:
             attribute_id = attribute_id_or_name
 
         node = self
-        while node.attribute_id != attribute_id:
+        while node is not None and node.attribute_id != attribute_id:
             node = node.parent
 
-        return node.data
+        return node.data if node else None
 
     def attribute(self):
         """ Return the Caliper attribute object for this node.
