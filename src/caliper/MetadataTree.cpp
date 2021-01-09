@@ -37,10 +37,11 @@ struct MetadataTree::MetadataTreeImpl
             : config(RuntimeConfig::get_default_config().init("contexttree", s_configdata)),
               root(CALI_INV_ID, CALI_INV_ID, Variant()),
               next_block(1),
-              node_blocks(0)
+              node_blocks(0),
+              g_mempool(pool)
             {
                 num_blocks      = config.get("num_blocks").to_uint();
-                nodes_per_block = config.get("nodes_per_block").to_uint();
+                nodes_per_block = std::min<uint64_t>(config.get("nodes_per_block").to_uint(), 256);
 
                 node_blocks = new NodeBlock[num_blocks];
 
@@ -101,13 +102,9 @@ struct MetadataTree::MetadataTreeImpl
 
         Node*                   type_nodes[CALI_MAXTYPE+1];
 
-        //   Keep the memory pools from tree objects that have been deleted
-        // because we still need to access their node data.
-        //
-        //   TODO: find a strategy to merge them into someone else's mempool
-        // and free up the unallocated memory in the pool.
-        std::vector<MemoryPool> orphaned_mempools;
-        util::spinlock          orphaned_mempool_lock;
+        //   Shared copy of the initial thread's mempool.
+        // Used to merge in the pools of deleted threads.
+        MemoryPool              g_mempool;
     };
 
     static std::atomic<GlobalData*> mG;
@@ -157,14 +154,7 @@ struct MetadataTree::MetadataTreeImpl
 
     ~MetadataTreeImpl() {
         GlobalData* g = mG.load();
-
-        std::lock_guard<util::spinlock>
-            lock(g->orphaned_mempool_lock);
-
-        g->orphaned_mempools.push_back(std::move(m_mempool));
-
-        // for ( auto& n : m_root )
-        //     n.~Node(); // Nodes have been allocated in our own pools with placement new, just call destructor here
+        g->g_mempool.merge(m_mempool);
     }
 
     /// \brief Get a node block with \param n free entries

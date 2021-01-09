@@ -35,9 +35,14 @@ public:
 
     ~MemoryPool();
 
-    // --- allocate 
+    // --- allocate
 
     void* allocate(std::size_t bytes);
+
+    /// \brief Move \a other's data into this mempool.
+    ///
+    /// \note Does not lock \a other: we assume only one thread accesses it.
+    void merge(MemoryPool& other);
 
     std::ostream& print_statistics(std::ostream& os) const;
 };
