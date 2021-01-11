@@ -122,7 +122,7 @@ configure_file(
 add_custom_command(
   OUTPUT services.inc.cpp
   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_services_inc.py
-  COMMAND ${PYTHON_EXECUTABLE} gen_services_inc.py
+  COMMAND ${CALI_PYTHON_EXECUTABLE} gen_services_inc.py
   COMMENT "Generating services.inc.cpp"
 )
 

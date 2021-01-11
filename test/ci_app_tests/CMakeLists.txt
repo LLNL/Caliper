@@ -133,4 +133,4 @@ foreach(file ${PYTHON_SCRIPTS})
       ${CMAKE_CURRENT_BINARY_DIR}/${file})
 endforeach()
 
-add_test(NAME CI_app_tests COMMAND ${PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")
+add_test(NAME CI_app_tests COMMAND ${CALI_PYTHON_EXECUTABLE} -B -m unittest discover -p "test_*.py")

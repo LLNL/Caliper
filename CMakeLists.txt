@@ -336,8 +336,13 @@ if(WITH_TAU)
 endif()
 
 # Find Python
-
-find_package(PythonInterp REQUIRED)
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
+  find_package(Python COMPONENTS Interpreter REQUIRED)
+  set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
+else()
+  find_package(PythonInterp REQUIRED)
+  set(CALI_PYTHON_EXECUTABLE ${PythonExecutable})
+endif()
 
 if (WITH_SAMPLER)
   # Sampler is currently Linux-specific: check for Linux
