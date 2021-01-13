@@ -37,6 +37,8 @@ mark_as_advanced(CALIPER_OPTION_PREFIX)
 macro(ADD_CALIPER_OPTION NAME)
     if(CALIPER_OPTION_PREFIX)
         option(CALIPER_${NAME} ${ARGN})
+        # set the option locally for this project
+        set(${NAME} ${CALIPER_${NAME}})
     else()
         option(${NAME} ${ARGN})
     endif()
