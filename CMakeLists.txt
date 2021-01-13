@@ -30,8 +30,22 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
   set(CALIPER_HAVE_LINUX TRUE)
 endif()
 
+# generic options starting with WITH_ can conflict when caliper is submodule
+option(CALIPER_OPTION_PREFIX "Option names are prefixed with 'CALIPER_'" OFF)
+mark_as_advanced(CALIPER_OPTION_PREFIX)
+
+macro(ADD_CALIPER_OPTION NAME)
+    if(CALIPER_OPTION_PREFIX)
+        option(CALIPER_${NAME} ${ARGN})
+        # set the option locally for this project
+        set(${NAME} ${CALIPER_${NAME}})
+    else()
+        option(${NAME} ${ARGN})
+    endif()
+endmacro()
+
 # Optional Fortran
-option(WITH_FORTRAN   "Install Fortran interface")
+add_caliper_option(WITH_FORTRAN   "Install Fortran interface")
 
 # Shared libs option
 option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
@@ -39,37 +53,37 @@ option(BUILD_SHARED_LIBS "Build shared libraries" TRUE)
 # RPATH setup. By default, rpath everything.
 option(CMAKE_INSTALL_RPATH_USE_LINK_PATH "Add rpath for all dependencies" TRUE)
 
-option(WITH_TOOLS     "Build Caliper tools" TRUE)
+add_caliper_option(WITH_TOOLS     "Build Caliper tools" TRUE)
 
-option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
-option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
-option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" FALSE)
-option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" FALSE)
-option(WITH_LIBDW     "Enable libdw support (for symbollookup service)" FALSE)
-option(WITH_LIBUNWIND "Enable libunwind support (for callpath service)" FALSE)
-option(WITH_MPI       "Enable MPI" FALSE)
-# option(WITH_MPIT      "Enable MPI-T" FALSE)
-# option(WITH_OMPT      "Enable OMPT" FALSE)
-option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
-option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
-option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
-option(WITH_ROCM      "Enable AMD ROCtracer/RocTX support" FALSE)
-option(WITH_SOS       "Enable SOSFlow data management" FALSE)
-option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
-option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
-option(WITH_ADIAK     "Enable adiak support" FALSE)
-option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
-option(WITH_PCP       "Enable performance co-pilot support" FALSE)
+add_caliper_option(WITH_NVTX      "Enable NVidia nvtx bindings for NVprof and NSight (requires CUDA)" FALSE)
+add_caliper_option(WITH_CUPTI     "Enable CUPTI service (CUDA performance analysis)" FALSE)
+add_caliper_option(WITH_PAPI      "Enable PAPI hardware counter service (requires papi)" FALSE)
+add_caliper_option(WITH_LIBPFM    "Enable libpfm (perf_event) sampling" FALSE)
+add_caliper_option(WITH_LIBDW     "Enable libdw support (for symbollookup service)" FALSE)
+add_caliper_option(WITH_LIBUNWIND "Enable libunwind support (for callpath service)" FALSE)
+add_caliper_option(WITH_MPI       "Enable MPI" FALSE)
+# add_caliper_option(WITH_MPIT      "Enable MPI-T" FALSE)
+# add_caliper_option(WITH_OMPT      "Enable OMPT" FALSE)
+add_caliper_option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
+add_caliper_option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
+add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
+add_caliper_option(WITH_ROCM      "Enable AMD ROCtracer/RocTX support" FALSE)
+add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
+add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
+add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
+add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
+add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
+add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 
-option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
+add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
-option(ENABLE_HISTOGRAMS "Enable histogram aggregation (experimental)" FALSE)
+add_caliper_option(ENABLE_HISTOGRAMS "Enable histogram aggregation (experimental)" FALSE)
 
 # configure testing explicitly rather than with include(CTest) - avoids some clutter
-option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
-option(BUILD_DOCS     "Build Caliper documentation" FALSE)
+add_caliper_option(BUILD_TESTING  "Build continuous integration app and unit tests" FALSE)
+add_caliper_option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
-option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
+add_caliper_option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
 
 ## Find Shroud
 ## Doesn't work for me :-/ Generating wrapper manually.
