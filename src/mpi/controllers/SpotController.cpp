@@ -530,10 +530,13 @@ public:
         OutputStream stream;
 
         if (m_rank == 0) {
+            std::string outdir = m_opts.get("outdir", "").to_string();
             std::string output = m_opts.get("output", "").to_string();
 
             if (output.empty())
                 output = ::make_filename();
+            if (!outdir.empty() && output != "stderr" && output != "stdout")
+                output = outdir + std::string("/") + output;
 
             stream.set_filename(output.c_str(), c, c.get_globals());
         }
@@ -678,6 +681,11 @@ const char* controller_spec =
     "   \"name\": \"timeseries.metrics\","
     "   \"type\": \"string\","
     "   \"description\": \"Metrics to record for timeseries measurements.\""
+    "  },"
+    "  {"
+    "   \"name\": \"outdir\","
+    "   \"type\": \"string\","
+    "   \"description\": \"Output directory name\""
     "  }"
     " ]"
     "}";
