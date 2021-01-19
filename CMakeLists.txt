@@ -355,7 +355,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
   set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
 else()
   find_package(PythonInterp REQUIRED)
-  set(CALI_PYTHON_EXECUTABLE ${PythonExecutable})
+  set(CALI_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
 endif()
 
 if (WITH_SAMPLER)
