@@ -274,7 +274,7 @@ if (WITH_SOS)
   endif()
 endif()
 
-if (WITH_KOKKOS_PROFILING)
+if (WITH_KOKKOS)
   set(CALIPER_HAVE_KOKKOS TRUE)
   set(CALIPER_Kokkos_CMAKE_MSG "Yes")
 endif()
