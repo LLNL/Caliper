@@ -149,6 +149,10 @@ public:
         return a == b;
     }
 
+    std::string get_query(const char* level, const std::map<std::string, std::string>& in, bool aliases = true) const {
+        return opts.build_query(level, in, aliases);
+    }
+
     static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
         return new TestController(name, initial_cfg, opts);
     }
@@ -173,7 +177,13 @@ const char* testcontroller_spec =
     "  {"
     "   \"name\": \"boolopt\","
     "   \"type\": \"bool\","
-    "   \"description\": \"A boolean option\""
+    "   \"description\": \"A boolean option\","
+    "   \"query args\": "
+    "    ["
+    "     { \"level\": \"local\", \"group by\": \"g\", \"let\": \"x=scale(y,2)\", \"select\": "
+    "       [ { \"expr\": \"sum(x)\", \"as\": X, \"unit\": \"Foos\" } ]"
+    "     }"
+    "    ]"
     "  },"
     "  {"
     "   \"name\": \"another_opt\","
@@ -294,5 +304,92 @@ TEST(ConfigManagerTest, Options)
         EXPECT_FALSE(tP->is_enabled("defaultopt"));
         EXPECT_EQ(tP->get_opt("intopt"),    std::string("42"));
         EXPECT_EQ(tP->get_opt("stringopt"), std::string("set_default_parameter"));
+    }
+}
+
+
+TEST(ConfigManagerTest, BuildQuery)
+{
+    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };    
+
+    {
+        ConfigManager mgr;
+        mgr.add_config_spec(testcontroller_info);
+        mgr.add("testcontroller(boolopt)");
+
+        auto cP = mgr.get_channel("testcontroller");
+        ASSERT_TRUE(cP);
+        auto tP = std::dynamic_pointer_cast<TestController>(cP);
+        ASSERT_TRUE(tP);
+        
+        EXPECT_TRUE(tP->is_enabled("boolopt"));
+
+        std::string q1 = tP->get_query("local", { 
+                { "select", "me" },
+                { "format", "expand" },
+                { "let", "a=first(b,c)" },
+                { "where", "xyz=42" },
+                { "group by", "z"}
+            });
+        const char* expect = 
+            " let a=first(b,c),x=scale(y,2)"
+            " select me,sum(x) as \"X\" unit \"Foos\""
+            " group by z,g"
+            " where xyz=42"
+            " format expand";
+        
+        EXPECT_STREQ(q1.c_str(), expect);
+
+        std::string q2 = tP->get_query("local", { 
+                { "select", "me" },
+                { "format", "expand" },
+            }, false /* no aliases */);
+        expect = 
+            " let x=scale(y,2)"
+            " select me,sum(x)"
+            " group by g"
+            " format expand";
+
+        EXPECT_STREQ(q2.c_str(), expect);
+    }
+
+
+    {
+        ConfigManager mgr;
+        mgr.add_config_spec(testcontroller_info);
+        mgr.add("testcontroller(another_opt)");
+
+        auto cP = mgr.get_channel("testcontroller");
+        ASSERT_TRUE(cP);
+        auto tP = std::dynamic_pointer_cast<TestController>(cP);
+        ASSERT_TRUE(tP);
+        
+        EXPECT_FALSE(tP->is_enabled("boolopt"));
+
+        std::string q3 = tP->get_query("local", { 
+                { "select", "me" },
+                { "format", "expand" },
+                { "let", "a=first(b,c)" },
+                { "where", "xyz=42" },
+                { "group by", "z"}
+            });
+        const char* expect = 
+            " let a=first(b,c)"
+            " select me"
+            " group by z"
+            " where xyz=42"
+            " format expand";
+        
+        EXPECT_STREQ(q3.c_str(), expect);
+
+        std::string q4 = tP->get_query("local", { 
+                { "select", "me" },
+                { "format", "expand" },
+            });
+        expect = 
+            " select me"
+            " format expand";
+
+        EXPECT_STREQ(q4.c_str(), expect);
     }
 }

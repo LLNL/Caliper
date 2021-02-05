@@ -43,12 +43,12 @@ public:
                 pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
-            std::string formatarg;
+            std::string format = "tree";
 
             if (opts.is_set("max_column_width")) {
-                formatarg = "(prop:nested,";
-                formatarg.append(opts.get("max_column_width").to_string());
-                formatarg.append(")");
+                format = "(prop:nested,";
+                format.append(opts.get("max_column_width").to_string());
+                format.append(")");
             }
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
@@ -63,30 +63,25 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", local_select)
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested");
+                    opts.build_query("local", {
+                            { "select",   local_select  },
+                            { "group by", "prop:nested" }
+                        });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    opts.query_let("cross", "")
-                    + " select "
-                    + opts.query_select("cross", cross_select)
-                    + " group by "
-                    + opts.query_groupby("cross", "prop:nested")
-                    + " format tree"
-                    + formatarg;
+                    opts.build_query("cross", {
+                            { "select",   cross_select  },
+                            { "group by", "prop:nested" },
+                            { "format",   format        }
+                        });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", serial_select)
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested")
-                    + " format tree"
-                    + formatarg;
+                    opts.build_query("local", {
+                            { "select",   serial_select },
+                            { "group by", "prop:nested" },
+                            { "format",   format        }
+                        });
             }
 
             opts.update_channel_config(config());

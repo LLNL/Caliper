@@ -121,6 +121,13 @@ join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
+std::string
+find_or(const std::map<std::string,std::string>& m, const std::string& k, const std::string v = "")
+{
+    auto it = m.find(k);
+    return it != m.end() ? it->second : v;
+}
+
 } // namespace [anonymous]
 
 
@@ -443,7 +450,7 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    query_select(const std::string& level, const std::string& in, bool use_alias) const {
+    query_select(const char* level, const std::string& in, bool use_alias) const {
         std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
@@ -477,7 +484,7 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    query_groupby(const std::string& level, const std::string& in) const {
+    query_groupby(const char* level, const std::string& in) const {
         std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
@@ -500,7 +507,7 @@ struct ConfigManager::Options::OptionsImpl
     }
 
     std::string
-    query_let(const std::string& level, const std::string& in) const {
+    query_let(const char* level, const std::string& in) const {
         std::string ret = in;
 
         for (const std::string& opt : enabled_options) {
@@ -521,6 +528,41 @@ struct ConfigManager::Options::OptionsImpl
 
         if (!ret.empty())
             ret = std::string(" let ") + ret;
+
+        return ret;
+    }
+
+    std::string
+    build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) {
+        std::string ret;
+
+        ret.append(query_let(level, ::find_or(in, "let")));
+
+        {
+            std::string s = query_select(level, ::find_or(in, "select"), use_alias);
+
+            if (!s.empty())
+                ret.append(" select ").append(s);
+        }
+
+        {
+            std::string s = query_groupby(level, ::find_or(in, "group by"));
+
+            if (!s.empty())
+                ret.append(" group by ").append(s);
+        }
+
+        {
+            auto it = in.find("where");
+            if (it != in.end())
+                ret.append(" where ").append(it->second);
+        }
+
+        {
+            auto it = in.find("format");
+            if (it != in.end())
+                ret.append(" format ").append(it->second);
+        }
 
         return ret;
     }
@@ -678,6 +720,12 @@ std::string
 ConfigManager::Options::query_let(const char* level, const std::string& in) const
 {
     return mP->query_let(level, in);
+}
+
+std::string
+ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) const
+{
+    return mP->build_query(level, in, use_alias);
 }
 
 //

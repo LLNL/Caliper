@@ -60,22 +60,20 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = output;
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", "*,sum(sum#time.duration) as time unit sec")
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested,mpi.rank")
-                    + " format " + format;
+                    opts.build_query("local", {
+                            { "select",   "*,sum(sum#time.duration) as time unit sec" },
+                            { "group by", "prop:nested,mpi.rank" },
+                            { "format",   format }
+                        });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", "*,sum(sum#time.duration) as time unit sec")
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested")
-                    + " format " + format;
+                    opts.build_query("local", {
+                            { "select",   "*,sum(sum#time.duration) as time unit sec" },
+                            { "group by", "prop:nested" },
+                            { "format",   format }
+                        });
             }
 
             opts.update_channel_config(config());

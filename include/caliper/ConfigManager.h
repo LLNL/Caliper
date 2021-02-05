@@ -138,6 +138,24 @@ public:
         std::string
         query_let(const char* level, const std::string& in) const;
 
+        /// \brief Returns a CalQL query based on the fields in \a input
+        ///   and option list.
+        ///
+        /// Construct a CalQL query for the option list. Example:
+        /// \code
+        /// auto query = opts.build_query("cross", {
+        ///         { "select",   "sum(inclusive#sum#time.duration) as Total unit sec" },
+        ///         { "group by", "prop:nested" },
+        ///         { "format",   "tree" }
+        ///     });
+        /// \endcode
+        ///
+        /// \param level The aggreatation level ("local" or "cross")
+        /// \param in Base CalQL clauses as needed by the controller
+        /// \return Complete CalQL query statement
+        std::string
+        build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias = true) const;
+
         friend class ConfigManager;
     };
 
