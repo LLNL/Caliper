@@ -22,7 +22,7 @@ class CudaActivityController : public cali::ChannelController
 public:
 
     CudaActivityController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
-        : ChannelController(name, 0, initial_cfg) 
+        : ChannelController(name, 0, initial_cfg)
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
@@ -47,28 +47,25 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", local_select)
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested");
+                    opts.build_query("local", {
+                            { "select",   local_select },
+                            { "group by", "prop:nested" }
+                        });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    opts.query_let("cross", "")
-                    + " select "
-                    + opts.query_select("cross", cross_select)
-                    + " group by "
-                    + opts.query_groupby("cross", "prop:nested")
-                    + " format tree";
+                    opts.build_query("cross", {
+                            { "select",   cross_select  },
+                            { "group by", "prop:nested" },
+                            { "format",   "tree" }
+                        });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", serial_select)
-                    + " group by "
-                    + opts.query_groupby("local", "prop:nested")
-                    + " format tree";
+                    opts.build_query("local", {
+                            { "select",   serial_select },
+                            { "group by", "prop:nested" },
+                            { "format",   "tree" }
+                        });
             }
 
             opts.update_channel_config(config());

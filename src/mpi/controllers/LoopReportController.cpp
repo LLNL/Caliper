@@ -130,13 +130,12 @@ class LoopReportController : public cali::ChannelController
             ",max(iter_per_sec)"
             ",avg(iter_per_sec)";
 
-        std::string query =
-            m_opts.query_let("local", "iter_per_sec = ratio(loop.iterations,time.duration)")
-            + " select "
-            + m_opts.query_select("local", select, false)
-            + " group by "
-            + m_opts.query_groupby("local", "loop")
-            + " where loop";
+        std::string query = m_opts.build_query("local", {
+                { "let",      "iter_per_sec = ratio(loop.iterations,time.duration)" },
+                { "select",   select },
+                { "group by", "loop" },
+                { "where",    "loop" }
+            }, false);
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
@@ -150,13 +149,12 @@ class LoopReportController : public cali::ChannelController
             ",max(max#iter_per_sec) as \"Iter/s (max)\""
             ",avg(avg#iter_per_sec) as \"Iter/s (avg)\"";
 
-        std::string query =
-            m_opts.query_let("cross", "")
-            + " select "
-            + m_opts.query_select("cross", select, true)
-            + " group by "
-            + m_opts.query_groupby("cross", "loop")
-            + " aggregate max(count) format table";
+        std::string query = m_opts.build_query("cross", {
+                { "select",    select },
+                { "aggregate", "max(count)" },
+                { "group by",  "loop" },
+                { "format",    "table" },
+            });
 
         return CalQLParser(query.c_str()).spec();
     }
@@ -171,13 +169,12 @@ class LoopReportController : public cali::ChannelController
         std::string block =
             std::string("Block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
-        std::string query =
-            m_opts.query_let("local", block)
-            + " select "
-            + m_opts.query_select("local", select, false)
-            + " group by "
-            + m_opts.query_groupby("local", "Block")
-            + " where loop=" + loopname;
+        std::string query = m_opts.build_query("local", {
+                { "let",      block   },
+                { "select",   select  },
+                { "group by", "Block" },
+                { "where",    std::string("loop=")+loopname }
+            }, false);
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
     }
@@ -189,11 +186,11 @@ class LoopReportController : public cali::ChannelController
             ",max(sum#time.duration) as \"Time (s)\""
             ",avg(loop.iterations/time.duration) as \"Iter/s\"";
 
-        std::string query =
-            m_opts.query_let("cross", "")
-            + " select "
-            + m_opts.query_select("cross", select, true)
-            + " group by Block format table order by Block";
+        std::string query = m_opts.build_query("cross", {
+                { "select",   select  },
+                { "group by", "Block" },
+                { "format",   "table order by Block" }
+            });
 
         CalQLParser parser(query.c_str());
 

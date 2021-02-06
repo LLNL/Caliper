@@ -109,35 +109,6 @@ public:
         /// configuration flags that may be required.
         void update_channel_config(config_map_t& config) const;
 
-        /// \brief Returns a CalQL SELECT expression to compute metrics
-        ///   in the option list.
-        /// \param level The aggregation level ('local' or 'cross')
-        /// \param in Base SELECT expression as required by the controller
-        /// \param use_alias Wether to add aliases to the expression
-        ///   (as in SELECT x AS y)
-        /// \return The SELECT list (comma-separated string), but without the
-        ///   'SELECT' keyword
-        std::string
-        query_select(const char* level, const std::string& in, bool use_alias = true) const;
-
-        /// \brief Returns a CalQL GROUP BY list for metrics in the option
-        ///   list.
-        /// \param level The aggregation level ('local' or 'cross')
-        /// \param in Base GROUP BY list as required by the controller
-        /// \return The GROUP BY list (comma-separated string), but without the
-        ///   'GROUP BY' keyword
-        std::string
-        query_groupby(const char* level, const std::string& in) const;
-
-        /// \brief Returns a CalQL LET list for metrics in the option
-        ///   list.
-        /// \param level The aggregation level ('local' or 'cross')
-        /// \param in Base LET list as required by the controller
-        /// \return The LET clause ('LET' + comma-separated list of definitions),
-        ///    or an empty string if there is no LET input
-        std::string
-        query_let(const char* level, const std::string& in) const;
-
         /// \brief Returns a CalQL query based on the fields in \a input
         ///   and option list.
         ///

@@ -57,30 +57,25 @@ public:
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", local_select)
-                    + " group by "
-                    + opts.query_groupby("local", "source.function#callpath.address");
+                    opts.build_query("local", {
+                            { "select", local_select },
+                            { "group by", "source.function#callpath.address" }
+                        });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
-                    opts.query_let("cross", "")
-                    + " select "
-                    + opts.query_select("cross", cross_select)
-                    + " group by "
-                    + opts.query_groupby("cross", "source.function#callpath.address")
-                    + " format "
-                    + format;
+                    opts.build_query("cross", {
+                            { "select",   cross_select },
+                            { "group by", "source.function#callpath.address" },
+                            { "format",   format }
+                        });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
-                    opts.query_let("local", "")
-                    + " select "
-                    + opts.query_select("local", local_select)
-                    + " group by "
-                    + opts.query_groupby("local", "source.function#callpath.address")
-                    + " format "
-                    + format;
+                    opts.build_query("local", {
+                            { "select",   local_select },
+                            { "group by", "source.function#callpath.address" },
+                            { "format",   format }
+                        });
             }
 
             opts.update_channel_config(config());

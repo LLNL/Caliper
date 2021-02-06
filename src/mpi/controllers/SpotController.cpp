@@ -182,13 +182,12 @@ public:
         std::string block =
             std::string("block = truncate(loop.start_iteration,") + std::to_string(blocksize) + ")";
 
-        std::string query =
-            m_opts.query_let("local", block)
-            + " select "
-            + m_opts.query_select("local", select, false)
-            + " group by "
-            + m_opts.query_groupby("local", "cali.channel,loop,block")
-            + " where loop.start_iteration,loop=" + loopname;
+        std::string query = m_opts.build_query("local", {
+                { "let",      block },
+                { "select",   select },
+                { "group by", "cali.channel,loop,block" },
+                { "where",    std::string("loop.start_iteration,loop=") + loopname }
+            }, false /* no aliases */);
 
         local_aggregate(query.c_str(), c, channel(), db, output_agg);
     }
@@ -202,12 +201,10 @@ public:
             ",max(sum#time.duration) as \"Time (s)\" unit sec"
             ",avg(loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
 
-        std::string query =
-            m_opts.query_let("cross", "")
-            + " select "
-            + m_opts.query_select("cross", select, true)
-            + " group by "
-            + m_opts.query_groupby("cross", "cali.channel,loop,block");
+        std::string query = m_opts.build_query("cross", {
+                { "select",   select },
+                { "group by", "cali.channel,loop,block" }
+            });
 
         return parse_spec(query.c_str());
     }
@@ -438,11 +435,11 @@ class SpotController : public cali::ChannelController
             ",max(inclusive#sum#time.duration) as \"Max time/rank\" unit sec"
             ",avg(inclusive#sum#time.duration) as \"Avg time/rank\" unit sec"
             ",sum(inclusive#sum#time.duration) as \"Total time\"    unit sec";
-        std::string cross_query =
-            std::string("select ")
-            + m_opts.query_select("cross", cross_select)
-            + " group by "
-            + m_opts.query_groupby("cross", "prop:nested");
+
+        std::string cross_query = m_opts.build_query("cross", {
+                { "select",   cross_select  },
+                { "group by", "prop:nested" }
+            });
 
         QuerySpec  output_spec(parse_spec(cross_query.c_str()));
         Aggregator output_agg(output_spec);
@@ -453,11 +450,10 @@ class SpotController : public cali::ChannelController
         // ---   Flush Caliper buffers into intermediate aggregator to calculate
         //     region profile inclusive times
         {
-            std::string query = m_opts.query_let("local", "")
-                + " select "
-                + m_opts.query_select("local", "inclusive_sum(sum#time.duration)", false)
-                + " group by "
-                + m_opts.query_groupby("local", "prop:nested");
+            std::string query = m_opts.build_query("local", {
+                    { "select",   "inclusive_sum(sum#time.duration)" },
+                    { "group by", "prop:nested" },
+                }, false /* no aliases */);
 
             local_aggregate(query.c_str(), c, channel(), m_db, output_agg);
         }
