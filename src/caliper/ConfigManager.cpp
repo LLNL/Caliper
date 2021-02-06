@@ -121,6 +121,13 @@ join_stringlist(const std::vector<std::string>& list)
     return ret;
 }
 
+std::string
+find_or(const std::map<std::string,std::string>& m, const std::string& k, const std::string v = "")
+{
+    auto it = m.find(k);
+    return it != m.end() ? it->second : v;
+}
+
 } // namespace [anonymous]
 
 
@@ -140,6 +147,7 @@ class ConfigManager::OptionSpec
         std::vector< select_expr_t > select;
         std::vector< std::string   > groupby;
         std::vector< std::string   > let;
+        std::vector< std::string   > where;
     };
 
     struct option_spec_t {
@@ -187,6 +195,10 @@ class ConfigManager::OptionSpec
             it = dict.find("let");
             if (it != dict.end())
                 qarg.let = ::to_stringlist(it->second.rec_list());
+
+            it = dict.find("where");
+            if (it != dict.end())
+                qarg.where = ::to_stringlist(it->second.rec_list());
 
             it = dict.find("select");
             if (it != dict.end())
@@ -442,20 +454,29 @@ struct ConfigManager::Options::OptionsImpl
         append_config(config);
     }
 
-    std::string
-    query_select(const std::string& level, const std::string& in, bool use_alias) const {
-        std::string ret = in;
+    std::vector< const OptionSpec::query_arg_t* >
+    get_enabled_query_args(const char* level) const {
+        std::vector< const OptionSpec::query_arg_t* > ret;
 
         for (const std::string& opt : enabled_options) {
-            auto s_it = spec.data.find(opt); // find option description
+            auto s_it = spec.data.find(opt);
             if (s_it == spec.data.end())
                 continue;
 
-            auto l_it = s_it->second.query_args.find(level); // find query level
-            if (l_it == s_it->second.query_args.end())
-                continue;
+            auto l_it = s_it->second.query_args.find(level);
+            if (l_it != s_it->second.query_args.end())
+                ret.push_back(&l_it->second);
+        }
 
-            for (const auto &p : l_it->second.select) {
+        return ret;
+    }
+
+    std::string
+    query_select(const char* level, const std::string& in, bool use_alias) const {
+        std::string ret = in;
+
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &p : q->select) {
                 if (p.expression.empty())
                     break;
 
@@ -473,46 +494,36 @@ struct ConfigManager::Options::OptionsImpl
             }
         }
 
+        if (!ret.empty())
+            ret = std::string(" select ") + ret;
+
         return ret;
     }
 
     std::string
-    query_groupby(const std::string& level, const std::string& in) const {
+    query_groupby(const char* level, const std::string& in) const {
         std::string ret = in;
 
-        for (const std::string& opt : enabled_options) {
-            auto s_it = spec.data.find(opt); // find option description
-            if (s_it == spec.data.end())
-                continue;
-
-            auto l_it = s_it->second.query_args.find(level); // find query level
-            if (l_it == s_it->second.query_args.end())
-                continue;
-
-            for (const auto &s : l_it->second.groupby) {
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &s : q->groupby) {
                 if (!ret.empty())
                     ret.append(",");
                 ret.append(s);
             }
         }
 
+        if (!ret.empty())
+            ret = std::string(" group by ") + ret;
+
         return ret;
     }
 
     std::string
-    query_let(const std::string& level, const std::string& in) const {
+    query_let(const char* level, const std::string& in) const {
         std::string ret = in;
 
-        for (const std::string& opt : enabled_options) {
-            auto s_it = spec.data.find(opt); // find option description
-            if (s_it == spec.data.end())
-                continue;
-
-            auto l_it = s_it->second.query_args.find(level); // find query level
-            if (l_it == s_it->second.query_args.end())
-                continue;
-
-            for (const auto &s : l_it->second.let) {
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &s : q->let) {
                 if (!ret.empty())
                     ret.append(",");
                 ret.append(s);
@@ -521,6 +532,48 @@ struct ConfigManager::Options::OptionsImpl
 
         if (!ret.empty())
             ret = std::string(" let ") + ret;
+
+        return ret;
+    }
+
+    std::string
+    query_where(const char* level, const std::string& in) const {
+        std::string ret = in;
+
+        for (const auto *q : get_enabled_query_args(level)) {
+            for (const auto &s : q->where) {
+                if (!ret.empty())
+                    ret.append(",");
+                ret.append(s);
+            }
+        }
+
+        if (!ret.empty())
+            ret = std::string(" where ") + ret;
+
+        return ret;
+    }
+
+    std::string
+    build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) {
+        std::string ret;
+
+        ret.append(query_let(level, ::find_or(in, "let")));
+        ret.append(query_select(level, ::find_or(in, "select"), use_alias));
+        ret.append(query_groupby(level, ::find_or(in, "group by")));
+        ret.append(query_where(level, ::find_or(in, "where")));
+
+        {
+            auto it = in.find("format");
+            if (it != in.end())
+                ret.append(" format ").append(it->second);
+        }
+
+        {
+            auto it = in.find("aggregate");
+            if (it != in.end())
+                ret.append(" aggregate ").append(it->second);
+        }
 
         return ret;
     }
@@ -663,21 +716,9 @@ ConfigManager::Options::update_channel_config(config_map_t& config) const
 }
 
 std::string
-ConfigManager::Options::query_select(const char* level, const std::string& in, bool use_alias) const
+ConfigManager::Options::build_query(const char* level, const std::map<std::string, std::string>& in, bool use_alias) const
 {
-    return mP->query_select(level, in, use_alias);
-}
-
-std::string
-ConfigManager::Options::query_groupby(const char* level, const std::string& in) const
-{
-    return mP->query_groupby(level, in);
-}
-
-std::string
-ConfigManager::Options::query_let(const char* level, const std::string& in) const
-{
-    return mP->query_let(level, in);
+    return mP->build_query(level, in, use_alias);
 }
 
 //
