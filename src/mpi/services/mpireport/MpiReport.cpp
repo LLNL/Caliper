@@ -46,8 +46,11 @@ class MpiReport
         PMPI_Initialized(&initialized);
         PMPI_Finalized(&finalized);
 
-        if (finalized)
+        if (finalized) {
+            Log(0).stream() << chn->name() << ": mpireport: MPI is already finalized. Cannot aggregate output."
+                            << std::endl;
             return;
+        }
 
         CaliperMetadataDB db;
 

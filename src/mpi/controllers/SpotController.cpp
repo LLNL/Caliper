@@ -298,9 +298,17 @@ class SpotController : public cali::ChannelController
     void init_mpi() {
 #ifdef CALIPER_HAVE_MPI
         int initialized = 0;
-        MPI_Initialized(&initialized);
+        int finalized = 0;
 
-        if (!initialized)
+        MPI_Initialized(&initialized);
+        MPI_Finalized(&finalized);
+
+        if (finalized) {
+            Log(0).stream() << "[spot controller]: MPI is already finalized. Cannot aggregate output."
+                            << std::endl;
+        }
+
+        if (!initialized || finalized)
             m_use_mpi = false;
 
         if (m_use_mpi) {
