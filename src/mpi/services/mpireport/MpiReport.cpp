@@ -35,9 +35,8 @@ class MpiReport
     QuerySpec   m_cross_spec;
     QuerySpec   m_local_spec;
     std::string m_filename;
-    bool        m_2step_agg;
 
-    void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+    void write_output_cb(Caliper* c, Channel* channel, const SnapshotRecord* flush_info) {
         // check if we can use MPI
 
         int initialized = 0;
@@ -47,82 +46,39 @@ class MpiReport
         PMPI_Finalized(&finalized);
 
         if (finalized) {
-            Log(0).stream() << chn->name() << ": mpireport: MPI is already finalized. Cannot aggregate output."
+            Log(0).stream() << channel->name()
+                            << ": mpireport: MPI is already finalized. Cannot aggregate output."
                             << std::endl;
             return;
         }
 
-        CaliperMetadataDB db;
+        int      rank = 0;
+        MPI_Comm comm = MPI_COMM_NULL;
 
-        db.add_attribute_aliases(m_cross_spec.aliases);
-        db.add_attribute_units(m_cross_spec.units);
-
-        Aggregator        cross_agg(m_cross_spec);
-        Aggregator        local_agg(m_local_spec);
-
-        Preprocessor      cross_pp(m_cross_spec);
-        Preprocessor      local_pp(m_local_spec);
-
-        RecordSelector    filter(m_2step_agg ? m_local_spec : m_cross_spec);
-        Aggregator        agg = m_2step_agg ? local_agg : cross_agg;
-        Preprocessor      pp  = m_2step_agg ? local_pp  : cross_pp;
-
-        // flush this rank's caliper data into local aggregator
-        c->flush(chn, flush_info, [&db,&agg,&pp,&filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
-                EntryList mrec = db.merge_snapshot(in_db, rec);
-
-                if (filter.pass(db, mrec)) {
-                    mrec = pp.process(db, mrec);
-                    agg.add(db, mrec);
-                }
-            });
-
-        // with 2-step aggregation, flush local aggregator results into cross-process aggregator
-        if (m_2step_agg)
-            local_agg.flush(db, [&cross_agg,&cross_pp](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                    cross_agg.add(db, cross_pp.process(db, rec));
-                });
-
-        int rank = 0;
-
-        // cross-process aggregation, if we have MPI
         if (initialized) {
-            MPI_Comm comm;
             MPI_Comm_dup(MPI_COMM_WORLD, &comm);
             MPI_Comm_rank(comm, &rank);
-
-            // do the global cross-process aggregation:
-            //   aggregate_over_mpi() does all the magic
-            aggregate_over_mpi(db, cross_agg, comm);
-
-            MPI_Comm_free(&comm);
         }
 
-        // rank 0's aggregator contains the global result:
-        //   create a formatter and print it out
+        OutputStream stream;
+
         if (rank == 0) {
-            // import globals from runtime Caliper object
-            db.import_globals(*c, c->get_globals(chn));
-
-            // set default formatter to table if it hasn't been set
-            if (m_cross_spec.format.opt == QuerySpec::FormatSpec::Default)
-                m_cross_spec.format = CalQLParser("format table").spec().format;
-
-            OutputStream    stream;
             stream.set_stream(OutputStream::StdOut);
 
             if (!m_filename.empty())
                 stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
-
-            FormatProcessor formatter(m_cross_spec, stream);
-
-            cross_agg.flush(db, formatter);
-            formatter.flush(db);
         }
+
+        collective_flush(stream, *c, *channel, m_local_spec, m_cross_spec, comm);
+
+        if (comm != MPI_COMM_NULL)
+            MPI_Comm_free(&comm);
     }
 
-    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename, bool two_step_agg)
-        : m_cross_spec(cross_spec), m_local_spec(local_spec), m_filename(filename), m_2step_agg(two_step_agg)
+    MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename)
+        : m_cross_spec(cross_spec),
+          m_local_spec(local_spec),
+          m_filename(filename)
         { }
 
 public:
@@ -134,7 +90,7 @@ public:
         std::string local_cfg = config.get("local_config").to_string();
 
         CalQLParser cross_parser(cross_cfg.c_str());
-        CalQLParser local_parser(local_cfg.c_str());
+        CalQLParser local_parser(local_cfg.empty() ? cross_cfg.c_str() : local_cfg.c_str());
 
         for ( const auto *p : { &cross_parser, &local_parser } )
             if (p->error()) {
@@ -145,7 +101,7 @@ public:
             }
 
         MpiReport* instance =
-            new MpiReport(cross_parser.spec(), local_parser.spec(), config.get("filename").to_string(), !local_cfg.empty());
+            new MpiReport(cross_parser.spec(), local_parser.spec(), config.get("filename").to_string());
 
         chn->events().write_output_evt.connect(
             [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
