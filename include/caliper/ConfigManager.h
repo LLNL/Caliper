@@ -379,6 +379,20 @@ public:
     typedef std::shared_ptr<cali::ChannelController> ChannelPtr;
     typedef std::vector<ChannelPtr> ChannelList;
 
+    /// \brief Parse \a config_string and return the specified configuration
+    ///   channels
+    ///
+    /// Unlike ConfigManager::add(const char*), this function does not add
+    /// the specified configuration channels to the ConfigManager object's
+    /// internal list of channels.
+    ///
+    /// If there was an error parsing the configuration string, the error()
+    /// method will return \a true and an error message can be retrieved
+    /// with error_msg().
+    ///
+    /// \return List of configuration channels
+    ChannelList parse(const char* config_string);
+
     /// \brief Return a list of channel controller instances for the requested
     ///   configurations
     ///
