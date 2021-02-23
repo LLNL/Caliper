@@ -122,7 +122,7 @@ public:
 /// {
 ///     MPI_Init(&argc, &argv);
 ///
-///     auto channel = std::make_shared<cali::CollectiveOutputChannel>();
+///     std::shared_ptr<CollectiveOutputChannel> channel;
 ///     std::string errmsg;
 ///
 ///     std::tie(channel, errmsg) =
