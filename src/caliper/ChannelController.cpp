@@ -44,8 +44,8 @@ ChannelController::config()
     return mP->config;
 }
 
-const config_map_t&
-ChannelController::config() const
+config_map_t
+ChannelController::copy_config() const
 {
     return mP->config;
 }

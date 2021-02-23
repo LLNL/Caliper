@@ -10,6 +10,7 @@
 #include "caliper/reader/CalQLParser.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/ConfigManager.h"
 
 #include "caliper/cali-mpi.h"
 
@@ -52,12 +53,12 @@ struct CollectiveOutputChannel::CollectiveOutputChannelImpl
 };
 
 
-std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Comm comm)
+void CollectiveOutputChannel::collective_flush(OutputStream& stream, MPI_Comm comm)
 {
     Channel* chn = channel();
 
     if (!chn || !mP)
-        return os;
+        return;
 
     QuerySpec cross_spec;
     QuerySpec local_spec;
@@ -69,7 +70,7 @@ std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Co
             Log(0).stream() << "CollectiveOutputChannel: cross query parse error: "
                             << p.error_msg()
                             << std::endl;
-            return os;
+            return;
         } else {
             cross_spec = p.spec();
         }
@@ -82,18 +83,21 @@ std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Co
             Log(0).stream() << "CollectiveOutputChannel: local query parse error: "
                             << p.error_msg()
                             << std::endl;
-            return os;
+            return;
         } else {
             local_spec = p.spec();
         }
     }
 
-    OutputStream stream;
-    stream.set_stream(&os);
-
     Caliper c;
     cali::collective_flush(stream, c, *chn, local_spec, cross_spec, comm);
+}
 
+std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Comm comm)
+{
+    OutputStream stream;
+    stream.set_stream(&os);
+    collective_flush(stream, comm);
     return os;
 }
 
@@ -118,39 +122,70 @@ void CollectiveOutputChannel::flush()
         MPI_Comm_free(&comm);
 }
 
-CollectiveOutputChannel
-CollectiveOutputChannel::from(const ChannelController& from)
+std::shared_ptr<CollectiveOutputChannel>
+CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
 {
-    config_map_t cfg(from.config());
+    config_map_t cfg(from->copy_config());
 
     cfg["CALI_SERVICES_ENABLE"] = ::remove_from_stringlist(cfg["CALI_SERVICES_ENABLE"], "mpireport");
 
     std::string cross_query = cfg["CALI_MPIREPORT_CONFIG"];
     std::string local_query = cfg["CALI_MPIREPORT_LOCAL_CONFIG"];
 
+    if (cross_query.empty())
+        return { nullptr };
     if (local_query.empty())
         local_query = cross_query;
-    if (cross_query.empty()) {
-        Log(0).stream() << "CollectiveOutputChannel::from(): cannot convert "
-                        << from.name()
-                        << " into a collective output channel"
-                        << std::endl;
-    }
 
-    std::string name = from.name() + ".output";
+    std::string name = from->name() + ".output";
 
-    CollectiveOutputChannel ret(name.c_str(), 0, cfg);
-
-    ret.mP->cross_query = cross_query;
-    ret.mP->local_query = local_query;
-
-    return ret;
+    return std::make_shared<CollectiveOutputChannel>(local_query.c_str(), cross_query.c_str(), name.c_str(), 0, cfg);
 }
 
 CollectiveOutputChannel::CollectiveOutputChannel(const char* name, int flags, const config_map_t& cfg)
     : ChannelController(name, flags, cfg),
-      mP(new CollectiveOutputChannelImpl)
+      mP(nullptr)
 { }
+
+CollectiveOutputChannel::CollectiveOutputChannel(const char* local_query,
+                                                 const char* cross_query,
+                                                 const char* name,
+                                                 int flags,
+                                                 const config_map_t& cfg)
+    : ChannelController(name, flags, cfg),
+      mP(new CollectiveOutputChannelImpl)
+{
+    mP->cross_query = cross_query;
+    mP->local_query = local_query;
+}
 
 CollectiveOutputChannel::~CollectiveOutputChannel()
 { }
+
+namespace cali
+{
+
+std::pair< std::shared_ptr<CollectiveOutputChannel>, std::string >
+make_collective_output_channel(const char* config_str)
+{
+    ConfigManager mgr;
+    auto configs = mgr.parse(config_str);
+
+    if (mgr.error())
+        return std::make_pair(nullptr, mgr.error_msg());
+    if (configs.empty())
+        return std::make_pair(nullptr, "No config specified");
+
+    auto ret = CollectiveOutputChannel::from(configs.front());
+
+    if (!ret) {
+        std::string msg("Cannot create CollectiveOutputChannel from ");
+        msg.append(configs.front()->name());
+
+        return std::make_pair(nullptr, msg);
+    }
+
+    return std::make_pair(ret, std::string());
+}
+
+} // namespace cali

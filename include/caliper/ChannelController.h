@@ -82,7 +82,7 @@ public:
     virtual void flush();
 
     /// \brief Return the underlying config map.
-    const config_map_t& config() const;
+    config_map_t copy_config() const;
 
     /// \brief Create channel controller with given name, flags, and config.
     ChannelController(const char* name, int flags, const config_map_t& cfg);
