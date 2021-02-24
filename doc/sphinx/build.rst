@@ -130,7 +130,7 @@ Caliper installation with `caliper_DIR`: ::
 The CMake package defines the following variables and targets:
 
 +----------------------------+------------------------------------------+
-| caliper_INCLUDE_DIR        | Caliper include directory (variable)     |
+| ${caliper_INCLUDE_DIR}     | Caliper include directory (variable)     |
 +----------------------------+------------------------------------------+
 | caliper                    | The Caliper runtime library (target)     |
 +----------------------------+------------------------------------------+
