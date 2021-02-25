@@ -3,7 +3,9 @@ include_directories(${MPI_CXX_INCLUDE_PATH})
 set(CALIPER_MPI_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CALIPER_MPI_SOURCES
+  CollectiveOutputChannel.cpp
   aggregate_over_mpi.cpp
+  collective_flush.cpp
   mpi_flush.cpp
   mpi_machine.cpp
   mpi_setup.cpp)

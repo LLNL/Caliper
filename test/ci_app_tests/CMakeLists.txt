@@ -22,6 +22,7 @@ set(CALIPER_CI_C_TEST_APPS
   ci_test_channel_api)
 set(CALIPER_CI_MPI_TEST_APPS
   ci_test_cali_before_mpi
+  ci_test_collective_output_channel
   ci_test_mpi_before_cali)
 set(CALIPER_CI_Fortran_TEST_APPS
   ci_test_f_ann)

@@ -16,7 +16,7 @@ class CaliperMPITest(unittest.TestCase):
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_CHANNEL_FLUSH_ON_EXIT' : 'false',
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
@@ -43,7 +43,7 @@ class CaliperMPITest(unittest.TestCase):
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_CHANNEL_FLUSH_ON_EXIT' : 'false',
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'all',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
@@ -70,7 +70,7 @@ class CaliperMPITest(unittest.TestCase):
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_CHANNEL_FLUSH_ON_EXIT' : 'false',
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
@@ -93,7 +93,7 @@ class CaliperMPITest(unittest.TestCase):
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_CHANNEL_FLUSH_ON_EXIT' : 'false',
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_BLACKLIST'      : 'MPI_Barrier,MPI_Reduce',
             'CALI_MPIREPORT_FILENAME' : 'stdout',
@@ -116,7 +116,7 @@ class CaliperMPITest(unittest.TestCase):
 
         caliper_config = {
             'PATH'                    : '/usr/bin', # for ssh/rsh
-            'CALI_LOG_VERBOSITY'      : '0',
+            'CALI_CHANNEL_FLUSH_ON_EXIT' : 'false',
             'CALI_SERVICES_ENABLE'    : 'event,mpi,mpireport,trace',
             'CALI_MPI_WHITELIST'      : 'MPI_Bcast,MPI_Reduce',
             'CALI_MPI_BLACKLIST'      : 'MPI_Reduce',
@@ -178,6 +178,29 @@ class CaliperMPITest(unittest.TestCase):
         log_targets = [
             'Function',
             'MPI_Bcast'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
+    def test_collective_output_channel(self):
+        target_cmd = [ './ci_test_collective_output_channel', 'mpi-report' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        log_targets = [
+            'Function',
+            'MPI_Barrier'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)

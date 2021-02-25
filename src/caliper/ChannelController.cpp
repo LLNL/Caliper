@@ -44,6 +44,12 @@ ChannelController::config()
     return mP->config;
 }
 
+config_map_t
+ChannelController::copy_config() const
+{
+    return mP->config;
+}
+
 Channel*
 ChannelController::create()
 {

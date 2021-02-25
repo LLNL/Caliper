@@ -1018,11 +1018,14 @@ struct ConfigManager::ConfigManagerImpl
         return args;
     }
 
-    bool add(const char* config_string) {
+    ChannelList parse(const char* config_string) {
         auto configs = parse_configstring(config_string);
 
         if (m_error)
-            return false;
+            return ChannelList();
+
+        ChannelList ret;
+        ret.reserve(configs.size());
 
         for (auto cfg : configs) {
             Options opts(cfg.first->opts, add_default_parameters(cfg.second, *cfg.first));
@@ -1033,11 +1036,17 @@ struct ConfigManager::ConfigManagerImpl
                 check_error((cfg.first->check_args)(opts));
 
             if (m_error)
-                return false;
+                return ChannelList();
             else
-                m_channels.emplace_back( (cfg.first->create)(cfg.first->name.c_str(), cfg.first->initial_cfg, opts) );
+                ret.emplace_back( (cfg.first->create)(cfg.first->name.c_str(), cfg.first->initial_cfg, opts) );
         }
 
+        return ret;
+    }
+
+    bool add(const char* config_string) {
+        auto channels = parse(config_string);
+        m_channels.insert(m_channels.end(), channels.begin(), channels.end());
         return !m_error;
     }
 
@@ -1124,6 +1133,12 @@ void
 ConfigManager::add_option_spec(const char* json)
 {
     mP->add_global_option_specs(json);
+}
+
+ConfigManager::ChannelList
+ConfigManager::parse(const char* config_str)
+{
+    return mP->parse(config_str);
 }
 
 bool
