@@ -27,15 +27,8 @@ if (NOT Wrap_CONFIG_LOADED)
     set(file_path    ${CMAKE_CURRENT_BINARY_DIR}/${file_name})
     set(wrapper_path ${CMAKE_CURRENT_SOURCE_DIR}/${wrapper_name})
 
-    # Play nice with FindPythonInterp -- use the interpreter if it was found,
-    # otherwise use the script directly.
-    if (PYTHON_EXECUTABLE)
-      set(command ${PYTHON_EXECUTABLE})
-      set(script_arg ${Wrap_EXECUTABLE})
-    else()
-      set(command ${Wrap_EXECUTABLE})
-      set(script_arg "")
-    endif()
+    set(command ${CALI_PYTHON_EXECUTABLE})
+    set(script_arg ${Wrap_EXECUTABLE})
 
     # Backward compatibility for old FindMPIs that did not have MPI_C_INCLUDE_PATH
     if (NOT MPI_C_INCLUDE_PATH)
