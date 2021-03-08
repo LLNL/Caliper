@@ -323,20 +323,12 @@ class CuptiTraceService
         }
         case CUPTI_ACTIVITY_KIND_DRIVER:
         {
-            CUpti_ActivityAPI* api =
-                reinterpret_cast<CUpti_ActivityAPI*>(rec);
-
             ++num_driver_recs;
-
             return 0;
         }
         case CUPTI_ACTIVITY_KIND_RUNTIME:
         {
-            CUpti_ActivityAPI* api =
-                reinterpret_cast<CUpti_ActivityAPI*>(rec);
-
             ++num_runtime_recs;
-
             return 0;
         }
         case CUPTI_ACTIVITY_KIND_MEMCPY:
