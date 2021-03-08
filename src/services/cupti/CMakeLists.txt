@@ -1,12 +1,10 @@
-include_directories(${CUPTI_INCLUDE_DIR})
-include_directories(${CUDA_INCLUDE_DIRS})
-
 set(CALIPER_CUPTI_SOURCES
   Cupti.cpp
   CuptiEventSampling.cpp
   CuptiTrace.cpp)
 
 add_library(caliper-cupti OBJECT ${CALIPER_CUPTI_SOURCES})
+target_include_directories(caliper-cupti PRIVATE ${CALI_CUPTI_INCLUDE_DIRS})
 
 add_service_objlib("caliper-cupti")
 
