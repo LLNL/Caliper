@@ -6,6 +6,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/StringConverter.h"
 
 #include <ompt.h>
 
@@ -135,7 +136,7 @@ void cb_parallel_end(ompt_data_t*, ompt_data_t*, int, const void*)
     c.end(region_attr);
 }
 
-void cb_implicit_task(ompt_scope_endpoint_t endpoint, ompt_data_t*, ompt_data_t*, unsigned int par, unsigned int index, int flags) 
+void cb_implicit_task(ompt_scope_endpoint_t endpoint, ompt_data_t*, ompt_data_t*, unsigned int par, unsigned int index, int flags)
 {
     // ignore the initial task
     if (flags & ompt_task_initial)
@@ -290,7 +291,7 @@ void create_attributes(Caliper* c)
     Attribute subscription_attr = c->get_attribute("subscription_event");
     Variant v_true(true);
 
-    region_attr = 
+    region_attr =
         c->create_attribute("omp.region", CALI_TYPE_STRING,
                             CALI_ATTR_SCOPE_THREAD,
                             1, &subscription_attr, &v_true);
@@ -308,21 +309,23 @@ void create_attributes(Caliper* c)
                             1, &subscription_attr, &v_true);
     state_attr =
         c->create_attribute("omp.state", CALI_TYPE_STRING,
-                            CALI_ATTR_SCOPE_THREAD | 
+                            CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_SKIP_EVENTS);
     proc_id_attr =
         c->create_attribute("omp.proc.id", CALI_TYPE_INT,
-                            CALI_ATTR_SCOPE_THREAD | 
+                            CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_SKIP_EVENTS);
     thread_id_attr =
         c->create_attribute("omp.thread.id", CALI_TYPE_INT,
-                            CALI_ATTR_SKIP_EVENTS | 
+                            CALI_ATTR_SKIP_EVENTS |
                             CALI_ATTR_SCOPE_THREAD);
     num_threads_attr =
         c->create_attribute("omp.num.threads", CALI_TYPE_INT,
-                            CALI_ATTR_SCOPE_THREAD | 
+                            CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_SKIP_EVENTS);
 }
+
+bool cali_ompt_requested = false;
 
 void register_ompt_service(Caliper* c, Channel* channel)
 {
@@ -332,6 +335,8 @@ void register_ompt_service(Caliper* c, Channel* channel)
         is_initialized = true;
         create_attributes(c);
     }
+
+    cali_ompt_requested = true;
 
     channel->events().post_init_evt.connect(post_init_cb);
 
@@ -344,9 +349,19 @@ extern "C" {
 
 ompt_start_tool_result_t*
 ompt_start_tool(unsigned omp_version, const char* runtime_version) {
-    Log(2).stream() << "OMPT is available. Using " << runtime_version << std::endl;
+    bool use_ompt = ::cali_ompt_requested;
 
-    return &::start_tool_result;
+    const char* optstr = std::getenv("CALI_USE_OMPT");
+
+    if (optstr)
+        use_ompt = StringConverter(optstr).to_bool();
+
+    if (Log::verbosity() >= 2)
+        Log(2).stream() << "OMPT is available. Using " << runtime_version
+                        << ". OMPT requested: "
+                        << (use_ompt ? "Yes" : "No") << std::endl;
+
+    return use_ompt ? &::start_tool_result : nullptr;
 }
 
 }
