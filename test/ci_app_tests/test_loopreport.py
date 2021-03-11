@@ -17,8 +17,8 @@ class CaliperLoopReportTest(unittest.TestCase):
 
         log_targets = [
             'Loop summary:',
-            'Loop     Iterations Time (s)',
-            'mainloop         20'
+            'Loop      Iterations Time (s)',
+            'main loop         20'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
@@ -40,7 +40,7 @@ class CaliperLoopReportTest(unittest.TestCase):
         }
 
         log_targets = [
-            'Iteration summary (mainloop):',
+            'Iteration summary (main loop):',
             'Block Iterations Time (s)',
             '    0         15',
             '   30         15',
@@ -95,7 +95,7 @@ class CaliperLoopReportTest(unittest.TestCase):
 
         log_targets = [
             'Iteration summary (fooloop):',
-            'mainloop/fooloop        400',
+            'main loop/fooloop        400',
             'Block Iterations Time (s)',
             '    0        100',
             '    5        100',

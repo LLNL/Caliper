@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
             count = std::max(1, std::stoi(argv[3]));
     }
 
-    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "mainloop");
+    CALI_CXX_MARK_LOOP_BEGIN(mainloop, "main loop");
 
     for (int i = 0; i < count; ++i) {
         CALI_CXX_MARK_LOOP_ITERATION(mainloop, i);

@@ -230,8 +230,8 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
                 'function'   : 'main',
-                'loop'       : 'mainloop',
-                'iteration#mainloop' : '3' }))
+                'loop'       : 'main loop',
+                'iteration#main loop' : '3' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
                 'function'   : 'main/foo',
@@ -244,7 +244,7 @@ class CaliperBasicTraceTest(unittest.TestCase):
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
                 'function'   : 'main/foo',
-                'loop'       : 'mainloop/fooloop',
+                'loop'       : 'main loop/fooloop',
                 'iteration#fooloop' : '3' }))
 
     def test_property_override(self):

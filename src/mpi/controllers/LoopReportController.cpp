@@ -173,7 +173,7 @@ class LoopReportController : public cali::ChannelController
                 { "let",      block   },
                 { "select",   select  },
                 { "group by", "Block" },
-                { "where",    std::string("loop=")+loopname }
+                { "where",    std::string("loop=\"")+loopname+"\"" }
             }, false);
 
         return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
