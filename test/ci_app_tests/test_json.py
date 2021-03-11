@@ -63,7 +63,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         target_cmd = [ './ci_test_macros' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query',
-                       '-q', 'SELECT count(),sum(time.inclusive.duration),loop,iteration#mainloop group by loop,iteration#mainloop format json-split' ]
+                       '-q', 'SELECT count(),sum(time.inclusive.duration),loop,iteration#main\ loop group by loop,iteration#main\ loop format json-split' ]
 
         caliper_config = {
             'CALI_CONFIG_PROFILE'    : 'serial-trace',
@@ -77,7 +77,7 @@ class CaliperJSONTest(unittest.TestCase):
 
         columns = obj['columns']
 
-        self.assertEqual( { 'path', 'iteration#mainloop', 'count', 'sum#time.inclusive.duration' }, set(columns) )
+        self.assertEqual( { 'path', 'iteration#main loop', 'count', 'sum#time.inclusive.duration' }, set(columns) )
 
         data = obj['data']
 
@@ -92,13 +92,13 @@ class CaliperJSONTest(unittest.TestCase):
 
         nodes = obj['nodes']
 
-        self.assertEqual(nodes[0]['label' ], 'mainloop')
+        self.assertEqual(nodes[0]['label' ], 'main loop')
         self.assertEqual(nodes[0]['column'], 'path')
         self.assertEqual(nodes[1]['label' ], 'fooloop')
         self.assertEqual(nodes[1]['column'], 'path')
         self.assertEqual(nodes[1]['parent'], 0)
 
-        iterindex = columns.index('iteration#mainloop')
+        iterindex = columns.index('iteration#main loop')
 
         # Note: this is a pretty fragile test
         self.assertEqual(data[9][iterindex], 3)

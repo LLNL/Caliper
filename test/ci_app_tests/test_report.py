@@ -52,7 +52,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select *,count() group by prop:nested,iteration#mainloop format expand',
+            'CALI_REPORT_CONFIG'     : 'select *,count() group by prop:nested,iteration#main\ loop format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -61,16 +61,16 @@ class CaliperReportTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'mainloop',
+                         'loop'       : 'main loop',
                          'annotation' : 'pre-loop',
                          'statement'  : 'foo.init',
-                         'iteration#mainloop' : '2',
+                         'iteration#main loop' : '2',
                          'count'      : '1'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'mainloop/fooloop',
-                         'iteration#mainloop' : '3',
+                         'loop'       : 'main loop/fooloop',
+                         'iteration#main loop' : '3',
                          'count'      : '9'
             }))
 
@@ -88,8 +88,8 @@ class CaliperReportTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'mainloop/fooloop',
-                         'iteration#mainloop' : '3',
+                         'loop'       : 'main loop/fooloop',
+                         'iteration#main loop' : '3',
                          'iteration#fooloop'  : '1',
                          'count'      : '1'
             }))
@@ -99,7 +99,7 @@ class CaliperReportTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'event,trace,report',
-            'CALI_REPORT_CONFIG'     : 'select *,count() as my\\ count\\ alias group by prop:nested,iteration#mainloop format expand',
+            'CALI_REPORT_CONFIG'     : 'select *,count() as my\\ count\\ alias group by prop:nested,iteration#main\ loop format expand',
             'CALI_LOG_VERBOSITY'     : '0'
         }
 
@@ -108,17 +108,17 @@ class CaliperReportTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'mainloop',
+                         'loop'       : 'main loop',
                          'annotation' : 'pre-loop',
                          'statement'  : 'foo.init',
-                         'iteration#mainloop' : '2',
-                         'my count alias'     : '1'
+                         'iteration#main loop' : '2',
+                         'my count alias'      : '1'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, { 'function'   : 'main/foo',
-                         'loop'       : 'mainloop/fooloop',
-                         'iteration#mainloop' : '3',
-                         'my count alias'     : '9'
+                         'loop'       : 'main loop/fooloop',
+                         'iteration#main loop' : '3',
+                         'my count alias'      : '9'
             }))
 
     def test_report_tree_formatter(self):
@@ -133,7 +133,7 @@ class CaliperReportTest(unittest.TestCase):
         report_targets = [
             'Path             Count',
             'main                 1',
-            '  mainloop           5',
+            '  main loop          5',
             '    foo              4',
             '      fooloop       20',
             '      pre-loop       4',
@@ -161,9 +161,9 @@ class CaliperReportTest(unittest.TestCase):
         }
 
         report_targets = [
-            'loop             count',
-            'mainloop/fooloop     4',
-            'mainloop             1'
+            'loop              count',
+            'main loop/fooloop     4',
+            'main loop             1'
         ]
 
         report_output,_ = cat.run_test(target_cmd, caliper_config)

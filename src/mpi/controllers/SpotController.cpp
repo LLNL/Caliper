@@ -186,7 +186,7 @@ public:
                 { "let",      block },
                 { "select",   select },
                 { "group by", "cali.channel,loop,block" },
-                { "where",    std::string("loop.start_iteration,loop=") + loopname }
+                { "where",    std::string("loop.start_iteration,loop=\"") + loopname + "\"" }
             }, false /* no aliases */);
 
         local_aggregate(query.c_str(), c, channel(), db, output_agg);

@@ -14,7 +14,7 @@ class CaliperTestMonitor(unittest.TestCase):
         caliper_config = {
             'CALI_SERVICES_ENABLE'   : 'loop_monitor,trace,report',
             'CALI_LOOP_MONITOR_ITERATION_INTERVAL' : '5',
-            'CALI_REPORT_CONFIG'     : 'select * where iteration#mainloop format expand',
+            'CALI_REPORT_CONFIG'     : 'select * where iteration#main\ loop format expand',
             'CALI_REPORT_FILENAME'   : 'stdout',
             'CALI_LOG_VERBOSITY'     : '0'
         }
@@ -24,8 +24,8 @@ class CaliperTestMonitor(unittest.TestCase):
 
         self.assertTrue(len(snapshots) == 2)
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'iteration#mainloop' : '4',
-                         'loop.iterations'    : '5'
+            snapshots, { 'iteration#main loop' : '4',
+                         'loop.iterations'     : '5'
             }))
 
     def test_loopmonitor_time_interval(self):
@@ -67,16 +67,16 @@ class CaliperTestMonitor(unittest.TestCase):
 
         self.assertEqual(len(snapshots), 20)
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'iteration#mainloop' : '3',
-                         'iteration#fooloop'  : '4',
-                         'loop.iterations'    : '5',
-                         'loop'               : 'mainloop/fooloop'
+            snapshots, { 'iteration#main loop' : '3',
+                         'iteration#fooloop'   : '4',
+                         'loop.iterations'     : '5',
+                         'loop'                : 'main loop/fooloop'
             }))
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'iteration#mainloop' : '7',
-                         'iteration#fooloop'  : '9',
-                         'loop.iterations'    : '5',
-                         'loop'               : 'mainloop/fooloop'
+            snapshots, { 'iteration#main loop' : '7',
+                         'iteration#fooloop'   : '9',
+                         'loop.iterations'     : '5',
+                         'loop'                : 'main loop/fooloop'
             }))
 
     def test_regionmonitor_time_interval(self):
@@ -95,7 +95,7 @@ class CaliperTestMonitor(unittest.TestCase):
 
         self.assertTrue(len(snapshots) == 4)
         self.assertTrue(cat.has_snapshot_with_attributes(
-            snapshots, { 'loop'     : 'mainloop/fooloop',
+            snapshots, { 'loop'     : 'main loop/fooloop',
                          'function' : 'main/foo'
             }))
         self.assertFalse(cat.has_snapshot_with_attributes(

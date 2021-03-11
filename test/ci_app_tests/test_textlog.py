@@ -12,8 +12,8 @@ class CaliperTextlogTest(unittest.TestCase):
 
         caliper_config = {
             'CALI_SERVICES_ENABLE'      : 'event,textlog',
-            'CALI_TEXTLOG_TRIGGER'      : 'iteration#mainloop',
-            'CALI_TEXTLOG_FORMATSTRING' : '%function% iteration: %[2]iteration#mainloop',
+            'CALI_TEXTLOG_TRIGGER'      : 'iteration#main\ loop',
+            'CALI_TEXTLOG_FORMATSTRING' : '%function% iteration: %[2]iteration#main loop%',
             'CALI_LOG_VERBOSITY'        : '0',
         }
 
@@ -44,7 +44,7 @@ class CaliperTextlogTest(unittest.TestCase):
         }
 
         log_targets = [
-            'loop=mainloop/fooloop'
+            'loop=main loop/fooloop'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)

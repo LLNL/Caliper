@@ -18,7 +18,7 @@ class CaliperRuntimeReportTest(unittest.TestCase):
         log_targets = [
             'Path',
             'main',
-            '  mainloop',
+            '  main loop',
             '    foo',
             '      fooloop'
         ]
@@ -43,7 +43,7 @@ class CaliperRuntimeReportTest(unittest.TestCase):
         log_targets = [
             'Time (E) Time (I) Time % (E) Time % (I)',
             'main',
-            '  mainloop',
+            '  main loop',
             '    foo',
             '      fooloop'
         ]
