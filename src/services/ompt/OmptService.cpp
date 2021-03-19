@@ -22,8 +22,7 @@ struct OmptAPI {
     ompt_get_state_t         get_state        { nullptr };
     ompt_enumerate_states_t  enumerate_states { nullptr };
     ompt_get_proc_id_t       get_proc_id      { nullptr };
-
-    // std::vector<std::string> states;
+    ompt_finalize_tool_t     finalize_tool    { nullptr };
 
     bool
     init(ompt_function_lookup_t lookup) {
@@ -31,8 +30,9 @@ struct OmptAPI {
         get_state        = (ompt_get_state_t)        (*lookup)("ompt_get_state");
         enumerate_states = (ompt_enumerate_states_t) (*lookup)("ompt_enumerate_states");
         get_proc_id      = (ompt_get_proc_id_t)      (*lookup)("ompt_get_proc_id");
+        finalize_tool    = (ompt_finalize_tool_t)    (*lookup)("ompt_finalize_tool");
 
-        if (!set_callback || !get_state || !enumerate_states || !get_proc_id)
+        if (!set_callback || !get_state || !enumerate_states || !get_proc_id || !finalize_tool)
             return false;
 
         // enumerate states
@@ -260,13 +260,14 @@ int initialize_ompt(ompt_function_lookup_t lookup, int initial_device_num, ompt_
 
     Log(1).stream() << "OMPT support initialized" << std::endl;
 
-    return 42;
+    return 42; // return a non-zero
 }
 
 void finalize_ompt(ompt_data_t* tool_data)
 {
+    // This can be invoked after Caliper destruction so use cerr instead of our own log
     if (num_skipped > 0)
-        std::cerr << "== CALIPER OMPT: " << num_skipped << " callbacks skipped" << std::endl;
+        std::cerr << "== CALIPER: OMPT: " << num_skipped << " callbacks skipped" << std::endl;
 }
 
 ompt_start_tool_result_t start_tool_result { initialize_ompt, finalize_ompt, { 0 } };
@@ -325,7 +326,16 @@ void create_attributes(Caliper* c)
                             CALI_ATTR_SKIP_EVENTS);
 }
 
-bool cali_ompt_requested = false;
+int num_ompt_channels = 0;
+
+void pre_finish_cb(Caliper*, Channel* channel) {
+    if (--num_ompt_channels == 0) {
+        Log(1).stream() << channel->name() << ": Finalizing OMPT" << std::endl;
+
+        if (api.finalize_tool)
+            (*api.finalize_tool)();
+    }
+}
 
 void register_ompt_service(Caliper* c, Channel* channel)
 {
@@ -336,9 +346,10 @@ void register_ompt_service(Caliper* c, Channel* channel)
         create_attributes(c);
     }
 
-    cali_ompt_requested = true;
+    ++num_ompt_channels;
 
     channel->events().post_init_evt.connect(post_init_cb);
+    channel->events().pre_finish_evt.connect(pre_finish_cb);
 
     Log(1).stream() << channel->name() << ": " << "Registered OMPT service" << std::endl;
 }
@@ -349,7 +360,7 @@ extern "C" {
 
 ompt_start_tool_result_t*
 ompt_start_tool(unsigned omp_version, const char* runtime_version) {
-    bool use_ompt = ::cali_ompt_requested;
+    bool use_ompt = (::num_ompt_channels > 0);
 
     const char* optstr = std::getenv("CALI_USE_OMPT");
 

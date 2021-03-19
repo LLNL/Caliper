@@ -103,6 +103,8 @@ public:
         ///
         /// At this point, all registered services have been initialized.
         caliper_cbvec          post_init_evt;
+        /// \brief Invoked prior to %Caliper channel finalization.
+        caliper_cbvec          pre_finish_evt;
         /// \brief Invoked at the end of %Caliper channel finalization.
         ///
         /// At this point, other services in this channel may already be
