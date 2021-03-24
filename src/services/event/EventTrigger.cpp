@@ -50,6 +50,8 @@ class EventTrigger
 
     Attribute                exp_marker_attr    { Attribute::invalid };
 
+    Attribute                region_count_attr  { Attribute::invalid };
+
     std::vector<std::string> trigger_attr_names;
 
     bool                     enable_snapshot_info;
@@ -206,16 +208,20 @@ class EventTrigger
 
             // Construct the trigger info entry with previous level
 
-            Attribute attrs[2] = { trigger_end_attr, end_attr };
-            Variant    vals[2] = { Variant(attr.id()), value };
+            Attribute attrs[3] = { trigger_end_attr, end_attr, region_count_attr };
+            Variant    vals[3] = { Variant(attr.id()), value, cali_make_variant_from_uint(1) };
 
-            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
+            SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
             SnapshotRecord trigger_info(trigger_info_data);
 
-            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
+            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
             c->push_snapshot(chn, &trigger_info);
         } else {
-            c->push_snapshot(chn, nullptr);
+            cali_id_t attr_id = region_count_attr.id();
+            Variant   v_1(cali_make_variant_from_uint(1));
+            SnapshotRecord trigger_info(1, &attr_id, &v_1);
+
+            c->push_snapshot(chn, &trigger_info);
         }
     }
 
@@ -234,6 +240,14 @@ class EventTrigger
     EventTrigger(Caliper* c, Channel* chn)
         : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
+            Attribute aggr_attr = c->get_attribute("class.aggregatable");
+            Variant   v_true(true);
+
+            region_count_attr =
+                c->create_attribute("region.count", CALI_TYPE_UINT,
+                                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE,
+                                    1, &aggr_attr, &v_true);
+
             ConfigSet cfg =
                 chn->config().init("event", s_configdata);
 
