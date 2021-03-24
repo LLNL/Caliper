@@ -10,7 +10,7 @@ import calipertest as cat
 
 class CaliperSpotControllerTest(unittest.TestCase):
     def test_spot_regionprofile(self):
-        target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout)' ]
+        target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,region.count)' ]
         query_cmd = [ '../../src/tools/cali-query/cali-query', '-q', 'format json(object)' ]
 
         caliper_config = {
@@ -27,6 +27,10 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertIn('min#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
         self.assertIn('max#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
         self.assertIn('sum#inclusive#sum#time.duration', obj['globals']['spot.metrics'])
+        self.assertIn('min#sum#rc.count',                obj['globals']['spot.metrics'])
+        self.assertIn('avg#sum#rc.count',                obj['globals']['spot.metrics'])
+        self.assertIn('max#sum#rc.count',                obj['globals']['spot.metrics'])
+        self.assertIn('sum#sum#rc.count',                obj['globals']['spot.metrics'])
         self.assertIn('avg#inclusive#sum#time.duration', obj['attributes'])
         self.assertIn('min#inclusive#sum#time.duration', obj['attributes'])
         self.assertIn('max#inclusive#sum#time.duration', obj['attributes'])
@@ -39,7 +43,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
 
         r = None
         for rec in obj['records']:
-            if 'path' in rec and rec['path'] == 'main':
+            if 'path' in rec and rec['path'] == 'main/main loop/foo':
                 r = rec
                 break
 
@@ -48,6 +52,7 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertIn('min#inclusive#sum#time.duration', r)
         self.assertIn('max#inclusive#sum#time.duration', r)
         self.assertIn('sum#inclusive#sum#time.duration', r)
+        self.assertEqual(int(r['sum#sum#rc.count']), 4)
         self.assertEqual(r['spot.channel'], 'regionprofile')
 
     def test_spot_timeseries(self):

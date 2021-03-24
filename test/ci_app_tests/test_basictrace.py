@@ -229,9 +229,10 @@ class CaliperBasicTraceTest(unittest.TestCase):
 
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
-                'function'   : 'main',
-                'loop'       : 'main loop',
-                'iteration#main loop' : '3' }))
+                'function'     : 'main',
+                'loop'         : 'main loop',
+                'iteration#main loop' : '3',
+                'region.count' : '1' }))
         self.assertTrue(cat.has_snapshot_with_attributes(
             snapshots, {
                 'function'   : 'main/foo',
