@@ -3,8 +3,9 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-//   This is a template for a measurement service (adding measurements
-// to a Caliper snapshot) as developer demo and documentation.
+//   This is a variorum caliper service based on 
+//   the caliper measurement service template file.
+//  
 
 #include "caliper/CaliperService.h"
 
@@ -18,10 +19,14 @@
 #include <mutex>
 #include <tuple>
 #include <vector>
+#include <iostream>
 
 //Variourm include area 
+extern "C" {
 #include <variorum.h>
 #include <jansson.h>
+}
+
 
 using namespace cali;
 
@@ -40,10 +45,25 @@ typedef std::chrono::time_point<Clock> TimePoint;
 
 // Our "measurement function"
 std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& name) {
-    auto     now = Clock::now();
+    /*
+    * lets try extracting variorum and returning it
+    auto     now = Clock::now(); 
     uint64_t val =
         name.length() * std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
+    */
+    //std::cout << "Measuring with Variorum" << std::endl;
+  
+    double power_node;
+    json_t *power_obj  = json_object(); 
+    int ret = variorum_get_node_power_json(power_obj);
+    if (ret != 0) {
+        std::cout << "Variorum JSON API failed" << std::endl;
+        uint64_t val;
+        return std::make_tuple(false, val);
+    }
+    power_node =  json_real_value(json_object_get(power_obj, "power_node"));
 
+    uint64_t val = (uint64_t)power_node;
     return std::make_tuple(true, val);
 }
 
@@ -83,9 +103,12 @@ class VariorumService
         for (const MeasurementInfo& m : m_info) {
             bool success;
             uint64_t val;
-
+		
+        
+            
             std::tie(success, val) = measure(m_starttime, m.name);
-
+            std::string outstring = "Node Power "+ std::to_string(val);
+            std::cout << outstring << std::endl;
             //   Check for measurement errors. Best practice is to count and
             // report them at the end rather than printing error messages at
             // runtime.
@@ -96,7 +119,8 @@ class VariorumService
 
             // Append measurement value to the snapshot record
             Variant v_val(cali_make_variant_from_uint(val));
-            rec->append(m.value_attr, v_val);
+            
+            rec->append(m.value_attr, val);
 
             //   We store the previous measurement value on the Caliper thread
             // blackboard so we can compute the difference since the last
@@ -104,6 +128,9 @@ class VariorumService
             // the previous value. Compute the difference and append it.
             Variant v_prev = c->exchange(m.prval_attr, v_val);
             rec->append(m.delta_attr, cali_make_variant_from_uint(val - v_prev.to_uint()));
+            outstring = "Node Power prev "+ std::to_string(v_prev);
+            std::cout << outstring << std::endl;
+            
         }
     }
 
@@ -129,6 +156,12 @@ class VariorumService
     }
 
     MeasurementInfo create_measurement_info(Caliper* c, Channel* channel, const std::string& name) {
+
+        /********
+         * Delete Comment Later
+         * This is how the measurment info class that was confusing above, comes into play 
+         *
+         *******/
         MeasurementInfo m;
 
         m.name = name;
@@ -146,7 +179,7 @@ class VariorumService
         // events when using set/begin/end on this attribute. This attribute
         // is for absolute measurement values for <name>.
         m.value_attr =
-            c->create_attribute(std::string("measurement.val.") + name,
+            c->create_attribute(std::string("variorum.val.") + name,
                                 CALI_TYPE_UINT,
                                 CALI_ATTR_SCOPE_THREAD |
                                 CALI_ATTR_ASVALUE      |
@@ -159,7 +192,7 @@ class VariorumService
         // metadata attribute here, which lets Caliper aggregate these values
         // automatically.
         m.delta_attr =
-            c->create_attribute(std::string("measurement.") + name,
+            c->create_attribute(std::string("variorum.") + name,
                         CALI_TYPE_UINT,
                         CALI_ATTR_SCOPE_THREAD |
                         CALI_ATTR_ASVALUE      |
@@ -174,7 +207,7 @@ class VariorumService
         // better to combine them in a structure and create a CALI_TYPE_PTR
         // attribute for this thread info in the service instance.
         m.prval_attr =
-            c->create_attribute(std::string("measurement.pv.") + std::to_string(channel->id()) + name,
+            c->create_attribute(std::string("variorum.pv.") + std::to_string(channel->id()) + name,
                         CALI_TYPE_UINT,
                         CALI_ATTR_SCOPE_THREAD |
                         CALI_ATTR_ASVALUE      |
@@ -252,12 +285,12 @@ public:
 
 const ConfigSet::Entry VariorumService::s_configdata[] = {
     { "names",          // config variable name
-      CALI_TYPE_STRING, // datatype
-      "a,b",            // default value
+      CALI_TYPE_UINT, // datatype
+      "0",            // default value
       // short description
       "Names of measurements to record",
       // long description
-      "Names of measurements to record, separated by ','"
+      "Node Power, Socket Power, GPU Power, All Power Measurements, Memory Power"
     },
     ConfigSet::Terminator
 };
