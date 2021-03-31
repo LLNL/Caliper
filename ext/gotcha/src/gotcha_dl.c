@@ -53,9 +53,13 @@ static void* dlsym_wrapper(void* handle, const char* symbol_name){
   typeof(&dlsym_wrapper) orig_dlsym = gotcha_get_wrappee(orig_dlsym_handle);
   struct internal_binding_t *binding;
   int result;
-  
+  debug_printf(1, "User called dlsym(%p, %s)\n", handle, symbol_name);
+
   if(handle == RTLD_NEXT){
     return _dl_sym(RTLD_NEXT, symbol_name ,__builtin_return_address(0));
+  }
+  if(handle == RTLD_DEFAULT) {
+    return _dl_sym(RTLD_DEFAULT, symbol_name,__builtin_return_address(0));
   }
   
   result = lookup_hashtable(&function_hash_table, (hash_key_t) symbol_name, (hash_data_t *) &binding);

@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #define GOTCHA_H
 
 #include "gotcha/gotcha_types.h"
+#include <link.h>
 
 #if defined(__cplusplus) 
 extern "C" {
@@ -117,6 +118,12 @@ GOTCHA_EXPORT enum gotcha_error_t gotcha_get_priority(const char* tool_name, int
  ******************************************************************************
  */
 GOTCHA_EXPORT void* gotcha_get_wrappee(gotcha_wrappee_handle_t handle);
+
+GOTCHA_EXPORT void gotcha_filter_libraries_by_name(const char* nameFilter);
+GOTCHA_EXPORT void gotcha_only_filter_last();
+GOTCHA_EXPORT void gotcha_set_library_filter_func(int(*new_func)(struct link_map*));
+GOTCHA_EXPORT void gotcha_restore_library_filter_func();
+
 
 #if defined(__cplusplus) 
 }

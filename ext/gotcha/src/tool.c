@@ -102,6 +102,7 @@ binding_t *add_binding_to_tool(tool_t *tool, struct gotcha_binding_t *user_bindi
    newbinding->tool = tool;
    struct internal_binding_t* internal_bindings = (struct internal_binding_t*)gotcha_malloc(sizeof(struct internal_binding_t)*user_binding_size);
    for(i=0;i<user_binding_size;i++){
+      internal_bindings[i].next_binding = NULL;
       internal_bindings[i].user_binding = &user_binding[i];
       *(user_binding[i].function_handle) = &internal_bindings[i];
       internal_bindings[i].associated_binding_table = newbinding;
