@@ -25,8 +25,4 @@ extern int (*libraryFilterFunc)(struct link_map*);
 
 int trueIfNameMatches(struct link_map* target);
 int trueIfLast(struct link_map* target);
-void filterLibrariesByName(const char* nameFilter);
-void onlyFilterLast();
-void setLibraryFilterFunc(int(*new_func)(struct link_map*));
-void restoreLibraryFilterFunc();
 #endif

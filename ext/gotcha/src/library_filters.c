@@ -15,6 +15,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "library_filters.h"
 #include "libc_wrappers.h"
 
+#include "gotcha/gotcha.h"
+
 static const char* filter;
 int (*libraryFilterFunc)(struct link_map*) = alwaysTrue;
 
@@ -30,18 +32,18 @@ int trueIfLast(struct link_map* target){
   int ret = (target->l_next) ? 0 : 1;
   return ret;
 }
-void onlyFilterLast(){
-  setLibraryFilterFunc(trueIfLast);
+void gotcha_only_filter_last(){
+  gotcha_set_library_filter_func(trueIfLast);
 }
-void setLibraryFilterFunc(int(*new_func)(struct link_map*)){
+void gotcha_set_library_filter_func(int(*new_func)(struct link_map*)){
   libraryFilterFunc = new_func;
 }
-void restoreLibraryFilterFunc(){
-  setLibraryFilterFunc(alwaysTrue);
+void gotcha_restore_library_filter_func(){
+  gotcha_set_library_filter_func(alwaysTrue);
 }
 
-void filterLibrariesByName(const char* nameFilter){
+void gotcha_filter_libraries_by_name(const char* nameFilter){
   filter = nameFilter;
-  setLibraryFilterFunc(trueIfNameMatches);
+  gotcha_set_library_filter_func(trueIfNameMatches);
 }
 

@@ -160,7 +160,8 @@ static int read_line(char *line, int size, int fd)
          return 0;
       }
    }
-   line[size-1] = '\0';
+   if (size > 0)
+      line[size-1] = '\0';
    return 0;
 }
 
@@ -227,7 +228,7 @@ struct link_map *get_vdso_from_maps()
    struct link_map *m;
    maps = gotcha_open("/proc/self/maps", O_RDONLY);
    for (;;) {
-      hit_eof = read_line(line, 4097, maps);
+      hit_eof = read_line(line, 4096, maps);
       if (hit_eof) {
          gotcha_close(maps);
          return NULL;
