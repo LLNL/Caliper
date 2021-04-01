@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <map>
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -33,8 +32,7 @@ class TextLogService
     static const ConfigSet::Entry s_configdata[];
 
     std::mutex                  trigger_attr_mutex;
-    typedef std::map<cali_id_t, Attribute> TriggerAttributeMap;
-    TriggerAttributeMap         trigger_attr_map;
+    std::vector<Attribute>      trigger_attributes;
 
     std::vector<std::string>    trigger_attr_names;
 
@@ -44,12 +42,12 @@ class TextLogService
     SnapshotTextFormatter       formatter;
     OutputStream                stream;
 
-    Attribute                   set_event_attr;   
+    Attribute                   set_event_attr;
     Attribute                   end_event_attr;
 
     std::mutex                  stream_mutex;
 
-    std::string 
+    std::string
     create_default_formatstring(const std::vector<std::string>& attr_names) {
         if (attr_names.size() < 1)
             return "%time.inclusive.duration%";
@@ -72,46 +70,58 @@ class TextLogService
     }
 
     void check_attribute(const Attribute& attr) {
-        if (attr.skip_events())
-            return;
-
-        std::vector<std::string>::iterator it = 
+        std::vector<std::string>::iterator it =
             std::find(trigger_attr_names.begin(), trigger_attr_names.end(), attr.name());
 
         if (it != trigger_attr_names.end()) {
             std::lock_guard<std::mutex>
                 g(trigger_attr_mutex);
-            
-            trigger_attr_map.insert(std::make_pair(attr.id(), attr));
+
+            trigger_attributes.push_back(attr);
+            Log(1).stream() << "textlog: Found " << *it << std::endl;
         }
     }
 
-    void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
-        // operate only on cali.snapshot.event.end attributes for now
+    bool is_triggering_event(const Attribute& event_attr, const SnapshotRecord* trigger_info) {
+        if (event_attr == Attribute::invalid)
+            return false;
+
+        Entry event = trigger_info->get(event_attr);
+
+        if (!event.is_empty()) {
+            std::lock_guard<std::mutex>
+                g(trigger_attr_mutex);
+
+            for (const Attribute& a : trigger_attributes)
+                if (event.value().to_id() == a.id())
+                    return true;
+        }
+
+        return false;
+    }
+
+    bool is_triggering_snapshot(const SnapshotRecord* trigger_info) {
         if (!trigger_info)
-            return;
+            return false;
 
-        Entry event = trigger_info->get(end_event_attr);
-
-        if (event.is_empty())
-            event = trigger_info->get(set_event_attr);
-        if (event.is_empty())
-            return;
-
-        Attribute trigger_attr { Attribute::invalid };
+        // check if any of the textlog trigger attributes are in trigger_info
 
         {
             std::lock_guard<std::mutex>
                 g(trigger_attr_mutex);
 
-            TriggerAttributeMap::const_iterator it = 
-                trigger_attr_map.find(event.value().to_id());
-
-            if (it != trigger_attr_map.end())
-                trigger_attr = it->second;
+            for (const Attribute& a : trigger_attributes)
+                if (!trigger_info->get(a).is_empty())
+                    return true;
         }
 
-        if (trigger_attr == Attribute::invalid || snapshot->get(trigger_attr).is_empty())
+        // check if there is a begin or end event with any of the textlog triggers
+        return is_triggering_event(end_event_attr, trigger_info) ||
+               is_triggering_event(set_event_attr, trigger_info);
+    }
+
+    void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
+        if (!is_triggering_snapshot(trigger_info))
             return;
 
         auto rec = snapshot->to_entrylist();
@@ -136,13 +146,6 @@ class TextLogService
         set_event_attr = c->get_attribute("cali.event.set");
         end_event_attr = c->get_attribute("cali.event.end");
 
-        if (end_event_attr      == Attribute::invalid ||
-            set_event_attr      == Attribute::invalid) {
-            Log(1).stream() << "TextLog: Note: \"event\" trigger attributes not registered\n"
-                "    disabling text log.\n" << std::endl;
-            return;
-        }
-
         for (const Attribute& a : c->get_all_attributes())
             check_attribute(a);
 
@@ -157,9 +160,9 @@ class TextLogService
           end_event_attr(Attribute::invalid)
         {
             ConfigSet config = chn->config().init("textlog", s_configdata);
-            
+
             trigger_attr_names =
-                config.get("trigger").to_stringlist(",:");
+                config.get("trigger").to_stringlist(",");
             stream_filename =
                 config.get("filename").to_string();
             formatstr =
@@ -183,7 +186,7 @@ public:
             [instance](Caliper* c, Channel* chn){
                 delete instance;
             });
-        
+
         Log(1).stream() << chn->name() << ": Registered text log service" << std::endl;
     }
 
