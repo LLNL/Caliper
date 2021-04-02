@@ -64,6 +64,7 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
     power_node =  json_real_value(json_object_get(power_obj, "power_node"));
 
     uint64_t val = (uint64_t)power_node;
+    
     return std::make_tuple(true, val);
 }
 
