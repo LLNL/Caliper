@@ -8,7 +8,7 @@ options:
 
 format:
   C_prefix: cali_
-  F_filename_suffix: F
+  F_filename_suffix: F08
 
 declarations:
   - decl: |

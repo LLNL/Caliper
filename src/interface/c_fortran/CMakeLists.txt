@@ -10,7 +10,8 @@ set(CALIPER_INTERFACE_SOURCES
 if (WITH_FORTRAN)
   list(APPEND CALIPER_INTERFACE_SOURCES
     wrapfcaliper.F08)
-  set_source_files_properties(wrapfcaliper.F08 PROPERTIES Fortran_FORMAT FREE)  
+   set_source_files_properties(wrapfcaliper.F08 PROPERTIES Fortran_FORMAT FREE)  
+   set_source_files_properties(wrapfcaliper.F08 PROPERTIES LANGUAGE Fortran)  
 endif()
 
 add_library(caliper-interface OBJECT ${CALIPER_INTERFACE_SOURCES})
