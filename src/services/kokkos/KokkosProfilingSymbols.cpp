@@ -2,10 +2,25 @@
 #include "types.hpp"
 #include "caliper/Annotation.h"
 #include "caliper/cali.h"
-
+#include "caliper/ConfigManager.h"
 cali::kokkos::callbacks kokkosp_callbacks;
 
 using cali::kokkos::SpaceHandle;
+cali::ConfigManager mgr;
+extern "C" void kokkosp_parse_args(int argc, char* argv_raw[]){
+  std::string joined_argv;
+  for(int x = 1 ; x< argc; ++x){
+    joined_argv += (std::string(argv_raw[x])) + (( x == (argc-1) ) ? std::string("") : std::string(","));
+  }
+  if(argc > 1) {
+  mgr.add(joined_argv.c_str());
+  if(mgr.error()){
+    std::cerr << "Kokkos Caliper connector error: "<< mgr.error_msg() << std::endl;
+  }
+  mgr.start();
+  }
+  
+}
 
 extern "C" void kokkosp_init_library(const int loadSeq,
   const uint64_t interfaceVer,
@@ -16,6 +31,7 @@ extern "C" void kokkosp_init_library(const int loadSeq,
 }
 
 extern "C" void kokkosp_finalize_library() {
+    mgr.flush();
     kokkosp_callbacks.kokkosp_finalize_callback();
 }
 
