@@ -32,6 +32,16 @@ void cali_ConfigManager_delete(cali_ConfigManager * self);
 void cali_ConfigManager_set_default_parameter(cali_ConfigManager * self,
     const char * option, const char * val);
 
+void cali_ConfigManager_set_default_parameter_for_config(
+    cali_ConfigManager * self, const char * config, const char * option,
+    const char * val);
+
+void cali_ConfigManager_add_config_spec(cali_ConfigManager * self,
+    const char * spec);
+
+void cali_ConfigManager_add_option_spec(cali_ConfigManager * self,
+    const char * spec);
+
 void cali_ConfigManager_add(cali_ConfigManager * self,
     const char * config);
 

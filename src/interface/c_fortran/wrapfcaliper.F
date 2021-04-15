@@ -106,6 +106,9 @@ module caliper_mod
     contains
         procedure :: delete => configmanager_delete
         procedure :: set_default_parameter => configmanager_set_default_parameter
+        procedure :: set_default_parameter_for_config => configmanager_set_default_parameter_for_config
+        procedure :: add_config_spec => configmanager_add_config_spec
+        procedure :: add_option_spec => configmanager_add_option_spec
         procedure :: add => configmanager_add
         procedure :: error => configmanager_error
         procedure :: error_msg => configmanager_error_msg
@@ -281,6 +284,36 @@ module caliper_mod
             character(kind=C_CHAR), intent(IN) :: option(*)
             character(kind=C_CHAR), intent(IN) :: val(*)
         end subroutine c_configmanager_set_default_parameter
+
+        subroutine c_configmanager_set_default_parameter_for_config( &
+                self, config, option, val) &
+                bind(C, name="cali_ConfigManager_set_default_parameter_for_config")
+            use iso_c_binding, only : C_CHAR
+            import :: cali_SHROUD_capsule_data
+            implicit none
+            type(cali_SHROUD_capsule_data), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: config(*)
+            character(kind=C_CHAR), intent(IN) :: option(*)
+            character(kind=C_CHAR), intent(IN) :: val(*)
+        end subroutine c_configmanager_set_default_parameter_for_config
+
+        subroutine c_configmanager_add_config_spec(self, spec) &
+                bind(C, name="cali_ConfigManager_add_config_spec")
+            use iso_c_binding, only : C_CHAR
+            import :: cali_SHROUD_capsule_data
+            implicit none
+            type(cali_SHROUD_capsule_data), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: spec(*)
+        end subroutine c_configmanager_add_config_spec
+
+        subroutine c_configmanager_add_option_spec(self, spec) &
+                bind(C, name="cali_ConfigManager_add_option_spec")
+            use iso_c_binding, only : C_CHAR
+            import :: cali_SHROUD_capsule_data
+            implicit none
+            type(cali_SHROUD_capsule_data), intent(IN) :: self
+            character(kind=C_CHAR), intent(IN) :: spec(*)
+        end subroutine c_configmanager_add_option_spec
 
         subroutine c_configmanager_add(self, config) &
                 bind(C, name="cali_ConfigManager_add")
@@ -545,6 +578,30 @@ module caliper_mod
             integer(C_INT64_T) :: SHT_rv
         end function c_cali_make_loop_iteration_attribute
 
+        subroutine c_cali_set_global_int_byname(name, val) &
+                bind(C, name="cali_set_global_int_byname")
+            use iso_c_binding, only : C_CHAR, C_INT
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: name(*)
+            integer(C_INT), value, intent(IN) :: val
+        end subroutine c_cali_set_global_int_byname
+
+        subroutine c_cali_set_global_string_byname(name, val) &
+                bind(C, name="cali_set_global_string_byname")
+            use iso_c_binding, only : C_CHAR
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: name(*)
+            character(kind=C_CHAR), intent(IN) :: val(*)
+        end subroutine c_cali_set_global_string_byname
+
+        subroutine c_cali_set_global_double_byname(name, val) &
+                bind(C, name="cali_set_global_double_byname")
+            use iso_c_binding, only : C_CHAR, C_DOUBLE
+            implicit none
+            character(kind=C_CHAR), intent(IN) :: name(*)
+            real(C_DOUBLE), value, intent(IN) :: val
+        end subroutine c_cali_set_global_double_byname
+
         ! splicer begin additional_interfaces
         ! splicer end additional_interfaces
     end interface
@@ -755,6 +812,40 @@ contains
             trim(option)//C_NULL_CHAR, trim(val)//C_NULL_CHAR)
         ! splicer end class.ConfigManager.method.set_default_parameter
     end subroutine configmanager_set_default_parameter
+
+    subroutine configmanager_set_default_parameter_for_config(obj, &
+            config, option, val)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(configmanager) :: obj
+        character(len=*), intent(IN) :: config
+        character(len=*), intent(IN) :: option
+        character(len=*), intent(IN) :: val
+        ! splicer begin class.ConfigManager.method.set_default_parameter_for_config
+        call c_configmanager_set_default_parameter_for_config(obj%cxxmem, &
+            trim(config)//C_NULL_CHAR, trim(option)//C_NULL_CHAR, &
+            trim(val)//C_NULL_CHAR)
+        ! splicer end class.ConfigManager.method.set_default_parameter_for_config
+    end subroutine configmanager_set_default_parameter_for_config
+
+    subroutine configmanager_add_config_spec(obj, spec)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(configmanager) :: obj
+        character(len=*), intent(IN) :: spec
+        ! splicer begin class.ConfigManager.method.add_config_spec
+        call c_configmanager_add_config_spec(obj%cxxmem, &
+            trim(spec)//C_NULL_CHAR)
+        ! splicer end class.ConfigManager.method.add_config_spec
+    end subroutine configmanager_add_config_spec
+
+    subroutine configmanager_add_option_spec(obj, spec)
+        use iso_c_binding, only : C_NULL_CHAR
+        class(configmanager) :: obj
+        character(len=*), intent(IN) :: spec
+        ! splicer begin class.ConfigManager.method.add_option_spec
+        call c_configmanager_add_option_spec(obj%cxxmem, &
+            trim(spec)//C_NULL_CHAR)
+        ! splicer end class.ConfigManager.method.add_option_spec
+    end subroutine configmanager_add_option_spec
 
     subroutine configmanager_add(obj, config)
         use iso_c_binding, only : C_NULL_CHAR
@@ -1048,6 +1139,35 @@ contains
         SHT_rv = c_cali_make_loop_iteration_attribute(trim(name)//C_NULL_CHAR)
         ! splicer end function.cali_make_loop_iteration_attribute
     end function cali_make_loop_iteration_attribute
+
+    subroutine cali_set_global_int_byname(name, val)
+        use iso_c_binding, only : C_INT, C_NULL_CHAR
+        character(len=*), intent(IN) :: name
+        integer(C_INT), value, intent(IN) :: val
+        ! splicer begin function.cali_set_global_int_byname
+        call c_cali_set_global_int_byname(trim(name)//C_NULL_CHAR, val)
+        ! splicer end function.cali_set_global_int_byname
+    end subroutine cali_set_global_int_byname
+
+    subroutine cali_set_global_string_byname(name, val)
+        use iso_c_binding, only : C_NULL_CHAR
+        character(len=*), intent(IN) :: name
+        character(len=*), intent(IN) :: val
+        ! splicer begin function.cali_set_global_string_byname
+        call c_cali_set_global_string_byname(trim(name)//C_NULL_CHAR, &
+            trim(val)//C_NULL_CHAR)
+        ! splicer end function.cali_set_global_string_byname
+    end subroutine cali_set_global_string_byname
+
+    subroutine cali_set_global_double_byname(name, val)
+        use iso_c_binding, only : C_DOUBLE, C_NULL_CHAR
+        character(len=*), intent(IN) :: name
+        real(C_DOUBLE), value, intent(IN) :: val
+        ! splicer begin function.cali_set_global_double_byname
+        call c_cali_set_global_double_byname(trim(name)//C_NULL_CHAR, &
+            val)
+        ! splicer end function.cali_set_global_double_byname
+    end subroutine cali_set_global_double_byname
 
     ! splicer begin additional_functions
     ! splicer end additional_functions

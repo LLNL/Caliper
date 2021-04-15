@@ -64,6 +64,37 @@ void cali_ConfigManager_set_default_parameter(cali_ConfigManager * self,
     // splicer end class.ConfigManager.method.set_default_parameter
 }
 
+void cali_ConfigManager_set_default_parameter_for_config(
+    cali_ConfigManager * self, const char * config, const char * option,
+    const char * val)
+{
+    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
+        (self->addr);
+    // splicer begin class.ConfigManager.method.set_default_parameter_for_config
+    SH_this->set_default_parameter_for_config(config, option, val);
+    // splicer end class.ConfigManager.method.set_default_parameter_for_config
+}
+
+void cali_ConfigManager_add_config_spec(cali_ConfigManager * self,
+    const char * spec)
+{
+    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
+        (self->addr);
+    // splicer begin class.ConfigManager.method.add_config_spec
+    SH_this->add_config_spec(spec);
+    // splicer end class.ConfigManager.method.add_config_spec
+}
+
+void cali_ConfigManager_add_option_spec(cali_ConfigManager * self,
+    const char * spec)
+{
+    cali::ConfigManager *SH_this = static_cast<cali::ConfigManager *>
+        (self->addr);
+    // splicer begin class.ConfigManager.method.add_option_spec
+    SH_this->add_option_spec(spec);
+    // splicer end class.ConfigManager.method.add_option_spec
+}
+
 void cali_ConfigManager_add(cali_ConfigManager * self,
     const char * config)
 {
