@@ -102,6 +102,15 @@ declarations:
   - decl: cali_id_t cali_make_loop_iteration_attribute(const char* name)
     options:
       C_extern_C: true
+  - decl: void cali_set_global_int_byname(const char* name, int val)
+    options:
+      C_extern_C: true
+  - decl: void cali_set_global_string_byname(const char* name, const char* val)
+    options:
+      C_extern_C: true
+  - decl: void cali_set_global_double_byname(const char* name, double val)
+    options:
+      C_extern_C: true
 
   - decl: class ScopeAnnotation
     declarations:
@@ -135,7 +144,10 @@ declarations:
       - decl: ConfigManager()  +name(new)
       - decl: ~ConfigManager() +name(delete)
       - decl: void set_default_parameter(const char* option, const char* val)
+      - decl: void set_default_parameter_for_config(const char* config, const char* option, const char* val)
       # really bool add(const char* config) but subroutine syntax is more consistent here
+      - decl: void add_config_spec(const char* spec)
+      - decl: void add_option_spec(const char* spec)
       - decl: void add(const char* config)
       - decl: bool error()
       - decl: std::string error_msg()
