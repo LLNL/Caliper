@@ -4,21 +4,28 @@
 #include "types.hpp"
 #include <cstdint>
 cali::kokkos::callbacks kokkosp_callbacks;
-
 using cali::kokkos::SpaceHandle;
-cali::ConfigManager mgr;
+namespace kokkos {
+    cali::ConfigManager mgr;
+}
+extern "C" void kokkosp_print_help(char* progName){
+  std::cerr << "Caliper: available configs: \n";
+  for(auto conf: kokkos::mgr.available_config_specs() ) {
+    std::cerr << kokkos::mgr.get_documentation_for_spec(conf.c_str()) << std::endl;
+  }
+}
 extern "C" void kokkosp_parse_args(int argc, char *argv_raw[]) {
   if (argc > 2) {
     std::cerr << "Error: the Kokkos Caliper connector takes only one argument"
               << std::endl;
   }
   if (argc == 2) {
-    mgr.add(argv_raw[1]);
-    if (mgr.error()) {
-      std::cerr << "Kokkos Caliper connector error: " << mgr.error_msg()
+    kokkos::mgr.add(argv_raw[1]);
+    if (kokkos::mgr.error()) {
+      std::cerr << "Kokkos Caliper connector error: " << kokkos::mgr.error_msg()
                 << std::endl;
     }
-    mgr.start();
+    kokkos::mgr.start();
   }
 }
 
@@ -32,7 +39,7 @@ extern "C" void kokkosp_init_library(const int loadSeq,
 }
 
 extern "C" void kokkosp_finalize_library() {
-  mgr.flush();
+  kokkos::mgr.flush();
   kokkosp_callbacks.kokkosp_finalize_callback();
 }
 
