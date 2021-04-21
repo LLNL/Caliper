@@ -76,7 +76,7 @@ add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
 add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
-add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" FALSE)
+add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" TRUE)
 add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
