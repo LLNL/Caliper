@@ -152,7 +152,7 @@ const char* builtin_option_specs =
     " \"type\"        : \"bool\","
     " \"description\" : \"Profile Kokkos functions\","
     " \"category\"    : \"region\","
-    " \"services\"    : [ \"kokkostime\" ]"
+    " \"services\"    : [ \"kokkostime\", \"kokkosadiak\" ]"
     "},"
     "{"
     " \"name\"        : \"main_thread_only\","
