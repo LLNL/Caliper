@@ -24,6 +24,7 @@ namespace {
         static const ConfigSet::Entry s_configdata[];
 
         KokkosAdiak(Caliper *c, Channel *chn) {
+           adiak_init(nullptr);
            adiak::user();
            adiak::launchdate();
            adiak::executablepath();
