@@ -8,6 +8,7 @@
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
+#include <algorithm>
 #include <cassert>
 #include <vector>
 
@@ -27,14 +28,13 @@ struct SnapshotTree::SnapshotTreeImpl
         }
     }
 
-    const SnapshotTreeNode* 
-    add_snapshot(const CaliperMetadataAccessInterface& db, 
+    const SnapshotTreeNode*
+    add_snapshot(const CaliperMetadataAccessInterface& db,
                  const EntryList&  list,
-                 IsPathPredicateFn is_path) 
+                 IsPathPredicateFn is_path)
     {
         std::vector< std::pair<Attribute, Variant> > path;
-        std::map<Attribute, Variant> attributes;
-
+        std::vector< std::pair<Attribute, Variant> > data;
         //
         // helper function to distinguish path and attribute entries
         //
@@ -48,9 +48,13 @@ struct SnapshotTree::SnapshotTreeImpl
             if (is_path(attr, val))
                 path.push_back(std::make_pair(attr, val));
             else {
-                if (attributes.count(attr) == 0)
-                    attributes.insert(std::make_pair(attr, val));
-            }   
+                auto it = std::find_if(data.begin(), data.end(), [&attr](const std::pair<Attribute, Variant>& p){
+                        return attr == p.first;
+                    });
+
+                if (it == data.end())
+                    data.push_back(std::make_pair(attr, val));
+            }
         };
 
         //
@@ -81,7 +85,7 @@ struct SnapshotTree::SnapshotTreeImpl
                 ;
 
             if (!child) {
-                child = new SnapshotTreeNode((*it).first, (*it).second, true /* empty */);
+                child = new SnapshotTreeNode((*it).first, (*it).second);
                 node->append(child);
             }
 
@@ -90,25 +94,17 @@ struct SnapshotTree::SnapshotTreeImpl
 
         assert(node);
 
-        if (!(node->is_empty())) {
-            // create a new node if the existing one is not empty
-            SnapshotTreeNode* parent = node->parent();
-
-            node = new SnapshotTreeNode(node->label_key(), node->label_value(), false);
-            parent->append(node);
-        }
-
         //
         // add the attributes
-        // 
+        //
 
-        node->assign_attributes(std::move(attributes));
+        node->add_record(data);
 
         return node;
     }
 
     SnapshotTreeImpl(const Attribute& attr, const Variant& value)
-        : m_root(new SnapshotTreeNode(attr, value, true))
+        : m_root(new SnapshotTreeNode(attr, value))
         { }
 
     ~SnapshotTreeImpl() {
