@@ -8,9 +8,6 @@
 
 #include "RecordProcessor.h"
 
-#include "caliper/common/Attribute.h"
-#include "caliper/common/Variant.h"
-
 #include "caliper/common/util/lockfree-tree.hpp"
 
 #include <functional>
@@ -55,7 +52,7 @@ class CaliperMetadataAccessInterface;
 /// ```
 /// \sa SnapshotTree
 /// \ingroup ReaderAPI
-    
+
 class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
 {
     util::LockfreeIntrusiveTree<SnapshotTreeNode>::Node m_treenode;
@@ -65,18 +62,18 @@ class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
 
     bool      m_empty;
 
-    std::map<cali::Attribute, cali::Variant> m_attributes;
+    using Record = std::vector< std::pair<Attribute, Variant> >;
 
-    void assign_attributes(std::map<cali::Attribute, cali::Variant>&& a) {
-        m_attributes = a;
-        m_empty = false;
+    std::vector<Record> m_records;
+
+    void add_record(const Record& rec) {
+        m_records.push_back(rec);
     }
 
-    SnapshotTreeNode(const Attribute& label_key, const Variant& label_val, bool empty = true)
+    SnapshotTreeNode(const Attribute& label_key, const Variant& label_val)
         : util::LockfreeIntrusiveTree<SnapshotTreeNode>(this, &SnapshotTreeNode::m_treenode),
           m_label_key(label_key),
-          m_label_value(label_val),
-          m_empty(empty)
+          m_label_value(label_val)
     { }
 
 public:
@@ -88,17 +85,17 @@ public:
 
     /// \brief Return `false` if the node represents a snapshot record,
     ///   otherwise (i.e., if the node is empty) return `true`.
-    bool      is_empty()    const { return m_empty;       }
+    bool      is_empty()    const { return m_records.empty(); }
 
     /// \brief Return `true` if the label equals the given (\a key,\a value) pair.
     bool label_equals(const Attribute& key, const Variant& value) const {
         return m_label_key == key && m_label_value == value;
     }
 
-    /// \brief Access the non-path attributes of the snapshot associated
+    /// \brief Access the non-path attributes of the snapshot records associated
     ///   with this node.
-    const std::map<cali::Attribute, cali::Variant>& attributes() const {
-        return m_attributes;
+    const decltype(m_records)& records() const {
+        return m_records;
     }
 
     friend class SnapshotTree;
@@ -126,7 +123,7 @@ public:
 ///
 /// \sa SnapshotTreeNode
 /// \ingroup ReaderAPI
-    
+
 class SnapshotTree
 {
     struct SnapshotTreeImpl;

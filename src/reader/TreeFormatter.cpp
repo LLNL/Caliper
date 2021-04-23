@@ -141,28 +141,30 @@ struct TreeFormatter::TreeFormatterImpl
 
         // update column widths
 
-        for (auto &p : node->attributes()) {
-            int len = p.second.to_string().size();
-            auto it = m_column_info.find(p.first);
+        for (auto &data : node->records()) {
+            for (auto &entry : data) {
+                int len = entry.second.to_string().size();
+                auto it = m_column_info.find(entry.first);
 
-            if (it == m_column_info.end()) {
-                std::string name = p.first.name();
+                if (it == m_column_info.end()) {
+                    std::string name = entry.first.name();
 
-                auto ait = m_aliases.find(name);
-                if (ait != m_aliases.end())
-                    name = ait->second;
-                else {
-                    Variant v = p.first.get(db.get_attribute("attribute.alias"));
+                    auto ait = m_aliases.find(name);
+                    if (ait != m_aliases.end())
+                        name = ait->second;
+                    else {
+                        Variant v = entry.first.get(db.get_attribute("attribute.alias"));
 
-                    if (!v.empty())
-                        name = v.to_string();
-                }
+                        if (!v.empty())
+                            name = v.to_string();
+                    }
 
-                ColumnInfo ci { name, std::max<int>(len, name.size()) };
+                    ColumnInfo ci { name, std::max<int>(len, name.size()) };
 
-                m_column_info.insert(std::make_pair(p.first, ci));
-            } else
-                it->second.width = std::max(it->second.width, len);
+                    m_column_info.insert(std::make_pair(entry.first, ci));
+                } else
+                    it->second.width = std::max(it->second.width, len);
+            }
         }
     }
 
@@ -175,6 +177,7 @@ struct TreeFormatter::TreeFormatterImpl
         // print this node
         //
 
+        // print the tree node label
         {
             int width = column_width(m_path_column_width);
 
@@ -189,27 +192,49 @@ struct TreeFormatter::TreeFormatterImpl
             util::pad_right(os, path_str, width);
         }
 
-        for (const Attribute& a : attributes) {
-            std::string str;
+        int lines = node->records().size() > 1 ? 1 : 0;
 
-            int width = column_width(m_column_info[a].width);
+        // print the node's data (possibly multiple records)
+        for (const auto& rec : node->records()) {
+            if (lines++ > 0) {
+                int width = column_width(m_path_column_width);
 
-            {
-                auto it = node->attributes().find(a);
-                if (it != node->attributes().end())
-                    str = util::clamp_string(it->second.to_string(), width);
+                std::string path_str;
+                path_str.append(std::min(2*level, width-2), ' ');
+
+                if (2*level >= width)
+                    path_str.append("..");
+                else
+                    path_str.append(" |-");
+
+                util::pad_right(os << "\n", path_str, width);
             }
 
-            cali_attr_type t = a.type();
-            bool align_right = (t == CALI_TYPE_INT    ||
-                                t == CALI_TYPE_UINT   ||
-                                t == CALI_TYPE_DOUBLE ||
-                                t == CALI_TYPE_ADDR);
+            for (const Attribute& a : attributes) {
+                std::string str;
 
-            if (align_right)
-                util::pad_left (os, str, width);
-            else
-                util::pad_right(os, str, width);
+                int width = column_width(m_column_info[a].width);
+
+                {
+                    auto it = std::find_if(rec.begin(), rec.end(), [&a](const std::pair<Attribute, Variant>& p) {
+                            return a == p.first;
+                        });
+
+                    if (it != rec.end())
+                        str = util::clamp_string(it->second.to_string(), width);
+                }
+
+                cali_attr_type t = a.type();
+                bool align_right = (t == CALI_TYPE_INT    ||
+                                    t == CALI_TYPE_UINT   ||
+                                    t == CALI_TYPE_DOUBLE ||
+                                    t == CALI_TYPE_ADDR);
+
+                if (align_right)
+                    util::pad_left (os, str, width);
+                else
+                    util::pad_right(os, str, width);
+            }
         }
 
         os << std::endl;
