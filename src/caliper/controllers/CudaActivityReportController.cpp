@@ -24,15 +24,23 @@ public:
     CudaActivityReportController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
         : ChannelController(name, 0, initial_cfg)
         {
+            const char* local_let = 
+                " bytes.htod=first(cupti.memcpy.bytes) if cupti.memcpy.kind=HtoD"
+                ",bytes.dtoh=first(cupti.memcpy.bytes) if cupti.memcpy.kind=DtoH";
+
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
-                " inclusive_scale(sum#cupti.host.duration,1e-9)"
+                " inclusive_scale(bytes.htod,1e-6)"
+                ",inclusive_scale(bytes.dtoh,1e-6)"
+                ",inclusive_scale(sum#cupti.host.duration,1e-9)"
                 ",inclusive_scale(cupti.activity.duration,1e-9)";
             // Config for serial-mode aggregation
             std::string serial_select =
                 " inclusive_scale(sum#cupti.host.duration,1e-9) as \"Host Time\""
                 ",inclusive_scale(cupti.activity.duration,1e-9) as \"GPU Time\""
-                ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\"";
+                ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\""
+                ",inclusive_scale(bytes.htod,1e-6) as \"MB (CPU->GPU)\""
+                ",inclusive_scale(bytes.dtoh,1e-6) as \"MB (GPU->CPU)\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -40,7 +48,11 @@ public:
                 ",max(iscale#sum#cupti.host.duration) as \"Max Host Time\""
                 ",avg(iscale#cupti.activity.duration) as \"Avg GPU Time\""
                 ",max(iscale#cupti.activity.duration) as \"Max GPU Time\""
-                ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\"";
+                ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\""
+                ",avg(iscale#bytes.htod) as \"Avg MB (CPU->GPU)\""
+                ",max(iscale#bytes.htod) as \"Max MB (CPU->GPU)\""
+                ",avg(iscale#bytes.dtoh) as \"Avg MB (GPU->CPU)\""
+                ",max(iscale#bytes.dtoh) as \"Max MB (GPU->CPU)\"";
 
             std::string groupby = "prop:nested";
 
@@ -58,6 +70,7 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
+                            { "let",      local_let    },
                             { "select",   local_select },
                             { "group by", groupby }
                         });
@@ -72,6 +85,7 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
+                            { "let",      local_let     },
                             { "select",   serial_select },
                             { "group by", groupby },
                             { "format",   "tree"  }

@@ -61,9 +61,15 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("local", {
+                            { "let",
+                              " bytes.dtoh=first(cupti.memcpy.bytes) if cupti.memcpy.kind=DtoH"
+                              ",bytes.htod=first(cupti.memcpy.bytes) if cupti.memcpy.kind=HtoD" },
                             { "select",
                               "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                              " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec" },
+                              " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec"
+                              " ,sum(bytes.dtoh) as \"Bytes (D->H)\" unit Bytes"
+                              " ,sum(bytes.htod) as \"Bytes (H->D)\" unit Bytes"
+                            },
                             { "group by", "prop:nested,cupti.kernel.name,cupti.activity.kind,mpi.rank" },
                             { "format",   format }
                         });
@@ -72,9 +78,14 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = output;
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
+                            { "let",
+                              " bytes.dtoh=first(cupti.memcpy.bytes) if cupti.memcpy.kind=DtoH"
+                              ",bytes.htod=first(cupti.memcpy.bytes) if cupti.memcpy.kind=HtoD" },
                             { "select",
                               "*,scale(cupti.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                              " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec" },
+                              " ,scale(sum#cupti.host.duration,1e-9) as \"time\" unit sec"
+                              " ,sum(bytes.dtoh) as \"Bytes (D->H)\" unit Bytes"
+                              " ,sum(bytes.htod) as \"Bytes (H->D)\" unit Bytes" },
                             { "group by", "prop:nested,cupti.kernel.name,cupti.activity.kind" },
                             { "format",   format }
                         });
