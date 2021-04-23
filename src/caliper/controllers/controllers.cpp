@@ -112,13 +112,15 @@ namespace cali
 {
 
 extern ConfigManager::ConfigInfo callpath_sample_report_controller_info;
-extern ConfigManager::ConfigInfo cuda_activity_controller_info;
+extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
+extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &callpath_sample_report_controller_info,
+    &cuda_activity_profile_controller_info,
     &cuda_activity_report_controller_info,
     &::event_trace_controller_info,
     &::nvprof_controller_info,
