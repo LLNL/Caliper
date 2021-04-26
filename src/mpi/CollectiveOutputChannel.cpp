@@ -90,7 +90,7 @@ void CollectiveOutputChannel::collective_flush(OutputStream& stream, MPI_Comm co
     }
 
     Caliper c;
-    cali::collective_flush(stream, c, *chn, local_spec, cross_spec, comm);
+    cali::collective_flush(stream, c, *chn, nullptr, local_spec, cross_spec, comm);
 }
 
 std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Comm comm)

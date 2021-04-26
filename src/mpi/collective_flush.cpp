@@ -24,7 +24,7 @@ namespace cali
 {
 
 void
-collective_flush(OutputStream& stream, Caliper& c, Channel& channel, const QuerySpec& local_query, const QuerySpec& cross_query, MPI_Comm comm)
+collective_flush(OutputStream& stream, Caliper& c, Channel& channel, const SnapshotRecord* flush_info, const QuerySpec& local_query, const QuerySpec& cross_query, MPI_Comm comm)
 {
     CaliperMetadataDB db;
 
@@ -41,7 +41,7 @@ collective_flush(OutputStream& stream, Caliper& c, Channel& channel, const Query
     RecordSelector    local_filter(local_query);
 
     // flush this rank's caliper data into local aggregator
-    c.flush(&channel, nullptr, [&db,&local_agg,&local_pp,&local_filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+    c.flush(&channel, flush_info, [&db,&local_agg,&local_pp,&local_filter](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
             EntryList mrec = local_pp.process(db, db.merge_snapshot(in_db, rec));
 
             if (local_filter.pass(db, mrec))
