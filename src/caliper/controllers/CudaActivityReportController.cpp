@@ -24,23 +24,15 @@ public:
     CudaActivityReportController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
         : ChannelController(name, 0, initial_cfg)
         {
-            const char* local_let = 
-                " bytes.htod=first(cupti.memcpy.bytes) if cupti.memcpy.kind=HtoD"
-                ",bytes.dtoh=first(cupti.memcpy.bytes) if cupti.memcpy.kind=DtoH";
-
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
-                " inclusive_scale(bytes.htod,1e-6)"
-                ",inclusive_scale(bytes.dtoh,1e-6)"
-                ",inclusive_scale(sum#cupti.host.duration,1e-9)"
+                " inclusive_scale(sum#cupti.host.duration,1e-9)"
                 ",inclusive_scale(cupti.activity.duration,1e-9)";
             // Config for serial-mode aggregation
             std::string serial_select =
                 " inclusive_scale(sum#cupti.host.duration,1e-9) as \"Host Time\""
                 ",inclusive_scale(cupti.activity.duration,1e-9) as \"GPU Time\""
-                ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\""
-                ",inclusive_scale(bytes.htod,1e-6) as \"MB (CPU->GPU)\""
-                ",inclusive_scale(bytes.dtoh,1e-6) as \"MB (GPU->CPU)\"";
+                ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -48,19 +40,15 @@ public:
                 ",max(iscale#sum#cupti.host.duration) as \"Max Host Time\""
                 ",avg(iscale#cupti.activity.duration) as \"Avg GPU Time\""
                 ",max(iscale#cupti.activity.duration) as \"Max GPU Time\""
-                ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\""
-                ",avg(iscale#bytes.htod) as \"Avg MB (CPU->GPU)\""
-                ",max(iscale#bytes.htod) as \"Max MB (CPU->GPU)\""
-                ",avg(iscale#bytes.dtoh) as \"Avg MB (GPU->CPU)\""
-                ",max(iscale#bytes.dtoh) as \"Max MB (GPU->CPU)\"";
+                ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\"";
 
             std::string groupby = "prop:nested";
 
             if (opts.is_enabled("show_kernels")) {
                 groupby += ",cupti.kernel.name";
-                serial_select 
+                serial_select
                     = std::string("cupti.kernel.name as Kernel,") + serial_select;
-                cross_select 
+                cross_select
                     = std::string("cupti.kernel.name as Kernel,") + cross_select;
             }
 
@@ -70,7 +58,6 @@ public:
                 config()["CALI_MPIREPORT_WRITE_ON_FINALIZE"] = "false";
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
-                            { "let",      local_let    },
                             { "select",   local_select },
                             { "group by", groupby }
                         });
@@ -85,7 +72,6 @@ public:
                 config()["CALI_REPORT_FILENAME"   ] = opts.get("output", "stderr").to_string();
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
-                            { "let",      local_let     },
                             { "select",   serial_select },
                             { "group by", groupby },
                             { "format",   "tree"  }
@@ -129,7 +115,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"cuda-activity-report\","
     " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
-    " \"categories\"  : [ \"output\", \"region\" ],"
+    " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\" ],"
     " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
@@ -139,7 +125,7 @@ const char* controller_spec =
     " \"options\": "
     " ["
     "  {"
-    "   \"name\": \"show_kernels\","
+    "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
     "  },"
