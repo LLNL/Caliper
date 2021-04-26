@@ -1,4 +1,5 @@
 set(UTIL_SOURCES
+  util/demangle.cpp
   util/format_util.cpp
   util/parse_util.cpp
   util/unitfmt.c

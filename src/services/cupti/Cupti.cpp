@@ -14,6 +14,8 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
 
+#include "../../common/util/demangle.h"
+
 #include <cupti.h>
 
 #include <cuda_runtime_api.h>
@@ -218,8 +220,10 @@ class CuptiService
         Caliper c;
 
         if (cbInfo->callbackSite == CUPTI_API_ENTER) {
-            if (cupti_info.record_symbol && cbInfo->symbolName)
-                c.begin(cupti_info.symbol_attr, Variant(cbInfo->symbolName));
+            if (cupti_info.record_symbol && cbInfo->symbolName) {
+                std::string name = util::demangle(cbInfo->symbolName);
+                c.begin(cupti_info.symbol_attr, Variant(name.c_str()));
+            }
 
             c.begin(attr, Variant(cbInfo->functionName));
         } else if (cbInfo->callbackSite == CUPTI_API_EXIT) {
