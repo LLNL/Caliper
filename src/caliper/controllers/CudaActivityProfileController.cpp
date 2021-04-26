@@ -27,7 +27,7 @@ public:
     CudaActivityProfileController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts, const std::string& format)
         : ChannelController(name, 0, initial_cfg)
         {
-            std::string output(opts.get("output", "region_profile").to_string());
+            std::string output(opts.get("output", "cuda_profile").to_string());
 
             if (output != "stdout" && output != "stderr") {
                 auto pos = output.find_last_of('.');
