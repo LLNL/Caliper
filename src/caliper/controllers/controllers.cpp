@@ -112,14 +112,16 @@ namespace cali
 {
 
 extern ConfigManager::ConfigInfo callpath_sample_report_controller_info;
-extern ConfigManager::ConfigInfo cuda_activity_controller_info;
+extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
+extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &callpath_sample_report_controller_info,
-    &cuda_activity_controller_info,
+    &cuda_activity_profile_controller_info,
+    &cuda_activity_report_controller_info,
     &::event_trace_controller_info,
     &::nvprof_controller_info,
     &::nvtx_controller_info,
@@ -183,6 +185,33 @@ const char* builtin_option_specs =
     "       { \"expr\": \"max(sum#rc.count)\", \"as\": \"Calls (max)\",   \"unit\": \"count\" },"
     "       { \"expr\": \"avg(sum#rc.count)\", \"as\": \"Calls (avg)\",   \"unit\": \"count\" },"
     "       { \"expr\": \"sum(sum#rc.count)\", \"as\": \"Calls (total)\", \"unit\": \"count\" }"
+    "     ]"
+    "   }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"cuda.memcpy\","
+    " \"description\" : \"Report MB copied between host and device with cudaMemcpy\","
+    " \"type\"        : \"bool\","
+    " \"category\"    : \"cuptitrace.metric\","
+    " \"query args\"  : "
+    " ["
+    "   { \"level\"   : \"local\","
+    "     \"let\"     : "
+    "     [ "
+    "      \"cuda.memcpy.dtoh=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=DtoH\","
+    "      \"cuda.memcpy.htod=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=HtoD\""
+    "     ],"
+    "     \"select\"  : "
+    "     [ { \"expr\": \"sum(cuda.memcpy.htod)\", \"as\": \"Copy CPU->GPU\", \"unit\": \"MB\" },"
+    "       { \"expr\": \"sum(cuda.memcpy.dtoh)\", \"as\": \"Copy GPU->CPU\", \"unit\": \"MB\" }"
+    "     ]"
+    "   },"
+    "   { \"level\"   : \"cross\", \"select\":"
+    "     [ { \"expr\": \"avg(sum#cuda.memcpy.htod)\", \"as\": \"Copy CPU->GPU (avg)\", \"unit\": \"MB\" },"
+    "       { \"expr\": \"max(sum#cuda.memcpy.htod)\", \"as\": \"Copy CPU->GPU (max)\", \"unit\": \"MB\" },"
+    "       { \"expr\": \"avg(sum#cuda.memcpy.dtoh)\", \"as\": \"Copy GPU->CPU (avg)\", \"unit\": \"MB\" },"
+    "       { \"expr\": \"max(sum#cuda.memcpy.dtoh)\", \"as\": \"Copy GPU->CPU (max)\", \"unit\": \"MB\" }"
     "     ]"
     "   }"
     " ]"

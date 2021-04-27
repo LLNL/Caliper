@@ -69,7 +69,7 @@ class MpiReport
                 stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
         }
 
-        collective_flush(stream, *c, *channel, m_local_spec, m_cross_spec, comm);
+        collective_flush(stream, *c, *channel, flush_info, m_local_spec, m_cross_spec, comm);
 
         if (comm != MPI_COMM_NULL)
             MPI_Comm_free(&comm);

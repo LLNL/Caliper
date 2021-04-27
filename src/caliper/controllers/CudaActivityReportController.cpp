@@ -17,11 +17,11 @@ using namespace cali;
 namespace
 {
 
-class CudaActivityController : public cali::ChannelController
+class CudaActivityReportController : public cali::ChannelController
 {
 public:
 
-    CudaActivityController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+    CudaActivityReportController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
         : ChannelController(name, 0, initial_cfg)
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
@@ -42,6 +42,16 @@ public:
                 ",max(iscale#cupti.activity.duration) as \"Max GPU Time\""
                 ",ratio(iscale#cupti.activity.duration,iscale#sum#cupti.host.duration,100.0) as \"GPU %\"";
 
+            std::string groupby = "prop:nested";
+
+            if (opts.is_enabled("show_kernels")) {
+                groupby += ",cupti.kernel.name";
+                serial_select
+                    = std::string("cupti.kernel.name as Kernel,") + serial_select;
+                cross_select
+                    = std::string("cupti.kernel.name as Kernel,") + cross_select;
+            }
+
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
@@ -49,13 +59,13 @@ public:
                 config()["CALI_MPIREPORT_LOCAL_CONFIG"] =
                     opts.build_query("local", {
                             { "select",   local_select },
-                            { "group by", "prop:nested" }
+                            { "group by", groupby }
                         });
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("cross", {
                             { "select",   cross_select  },
-                            { "group by", "prop:nested" },
-                            { "format",   "tree" }
+                            { "group by", groupby },
+                            { "format",   "tree"  }
                         });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
@@ -63,8 +73,8 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",   serial_select },
-                            { "group by", "prop:nested" },
-                            { "format",   "tree" }
+                            { "group by", groupby },
+                            { "format",   "tree"  }
                         });
             }
 
@@ -98,14 +108,14 @@ use_mpi(const cali::ConfigManager::Options& opts)
 cali::ChannelController*
 make_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
 {
-    return new CudaActivityController(use_mpi(opts), name, initial_cfg, opts);
+    return new CudaActivityReportController(use_mpi(opts), name, initial_cfg, opts);
 }
 
 const char* controller_spec =
     "{"
-    " \"name\"        : \"cuda-activity\","
+    " \"name\"        : \"cuda-activity-report\","
     " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
-    " \"categories\"  : [ \"output\", \"region\" ],"
+    " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\" ],"
     " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
@@ -118,6 +128,11 @@ const char* controller_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
+    "  },"
+    "  {"
+    "   \"name\": \"show_kernels\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Show kernel names\""
     "  }"
     " ]"
     "}";
@@ -127,7 +142,7 @@ const char* controller_spec =
 namespace cali
 {
 
-ConfigManager::ConfigInfo cuda_activity_controller_info
+ConfigManager::ConfigInfo cuda_activity_report_controller_info
 {
     ::controller_spec, ::make_controller, nullptr
 };

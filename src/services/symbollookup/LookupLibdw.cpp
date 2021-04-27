@@ -5,7 +5,8 @@
 
 #include "caliper/common/Log.h"
 
-#include <cxxabi.h>
+#include "../../common/util/demangle.h"
+
 #include <elfutils/libdwfl.h>
 #include <unistd.h>
 
@@ -16,29 +17,6 @@ using namespace symbollookup;
 
 namespace
 {
-
-std::string demangle(const char* name)
-{
-    std::string result;
-
-    if (!name)
-        return result;
-
-    char* demangled = nullptr;
-    int status = -1;
-
-    if (name[0] == '_' && name[1] == 'Z')
-        demangled = abi::__cxa_demangle(name, nullptr, 0, &status);
-
-    if (status == 0)
-        result = demangled;
-    else
-        result = name;
-
-    free(demangled);
-
-    return result;
-}
 
 Dwfl_Callbacks* get_dwfl_callbacks()
 {
@@ -79,7 +57,7 @@ struct Lookup::LookupImpl
         result.success = true;
 
         if (what & Kind::Name)
-            result.name = ::demangle(dwfl_module_addrname(mod, address));
+            result.name = util::demangle(dwfl_module_addrname(mod, address));
 
         if (what & Kind::File || what & Kind::Line) {
             Dwfl_Line *line = dwfl_module_getsrc(mod, address);

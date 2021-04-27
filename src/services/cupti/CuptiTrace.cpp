@@ -15,6 +15,8 @@
 
 #include "caliper/common/c-util/unitfmt.h"
 
+#include "../../common/util/demangle.h"
+
 #include <cupti.h>
 
 #include <cuda_runtime_api.h>
@@ -436,6 +438,8 @@ class CuptiTraceService
 
             // append the kernel info
 
+            std::string name = util::demangle(kernel->name);
+
             Attribute attr[5] = {
                 activity_kind_attr,
                 kernel_name_attr,
@@ -445,7 +449,7 @@ class CuptiTraceService
             };
             Variant   data[5] = {
                 Variant("kernel"),
-                Variant(kernel->name),
+                Variant(name.c_str()),
                 Variant(cali_make_variant_from_uint(kernel->start)),
                 Variant(cali_make_variant_from_uint(kernel->end)),
                 Variant(cali_make_variant_from_uint(kernel->end - kernel->start))
