@@ -60,8 +60,6 @@ class SnapshotTreeNode : public util::LockfreeIntrusiveTree<SnapshotTreeNode>
     Attribute m_label_key;
     Variant   m_label_value;
 
-    bool      m_empty;
-
     using Record = std::vector< std::pair<Attribute, Variant> >;
 
     std::vector<Record> m_records;
