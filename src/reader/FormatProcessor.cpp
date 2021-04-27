@@ -20,7 +20,8 @@ namespace
 {
 
 const char* format_kernel_args[] = { "format", "title" };
-const char* tree_kernel_args[]   = { "path-attributes", "column-width" }; 
+const char* tree_kernel_args[]   = { "path-attributes", "column-width" };
+const char* table_kernel_args[]  = { "column-width" };
 const char* json_kernel_args[]   = { "layout", "pretty", "quote-all", "separate-nested" };
 
 enum FormatterID {
@@ -39,10 +40,10 @@ const QuerySpec::FunctionSignature formatters[] = {
     { FormatterID::Json,      "json",       0, 4, json_kernel_args },
     { FormatterID::Expand,    "expand",     0, 0, nullptr },
     { FormatterID::Format,    "format",     1, 2, format_kernel_args },
-    { FormatterID::Table,     "table",      0, 0, nullptr },
+    { FormatterID::Table,     "table",      0, 1, table_kernel_args  },
     { FormatterID::Tree,      "tree",       0, 2, tree_kernel_args   },
     { FormatterID::JsonSplit, "json-split", 0, 0, nullptr },
-    
+
     QuerySpec::FunctionSignatureTerminator
 };
 
@@ -101,7 +102,7 @@ struct FormatProcessor::FormatProcessorImpl
             }
         }
     }
-    
+
     FormatProcessorImpl(OutputStream& stream, const QuerySpec& spec)
         : m_formatter(nullptr), m_stream(stream)
     {
@@ -141,7 +142,7 @@ void
 FormatProcessor::flush(CaliperMetadataAccessInterface& db)
 {
     if (mP->m_formatter) {
-        std::ostream* os = mP->m_stream.stream();        
+        std::ostream* os = mP->m_stream.stream();
         mP->m_formatter->flush(db, *os);
     }
 }

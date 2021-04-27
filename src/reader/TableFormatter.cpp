@@ -27,7 +27,7 @@ struct TableFormatter::TableImpl
     struct Column {
         std::string name;
         std::string display_name;
-        std::size_t max_width;
+        std::size_t width;
 
         Attribute   attr;
 
@@ -37,7 +37,7 @@ struct TableFormatter::TableImpl
 
         Column(const std::string& n, const std::string alias, std::size_t w, const Attribute& a, bool p,
                QuerySpec::SortSpec::Order o = QuerySpec::SortSpec::Order::None)
-            : name(n), display_name(alias), max_width(w), attr(a), print(p), sort_order(o)
+            : name(n), display_name(alias), width(w), attr(a), print(p), sort_order(o)
             { }
     };
 
@@ -50,6 +50,12 @@ struct TableFormatter::TableImpl
     std::map<std::string, std::string>      m_aliases;
 
     bool                                    m_auto_column;
+
+    int                                     m_max_column_width;
+
+    int column_width(int base) const {
+        return std::max(m_max_column_width > 0 ? std::min(base, m_max_column_width) : base, 4);
+    }
 
     void parse(const std::string& field_string, const std::string& sort_string) {
         std::vector<std::string> fields;
@@ -86,6 +92,17 @@ struct TableFormatter::TableImpl
         m_auto_column = false;
 
         m_aliases = spec.aliases;
+
+        // Set max column width
+
+        if (spec.format.args.size() > 0) {
+            bool ok = false;
+
+            m_max_column_width = StringConverter(spec.format.args[0]).to_int(&ok);
+
+            if (!ok)
+                m_max_column_width = -1;
+        }
 
         // Fill sort columns
 
@@ -218,9 +235,9 @@ struct TableFormatter::TableImpl
 
                 size_t width = val.length();
 
-                if (width > cols[c].max_width) {
-                    cols[c].max_width = width;
-                    update_max_width  = true;
+                if (width > cols[c].width) {
+                    cols[c].width    = width;
+                    update_max_width = true;
                 }
             }
         }
@@ -237,8 +254,8 @@ struct TableFormatter::TableImpl
                 g(m_col_lock);
 
             for (std::vector<Column>::size_type c = 0; c < cols.size(); ++c)
-                if (cols[c].max_width > m_cols[c].max_width)
-                    m_cols[c].max_width = cols[c].max_width;
+                if (cols[c].width > m_cols[c].width)
+                    m_cols[c].width = cols[c].width;
         }
     }
 
@@ -269,8 +286,10 @@ struct TableFormatter::TableImpl
         // print header
 
         for (const Column& col : m_cols)
-            if (col.print)
-                util::pad_right(os, col.display_name, col.max_width);
+            if (col.print) {
+                int width = column_width(col.width);
+                util::pad_right(os, util::clamp_string(col.display_name, width), width);
+            }
 
         os << std::endl;
 
@@ -281,23 +300,27 @@ struct TableFormatter::TableImpl
                 if (!m_cols[c].print)
                     continue;
 
-                std::string    str = row[c];
+                int            width = column_width(m_cols[c].width);
+                std::string    str = util::clamp_string(row[c], width);
                 cali_attr_type t   = m_cols[c].attr.type();
                 bool           align_right = (t == CALI_TYPE_INT  ||
                                               t == CALI_TYPE_UINT ||
                                               t == CALI_TYPE_DOUBLE);
 
                 if (align_right)
-                    util::pad_left (os, str, m_cols[c].max_width);
+                    util::pad_left (os, str, width);
                 else
-                    util::pad_right(os, str, m_cols[c].max_width);
+                    util::pad_right(os, str, width);
             }
 
             os << std::endl;
         }
     }
-};
 
+    TableImpl()
+        : m_max_column_width(60)
+        { }
+};
 
 TableFormatter::TableFormatter(const std::string& fields, const std::string& sort_fields)
     : mP { new TableImpl }
