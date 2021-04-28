@@ -362,6 +362,9 @@ public:
     /// \a extra_kv_pairs.
     bool add(const char* config_string, argmap_t& extra_kv_pairs);
 
+    /// \brief Load config and option specs from \a filename
+    void load(const char* filename);
+
     /// \brief Pre-set parameter \a key to \a value for all configurations
     void set_default_parameter(const char* key, const char* value);
 

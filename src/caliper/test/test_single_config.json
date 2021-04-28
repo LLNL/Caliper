@@ -1,0 +1,8 @@
+{
+    "name": "testcontroller",
+    "description": "A test controller",
+    "services": [ "trace", "recorder" , "event" ],
+    "config": {
+        "CALI_CHANNEL_FLUSH_ON_EXIT": "false"
+    }
+}
