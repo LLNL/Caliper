@@ -274,7 +274,7 @@ public:
     ///   " \"description\" : \"Count total instructions\","
     ///   " \"services\"    : [ \"papi\" ],"
     ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
-    ///   " \"query args\"  : "
+    ///   " \"query\"       : "
     ///   " ["
     ///   "  { \"level\": \"local\", \"select\":"
     ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
@@ -312,7 +312,7 @@ public:
     /// \li \a config: A dictionary with %Caliper configuration
     ///   variables required for this option. Note that services will be
     ///   added automatically based on the \a services entry.
-    /// \li \a query_args: Defines aggregation operations to compute
+    /// \li \a query: Defines aggregation operations to compute
     ///   performance metrics. Specific to "metric" options. There are
     ///   two aggregation levels: \e local computes process-local
     ///   metrics, and \e cross computes cross-process

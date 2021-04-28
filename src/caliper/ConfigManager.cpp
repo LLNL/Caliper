@@ -236,7 +236,7 @@ class ConfigManager::OptionSpec
         it = dict.find("config");
         if (ok && !m_error && it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
-        it = dict.find("query args");
+        it = dict.find("query");
         if (ok && !m_error && it != dict.end())
             parse_query_args(it->second.rec_list(&ok), opt);
         it = dict.find("type");

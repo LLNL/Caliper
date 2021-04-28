@@ -178,7 +178,7 @@ const char* testcontroller_spec =
     "   \"name\": \"boolopt\","
     "   \"type\": \"bool\","
     "   \"description\": \"A boolean option\","
-    "   \"query args\": "
+    "   \"query\": "
     "    ["
     "     { \"level\": \"local\", \"group by\": \"g\", \"let\": \"x=scale(y,2)\", \"select\": "
     "       [ { \"expr\": \"sum(x)\", \"as\": X, \"unit\": \"Foos\" } ]"
