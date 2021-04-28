@@ -363,6 +363,32 @@ public:
     bool add(const char* config_string, argmap_t& extra_kv_pairs);
 
     /// \brief Load config and option specs from \a filename
+    ///
+    /// Loads JSON config and option specs from a file. The files can contain
+    /// either a single config spec, a list of config specs, or a JSON object
+    /// with both config and option specs in the following form:
+    ///
+    /// \code
+    /// {
+    ///  "configs": [
+    ///   { "name": "myconfig", ... }, ...
+    ///  ],
+    ///  "options": [
+    ///   { "name": "myoption", "category": ... }, ...
+    ///  ]
+    /// }
+    /// \endcode
+    ///
+    /// The schemas for config and option specs are described in
+    /// ConfigManager::add_config_spec(const char*) and
+    /// ConfigManager::add_option_spec(const char*), respectively.
+    ///
+    /// If there was an error parsing the file, the error()
+    /// method will return \a true and an error message can be retrieved
+    /// with error_msg().
+    ///
+    /// \sa ConfigManager::add_config_spec(const char*),
+    ///   ConfigManager::add_option_spec(const char*)
     void load(const char* filename);
 
     /// \brief Pre-set parameter \a key to \a value for all configurations
