@@ -375,7 +375,7 @@ struct ConfigManager::Options::OptionsImpl
     std::string
     check() const {
         //
-        // Check if option values have the correct datatype
+        // Check if option value has the correct datatype
         //
         for (const auto &arg : args) {
             auto it = spec.data.find(arg.first);
@@ -836,14 +836,10 @@ struct ConfigManager::ConfigManagerImpl
         if (cfg_srvcs.size() > 0)
             spec.initial_cfg["CALI_SERVICES_ENABLE"].append(::join_stringlist(cfg_srvcs));
 
-        spec.opts.add(m_global_opts, spec.categories);
-        spec.opts.filter_unavailable_options(slist);
-
         it = dict.find("defaults");
         if (ok && !m_error && it != dict.end())
             for (const auto &p : it->second.rec_dict(&ok))
-                if (spec.opts.contains(p.first))
-                    spec.defaults[p.first] = p.second.to_string();
+                spec.defaults[p.first] = p.second.to_string();
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
@@ -943,6 +939,9 @@ struct ConfigManager::ConfigManagerImpl
     bool
     is_option(const std::string& key) {
         if (key == "profile") // special-case for deprecated "profile=" argument
+            return true;
+
+        if (m_global_opts.contains(key))
             return true;
 
         for (const auto& p : m_spec)
@@ -1085,7 +1084,10 @@ struct ConfigManager::ConfigManagerImpl
             } else {
                 auto spec_p = m_spec.find(key);
                 if (spec_p != m_spec.end() && spec_p->second) {
-                    auto args = parse_arglist(is, spec_p->second->opts);
+                    OptionSpec opts(spec_p->second->opts);
+                    opts.add(m_global_opts, spec_p->second->categories);
+
+                    auto args = parse_arglist(is, opts);
 
                     if (m_error)
                         return ret;
@@ -1114,7 +1116,7 @@ struct ConfigManager::ConfigManagerImpl
         return ret;
     }
 
-    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) {
+    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) const {
         auto it = m_default_parameters_for_spec.find(spec.name);
 
         if (it != m_default_parameters_for_spec.end())
@@ -1124,6 +1126,12 @@ struct ConfigManager::ConfigManagerImpl
         merge_new_elements(args, spec.defaults);
 
         return args;
+    }
+
+    OptionSpec options_for_config(const config_spec_t& config) const {
+        OptionSpec opts(config.opts);
+        opts.add(m_global_opts, config.categories);
+        return opts;
     }
 
     ChannelList parse(const char* config_string) {
@@ -1136,7 +1144,7 @@ struct ConfigManager::ConfigManagerImpl
         ret.reserve(configs.size());
 
         for (auto cfg : configs) {
-            Options opts(cfg.first->opts, add_default_parameters(cfg.second, *cfg.first));
+            Options opts(options_for_config(*cfg.first), add_default_parameters(cfg.second, *cfg.first));
 
             check_error(opts.check());
 
@@ -1168,7 +1176,7 @@ struct ConfigManager::ConfigManagerImpl
         } else {
             doc.append("\n ").append(it->second->description);
 
-            auto optdescrmap = it->second->opts.get_option_descriptions();
+            auto optdescrmap = options_for_config(*it->second).get_option_descriptions();
 
             if (!optdescrmap.empty()) {
                 doc.append("\n  Options:");
@@ -1188,7 +1196,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string doc = p.first;
             doc.append("\n ").append(p.second->description);
 
-            auto optdescrmap = p.second->opts.get_option_descriptions();
+            auto optdescrmap = options_for_config(*p.second).get_option_descriptions();
 
             if (!optdescrmap.empty()) {
                 doc.append("\n  Options:");
@@ -1345,7 +1353,7 @@ ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
     auto configs = tmpP.parse_configstring(configstr);
 
     for (auto cfg : configs) {
-        Options opts(cfg.first->opts, tmpP.add_default_parameters(cfg.second, *cfg.first));
+        Options opts(tmpP.options_for_config(*cfg.first), tmpP.add_default_parameters(cfg.second, *cfg.first));
 
         if (cfg.first->check_args)
             tmpP.check_error((cfg.first->check_args)(opts));

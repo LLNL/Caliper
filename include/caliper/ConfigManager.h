@@ -274,7 +274,7 @@ public:
     ///   " \"description\" : \"Count total instructions\","
     ///   " \"services\"    : [ \"papi\" ],"
     ///   " \"config\"      : { \"CALI_PAPI_COUNTERS\": \"PAPI_TOT_INS\" },"
-    ///   " \"query_args\"  : "
+    ///   " \"query args\"  : "
     ///   " ["
     ///   "  { \"level\": \"local\", \"select\":"
     ///   "   [ { \"expr\": \"sum(sum#papi.PAPI_TOT_INS)\" } ]"
