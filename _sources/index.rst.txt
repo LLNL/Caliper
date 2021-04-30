@@ -73,6 +73,11 @@ aspects in detail:
    tools
    DeveloperGuide
 
+Materials
+--------------------------------
+
+Tutorial slides: :download:`2021 ECP Annual Meeting Tutorial slide deck <2021_ECP_Caliper_Tutorial.pdf>`.
+
 About
 --------------------------------
 
@@ -95,8 +100,8 @@ To reference Caliper in a publication, please cite the following
   In *Supercomputing 2016 (SC16)*, Salt Lake City, Utah,
   November 13-18, 2016. LLNL-CONF-699263.
 
-Caliper is released under a BSD 3-clause license. 
-See `LICENSE <https://github.com/LLNL/Caliper/blob/master/LICENSE>`_ 
+Caliper is released under a BSD 3-clause license.
+See `LICENSE <https://github.com/LLNL/Caliper/blob/master/LICENSE>`_
 for details.
 
 LLNL Software release ID LLNL-CODE-678900.

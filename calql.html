@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>The CalQL query language &#8212; Caliper 2.5.0-dev documentation</title>
+    <title>The CalQL query language &#8212; Caliper 2.6.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="services.html" title="Caliper services"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -63,6 +63,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">scale</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>         <span class="c1"># computes &lt;a&gt; = &lt;b&gt;*S</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">truncate</span><span class="p">(</span><span class="o">&lt;</span><span class="n">b</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">S</span><span class="o">&gt;</span><span class="p">)</span>      <span class="c1"># computes &lt;a&gt; = &lt;b&gt; - mod(&lt;b&gt;, S)</span>
   <span class="o">&lt;</span><span class="n">a</span><span class="o">&gt;=</span><span class="n">first</span><span class="p">(</span><span class="o">&lt;</span><span class="n">a0</span><span class="o">&gt;</span><span class="p">,</span><span class="o">&lt;</span><span class="n">a1</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>  <span class="c1"># &lt;a&gt; is the first of &lt;a0&gt;, &lt;a1&gt;, ... found in the input record</span>
+  <span class="o">...</span> <span class="n">IF</span> <span class="o">&lt;</span><span class="n">condition</span><span class="o">&gt;</span>         <span class="c1"># apply only if input record meets condition</span>
 
 <span class="n">SELECT</span> <span class="o">&lt;</span><span class="nb">list</span><span class="o">&gt;</span>                <span class="c1"># Select attributes and define aggregations (i.e., select columns)</span>
   <span class="o">*</span>                          <span class="c1"># select all attributes</span>
@@ -91,8 +92,7 @@ table, sorted by time, is accomplished with the following statement:</p>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">=</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; = &lt;value&gt;</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">&lt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; &gt; &lt;value&gt;</span>
   <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span>      <span class="c1"># records where &lt;attribute&gt; &lt; &lt;value&gt;</span>
-  <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;</span>            <span class="c1"># records where &lt;attribute&gt; does not exist</span>
-  <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">attribute</span><span class="o">&gt;=&lt;</span><span class="n">value</span><span class="o">&gt;</span>    <span class="c1"># records where &lt;attribute&gt;!=&lt;value&gt;</span>
+  <span class="n">NOT</span> <span class="o">&lt;</span><span class="n">clause</span><span class="o">&gt;</span>               <span class="c1"># negate the filter clause</span>
 
 <span class="n">FORMAT</span> <span class="o">&lt;</span><span class="n">formatter</span><span class="o">&gt;</span>           <span class="c1"># Define output format</span>
   <span class="n">cali</span>                       <span class="c1"># .cali format</span>
@@ -118,26 +118,58 @@ and adds the results as a new entries in the input records. The new entries
 can then be used in subsequent SELECT, GROUP BY, or FORMAT statements.
 For example, we can use the scale() operator to scale a value before
 subsequent aggregations:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">SELECT</span> <span class="n">prop</span><span class="p">:</span><span class="n">nested</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
+  <span class="n">sec</span><span class="o">=</span><span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span>
+<span class="n">SELECT</span>
+  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">sec</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>For example, we can use the truncate() operator on an iteration counter to
+<p>We can use the truncate() operator on an iteration counter to
 aggregate blocks of 10 iterations in a time-series profile:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">block</span><span class="o">=</span><span class="n">truncate</span><span class="p">(</span><span class="n">iteration</span><span class="c1">#mainloop,10) SELECT block,sum(time.duration) GROUP BY block</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
+  <span class="n">block</span><span class="o">=</span><span class="n">truncate</span><span class="p">(</span><span class="n">iteration</span><span class="c1">#mainloop,10)</span>
+<span class="n">SELECT</span>
+  <span class="n">block</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+<span class="n">GROUP</span> <span class="n">BY</span>
+  <span class="n">block</span>
 </pre></div>
 </div>
 <p>The first() operator returns the first attribute out of a list of attribute
 names found in an input record. It can also be used to rename attributes:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span> <span class="n">time</span><span class="o">=</span><span class="n">first</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="nb">sum</span><span class="c1">#time.duration) SELECT sum(time) AS Time GROUP BY prop:nested</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">LET</span>
+  <span class="n">time</span><span class="o">=</span><span class="n">first</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="nb">sum</span><span class="c1">#time.duration)</span>
+<span class="n">SELECT</span>
+  <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
+<span class="n">GROUP</span> <span class="n">BY</span>
+  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>
 </pre></div>
 </div>
 <p>LET terms have the general form</p>
 <blockquote>
-<div><p>a = f(…)</p>
+<div><p>a = f(…) [IF &lt;condition&gt;]</p>
 </div></blockquote>
 <p>where f is one of the operators and <cite>a</cite> is the name of the result attribute.
 The result is added to the input records before the record is processed further.
-Result entries are only added to a record if all required input operands are present.</p>
+Result entries are only added to a record if all required input operands are
+present.</p>
+<p>With the optional IF condition, the operation is only applied for input records
+that meet a condition. One can use this to compute values for a specific
+subset of records. The condition clauses use the same syntax as WHERE filter
+clauses. The example below defines a “work” attribute with the time in
+records that contain “omp.work” regions, and then uses that to compute
+efficiency from the total and “work” time:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>LET</dt><dd><p>work=first(time.duration) IF omp.work</p>
+</dd>
+<dt>SELECT</dt><dd><p>sum(time.duration)        AS Total,
+sum(work)                 AS Work,
+ratio(work,time.duration) AS Efficiency</p>
+</dd>
+<dt>GROUP BY</dt><dd><p>prop:nested</p>
+</dd>
+</dl>
+</div></blockquote>
 </div>
 <div class="section" id="select">
 <h2>SELECT<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h2>
@@ -170,7 +202,14 @@ applies to the hierarchy defined by attributes with the
 <code class="docutils literal notranslate"><span class="pre">CALI_ATTR_NESTED</span></code> property, including the default <cite>function</cite>,
 <cite>annotation</cite>, and <cite>loop</cite> attributes from Caliper’s high-level annotation macros.</p>
 <p>A more complex example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span> <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span> <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">prop</span><span class="p">:</span><span class="n">nested</span> <span class="n">FORMAT</span> <span class="n">tree</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span>
+  <span class="o">*</span><span class="p">,</span>
+  <span class="n">scale</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span><span class="mf">1e-6</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span><span class="p">,</span>
+  <span class="n">inclusive_percent_total</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="s2">&quot;Time %&quot;</span>
+<span class="n">GROUP</span> <span class="n">BY</span>
+  <span class="n">prop</span><span class="p">:</span><span class="n">nested</span>
+<span class="n">FORMAT</span>
+  <span class="n">tree</span>
 </pre></div>
 </div>
 <p>The computes the (exclusive) sum of <cite>time.duration</cite> divided by 100000 and the inclusive
@@ -257,8 +296,14 @@ available in some formatters (e.g., table).</p>
 <p>The following example prints a iteration/function profile ordered by
 time and iteration number. Note that one must use the original
 attribute name and not an alias assigned with <code class="docutils literal notranslate"><span class="pre">AS</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span> <span class="n">FORMAT</span> <span class="n">table</span> \
-  <span class="n">ORDER</span> <span class="n">BY</span> <span class="nb">sum</span><span class="c1">#time.inclusive.duration DESC, iteration#mainloop</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SELECT</span>
+  <span class="o">*</span><span class="p">,</span>
+  <span class="nb">sum</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">inclusive</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span> <span class="n">AS</span> <span class="n">Time</span>
+<span class="n">FORMAT</span>
+  <span class="n">table</span>
+<span class="n">ORDER</span> <span class="n">BY</span>
+  <span class="nb">sum</span><span class="c1">#time.inclusive.duration DESC,</span>
+  <span class="n">iteration</span><span class="c1">#mainloop</span>
 
 <span class="n">function</span> <span class="n">loop</span>     <span class="n">iteration</span><span class="c1">#mainloop     Time</span>
 <span class="n">main</span>                                   <span class="mi">100000</span>
@@ -337,7 +382,7 @@ attribute name and not an alias assigned with <code class="docutils literal notr
         <li class="right" >
           <a href="services.html" title="Caliper services"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

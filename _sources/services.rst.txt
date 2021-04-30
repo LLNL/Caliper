@@ -1073,6 +1073,12 @@ Only snapshots where ``phase=loop`` are selected (due to the filter
 configuration), and the ``function`` and ``time.duration`` attributes
 are printed, in ascending order of ``time.duration``.
 
+RocTX
+--------------------------------
+
+The RocTX service forwards Caliper annotations as ROCm RocTX
+ranges for AMD's rocprof tool.
+
 .. _sampler-service:
 
 Sampler

@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Connection to third-party tools &#8212; Caliper 2.5.0-dev documentation</title>
+    <title>Connection to third-party tools &#8212; Caliper 2.6.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="FortranSupport.html" title="Fortran support"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -45,15 +45,15 @@
 <p>Caliper provides bindings to export Caliper annotations to third-party
 tools. Currently, Nvidia’s NVProf/NSight and Intel VTune Amplifier are
 supported.</p>
-<div class="section" id="nvprof">
-<h2>NVProf<a class="headerlink" href="#nvprof" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>nvprof</cite> service translates Caliper annotations into NVTX ranges
+<div class="section" id="nvidia-nvprof-nsight">
+<h2>NVidia NVProf/NSight<a class="headerlink" href="#nvidia-nvprof-nsight" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>nvtx</cite> service translates Caliper annotations into NVTX ranges
 (Nvidia’s source-code annoatation interface). Caliper-annotated
 regions will then be visible in the “Markers and Ranges” section of
 the NVprof or NSight timeline display.</p>
-<p>To use the NVprof bindings, enable the <cite>nvprof</cite> service and run the
+<p>To use the NVprof bindings, enable the <cite>nvtx</cite> service and run the
 target application under nvprof:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>nvprof nvprof &lt;nvprof-options&gt; app &lt;app-options&gt;
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>$ <span class="nv">CALI_SERVICES_ENABLE</span><span class="o">=</span>nvtx nvprof &lt;nvprof-options&gt; app &lt;app-options&gt;
 </pre></div>
 </div>
 <p>Then, load the measurement result file created by nvprof in nvvp (use
@@ -62,10 +62,10 @@ the -o flag for nvprof to write output into a file).</p>
 property. This includes the regions created by Caliper’s annotation
 macros (CALI_CXX_MARK_FUNCTION, CALI_MARK_BEGIN/END
 etc.). Alternatively, the region attributes to export can be specified
-explicitly in the <cite>CALI_NVPROF_TRIGGER_ATTRIBUTES</cite> configuration
+explicitly in the <cite>CALI_NVTX_TRIGGER_ATTRIBUTES</cite> configuration
 variable.</p>
 <dl class="simple">
-<dt>CALI_NVPROF_TRIGGER_ATTRIBUTES</dt><dd><p>Specify which attributes should be exported as NVTX
+<dt>CALI_NVTX_TRIGGER_ATTRIBUTES</dt><dd><p>Specify which attributes should be exported as NVTX
 ranges. Comma-separated list.</p>
 </dd>
 </dl>
@@ -105,7 +105,7 @@ configuration variable.</p>
   <h3><a href="index.html">Table of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Connection to third-party tools</a><ul>
-<li><a class="reference internal" href="#nvprof">NVProf</a></li>
+<li><a class="reference internal" href="#nvidia-nvprof-nsight">NVidia NVProf/NSight</a></li>
 <li><a class="reference internal" href="#intel-vtune">Intel VTune</a></li>
 </ul>
 </li>
@@ -150,7 +150,7 @@ configuration variable.</p>
         <li class="right" >
           <a href="FortranSupport.html" title="Fortran support"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

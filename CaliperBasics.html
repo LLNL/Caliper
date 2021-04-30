@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Caliper Basics &#8212; Caliper 2.5.0-dev documentation</title>
+    <title>Caliper Basics &#8212; Caliper 2.6.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -83,7 +83,7 @@ of interest in your program. Much of Caliper’s functionality depends on these
 region annotations.</p>
 <p>Caliper provides macros and functions for C, C++, and Fortran to mark
 functions, loops, or sections of source-code. For example, use
-<a class="reference internal" href="AnnotationAPI.html#c.CALI_CXX_MARK_FUNCTION" title="CALI_CXX_MARK_FUNCTION"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code></a> to mark a function in C++:</p>
+<code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_CXX_MARK_FUNCTION</span></code> to mark a function in C++:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
 <span class="kt">void</span> <span class="nf">foo</span><span class="p">()</span>
@@ -93,9 +93,9 @@ functions, loops, or sections of source-code. For example, use
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>You can mark arbitrary code regions with the <a class="reference internal" href="AnnotationAPI.html#c.CALI_MARK_BEGIN" title="CALI_MARK_BEGIN"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code></a>
-and <a class="reference internal" href="AnnotationAPI.html#c.CALI_MARK_END" title="CALI_MARK_END"><code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code></a> macros or the corresponding
-<a class="reference internal" href="AnnotationAPI.html#_CPPv417cali_begin_regionPKc" title="cali_begin_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_begin_region()</span></code></a> and <a class="reference internal" href="AnnotationAPI.html#_CPPv415cali_end_regionPKc" title="cali_end_region"><code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_end_region()</span></code></a>
+<p>You can mark arbitrary code regions with the <code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_BEGIN</span></code>
+and <code class="xref c c-macro docutils literal notranslate"><span class="pre">CALI_MARK_END</span></code> macros or the corresponding
+<code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_begin_region()</span></code> and <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">cali_end_region()</span></code>
 functions:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
@@ -223,7 +223,7 @@ interprets a short configuration string that can be hard-coded in the program
 or provided by the user in some form, e.g. as a command-line parameter or
 in the program’s configuration file.</p>
 <p>To access and control the built-in configurations, create a
-<a class="reference internal" href="ConfigManagerAPI.html#_CPPv4N4cali13ConfigManagerE" title="cali::ConfigManager"><code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::ConfigManager</span></code></a> object. Add a configuration string with
+<code class="xref cpp cpp-class docutils literal notranslate"><span class="pre">cali::ConfigManager</span></code> object. Add a configuration string with
 <code class="docutils literal notranslate"><span class="pre">add()</span></code>, start the requested configuration channels with <code class="docutils literal notranslate"><span class="pre">start()</span></code>,
 and trigger output with <code class="docutils literal notranslate"><span class="pre">flush()</span></code>. In MPI programs, the <code class="docutils literal notranslate"><span class="pre">flush()</span></code> method
 must be called before <code class="docutils literal notranslate"><span class="pre">MPI_Finalize</span></code>:</p>
@@ -525,7 +525,7 @@ attributes are recorded through Adiak.</p>
 <p>Caliper provides bindings to export Caliper-annotated source code regions to
 third-party tools. Currently, Nvidia’s NVTX API for the NVProf/NSight
 profilers and Intel’s ITT API for Intel VTune Amplifier are supported.</p>
-<p>To use the NVTX forwarding, activate the “nvprof” Caliper config when
+<p>To use the NVTX forwarding, activate the “nvtx” Caliper config when
 recording data with nvprof or ncu, either with the <span class="target" id="index-3"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a>
 environment variable, or the ConfigManager API. Be sure to enable NVTX support
 in NSight Compute.</p>
@@ -740,7 +740,7 @@ analysis views.</p>
         <li class="right" >
           <a href="index.html" title="Caliper: A Performance Analysis Toolbox in a Library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

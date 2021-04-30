@@ -4,7 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Building Caliper &#8212; Caliper 2.5.0-dev documentation</title>
+    <title>Building Caliper &#8212; Caliper 2.6.0-dev documentation</title>
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
@@ -31,7 +31,7 @@
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>  
 
@@ -92,7 +92,7 @@ in LIBPFM_INSTALL.</p>
 </dd>
 <dt>WITH_MPI</dt><dd><p>Build with MPI support.</p>
 </dd>
-<dt>WITH_NVPROF</dt><dd><p>Build adapters to forward Caliper annotations to NVidia’s nvtx annotation API.
+<dt>WITH_NVTX</dt><dd><p>Build adapters to forward Caliper annotations to NVidia’s nvtx annotation API.
 Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.</p>
 </dd>
 <dt>WITH_PAPI</dt><dd><p>Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.</p>
@@ -122,7 +122,7 @@ g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 <div class="section" id="using-caliper-in-cmake-projects">
 <h2>Using Caliper in CMake projects<a class="headerlink" href="#using-caliper-in-cmake-projects" title="Permalink to this headline">¶</a></h2>
 <p>Caliper creates a CMake package file (caliper-config.cmake) and
-installs it in &lt;caliper-installation-dir&gt;/share/cmake/caliper. The
+installs it in &lt;caliper-installation-dir&gt;/lib64/cmake/caliper. The
 package file defines Caliper’s include directories and exports targets
 for the Caliper libraries. Projects using CMake can use find_package()
 and target_link_libraries() to integrate Caliper as a dependency.</p>
@@ -144,7 +144,7 @@ target_link_libraries(MyExample
 </div>
 <p>When configuring the target program, point CMake to the desired
 Caliper installation with <cite>caliper_DIR</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">Dcaliper_DIR</span><span class="o">=&lt;</span><span class="n">caliper</span><span class="o">-</span><span class="n">installation</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;/</span><span class="n">share</span><span class="o">/</span><span class="n">cmake</span><span class="o">/</span><span class="n">caliper</span> <span class="o">..</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">Dcaliper_DIR</span><span class="o">=&lt;</span><span class="n">caliper</span><span class="o">-</span><span class="n">installation</span><span class="o">-</span><span class="nb">dir</span><span class="o">&gt;/</span><span class="n">lib64</span><span class="o">/</span><span class="n">cmake</span><span class="o">/</span><span class="n">caliper</span> <span class="o">..</span>
 </pre></div>
 </div>
 <p>The CMake package defines the following variables and targets:</p>
@@ -154,7 +154,7 @@ Caliper installation with <cite>caliper_DIR</cite>:</p>
 <col style="width: 60%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p>caliper_INCLUDE_DIR</p></td>
+<tr class="row-odd"><td><p>${caliper_INCLUDE_DIR}</p></td>
 <td><p>Caliper include directory (variable)</p></td>
 </tr>
 <tr class="row-even"><td><p>caliper</p></td>
@@ -233,7 +233,7 @@ dependencies (target)</p></td>
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.5.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
