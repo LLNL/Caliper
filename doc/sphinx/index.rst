@@ -73,6 +73,11 @@ aspects in detail:
    tools
    DeveloperGuide
 
+Materials
+--------------------------------
+
+Tutorial slides: :download:`2021 ECP Annual Meeting Tutorial slide deck <2021_ECP_Caliper_Tutorial.pdf>`.
+
 About
 --------------------------------
 
