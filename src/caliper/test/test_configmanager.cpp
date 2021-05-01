@@ -178,7 +178,7 @@ const char* testcontroller_spec =
     "   \"name\": \"boolopt\","
     "   \"type\": \"bool\","
     "   \"description\": \"A boolean option\","
-    "   \"query args\": "
+    "   \"query\": "
     "    ["
     "     { \"level\": \"local\", \"group by\": \"g\", \"let\": \"x=scale(y,2)\", \"select\": "
     "       [ { \"expr\": \"sum(x)\", \"as\": X, \"unit\": \"Foos\" } ]"
@@ -310,7 +310,7 @@ TEST(ConfigManagerTest, Options)
 
 TEST(ConfigManagerTest, BuildQuery)
 {
-    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };    
+    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
 
     {
         ConfigManager mgr;
@@ -321,30 +321,30 @@ TEST(ConfigManagerTest, BuildQuery)
         ASSERT_TRUE(cP);
         auto tP = std::dynamic_pointer_cast<TestController>(cP);
         ASSERT_TRUE(tP);
-        
+
         EXPECT_TRUE(tP->is_enabled("boolopt"));
 
-        std::string q1 = tP->get_query("local", { 
+        std::string q1 = tP->get_query("local", {
                 { "select", "me" },
                 { "format", "expand" },
                 { "let", "a=first(b,c)" },
                 { "where", "xyz=42" },
                 { "group by", "z"}
             });
-        const char* expect = 
+        const char* expect =
             " let a=first(b,c),x=scale(y,2)"
             " select me,sum(x) as \"X\" unit \"Foos\""
             " group by z,g"
             " where xyz=42"
             " format expand";
-        
+
         EXPECT_STREQ(q1.c_str(), expect);
 
-        std::string q2 = tP->get_query("local", { 
+        std::string q2 = tP->get_query("local", {
                 { "select", "me" },
                 { "format", "expand" },
             }, false /* no aliases */);
-        expect = 
+        expect =
             " let x=scale(y,2)"
             " select me,sum(x)"
             " group by g"
@@ -363,33 +363,71 @@ TEST(ConfigManagerTest, BuildQuery)
         ASSERT_TRUE(cP);
         auto tP = std::dynamic_pointer_cast<TestController>(cP);
         ASSERT_TRUE(tP);
-        
+
         EXPECT_FALSE(tP->is_enabled("boolopt"));
 
-        std::string q3 = tP->get_query("local", { 
+        std::string q3 = tP->get_query("local", {
                 { "select", "me" },
                 { "format", "expand" },
                 { "let", "a=first(b,c)" },
                 { "where", "xyz=42" },
                 { "group by", "z"}
             });
-        const char* expect = 
+        const char* expect =
             " let a=first(b,c)"
             " select me"
             " group by z"
             " where xyz=42"
             " format expand";
-        
+
         EXPECT_STREQ(q3.c_str(), expect);
 
-        std::string q4 = tP->get_query("local", { 
+        std::string q4 = tP->get_query("local", {
                 { "select", "me" },
                 { "format", "expand" },
             });
-        expect = 
+        expect =
             " select me"
             " format expand";
 
         EXPECT_STREQ(q4.c_str(), expect);
     }
+}
+
+TEST(ConfigManagerTest, LoadCmd_SingleConfig) {
+    // test parsing of a single config spec with the load() command inside add()
+
+    ConfigManager mgr;
+    mgr.add("load(\"test_single_config.json\"), testcontroller");
+
+    EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+    auto cP = mgr.get_channel("testcontroller");
+    EXPECT_TRUE(cP);
+}
+
+TEST(ConfigManagerTest, LoadCmd_ConfigList) {
+    // test parsing of a config spec list with the load() command inside add()
+
+    ConfigManager mgr;
+    mgr.add("load(test_config_list.json)");
+
+    EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+    EXPECT_EQ(mgr.get_documentation_for_spec("testcontroller_b"), std::string("testcontroller_b\n Test controller B"));
+}
+
+TEST(ConfigManagerTest, LoadCmd_ConfigAndOptions) {
+    // test parsing of a config and options list with load()
+
+    ConfigManager mgr;
+    mgr.load("test_config_and_options.json");
+    EXPECT_FALSE(mgr.error()) << mgr.error_msg();
+
+    const std::string expect =
+        "testcontroller"
+        "\n A test controller"
+        "\n  Options:"
+        "\n   testoption"
+        "\n    A test option";
+
+    EXPECT_EQ(mgr.get_documentation_for_spec("testcontroller"), expect);
 }

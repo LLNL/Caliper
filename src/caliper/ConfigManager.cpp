@@ -13,6 +13,7 @@
 #include "../services/Services.h"
 
 #include <algorithm>
+#include <fstream>
 #include <sstream>
 
 using namespace cali;
@@ -235,7 +236,7 @@ class ConfigManager::OptionSpec
         it = dict.find("config");
         if (ok && !m_error && it != dict.end())
             parse_config(it->second.rec_dict(&ok), opt);
-        it = dict.find("query args");
+        it = dict.find("query");
         if (ok && !m_error && it != dict.end())
             parse_query_args(it->second.rec_list(&ok), opt);
         it = dict.find("type");
@@ -374,7 +375,7 @@ struct ConfigManager::Options::OptionsImpl
     std::string
     check() const {
         //
-        // Check if option values have the correct datatype
+        // Check if option value has the correct datatype
         //
         for (const auto &arg : args) {
             auto it = spec.data.find(arg.first);
@@ -835,14 +836,10 @@ struct ConfigManager::ConfigManagerImpl
         if (cfg_srvcs.size() > 0)
             spec.initial_cfg["CALI_SERVICES_ENABLE"].append(::join_stringlist(cfg_srvcs));
 
-        spec.opts.add(m_global_opts, spec.categories);
-        spec.opts.filter_unavailable_options(slist);
-
         it = dict.find("defaults");
         if (ok && !m_error && it != dict.end())
             for (const auto &p : it->second.rec_dict(&ok))
-                if (spec.opts.contains(p.first))
-                    spec.defaults[p.first] = p.second.to_string();
+                spec.defaults[p.first] = p.second.to_string();
 
         if (!ok)
             set_error(std::string("spec parse error: ") + util::clamp_string(spec.json, 48));
@@ -944,11 +941,114 @@ struct ConfigManager::ConfigManagerImpl
         if (key == "profile") // special-case for deprecated "profile=" argument
             return true;
 
+        if (m_global_opts.contains(key))
+            return true;
+
         for (const auto& p : m_spec)
             if (p.second->opts.contains(key))
                 return true;
 
         return false;
+    }
+
+    void
+    parse_json_content(const std::string& json) {
+        bool ok = false;
+        auto dict = StringConverter(json).rec_dict(&ok);
+
+        if (ok) {
+            // first, try and see if this is a single config spec
+            if (dict.count("name") > 0) {
+                add_config_spec(json.c_str(), nullptr, nullptr, false);
+                return;
+            }
+
+            // see if we have "configs" and "options" lists and parse them
+            auto it = dict.find("options");
+            if (it != dict.end()) {
+                ok = false;
+                m_global_opts.add(it->second.rec_list(&ok));
+
+                if (m_global_opts.error())
+                    set_error(m_global_opts.error_msg());
+                if (!ok)
+                    set_error(std::string("parse error: ") + util::clamp_string(it->second.to_string(), 48));
+            }
+
+            it = dict.find("configs");\
+            if (it != dict.end()) {
+                auto configs = it->second.rec_list(&ok);
+                if (!ok) {
+                    set_error(std::string("parse error: ") + util::clamp_string(it->second.to_string(), 48));
+                    return;
+                }
+                for (auto &s : configs) {
+                    std::string buf = s.to_string();
+                    add_config_spec(buf.c_str(), nullptr, nullptr, false);
+
+                    if (m_error)
+                        return;
+                }
+            }
+        } else {
+            // try to parse a list of config specs
+
+            auto list = StringConverter(json).rec_list(&ok);
+
+            if (ok) {
+                for (auto &s : list) {
+                    add_config_spec(s.to_string().c_str(), nullptr, nullptr, false);
+                    if (m_error)
+                        return;
+                }
+            } else {
+                set_error(std::string("parse error: ") + util::clamp_string(json, 48));
+            }
+        }
+    }
+
+    // Load config and/or option specs from file
+    void
+    load_file(const std::string& filename) {
+        if (std::ifstream is { filename, std::ios::ate }) {
+            auto size = is.tellg();
+            std::string str(size, '\0');
+            is.seekg(0);
+            if (is.read(&str[0], size))
+                parse_json_content(str);
+        } else {
+            set_error(std::string("Could not open file ") + filename);
+        }
+    }
+
+    void
+    handle_load_command(std::istream& is) {
+        std::vector<std::string> ret;
+        char c = util::read_char(is);
+
+        if (c != '(') {
+            set_error("Expected '(' after \"load\"");
+            return;
+        }
+
+        do {
+            std::string filename = util::read_word(is, ",()");
+
+            if (!filename.empty())
+                load_file(filename);
+            else
+                set_error("Expected filename for \"load\"");
+
+            if (m_error)
+                return;
+
+            c = util::read_char(is);
+        } while (is.good() && c == ',');
+
+        if (c != ')') {
+            set_error("Missing ')' after \"load(\"");
+            is.unget();
+        }
     }
 
     //   Returns found configs with their args. Also updates the default parameters list
@@ -976,28 +1076,38 @@ struct ConfigManager::ConfigManagerImpl
         do {
             std::string key = util::read_word(is, ",=()\n");
 
-            auto spec_p = m_spec.find(key);
-            if (spec_p != m_spec.end() && spec_p->second) {
-                auto args = parse_arglist(is, spec_p->second->opts);
+            if (key == "load") {
+                handle_load_command(is);
 
                 if (m_error)
                     return ret;
-
-                ret.push_back(std::make_pair(spec_p->second, std::move(args)));
             } else {
-                std::string val = read_value(is, key);
+                auto spec_p = m_spec.find(key);
+                if (spec_p != m_spec.end() && spec_p->second) {
+                    OptionSpec opts(spec_p->second->opts);
+                    opts.add(m_global_opts, spec_p->second->categories);
 
-                if (m_error)
-                    return ret;
+                    auto args = parse_arglist(is, opts);
 
-                if (is_option(key)) {
-                    if (val.empty())
-                        val = "true";
+                    if (m_error)
+                        return ret;
 
-                    m_default_parameters[key] = val;
+                    ret.push_back(std::make_pair(spec_p->second, std::move(args)));
+                } else {
+                    std::string val = read_value(is, key);
+
+                    if (m_error)
+                        return ret;
+
+                    if (is_option(key)) {
+                        if (val.empty())
+                            val = "true";
+
+                        m_default_parameters[key] = val;
+                    }
+                    else
+                        m_extra_vars[key] = val;
                 }
-                else
-                    m_extra_vars[key] = val;
             }
 
             c = util::read_char(is);
@@ -1006,7 +1116,7 @@ struct ConfigManager::ConfigManagerImpl
         return ret;
     }
 
-    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) {
+    argmap_t add_default_parameters(argmap_t& args, const config_spec_t& spec) const {
         auto it = m_default_parameters_for_spec.find(spec.name);
 
         if (it != m_default_parameters_for_spec.end())
@@ -1016,6 +1126,12 @@ struct ConfigManager::ConfigManagerImpl
         merge_new_elements(args, spec.defaults);
 
         return args;
+    }
+
+    OptionSpec options_for_config(const config_spec_t& config) const {
+        OptionSpec opts(config.opts);
+        opts.add(m_global_opts, config.categories);
+        return opts;
     }
 
     ChannelList parse(const char* config_string) {
@@ -1028,7 +1144,7 @@ struct ConfigManager::ConfigManagerImpl
         ret.reserve(configs.size());
 
         for (auto cfg : configs) {
-            Options opts(cfg.first->opts, add_default_parameters(cfg.second, *cfg.first));
+            Options opts(options_for_config(*cfg.first), add_default_parameters(cfg.second, *cfg.first));
 
             check_error(opts.check());
 
@@ -1060,7 +1176,7 @@ struct ConfigManager::ConfigManagerImpl
         } else {
             doc.append("\n ").append(it->second->description);
 
-            auto optdescrmap = it->second->opts.get_option_descriptions();
+            auto optdescrmap = options_for_config(*it->second).get_option_descriptions();
 
             if (!optdescrmap.empty()) {
                 doc.append("\n  Options:");
@@ -1080,7 +1196,7 @@ struct ConfigManager::ConfigManagerImpl
             std::string doc = p.first;
             doc.append("\n ").append(p.second->description);
 
-            auto optdescrmap = p.second->opts.get_option_descriptions();
+            auto optdescrmap = options_for_config(*p.second).get_option_descriptions();
 
             if (!optdescrmap.empty()) {
                 doc.append("\n  Options:");
@@ -1139,6 +1255,12 @@ ConfigManager::ChannelList
 ConfigManager::parse(const char* config_str)
 {
     return mP->parse(config_str);
+}
+
+void
+ConfigManager::load(const char* filename)
+{
+    mP->load_file(filename);
 }
 
 bool
@@ -1231,7 +1353,7 @@ ConfigManager::check(const char* configstr, bool allow_extra_kv_pairs) const
     auto configs = tmpP.parse_configstring(configstr);
 
     for (auto cfg : configs) {
-        Options opts(cfg.first->opts, tmpP.add_default_parameters(cfg.second, *cfg.first));
+        Options opts(tmpP.options_for_config(*cfg.first), tmpP.add_default_parameters(cfg.second, *cfg.first));
 
         if (cfg.first->check_args)
             tmpP.check_error((cfg.first->check_args)(opts));
