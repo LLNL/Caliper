@@ -112,7 +112,7 @@ void cb_thread_end(ompt_data_t*)
         c.end(proc_id_attr);
 }
 
-void cb_parallel_begin(ompt_data_t*, ompt_frame_t*, ompt_data_t*, unsigned, int, const void*)
+void cb_parallel_begin(ompt_data_t*, ompt_frame_t*, ompt_data_t*, unsigned nthreads, int, const void*)
 {
     Caliper c;
 
@@ -121,7 +121,7 @@ void cb_parallel_begin(ompt_data_t*, ompt_frame_t*, ompt_data_t*, unsigned, int,
         return;
     }
 
-    c.begin(region_attr, Variant("parallel"));
+    c.begin(region_attr, Variant(cali_make_variant_from_uint(nthreads)));
 }
 
 void cb_parallel_end(ompt_data_t*, ompt_data_t*, int, const void*)
@@ -293,7 +293,7 @@ void create_attributes(Caliper* c)
     Variant v_true(true);
 
     region_attr =
-        c->create_attribute("omp.region", CALI_TYPE_STRING,
+        c->create_attribute("omp.parallel", CALI_TYPE_UINT,
                             CALI_ATTR_SCOPE_THREAD,
                             1, &subscription_attr, &v_true);
     thread_type_attr =
