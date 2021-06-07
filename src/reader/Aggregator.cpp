@@ -827,10 +827,12 @@ public:
         Attribute   m_ratio_attr;
 
         double      m_scale;
+        bool        m_inclusive;
 
     public:
 
-        double get_scale() { return m_scale; }
+        double get_scale()    const { return m_scale;     }
+        bool   is_inclusive() const { return m_inclusive; }
 
         std::pair<Attribute,Attribute> get_target_attributes(CaliperMetadataAccessInterface& db) {
             if (m_tgt1_attr == Attribute::invalid)
@@ -844,13 +846,13 @@ public:
         std::pair<Attribute,Attribute> get_sum_attributes(CaliperMetadataAccessInterface& db) {
             if (m_sum1_attr == Attribute::invalid)
                 m_sum1_attr =
-                    db.create_attribute("sr.sum#" + m_tgt1_attr_name, CALI_TYPE_DOUBLE,
+                    db.create_attribute(std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt1_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS |
                                         CALI_ATTR_ASVALUE     |
                                         CALI_ATTR_HIDDEN);
             if (m_sum2_attr == Attribute::invalid)
                 m_sum2_attr =
-                    db.create_attribute("sr.sum#" + m_tgt2_attr_name, CALI_TYPE_DOUBLE,
+                    db.create_attribute(std::string(m_inclusive ? "isr.sum#" : "sr.sum#") + m_tgt2_attr_name, CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS |
                                         CALI_ATTR_ASVALUE     |
                                         CALI_ATTR_HIDDEN);
@@ -861,7 +863,7 @@ public:
         Attribute get_ratio_attribute(CaliperMetadataAccessInterface& db) {
             if (m_ratio_attr == Attribute::invalid)
                 m_ratio_attr =
-                    db.create_attribute(m_tgt1_attr_name + "/" + m_tgt2_attr_name,
+                    db.create_attribute(std::string(m_inclusive ? "iratio#" : "ratio#") + m_tgt1_attr_name + "/" + m_tgt2_attr_name,
                                         CALI_TYPE_DOUBLE,
                                         CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE);
 
@@ -872,19 +874,24 @@ public:
             return new ScaledRatioKernel(this);
         }
 
-        Config(const std::vector<std::string>& cfg)
+        Config(const std::vector<std::string>& cfg, bool is_inclusive)
             : m_tgt1_attr_name(cfg[0]), // We have already checked that there are two strings given
               m_tgt2_attr_name(cfg[1]),
               m_tgt1_attr(Attribute::invalid),
               m_tgt2_attr(Attribute::invalid),
-              m_scale(1.0)
+              m_scale(1.0),
+              m_inclusive(is_inclusive)
             {
                 if (cfg.size() > 2)
                     m_scale = std::stod(cfg[2]);
             }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg);
+            return new Config(cfg, false);
+        }
+
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg, true);
         }
     };
 
@@ -1219,10 +1226,11 @@ enum KernelID {
     IScaledSum    = 9,
     IPercentTotal = 10,
     Any           = 11,
-    ScaledCount   = 12
+    ScaledCount   = 12,
+    IRatio        = 13
 };
 
-#define MAX_KERNEL_ID 12
+#define MAX_KERNEL_ID IRatio
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -1239,10 +1247,11 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Max,           "max",           1, 1, kernel_args  },
     { KernelID::Avg,           "avg",           1, 1, kernel_args  },
     { KernelID::ScaledSum,     "scale",         2, 2, scale_args   },
-    { KernelID::IScaledSum,    "inclusive_scale", 2, 2, scale_args   },
+    { KernelID::IScaledSum,    "inclusive_scale", 2, 2, scale_args },
     { KernelID::IPercentTotal, "inclusive_percent_total", 1, 1, kernel_args },
     { KernelID::Any,           "any",           1, 1, kernel_args  },
     { KernelID::ScaledCount,   "scale_count",   1, 1, scount_args  },
+    { KernelID::IRatio,        "inclusive_ratio", 2, 3, sratio_args },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1251,19 +1260,20 @@ const struct KernelInfo {
     const char* name;
     AggregateKernelConfig* (*create)(const std::vector<std::string>& cfg);
 } kernel_list[] = {
-    { "count",         CountKernel::Config::create         },
-    { "sum",           SumKernel::Config::create           },
-    { "ratio",         ScaledRatioKernel::Config::create   },
-    { "percent_total", PercentTotalKernel::Config::create  },
-    { "inclusive_sum", SumKernel::Config::create_inclusive },
-    { "min",           MinKernel::Config::create           },
-    { "max",           MaxKernel::Config::create           },
-    { "avg",           AvgKernel::Config::create           },
-    { "scale",         ScaledSumKernel::Config::create     },
+    { "count",           CountKernel::Config::create         },
+    { "sum",             SumKernel::Config::create           },
+    { "ratio",           ScaledRatioKernel::Config::create   },
+    { "percent_total",   PercentTotalKernel::Config::create  },
+    { "inclusive_sum",   SumKernel::Config::create_inclusive },
+    { "min",             MinKernel::Config::create           },
+    { "max",             MaxKernel::Config::create           },
+    { "avg",             AvgKernel::Config::create           },
+    { "scale",           ScaledSumKernel::Config::create     },
     { "inclusive_scale", ScaledSumKernel::Config::create_inclusive },
     { "inclusive_percent_total", PercentTotalKernel::Config::create_inclusive },
-    { "any",           AnyKernel::Config::create           },
-    { "scale_count",   ScaledCountKernel::Config::create   },
+    { "any",             AnyKernel::Config::create           },
+    { "scale_count",     ScaledCountKernel::Config::create   },
+    { "inclusive_ratio", ScaledRatioKernel::Config::create_inclusive },
     { 0, 0 }
 };
 
@@ -1691,7 +1701,7 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
     case KernelID::Sum:
         return std::string("sum#") + op.args[0];
     case KernelID::ScaledRatio:
-        return op.args[0] + std::string("/") + op.args[1];
+        return std::string("ratio#") + op.args[0] + std::string("/") + op.args[1];
     case KernelID::PercentTotal:
         return std::string("percent_total#") + op.args[0];
     case KernelID::InclusiveSum:
@@ -1712,6 +1722,8 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("any#") + op.args[0];
     case KernelID::ScaledCount:
         return std::string("scount");
+    case KernelID::IRatio:
+        return std::string("iratio#") + op.args[0] + std::string("/") + op.args[1];
     }
 
     return std::string();

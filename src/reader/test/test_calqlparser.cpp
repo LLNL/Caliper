@@ -358,7 +358,7 @@ TEST(CalQLParserTest, AttributeAliasAndUnit) {
     ASSERT_EQ(q1.attribute_selection.list.size(), 2);
 
     EXPECT_EQ(q1.attribute_selection.list[0], "x");
-    EXPECT_EQ(q1.attribute_selection.list[1], "a/b");
+    EXPECT_EQ(q1.attribute_selection.list[1], "ratio#a/b");
 
     EXPECT_EQ(q1.aggregation_ops.selection, QuerySpec::AggregationSelection::List);
     ASSERT_EQ(q1.aggregation_ops.list.size(), 1);
@@ -370,9 +370,9 @@ TEST(CalQLParserTest, AttributeAliasAndUnit) {
     EXPECT_STREQ(q1.format.formatter.name, "table");
 
     ASSERT_EQ(q1.units.size(), 1);
-    EXPECT_STREQ(q1.units["a/b"].c_str(), "MB/s");
+    EXPECT_STREQ(q1.units["ratio#a/b"].c_str(), "MB/s");
     ASSERT_EQ(q1.aliases.size(), 1);
-    EXPECT_STREQ(q1.aliases["a/b"].c_str(), "Read BW");
+    EXPECT_STREQ(q1.aliases["ratio#a/b"].c_str(), "Read BW");
 }
 
 TEST(CalQLParserTest, AttributeDoubleAliasParseError) {
