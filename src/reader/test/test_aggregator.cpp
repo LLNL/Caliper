@@ -491,6 +491,104 @@ TEST(AggregatorTest, InclusiveSumOp) {
     EXPECT_EQ(rescount, 2);
 }
 
+
+TEST(AggregatorTest, InclusiveRatio) {
+    //
+    // --- setup
+    //
+
+    CaliperMetadataDB db;
+    IdMap             idmap;
+
+    // create some context attributes
+
+    Attribute ctx =
+        db.create_attribute("ctx", CALI_TYPE_STRING, CALI_ATTR_NESTED);
+    Attribute num_attr =
+        db.create_attribute("num", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+    Attribute den_attr =
+        db.create_attribute("den", CALI_TYPE_INT,    CALI_ATTR_ASVALUE);
+
+    // make some nodes
+
+    const struct NodeInfo {
+        cali_id_t node_id;
+        cali_id_t attr_id;
+        cali_id_t prnt_id;
+        Variant   data;
+    } test_nodes[] = {
+        { 100, ctx.id(), CALI_INV_ID, Variant("outer") },
+        { 101, ctx.id(), 100,         Variant("inner") }
+    };
+
+    for ( const NodeInfo& nI : test_nodes )
+        db.merge_node(nI.node_id, nI.attr_id, nI.prnt_id, nI.data, idmap);
+
+    //
+    // --- Test with ctx2 key, count and sum kernel
+    //
+
+    QuerySpec spec;
+
+    spec.aggregation_key.selection = QuerySpec::SelectionList<std::string>::Default;
+
+    spec.aggregation_ops.selection = QuerySpec::SelectionList<QuerySpec::AggregationOp>::List;
+    spec.aggregation_ops.list.push_back(::make_op("inclusive_ratio", "num", "den"));
+
+    ASSERT_EQ(static_cast<int>(spec.aggregation_ops.list.size()), 1);
+    ASSERT_STREQ(spec.aggregation_ops.list[0].op.name, "inclusive_ratio");
+
+    Aggregator a(spec);
+
+    // add some entries
+
+    cali_id_t node_inner = 101;
+    cali_id_t node_outer = 100;
+    cali_id_t attr[2] = { num_attr.id(), den_attr.id() };
+    Variant   data_inner[2] = { Variant(10), Variant(10) };
+    Variant   data_outer[2] = { Variant(10), Variant(5)  };
+
+    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr,    data_outer, idmap));
+    a.add(db, db.merge_snapshot(1, &node_outer, 0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_outer, 2, attr,    data_outer, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr,     2, attr,    data_outer, idmap));
+    a.add(db, db.merge_snapshot(0, nullptr,     0, nullptr, nullptr, idmap));
+    a.add(db, db.merge_snapshot(1, &node_inner, 2, attr,    data_inner,  idmap));
+    a.add(db, db.merge_snapshot(1, &node_inner, 0, nullptr, nullptr, idmap));
+
+    std::vector<EntryList> resdb;
+
+    a.flush(db, [&resdb](CaliperMetadataAccessInterface&, const EntryList& list) {
+            resdb.push_back(list);
+        });
+
+    Attribute iratio_attr = db.get_attribute("iratio#num/den");
+
+    ASSERT_NE(iratio_attr, Attribute::invalid);
+
+    // check results
+
+    EXPECT_EQ(resdb.size(), 3); // one entry for 100, 101, (empty)
+
+    int rescount = 0;
+
+    std::for_each(resdb.begin(), resdb.end(), [&](const EntryList& list){
+            auto dict = make_dict_from_entrylist(list);
+
+            double iratio = dict[iratio_attr.id()].value().to_double();
+
+            if (dict[ctx.id()].value() == Variant("inner")) {
+                EXPECT_DOUBLE_EQ(iratio, 1.0);
+                ++rescount;
+            } else if (dict[ctx.id()].value() == Variant("outer")) {
+                EXPECT_DOUBLE_EQ(iratio, 1.5);
+                ++rescount;
+            }
+        });
+
+    EXPECT_EQ(rescount, 2);
+}
+
 TEST(AggregatorTest, NoneKeySumOpSpec) {
     //
     // --- setup
@@ -700,7 +798,7 @@ TEST(AggregatorTest, ScaledRatioKernel) {
 
     ASSERT_EQ(resdb.size(), 1);
 
-    Attribute attr_ratio = db.get_attribute("x/y");
+    Attribute attr_ratio = db.get_attribute("ratio#x/y");
 
     ASSERT_NE(attr_ratio, Attribute::invalid);
 

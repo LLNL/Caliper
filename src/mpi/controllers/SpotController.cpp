@@ -199,7 +199,7 @@ public:
             ",block"
             ",max(sum#loop.iterations) as \"Iterations\" unit iterations"
             ",max(sum#time.duration) as \"Time (s)\" unit sec"
-            ",avg(loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
+            ",avg(ratio#loop.iterations/time.duration) as \"Iter/s\" unit iter/s";
 
         std::string query = m_opts.build_query("cross", {
                 { "select",   select },
