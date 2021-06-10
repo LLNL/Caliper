@@ -31,9 +31,11 @@ Variant get_value(const CaliperMetadataAccessInterface& db, const std::string& a
     if (attr == Attribute::invalid)
         return Variant();
 
-    for (const Entry& e : rec)
-        if (e.attribute() == attr.id())
-            return e.value();
+    for (const Entry& e : rec) {
+        auto val = e.value(attr.id());
+        if (!val.empty())
+            return val;
+    }
 
     return Variant();
 }

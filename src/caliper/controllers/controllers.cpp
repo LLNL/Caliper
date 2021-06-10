@@ -121,6 +121,7 @@ extern ConfigManager::ConfigInfo cuda_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo cuda_activity_report_controller_info;
 extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
+extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
 ConfigManager::ConfigInfo* builtin_controllers_table[] = {
@@ -133,6 +134,7 @@ ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &::mpireport_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
+    &openmp_report_controller_info,
     &runtime_report_controller_info,
     nullptr
 };
@@ -237,15 +239,15 @@ const char* builtin_option_specs =
     "      \"t.omp.total=first(sum#time.duration,time.duration)\""
     "     ],"
     "     \"select\"  : "
-    "     [ { \"expr\": \"sum(t.omp.work)\", \"as\": \"OpenMP Work\",    \"unit\": \"sec\" },"
-    "       { \"expr\": \"sum(t.omp.sync)\", \"as\": \"OpenMP Barriers\", \"unit\": \"sec\" }"
+    "     [ { \"expr\": \"sum(t.omp.work)\", \"as\": \"Time (work)\",    \"unit\": \"sec\" },"
+    "       { \"expr\": \"sum(t.omp.sync)\", \"as\": \"Time (barrier)\", \"unit\": \"sec\" }"
     "     ]"
     "   },"
     "   { \"level\"   : \"cross\", \"select\":"
-    "     [ { \"expr\": \"avg(sum#t.omp.work)\", \"as\": \"OpenMP Work (avg)\", \"unit\": \"sec\" },"
-    "       { \"expr\": \"avg(sum#t.omp.sync)\", \"as\": \"OpenMP Barriers (avg)\", \"unit\": \"sec\" },"
-    "       { \"expr\": \"sum(sum#t.omp.work)\", \"as\": \"OpenMP Work (total)\", \"unit\": \"sec\" },"
-    "       { \"expr\": \"sum(sum#t.omp.sync)\", \"as\": \"OpenMP Barriers (total)\", \"unit\": \"sec\" }"
+    "     [ { \"expr\": \"avg(sum#t.omp.work)\", \"as\": \"Time (work) (avg)\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"avg(sum#t.omp.sync)\", \"as\": \"Time (barrier) (avg)\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"sum(sum#t.omp.work)\", \"as\": \"Time (work) (total)\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"sum(sum#t.omp.sync)\", \"as\": \"Time (barrier) (total)\", \"unit\": \"sec\" }"
     "     ]"
     "   }"
     " ]"
@@ -260,15 +262,40 @@ const char* builtin_option_specs =
     " ["
     "   { \"level\"   : \"local\","
     "     \"select\"  : "
-    "     [ { \"expr\": \"inclusive_ratio(t.omp.work,t.omp.total)\", \"as\": \"OpenMP Work %\",    \"unit\": \"percent\" },"
-    "       { \"expr\": \"inclusive_ratio(t.omp.sync,t.omp.total)\", \"as\": \"OpenMP Barrier %\", \"unit\": \"percent\" }"
+    "     [ { \"expr\": \"inclusive_ratio(t.omp.work,t.omp.total)\", \"as\": \"Work %\",    \"unit\": \"percent\" },"
+    "       { \"expr\": \"inclusive_ratio(t.omp.sync,t.omp.total)\", \"as\": \"Barrier %\", \"unit\": \"percent\" }"
     "     ]"
     "   },"
     "   { \"level\"   : \"cross\", \"select\":"
-    "     [ { \"expr\": \"min(iratio#t.omp.work/t.omp.total)\", \"as\": \"OpenMP Work % (min)\", \"unit\": \"percent\" },"
-    "       { \"expr\": \"avg(iratio#t.omp.work/t.omp.total)\", \"as\": \"OpenMP Work % (avg)\", \"unit\": \"percent\" },"
-    "       { \"expr\": \"avg(iratio#t.omp.sync/t.omp.total)\", \"as\": \"OpenMP Barrier % (avg)\", \"unit\": \"percent\" },"
-    "       { \"expr\": \"max(iratio#t.omp.sync/t.omp.total)\", \"as\": \"OpenMP Barrier % (max)\", \"unit\": \"percent\" }"
+    "     [ { \"expr\": \"min(iratio#t.omp.work/t.omp.total)\", \"as\": \"Work % (min)\", \"unit\": \"percent\" },"
+    "       { \"expr\": \"avg(iratio#t.omp.work/t.omp.total)\", \"as\": \"Work % (avg)\", \"unit\": \"percent\" },"
+    "       { \"expr\": \"avg(iratio#t.omp.sync/t.omp.total)\", \"as\": \"Barrier % (avg)\", \"unit\": \"percent\" },"
+    "       { \"expr\": \"max(iratio#t.omp.sync/t.omp.total)\", \"as\": \"Barrier % (max)\", \"unit\": \"percent\" }"
+    "     ]"
+    "   }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"openmp.threads\","
+    " \"description\" : \"Show OpenMP threads\","
+    " \"type\"        : \"bool\","
+    " \"category\"    : \"metric\","
+    " \"services\"    : [ \"ompt\" ],"
+    " \"query\"  : "
+    " ["
+    "   { \"level\"   : \"local\","
+    "     \"let\"     : [ \"n.omp.threads=first(omp.num.threads)\" ],"
+    "     \"group by\": \"omp.thread.id,omp.thread.type\","
+    "     \"select\"  : "
+    "     [ { \"expr\": \"max(n.omp.threads)\", \"as\": \"#Threads\" },"
+    "       { \"expr\": \"omp.thread.id\", \"as\": \"Thread\" }"
+    "     ]"
+    "   },"
+    "   { \"level\"   : \"cross\", "
+    "     \"group by\": \"omp.thread.id,omp.thread.type\","
+    "     \"select\"  :"
+    "     [ { \"expr\": \"max(max#n.omp.threads)\", \"as\": \"#Threads\" },"
+    "       { \"expr\": \"omp.thread.id\",   \"as\": \"Thread\" }"
     "     ]"
     "   }"
     " ]"
