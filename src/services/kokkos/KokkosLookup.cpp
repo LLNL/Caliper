@@ -363,8 +363,6 @@ const ConfigSet::Entry KokkosLookup::s_configdata[] = {
     ConfigSet::Terminator
 };
 
-Attribute kokkos_space_attr = Attribute::invalid;
-
 } // namespace [anonymous]
 
 

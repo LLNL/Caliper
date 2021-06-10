@@ -52,7 +52,6 @@ using namespace cali;
 namespace {
 
     class KokkosTime {
-        static const ConfigSet::Entry s_configdata[];
         cali::Annotation kernel_name_annot;
         cali::Annotation kernel_type_annot;
 
@@ -117,11 +116,6 @@ namespace {
             Log(1).stream() << chn->name() << ": Registered kokkostime service" << std::endl;
         }
     };
-
-    const ConfigSet::Entry KokkosTime::s_configdata[] = {
-            ConfigSet::Terminator
-    };
-
 } // namespace [anonymous]
 
 
