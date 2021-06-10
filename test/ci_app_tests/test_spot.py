@@ -55,6 +55,8 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertEqual(int(r['sum#sum#rc.count']), 4)
         self.assertEqual(r['spot.channel'], 'regionprofile')
 
+        self.assertEqual('regionprofile', obj['globals']['spot.channels'])
+
     def test_spot_timeseries(self):
         target_cmd = [ './ci_test_macros', '0', 'spot(output=stdout,timeseries,timeseries.iteration_interval=15)', '75' ]
         query_cmd  = [ '../../src/tools/cali-query/cali-query', '-q', 'select * where spot.channel=timeseries format json(object)' ]
@@ -69,6 +71,8 @@ class CaliperSpotControllerTest(unittest.TestCase):
         self.assertIn('records', obj)
 
         self.assertIn('timeseries', obj['globals']['spot.options'])
+        self.assertIn('timeseries', obj['globals']['spot.channels'])
+        self.assertIn('regionprofile', obj['globals']['spot.channels'])
 
         self.assertIn('avg#ratio#loop.iterations/time.duration', obj['globals']['spot.timeseries.metrics'])
         self.assertIn('avg#ratio#loop.iterations/time.duration', obj['records'][0])

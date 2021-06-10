@@ -491,27 +491,33 @@ class SpotController : public cali::ChannelController
     }
 
     void save_spot_metadata() {
+        std::string spot_channels = "regionprofile";
         std::string spot_opts = "";
 
         for (const auto &o : m_opts.enabled_options()) {
             if (!spot_opts.empty())
                 spot_opts.append(",");
             spot_opts.append(o);
+            if (o == "timeseries")
+                spot_channels.append(",timeseries");
         }
 
         Attribute mtr_attr =
-            m_db.create_attribute("spot.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.metrics",  CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         Attribute tsm_attr =
             m_db.create_attribute("spot.timeseries.metrics", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
         Attribute fmt_attr =
             m_db.create_attribute("spot.format.version",     CALI_TYPE_INT,    CALI_ATTR_GLOBAL);
         Attribute opt_attr =
-            m_db.create_attribute("spot.options", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+            m_db.create_attribute("spot.options",  CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+        Attribute chn_attr =
+            m_db.create_attribute("spot.channels", CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
 
         m_db.set_global(mtr_attr, Variant(m_spot_metrics.c_str()));
         m_db.set_global(tsm_attr, Variant(m_spot_timeseries_metrics.c_str()));
         m_db.set_global(fmt_attr, Variant(spot_format_version));
         m_db.set_global(opt_attr, Variant(spot_opts.c_str()));
+        m_db.set_global(chn_attr, Variant(spot_channels.c_str()));
     }
 
     void on_create(Caliper*, Channel*) {
