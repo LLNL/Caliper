@@ -1,6 +1,9 @@
 #include <caliper/cali.h>
 #include <caliper/cali-manager.h>
 
+#include <omp.h>
+
+#include <cstdlib>
 #include <iostream>
 
 int main(int argc, char* argv[])
@@ -19,6 +22,8 @@ int main(int argc, char* argv[])
     mgr.start();
 
     CALI_MARK_FUNCTION_BEGIN;
+
+    omp_set_num_threads(2);
 
     int sum = 0;
 
