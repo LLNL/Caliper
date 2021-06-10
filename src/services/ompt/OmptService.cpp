@@ -298,7 +298,8 @@ void create_attributes(Caliper* c)
                             1, &subscription_attr, &v_true);
     thread_type_attr =
         c->create_attribute("omp.thread.type", CALI_TYPE_STRING,
-                            CALI_ATTR_SCOPE_THREAD,
+                            CALI_ATTR_SCOPE_THREAD | 
+                            CALI_ATTR_UNALIGNED,
                             1, &subscription_attr, &v_true);
     sync_attr =
         c->create_attribute("omp.sync", CALI_TYPE_STRING,
@@ -315,14 +316,17 @@ void create_attributes(Caliper* c)
     proc_id_attr =
         c->create_attribute("omp.proc.id", CALI_TYPE_INT,
                             CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_UNALIGNED    |
                             CALI_ATTR_SKIP_EVENTS);
     thread_id_attr =
         c->create_attribute("omp.thread.id", CALI_TYPE_INT,
-                            CALI_ATTR_SKIP_EVENTS |
+                            CALI_ATTR_SKIP_EVENTS  |
+                            CALI_ATTR_UNALIGNED    |
                             CALI_ATTR_SCOPE_THREAD);
     num_threads_attr =
         c->create_attribute("omp.num.threads", CALI_TYPE_INT,
                             CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_UNALIGNED    |
                             CALI_ATTR_SKIP_EVENTS);
 }
 
