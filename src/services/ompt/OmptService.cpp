@@ -298,7 +298,7 @@ void create_attributes(Caliper* c)
                             1, &subscription_attr, &v_true);
     thread_type_attr =
         c->create_attribute("omp.thread.type", CALI_TYPE_STRING,
-                            CALI_ATTR_SCOPE_THREAD | 
+                            CALI_ATTR_SCOPE_THREAD |
                             CALI_ATTR_UNALIGNED,
                             1, &subscription_attr, &v_true);
     sync_attr =
@@ -338,6 +338,12 @@ void pre_finish_cb(Caliper*, Channel* channel) {
 
         if (api.finalize_tool)
             (*api.finalize_tool)();
+        else {
+            Log(0).stream() << channel->name()
+                            << ": ompt: OMPT support was not enabled: "
+                               "Set the CALI_USE_OMPT environment variable to enable it (CALI_USE_OMPT=1)"
+                            << std::endl;
+        }
     }
 }
 
