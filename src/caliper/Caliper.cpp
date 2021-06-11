@@ -1456,6 +1456,8 @@ Caliper::delete_channel(Channel* chn)
     std::lock_guard<::siglock>
         g(sT->lock);
 
+    chn->mP->events.pre_finish_evt(this, chn);
+
     Log(1).stream() << "Releasing channel " << chn->name() << std::endl;
 
     chn->mP->events.finish_evt(this, chn);

@@ -93,6 +93,15 @@ if (CALIPER_HAVE_SAMPLER)
   endif()
 endif()
 
+if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
+  find_package(OpenMP REQUIRED)
+  add_executable(ci_test_openmp ci_test_openmp.cpp)
+  target_link_libraries(ci_test_openmp caliper OpenMP::OpenMP_CXX)
+
+  list(APPEND PYTHON_SCRIPTS
+    test_ompt.py)
+endif()
+
 if (CALIPER_HAVE_MPI)
   list(APPEND PYTHON_SCRIPTS 
     test_loopreport.py
