@@ -331,6 +331,16 @@ mpi-report
 callpath-sample-report
    Print time spent in functions using call-path sampling.
 
+cuda-activity-report
+   Record and print CUDA activities (kernel executions, memcopies, etc.)
+
+cuda-activity-profile
+   Record CUDA activities and a write profile file (json or .cali)
+
+openmp-report
+   Record and print OpenMP performance metrics (loops, barriers, etc.).
+   Requires OMPT support.
+
 event-trace
    Record a trace of region enter/exit events in .cali format.
 
