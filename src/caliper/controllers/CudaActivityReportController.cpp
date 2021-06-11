@@ -32,7 +32,7 @@ public:
             std::string serial_select =
                 " inclusive_scale(sum#cupti.host.duration,1e-9) as \"Host Time\""
                 ",inclusive_scale(cupti.activity.duration,1e-9) as \"GPU Time\""
-                ",ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\"";
+                ",inclusive_ratio(cupti.activity.duration,sum#cupti.host.duration,100.0) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
