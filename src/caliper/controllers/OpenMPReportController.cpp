@@ -134,7 +134,7 @@ make_controller(const char* name, const config_map_t& initial_cfg, const cali::C
 const char* controller_spec =
     "{"
     " \"name\"        : \"openmp-report\","
-    " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
+    " \"description\" : \"Record and print OpenMP performance metrics (loops, barriers, etc.)\","
     " \"categories\"  : [ \"output\", \"region\", \"metric\" ],"
     " \"services\"    : [ \"aggregate\", \"ompt\", \"event\" ],"
     " \"config\"      : "

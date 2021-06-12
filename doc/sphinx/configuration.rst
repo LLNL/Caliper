@@ -118,7 +118,7 @@ Configuration variables
 ........................................
 
 These variables can be set using environment variables, config files,
-or the configuration API).
+or the configuration API.
 
 CALI_CONFIG_FILE
    Comma-separated list of configuration files. The provided
