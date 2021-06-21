@@ -941,6 +941,55 @@ service description).</p>
 </dd>
 </dl>
 </div>
+<div class="section" id="ompt">
+<span id="ompt-service"></span><h2>OMPT<a class="headerlink" href="#ompt" title="Permalink to this headline">¶</a></h2>
+<p>The OMPT service records OpenMP information using the OpenMP tools interface
+(OMPT). It creates Caliper regions for OpenMP parallel regions, worksharing
+constructs (e.g., loops), and synchronization regions (e.g., barriers).</p>
+<p>To use the ompt service, the OpenMP tools interface must be activated in the
+OpenMP runtime. The ompt service activates the tools interface automatically
+if a Caliper channel with the ompt service enabled is created before the
+OpenMP runtime system is first initialized. If an ompt service instance is
+only created after the OpenMP runtime system has been initialized, you may
+have to activate manually OMPT by setting the <span class="target" id="index-0"></span><a class="reference internal" href="configuration.html#envvar-CALI_USE_OMPT"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_USE_OMPT</span></code></a>
+environment variable to “1” or “true”.</p>
+<p>The ompt service provides the following attributes:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 69%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>omp.parallel</p></td>
+<td><p>An OpenMP parallel region. The value is the
+number of threads inside the parallel region.
+Only set on the thread that created the parallel
+region.</p></td>
+</tr>
+<tr class="row-even"><td><p>omp.work</p></td>
+<td><p>An OpenMP worksharing region (“loop” etc.)</p></td>
+</tr>
+<tr class="row-odd"><td><p>omp.sync</p></td>
+<td><p>An OpenMP synchronization region (e.g.,
+“barrier”)</p></td>
+</tr>
+<tr class="row-even"><td><p>omp.num.threads</p></td>
+<td><p>Number of threads in the current parallel region</p></td>
+</tr>
+<tr class="row-odd"><td><p>omp.proc.id</p></td>
+<td><p>Arbitrary ID for the current thread</p></td>
+</tr>
+<tr class="row-even"><td><p>omp.thread.id</p></td>
+<td><p>The OpenMP thread ID of the current thread in
+the innermost parallel region</p></td>
+</tr>
+<tr class="row-odd"><td><p>omp.thread.type</p></td>
+<td><p>The kind of OpenMP thread (“initial” or
+“worker”)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <div class="section" id="papi">
 <span id="papi-service"></span><h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this headline">¶</a></h2>
 <p>The PAPI service collects hardware counter information through the
@@ -1274,6 +1323,7 @@ is full, another chunk of this size is added.</p>
 </ul>
 </li>
 <li><a class="reference internal" href="#mpi-report">MPI Report</a></li>
+<li><a class="reference internal" href="#ompt">OMPT</a></li>
 <li><a class="reference internal" href="#papi">PAPI</a></li>
 <li><a class="reference internal" href="#pthread">Pthread</a></li>
 <li><a class="reference internal" href="#recorder">Recorder</a></li>

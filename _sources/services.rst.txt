@@ -942,6 +942,48 @@ CALI_MPIREPORT_CONFIG
 
    Default: empty; all attributes in the snapshots will be printed.
 
+
+.. _ompt-service:
+
+OMPT
+--------------------------------
+
+The OMPT service records OpenMP information using the OpenMP tools interface
+(OMPT). It creates Caliper regions for OpenMP parallel regions, worksharing
+constructs (e.g., loops), and synchronization regions (e.g., barriers).
+
+To use the ompt service, the OpenMP tools interface must be activated in the
+OpenMP runtime. The ompt service activates the tools interface automatically 
+if a Caliper channel with the ompt service enabled is created before the 
+OpenMP runtime system is first initialized. If an ompt service instance is 
+only created after the OpenMP runtime system has been initialized, you may 
+have to activate manually OMPT by setting the :envvar:`CALI_USE_OMPT` 
+environment variable to "1" or "true".
+
+The ompt service provides the following attributes:
+
++----------------------+--------------------------------------------------+
+| omp.parallel         | An OpenMP parallel region. The value is the      |
+|                      | number of threads inside the parallel region.    |
+|                      | Only set on the thread that created the parallel |
+|                      | region.                                          |
++----------------------+--------------------------------------------------+
+| omp.work             | An OpenMP worksharing region ("loop" etc.)       |
++----------------------+--------------------------------------------------+
+| omp.sync             | An OpenMP synchronization region (e.g.,          |
+|                      | "barrier")                                       |
++----------------------+--------------------------------------------------+
+| omp.num.threads      | Number of threads in the current parallel region |
++----------------------+--------------------------------------------------+
+| omp.proc.id          | Arbitrary ID for the current thread              |
++----------------------+--------------------------------------------------+
+| omp.thread.id        | The OpenMP thread ID of the current thread in    |
+|                      | the innermost parallel region                    |
++----------------------+--------------------------------------------------+
+| omp.thread.type      | The kind of OpenMP thread ("initial" or          |
+|                      | "worker")                                        |
++----------------------+--------------------------------------------------+
+
 .. _papi-service:
 
 PAPI

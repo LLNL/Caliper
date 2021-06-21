@@ -124,6 +124,9 @@ runtime system.</p>
 <p>Many Caliper services define additional configuration variables. See
 <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for a list of Caliper services and their
 configuration.</p>
+<div class="section" id="environment-variables">
+<h3>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
+<p>These variables can only be set as environment variables.</p>
 <dl class="std envvar">
 <dt id="envvar-CALI_CONFIG">
 <code class="sig-name descname">CALI_CONFIG</code><a class="headerlink" href="#envvar-CALI_CONFIG" title="Permalink to this definition">¶</a></dt>
@@ -131,6 +134,22 @@ configuration.</p>
 performance profiling configurations. See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>.</p>
 </dd></dl>
 
+<dl class="std envvar">
+<dt id="envvar-CALI_USE_OMPT">
+<code class="sig-name descname">CALI_USE_OMPT</code><a class="headerlink" href="#envvar-CALI_USE_OMPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set to “1” or “true” to activate the OpenMP tools interface in the OpenMP
+runtime. This is required for the ompt service. It is only necessary to set
+this if the OpenMP runtime is first initialized before the ompt service is
+initialized, otherwise ompt will activate the OpenMP tools interface
+automatically. When set to “0” or “false” Caliper will not use the
+OpenMP tools interface. See <a class="reference internal" href="services.html#ompt-service"><span class="std std-ref">ompt</span></a></p>
+</dd></dl>
+
+</div>
+<div class="section" id="configuration-variables">
+<h3>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this headline">¶</a></h3>
+<p>These variables can be set using environment variables, config files,
+or the configuration API.</p>
 <dl>
 <dt>CALI_CONFIG_FILE</dt><dd><p>Comma-separated list of configuration files. The provided
 configuration files are read in order. Note: this variable can only
@@ -162,6 +181,7 @@ is enabled but no output service.</p>
 </dl>
 </div>
 </div>
+</div>
 
 
           </div>
@@ -177,7 +197,11 @@ is enabled but no output service.</p>
 <li><a class="reference internal" href="#">Manual configuration</a><ul>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#configuration-profiles">Configuration profiles</a></li>
-<li><a class="reference internal" href="#configuration-variables-reference">Configuration variables reference</a></li>
+<li><a class="reference internal" href="#configuration-variables-reference">Configuration variables reference</a><ul>
+<li><a class="reference internal" href="#environment-variables">Environment variables</a></li>
+<li><a class="reference internal" href="#configuration-variables">Configuration variables</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

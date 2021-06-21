@@ -72,8 +72,7 @@ In addition, Caliper supports the following CMake flags:</p>
 module, e.g. with <code class="docutils literal notranslate"><span class="pre">-Dadiak_PREFIX=&lt;path-to-adiak&gt;/lib/cmake/adiak</span></code>.</p>
 </dd>
 <dt>WITH_CUPTI</dt><dd><p>Enable support for CUDA performance analysis (wrapping of driver/runtime API
-calls and CUDA activity tracing). Set CUpti installation dir
-with CUPTI_PREFIX.</p>
+calls and CUDA activity tracing).</p>
 </dd>
 <dt>WITH_FORTRAN</dt><dd><p>Build the Fortran wrappers.</p>
 </dd>
@@ -94,6 +93,8 @@ in LIBPFM_INSTALL.</p>
 </dd>
 <dt>WITH_NVTX</dt><dd><p>Build adapters to forward Caliper annotations to NVidia’s nvtx annotation API.
 Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.</p>
+</dd>
+<dt>WITH_OMPT</dt><dd><p>Build with support for the OpenMP tools interface.</p>
 </dd>
 <dt>WITH_PAPI</dt><dd><p>Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.</p>
 </dd>

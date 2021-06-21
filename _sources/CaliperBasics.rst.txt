@@ -92,7 +92,7 @@ An easy way to do this is to use one of Caliper's built-in measurement
 configurations. For example, the `runtime-report` config prints out the time
 spent in the annotated regions. You can activate built-in measurement
 configurations with the :ref:`configmgr_api` or with the
-:doc:envvar:`CALI_CONFIG` environment variable.
+:envvar:`CALI_CONFIG` environment variable.
 Let's try this on Caliper's cxx-example program:
 
 .. code-block:: sh
@@ -273,7 +273,7 @@ Notes:
 
 * Multiple ConfigManager objects can co-exist in a program.
 * The ConfigManager API can be used in combination with
-  the :doc:envvar:`CALI_CONFIG` environment variable or manual
+  the :envvar:`CALI_CONFIG` environment variable or manual
   configurations.
 
 .. _more-on-configurations:
@@ -282,7 +282,7 @@ More on configurations
 --------------------------------
 
 A configuration string for the ConfigManager API or the
-:doc:envvar:`CALI_CONFIG` environment variable is a comma-separated list of
+:envvar:`CALI_CONFIG` environment variable is a comma-separated list of
 *configs* and *parameters*.
 
 A *config* is the name of one of Caliper's built-in measurement configurations,
@@ -330,6 +330,16 @@ mpi-report
 
 callpath-sample-report
    Print time spent in functions using call-path sampling.
+
+cuda-activity-report
+   Record and print CUDA activities (kernel executions, memcopies, etc.)
+
+cuda-activity-profile
+   Record CUDA activities and a write profile file (json or .cali)
+
+openmp-report
+   Record and print OpenMP performance metrics (loops, barriers, etc.).
+   Requires OMPT support.
 
 event-trace
    Record a trace of region enter/exit events in .cali format.

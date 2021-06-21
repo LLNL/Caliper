@@ -40,8 +40,7 @@ WITH_ADIAK
 
 WITH_CUPTI
   Enable support for CUDA performance analysis (wrapping of driver/runtime API
-  calls and CUDA activity tracing). Set CUpti installation dir
-  with CUPTI_PREFIX.
+  calls and CUDA activity tracing).
 
 WITH_FORTRAN
   Build the Fortran wrappers.
@@ -69,6 +68,9 @@ WITH_MPI
 WITH_NVTX
   Build adapters to forward Caliper annotations to NVidia's nvtx annotation API.
   Set CUDA_TOOLKIT_ROOT_DIR to the CUDA installation.
+
+WITH_OMPT
+  Build with support for the OpenMP tools interface.
 
 WITH_PAPI
   Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.
