@@ -236,7 +236,7 @@ const char* builtin_option_specs =
     "     [ "
     "      \"t.omp.work=first(sum#time.duration,time.duration) if omp.work\","
     "      \"t.omp.sync=first(sum#time.duration,time.duration) if omp.sync\","
-    "      \"t.omp.total=first(sum#time.duration,time.duration)\""
+    "      \"t.omp.total=first(t.omp.work,t.omp.sync)\""
     "     ],"
     "     \"select\"  : "
     "     [ { \"expr\": \"sum(t.omp.work)\", \"as\": \"Time (work)\",    \"unit\": \"sec\" },"
