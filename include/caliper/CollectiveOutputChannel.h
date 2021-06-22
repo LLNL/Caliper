@@ -110,7 +110,7 @@ public:
 /// The example demonstrates how to collect and write \a runtime-report
 /// output into a user-provided file stream:
 /// \code
-/// #include <caliper/CollectiveOutputChannel>
+/// #include <caliper/CollectiveOutputChannel.h>
 ///
 /// #include <mpi.h>
 ///
@@ -122,7 +122,7 @@ public:
 /// {
 ///     MPI_Init(&argc, &argv);
 ///
-///     std::shared_ptr<CollectiveOutputChannel> channel;
+///     std::shared_ptr<cali::CollectiveOutputChannel> channel;
 ///     std::string errmsg;
 ///
 ///     std::tie(channel, errmsg) =
@@ -137,7 +137,7 @@ public:
 ///
 ///     CALI_MARK_BEGIN("work");
 ///     // ...
-///     CALI_MARK_END("work")
+///     CALI_MARK_END("work");
 ///
 ///     int rank = 0;
 ///     MPI_Comm_rank(MPI_COMM_WORLD, &rank);

@@ -50,6 +50,11 @@ using Caliper's built-in performance measurement configurations:
 
    CaliperBasics
 
+Guides
+-------------------------------
+
+This section lists how-to articles for various use cases.
+
 Reference documentation
 -------------------------------
 
