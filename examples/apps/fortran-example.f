@@ -1,11 +1,13 @@
 program fortran_example
     use caliper_mod
+    use iso_c_binding, ONLY : C_INT64_T
 
     implicit none
 
     type(ConfigManager)   :: mgr
 
     integer               :: i, count, argc
+    integer(C_INT64_T)    :: loop_attribute, iter_attribute
 
     logical               :: ret
     character(len=:), allocatable :: errmsg
@@ -33,11 +35,26 @@ program fortran_example
     ! A scope annotation. Start region 'main'
     call cali_begin_region('main')
 
-    ! Add another region 'inner' nested under 'main'
-    call cali_begin_region('inner')
     count = 4
-    ! End the inner region
-    call cali_end_region('inner')
+
+    !   Annotate a loop. We'll have to find Caliper's built-in "loop"
+    ! attribute first and create a loop iteration attribute, using the region
+    ! name ("mainloop") of our loop.
+
+    loop_attribute = cali_find_attribute('loop')
+    iter_attribute = cali_make_loop_iteration_attribute('mainloop')
+
+    call cali_begin_string(loop_attribute, 'mainloop')
+
+    do i = 1, count
+        call cali_begin_int(iter_attribute, i)
+
+        ! ...
+
+        call cali_end(iter_attribute)
+    end do
+
+    call cali_end(loop_attribute)
 
     ! End 'main'
     call cali_end_region('main')
