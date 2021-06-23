@@ -55,6 +55,11 @@ Guides
 
 This section lists how-to articles for various use cases.
 
+.. toctree::
+   :maxdepth: 1
+
+   OpenMP
+
 Reference documentation
 -------------------------------
 

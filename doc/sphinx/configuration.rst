@@ -110,9 +110,9 @@ These variables can only be set as environment variables.
    Set to "1" or "true" to activate the OpenMP tools interface in the OpenMP
    runtime. This is required for the ompt service. It is only necessary to set
    this if the OpenMP runtime is first initialized before the ompt service is
-   initialized, otherwise ompt will activate the OpenMP tools interface
-   automatically. When set to "0" or "false" Caliper will not use the
-   OpenMP tools interface. See :ref:`ompt <ompt-service>`
+   initialized, otherwise the `ompt` service will activate the OpenMP tools 
+   interface automatically. When set to "0" or "false" Caliper will not use 
+   the OpenMP tools interface. See :ref:`ompt <ompt-service>`
 
 Configuration variables
 ........................................
