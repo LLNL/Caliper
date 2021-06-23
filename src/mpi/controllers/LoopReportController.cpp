@@ -184,7 +184,7 @@ class LoopReportController : public cali::ChannelController
             " Block"
             ",max(sum#loop.iterations) as \"Iterations\""
             ",max(sum#time.duration) as \"Time (s)\""
-            ",avg(loop.iterations/time.duration) as \"Iter/s\"";
+            ",avg(ratio#loop.iterations/time.duration) as \"Iter/s\"";
 
         std::string query = m_opts.build_query("cross", {
                 { "select",   select  },
