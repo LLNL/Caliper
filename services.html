@@ -925,6 +925,13 @@ aggregation, and formatting options.</p>
 before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.</p>
+<p>There are two aggregation steps: the first step aggregates data
+locally on each MPI rank, the second step aggregates data across MPI
+ranks. Results from the first (local) step are the input for the second
+(cross-rank) aggregation step. Use <code class="docutils literal notranslate"><span class="pre">CALI_MPIREPORT_LOCAL_CONFIG</span></code> to define
+a local aggregation specification. If none is given, the specification given
+in <code class="docutils literal notranslate"><span class="pre">CALI_MPIREPORT_CONFIG</span></code> will be used for both the local and cross-rank
+aggregation.</p>
 <p>The <a class="reference internal" href="#mpi-service"><span class="std std-ref">mpi</span></a> service must be enabled for mpireport
 to work.</p>
 <dl>
@@ -936,10 +943,23 @@ service description).</p>
 <p>Default: stdout</p>
 </dd>
 <dt>CALI_MPIREPORT_CONFIG</dt><dd><p>An aggregation and formatting specification in CalQL syntax
-(<a class="reference internal" href="calql.html"><span class="doc">The CalQL query language</span></a>).</p>
+(<a class="reference internal" href="calql.html"><span class="doc">The CalQL query language</span></a>). Defines the cross-rank aggregation operation and
+output formatting.</p>
 <p>Default: empty; all attributes in the snapshots will be printed.</p>
 </dd>
+<dt>CALI_MPIREPORT_LOCAL_CONFIG</dt><dd><p>An aggregation specification in CalQL syntax for the first (local)
+aggregation step on each rank.</p>
+<p>Default: empty; use the cross-rank aggregation specification also for
+the local aggregation step.</p>
+</dd>
 </dl>
+<p>Example: Measure time in Caliper regions, compute inclusive times locally,
+then compute the average inclusive time per MPI rank:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_SERVICES_ENABLE</span><span class="o">=</span><span class="n">aggregate</span><span class="p">,</span><span class="n">event</span><span class="p">,</span><span class="n">mpi</span><span class="p">,</span><span class="n">mpireport</span><span class="p">,</span><span class="n">timestamp</span>
+<span class="n">CALI_MPIREPORT_LOCAL_CONFIG</span><span class="o">=</span><span class="s2">&quot;select inclusive_sum(sum#time.duration) group by prop:nested&quot;</span>
+<span class="n">CALI_MPIREPORT_CONFIG</span><span class="o">=</span><span class="s2">&quot;select avg(inclusive#sum#time.duration) as </span><span class="se">\&quot;</span><span class="s2">Time (Avg)</span><span class="se">\&quot;</span><span class="s2"> group by prop:nested format tree&quot;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="ompt">
 <span id="ompt-service"></span><h2>OMPT<a class="headerlink" href="#ompt" title="Permalink to this headline">¶</a></h2>

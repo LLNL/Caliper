@@ -134,6 +134,9 @@ with `Hatchet <https://github.com/LLNL/hatchet>`_. See
 :ref:`more-on-configurations` below to learn more about different
 configurations and their options.
 
+
+.. _notes_on_threading:
+
 Notes on multi-threading
 ................................
 
