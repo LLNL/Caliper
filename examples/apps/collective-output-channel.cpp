@@ -36,10 +36,13 @@ int main(int argc, char* argv[])
         MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
+    // Start channel
     channel->start();
 
     CALI_MARK_BEGIN("work");
-    // ...
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
     CALI_MARK_END("work");
 
     int rank = 0;
@@ -53,6 +56,8 @@ int main(int argc, char* argv[])
     //
     //   Gather and flush channel output into the given std::ostream on
     // MPI_COMM_WORLD. This is a collective operation on MPI_COMM_WORLD.
+    // Output will be written on rank 0 on the given communicator. 
+    // Other ranks ignore the stream argument.
 
     channel->collective_flush(os, MPI_COMM_WORLD);
 

@@ -923,6 +923,14 @@ before printing it. This happens on every Caliper flush event.
 Enabling the mpireport service will trigger a flush during
 MPI_Finalize.
 
+There are two aggregation steps: the first step aggregates data
+locally on each MPI rank, the second step aggregates data across MPI
+ranks. Results from the first (local) step are the input for the second
+(cross-rank) aggregation step. Use ``CALI_MPIREPORT_LOCAL_CONFIG`` to define
+a local aggregation specification. If none is given, the specification given
+in ``CALI_MPIREPORT_CONFIG`` will be used for both the local and cross-rank
+aggregation.
+
 The :ref:`mpi <mpi-service>` service must be enabled for mpireport
 to work.
 
@@ -938,9 +946,25 @@ CALI_MPIREPORT_FILENAME
 
 CALI_MPIREPORT_CONFIG
    An aggregation and formatting specification in CalQL syntax
-   (:doc:`calql`).
+   (:doc:`calql`). Defines the cross-rank aggregation operation and
+   output formatting.
 
    Default: empty; all attributes in the snapshots will be printed.
+
+CALI_MPIREPORT_LOCAL_CONFIG
+   An aggregation specification in CalQL syntax for the first (local)
+   aggregation step on each rank.
+
+   Default: empty; use the cross-rank aggregation specification also for
+   the local aggregation step.
+
+Example: Measure time in Caliper regions, compute inclusive times locally,
+then compute the average inclusive time per MPI rank::
+
+    CALI_SERVICES_ENABLE=aggregate,event,mpi,mpireport,timestamp
+    CALI_MPIREPORT_LOCAL_CONFIG="select inclusive_sum(sum#time.duration) group by prop:nested"
+    CALI_MPIREPORT_CONFIG="select avg(inclusive#sum#time.duration) as \"Time (Avg)\" group by prop:nested format tree"
+
 
 
 .. _ompt-service:
@@ -953,11 +977,11 @@ The OMPT service records OpenMP information using the OpenMP tools interface
 constructs (e.g., loops), and synchronization regions (e.g., barriers).
 
 To use the ompt service, the OpenMP tools interface must be activated in the
-OpenMP runtime. The ompt service activates the tools interface automatically 
-if a Caliper channel with the ompt service enabled is created before the 
-OpenMP runtime system is first initialized. If an ompt service instance is 
-only created after the OpenMP runtime system has been initialized, you may 
-have to activate manually OMPT by setting the :envvar:`CALI_USE_OMPT` 
+OpenMP runtime. The ompt service activates the tools interface automatically
+if a Caliper channel with the ompt service enabled is created before the
+OpenMP runtime system is first initialized. If an ompt service instance is
+only created after the OpenMP runtime system has been initialized, you may
+have to activate manually OMPT by setting the :envvar:`CALI_USE_OMPT`
 environment variable to "1" or "true".
 
 The ompt service provides the following attributes:
