@@ -3,16 +3,35 @@
 #include "caliper/cali.h"
 #include "types.hpp"
 #include <cstdint>
+#include <impl/Kokkos_Profiling_Interface.hpp>
 cali::kokkos::callbacks kokkosp_callbacks;
 using cali::kokkos::SpaceHandle;
 namespace kokkos {
     cali::ConfigManager mgr;
+    bool can_control_fences = false;
+    Kokkos::Tools::Experimental::ToolProgrammingInterface kokkos_interface;
+    template<typename Container>
+    void fence_if_subscribed(const Container& in, uint32_t dev_id){
+      if(can_control_fences && !in.empty()){
+        kokkos_interface.fence(dev_id);
+      }
+    }
 }
 extern "C" void kokkosp_print_help(char* progName){
   std::cerr << "Caliper: available configs: \n";
   for(auto conf: kokkos::mgr.available_config_specs() ) {
     std::cerr << kokkos::mgr.get_documentation_for_spec(conf.c_str()) << std::endl;
   }
+}
+extern "C" void kokkosp_request_tool_settings(int num_actions, Kokkos::Tools::Experimental::ToolSettings* settings){ 
+  if((num_actions > 0) && (settings!=nullptr)){
+    settings->requires_global_fencing = false;
+  }
+}
+
+extern "C" void kokkosp_provide_tool_programming_interface(int num_actions, Kokkos::Tools::Experimental::ToolProgrammingInterface interface){
+  kokkos::can_control_fences = true;
+  kokkos::kokkos_interface = interface; 
 }
 extern "C" void kokkosp_parse_args(int argc, char *argv_raw[]) {
   if (argc > 2) {
@@ -46,17 +65,23 @@ extern "C" void kokkosp_finalize_library() {
 extern "C" void kokkosp_begin_parallel_for(const char *name,
                                            const uint32_t devID,
                                            uint64_t *kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_begin_parallel_for_callback, devID); 
   kokkosp_callbacks.kokkosp_begin_parallel_for_callback(name, devID, kID);
+  *kID = devID;
 }
 extern "C" void kokkosp_begin_parallel_reduce(const char *name,
                                               const uint32_t devID,
                                               uint64_t *kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_begin_parallel_reduce_callback, devID); 
   kokkosp_callbacks.kokkosp_begin_parallel_reduce_callback(name, devID, kID);
+  *kID = devID;
 }
 extern "C" void kokkosp_begin_parallel_scan(const char *name,
                                             const uint32_t devID,
                                             uint64_t *kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_begin_parallel_scan_callback, devID); 
   kokkosp_callbacks.kokkosp_begin_parallel_scan_callback(name, devID, kID);
+  *kID = devID;
 }
 extern "C" void kokkosp_begin_fence(const char *name, const uint32_t devID,
                                     uint64_t *kID) {
@@ -64,12 +89,15 @@ extern "C" void kokkosp_begin_fence(const char *name, const uint32_t devID,
 }
 
 extern "C" void kokkosp_end_parallel_for(const uint64_t kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_end_parallel_for_callback, kID); 
   kokkosp_callbacks.kokkosp_end_parallel_for_callback(kID);
 }
 extern "C" void kokkosp_end_parallel_reduce(const uint64_t kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_end_parallel_reduce_callback, kID); 
   kokkosp_callbacks.kokkosp_end_parallel_reduce_callback(kID);
 }
 extern "C" void kokkosp_end_parallel_scan(const uint64_t kID) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_end_parallel_scan_callback, kID); 
   kokkosp_callbacks.kokkosp_end_parallel_scan_callback(kID);
 }
 extern "C" void kokkosp_end_fence(const uint64_t kID) {
@@ -77,9 +105,11 @@ extern "C" void kokkosp_end_fence(const uint64_t kID) {
 }
 
 extern "C" void kokkosp_push_profile_region(char *regionName) {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_push_region_callback, 0); 
   kokkosp_callbacks.kokkosp_push_region_callback(regionName);
 }
 extern "C" void kokkosp_pop_profile_region() {
+  kokkos::fence_if_subscribed(kokkosp_callbacks.kokkosp_pop_region_callback, 0); 
   kokkosp_callbacks.kokkosp_pop_region_callback();
 }
 extern "C" void kokkosp_allocate_data(const SpaceHandle space,

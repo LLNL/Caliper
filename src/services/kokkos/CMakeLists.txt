@@ -1,3 +1,4 @@
+include_directories(include)
 set(CALIPER_KOKKOS_SOURCES
   KokkosProfilingSymbols.cpp
   KokkosLookup.cpp
