@@ -89,6 +89,10 @@ add_caliper_option(BUILD_DOCS     "Build Caliper documentation" FALSE)
 
 add_caliper_option(RUN_MPI_TESTS  "Run MPI tests (only applicable with BUILD_TESTING=On)" TRUE)
 
+# allow disabling cmake/pkg-config files and headers for when caliper is a subproject
+add_caliper_option(INSTALL_CONFIG  "Install cmake and pkg-config files" TRUE)
+add_caliper_option(INSTALL_HEADERS "Install caliper headers" TRUE)
+
 ## Find Shroud
 ## Doesn't work for me :-/ Generating wrapper manually.
 # if (EXISTS ${SHROUD_EXECUTABLE})
@@ -430,49 +434,53 @@ configure_file(
 include_directories(${PROJECT_BINARY_DIR}/include)
 include_directories(include)
 
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN "*.h")
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN "*.hpp")
+if(INSTALL_HEADERS)
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h")
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.hpp")
 
-install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
+  install(FILES ${PROJECT_BINARY_DIR}/include/caliper/caliper-config.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper)
 
-install(
-  DIRECTORY   src/interface/c_fortran/
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper
-  FILES_MATCHING PATTERN "*.h")
-
-if (WITH_FORTRAN)
   install(
-    DIRECTORY   ${CMAKE_Fortran_MODULE_DIRECTORY}/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran
-    FILES_MATCHING PATTERN "*.mod")
+    DIRECTORY   src/interface/c_fortran/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper
+    FILES_MATCHING PATTERN "*.h")
+
+  if (WITH_FORTRAN)
+    install(
+      DIRECTORY   ${CMAKE_Fortran_MODULE_DIRECTORY}/
+      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/caliper/fortran
+      FILES_MATCHING PATTERN "*.mod")
+  endif()
 endif()
 
-# Create pkg-config .pc file
-set(PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
-set(PKG_CONFIG_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
-set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
-set(PKG_CONFIG_CFLAGS "-I\${includedir}")
+if(INSTALL_CONFIG)
+  # Create pkg-config .pc file
+  set(PKG_CONFIG_INCLUDEDIR "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+  set(PKG_CONFIG_LIBDIR "${CMAKE_INSTALL_FULL_LIBDIR}")
+  set(PKG_CONFIG_LIBS "-L\${libdir} -lcaliper")
+  set(PKG_CONFIG_CFLAGS "-I\${includedir}")
 
-configure_file(
-  ${PROJECT_SOURCE_DIR}/caliper.pc.in
-  ${PROJECT_BINARY_DIR}/caliper.pc)
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/caliper.pc.in
+    ${PROJECT_BINARY_DIR}/caliper.pc)
 
-# Make caliper findable for cmake
-configure_file(
-  ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
-  ${PROJECT_BINARY_DIR}/caliper-config.cmake
-  @ONLY)
+  # Make caliper findable for cmake
+  configure_file(
+    ${PROJECT_SOURCE_DIR}/caliper-config.cmake.in
+    ${PROJECT_BINARY_DIR}/caliper-config.cmake
+    @ONLY)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
-install(EXPORT caliper
-  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
+  install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
+  install(EXPORT caliper
+    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 
-install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+endif()
 
 add_subdirectory(ext)
 add_subdirectory(src)
