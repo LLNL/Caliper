@@ -114,6 +114,19 @@ class Attribute:
         prop = self.node.get(self.prop_attribute_id)
         return (int(prop) & self.CALI_ATTR_ASVALUE) != 0
 
+    def metadata(self):
+        """ Return a dict with all metadata entries for this attribute
+        """
+
+        result = {}
+        node = self.node
+
+        while node is not None:
+            result[node.attribute().name()] = node.data
+            node = node.parent
+
+        return result
+
 
 class MetadataDB:
     """ The Caliper metadata tree """

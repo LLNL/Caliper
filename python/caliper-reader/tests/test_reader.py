@@ -34,6 +34,9 @@ class CaliperReaderBasic(unittest.TestCase):
         self.assertEqual(r.attribute('function').attribute_type(), 'string')
         self.assertEqual(r.attribute('figure_of_merit').get('adiak.type'), 'double')
 
+        meta = r.attribute('figure_of_merit').metadata()
+        self.assertEqual(meta['adiak.type'], 'double')
+
         self.assertIsNotNone(r.attribute('avg#inclusive#sum#time.duration').get('attribute.unit'))
         self.assertIsNone(r.attribute('function').get('attribute.unit'))
         self.assertIsNone(r.attribute('function').get('DOES NOT EXIST'))
