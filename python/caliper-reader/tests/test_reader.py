@@ -28,16 +28,23 @@ class CaliperReaderBasic(unittest.TestCase):
         self.assertTrue( r.attribute('function').is_nested())
         self.assertFalse(r.attribute('function').is_value() )
 
-        self.assertFalse(r.attribute('avg#inclusive#sum#time.duration').is_nested())
-        self.assertTrue( r.attribute('avg#inclusive#sum#time.duration').is_value() )
+        attr = r.attribute("avg#inclusive#sum#time.duration")
+
+        self.assertFalse(attr.is_nested())
+        self.assertFalse(attr.is_global())
+        self.assertTrue( attr.is_value() )
+
+        self.assertIsNotNone(attr.get('attribute.unit'))
 
         self.assertEqual(r.attribute('function').attribute_type(), 'string')
         self.assertEqual(r.attribute('figure_of_merit').get('adiak.type'), 'double')
 
         meta = r.attribute('figure_of_merit').metadata()
-        self.assertEqual(meta['adiak.type'], 'double')
 
-        self.assertIsNotNone(r.attribute('avg#inclusive#sum#time.duration').get('attribute.unit'))
+        self.assertEqual( meta['adiak.type'], 'double' )
+        self.assertEqual( meta['is_value'  ], False    )
+        self.assertEqual( meta['is_global' ], True     )
+
         self.assertIsNone(r.attribute('function').get('attribute.unit'))
         self.assertIsNone(r.attribute('function').get('DOES NOT EXIST'))
 
