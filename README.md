@@ -1,6 +1,7 @@
 Caliper: A Performance Analysis Toolbox in a Library
 ==========================================
 
+[![Github Actions](https://github.com/LLNL/Caliper/.github/workflows/cmake.yml/badge.svg)](https://github.com/LLNL/Caliper/actions)
 [![Build Status](https://travis-ci.org/LLNL/Caliper.svg)](https://travis-ci.org/LLNL/Caliper)
 [![Coverage](https://img.shields.io/codecov/c/github/LLNL/Caliper/master.svg)](https://codecov.io/gh/LLNL/Caliper)
 
