@@ -82,6 +82,7 @@ aspects in detail:
    calql
    OutputFormats
    tools
+   pythonreader
    DeveloperGuide
 
 Materials
