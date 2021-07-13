@@ -50,7 +50,7 @@ class CaliperStreamReader:
 
 
     def attributes(self):
-        """ Return the attribute keys.
+        """ Return the list of attribute names.
 
         A file must have been read with read().
 
