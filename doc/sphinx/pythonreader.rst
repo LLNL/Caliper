@@ -1,6 +1,14 @@
 Python reader API
 ===============================================
 
+The caliper-reader is a Python API for reading Caliper's .cali file 
+format. You can install it via pip::
+
+    $ pip install caliper-reader
+
+or add the ``python/caliper-reader`` directory in the cloned Caliper
+repository to ``PYTHONPATH``.
+
 Usage
 ---------------------------------------
 
