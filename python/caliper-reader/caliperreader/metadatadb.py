@@ -63,6 +63,7 @@ class Attribute:
 
     CALI_ATTR_ASVALUE =   1
     CALI_ATTR_NESTED  = 256
+    CALI_ATTR_GLOBAL  = 512
 
     def __init__(self, node):
         self.node = node
@@ -113,6 +114,33 @@ class Attribute:
 
         prop = self.node.get(self.prop_attribute_id)
         return (int(prop) & self.CALI_ATTR_ASVALUE) != 0
+
+    def is_global(self):
+        """ Is this a global attribute (run metadata)?
+
+        Attributes with the "global" property describe run metadata
+        like the execution environment or program configuration.
+        """
+
+        prop = self.node.get(self.prop_attribute_id)
+        return (int(prop) & self.CALI_ATTR_GLOBAL) != 0
+
+    def metadata(self):
+        """ Return a dict with all metadata entries for this attribute
+        """
+
+        node = self.node
+        result = {
+            "is_global" : self.is_global() ,
+            "is_value"  : self.is_value()  ,
+            "is_nested" : self.is_nested()
+        }
+
+        while node is not None:
+            result[node.attribute().name()] = node.data
+            node = node.parent
+
+        return result
 
 
 class MetadataDB:

@@ -21,6 +21,8 @@ import shlex
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
+sys.path.insert(0, os.path.abspath('@CMAKE_SOURCE_DIR@/python/caliper-reader'))
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -30,7 +32,7 @@ import shlex
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'breathe',
+    'breathe', 'sphinx.ext.autodoc'
 ]
 
 # Import doxygen docs in sphinx
@@ -56,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Caliper'
-copyright = u'2015-2016, Lawrence Livermore National Laboratory'
+copyright = u'2015-2021, Lawrence Livermore National Laboratory'
 author = u'David Boehme'
 
 # The version info for the project you're documenting, acts as replacement for
