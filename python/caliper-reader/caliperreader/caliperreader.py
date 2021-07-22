@@ -54,11 +54,12 @@ class CaliperReader:
         """ Return the list of attribute names.
 
         A file must have been read with read().
+        Only returns attribute keys not marked as hidden.
 
         Returns:
             The attribute keys (list of strings).
         """
-        return self.db.attributes.keys()
+        return [ k for k, v in self.db.attributes.items() if not v.is_hidden() ]
 
 
     def attribute(self, attribute_name):

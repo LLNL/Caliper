@@ -33,20 +33,32 @@ class CaliperReaderBasic(unittest.TestCase):
         self.assertFalse(attr.is_nested())
         self.assertFalse(attr.is_global())
         self.assertTrue( attr.is_value() )
+        self.assertFalse(attr.is_hidden())
 
         self.assertIsNotNone(attr.get('attribute.unit'))
 
         self.assertEqual(r.attribute('function').attribute_type(), 'string')
         self.assertEqual(r.attribute('figure_of_merit').get('adiak.type'), 'double')
 
+        self.assertTrue(r.attribute('avg.sum#inclusive#sum#time.duration').is_hidden())
+
         meta = r.attribute('figure_of_merit').metadata()
 
         self.assertEqual( meta['adiak.type'], 'double' )
         self.assertEqual( meta['is_value'  ], False    )
         self.assertEqual( meta['is_global' ], True     )
+        self.assertEqual( meta['type'      ], 'double' )
 
         self.assertIsNone(r.attribute('function').get('attribute.unit'))
         self.assertIsNone(r.attribute('function').get('DOES NOT EXIST'))
+        self.assertEqual (r.attribute('function').scope(), 'process')
+
+        attributes = r.attributes()
+
+        self.assertIn('function', attributes)
+        self.assertIn('avg#inclusive#sum#time.duration', attributes)
+        self.assertIn('figure_of_merit', attributes)
+        self.assertNotIn('avg.sum#inclusive#sum#time.duration', attributes)
 
     def test_read_contents(self):
         records, globals = cr.read_caliper_contents('example-profile.cali')
@@ -61,6 +73,8 @@ class CaliperReaderBasic(unittest.TestCase):
         self.assertIn('path',     records[7])
         self.assertIn('function', records[8])
         self.assertIn('avg#inclusive#sum#time.duration', records[9])
+        # don't add hidden attributes
+        self.assertNotIn('avg.sum#inclusive#sum#time.duration', records[9])
 
     def test_read_globals(self):
         globals = cr.read_caliper_globals('example-profile.cali')

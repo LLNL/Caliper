@@ -110,7 +110,9 @@ class CaliperStreamReader:
 
         if 'attr' in record and 'data' in record:
             for attr_id, val in zip(record['attr'], record['data']):
-                result[self.db.nodes[int(attr_id)].data] = val
+                attr = Attribute(self.db.nodes[int(attr_id)])
+                if not attr.is_hidden():
+                    result[attr.name()] = val
 
         return result
 
@@ -127,9 +129,10 @@ class CaliperStreamReader:
         while node is not None:
             attr = node.attribute()
 
-            add(result, attr.name(), node.data)
-            if attr.is_nested():
-                add(result, 'path', node.data)
+            if not attr.is_hidden():
+                add(result, attr.name(), node.data)
+                if attr.is_nested():
+                    add(result, 'path', node.data)
 
             node = node.parent
 

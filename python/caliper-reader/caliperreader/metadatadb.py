@@ -62,11 +62,21 @@ class Attribute:
     prop_attribute_id =  10
 
     CALI_ATTR_ASVALUE =   1
+    CALI_ATTR_HIDDEN  = 128
     CALI_ATTR_NESTED  = 256
     CALI_ATTR_GLOBAL  = 512
 
+    SCOPE_PROCESS     =  12
+    SCOPE_THREAD      =  20
+    SCOPE_TASK        =  24
+
+    SCOPE_MASK        =  60
+
     def __init__(self, node):
+        prop = node.get(self.prop_attribute_id)
+
         self.node = node
+        self.prop = int(prop) if prop is not None else 0
 
     def name(self):
         """ Return the name of the Caliper attribute. """
@@ -102,8 +112,7 @@ class Attribute:
         begin/end annotations.
         """
 
-        prop = self.node.get(self.prop_attribute_id)
-        return (int(prop) & self.CALI_ATTR_NESTED) != 0
+        return (self.prop & self.CALI_ATTR_NESTED) != 0
 
     def is_value(self):
         """ Does this attribute have the "as_value" property?
@@ -112,8 +121,7 @@ class Attribute:
         snapshot records.
         """
 
-        prop = self.node.get(self.prop_attribute_id)
-        return (int(prop) & self.CALI_ATTR_ASVALUE) != 0
+        return (self.prop & self.CALI_ATTR_ASVALUE) != 0
 
     def is_global(self):
         """ Is this a global attribute (run metadata)?
@@ -122,8 +130,25 @@ class Attribute:
         like the execution environment or program configuration.
         """
 
-        prop = self.node.get(self.prop_attribute_id)
-        return (int(prop) & self.CALI_ATTR_GLOBAL) != 0
+        return (self.prop & self.CALI_ATTR_GLOBAL) != 0
+
+    def is_hidden(self):
+        """ Is this a hidden attribute?
+        """
+
+        return (self.prop & self.CALI_ATTR_HIDDEN) != 0
+
+    def scope(self):
+        """ Returns the attribute's scope ("process", "thread", or "task")
+        """
+
+        scopemap = {
+            self.SCOPE_THREAD  : "thread"  ,
+            self.SCOPE_PROCESS : "process" ,
+            self.SCOPE_TASK    : "task"
+        }
+
+        return scopemap.get(self.prop & self.SCOPE_MASK, "UNKNOWN")
 
     def metadata(self):
         """ Return a dict with all metadata entries for this attribute
@@ -133,7 +158,8 @@ class Attribute:
         result = {
             "is_global" : self.is_global() ,
             "is_value"  : self.is_value()  ,
-            "is_nested" : self.is_nested()
+            "is_nested" : self.is_nested() ,
+            "type"      : self.attribute_type()
         }
 
         while node is not None:
