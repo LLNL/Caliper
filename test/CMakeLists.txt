@@ -18,7 +18,7 @@ endforeach()
 
 if (CALIPER_HAVE_ADIAK)
   target_include_directories(cali-annotation-perftest PRIVATE ${adiak_INCLUDE_DIRS})
-  target_link_libraries(cali-annotation-perftest adiak::adiak)
+  target_link_libraries(cali-annotation-perftest ${adiak_LIBRARIES})
 endif()
 
 set(CALIPER_TEST_OMP_APPS
