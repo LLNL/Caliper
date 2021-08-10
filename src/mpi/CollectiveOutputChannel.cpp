@@ -43,55 +43,67 @@ std::string remove_from_stringlist(const std::string& in, const std::string& ele
     return ret;
 }
 
-}
-
-
-struct CollectiveOutputChannel::CollectiveOutputChannelImpl
+class BasicCollectiveOutputChannel : public cali::CollectiveOutputChannel
 {
-    std::string local_query;
-    std::string cross_query;
+    std::string m_local_query;
+    std::string m_cross_query;
+
+public:
+
+    /// \brief Create channel controller with given queries, name, flags,
+    ///   and config.
+    BasicCollectiveOutputChannel(const std::string& local_query,
+                                 const std::string& cross_query,
+                                 const char* name,
+                                 int flags,
+                                 const config_map_t& cfg)
+        : cali::CollectiveOutputChannel(name, flags, cfg),
+          m_local_query(local_query),
+          m_cross_query(cross_query)
+    { }
+
+    void collective_flush(OutputStream& stream, MPI_Comm comm) override {
+        Channel* chn = channel();
+
+        if (!chn)
+            return;
+
+        QuerySpec cross_spec;
+        QuerySpec local_spec;
+
+        {
+            CalQLParser p(m_cross_query.c_str());
+
+            if (p.error()) {
+                Log(0).stream() << "CollectiveOutputChannel: cross query parse error: "
+                                << p.error_msg()
+                                << std::endl;
+                return;
+            } else {
+                cross_spec = p.spec();
+            }
+        }
+
+        {
+            CalQLParser p(m_local_query.c_str());
+
+            if (p.error()) {
+                Log(0).stream() << "CollectiveOutputChannel: local query parse error: "
+                                << p.error_msg()
+                                << std::endl;
+                return;
+            } else {
+                local_spec = p.spec();
+            }
+        }
+
+        Caliper c;
+        cali::collective_flush(stream, c, *chn, nullptr, local_spec, cross_spec, comm);
+    }
 };
 
-
-void CollectiveOutputChannel::collective_flush(OutputStream& stream, MPI_Comm comm)
-{
-    Channel* chn = channel();
-
-    if (!chn || !mP)
-        return;
-
-    QuerySpec cross_spec;
-    QuerySpec local_spec;
-
-    {
-        CalQLParser p(mP->cross_query.c_str());
-
-        if (p.error()) {
-            Log(0).stream() << "CollectiveOutputChannel: cross query parse error: "
-                            << p.error_msg()
-                            << std::endl;
-            return;
-        } else {
-            cross_spec = p.spec();
-        }
-    }
-
-    {
-        CalQLParser p(mP->local_query.c_str());
-
-        if (p.error()) {
-            Log(0).stream() << "CollectiveOutputChannel: local query parse error: "
-                            << p.error_msg()
-                            << std::endl;
-            return;
-        } else {
-            local_spec = p.spec();
-        }
-    }
-
-    Caliper c;
-    cali::collective_flush(stream, c, *chn, nullptr, local_spec, cross_spec, comm);
 }
+
 
 std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Comm comm)
 {
@@ -99,6 +111,21 @@ std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Co
     stream.set_stream(&os);
     collective_flush(stream, comm);
     return os;
+}
+
+void CollectiveOutputChannel::collective_flush(MPI_Comm comm)
+{
+    OutputStream stream;
+
+    auto it = config().find("CALI_MPIREPORT_FILENAME");
+    if (it == config().end()) {
+        stream.set_stream(OutputStream::StdOut);
+    } else {
+        Caliper c;
+        stream.set_filename(it->second.c_str(), c, c.get_globals());
+    }
+
+    collective_flush(stream, comm);
 }
 
 void CollectiveOutputChannel::flush()
@@ -116,7 +143,7 @@ void CollectiveOutputChannel::flush()
     if (initialized)
         MPI_Comm_dup(MPI_COMM_WORLD, &comm);
 
-    collective_flush(std::cout, comm);
+    collective_flush(comm);
 
     if (comm != MPI_COMM_NULL)
         MPI_Comm_free(&comm);
@@ -125,6 +152,18 @@ void CollectiveOutputChannel::flush()
 std::shared_ptr<CollectiveOutputChannel>
 CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
 {
+    // if from is already a CollectiveOutputChannel, just return it
+
+    {
+        auto ret = std::dynamic_pointer_cast<CollectiveOutputChannel>(from);
+
+        if (ret)
+            return ret;
+    }
+
+    //   if from uses mpireport, make a BasicCollectiveOutputChannel from
+    // its config
+
     config_map_t cfg(from->copy_config());
 
     cfg["CALI_SERVICES_ENABLE"] = ::remove_from_stringlist(cfg["CALI_SERVICES_ENABLE"], "mpireport");
@@ -139,25 +178,12 @@ CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
 
     std::string name = from->name() + ".output";
 
-    return std::make_shared<CollectiveOutputChannel>(local_query.c_str(), cross_query.c_str(), name.c_str(), 0, cfg);
+    return std::make_shared<BasicCollectiveOutputChannel>(local_query, cross_query, name.c_str(), 0, cfg);
 }
 
 CollectiveOutputChannel::CollectiveOutputChannel(const char* name, int flags, const config_map_t& cfg)
-    : ChannelController(name, flags, cfg),
-      mP(nullptr)
+    : ChannelController(name, flags, cfg)
 { }
-
-CollectiveOutputChannel::CollectiveOutputChannel(const char* local_query,
-                                                 const char* cross_query,
-                                                 const char* name,
-                                                 int flags,
-                                                 const config_map_t& cfg)
-    : ChannelController(name, flags, cfg),
-      mP(new CollectiveOutputChannelImpl)
-{
-    mP->cross_query = cross_query;
-    mP->local_query = local_query;
-}
 
 CollectiveOutputChannel::~CollectiveOutputChannel()
 { }

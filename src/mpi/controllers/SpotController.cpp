@@ -4,7 +4,7 @@
 #include "caliper/caliper-config.h"
 
 #include <caliper/Caliper.h>
-#include <caliper/ChannelController.h>
+#include <caliper/CollectiveOutputChannel.h>
 #include <caliper/ConfigManager.h>
 
 #include <caliper/reader/Aggregator.h>
@@ -25,10 +25,8 @@
 #include <algorithm>
 #include <ctime>
 
-#ifdef CALIPER_HAVE_MPI
 #include "caliper/cali-mpi.h"
 #include <mpi.h>
-#endif
 
 using namespace cali;
 
@@ -277,15 +275,13 @@ ConfigManager::ConfigInfo spot_timeseries_info { spot_timeseries_spec, make_time
 // Spot main
 //
 
-class SpotController : public cali::ChannelController
+class SpotController : public cali::CollectiveOutputChannel
 {
     ConfigManager::Options m_opts;
 
-    bool     m_use_mpi;
-    int      m_rank;
-#ifdef CALIPER_HAVE_MPI
-    MPI_Comm m_comm;
-#endif
+    bool              m_use_mpi;
+    int               m_rank;
+    MPI_Comm          m_comm;
 
     std::string       m_spot_metrics;
     std::string       m_spot_timeseries_metrics;
@@ -295,41 +291,19 @@ class SpotController : public cali::ChannelController
     CaliperMetadataDB m_db;
     Attribute         m_channel_attr;
 
-    void init_mpi() {
-#ifdef CALIPER_HAVE_MPI
-        int initialized = 0;
-        int finalized = 0;
-
-        MPI_Initialized(&initialized);
-        MPI_Finalized(&finalized);
-
-        if (finalized) {
-            Log(0).stream() << "[spot controller]: MPI is already finalized. Cannot aggregate output."
-                            << std::endl;
-        }
-
-        if (!initialized || finalized)
+    void init_mpi(MPI_Comm comm) {
+        if (comm == MPI_COMM_NULL)
             m_use_mpi = false;
 
         if (m_use_mpi) {
-            MPI_Comm_dup(MPI_COMM_WORLD, &m_comm);
+            m_comm = comm;
             MPI_Comm_rank(m_comm, &m_rank);
         }
-#endif
-    }
-
-    void finalize_mpi() {
-#ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi)
-            MPI_Comm_free(&m_comm);
-#endif
     }
 
     void cross_aggregate(Aggregator& agg) {
-#ifdef CALIPER_HAVE_MPI
         if (m_use_mpi)
             aggregate_over_mpi(m_db, agg, m_comm);
-#endif
     }
 
     void process_timeseries(SpotTimeseriesController* tsc, Caliper& c, CaliWriter& writer, const LoopInfo& info) {
@@ -529,30 +503,15 @@ class SpotController : public cali::ChannelController
         m_timeseries_mgr.start();
     }
 
-
 public:
 
     void
-    flush() {
+    collective_flush(OutputStream& stream, MPI_Comm comm) override {
         Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
 
+        init_mpi(comm);
+
         Caliper c;
-        OutputStream stream;
-
-        if (m_rank == 0) {
-            std::string outdir = m_opts.get("outdir", "").to_string();
-            std::string output = m_opts.get("output", "").to_string();
-
-            if (output.empty())
-                output = ::make_filename();
-            if (!outdir.empty() && output != "stderr" && output != "stdout")
-                output = outdir + std::string("/") + output;
-
-            stream.set_filename(output.c_str(), c, c.get_globals());
-        }
-
-        init_mpi();
-
         CaliWriter writer(stream);
 
         flush_regionprofile(c, writer);
@@ -569,15 +528,31 @@ public:
                             << writer.num_written() << " records."
                             << std::endl;
         }
+    }
 
-        finalize_mpi();
+    void
+    collective_flush(MPI_Comm comm) override {
+        std::string outdir = m_opts.get("outdir", "").to_string();
+        std::string output = m_opts.get("output", "").to_string();
+
+        if (output.empty())
+            output = ::make_filename();
+        if (!outdir.empty() && output != "stderr" && output != "stdout")
+            output = outdir + std::string("/") + output;
+
+        Caliper c;
+        OutputStream stream;
+        stream.set_filename(output.c_str(), c, c.get_globals());
+
+        collective_flush(stream, comm);
     }
 
     SpotController(bool use_mpi, const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : ChannelController(name, 0, initial_cfg),
+        : CollectiveOutputChannel(name, 0, initial_cfg),
           m_opts(opts),
           m_use_mpi(use_mpi),
-          m_rank(0)
+          m_rank(0),
+          m_comm(MPI_COMM_NULL)
         {
             m_channel_attr =
                 m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);

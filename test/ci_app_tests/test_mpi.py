@@ -213,5 +213,45 @@ class CaliperMPITest(unittest.TestCase):
             else:
                 self.fail('%s not found in log' % target)
 
+    def test_collective_output_channel_with_default_stream(self):
+        target_cmd = [ './ci_test_collective_output_channel', 'mpi-report,output=stdout', 'channel_defined_stream' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        log_targets = [
+            'Function',
+            'MPI_Barrier'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
+    def test_collective_output_channel_spot(self):
+        target_cmd = [ './ci_test_collective_output_channel', 'spot' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'spot.channel'      : 'regionprofile'
+            }))
+
 if __name__ == "__main__":
     unittest.main()
