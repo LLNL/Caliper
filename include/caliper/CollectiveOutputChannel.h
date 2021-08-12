@@ -25,8 +25,8 @@ class OutputStream;
 /// \brief A ChannelController for %Caliper configurations that aggregate
 ///   output over MPI.
 ///
-/// A CollectiveOutputChannel provides the collective_flush() interface to 
-/// produce output in an MPI program via a user-provided MPI 
+/// A CollectiveOutputChannel provides the collective_flush() interface to
+/// produce output in an MPI program via a user-provided MPI
 /// communicator and/or C++ I/O stream.
 ///
 /// \sa make_collective_output_channel()

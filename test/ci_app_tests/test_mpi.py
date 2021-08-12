@@ -253,5 +253,45 @@ class CaliperMPITest(unittest.TestCase):
                          'spot.channel'      : 'regionprofile'
             }))
 
+    def test_mpi_channel_manager(self):
+        target_cmd = [ './ci_test_mpi_channel_manager', 'mpi-report' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        log_targets = [
+            'Function',
+            'MPI_Barrier'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
+    def test_mpi_channel_manager_trace(self):
+        target_cmd = [ './ci_test_mpi_channel_manager', 'event-trace,trace.mpi,output=stdout' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'mpi.function'      : 'MPI_Barrier'
+            }))
+
 if __name__ == "__main__":
     unittest.main()

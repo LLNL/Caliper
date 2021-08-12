@@ -4,6 +4,7 @@ set(CALIPER_MPI_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CALIPER_MPI_SOURCES
   CollectiveOutputChannel.cpp
+  MpiChannelManager.cpp
   aggregate_over_mpi.cpp
   collective_flush.cpp
   mpi_flush.cpp

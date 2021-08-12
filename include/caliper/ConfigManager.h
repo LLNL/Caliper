@@ -428,7 +428,7 @@ public:
     /// \return An STL container with C++ shared_ptr objects to the
     /// ChannelController instances created from the configuration strings.
     ChannelList
-    get_all_channels();
+    get_all_channels() const;
 
     /// \brief Return a channel controller instance for configuration \a name
     ///
@@ -436,7 +436,7 @@ public:
     /// with the given \a name, or an empty shared_ptr object when no such
     /// channel exists.
     ChannelPtr
-    get_channel(const char* name);
+    get_channel(const char* name) const;
 
     /// \brief Start all configured measurement channels, or re-start
     ///   paused ones

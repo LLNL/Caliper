@@ -167,6 +167,8 @@ CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
     config_map_t cfg(from->copy_config());
 
     cfg["CALI_SERVICES_ENABLE"] = ::remove_from_stringlist(cfg["CALI_SERVICES_ENABLE"], "mpireport");
+    cfg["CALI_CHANNEL_CONFIG_CHECK" ] = "false";
+    cfg["CALI_CHANNEL_FLUSH_AT_EXIT"] = "false";
 
     std::string cross_query = cfg["CALI_MPIREPORT_CONFIG"];
     std::string local_query = cfg["CALI_MPIREPORT_LOCAL_CONFIG"];
