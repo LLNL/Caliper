@@ -11,6 +11,7 @@
 
 #include <adiak_tool.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <memory>
@@ -123,7 +124,7 @@ set_val(Channel* channel, const char* name, const Variant& val, adiak_datatype_t
     Caliper c;
     Variant v_metavals[3];
 
-    std::shared_ptr<char> typestr(adiak_type_to_string(type, 1), free);
+    std::shared_ptr<char> typestr(adiak_type_to_string(type, 1), std::free);
     v_metavals[0] = Variant(typestr.get());
     v_metavals[1] = Variant(static_cast<int>(category));
 

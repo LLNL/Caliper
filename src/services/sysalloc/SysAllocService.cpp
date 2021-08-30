@@ -12,6 +12,7 @@
 #include <gotcha/gotcha.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <vector>
 
 #include <errno.h>
@@ -51,8 +52,8 @@ ChannelList* sysalloc_channels = nullptr;
 
 void* cali_malloc_wrapper(size_t size)
 {
-    decltype(&malloc) orig_malloc =
-        reinterpret_cast<decltype(&malloc)>(gotcha_get_wrappee(orig_malloc_handle));
+    decltype(&std::malloc) orig_malloc =
+        reinterpret_cast<decltype(&std::malloc)>(gotcha_get_wrappee(orig_malloc_handle));
 
     void *ret = (*orig_malloc)(size);
 
@@ -72,8 +73,8 @@ void* cali_malloc_wrapper(size_t size)
 
 void* cali_calloc_wrapper(size_t num, size_t size)
 {
-    decltype(&calloc) orig_calloc =
-        reinterpret_cast<decltype(&calloc)>(gotcha_get_wrappee(orig_calloc_handle));
+    decltype(&std::calloc) orig_calloc =
+        reinterpret_cast<decltype(&std::calloc)>(gotcha_get_wrappee(orig_calloc_handle));
 
     void *ret = (*orig_calloc)(num, size);
 
@@ -93,8 +94,8 @@ void* cali_calloc_wrapper(size_t num, size_t size)
 
 void* cali_realloc_wrapper(void *ptr, size_t size)
 {
-    decltype(&realloc) orig_realloc =
-        reinterpret_cast<decltype(&realloc)>(gotcha_get_wrappee(orig_realloc_handle));
+    decltype(&std::realloc) orig_realloc =
+        reinterpret_cast<decltype(&std::realloc)>(gotcha_get_wrappee(orig_realloc_handle));
 
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance();
@@ -121,8 +122,8 @@ void* cali_realloc_wrapper(void *ptr, size_t size)
 
 void cali_free_wrapper(void *ptr)
 {
-    decltype(&free) orig_free =
-        reinterpret_cast<decltype(&free)>(gotcha_get_wrappee(orig_free_handle));
+    decltype(&std::free) orig_free =
+        reinterpret_cast<decltype(&std::free)>(gotcha_get_wrappee(orig_free_handle));
 
     for (ChannelList* p = sysalloc_channels; p; p = p->next) {
         Caliper c = Caliper::sigsafe_instance();
