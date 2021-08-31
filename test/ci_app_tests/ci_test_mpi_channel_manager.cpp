@@ -32,9 +32,7 @@ int main(int argc, char* argv[])
 
     cali::MpiChannelManager mpimgr(subcomm);
     mpimgr.add(mgr);
-
-    if (worldrank % 2 == 0)
-        mpimgr.start();
+    mpimgr.start();
 
     {
         CALI_CXX_MARK_FUNCTION;
@@ -44,10 +42,10 @@ int main(int argc, char* argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (worldrank % 2 == 0) {
-        mpimgr.stop();
+    mpimgr.stop();
+
+    if (worldrank % 2 == 0)
         mpimgr.collective_flush();
-    }
 
     MPI_Comm_free(&subcomm);
     MPI_Finalize();

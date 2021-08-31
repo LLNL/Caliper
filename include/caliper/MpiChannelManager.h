@@ -56,7 +56,7 @@ class MpiChannelManager
 public:
 
     /// \brief Create channel manager on communicator \a comm
-    MpiChannelManager(MPI_Comm comm = MPI_COMM_NULL);
+    explicit MpiChannelManager(MPI_Comm comm);
 
     ~MpiChannelManager();
 

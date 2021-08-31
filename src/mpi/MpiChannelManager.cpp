@@ -13,7 +13,8 @@ using namespace cali;
 
 struct MpiChannelManager::MpiChannelManagerImpl
 {
-    MPI_Comm comm  { MPI_COMM_NULL };
+    MPI_Comm comm       { MPI_COMM_NULL };
+    bool     is_in_comm { false };
 
     // mpi channels are those using collective_flush()
     std::vector< std::shared_ptr<CollectiveOutputChannel> > mpi_channels;
@@ -33,6 +34,9 @@ struct MpiChannelManager::MpiChannelManagerImpl
     }
 
     void start() const {
+        if (!is_in_comm)
+            return;
+
         for (auto channel : mpi_channels)
             channel->start();
         for (auto channel : ser_channels)
@@ -40,6 +44,9 @@ struct MpiChannelManager::MpiChannelManagerImpl
     }
 
     void stop() const {
+        if (!is_in_comm)
+            return;
+
         for (auto channel : mpi_channels)
             channel->stop();
         for (auto channel : ser_channels)
@@ -47,6 +54,9 @@ struct MpiChannelManager::MpiChannelManagerImpl
     }
 
     void flush() const {
+        if (!is_in_comm)
+            return;
+
         for (auto channel : mpi_channels)
             channel->collective_flush(comm);
         for (auto channel : ser_channels)
@@ -55,7 +65,13 @@ struct MpiChannelManager::MpiChannelManagerImpl
 
     MpiChannelManagerImpl(MPI_Comm comm_)
         : comm { comm_ }
-    { }
+    {
+        MPI_Group group;
+        MPI_Comm_group(comm, &group);
+        int rank;
+        MPI_Group_rank(group, &rank);
+        is_in_comm = (rank != MPI_UNDEFINED);
+    }
 };
 
 
