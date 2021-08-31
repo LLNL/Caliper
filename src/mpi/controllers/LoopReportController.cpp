@@ -4,7 +4,7 @@
 #include "caliper/caliper-config.h"
 
 #include <caliper/Caliper.h>
-#include <caliper/ChannelController.h>
+#include <caliper/CollectiveOutputChannel.h>
 #include <caliper/ConfigManager.h>
 
 #include <caliper/reader/Aggregator.h>
@@ -62,7 +62,7 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
 }
 
 
-class LoopReportController : public cali::ChannelController
+class LoopReportController : public cali::CollectiveOutputChannel
 {
     cali::ConfigManager::Options m_opts;
     bool m_use_mpi;
@@ -71,30 +71,20 @@ class LoopReportController : public cali::ChannelController
     MPI_Comm m_comm;
 #endif
 
-    void init_mpi() {
+    void init_mpi(MPI_Comm comm) {
 #ifdef CALIPER_HAVE_MPI
         m_use_mpi = true;
 
         if (m_opts.is_set("aggregate_across_ranks"))
             m_use_mpi = m_opts.get("aggregate_across_ranks").to_bool();
 
-        int initialized = 0;
-        MPI_Initialized(&initialized);
-
-        if (!initialized)
+        if (comm == MPI_COMM_NULL)
             m_use_mpi = false;
 
         if (m_use_mpi) {
-            MPI_Comm_dup(MPI_COMM_WORLD, &m_comm);
+            m_comm = comm;
             MPI_Comm_rank(m_comm, &m_rank);
         }
-#endif
-    }
-
-    void finalize_mpi() {
-#ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi)
-            MPI_Comm_free(&m_comm);
 #endif
     }
 
@@ -257,7 +247,7 @@ class LoopReportController : public cali::ChannelController
 
 public:
 
-    void flush() {
+    void collective_flush(OutputStream& stream, MPI_Comm comm) {
         Caliper c;
         CaliperMetadataDB db;
 
@@ -267,18 +257,10 @@ public:
 
         summary_local_agg.flush(db, summary_cross_agg);
 
-        init_mpi();
+        init_mpi(comm);
         cross_aggregate(db, summary_cross_agg);
 
-        OutputStream stream;
-
         if (m_rank == 0) {
-            std::string output = m_opts.get("output").to_string();
-            if (output.empty())
-                output = "stderr";
-
-            Caliper c;
-            stream.set_filename(output.c_str(), c, c.get_globals());
             std::ostream* os = stream.stream();
 
             bool print_summary = true;
@@ -313,12 +295,21 @@ public:
                 Log(1).stream() << channel()->name() << ": No instrumented loops found" << std::endl;
             }
         }
+    }
 
-        finalize_mpi();
+    void
+    collective_flush(MPI_Comm comm) override {
+        std::string output = m_opts.get("output", "stdout").to_string();
+
+        Caliper c;
+        OutputStream stream;
+        stream.set_filename(output.c_str(), c, c.get_globals());
+
+        collective_flush(stream, comm);
     }
 
     LoopReportController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : ChannelController(name, 0, initial_cfg),
+        : CollectiveOutputChannel(name, 0, initial_cfg),
           m_opts(opts),
           m_use_mpi(false),
           m_rank(0)

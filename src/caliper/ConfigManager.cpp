@@ -1309,13 +1309,13 @@ ConfigManager::set_default_parameter_for_config(const char* config, const char* 
 }
 
 ConfigManager::ChannelList
-ConfigManager::get_all_channels()
+ConfigManager::get_all_channels() const
 {
     return mP->m_channels;
 }
 
 ConfigManager::ChannelPtr
-ConfigManager::get_channel(const char* name)
+ConfigManager::get_channel(const char* name) const
 {
     for (ChannelPtr& chn : mP->m_channels)
         if (chn->name() == name)

@@ -25,28 +25,17 @@ class OutputStream;
 /// \brief A ChannelController for %Caliper configurations that aggregate
 ///   output over MPI.
 ///
-/// A CollectiveOutputChannel object controls a %Caliper measurement channel
-/// that produces a single output in an MPI program. The output can be written
-/// into a user-provided C++ I/O stream.
+/// A CollectiveOutputChannel provides the collective_flush() interface to
+/// produce output in an MPI program via a user-provided MPI
+/// communicator and/or C++ I/O stream.
 ///
 /// \sa make_collective_output_channel()
 class CollectiveOutputChannel : public cali::ChannelController
 {
-    struct CollectiveOutputChannelImpl;
-    std::shared_ptr<CollectiveOutputChannelImpl> mP;
-
 public:
 
     /// \brief Create channel controller with given name, flags, and config.
     CollectiveOutputChannel(const char* name, int flags, const config_map_t& cfg);
-
-    /// \brief Create channel controller with given queries, name, flags,
-    ///   and config.
-    CollectiveOutputChannel(const char* local_query,
-                            const char* cross_query,
-                            const char* name,
-                            int flags,
-                            const config_map_t& cfg);
 
     /// \brief Try to create a CollectiveOutputChannel based on the
     ///   configuration in \a from.
@@ -54,9 +43,6 @@ public:
     /// Can be used to convert a control channel created by ConfigManager
     /// into a CollectiveOutputChannel object that can be flushed
     /// into a user-defined stream with collective_flush().
-    ///
-    /// Currently, this only works for input configurations that use the
-    /// \e mpireport service.
     ///
     /// \return A new <tt>std::shared_ptr</tt>-wrapped CollectiveOutputChannel, or
     ///   an empty \c std::shared_ptr object if \a from couldn't be
@@ -76,10 +62,21 @@ public:
     /// \param os Output stream object. Used only on rank 0 and ignored
     ///   on all other ranks.
     /// \param comm MPI communicator
-    virtual void collective_flush(OutputStream& os, MPI_Comm comm);
+    virtual void collective_flush(OutputStream& os, MPI_Comm comm) = 0;
 
     /// \copydoc CollectiveOutputChannel::collective_flush(OutputStream&, MPI_Comm)
     std::ostream& collective_flush(std::ostream& os, MPI_Comm comm);
+
+    /// \brief Aggregate data from MPI ranks in \a comm and write output.
+    ///
+    /// This is a collective operation on the MPI communicator \a comm.
+    /// Rank 0 in \a comm collects all output, and formats and writes it into
+    /// an output stream defined by the channel (stdout by default).
+    /// If \a comm is \c MPI_COMM_NULL, the calling process will aggregate and
+    /// write its local data.
+    ///
+    /// \param comm MPI communicator
+    virtual void collective_flush(MPI_Comm comm);
 
     /// \brief Aggregate and flush data.
     ///

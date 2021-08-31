@@ -1152,8 +1152,6 @@ post_init_cb(Caliper* c, Channel* channel)
     bool run_init_evts = Caliper::is_initialized();
     Caliper c;
 
-    // cheat a bit: put begin/ends around a barrier here
-
     for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next) {
         //   Run mpi init events here if Caliper was initialized before MPI_Init
         // Otherwise they will run via the Caliper initialization above.
@@ -1163,27 +1161,28 @@ post_init_cb(Caliper* c, Channel* channel)
 
     ::push_mpifn(&c, ::{{func}}_wrap_count > 0, "{{func}}");
 
+    /* skip the barrier / tracing, causes problems if not all ranks initialize MPI wrappers
     PMPI_Barrier(MPI_COMM_WORLD);
 
     for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
         if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
             mwc->tracing.handle_init(&c, mwc->channel);
-
+    */
     ::pop_mpifn(&c, ::{{func}}_wrap_count);
 }{{endfn}}
 
 {{fn func MPI_Finalize}}{
     Caliper c;
 
-    // cheat a bit: put begin/ends around a barrier here
-
     ::push_mpifn(&c, ::{{func}}_wrap_count > 0, "{{func}}");
 
+    /* skip the barrier / tracing, causes problems if not all ranks initialize MPI wrappers
     PMPI_Barrier(MPI_COMM_WORLD);
 
     for (MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(); mwc; mwc = mwc->next)
         if (mwc->enable_msg_tracing && mwc->enable_{{func}} && mwc->channel->is_active())
             mwc->tracing.handle_finalize(&c, mwc->channel);
+    */
 
     ::pop_mpifn(&c, ::{{func}}_wrap_count > 0);
 

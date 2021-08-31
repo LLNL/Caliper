@@ -23,7 +23,8 @@ set(CALIPER_CI_C_TEST_APPS
 set(CALIPER_CI_MPI_TEST_APPS
   ci_test_cali_before_mpi
   ci_test_collective_output_channel
-  ci_test_mpi_before_cali)
+  ci_test_mpi_before_cali
+  ci_test_mpi_channel_manager)
 set(CALIPER_CI_Fortran_TEST_APPS
   ci_test_f_ann)
 
@@ -103,7 +104,7 @@ if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
 endif()
 
 if (CALIPER_HAVE_MPI)
-  list(APPEND PYTHON_SCRIPTS 
+  list(APPEND PYTHON_SCRIPTS
     test_loopreport.py
     test_spot.py)
 

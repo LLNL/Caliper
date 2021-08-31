@@ -35,7 +35,12 @@ int main(int argc, char* argv[])
         MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    channel->collective_flush(std::cout, MPI_COMM_WORLD);
+    channel->stop();
+
+    if (argc > 2 && strcmp(argv[2], "channel_defined_stream") == 0)
+        channel->collective_flush(MPI_COMM_WORLD);
+    else
+        channel->collective_flush(std::cout, MPI_COMM_WORLD);
 
     MPI_Finalize();
 }
