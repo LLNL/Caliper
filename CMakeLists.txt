@@ -421,7 +421,7 @@ if (WITH_VARIORUM)
   include(FindVariorum)
   if (VARIORUM_FOUND)
     set(CALIPER_HAVE_VARIORUM TRUE)
-    set(CALIPER_VARIORUM_CMAKE_MSG "Yes, using ${VARIORUM_LIBRARIES}")
+    set(CALIPER_variorum_CMAKE_MSG "Yes, using ${VARIORUM_LIBRARIES}")
     list(APPEND CALIPER_EXTERNAL_LIBS ${VARIORUM_LIBRARIES})
   else()
     message(WARNING "Variorum support was requested but Variorum was not found!\n"
@@ -547,7 +547,8 @@ set(CALIPER_MODULES
   TAU
   VTune
   PCP
-  histogram)
+  histogram
+  variorum)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
