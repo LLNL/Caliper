@@ -207,13 +207,11 @@ QueryArgsParser::parse_args(const Args& args)
 
             // Find formatter args (if any)
             for (int i = 0; i < fmtsig->max_args; ++i)
-                if (args.is_set(fmtsig->args[i])) {
-                    m_spec.format.args.resize(i+1);
-                    m_spec.format.args[i] = args.get(fmtsig->args[i]);
-                }
+                if (args.is_set(fmtsig->args[i]))
+                    m_spec.format.kwargs[fmtsig->args[i]] = args.get(fmtsig->args[i]);
 
             // NOTE: This check isn't complete yet.
-            if (m_spec.format.args.size() < static_cast<std::size_t>(fmtsig->min_args)) {
+            if (m_spec.format.kwargs.size() < static_cast<std::size_t>(fmtsig->min_args)) {
                 m_error     = true;
                 m_error_msg = std::string("Insufficient arguments for formatter ") + fmtsig->name;
 

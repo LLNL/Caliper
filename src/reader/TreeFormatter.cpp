@@ -60,22 +60,28 @@ struct TreeFormatter::TreeFormatterImpl
 
     void configure(const QuerySpec& spec) {
         // set path keys (first argument in spec.format.args)
-        if (spec.format.args.size() > 0)
-            util::split(spec.format.args.front(), ',',
-                        std::back_inserter(m_path_key_names));
+
+        {
+            auto it = spec.format.kwargs.find("path-attributes");
+            if (it != spec.format.kwargs.end())
+                util::split(it->second, ',', std::back_inserter(m_path_key_names));
+        }
 
         // set max column width
-        if (spec.format.args.size() > 1) {
-            bool ok = false;
+        {
+            auto it = spec.format.kwargs.find("column-width");
+            if (it != spec.format.kwargs.end()) {
+                bool ok = false;
 
-            m_max_column_width = StringConverter(spec.format.args[1]).to_int(&ok);
+                m_max_column_width = StringConverter(it->second).to_int(&ok);
 
-            if (!ok) {
-                Log(0).stream() << "TreeFormatter: invalid column width argument \""
-                                << spec.format.args[1] << "\""
-                                << std::endl;
+                if (!ok) {
+                    Log(0).stream() << "TreeFormatter: invalid column width argument \""
+                                    << it->second << "\""
+                                    << std::endl;
 
-                m_max_column_width = -1;
+                    m_max_column_width = -1;
+                }
             }
         }
 

@@ -75,18 +75,18 @@ struct JsonFormatter::JsonFormatterImpl
 
 
     void configure(const QuerySpec& spec) {
-        for (auto arg : spec.format.args) {
-            if (arg == "pretty")
+        for (auto p : spec.format.kwargs) {
+            if (p.first == "pretty")
                 m_opt_pretty = true;
-            else if (arg == "quote-all")
+            else if (p.first == "quote-all")
                 m_opt_quote_all = true;
-            else if (arg == "separate-nested")
+            else if (p.first == "separate-nested")
                 m_opt_sep_nested = true;
-            else if (arg == "records")
+            else if (p.first == "records")
                 m_layout = Records;
-            else if (arg == "split")
+            else if (p.first == "split")
                 m_layout = Split;
-            else if (arg == "object")
+            else if (p.first == "object")
                 m_layout = Object;
         }
 

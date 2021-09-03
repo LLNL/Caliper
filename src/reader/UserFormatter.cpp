@@ -29,7 +29,7 @@ struct UserFormatter::FormatImpl
 {
     struct Field {
         string    prefix;
-        
+
         string    attr_name;
         Attribute attr;
 
@@ -44,7 +44,7 @@ struct UserFormatter::FormatImpl
 
     OutputStream  m_os;
     std::mutex    m_os_lock;
-    
+
     FormatImpl(OutputStream& os)
         : m_os(os)
         { }
@@ -98,32 +98,33 @@ struct UserFormatter::FormatImpl
 
                 split_string.erase(split_string.begin());
             }
-            
+
             m_fields.push_back(field);
         }
     }
 
     void configure(const QuerySpec& spec) {
-        if (spec.format.args.size() > 0)
-            parse(spec.format.args[0]);
+        auto it = spec.format.kwargs.find("format");
+        if (it != spec.format.kwargs.end())
+            parse(it->second);
     }
-    
+
     void print(CaliperMetadataAccessInterface& db, const EntryList& list) {
         std::ostringstream os;
-        
+
         for (Field f : m_fields) {
             Attribute attr { Attribute::invalid };
-            
+
             {
                 std::lock_guard<std::mutex>
                     g(m_fields_lock);
-                
+
                 if (f.attr == Attribute::invalid)
                     f.attr = db.get_attribute(f.attr_name);
 
                 attr = f.attr;
             }
-            
+
             string str;
 
             if (attr != Attribute::invalid)
@@ -138,7 +139,7 @@ struct UserFormatter::FormatImpl
                     if (!str.empty())
                         break;
                 }
-            
+
             const char whitespace[80+1] =
                 "                                        "
                 "                                        ";
@@ -154,7 +155,7 @@ struct UserFormatter::FormatImpl
                 g(m_os_lock);
 
             std::ostream* real_os = m_os.stream();
-            
+
             *real_os << os.str() <<std::endl;
         }
     }
@@ -166,9 +167,12 @@ UserFormatter::UserFormatter(OutputStream& os, const QuerySpec& spec)
 {
     mP->configure(spec);
 
-    if (spec.format.args.size() > 1) {
-        std::ostream* real_os = os.stream();
-        *real_os << spec.format.args[1] << std::endl;
+    {
+        auto it = spec.format.kwargs.find("title");
+        if (it != spec.format.kwargs.end()) {
+            std::ostream* real_os = os.stream();
+            *real_os << it->second << std::endl;
+        }
     }
 }
 
@@ -177,7 +181,7 @@ UserFormatter::~UserFormatter()
     mP.reset();
 }
 
-void 
+void
 UserFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryList& list)
 {
     mP->print(db, list);

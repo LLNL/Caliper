@@ -95,13 +95,17 @@ struct TableFormatter::TableImpl
 
         // Set max column width
 
-        if (spec.format.args.size() > 0) {
-            bool ok = false;
+        {
+            auto it = spec.format.kwargs.find("column-width");
 
-            m_max_column_width = StringConverter(spec.format.args[0]).to_int(&ok);
+            if (it != spec.format.kwargs.end()) {
+                bool ok = false;
 
-            if (!ok)
-                m_max_column_width = -1;
+                m_max_column_width = StringConverter(it->second).to_int(&ok);
+
+                if (!ok)
+                    m_max_column_width = -1;
+            }
         }
 
         // Fill sort columns

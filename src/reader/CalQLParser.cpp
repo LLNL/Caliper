@@ -35,6 +35,29 @@ get_definition_id(const std::string& w, const QuerySpec::FunctionSignature* defs
     return defs[retid].name ? retid : -1;
 }
 
+std::pair<std::string, std::string> get_keyval(const std::string& str)
+{
+    std::istringstream is(str);
+
+    std::string first = util::read_word(is, "=");
+    char c = util::read_char(is);
+
+    if (c == '=') {
+        std::string val = util::read_word(is);
+        return std::make_pair(std::move(first), std::move(val));
+    } else {
+        return std::make_pair(std::string(), std::move(first));
+    }
+}
+
+bool is_in_strlist(const std::string& s, const char** list)
+{
+    for (const char** p = list; *p; ++p)
+        if (s == *p)
+            return true;
+    return false;
+}
+
 } // namespace [anonymous]
 
 
@@ -107,7 +130,7 @@ struct CalQLParser::CalQLParserImpl
         }
 
         do {
-            std::string str = util::read_word(is, ",;=<>()\n");
+            std::string str = util::read_word(is, ",;()\n");
             c = util::read_char(is);
 
             if (!str.empty() && (c == ',' || c == ')'))
@@ -118,6 +141,33 @@ struct CalQLParser::CalQLParserImpl
             set_error("Expected ')'", is);
             is.unget();
             ret.clear();
+        }
+
+        return ret;
+    }
+
+    std::map<std::string, std::string>
+    make_kwargs(const QuerySpec::FunctionSignature& sig, const std::vector<std::string>& args, std::istream& is)
+    {
+        std::map<std::string, std::string> ret;
+        int n = std::min(static_cast<int>(args.size()), sig.max_args);
+
+        for (int i = 0; i < n; ++i) {
+            auto p = get_keyval(args[i]);
+            if (p.first.empty()) {
+                if (is_in_strlist(p.second, sig.args))
+                    ret[p.second] = std::string("true"); // support boolean flags like in JsonFormatter
+                else
+                    ret[sig.args[i]] = p.second; // use name of positional argument
+            } else {
+                if (is_in_strlist(p.first, sig.args)) {
+                    ret[p.first] = p.second;
+                } else {
+                    set_error("Unknown argument " + p.first + " for " + sig.name, is);
+                    ret.clear();
+                    break;
+                }
+            }
         }
 
         return ret;
@@ -180,7 +230,7 @@ struct CalQLParser::CalQLParserImpl
         else {
             spec.format.opt       = QuerySpec::FormatSpec::User;
             spec.format.formatter = defs[i];
-            spec.format.args      = args;
+            spec.format.kwargs    = make_kwargs(defs[i], args, is);
         }
     }
 

@@ -105,7 +105,7 @@ struct QuerySpec
             Default, User
         }                        opt;       ///< Default or user-defined formatter
         FunctionSignature        formatter; ///< The formatter to use. Signatures provided by FormatProcessor.
-        std::vector<std::string> args;      ///< Arguments to the formatter.
+        std::map<std::string, std::string> kwargs; ///< Arguments to the formatter.
     };
 
     struct PreprocessSpec {
