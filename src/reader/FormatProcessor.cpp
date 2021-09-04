@@ -20,8 +20,8 @@ namespace
 {
 
 const char* format_kernel_args[] = { "format", "title" };
-const char* tree_kernel_args[]   = { "path-attributes", "column-width" };
-const char* table_kernel_args[]  = { "column-width" };
+const char* tree_kernel_args[]   = { "path-attributes", "column-width", "print-globals" };
+const char* table_kernel_args[]  = { "column-width", "print-globals" };
 const char* json_kernel_args[]   = { "object", "pretty", "quote-all", "separate-nested", "records", "split" };
 
 enum FormatterID {

@@ -7,6 +7,8 @@
 
 #include "caliper/reader/QuerySpec.h"
 
+#include "SnapshotTableFormatter.h"
+
 #include "caliper/common/Attribute.h"
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
@@ -53,6 +55,8 @@ struct TableFormatter::TableImpl
 
     int                                     m_max_column_width;
 
+    bool                                    m_print_globals;
+
     int column_width(int base) const {
         return std::max(m_max_column_width > 0 ? std::min(base, m_max_column_width) : base, 4);
     }
@@ -97,7 +101,6 @@ struct TableFormatter::TableImpl
 
         {
             auto it = spec.format.kwargs.find("column-width");
-
             if (it != spec.format.kwargs.end()) {
                 bool ok = false;
 
@@ -106,6 +109,12 @@ struct TableFormatter::TableImpl
                 if (!ok)
                     m_max_column_width = -1;
             }
+        }
+
+        {
+            auto it = spec.format.kwargs.find("print-globals");
+            if (it != spec.format.kwargs.end())
+                m_print_globals = true;
         }
 
         // Fill sort columns
@@ -322,7 +331,7 @@ struct TableFormatter::TableImpl
     }
 
     TableImpl()
-        : m_max_column_width(60)
+        : m_max_column_width(60), m_print_globals(false)
         { }
 };
 
@@ -350,7 +359,10 @@ TableFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLi
 }
 
 void
-TableFormatter::flush(CaliperMetadataAccessInterface&, std::ostream& os)
+TableFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
 {
+    if (mP->m_print_globals)
+        format_record_as_table(db, db.get_globals(), os);
+
     mP->flush(os);
 }

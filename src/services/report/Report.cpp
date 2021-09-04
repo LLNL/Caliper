@@ -63,11 +63,12 @@ class Report {
 
         db.add_attribute_aliases(spec.aliases);
         db.add_attribute_units(spec.units);
-        db.import_globals(*c, c->get_globals(channel));
 
         c->flush(channel, flush_info, [&queryP,&db](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
                 queryP.process_record(db, db.merge_snapshot(in_db, rec));
             } );
+
+        db.import_globals(*c, c->get_globals(channel));
 
         queryP.flush(db);
     }

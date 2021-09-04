@@ -43,13 +43,22 @@ public:
                 pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
-            std::string format = "tree";
+            auto avail_services = services::get_available_services();
+            bool have_adiak =
+                std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
 
-            if (opts.is_set("max_column_width")) {
-                format = "(prop:nested,";
-                format.append(opts.get("max_column_width").to_string());
-                format.append(")");
+            std::string format;
+
+            if (opts.is_set("max_column_width"))
+                format.append("column-width=").append(opts.get("max_column_width").to_string());
+            if (opts.is_set("print.metadata")) {
+                if (have_adiak)
+                    config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+
+                format.append(format.length() > 0 ? "," : "").append("print-globals");
             }
+
+            format = std::string("tree(") + format + ")";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -147,6 +156,11 @@ const char* runtime_report_spec =
     "   \"name\": \"max_column_width\","
     "   \"type\": \"int\","
     "   \"description\": \"Maximum column width in the tree display\""
+    "  },"
+    "  {"
+    "   \"name\": \"print.metadata\","
+    "   \"type\": \"bool\","
+    "   \"description\": \"Print program metadata (Caliper globals and Adiak data)\""
     "  }"
     " ]"
     "}";

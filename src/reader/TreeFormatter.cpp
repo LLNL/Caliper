@@ -5,6 +5,8 @@
 
 #include "caliper/reader/TreeFormatter.h"
 
+#include "SnapshotTableFormatter.h"
+
 #include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/SnapshotTree.h"
 
@@ -47,6 +49,7 @@ struct TreeFormatter::TreeFormatterImpl
     std::map<std::string, std::string> m_aliases;
 
     bool                     m_use_nested;
+    bool                     m_print_globals;
 
     std::vector<std::string> m_path_key_names;
     std::vector<Attribute>   m_path_keys;
@@ -83,6 +86,12 @@ struct TreeFormatter::TreeFormatterImpl
                     m_max_column_width = -1;
                 }
             }
+        }
+
+        {
+            auto it = spec.format.kwargs.find("print-globals");
+            if (it != spec.format.kwargs.end())
+                m_print_globals = true;
         }
 
         {
@@ -343,7 +352,8 @@ struct TreeFormatter::TreeFormatterImpl
     TreeFormatterImpl()
         : m_path_column_width(0),
           m_max_column_width(48),
-          m_use_nested(true)
+          m_use_nested(true),
+          m_print_globals(false)
     { }
 };
 
@@ -368,5 +378,8 @@ TreeFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 void
 TreeFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
 {
+    if (mP->m_print_globals)
+        format_record_as_table(db, db.get_globals(), os);
+
     mP->flush(db, os);
 }
