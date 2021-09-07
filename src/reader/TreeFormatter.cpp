@@ -5,6 +5,8 @@
 
 #include "caliper/reader/TreeFormatter.h"
 
+#include "SnapshotTableFormatter.h"
+
 #include "caliper/reader/QuerySpec.h"
 #include "caliper/reader/SnapshotTree.h"
 
@@ -47,6 +49,7 @@ struct TreeFormatter::TreeFormatterImpl
     std::map<std::string, std::string> m_aliases;
 
     bool                     m_use_nested;
+    bool                     m_print_globals;
 
     std::vector<std::string> m_path_key_names;
     std::vector<Attribute>   m_path_keys;
@@ -60,23 +63,35 @@ struct TreeFormatter::TreeFormatterImpl
 
     void configure(const QuerySpec& spec) {
         // set path keys (first argument in spec.format.args)
-        if (spec.format.args.size() > 0)
-            util::split(spec.format.args.front(), ',',
-                        std::back_inserter(m_path_key_names));
+
+        {
+            auto it = spec.format.kwargs.find("path-attributes");
+            if (it != spec.format.kwargs.end())
+                util::split(it->second, ',', std::back_inserter(m_path_key_names));
+        }
 
         // set max column width
-        if (spec.format.args.size() > 1) {
-            bool ok = false;
+        {
+            auto it = spec.format.kwargs.find("column-width");
+            if (it != spec.format.kwargs.end()) {
+                bool ok = false;
 
-            m_max_column_width = StringConverter(spec.format.args[1]).to_int(&ok);
+                m_max_column_width = StringConverter(it->second).to_int(&ok);
 
-            if (!ok) {
-                Log(0).stream() << "TreeFormatter: invalid column width argument \""
-                                << spec.format.args[1] << "\""
-                                << std::endl;
+                if (!ok) {
+                    Log(0).stream() << "TreeFormatter: invalid column width argument \""
+                                    << it->second << "\""
+                                    << std::endl;
 
-                m_max_column_width = -1;
+                    m_max_column_width = -1;
+                }
             }
+        }
+
+        {
+            auto it = spec.format.kwargs.find("print-globals");
+            if (it != spec.format.kwargs.end())
+                m_print_globals = true;
         }
 
         {
@@ -337,7 +352,8 @@ struct TreeFormatter::TreeFormatterImpl
     TreeFormatterImpl()
         : m_path_column_width(0),
           m_max_column_width(48),
-          m_use_nested(true)
+          m_use_nested(true),
+          m_print_globals(false)
     { }
 };
 
@@ -362,5 +378,8 @@ TreeFormatter::process_record(CaliperMetadataAccessInterface& db, const EntryLis
 void
 TreeFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
 {
+    if (mP->m_print_globals)
+        format_record_as_table(db, db.get_globals(), os);
+
     mP->flush(db, os);
 }

@@ -217,30 +217,57 @@ TEST(CalQLParserTest, OrderByClause3) {
 }
 
 TEST(CalQLParserTest, FormatSpec) {
-    CalQLParser p1("FORMAT tree(\"a,bb,ccc\")");
+    {
+        CalQLParser p1("FORMAT tree(\"a,bb,ccc\")");
 
-    EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
+        EXPECT_FALSE(p1.error()) << "Unexpected parse error: " << p1.error_msg();
 
-    QuerySpec q1 = p1.spec();
+        QuerySpec q1 = p1.spec();
 
-    EXPECT_EQ(q1.format.opt, QuerySpec::FormatSpec::User);
-    EXPECT_STREQ(q1.format.formatter.name, "tree");
-    ASSERT_EQ(q1.format.args.size(), 1);
-    EXPECT_EQ(q1.format.args[0], "a,bb,ccc");
+        EXPECT_EQ(q1.format.opt, QuerySpec::FormatSpec::User);
+        EXPECT_STREQ(q1.format.formatter.name, "tree");
+        ASSERT_EQ(q1.format.kwargs.size(), 1);
+        EXPECT_EQ(q1.format.kwargs["path-attributes"], "a,bb,ccc");
+    }
 
-    CalQLParser p2("FORMAT table");
+    {
+        CalQLParser p2("FORMAT table");
 
-    EXPECT_FALSE(p2.error()) << "Unexpected parse error: " << p2.error_msg();
+        EXPECT_FALSE(p2.error()) << "Unexpected parse error: " << p2.error_msg();
 
-    QuerySpec q2 = p2.spec();
+        QuerySpec q2 = p2.spec();
 
-    EXPECT_EQ(q2.format.opt, QuerySpec::FormatSpec::User);
-    EXPECT_STREQ(q2.format.formatter.name, "table");
-    EXPECT_EQ(q2.format.args.size(), 0);
+        EXPECT_EQ(q2.format.opt, QuerySpec::FormatSpec::User);
+        EXPECT_STREQ(q2.format.formatter.name, "table");
+        EXPECT_EQ(q2.format.kwargs.size(), 0);
+    }
 
-    CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd, e)");
+    {
+        CalQLParser p3("FORMAT tree(\"a,bb,ccc\", ddd, e)");
+        EXPECT_TRUE(p3.error());
+    }
 
-    EXPECT_TRUE(p3.error());
+    {
+        CalQLParser p4("FORMAT tree(column-width=42)");
+        EXPECT_FALSE(p4.error()) << "Unexpected parse error: " << p4.error_msg();
+
+        QuerySpec q4 = p4.spec();
+        EXPECT_EQ(q4.format.kwargs["column-width"], std::string("42"));
+    }
+
+    {
+        CalQLParser p5("FORMAT tree(glorb=glurb)");
+        EXPECT_TRUE(p5.error());
+    }
+
+    {
+        CalQLParser p6("FORMAT json(object)");
+        QuerySpec q6 = p6.spec();
+        EXPECT_FALSE(p6.error()) << "Unexpected parse error: " << p6.error_msg();
+        EXPECT_STREQ(q6.format.formatter.name, "json");
+        EXPECT_EQ(q6.format.kwargs.size(), 1);
+        EXPECT_FALSE(q6.format.kwargs.find("object") == q6.format.kwargs.end());
+    }
 }
 
 TEST(CalQLParserTest, AggregateClause) {

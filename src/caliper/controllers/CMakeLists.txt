@@ -6,7 +6,8 @@ set(CALIPER_CONTROLLERS_SOURCES
   controllers/HatchetSampleProfileController.cpp
   controllers/OpenMPReportController.cpp
   controllers/RuntimeReportController.cpp
-  controllers/controllers.cpp)
+  controllers/controllers.cpp
+  controllers/util.cpp)
 
 list(APPEND CALIPER_RUNTIME_SOURCES ${CALIPER_CONTROLLERS_SOURCES})
 set(CALIPER_RUNTIME_SOURCES ${CALIPER_RUNTIME_SOURCES} PARENT_SCOPE)

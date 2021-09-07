@@ -3,6 +3,8 @@
 
 #include "caliper/caliper-config.h"
 
+#include "util.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
@@ -43,13 +45,7 @@ public:
                 pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
-            std::string format = "tree";
-
-            if (opts.is_set("max_column_width")) {
-                format = "(prop:nested,";
-                format.append(opts.get("max_column_width").to_string());
-                format.append(")");
-            }
+            std::string format = util::build_tree_format_spec(config(), opts);
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -122,7 +118,7 @@ const char* runtime_report_spec =
     "{"
     " \"name\"        : \"runtime-report\","
     " \"description\" : \"Print a time profile for annotated regions\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"categories\"  : [ \"metric\", \"output\", \"region\", \"treeformatter\" ],"
     " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
@@ -142,11 +138,6 @@ const char* runtime_report_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
-    "  },"
-    "  {"
-    "   \"name\": \"max_column_width\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Maximum column width in the tree display\""
     "  }"
     " ]"
     "}";

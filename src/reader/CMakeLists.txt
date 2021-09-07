@@ -14,6 +14,7 @@ set(CALIPER_READER_SOURCES
   QueryProcessor.cpp
   QuerySpec.cpp
   RecordSelector.cpp
+  SnapshotTableFormatter.cpp
   SnapshotTree.cpp
   TableFormatter.cpp
   TreeFormatter.cpp

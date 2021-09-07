@@ -8,7 +8,8 @@ set(CALIPER_READER_TEST_SOURCES
   test_nestedexclusiveregionprofile.cpp
   test_nestedinclusiveregionprofile.cpp
   test_nodebuffer.cpp
-  test_preprocessor.cpp)
+  test_preprocessor.cpp
+  test_snapshottableformatter.cpp)
 
 add_executable(test_caliper-reader
   $<TARGET_OBJECTS:caliper-common>

@@ -662,6 +662,18 @@ const char* builtin_option_specs =
     " \"description\" : \"Adiak import categories. Comma-separated list of integers.\","
     " \"type\"        : \"string\","
     " \"category\"    : \"adiak\""
+    "},"
+    "{"
+    " \"name\"        : \"max_column_width\","
+    " \"type\"        : \"int\","
+    " \"description\" : \"Maximum column width in the tree display\","
+    " \"category\"    : \"treeformatter\""
+    "},"
+    "{"
+    " \"name\"        : \"print.metadata\","
+    " \"type\"        : \"bool\","
+    " \"description\" : \"Print program metadata (Caliper globals and Adiak data)\","
+    " \"category\"    : \"treeformatter\""
     "}"
     "]";
 
