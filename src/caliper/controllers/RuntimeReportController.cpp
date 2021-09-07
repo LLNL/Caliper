@@ -3,6 +3,8 @@
 
 #include "caliper/caliper-config.h"
 
+#include "util.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
@@ -43,22 +45,7 @@ public:
                 pmetric = "inclusive_percent_total(sum#sum#time.duration)";
             }
 
-            auto avail_services = services::get_available_services();
-            bool have_adiak =
-                std::find(avail_services.begin(), avail_services.end(), "adiak_import") != avail_services.end();
-
-            std::string format;
-
-            if (opts.is_set("max_column_width"))
-                format.append("column-width=").append(opts.get("max_column_width").to_string());
-            if (opts.is_set("print.metadata")) {
-                if (have_adiak)
-                    config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-
-                format.append(format.length() > 0 ? "," : "").append("print-globals");
-            }
-
-            format = std::string("tree(") + format + ")";
+            std::string format = util::build_tree_format_spec(config(), opts);
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
@@ -131,7 +118,7 @@ const char* runtime_report_spec =
     "{"
     " \"name\"        : \"runtime-report\","
     " \"description\" : \"Print a time profile for annotated regions\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\" ],"
+    " \"categories\"  : [ \"metric\", \"output\", \"region\", \"treeformatter\" ],"
     " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
@@ -151,16 +138,6 @@ const char* runtime_report_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
-    "  },"
-    "  {"
-    "   \"name\": \"max_column_width\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Maximum column width in the tree display\""
-    "  },"
-    "  {"
-    "   \"name\": \"print.metadata\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Print program metadata (Caliper globals and Adiak data)\""
     "  }"
     " ]"
     "}";

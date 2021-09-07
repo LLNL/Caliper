@@ -3,6 +3,8 @@
 
 #include "caliper/caliper-config.h"
 
+#include "util.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
@@ -52,6 +54,8 @@ public:
                     = std::string("cupti.kernel.name as Kernel,") + cross_select;
             }
 
+            std::string format = util::build_tree_format_spec(config(), opts);
+
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
                 config()["CALI_MPIREPORT_FILENAME"] = opts.get("output", "stderr").to_string();
@@ -65,7 +69,7 @@ public:
                     opts.build_query("cross", {
                             { "select",   cross_select  },
                             { "group by", groupby },
-                            { "format",   "tree"  }
+                            { "format",   format  }
                         });
             } else {
                 config()["CALI_SERVICES_ENABLE"   ].append(",report");
@@ -74,7 +78,7 @@ public:
                     opts.build_query("local", {
                             { "select",   serial_select },
                             { "group by", groupby },
-                            { "format",   "tree"  }
+                            { "format",   format  }
                         });
             }
 
@@ -116,7 +120,7 @@ const char* controller_spec =
     " \"name\"        : \"cuda-activity-report\","
     " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
     " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\" ],"
-    " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
+    " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\", \"treeformatter\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
     "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\"   : \"false\","

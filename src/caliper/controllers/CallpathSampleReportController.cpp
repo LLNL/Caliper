@@ -3,6 +3,8 @@
 
 #include "caliper/caliper-config.h"
 
+#include "util.h"
+
 #include "caliper/ChannelController.h"
 #include "caliper/ConfigManager.h"
 
@@ -33,10 +35,6 @@ public:
                 + std::to_string(1.0/freq)
                 + ") as \"Time (sec)\" unit sec";
 
-            std::string format = std::string("tree(source.function#callpath.address,")
-                + opts.get("max_column_width", "48").to_string()
-                + ")";
-
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
                   " min(scount) as \"Min time/rank\" unit sec"
@@ -51,6 +49,8 @@ public:
 
             if (have_pthread)
                 config()["CALI_SERVICES_ENABLE"].append(",pthread");
+
+            std::string format = util::build_tree_format_spec(config(), opts, "path-attributes=source.function#callpath.address");
 
             if (use_mpi) {
                 config()["CALI_SERVICES_ENABLE"   ].append(",mpi,mpireport");
@@ -116,7 +116,7 @@ const char* callpath_sample_report_spec =
     "{"
     " \"name\"        : \"callpath-sample-report\","
     " \"description\" : \"Print a call-path sampling profile for the program\","
-    " \"categories\"  : [ \"metric\", \"output\" ],"
+    " \"categories\"  : [ \"metric\", \"output\", \"treeformatter\" ],"
     " \"services\"    : [ \"callpath\", \"sampler\", \"symbollookup\", \"trace\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\""
@@ -132,11 +132,6 @@ const char* callpath_sample_report_spec =
     "   \"name\": \"aggregate_across_ranks\","
     "   \"type\": \"bool\","
     "   \"description\": \"Aggregate results across MPI ranks\""
-    "  },"
-    "  {"
-    "   \"name\": \"max_column_width\","
-    "   \"type\": \"int\","
-    "   \"description\": \"Maximum column width in the tree display\""
     "  }"
     " ]"
     "}";
