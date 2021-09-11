@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2021 Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 //
 // SPDX-License-Identifier: BSD-3-Clause
@@ -14,6 +14,11 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Log.h"
 
+extern "C" {
+#include <variorum.h>
+#include <jansson.h>
+}
+
 #include <chrono>
 #include <mutex>
 #include <tuple>
@@ -21,11 +26,6 @@
 #include <iostream>
 
 using namespace cali;
-
-extern "C" {
-#include <variorum.h>
-#include <jansson.h>
-}
 
 namespace cali
 {
@@ -48,8 +48,9 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
     //    name.length() * std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
     //std::cout << "Measuring with Variorum" << std::endl;
 
-    double power_node;
-    json_t *power_obj  = json_object();
+    double power_watts;
+    json_t *power_obj = json_object();
+
     int ret = variorum_get_node_power_json(power_obj);
     if (ret != 0)
     {
@@ -57,9 +58,10 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
         uint64_t val;
         return std::make_tuple(false, val);
     }
-    power_node =  json_real_value(json_object_get(power_obj, "power_node"));
+    // TODO: Add error if name is an invalid JSON field
+    power_watts = json_real_value(json_object_get(power_obj, name.c_str()));
 
-    uint64_t val = (uint64_t)power_node;
+    uint64_t val = (uint64_t)power_watts;
 
     return std::make_tuple(true, val);
 }
@@ -67,17 +69,19 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
 // The VariorumService class serves as template/demo/documentation
 // for writing Caliper measurement services.
 //
-// It reads a list of names from the CALI_MEASUREMENT_TEMPLATE_NAMES config
+// This class reads a list of domains from the CALI_VARIORUM config
 // variable. For each name, it appends "measurement.val.<name>" and
 // "measurement.<name>" entries (absolute value and delta-since-last-snapshot
 // for a performance measurement) to Caliper snapshot records.
 class VariorumService
 {
+    std::vector<Attribute> attrs;
+
     // Configuration variables for this service
     static const ConfigSet::Entry s_configdata[];
 
     struct MeasurementInfo {
-        std::string name;       // Measurement name / ID
+        std::string domain;     // Measurement name / ID
         Attribute   value_attr; // Attribute for the measurement value
         Attribute   delta_attr; // Attribute for the delta value (difference
                                 // since last snapshot)
@@ -109,9 +113,7 @@ class VariorumService
             bool success;
             uint64_t val;
 
-            std::tie(success, val) = measure(m_starttime, m.name);
-            std::string outstring = "Node Power "+ std::to_string(val);
-            std::cout << outstring << std::endl;
+            std::tie(success, val) = measure(m_starttime, m.domain);
             // Check for measurement errors. Best practice is to count and
             // report them at the end rather than printing error messages at
             // runtime.
@@ -132,8 +134,6 @@ class VariorumService
             // the previous value. Compute the difference and append it.
             Variant v_prev = c->exchange(m.prval_attr, v_val);
             rec->append(m.delta_attr, cali_make_variant_from_uint(val - v_prev.to_uint()));
-            outstring = "Node Power prev "+ std::to_string(v_prev);
-            std::cout << outstring << std::endl;
         }
     }
 
@@ -154,20 +154,22 @@ class VariorumService
 
         if (m_num_errors > 0)
         {
-            Log(0).stream() << channel->name() << ": measurement: "
+            Log(0).stream() << channel->name() << ": variorum: "
                             << m_num_errors << " measurement errors!"
                             << std::endl;
         }
     }
 
-    MeasurementInfo create_measurement_info(Caliper* c, Channel* channel, const std::string& name) {
+    MeasurementInfo create_measurement_info(Caliper* c, Channel* channel, const std::string& domain) {
 
         // Delete Comment Later
         // This is how the measurment info class that was confusing above,
         // comes into play
         MeasurementInfo m;
 
-        m.name = name;
+        m.domain = domain;
+
+        Variant v_true(true);
 
         // Create Caliper attributes for measurement variables, one for the
         // absolute value and one for the difference since the last snapshot.
@@ -181,42 +183,47 @@ class VariorumService
         // the Caliper context tree). Use SKIP_EVENTS to avoid triggering
         // events when using set/begin/end on this attribute. This attribute
         // is for absolute measurement values for <name>.
-        m.value_attr =
-            c->create_attribute(std::string("variorum.val.") + name,
-                                CALI_TYPE_UINT,
-                                CALI_ATTR_SCOPE_THREAD |
-                                CALI_ATTR_ASVALUE      |
-                                CALI_ATTR_SKIP_EVENTS);
+        auto domainList =
+            channel->config().init("variorum", s_configdata).get("domains").to_stringlist(",");
 
-        Variant v_true(true);
+        for (auto &domain : domainList) {
+            m.value_attr =
+                c->create_attribute(std::string("variorum.val.") + domain,
+                                    CALI_TYPE_UINT,
+                                    CALI_ATTR_SCOPE_THREAD |
+                                    CALI_ATTR_ASVALUE      |
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    1, &class_aggregatable_attr, &v_true);
 
-        // The delta attribute stores the difference of the measurement
-        // value since the last snapshot. We add the "class.aggregatable"
-        // metadata attribute here, which lets Caliper aggregate these values
-        // automatically.
-        m.delta_attr =
-            c->create_attribute(std::string("variorum.") + name,
-                        CALI_TYPE_UINT,
-                        CALI_ATTR_SCOPE_THREAD |
-                        CALI_ATTR_ASVALUE      |
-                        CALI_ATTR_SKIP_EVENTS,
-                        1, &class_aggregatable_attr, &v_true);
 
-        // We use a hidden attribute to store the previous measurement
-        // for <name> on Caliper's per-thread blackboard. This is a
-        // channel-specific attribute, so we encode the channel ID in the
-        // name.
-        //
-        // In case more thread-specific information must be stored, it is
-        // better to combine them in a structure and create a CALI_TYPE_PTR
-        // attribute for this thread info in the service instance.
-        m.prval_attr =
-            c->create_attribute(std::string("variorum.pv.") + std::to_string(channel->id()) + name,
-                        CALI_TYPE_UINT,
-                        CALI_ATTR_SCOPE_THREAD |
-                        CALI_ATTR_ASVALUE      |
-                        CALI_ATTR_HIDDEN       |
-                        CALI_ATTR_SKIP_EVENTS);
+            // The delta attribute stores the difference of the measurement
+            // value since the last snapshot. We add the "class.aggregatable"
+            // metadata attribute here, which lets Caliper aggregate these values
+            // automatically.
+            m.delta_attr =
+                c->create_attribute(std::string("variorum.") + domain,
+                            CALI_TYPE_UINT,
+                            CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_ASVALUE      |
+                            CALI_ATTR_SKIP_EVENTS,
+                            1, &class_aggregatable_attr, &v_true);
+
+            // We use a hidden attribute to store the previous measurement
+            // for <name> on Caliper's per-thread blackboard. This is a
+            // channel-specific attribute, so we encode the channel ID in the
+            // name.
+            //
+            // In case more thread-specific information must be stored, it is
+            // better to combine them in a structure and create a CALI_TYPE_PTR
+            // attribute for this thread info in the service instance.
+            m.prval_attr =
+                c->create_attribute(std::string("variorum.pv.") + std::to_string(channel->id()) + domain,
+                            CALI_TYPE_UINT,
+                            CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_ASVALUE      |
+                            CALI_ATTR_HIDDEN       |
+                            CALI_ATTR_SKIP_EVENTS);
+            }
 
         return m;
     }
@@ -234,12 +241,20 @@ class VariorumService
 
         // Read the "names" variable and treat it as a string list
         // (comma-separated list). Returns a std::vector<std::string>.
-        auto names = config.get("names").to_stringlist();
+        auto domainList = config.get("domains").to_stringlist(",");
+
+        if (domainList.empty()) {
+            Log(1).stream() << channel->name()
+                            << ": variorum: No domains specified, dropping variorum service"
+                            << std::endl;
+            return;
+        }
 
         // Create a MeasurementInfo entry for each of the "measurement
         // variables" in the configuration.
-        for (const std::string& name : names)
-            m_info.push_back( create_measurement_info(c, channel, name) );
+        for (const std::string& domain : domainList) {
+            m_info.push_back( create_measurement_info(c, channel, domain) );
+        }
     }
 
 public:
@@ -261,6 +276,16 @@ public:
     // functions.
 
     static void register_variorum(Caliper* c, Channel* channel) {
+        auto domainList =
+            channel->config().init("variorum", s_configdata).get("domains").to_stringlist(",");
+
+        if (domainList.empty()) {
+            Log(1).stream() << channel->name()
+                            << ": variorum: No domains specified, dropping variorum service"
+                            << std::endl;
+            return;
+        }
+
         // Create a new service instance for this channel
         VariorumService* instance = new VariorumService(c, channel);
 
@@ -282,18 +307,19 @@ public:
                 delete instance;
             });
 
-        Log(1).stream() << channel->name() << ": Registered measurement template service"
+        Log(1).stream() << channel->name() << ": Registered variorum service"
                         << std::endl;
     }
 };
 
 const ConfigSet::Entry VariorumService::s_configdata[] = {
-    { "names",                           // config variable name
-      CALI_TYPE_UINT,                    // datatype
-      "0",                               // default value
-      "Names of measurements to record", // short description
+    { "domains",                           // config variable name
+      CALI_TYPE_STRING,                    // datatype
+      "",                                  // default value
+      "List of domains to record", // short description
       // long description
-      "Node Power, Socket Power, GPU Power, All Power Measurements, Memory Power"
+      "List of domains to record (separated by ',')\n"
+      "Example: power_node_watts, power_socket_watts, power_gpu_watts, power_mem_watts"
     },
     ConfigSet::Terminator
 };

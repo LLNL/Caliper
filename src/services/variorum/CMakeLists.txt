@@ -1,7 +1,7 @@
 include_directories(${VARIORUM_INCLUDE_DIRS})
 
 set(CALIPER_VARIORUM_SOURCES
-    VariorumService.cpp)
+    Variorum.cpp)
 
 add_library(caliper-variorum OBJECT ${CALIPER_VARIORUM_SOURCES})
 
