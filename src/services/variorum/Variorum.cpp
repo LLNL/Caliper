@@ -40,14 +40,8 @@ namespace
 typedef std::chrono::system_clock Clock;
 typedef std::chrono::time_point<Clock> TimePoint;
 
-// Our "measurement function"
+// Power measurement function
 std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& name) {
-    // lets try extracting variorum and returning it
-    //auto     now = Clock::now();
-    //uint64_t val =
-    //    name.length() * std::chrono::duration_cast<std::chrono::microseconds>(now - start).count();
-    //std::cout << "Measuring with Variorum" << std::endl;
-
     double power_watts;
     json_t *power_obj = json_object();
 
@@ -58,7 +52,10 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
         uint64_t val;
         return std::make_tuple(false, val);
     }
+
     // TODO: Add error if name is an invalid JSON field
+    // TODO: Assume 1 rank/node for aggregation
+
     power_watts = json_real_value(json_object_get(power_obj, name.c_str()));
 
     uint64_t val = (uint64_t)power_watts;
@@ -66,18 +63,15 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
     return std::make_tuple(true, val);
 }
 
-// The VariorumService class serves as template/demo/documentation
-// for writing Caliper measurement services.
-//
-// This class reads a list of domains from the CALI_VARIORUM config
-// variable. For each name, it appends "measurement.val.<name>" and
-// "measurement.<name>" entries (absolute value and delta-since-last-snapshot
-// for a performance measurement) to Caliper snapshot records.
+// The VariorumService class reads a list of domains from the
+// CALI_VARIORUM_DOMAINS config variable. For each domain, it appends a
+// "measurement.val.<name>" entry (absolute value for a performance
+// measurement) to Caliper snapshot records.
 class VariorumService
 {
     std::vector<Attribute> attrs;
 
-    // Configuration variables for this service
+    // Configuration variables for the variorum service
     static const ConfigSet::Entry s_configdata[];
 
     struct MeasurementInfo {
@@ -98,7 +92,11 @@ class VariorumService
     // Initial value for our measurement function
     TimePoint m_starttime;
 
-    void snapshot_cb(Caliper* c, Channel* /*channel*/, int /*scopes*/, const SnapshotRecord* /*trigger_info*/, SnapshotRecord* rec) {
+    void snapshot_cb(Caliper* c,
+                     Channel* /*channel*/,
+                     int /*scopes*/,
+                     const SnapshotRecord* /*trigger_info*/,
+                     SnapshotRecord* rec) {
         // The snapshot callback triggers performance measurements.
         // Measurement services should make measurements and add them to the
         // provided SnapshotRecord parameter, e.g. using rec->append().
@@ -132,8 +130,10 @@ class VariorumService
             // blackboard so we can compute the difference since the last
             // snapshot. Here, c->exchange() stores the current and returns
             // the previous value. Compute the difference and append it.
+            // TODO: For aggregation, let's use average power for now
             Variant v_prev = c->exchange(m.prval_attr, v_val);
-            rec->append(m.delta_attr, cali_make_variant_from_uint(val - v_prev.to_uint()));
+            rec->append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
+            std::cout << "delta value: " << val << ", " << v_prev.to_uint() << " = " << cali_make_variant_from_uint((val + v_prev.to_uint())/2) << std::endl;
         }
     }
 
