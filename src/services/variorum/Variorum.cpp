@@ -41,7 +41,9 @@ typedef std::chrono::system_clock Clock;
 typedef std::chrono::time_point<Clock> TimePoint;
 
 // Power measurement function
-std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& name) {
+std::tuple<bool, uint64_t> measure(const TimePoint& start,
+                                   const std::string& name)
+{
     double power_watts;
     json_t *power_obj = json_object();
 
@@ -74,7 +76,8 @@ class VariorumService
     // Configuration variables for the variorum service
     static const ConfigSet::Entry s_configdata[];
 
-    struct MeasurementInfo {
+    struct MeasurementInfo
+    {
         std::string domain;     // Measurement name / ID
         Attribute   value_attr; // Attribute for the measurement value
         Attribute   delta_attr; // Attribute for the delta value (difference
@@ -96,7 +99,8 @@ class VariorumService
                      Channel* /*channel*/,
                      int /*scopes*/,
                      const SnapshotRecord* /*trigger_info*/,
-                     SnapshotRecord* rec) {
+                     SnapshotRecord* rec)
+    {
         // The snapshot callback triggers performance measurements.
         // Measurement services should make measurements and add them to the
         // provided SnapshotRecord parameter, e.g. using rec->append().
@@ -107,7 +111,8 @@ class VariorumService
         // handler.
 
         // Make measurements for all configured variables
-        for (const MeasurementInfo& m : m_info) {
+        for (const MeasurementInfo& m : m_info)
+        {
             bool success;
             uint64_t val;
 
@@ -133,11 +138,11 @@ class VariorumService
             // TODO: For aggregation, let's use average power for now
             Variant v_prev = c->exchange(m.prval_attr, v_val);
             rec->append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
-            std::cout << "delta value: " << val << ", " << v_prev.to_uint() << " = " << cali_make_variant_from_uint((val + v_prev.to_uint())/2) << std::endl;
         }
     }
 
-    void post_init_cb(Caliper* /*c*/, Channel* /*channel*/) {
+    void post_init_cb(Caliper* /*c*/, Channel* /*channel*/)
+    {
         // This callback is invoked when the channel is fully initialized
         // and ready to make measurements. This is a good place to initialize
         // measurement values, if needed.
@@ -145,7 +150,8 @@ class VariorumService
         m_starttime = Clock::now();
     }
 
-    void finish_cb(Caliper* c, Channel* channel) {
+    void finish_cb(Caliper* c, Channel* channel)
+    {
         // This callback is invoked when the channel is being destroyed.
         // This is a good place to shut down underlying measurement libraries
         // (but keep in mind multiple channels may be active), report errors,
@@ -160,13 +166,9 @@ class VariorumService
         }
     }
 
-    MeasurementInfo create_measurement_info(Caliper* c, Channel* channel, const std::string& domain) {
-
-        // Delete Comment Later
-        // This is how the measurment info class that was confusing above,
-        // comes into play
+    MeasurementInfo create_measurement_info(Caliper* c, Channel* channel, const std::string& domain)
+    {
         MeasurementInfo m;
-
         m.domain = domain;
 
         Variant v_true(true);
@@ -186,7 +188,8 @@ class VariorumService
         auto domainList =
             channel->config().init("variorum", s_configdata).get("domains").to_stringlist(",");
 
-        for (auto &domain : domainList) {
+        for (auto &domain : domainList)
+        {
             m.value_attr =
                 c->create_attribute(std::string("variorum.val.") + domain,
                                     CALI_TYPE_UINT,
@@ -194,7 +197,6 @@ class VariorumService
                                     CALI_ATTR_ASVALUE      |
                                     CALI_ATTR_SKIP_EVENTS,
                                     1, &class_aggregatable_attr, &v_true);
-
 
             // The delta attribute stores the difference of the measurement
             // value since the last snapshot. We add the "class.aggregatable"
@@ -239,11 +241,12 @@ class VariorumService
         // "CALI_MEASUREMENT_TEMPLATE_NAMES=a,b" to set "names" to "a,b".
         ConfigSet config = channel->config().init("variorum", s_configdata);
 
-        // Read the "names" variable and treat it as a string list
+        // Read the "domains" variable and treat it as a string list
         // (comma-separated list). Returns a std::vector<std::string>.
         auto domainList = config.get("domains").to_stringlist(",");
 
-        if (domainList.empty()) {
+        if (domainList.empty())
+        {
             Log(1).stream() << channel->name()
                             << ": variorum: No domains specified, dropping variorum service"
                             << std::endl;
@@ -252,7 +255,8 @@ class VariorumService
 
         // Create a MeasurementInfo entry for each of the "measurement
         // variables" in the configuration.
-        for (const std::string& domain : domainList) {
+        for (const std::string& domain : domainList)
+        {
             m_info.push_back( create_measurement_info(c, channel, domain) );
         }
     }
@@ -275,11 +279,13 @@ public:
     // any necessary objects like Caliper attributes, and register callback
     // functions.
 
-    static void register_variorum(Caliper* c, Channel* channel) {
+    static void register_variorum(Caliper* c, Channel* channel)
+    {
         auto domainList =
             channel->config().init("variorum", s_configdata).get("domains").to_stringlist(",");
 
-        if (domainList.empty()) {
+        if (domainList.empty())
+        {
             Log(1).stream() << channel->name()
                             << ": variorum: No domains specified, dropping variorum service"
                             << std::endl;
@@ -313,7 +319,8 @@ public:
 };
 
 const ConfigSet::Entry VariorumService::s_configdata[] = {
-    { "domains",                           // config variable name
+    {
+      "domains",                           // config variable name
       CALI_TYPE_STRING,                    // datatype
       "",                                  // default value
       "List of domains to record", // short description
