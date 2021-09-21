@@ -72,7 +72,7 @@ std::ostream& write_record_data(const RecordInfo& info, std::ostream& os)
 
     int count = 0;
 
-    for (const EntryInfo e : info.entries) {
+    for (const EntryInfo& e : info.entries) {
         if (count++ > 0)
             os << "\n";
 
