@@ -358,6 +358,18 @@ if (WITH_MPI)
   endif()
 endif()
 
+if (WITH_ROCTX)
+  include(FindRocTX)
+  if (ROCTX_FOUND)
+    set(CALIPER_HAVE_ROCTX TRUE)
+    set(CALIPER_RocTX_CMAKE_MSG "Yes, using ${ROCM_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCM_LIBRARIES})
+  else()
+    message(WARNING "RocTX support requested but ROCm was not found!\n"
+      "Set ROCM_PREFIX to installation path and re-run cmake.")
+  endif()
+endif()
+
 if (WITH_ROCM)
   include(FindRoctracer)
   if (ROCM_FOUND)
@@ -548,7 +560,7 @@ set(CALIPER_MODULES
   Nvtx
   CUpti
   Kokkos
-  ROCm
+  RocTX
   TAU
   VTune
   PCP
