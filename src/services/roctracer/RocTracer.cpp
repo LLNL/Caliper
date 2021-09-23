@@ -3,10 +3,16 @@
 
 #include "caliper/CaliperService.h"
 
+#include "caliper/Caliper.h"
+
 #include "caliper/common/Attribute.h"
 #include "caliper/common/Log.h"
 
 #include <roctracer.h>
+#include <roctracer_ext.h>
+#include <roctracer_hip.h>
+
+using namespace cali;
 
 namespace
 {
@@ -18,7 +24,7 @@ class RocTracerService {
         Attribute subs_attr = c->get_attribute("subscription_event");
         Variant v_true(true);
 
-        m_api_attribute =
+        m_api_attr =
             c->create_attribute("rocm.api", CALI_TYPE_STRING,
                                 CALI_ATTR_NESTED,
                                 1, &subs_attr, &v_true);
@@ -27,7 +33,7 @@ class RocTracerService {
     void subscribe_attributes(Caliper* c, Channel* channel) {
         channel->events().subscribe_attribute(c, channel, m_api_attr);
     }
-
+#if 0
     static void kfd_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) {
         auto instance = static_cast<const RocTracerService*>(arg);
 
@@ -39,7 +45,7 @@ class RocTracerService {
             c.end(instance->m_api_attr);
         }
     }
-
+#endif
     static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) {
         auto instance = static_cast<const RocTracerService*>(arg);
 
@@ -53,11 +59,7 @@ class RocTracerService {
     }
 
     bool init_callbacks(Channel* channel) {
-        int err = 0;
-        err = roctracer_enable_domain_callback(ACTIVITY_DOMAIN_KFD_API, RocTracerService::kfd_api_callback, this);
-        if (err != 0)
-            Log(0).stream() << channel->name() << ": roctracer: enable callback (KFD): " << roctracer_error_string() << std::endl;
-        err = roctracer_enable_domain_callback(ACTIVTIY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this);
+        int err = roctracer_enable_domain_callback(ACTIVITY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this);
         if (err != 0)
             Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): " << roctracer_error_string() << std::endl;
 
@@ -69,7 +71,6 @@ class RocTracerService {
 
     void stop_callbacks(Channel* channel) {
         roctracer_disable_domain_callback(ACTIVITY_DOMAIN_HIP_API);
-        roctracer_disable_domain_callback(ACTIVITY_DOMAIN_KFD_API);
 
         Log(1).stream() << channel->name() << ": roctracer: callbacks disabled" << std::endl;
     }
@@ -90,12 +91,12 @@ public:
     static void register_roctracer(Caliper* c, Channel* channel) {
         RocTracerService* instance = new RocTracerService(c);
 
-        chn->events().post_init_evt.connect(
+        channel->events().post_init_evt.connect(
             [instance](Caliper* c, Channel* channel){
                 instance->subscribe_attributes(c, channel);
-                instance->init_callbacks();
+                instance->init_callbacks(channel);
             });
-        chn->events().finish_evt.connect(
+        channel->events().finish_evt.connect(
             [instance](Caliper* c, Channel* channel){
                 instance->finish_cb(c, channel);
                 delete instance;

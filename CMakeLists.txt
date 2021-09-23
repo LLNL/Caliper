@@ -371,7 +371,7 @@ if (WITH_ROCTX)
   endif()
 endif()
 
-if (WITH_ROCM)
+if (WITH_ROCTRACER)
   include(FindRoctracer)
   if (ROCTRACER_FOUND)
     set(CALIPER_HAVE_ROCTRACER TRUE)
