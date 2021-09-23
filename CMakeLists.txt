@@ -71,7 +71,8 @@ add_caliper_option(WITH_OMPT      "Enable OMPT" FALSE)
 add_caliper_option(WITH_SAMPLER   "Enable Linux sampler (x86 and PPC Linux only)" FALSE)
 add_caliper_option(WITH_DYNINST   "Enable dyninst (for symbollookup service" FALSE)
 add_caliper_option(WITH_GOTCHA    "Enable GOTCHA wrapping" ${CALIPER_HAVE_LINUX})
-add_caliper_option(WITH_ROCM      "Enable AMD ROCtracer/RocTX support" FALSE)
+add_caliper_option(WITH_ROCTX     "Enable AMD RocTX support" FALSE)
+add_caliper_option(WITH_ROCTRACER "Enable AMD RocTracer support" FALSE)
 add_caliper_option(WITH_SOS       "Enable SOSFlow data management" FALSE)
 add_caliper_option(WITH_TAU       "Enable TAU service (TAU Performance System)" FALSE)
 add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings" FALSE)
@@ -372,12 +373,12 @@ endif()
 
 if (WITH_ROCM)
   include(FindRoctracer)
-  if (ROCM_FOUND)
-    set(CALIPER_HAVE_ROCM TRUE)
-    set(CALIPER_ROCm_CMAKE_MSG "Yes, using ${ROCM_LIBRARIES}")
-    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCM_LIBRARIES})
+  if (ROCTRACER_FOUND)
+    set(CALIPER_HAVE_ROCTRACER TRUE)
+    set(CALIPER_RocTracer_CMAKE_MSG "Yes, using ${ROCTRACER_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ROCTRACER_LIBRARIES})
   else()
-    message(WARNING "ROCm support requested but ROCm was not found!\n"
+    message(WARNING "RocTracer support requested but ROCm was not found!\n"
       "Set ROCM_PREFIX to installation path and re-run cmake.")
   endif()
 endif()
@@ -560,6 +561,7 @@ set(CALIPER_MODULES
   Nvtx
   CUpti
   Kokkos
+  RocTracer
   RocTX
   TAU
   VTune
