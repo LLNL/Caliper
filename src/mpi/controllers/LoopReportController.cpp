@@ -247,7 +247,7 @@ class LoopReportController : public cali::CollectiveOutputChannel
 
 public:
 
-    void collective_flush(OutputStream& stream, MPI_Comm comm) {
+    void collective_flush(OutputStream& stream, MPI_Comm comm) override {
         Caliper c;
         CaliperMetadataDB db;
 

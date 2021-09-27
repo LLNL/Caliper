@@ -494,7 +494,7 @@ class SpotController : public cali::CollectiveOutputChannel
         m_db.set_global(chn_attr, Variant(spot_channels.c_str()));
     }
 
-    void on_create(Caliper*, Channel*) {
+    void on_create(Caliper*, Channel*) override {
         if (m_timeseries_mgr.error())
             Log(0).stream() << "[spot controller]: Timeseries config error: "
                             << m_timeseries_mgr.error_msg()

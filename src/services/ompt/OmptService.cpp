@@ -8,7 +8,7 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/StringConverter.h"
 
-#include <ompt.h>
+#include <omp-tools.h>
 
 #include <cstdlib>
 
