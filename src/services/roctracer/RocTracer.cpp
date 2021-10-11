@@ -64,7 +64,7 @@ class RocTracerService {
             c->create_attribute("rocm.endtime", CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
-        Attribute aggr_attr = c->get_attribute("class.aggregate");
+        Attribute aggr_attr = c->get_attribute("class.aggregatable");
         Variant v_true(true);
 
         m_activity_duration_attr =
@@ -204,7 +204,7 @@ class RocTracerService {
     void init_tracing(Channel* channel) {
         roctracer_properties_t properties {};
 
-        properties.buffer_size = 12;
+        properties.buffer_size = 0x1000;
         properties.alloc_fun   = rt_alloc;
         properties.alloc_arg   = this;
         properties.buffer_callback_fun = rt_activity_callback;
@@ -212,6 +212,13 @@ class RocTracerService {
 
         if (roctracer_open_pool_expl(&properties, &m_roctracer_pool) != 0) {
             Log(0).stream() << channel->name() << ": roctracer: roctracer_open_pool_expl(): "
+                            << roctracer_error_string()
+                            << std::endl;
+            return;
+        }
+
+        if (roctracer_default_pool_expl(m_roctracer_pool) != 0) {
+            Log(0).stream() << channel->name() << ": roctracer: roctracer_default_pool_expl(): "
                             << roctracer_error_string()
                             << std::endl;
             return;
