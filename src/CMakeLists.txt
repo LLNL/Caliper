@@ -46,6 +46,11 @@ add_library(caliper-serial ${CALIPER_SERIAL_OBJS})
 set_target_properties(caliper-serial PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper-serial PROPERTIES VERSION ${CALIPER_VERSION})
 
+target_include_directories(
+  caliper-serial
+  INTERFACE
+  "$<INSTALL_INTERFACE:include>")
+
 list(APPEND CALIPER_EXTERNAL_LIBS
   Threads::Threads)
 
@@ -59,6 +64,11 @@ add_library(caliper ${CALIPER_ALL_OBJS})
 
 set_target_properties(caliper PROPERTIES SOVERSION ${CALIPER_MAJOR_VERSION})
 set_target_properties(caliper PROPERTIES VERSION ${CALIPER_VERSION})
+
+target_include_directories(
+  caliper
+  INTERFACE
+  "$<INSTALL_INTERFACE:include>")
 
 list(APPEND CALIPER_ALL_EXTERNAL_LIBS
   ${CALIPER_EXTERNAL_LIBS})
