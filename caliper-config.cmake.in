@@ -46,6 +46,9 @@ if (NOT caliper_CONFIG_LOADED)
   set(caliper_INCLUDE_PATH ${caliper_INCLUDE_DIR})
   set(caliper_LIB_PATH     ${caliper_LIB_DIR})
 
+  include(CMakeFindDependencyMacro)
+  find_dependency(Threads)
+
   # Library targets imported from file
   include(${caliper_CMAKE_DIR}/caliper.cmake)
 endif()
