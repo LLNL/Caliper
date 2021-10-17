@@ -7,8 +7,32 @@
 
 #include "caliper/common/CompressedSnapshotRecord.h"
 
-#include <cstring>
 #include <iostream>
+
+#ifdef _WIN32
+#include <intrin.h>
+#pragma intrinsic(_BitScanForward)
+namespace {
+int first_high_bit(int x)
+{
+    unsigned long const mask = static_cast<unsigned long>(x);
+    unsigned long index;
+    unsigned char is_non_zero = _BitScanForward(&index, mask);
+    if (is_non_zero) {
+        return index + 1;
+    }
+    return 0;
+}
+}
+#else
+#include <strings.h>
+namespace {
+int first_high_bit(int x)
+{
+    return ffs(x);
+}
+}
+#endif
 
 using namespace cali;
 
@@ -159,13 +183,13 @@ Blackboard::snapshot(CompressedSnapshotRecord* rec) const
         int tmptoc = ref_toctoc;
 
         while (tmptoc) {
-            int i = ffs(tmptoc) - 1;
+            int i = first_high_bit(tmptoc) - 1;
             tmptoc &= ~(1 << i);
 
             int tmp = ref_toc[i];
 
             while (tmp) {
-                int j = ffs(tmp) - 1;
+                int j = first_high_bit(tmp) - 1;
                 tmp &= ~(1 << j);
 
                 const blackboard_entry_t* entry = hashtable+(i*32+j);
@@ -181,13 +205,13 @@ Blackboard::snapshot(CompressedSnapshotRecord* rec) const
         int tmptoc = imm_toctoc;
 
         while (tmptoc) {
-            int i = ffs(tmptoc) - 1;
+            int i = first_high_bit(tmptoc) - 1;
             tmptoc &= ~(1 << i);
 
             int tmp = imm_toc[i];
 
             while (tmp) {
-                int j = ffs(tmp) - 1;
+                int j = first_high_bit(tmp) - 1;
                 tmp &= ~(1 << j);
 
                 const blackboard_entry_t* entry = hashtable+(i*32+j);
@@ -210,13 +234,13 @@ Blackboard::snapshot(SnapshotRecord* rec) const
         int tmptoc = ref_toctoc;
 
         while (tmptoc) {
-            int i = ffs(tmptoc) - 1;
+            int i = first_high_bit(tmptoc) - 1;
             tmptoc &= ~(1 << i);
 
             int tmp = ref_toc[i];
 
             while (tmp) {
-                int j = ffs(tmp) - 1;
+                int j = first_high_bit(tmp) - 1;
                 tmp &= ~(1 << j);
 
                 const blackboard_entry_t* entry = hashtable+(i*32+j);
@@ -232,13 +256,13 @@ Blackboard::snapshot(SnapshotRecord* rec) const
         int tmptoc = imm_toctoc;
 
         while (tmptoc) {
-            int i = ffs(tmptoc) - 1;
+            int i = first_high_bit(tmptoc) - 1;
             tmptoc &= ~(1 << i);
 
             int tmp = imm_toc[i];
 
             while (tmp) {
-                int j = ffs(tmp) - 1;
+                int j = first_high_bit(tmp) - 1;
                 tmp &= ~(1 << j);
 
                 const blackboard_entry_t* entry = hashtable+(i*32+j);
