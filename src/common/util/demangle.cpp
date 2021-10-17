@@ -3,7 +3,9 @@
 
 #include "demangle.h"
 
+#ifndef _WIN32
 #include <cxxabi.h>
+#endif
 
 #include <cstring>
 
@@ -12,6 +14,10 @@ namespace util
 
 std::string demangle(const char* name)
 {
+#ifdef _WIN32
+    // not sure how to demangle on Windows, make it a no-op for now.
+    return name;
+#else
     std::string result;
 
     if (!name)
@@ -31,6 +37,7 @@ std::string demangle(const char* name)
     free(demangled);
 
     return result;
+#endif
 }
 
 } // namespace util
