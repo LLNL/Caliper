@@ -58,6 +58,10 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper-serial PRIVATE ${_extlib})
 endforeach()
 
+if (WIN32)
+  target_link_libraries(caliper-serial PUBLIC ws2_32)
+endif()
+
 # Make the combined libcaliper
 
 add_library(caliper ${CALIPER_ALL_OBJS})
