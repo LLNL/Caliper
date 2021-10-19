@@ -124,7 +124,7 @@ extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo openmp_report_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 
-ConfigManager::ConfigInfo* builtin_controllers_table[] = {
+const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &callpath_sample_report_controller_info,
     &cuda_activity_profile_controller_info,
     &cuda_activity_report_controller_info,
