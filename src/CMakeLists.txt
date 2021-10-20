@@ -85,6 +85,10 @@ foreach (_extlib ${CALIPER_ALL_EXTERNAL_LIBS})
   target_link_libraries(caliper PRIVATE ${_extlib})
 endforeach()
 
+if (WIN32)
+  target_link_libraries(caliper PUBLIC ws2_32)
+endif()
+
 if (WITH_TOOLS)
   add_subdirectory(tools)
 endif()
