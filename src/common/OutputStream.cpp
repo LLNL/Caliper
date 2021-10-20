@@ -10,17 +10,25 @@
 #include <fstream>
 #include <mutex>
 #include <sstream>
+
+// MSVC has a low value of __cplusplus even though it support C++17
+#if defined(_WIN32) || (__cplusplus >= 201703L)
 #include <filesystem>
+#else
+#include <errno.h>
+#include <sys/stat.h>
+#endif
 
 using namespace cali;
 
 namespace
 {
 
+#if defined(_WIN32) || (__cplusplus >= 201703L)
 bool check_and_create_directory(const std::filesystem::path& filepath)
 {
     try {
-        bool result = std::filesystem::create_directories(filepath);
+        bool result = std::filesystem::create_directories(filepath.parent_path());
         if (result) {
             Log(2).stream() << "OutputStream: created directories for " << filepath << std::endl;
         }
@@ -30,6 +38,43 @@ bool check_and_create_directory(const std::filesystem::path& filepath)
     }
     return true;
 }
+#else
+bool check_and_create_directory(const std::string& filepath)
+{
+    auto pos = filepath.find_last_of('/');
+
+    if (pos == 0 || pos == std::string::npos)
+        return true;
+
+    // Check and create parent directories
+    std::string dir = filepath.substr(0, pos);
+
+    // Check if the directory exists
+    struct stat sb;
+    if (stat(dir.c_str(), &sb) == -1) {
+        // Doesn't exist - recursively descend and create the path
+        if (errno == ENOENT) {
+            if (!check_and_create_directory(dir))
+                return false;
+
+            Log(2).stream() << "OutputStream: creating directory " << dir << std::endl;
+
+            if (mkdir(dir.c_str(), 0755) == -1) {
+                Log(0).perror(errno, "OutputStream: mkdir: ") << ": " << dir << std::endl;
+                return false;
+            }
+        } else {
+            Log(0).perror(errno, "OutputStream: stat: ") << ": " << dir << std::endl;
+            return false;
+        }
+    } else if (!S_ISDIR(sb.st_mode)) {
+        Log(0).stream() << "OutputStream: " << dir << " is not a directory" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+#endif
 
 }
 
@@ -40,7 +85,11 @@ struct OutputStream::OutputStreamImpl
     bool          is_initialized;
     std::mutex    init_mutex;
 
+#if defined(_WIN32) || (__cplusplus >= 201703L)
     std::filesystem::path   filename;
+#else
+    std::string             filename;
+#endif
     std::ofstream fs;
 
     std::ostream* user_os;
