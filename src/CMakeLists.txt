@@ -1,7 +1,11 @@
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) 
 
-set(CMAKE_CXX_STANDARD 11)
+if (WIN32)
+  set(CMAKE_CXX_STANDARD 17)
+else()
+  set(CMAKE_CXX_STANDARD 11)
+endif()
 set(CMAKE_C_STANDARD   99)
 
 include(CheckCXXCompilerFlag)
@@ -58,6 +62,10 @@ foreach (_extlib ${CALIPER_EXTERNAL_LIBS})
   target_link_libraries(caliper-serial PRIVATE ${_extlib})
 endforeach()
 
+if (WIN32)
+  target_link_libraries(caliper-serial PUBLIC ws2_32)
+endif()
+
 # Make the combined libcaliper
 
 add_library(caliper ${CALIPER_ALL_OBJS})
@@ -76,6 +84,10 @@ list(APPEND CALIPER_ALL_EXTERNAL_LIBS
 foreach (_extlib ${CALIPER_ALL_EXTERNAL_LIBS})
   target_link_libraries(caliper PRIVATE ${_extlib})
 endforeach()
+
+if (WIN32)
+  target_link_libraries(caliper PUBLIC ws2_32)
+endif()
 
 if (WITH_TOOLS)
   add_subdirectory(tools)

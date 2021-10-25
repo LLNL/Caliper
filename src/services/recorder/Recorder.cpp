@@ -16,7 +16,11 @@
 
 #include "caliper/reader/CaliWriter.h"
 
+#ifdef _WIN32
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 
 #include <algorithm>
 #include <chrono>

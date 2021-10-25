@@ -506,7 +506,7 @@ cali_variant_compare(cali_variant_t lhs, cali_variant_t rhs)
         case CALI_TYPE_TYPE:
             return ((int) lhs.value.v_type) - ((int) rhs.value.v_type);
         case CALI_TYPE_PTR:
-            return (int) (lhs.value.unmanaged_ptr  - rhs.value.unmanaged_ptr);
+            return (int) ((char const*)(lhs.value.unmanaged_ptr)  - (char const*)(rhs.value.unmanaged_ptr));
         }
     }
 

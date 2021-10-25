@@ -6,19 +6,39 @@
 #include "caliper/common/Log.h"
 #include "caliper/common/SnapshotTextFormatter.h"
 
-#include <errno.h>
-#include <sys/stat.h>
-
 #include <cstring>
 #include <fstream>
 #include <mutex>
 #include <sstream>
+
+// MSVC has a low value of __cplusplus even though it support C++17
+#if defined(_WIN32) || (__cplusplus >= 201703L)
+#include <filesystem>
+#else
+#include <errno.h>
+#include <sys/stat.h>
+#endif
 
 using namespace cali;
 
 namespace
 {
 
+#if defined(_WIN32) || (__cplusplus >= 201703L)
+bool check_and_create_directory(const std::filesystem::path& filepath)
+{
+    try {
+        bool result = std::filesystem::create_directories(filepath.parent_path());
+        if (result) {
+            Log(2).stream() << "OutputStream: created directories for " << filepath << std::endl;
+        }
+    } catch (std::filesystem::filesystem_error const& e) {
+        Log(0).stream() << "OutputStream: create_directories failed: " << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+#else
 bool check_and_create_directory(const std::string& filepath)
 {
     auto pos = filepath.find_last_of('/');
@@ -54,6 +74,7 @@ bool check_and_create_directory(const std::string& filepath)
 
     return true;
 }
+#endif
 
 }
 
@@ -64,7 +85,11 @@ struct OutputStream::OutputStreamImpl
     bool          is_initialized;
     std::mutex    init_mutex;
 
-    std::string   filename;
+#if defined(_WIN32) || (__cplusplus >= 201703L)
+    std::filesystem::path   filename;
+#else
+    std::string             filename;
+#endif
     std::ofstream fs;
 
     std::ostream* user_os;

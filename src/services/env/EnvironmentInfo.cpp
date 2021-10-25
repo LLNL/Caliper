@@ -12,9 +12,13 @@
 #include "caliper/common/RuntimeConfig.h"
 #include "caliper/common/Variant.h"
 
+#ifdef _WIN32
+#include <winsock.h>
+#else
 #include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
+#endif
 
 #include <cstring>
 #include <fstream>
@@ -53,6 +57,24 @@ void read_cmdline(Caliper* c, Channel* chn, ConfigSet& config)
     
 void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
 {
+#ifdef _WIN32
+    const struct uname_attr_info_t { 
+        const char* attr_name;
+        const char* u_val;
+    } uname_attr_info[] = {
+        { "env.os.sysname", "Windows" },
+        { "env.os.release", "10" },
+        { "env.os.version", "10" },
+        { "env.machine",    "x86_64" }
+    };
+
+    for (const uname_attr_info_t& uinfo : uname_attr_info) {
+        Attribute attr = 
+            c->create_attribute(uinfo.attr_name, CALI_TYPE_STRING, CALI_ATTR_GLOBAL);
+
+        c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
+    }
+#else
     struct utsname u;
 
     if (uname(&u) == 0) {
@@ -73,6 +95,7 @@ void read_uname(Caliper* c, Channel* chn, ConfigSet& config)
             c->set(attr, Variant(CALI_TYPE_STRING, uinfo.u_val, strlen(uinfo.u_val)));
         }
     }
+#endif
 }
 
 void read_time(Caliper* c, Channel* chn, ConfigSet& config)
