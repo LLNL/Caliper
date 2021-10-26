@@ -25,8 +25,6 @@
 #include <sstream>
 #include <iostream>
 
-
-
 using namespace cali;
 
 namespace
@@ -144,9 +142,6 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
 
     std::map<std::string, std::string> m_aliases;
 
-    std::mutex               m_init_lock;
-    bool                     m_initialized;
-
     /// \brief The output columns.
     struct Column {
         std::string            title;
@@ -162,21 +157,13 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         }
     };
 
-    std::vector<Column>      m_columns;
-
     Hierarchy                m_hierarchy;
 
-    int                      m_row_count; // protected by m_os_lock
+    std::vector<EntryList>   m_records;
+    std::mutex               m_records_lock;
 
-    OutputStream             m_os;
-    std::mutex               m_os_lock;
-
-
-    JsonSplitFormatterImpl(OutputStream& os)
-        : m_select_all(false),
-          m_initialized(false),
-          m_row_count(0),
-          m_os(os)
+    JsonSplitFormatterImpl()
+        : m_select_all(false)
     { }
 
     void configure(const QuerySpec& spec) {
@@ -210,10 +197,10 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         m_aliases = spec.aliases;
     }
 
-    void init_columns(const CaliperMetadataAccessInterface& db) {
-        m_columns.clear();
+    std::vector<Column> init_columns(const CaliperMetadataAccessInterface& db) const {
+        std::vector<Column> columns;
 
-        std::vector<Attribute> attrs = db.get_all_attributes();
+        auto attrs = db.get_all_attributes();
         auto attrs_rem = attrs.end();
 
         if (m_select_all) {
@@ -255,12 +242,14 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
                 if (aliasit != m_aliases.end())
                     name = aliasit->second;
 
-                m_columns.push_back(Column::make_column(name, a));
+                columns.push_back(Column::make_column(name, a));
             }
         }
 
         if (!path.attributes.empty())
-            m_columns.push_back(path);
+            columns.push_back(path);
+        
+        return columns;
     }
 
     void write_hierarchy_entry(std::ostream& os, const EntryList& list, const std::vector<Attribute>& path_attrs, const std::string& column) {
@@ -301,42 +290,10 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
     }
 
     void process_record(const CaliperMetadataAccessInterface& db, const EntryList& list) {
-        // initialize the columns on first call
-        {
-            std::lock_guard<std::mutex>
-                g(m_init_lock);
-
-            if (!m_initialized)
-                init_columns(db);
-
-            m_initialized = true;
-        }
-
-        std::ostringstream os;
-        os << "[ ";
-
-        int count = 0;
-
-        for (const Column& c : m_columns) {
-            if (count++ > 0)
-                os << ", ";
-
-            if (c.is_hierarchy)
-                write_hierarchy_entry(os, list, c.attributes, c.title);
-            else
-                write_immediate_entry(os, list, c.attributes.front());
-        }
-
-        os << " ]";
-
-        {
-            std::lock_guard<std::mutex>
-                g(m_os_lock);
-
-            std::ostream* real_os = m_os.stream();
-
-            *real_os << (m_row_count++ > 0 ? ",\n    " : "{\n  \"data\": [\n    ") << os.str();
-        }
+        std::lock_guard<std::mutex>
+            g(m_records_lock);
+        
+        m_records.push_back(list);
     }
 
     std::ostream& write_globals(std::ostream& os, CaliperMetadataAccessInterface& db) {
@@ -389,42 +346,71 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         return os;
     }
 
-    void write_metadata(CaliperMetadataAccessInterface& db) {
-        std::ostream* real_os = m_os.stream();
-
-        // close "data" field, start "columns"
-        *real_os << (m_row_count > 0 ? "\n  ],\n" : "{\n") << "  \"columns\": [";
+    std::ostream& write_metadata(CaliperMetadataAccessInterface& db, const std::vector<Column>& columns, std::ostream& os) {
+        // start "columns"
+        os << ",\n  \"columns\": [";
 
         {
             int count = 0;
-            for (const Column& c : m_columns)
-                util::write_esc_string(*real_os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
+            for (const Column& c : columns)
+                util::write_esc_string(os << (count++ > 0 ? ", " : " ") << "\"", c.title) << "\"";
         }
 
         // close "columns", start "column_metadata"
-        *real_os << " ],\n  \"column_metadata\": [";
+        os << " ],\n  \"column_metadata\": [";
 
         {
             int count = 0;
 
-            for (const Column& c : m_columns)
-                write_column_metadata(*real_os << (count++ > 0 ? " }, { " : " { "), c, db);
+            for (const Column& c : columns)
+                write_column_metadata(os << (count++ > 0 ? " }, { " : " { "), c, db);
 
             if (count > 0)
-                *real_os << " } ";
+                os << " } ";
         }
 
         // close "column_metadata", write "nodes"
-        m_hierarchy.write_nodes( *real_os << " ],\n  " );
+        m_hierarchy.write_nodes( os << " ],\n  " );
 
-        // write globals and finish
-        write_globals(*real_os, db) << "\n}" << std::endl;
+        return write_globals(os, db);
+    }
+
+    void flush(CaliperMetadataAccessInterface& db, std::ostream& os) {
+        auto columns = init_columns(db);
+
+        os << "{\n  \"data\": [";
+
+        int rowcount = 0;
+
+        for (auto rec : m_records) {
+            os << (rowcount++ > 0 ? ",\n    [ " : "\n    [ ");
+
+            int colcount = 0;
+
+            for (const Column& c : columns) {
+                if (colcount++ > 0)
+                    os << ", ";
+
+                if (c.is_hierarchy)
+                    write_hierarchy_entry(os, rec, c.attributes, c.title);
+                else
+                    write_immediate_entry(os, rec, c.attributes.front());
+            }
+
+            os << " ]";
+        }
+
+        // close "data"
+        os << "\n  ]";
+
+        // write metadata and close object
+        write_metadata(db, columns, os) << "\n}" << std::endl;
     }
 };
 
 
-JsonSplitFormatter::JsonSplitFormatter(OutputStream &os, const QuerySpec& spec)
-    : mP { new JsonSplitFormatterImpl(os) }
+JsonSplitFormatter::JsonSplitFormatter(const QuerySpec& spec)
+    : mP { new JsonSplitFormatterImpl }
 {
     mP->configure(spec);
 }
@@ -440,7 +426,7 @@ JsonSplitFormatter::process_record(CaliperMetadataAccessInterface& db, const Ent
     mP->process_record(db, list);
 }
 
-void JsonSplitFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream&)
+void JsonSplitFormatter::flush(CaliperMetadataAccessInterface& db, std::ostream& os)
 {
-    mP->write_metadata(db);
+    mP->flush(db, os);
 }

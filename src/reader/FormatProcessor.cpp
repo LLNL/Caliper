@@ -97,7 +97,7 @@ struct FormatProcessor::FormatProcessorImpl
                 m_formatter = new TreeFormatter(spec);
                 break;
             case FormatterID::JsonSplit:
-                m_formatter = new JsonSplitFormatter(m_stream, spec);
+                m_formatter = new JsonSplitFormatter(spec);
                 break;
             }
         }
