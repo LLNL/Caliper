@@ -9,8 +9,6 @@
 #include "Formatter.h"
 #include "RecordProcessor.h"
 
-#include "../common/OutputStream.h"
-
 #include <memory>
 
 namespace cali
@@ -28,7 +26,7 @@ class JsonSplitFormatter : public Formatter
 
 public:
 
-    JsonSplitFormatter(OutputStream& os, const QuerySpec& spec);
+    JsonSplitFormatter(const QuerySpec& spec);
 
     ~JsonSplitFormatter();
 
