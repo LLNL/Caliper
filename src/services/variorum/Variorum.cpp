@@ -135,7 +135,8 @@ class VariorumService
             // blackboard so we can compute the difference since the last
             // snapshot. Here, c->exchange() stores the current and returns
             // the previous value. Compute the difference and append it.
-            // TODO: For aggregation, let's use average power for now
+            // TODO: For aggregation, we use average power instead of
+            // difference.
             Variant v_prev = c->exchange(m.prval_attr, v_val);
             rec->append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
         }

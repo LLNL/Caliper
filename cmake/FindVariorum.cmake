@@ -1,21 +1,21 @@
-# Try to find PAPI headers and libraries.
+# Try to find Variorum headers and libraries.
 #
 # Usage of this module as follows:
 #
-#     find_package(PAPI)
+#     find_package(Variorum)
 #
 # Variables used by this module, they can change the default behaviour and need
 # to be set before calling find_package:
 #
-#  PAPI_PREFIX         Set this variable to the root installation of
-#                      libpapi if the module has problems finding the
+#  VARIORUM_PREFIX     Set this variable to the root installation of
+#                      libvariorum if the module has problems finding the
 #                      proper installation path.
 #
 # Variables defined by this module:
 #
-#  PAPI_FOUND              System has PAPI libraries and headers
-#  PAPI_LIBRARIES          The PAPI library
-#  PAPI_INCLUDE_DIRS       The location of PAPI headers
+#  VARIORUM_FOUND              System has Variorum libraries and headers
+#  VARIORUM_LIBRARIES          The Variorum PAPI library
+#  VARIORUM_INCLUDE_DIRS       The location of Variorum header
 
 find_path(VARIORUM_PREFIX
     NAMES include/variorum.h
