@@ -38,10 +38,17 @@ if (NOT Wrap_CONFIG_LOADED)
       set(MPI_C_COMPILER ${MPI_COMPILER})
     endif()
 
+    set(wrap_includes "")
+    # On the latest macOS and XCode the files that used to be in /usr/include
+    # need to be found under the SDK directories, and are not found automatically
+    # by the compilers in those directories
+    if (APPLE)
+      set(wrap_includes ${wrap_includes} -I ${CMAKE_OSX_SYSROOT}/usr/include)
+    endif()
+
     # Play nice with FindMPI.  This will deduce the appropriate MPI compiler to use
     # for generating wrappers
     if (MPI_C_INCLUDE_PATH)
-      set(wrap_includes "")
       foreach(include ${MPI_C_INCLUDE_PATH})
         set(wrap_includes ${wrap_includes} -I ${include})
       endforeach()
