@@ -40,9 +40,6 @@ class ChannelController
 
 protected:
 
-    /// \brief Return the underlying %Caliper channel object.
-    Channel*      channel();
-
     /// \brief Provide access to the underlying config map.
     ///
     ///   Note that configuration modifications are only effective before
@@ -61,6 +58,9 @@ protected:
     virtual void  on_create(Caliper* /*c*/, Channel* /*chn*/) { }
 
 public:
+
+    /// \brief Return the underlying %Caliper channel object.
+    Channel*      channel();
 
     /// \brief Create and activate the %Caliper channel,
     ///   or reactivate a stopped %Caliper channel.

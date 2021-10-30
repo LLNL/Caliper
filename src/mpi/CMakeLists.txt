@@ -5,6 +5,7 @@ set(CALIPER_MPI_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CALIPER_MPI_SOURCES
   CollectiveOutputChannel.cpp
   MpiChannelManager.cpp
+  OutputCommMpi.cpp
   aggregate_over_mpi.cpp
   collective_flush.cpp
   mpi_flush.cpp
@@ -35,14 +36,14 @@ macro(add_mpi_service_objlib)
   set(CALIPER_MPI_SERVICES_LIBS ${CALIPER_MPI_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
 
+add_subdirectory(controllers)
+
 add_subdirectory(services/mpiwrap)
 add_subdirectory(services/mpireport)
 
 if (CALIPER_HAVE_TAU)
   add_subdirectory(services/tau)
 endif()
-
-add_subdirectory(controllers)
 
 if (CALIPER_HAVE_MPIT)
   # add_subdirectory(services/mpit)

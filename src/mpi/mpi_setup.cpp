@@ -30,9 +30,8 @@ extern CaliperService mpit_service;
 extern CaliperService tau_service;
 #endif
 
-extern ConfigManager::ConfigInfo loop_report_controller_info;
-extern ConfigManager::ConfigInfo spot_controller_info;
-extern ConfigManager::ConfigInfo spot_v1_controller_info;
+extern ConfigManager::ConfigInfo spot_controller_info_mpi;
+
 }
 
 namespace
@@ -77,7 +76,7 @@ namespace mpi
 void
 add_mpi_controllers_and_services()
 {
-    CaliperService services[] = {
+    const CaliperService services[] = {
         mpiwrap_service,
         mpireport_service,
         mpiflush_service,
@@ -90,14 +89,13 @@ add_mpi_controllers_and_services()
         { nullptr, nullptr }
     };
 
+    Caliper::add_services(services);
+
     const ConfigManager::ConfigInfo* controllers[] = {
-        &loop_report_controller_info,
-        &spot_controller_info,
-        &spot_v1_controller_info,
+        &spot_controller_info_mpi,
         nullptr
     };
 
-    Caliper::add_services(services);
     add_global_config_specs(controllers);
 }
 
