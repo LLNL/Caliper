@@ -3,8 +3,9 @@
 
 #include "caliper/caliper-config.h"
 
+#include "LoopReportController.h"
+
 #include <caliper/Caliper.h>
-#include <caliper/CollectiveOutputChannel.h>
 #include <caliper/ConfigManager.h>
 
 #include <caliper/reader/Aggregator.h>
@@ -21,11 +22,6 @@
 #include <algorithm>
 #include <cmath>
 #include <sstream>
-
-#ifdef CALIPER_HAVE_MPI
-#include "caliper/cali-mpi.h"
-#include <mpi.h>
-#endif
 
 using namespace cali;
 
@@ -61,39 +57,20 @@ LoopInfo get_loop_info(CaliperMetadataAccessInterface& db, const EntryList& rec)
     return ret;
 }
 
+} // namespace [anonymous]
 
-class LoopReportController : public cali::CollectiveOutputChannel
+using Comm = cali::internal::CustomOutputController::Comm;
+
+struct LoopReportController::LoopReportControllerImpl
 {
     cali::ConfigManager::Options m_opts;
-    bool m_use_mpi;
-    int  m_rank;
-#ifdef CALIPER_HAVE_MPI
-    MPI_Comm m_comm;
-#endif
 
-    void init_mpi(MPI_Comm comm) {
-#ifdef CALIPER_HAVE_MPI
-        m_use_mpi = true;
-
-        if (m_opts.is_set("aggregate_across_ranks"))
-            m_use_mpi = m_opts.get("aggregate_across_ranks").to_bool();
-
-        if (comm == MPI_COMM_NULL)
-            m_use_mpi = false;
-
-        if (m_use_mpi) {
-            m_comm = comm;
-            MPI_Comm_rank(m_comm, &m_rank);
-        }
-#endif
-    }
-
-    Aggregator local_aggregate(Caliper& c, CaliperMetadataDB& db, const QuerySpec& spec) {
+    Aggregator local_aggregate(Caliper& c, Channel* channel, CaliperMetadataDB& db, const QuerySpec& spec) {
         RecordSelector filter(spec);
         Preprocessor   prp(spec);
         Aggregator     agg(spec);
 
-        c.flush(channel(), nullptr, [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
+        c.flush(channel, nullptr, [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const EntryList& rec){
                 EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
                 if (filter.pass(db, mrec))
@@ -103,14 +80,7 @@ class LoopReportController : public cali::CollectiveOutputChannel
         return agg;
     }
 
-    void cross_aggregate(CaliperMetadataDB& db, Aggregator& agg) {
-#ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi)
-            aggregate_over_mpi(db, agg, m_comm);
-#endif
-    }
-
-    Aggregator summary_local_aggregation(Caliper& c, CaliperMetadataDB& db) {
+    Aggregator summary_local_aggregation(Caliper& c, Channel* channel, CaliperMetadataDB& db) {
         const char* select =
             " loop"
             ",count()"
@@ -127,7 +97,7 @@ class LoopReportController : public cali::CollectiveOutputChannel
                 { "where",    "loop" }
             }, false);
 
-        return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
+        return local_aggregate(c, channel, db, CalQLParser(query.c_str()).spec());
     }
 
     QuerySpec summary_query() {
@@ -149,7 +119,7 @@ class LoopReportController : public cali::CollectiveOutputChannel
         return CalQLParser(query.c_str()).spec();
     }
 
-    Aggregator timeseries_local_aggregation(Caliper& c, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
+    Aggregator timeseries_local_aggregation(Caliper& c, Channel* channel, CaliperMetadataDB& db, const std::string& loopname, int blocksize) {
         const char* select =
             " Block"
             ",sum(time.duration)"
@@ -166,7 +136,7 @@ class LoopReportController : public cali::CollectiveOutputChannel
                 { "where",    std::string("loop=\"")+loopname+"\"" }
             }, false);
 
-        return local_aggregate(c, db, CalQLParser(query.c_str()).spec());
+        return local_aggregate(c, channel, db, CalQLParser(query.c_str()).spec());
     }
 
     QuerySpec timeseries_spec() {
@@ -190,31 +160,10 @@ class LoopReportController : public cali::CollectiveOutputChannel
         return CalQLParser(query.c_str()).spec();
     }
 
-    void process_timeseries(Caliper& c, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info) {
-        int  iterations = 0;
-        int  rec_count = 0;
-        char namebuf[64];
-        memset(namebuf, 0, 64);
-
-        if (m_rank == 0) {
-            iterations = info.iterations;
-            rec_count  = info.count;
-
-            if (info.name.size() < 64) {
-                std::copy(info.name.begin(), info.name.end(), std::begin(namebuf));
-            } else {
-                Log(0).stream() << channel()->name() << ": Loop name too long (" << info.name << ")" << std::endl;
-                iterations = 0;
-            }
-        }
-
-#ifdef CALIPER_HAVE_MPI
-        if (m_use_mpi) {
-            MPI_Bcast(&iterations, 1,  MPI_INT,  0, m_comm);
-            MPI_Bcast(&rec_count,  1,  MPI_INT,  0, m_comm);
-            MPI_Bcast(namebuf,     64, MPI_CHAR, 0, m_comm);
-        }
-#endif
+    void process_timeseries(Caliper& c, Channel* channel, CaliperMetadataDB& db, OutputStream& stream, const LoopInfo& info, Comm comm) {
+        int iterations = comm.bcast_int(info.iterations);
+        int rec_count = comm.bcast_int(info.count);
+        std::string name = comm.bcast_str(info.name);
 
         if (iterations > 0) {
             int nblocks = 20;
@@ -226,14 +175,14 @@ class LoopReportController : public cali::CollectiveOutputChannel
 
             int blocksize = rec_count > nblocks ? iterations / nblocks : 1;
 
-            Aggregator local_agg = timeseries_local_aggregation(c, db, namebuf, std::max(blocksize, 1));
+            Aggregator local_agg = timeseries_local_aggregation(c, channel, db, name, std::max(blocksize, 1));
             QuerySpec  spec      = timeseries_spec();
             Aggregator cross_agg(spec);
 
             local_agg.flush(db, cross_agg);
-            cross_aggregate(db, cross_agg);
+            comm.cross_aggregate(db, cross_agg);
 
-            if (m_rank == 0) {
+            if (comm.rank() == 0) {
                 std::ostream* os = stream.stream();
                 *os << "\nIteration summary (" << info.name << "):\n-----------------\n\n";
 
@@ -244,23 +193,32 @@ class LoopReportController : public cali::CollectiveOutputChannel
         }
     }
 
+    OutputStream create_stream() {
+        std::string output = m_opts.get("output", "stdout").to_string();
 
-public:
+        Caliper c;
+        OutputStream stream;
+        stream.set_filename(output.c_str(), c, c.get_globals());
 
-    void collective_flush(OutputStream& stream, MPI_Comm comm) override {
+        return stream;
+    }
+
+    void collective_flush(Channel* channel, Comm comm, OutputStream& stream) {
         Caliper c;
         CaliperMetadataDB db;
 
-        Aggregator summary_local_agg  = summary_local_aggregation(c, db);
+        Aggregator summary_local_agg  = summary_local_aggregation(c, channel, db);
         QuerySpec  summary_query_spec = summary_query();
         Aggregator summary_cross_agg(summary_query_spec);
 
         summary_local_agg.flush(db, summary_cross_agg);
 
-        init_mpi(comm);
-        cross_aggregate(db, summary_cross_agg);
+        comm.cross_aggregate(db, summary_cross_agg);
 
-        if (m_rank == 0) {
+        if (comm.rank() == 0) {
+            if (stream.type() == OutputStream::None)
+                stream.set_stream(OutputStream::StdOut);
+
             std::ostream* os = stream.stream();
 
             bool print_summary = true;
@@ -290,52 +248,19 @@ public:
             if (!infovec.empty()) {
                 for (const LoopInfo& loopinfo : infovec)
                     if (loopinfo.iterations > 0)
-                        process_timeseries(c, db, stream, loopinfo);
+                        process_timeseries(c, channel, db, stream, loopinfo, comm);
             } else {
-                Log(1).stream() << channel()->name() << ": No instrumented loops found" << std::endl;
+                Log(1).stream() << channel->name() << ": No instrumented loops found" << std::endl;
             }
         }
     }
 
-    void
-    collective_flush(MPI_Comm comm) override {
-        std::string output = m_opts.get("output", "stdout").to_string();
-
-        Caliper c;
-        OutputStream stream;
-        stream.set_filename(output.c_str(), c, c.get_globals());
-
-        collective_flush(stream, comm);
-    }
-
-    LoopReportController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
-        : CollectiveOutputChannel(name, 0, initial_cfg),
-          m_opts(opts),
-          m_use_mpi(false),
-          m_rank(0)
-#ifdef CALIPER_HAVE_MPI
-          , m_comm(MPI_COMM_NULL)
-#endif
-    {
-        if (m_opts.is_set("iteration_interval"))
-            config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = m_opts.get("iteration_interval").to_string();
-        else if (m_opts.is_set("time_interval"))
-            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = m_opts.get("time_interval").to_string();
-        else
-            config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
-
-        if (m_opts.is_set("target_loops"))
-            config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = m_opts.get("target_loops").to_string();
-
-        m_opts.update_channel_config(config());
-    }
-
-    static ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
-        return new LoopReportController(name, initial_cfg, opts);
-    }
+    LoopReportControllerImpl(const cali::ConfigManager::Options& opts)
+        : m_opts(opts)
+    { }
 };
 
-const char* loop_report_spec =
+const char* LoopReportController::spec =
     "{"
     " \"name\"        : \"loop-report\","
     " \"description\" : \"Print summary and time-series information for loops\","
@@ -388,14 +313,25 @@ const char* loop_report_spec =
     " ]"
     "}";
 
-} // namespace [anonymous]
-
-namespace cali
+void 
+LoopReportController::collective_flush(cali::internal::CustomOutputController::Comm& comm, OutputStream& stream)
 {
+    mP->collective_flush(channel(), comm, stream);
+}
 
-ConfigManager::ConfigInfo loop_report_controller_info
+LoopReportController::LoopReportController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts)
+    : cali::internal::CustomOutputController(name, 0, initial_cfg),
+      mP { new LoopReportControllerImpl(opts) }
 {
-    ::loop_report_spec, ::LoopReportController::create, nullptr
-};
+    if (opts.is_set("iteration_interval"))
+        config()["CALI_LOOP_MONITOR_ITERATION_INTERVAL"] = opts.get("iteration_interval").to_string();
+    else if (opts.is_set("time_interval"))
+        config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = opts.get("time_interval").to_string();
+    else
+        config()["CALI_LOOP_MONITOR_TIME_INTERVAL"] = "0.5";
 
+    if (opts.is_set("target_loops"))
+        config()["CALI_LOOP_MONITOR_TARGET_LOOPS" ] = opts.get("target_loops").to_string();
+
+    opts.update_channel_config(config());
 }

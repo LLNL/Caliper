@@ -1,4 +1,5 @@
 set(CALIPER_MPI_CONTROLLER_SOURCES
+  controllers/LoopReportControllerMpi.cpp
   controllers/SpotControllerMpi.cpp
   controllers/SpotV1Controller.cpp)
 

@@ -10,6 +10,7 @@
 namespace cali
 {
 
+extern ConfigManager::ConfigInfo loopreport_controller_info_serial;
 extern ConfigManager::ConfigInfo spot_controller_info_serial;
 
 void add_submodule_controllers_and_services()
@@ -17,6 +18,7 @@ void add_submodule_controllers_and_services()
     services::add_default_service_specs();
 
     const ConfigManager::ConfigInfo* controllers[] = {
+        &loopreport_controller_info_serial,
         &spot_controller_info_serial,
         nullptr
     };
