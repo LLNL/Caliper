@@ -20,6 +20,7 @@ class OutputStream;
 namespace internal
 {
 
+
 ///   \brief Base class for a channel controller implementing a custom communication 
 /// scheme.
 ///
@@ -28,6 +29,21 @@ namespace internal
 class CustomOutputController : public cali::ChannelController
 {
 public:
+
+    typedef void (*FlushFn)(CustomOutputController*);
+
+private:
+
+    static FlushFn s_flush_fn;
+    
+public:
+
+    /// \brief Set the flush function for MPI (or other) communication
+    ///   protocols.
+    ///
+    /// This callback lets us specify alternate flush implementations, in 
+    /// particular for MPI. The MPI build sets this in mpi_setup.cpp.
+    static void set_flush_fn(FlushFn);
 
     ///   \brief Base class for the communication protocol. Implements serial
     /// (no-op) communication.
@@ -46,7 +62,9 @@ public:
 
     ///   \brief Override to implement custom collective flush operation using
     /// \a comm and \a stream.
-    virtual void collective_flush(Comm& comm, OutputStream& stream) = 0;
+    virtual void collective_flush(OutputStream& stream, Comm& comm) = 0;
+
+    virtual void flush() override;
 
     CustomOutputController(const char* name, int flags, const config_map_t& initial_config);
 };

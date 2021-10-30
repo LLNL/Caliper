@@ -151,7 +151,7 @@ public:
 
     void collective_flush(OutputStream& stream, MPI_Comm mpi_comm) {
         OutputCommMpi comm(mpi_comm);
-        m_channel->collective_flush(comm, stream);
+        m_channel->collective_flush(stream, comm);
     }
 };
 

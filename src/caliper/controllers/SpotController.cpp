@@ -3,10 +3,9 @@
 
 #include "caliper/caliper-config.h"
 
-#include "SpotController.h"
-
 #include <caliper/Caliper.h>
 #include <caliper/ConfigManager.h>
+#include <caliper/CustomOutputController.h>
 
 #include <caliper/reader/Aggregator.h>
 #include <caliper/reader/CaliperMetadataDB.h>
@@ -251,16 +250,13 @@ make_timeseries_controller(const char* name, const config_map_t& cfg, const cali
 
 ConfigManager::ConfigInfo spot_timeseries_info { spot_timeseries_spec, make_timeseries_controller, nullptr };
 
-} // namespace [anonymous]
-
-
 //
 // Spot main
 //
 
 using Comm = cali::internal::CustomOutputController::Comm;
 
-struct SpotController::SpotControllerImpl
+class SpotController : public cali::internal::CustomOutputController
 {
     ConfigManager::Options m_opts;
 
@@ -354,7 +350,7 @@ struct SpotController::SpotControllerImpl
         }
     }
 
-    void flush_regionprofile(Caliper& c, CaliWriter& writer, Comm& comm, Channel* channel) {
+    void flush_regionprofile(Caliper& c, CaliWriter& writer, Comm& comm) {
         // --- Setup output reduction aggregator (final cross-process aggregation)
         const char* cross_select =
             " *"
@@ -382,7 +378,7 @@ struct SpotController::SpotControllerImpl
                     { "group by", "prop:nested" },
                 }, false /* no aliases */);
 
-            local_aggregate(query.c_str(), c, channel, m_db, output_agg);
+            local_aggregate(query.c_str(), c, channel(), m_db, output_agg);
         }
 
         // --- Calculate min/max/avg times across MPI ranks
@@ -439,7 +435,7 @@ struct SpotController::SpotControllerImpl
         m_db.set_global(chn_attr, Variant(spot_channels.c_str()));
     }
 
-    void on_create() {
+    void on_create(Caliper*, Channel*) override {
         if (m_timeseries_mgr.error())
             Log(0).stream() << "[spot controller]: Timeseries config error: "
                             << m_timeseries_mgr.error_msg()
@@ -465,9 +461,12 @@ struct SpotController::SpotControllerImpl
         return stream;
     }
 
-    void
-    collective_flush(Comm& comm, OutputStream& stream, Channel* channel) {
-        Log(1).stream() << "[spot controller]: Flushing Caliper data" << std::endl;
+public:
+
+    void 
+    collective_flush(OutputStream& stream, Comm& comm) override
+    {
+        Log(1).stream() << name() << ": Flushing Caliper data" << std::endl;
 
         if (stream.type() == OutputStream::None)
             stream = create_output_stream();
@@ -475,32 +474,41 @@ struct SpotController::SpotControllerImpl
         Caliper c;
         CaliWriter writer(stream);
 
-        flush_regionprofile(c, writer, comm, channel);
+        flush_regionprofile(c, writer, comm);
 
         if (m_opts.is_enabled("timeseries"))
             flush_timeseries(c, writer, comm);
 
         if (comm.rank() == 0) {
-            m_db.import_globals(c, c.get_globals(channel));
+            m_db.import_globals(c, c.get_globals(channel()));
             save_spot_metadata();
             writer.write_globals(m_db, m_db.get_globals());
 
-            Log(1).stream() << "[spot controller]: Wrote "
+            Log(1).stream() << name() << ": Wrote "
                             << writer.num_written() << " records."
                             << std::endl;
         }
     }
 
-    SpotControllerImpl(const ConfigManager::Options& opts)
-        : m_opts { opts }
-    { 
+    SpotController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
+        : cali::internal::CustomOutputController(name, 0, initial_cfg),
+          m_opts(opts)
+    {
         m_channel_attr =
                 m_db.create_attribute("spot.channel", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
 
-        if (m_opts.is_enabled("timeseries")) {
+    #ifdef CALIPER_HAVE_ADIAK
+        config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
+        config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
+            opts.get("adiak.import_categories", "2,3").to_string();
+    #endif
+
+        if (opts.is_enabled("timeseries")) {
             m_timeseries_mgr.add_config_spec(spot_timeseries_info);
             m_timeseries_mgr.add(get_timeseries_config_string(m_opts).c_str());
         }
+
+        opts.update_channel_config(config());
     }
 };
 
@@ -532,7 +540,7 @@ check_spot_timeseries_args(const cali::ConfigManager::Options& opts) {
     return "";
 }
 
-const char* SpotController::spec =
+const char* spot_controller_spec =
     "{"
     " \"name\"        : \"spot\","
     " \"description\" : \"Record a time profile for the Spot web visualization framework\","
@@ -586,33 +594,20 @@ const char* SpotController::spec =
     " ]"
     "}";
 
-std::string 
-SpotController::check_options(const ConfigManager::Options& opts)
-{
-    return ::check_spot_timeseries_args(opts);
+
+cali::ChannelController*
+make_spot_controller(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
+    return new SpotController(name, initial_cfg, opts);
 }
 
-void 
-SpotController::on_create(Caliper*, Channel*)
-{
-    mP->on_create();
-}
+} // namespace [anonymous]
 
-void 
-SpotController::collective_flush(cali::internal::CustomOutputController::Comm& comm, OutputStream& stream)
+namespace cali
 {
-    mP->collective_flush(comm, stream, channel());
-}
 
-SpotController::SpotController(const char* name, const config_map_t& initial_cfg, const ConfigManager::Options& opts)
-    : cali::internal::CustomOutputController(name, 0, initial_cfg),
-      mP { new SpotControllerImpl(opts) }
+ConfigManager::ConfigInfo spot_controller_info
 {
-#ifdef CALIPER_HAVE_ADIAK
-    config()["CALI_SERVICES_ENABLE"].append(",adiak_import");
-    config()["CALI_ADIAK_IMPORT_CATEGORIES"] =
-        opts.get("adiak.import_categories", "2,3").to_string();
-#endif
+    ::spot_controller_spec, ::make_spot_controller, ::check_spot_timeseries_args
+};
 
-    opts.update_channel_config(config());
 }

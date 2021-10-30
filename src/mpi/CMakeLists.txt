@@ -36,8 +36,6 @@ macro(add_mpi_service_objlib)
   set(CALIPER_MPI_SERVICES_LIBS ${CALIPER_MPI_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
 
-add_subdirectory(controllers)
-
 add_subdirectory(services/mpiwrap)
 add_subdirectory(services/mpireport)
 

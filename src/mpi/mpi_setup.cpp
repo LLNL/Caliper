@@ -1,21 +1,26 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2021, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 // Caliper runtime MPI setup function: Sets log verbosity etc.
 
 #include "caliper/caliper-config.h"
 
+#include "OutputCommMpi.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
-#include "caliper/ConfigManager.h"
+#include "caliper/CustomOutputController.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/OutputStream.h"
 
 #include <mpi.h>
 
 #include <sstream>
 
 using namespace cali;
+
+using COC = cali::internal::CustomOutputController;
 
 namespace cali
 {
@@ -29,9 +34,6 @@ extern CaliperService mpit_service;
 #ifdef CALIPER_HAVE_TAU
 extern CaliperService tau_service;
 #endif
-
-extern ConfigManager::ConfigInfo loopreport_controller_info_mpi;
-extern ConfigManager::ConfigInfo spot_controller_info_mpi;
 
 }
 
@@ -67,6 +69,19 @@ setup_log_prefix()
     }
 }
 
+// Implement flush over MPI for CustomOutputControllers
+
+void
+custom_output_controller_flush_mpi(COC* controller)
+{
+    Log(2).stream() << controller->name() << ": CustomOutputController::flush(): using MPI" << std::endl;
+
+    OutputCommMpi comm;
+    OutputStream stream;
+
+    controller->collective_flush(stream, comm);
+}
+
 } // namespace [anonymous]
 
 namespace cali
@@ -92,13 +107,7 @@ add_mpi_controllers_and_services()
 
     Caliper::add_services(services);
 
-    const ConfigManager::ConfigInfo* controllers[] = {
-        &loopreport_controller_info_mpi,
-        &spot_controller_info_mpi,
-        nullptr
-    };
-
-    add_global_config_specs(controllers);
+    COC::set_flush_fn(::custom_output_controller_flush_mpi);
 }
 
 void
