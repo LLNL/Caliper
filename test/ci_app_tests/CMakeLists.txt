@@ -53,10 +53,12 @@ set(PYTHON_SCRIPTS
   test_file_io.py
   test_json.py
   test_log.py
+  test_loopreport.py
   test_monitor.py
   test_multichannel.py
   test_report.py
   test_runtimereport.py
+  test_spot.py
   test_templateservices.py
   test_textlog.py
   test_thread.py
@@ -104,10 +106,6 @@ if (CALIPER_HAVE_OMPT AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.9)
 endif()
 
 if (CALIPER_HAVE_MPI)
-  list(APPEND PYTHON_SCRIPTS
-    test_loopreport.py
-    test_spot.py)
-
   foreach(app ${CALIPER_CI_MPI_TEST_APPS})
     add_executable(${app} ${app}.cpp)
     set(calitest_mpi_include_dirs
