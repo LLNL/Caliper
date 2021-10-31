@@ -215,7 +215,7 @@ class LoopReportController : public cali::internal::CustomOutputController
 
         if (comm.rank() == 0) {
             if (stream.type() == OutputStream::None)
-                stream.set_stream(OutputStream::StdOut);
+                stream = create_stream();
 
             std::ostream* os = stream.stream();
 
