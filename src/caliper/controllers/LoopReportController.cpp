@@ -239,7 +239,7 @@ class LoopReportController : public cali::internal::CustomOutputController
         if (print_timeseries) {
             std::vector<LoopInfo> infovec;
 
-            summary_cross_agg.flush(db, [this,&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
+            summary_cross_agg.flush(db, [&infovec](CaliperMetadataAccessInterface& db, const EntryList& rec){
                     infovec.push_back(get_loop_info(db, rec));
                 });
 

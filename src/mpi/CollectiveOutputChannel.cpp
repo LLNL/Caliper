@@ -149,7 +149,7 @@ public:
         m_channel->stop();
     }
 
-    void collective_flush(OutputStream& stream, MPI_Comm mpi_comm) {
+    void collective_flush(OutputStream& stream, MPI_Comm mpi_comm) override {
         OutputCommMpi comm(mpi_comm);
         m_channel->collective_flush(stream, comm);
     }
