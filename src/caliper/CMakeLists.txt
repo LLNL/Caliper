@@ -5,6 +5,7 @@ set(CALIPER_RUNTIME_SOURCES
   Caliper.cpp
   ChannelController.cpp
   ConfigManager.cpp
+  CustomOutputController.cpp
   MemoryPool.cpp
   MetadataTree.cpp
   RegionProfile.cpp
@@ -30,6 +31,7 @@ list(APPEND CALIPER_SERIAL_OBJS
   caliper/setup_serial.cpp)
 
 if (CALIPER_HAVE_MPI)
+  target_include_directories(caliper-runtime PRIVATE ${MPI_CXX_INCLUDE_PATH})
   list(APPEND CALIPER_ALL_OBJS
     caliper/machine_mpi.cpp
     caliper/setup_mpi.cpp)

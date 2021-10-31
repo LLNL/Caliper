@@ -1,21 +1,26 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2021, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
 // Caliper runtime MPI setup function: Sets log verbosity etc.
 
 #include "caliper/caliper-config.h"
 
+#include "OutputCommMpi.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/CaliperService.h"
-#include "caliper/ConfigManager.h"
+#include "caliper/CustomOutputController.h"
 
 #include "caliper/common/Log.h"
+#include "caliper/common/OutputStream.h"
 
 #include <mpi.h>
 
 #include <sstream>
 
 using namespace cali;
+
+using COC = cali::internal::CustomOutputController;
 
 namespace cali
 {
@@ -30,9 +35,6 @@ extern CaliperService mpit_service;
 extern CaliperService tau_service;
 #endif
 
-extern ConfigManager::ConfigInfo loop_report_controller_info;
-extern ConfigManager::ConfigInfo spot_controller_info;
-extern ConfigManager::ConfigInfo spot_v1_controller_info;
 }
 
 namespace
@@ -67,6 +69,18 @@ setup_log_prefix()
     }
 }
 
+// Implement flush over MPI for CustomOutputController objects
+void
+custom_output_controller_flush_mpi(COC* controller)
+{
+    Log(2).stream() << controller->name() << ": CustomOutputController::flush(): using MPI" << std::endl;
+
+    OutputCommMpi comm;
+    OutputStream  stream;
+
+    controller->collective_flush(stream, comm);
+}
+
 } // namespace [anonymous]
 
 namespace cali
@@ -77,7 +91,7 @@ namespace mpi
 void
 add_mpi_controllers_and_services()
 {
-    CaliperService services[] = {
+    const CaliperService services[] = {
         mpiwrap_service,
         mpireport_service,
         mpiflush_service,
@@ -90,15 +104,9 @@ add_mpi_controllers_and_services()
         { nullptr, nullptr }
     };
 
-    const ConfigManager::ConfigInfo* controllers[] = {
-        &loop_report_controller_info,
-        &spot_controller_info,
-        &spot_v1_controller_info,
-        nullptr
-    };
-
     Caliper::add_services(services);
-    add_global_config_specs(controllers);
+
+    COC::set_flush_fn(::custom_output_controller_flush_mpi);
 }
 
 void

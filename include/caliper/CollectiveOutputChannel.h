@@ -9,8 +9,6 @@
 #ifndef CALI_COLLECTIVE_CHANNEL_CONTROLLER_H
 #define CALI_COLLECTIVE_CHANNEL_CONTROLLER_H
 
-#include "ChannelController.h"
-
 #include <mpi.h>
 
 #include <memory>
@@ -18,6 +16,7 @@
 namespace cali
 {
 
+class ChannelController;
 class OutputStream;
 
 /// \class CollectiveOutputChannel
@@ -30,12 +29,15 @@ class OutputStream;
 /// communicator and/or C++ I/O stream.
 ///
 /// \sa make_collective_output_channel()
-class CollectiveOutputChannel : public cali::ChannelController
+class CollectiveOutputChannel
 {
 public:
 
-    /// \brief Create channel controller with given name, flags, and config.
-    CollectiveOutputChannel(const char* name, int flags, const config_map_t& cfg);
+    /// \brief Start the underlying channel
+    virtual void start() = 0;
+
+    /// \brief Stop/pause the underlying channel
+    virtual void stop() = 0;
 
     /// \brief Try to create a CollectiveOutputChannel based on the
     ///   configuration in \a from.
@@ -77,17 +79,6 @@ public:
     ///
     /// \param comm MPI communicator
     virtual void collective_flush(MPI_Comm comm);
-
-    /// \brief Aggregate and flush data.
-    ///
-    /// The default behavior aggregates data across all ranks in the
-    /// \c MPI_COMM_WORLD communicator and writes it to stdout. This is a
-    /// collective operation on \c MPI_COMM_WORLD.
-    ///
-    /// If MPI was never initialized, the calling process will aggregate and
-    /// write its local data. If MPI was initialized but has been finalized,
-    /// the function does nothing.
-    virtual void flush() override;
 
     virtual ~CollectiveOutputChannel();
 };

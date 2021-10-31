@@ -14,6 +14,10 @@
 
 #include "caliper/cali-mpi.h"
 
+#include "../caliper/CustomOutputController.h"
+
+#include "OutputCommMpi.h"
+
 #include <algorithm>
 #include <iostream>
 
@@ -43,8 +47,10 @@ std::string remove_from_stringlist(const std::string& in, const std::string& ele
     return ret;
 }
 
-class BasicCollectiveOutputChannel : public cali::CollectiveOutputChannel
+class MpiReportWrapper : public CollectiveOutputChannel
 {
+    std::shared_ptr<cali::ChannelController> m_channel;
+
     std::string m_local_query;
     std::string m_cross_query;
 
@@ -52,18 +58,26 @@ public:
 
     /// \brief Create channel controller with given queries, name, flags,
     ///   and config.
-    BasicCollectiveOutputChannel(const std::string& local_query,
-                                 const std::string& cross_query,
-                                 const char* name,
-                                 int flags,
-                                 const config_map_t& cfg)
-        : cali::CollectiveOutputChannel(name, flags, cfg),
+    MpiReportWrapper(const std::string& local_query,
+                     const std::string& cross_query,
+                     const char* name,
+                     int flags,
+                     const config_map_t& cfg)
+        : m_channel(std::make_shared<ChannelController>(name, flags, cfg)),
           m_local_query(local_query),
           m_cross_query(cross_query)
     { }
 
+    void start() override {
+        m_channel->start();
+    }
+
+    void stop() override {
+        m_channel->stop();
+    }
+
     void collective_flush(OutputStream& stream, MPI_Comm comm) override {
-        Channel* chn = channel();
+        Channel* chn = m_channel->channel();
 
         if (!chn)
             return;
@@ -100,9 +114,48 @@ public:
         Caliper c;
         cali::collective_flush(stream, c, *chn, nullptr, local_spec, cross_spec, comm);
     }
+
+    void collective_flush(MPI_Comm comm) override {
+        OutputStream stream;
+
+        auto cfg = m_channel->copy_config();
+        auto it = cfg.find("CALI_MPIREPORT_FILENAME");
+        if (it == cfg.end()) {
+            stream.set_stream(OutputStream::StdOut);
+        } else {
+            Caliper c;
+            stream.set_filename(it->second.c_str(), c, c.get_globals());
+        }
+
+        collective_flush(stream, comm);
+    }
 };
 
-}
+class CustomOutputControllerWrapper : public CollectiveOutputChannel
+{
+    std::shared_ptr<cali::internal::CustomOutputController> m_channel;
+
+public:
+
+    CustomOutputControllerWrapper(std::shared_ptr<cali::internal::CustomOutputController>& from)
+        : m_channel(from)
+    { }
+
+    void start() override {
+        m_channel->start();
+    }
+
+    void stop() override {
+        m_channel->stop();
+    }
+
+    void collective_flush(OutputStream& stream, MPI_Comm mpi_comm) override {
+        OutputCommMpi comm(mpi_comm);
+        m_channel->collective_flush(stream, comm);
+    }
+};
+
+} // namespace [anonymous]
 
 
 std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Comm comm)
@@ -116,37 +169,7 @@ std::ostream& CollectiveOutputChannel::collective_flush(std::ostream& os, MPI_Co
 void CollectiveOutputChannel::collective_flush(MPI_Comm comm)
 {
     OutputStream stream;
-
-    auto it = config().find("CALI_MPIREPORT_FILENAME");
-    if (it == config().end()) {
-        stream.set_stream(OutputStream::StdOut);
-    } else {
-        Caliper c;
-        stream.set_filename(it->second.c_str(), c, c.get_globals());
-    }
-
     collective_flush(stream, comm);
-}
-
-void CollectiveOutputChannel::flush()
-{
-    int initialized = 0;
-    int finalized = 0;
-
-    MPI_Comm comm = MPI_COMM_NULL;
-
-    MPI_Initialized(&initialized);
-    MPI_Finalized(&finalized);
-
-    if (finalized)
-        return;
-    if (initialized)
-        MPI_Comm_dup(MPI_COMM_WORLD, &comm);
-
-    collective_flush(comm);
-
-    if (comm != MPI_COMM_NULL)
-        MPI_Comm_free(&comm);
 }
 
 std::shared_ptr<CollectiveOutputChannel>
@@ -155,10 +178,10 @@ CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
     // if from is already a CollectiveOutputChannel, just return it
 
     {
-        auto ret = std::dynamic_pointer_cast<CollectiveOutputChannel>(from);
+        auto cast = std::dynamic_pointer_cast<cali::internal::CustomOutputController>(from);
 
-        if (ret)
-            return ret;
+        if (cast)
+            return std::make_shared<::CustomOutputControllerWrapper>(cast);
     }
 
     //   if from uses mpireport, make a BasicCollectiveOutputChannel from
@@ -180,12 +203,8 @@ CollectiveOutputChannel::from(const std::shared_ptr<ChannelController>& from)
 
     std::string name = from->name() + ".output";
 
-    return std::make_shared<BasicCollectiveOutputChannel>(local_query, cross_query, name.c_str(), 0, cfg);
+    return std::make_shared<::MpiReportWrapper>(local_query, cross_query, name.c_str(), 0, cfg);
 }
-
-CollectiveOutputChannel::CollectiveOutputChannel(const char* name, int flags, const config_map_t& cfg)
-    : ChannelController(name, flags, cfg)
-{ }
 
 CollectiveOutputChannel::~CollectiveOutputChannel()
 { }

@@ -4,8 +4,10 @@ set(CALIPER_CONTROLLERS_SOURCES
   controllers/CudaActivityReportController.cpp
   controllers/HatchetRegionProfileController.cpp
   controllers/HatchetSampleProfileController.cpp
+  controllers/LoopReportController.cpp
   controllers/OpenMPReportController.cpp
   controllers/RuntimeReportController.cpp
+  controllers/SpotController.cpp
   controllers/controllers.cpp
   controllers/util.cpp)
 
