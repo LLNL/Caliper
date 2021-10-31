@@ -69,15 +69,14 @@ setup_log_prefix()
     }
 }
 
-// Implement flush over MPI for CustomOutputControllers
-
+// Implement flush over MPI for CustomOutputController objects
 void
 custom_output_controller_flush_mpi(COC* controller)
 {
     Log(2).stream() << controller->name() << ": CustomOutputController::flush(): using MPI" << std::endl;
 
     OutputCommMpi comm;
-    OutputStream stream;
+    OutputStream  stream;
 
     controller->collective_flush(stream, comm);
 }

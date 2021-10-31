@@ -5,6 +5,8 @@
 
 #include "caliper/cali-mpi.h"
 
+#include "caliper/common/Log.h"
+
 #include <vector>
 
 using namespace cali;
@@ -20,7 +22,7 @@ struct OutputCommMpi::OutputCommMpiImpl
 
     OutputCommMpiImpl(MPI_Comm comm_)
     {
-        if (comm != MPI_COMM_NULL) {
+        if (comm_ != MPI_COMM_NULL) {
             MPI_Comm_dup(comm_, &comm);
             MPI_Comm_rank(comm, &rank);
         }
@@ -40,6 +42,13 @@ OutputCommMpi::OutputCommMpi()
 
     MPI_Initialized(&initialized);
     MPI_Finalized(&finalized);
+
+    if (finalized)
+        Log(1).stream() << "OutputCommMpi: MPI is finalized" << std::endl;
+    else if (!initialized)
+        Log(1).stream() << "OutputCommMpi: MPI not initialized" << std::endl;
+    else if (Log::verbosity() >= 2)
+        Log(2).stream() << "OutputCommMpi: MPI is available" << std::endl;
 
     MPI_Comm comm = (initialized && !finalized ? MPI_COMM_WORLD : MPI_COMM_NULL);
 
