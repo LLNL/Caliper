@@ -34,7 +34,7 @@ class CaliperRuntimeReportTest(unittest.TestCase):
                 self.fail('%s not found in log' % target)
 
     def test_runtime_report_nompi(self):
-        target_cmd = [ './ci_test_macros', '10', 'runtime-report,aggregate_across_ranks=false,output=stdout' ]
+        target_cmd = [ './ci_test_macros', '10', 'runtime-report,aggregate_across_ranks=false,output=stdout,max_column_width=0' ]
 
         caliper_config = {
             'CALI_LOG_VERBOSITY'      : '0',
@@ -46,6 +46,32 @@ class CaliperRuntimeReportTest(unittest.TestCase):
             '  main loop',
             '    foo',
             '      fooloop'
+        ]
+
+        report_out,_ = cat.run_test(target_cmd, caliper_config)
+        lines = report_out.decode().splitlines()
+
+        for target in log_targets:
+            for line in lines:
+                if target in line:
+                    break
+            else:
+                self.fail('%s not found in log' % target)
+
+    def test_runtime_report_max_column_width(self):
+        target_cmd = [ './ci_test_macros', '10', 'runtime-report,output=stdout,max_column_width=8' ]
+
+        caliper_config = {
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        log_targets = [
+            'Path     ',
+            'main     ',
+            '  ma~~op ',
+            '    foo  ',
+            '      fo ',
+            '      .. ',
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
