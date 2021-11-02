@@ -78,6 +78,7 @@ add_caliper_option(WITH_VTUNE     "Enable Intel(R) VTune(tm) annotation bindings
 add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
 add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" TRUE)
 add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
+add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -420,6 +421,19 @@ if (WITH_PCP)
   endif()
 endif()
 
+# Find VARIORUM
+if (WITH_VARIORUM)
+  include(FindVariorum)
+  if (VARIORUM_FOUND)
+    set(CALIPER_HAVE_VARIORUM TRUE)
+    set(CALIPER_variorum_CMAKE_MSG "Yes, using ${VARIORUM_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${VARIORUM_LIBRARIES})
+  else()
+    message(WARNING "Variorum support was requested but Variorum was not found!\n"
+  "Set VARIORUM_PREFIX to the Variorum installation path and re-run cmake.")
+  endif()
+endif()
+
 # PGI 17.x has issues with some constexpr constructors
 if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
   set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
@@ -538,7 +552,8 @@ set(CALIPER_MODULES
   TAU
   VTune
   PCP
-  histogram)
+  histogram
+  variorum)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
