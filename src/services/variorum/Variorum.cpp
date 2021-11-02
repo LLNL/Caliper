@@ -19,7 +19,6 @@ extern "C" {
 #include <jansson.h>
 }
 
-#include <chrono>
 #include <mutex>
 #include <tuple>
 #include <vector>
@@ -37,12 +36,8 @@ extern cali::Attribute class_aggregatable_attr;
 namespace
 {
 
-typedef std::chrono::system_clock Clock;
-typedef std::chrono::time_point<Clock> TimePoint;
-
 // Power measurement function
-std::tuple<bool, uint64_t> measure(const TimePoint& start,
-                                   const std::string& name)
+std::tuple<bool, uint64_t> measure(const std::string& name)
 {
     double power_watts;
     json_t *power_obj = json_object();
@@ -92,9 +87,6 @@ class VariorumService
     // Number of measurement errors encountered at runtime
     unsigned m_num_errors;
 
-    // Initial value for our measurement function
-    TimePoint m_starttime;
-
     void snapshot_cb(Caliper* c,
                      Channel* /*channel*/,
                      int /*scopes*/,
@@ -116,7 +108,7 @@ class VariorumService
             bool success;
             uint64_t val;
 
-            std::tie(success, val) = measure(m_starttime, m.domain);
+            std::tie(success, val) = measure(m.domain);
             // Check for measurement errors. Best practice is to count and
             // report them at the end rather than printing error messages at
             // runtime.
@@ -147,8 +139,6 @@ class VariorumService
         // This callback is invoked when the channel is fully initialized
         // and ready to make measurements. This is a good place to initialize
         // measurement values, if needed.
-
-        m_starttime = Clock::now();
     }
 
     void finish_cb(Caliper* c, Channel* channel)
