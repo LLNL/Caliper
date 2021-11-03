@@ -154,7 +154,7 @@ if(WITH_VTUNE)
     set(CALIPER_HAVE_VTUNE TRUE)
     set(CALIPER_VTune_CMAKE_MSG "Yes, using ${ITT_LIBRARY}")
     # libittnotify.a needs libdl
-    list(APPEND CALIPER_EXTERNAL_LIBS ${ITT_LIBRARY} "-ldl")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${ITT_LIBRARY} ${CMAKE_DL_LIBS})
   else()
     message(WARNING "VTune bindings requested but Intel ITT API was not found!\n"
   "Set ITT_PREFIX to ittnotify installation path and re-run cmake.")

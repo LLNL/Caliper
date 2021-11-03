@@ -18,7 +18,7 @@ class CaliperSampleReportTest(unittest.TestCase):
         log_targets = [
             'Path',
             'main',
-            '  foo'
+            '  usleep'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
@@ -41,7 +41,7 @@ class CaliperSampleReportTest(unittest.TestCase):
         log_targets = [
             'Samples Time (sec)',
             'main',
-            '  foo'
+            '  usleep'
         ]
 
         report_out,_ = cat.run_test(target_cmd, caliper_config)
