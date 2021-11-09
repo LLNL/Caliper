@@ -193,7 +193,7 @@ __attribute__((weak)) extern "C" void kokkosp_end_deep_copy() {
 }
 
 namespace cali {
-  Kokkos::Tools::Experimental::EventSet get_event_set() {
+  extern Kokkos::Tools::Experimental::EventSet get_event_set() {
     Kokkos::Tools::Experimental::EventSet my_event_set;
     my_event_set.init = cali::kokkosp_init_library;
     my_event_set.finalize = cali::kokkosp_finalize_library;
