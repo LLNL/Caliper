@@ -495,7 +495,7 @@ if(INSTALL_CONFIG)
 
   install(FILES ${PROJECT_BINARY_DIR}/caliper-config.cmake
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
-  install(EXPORT caliper
+  install(EXPORT caliper-targets
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/cmake/caliper)
 
   install(FILES ${PROJECT_BINARY_DIR}/caliper.pc
