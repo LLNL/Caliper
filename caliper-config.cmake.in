@@ -49,6 +49,10 @@ if (NOT caliper_CONFIG_LOADED)
   include(CMakeFindDependencyMacro)
   find_dependency(Threads)
 
+  if (@CALIPER_HAVE_ADIAK@)
+    find_dependency(adiak)
+  endif()
+
   # Library targets imported from file
   include(${caliper_CMAKE_DIR}/caliper.cmake)
 endif()
