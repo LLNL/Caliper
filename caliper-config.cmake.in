@@ -50,5 +50,5 @@ if (NOT caliper_CONFIG_LOADED)
   find_dependency(Threads)
 
   # Library targets imported from file
-  include(${caliper_CMAKE_DIR}/caliper.cmake)
+  include(${caliper_CMAKE_DIR}/caliper-targets.cmake)
 endif()

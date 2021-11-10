@@ -7,6 +7,6 @@ set_target_properties(caliper-tools-util PROPERTIES SOVERSION ${CALIPER_MAJOR_VE
 set_target_properties(caliper-tools-util PROPERTIES VERSION ${CALIPER_VERSION})
 
 install(TARGETS caliper-tools-util 
-  EXPORT caliper
+  EXPORT caliper-targets
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
