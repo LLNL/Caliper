@@ -12,9 +12,9 @@
 #include "caliper/common/c-util/unitfmt.h"
 
 #include <roctracer.h>
+#include <roctracer_hip.h>
 #if 0
 #include <roctracer_ext.h>
-#include <roctracer_hip.h>
 #endif
 
 using namespace cali;
@@ -95,6 +95,7 @@ class RocTracerService {
             c.end(instance->m_api_attr);
         }
     }
+#endif
 
     static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) {
         auto instance = static_cast<const RocTracerService*>(arg);
@@ -107,18 +108,6 @@ class RocTracerService {
             c.end(instance->m_api_attr);
         }
     }
-
-    bool init_callbacks(Channel* channel) {
-        int err = roctracer_enable_domain_callback(ACTIVITY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this);
-        if (err != 0)
-            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): " << roctracer_error_string() << std::endl;
-
-        if (err == 0)
-            Log(1).stream() << channel->name() << ": roctracer: enabled callbacks" << std::endl;
-
-        return err == 0;
-    }
-#endif
 
     void flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
         Attribute attr[6] = {
@@ -199,12 +188,21 @@ class RocTracerService {
         buffer_chunk_t chunk = { begin, end };
         instance->m_flushed_chunks.push_back(chunk);
         ++instance->m_num_flushes;
+
+        if (Log::verbosity() >= 2) {
+            unitfmt_result bytes = unitfmt(end-begin, unitfmt_bytes);
+            Log(2).stream() << "roctracer: storing "
+                            << bytes.val << bytes.symbol
+                            << " chunk" << std::endl;
+        }
     }
 
     void init_tracing(Channel* channel) {
+        roctracer_set_properties(ACTIVITY_DOMAIN_HIP_API, NULL);
+    
         roctracer_properties_t properties {};
 
-        properties.buffer_size = 0x1000;
+        properties.buffer_size = 0x100000;
         properties.alloc_fun   = rt_alloc;
         properties.alloc_arg   = this;
         properties.buffer_callback_fun = rt_activity_callback;
@@ -224,7 +222,14 @@ class RocTracerService {
             return;
         }
 
-        if (roctracer_enable_activity_expl(m_roctracer_pool) != 0) {
+        if (roctracer_enable_domain_callback(ACTIVITY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this) != 0) {
+            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): " 
+                            << roctracer_error_string() 
+                            << std::endl;
+            return;
+        }
+
+        if (roctracer_enable_domain_activity_expl(ACTIVITY_DOMAIN_HIP_OPS, m_roctracer_pool) != 0) {
             Log(0).stream() << channel->name() << ": roctracer: roctracer_enable_activity_expl(): "
                             << roctracer_error_string()
                             << std::endl;
@@ -248,13 +253,13 @@ class RocTracerService {
     }
 
     void stop_callbacks(Channel* channel) {
-        // roctracer_disable_domain_callback(ACTIVITY_DOMAIN_HIP_API);
+        roctracer_disable_domain_callback(ACTIVITY_DOMAIN_HIP_API);
 
         Log(1).stream() << channel->name() << ": roctracer: callbacks disabled" << std::endl;
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
-        // stop_callbacks(channel);
+        stop_callbacks(channel);
         finish_tracing(channel);
 
         Log(1).stream() << channel->name() << ": roctracer: "
