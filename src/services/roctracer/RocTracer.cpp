@@ -61,6 +61,7 @@ class RocTracerService {
     bool     m_enable_tracing;
 
     static const ConfigSet::Entry s_configdata[];
+    static RocTracerService* s_instance;
 
     void create_callback_attributes(Caliper* c) {
         Attribute subs_attr = c->get_attribute("subscription_event");
@@ -236,7 +237,6 @@ class RocTracerService {
     void flush_cb(Caliper* c, Channel* channel, const SnapshotRecord*, SnapshotFlushFn snap_fn) {
         roctracer_flush_activity_expl(m_roctracer_pool);
 
-	unsigned num_correl  = 0;
 	unsigned num_flushed = 0;
         unsigned num_records = 0;
         unsigned num_chunks  = 0;
@@ -260,12 +260,11 @@ class RocTracerService {
             ++num_chunks;
         }
 
-        Log(1).stream() << channel->name() << ": roctracer: Flushed "
+        Log(1).stream() << channel->name() << ": roctracer: Processed "
                         << num_records << " records in "
-                        << num_chunks  << " chunk(s): "
-			<< "\n  correlation: " << num_correl
-			<< "\n  flushed:     " << num_flushed
-			<< "\n  skipped:     " << num_records - num_correl - num_flushed
+                        << num_chunks  << " chunk(s) ("
+			<< num_flushed << " flushed, "
+			<< num_records - num_flushed << " skipped)."
                         << std::endl;
     }
 
@@ -290,6 +289,8 @@ class RocTracerService {
     static void rt_activity_callback(const char* begin, const char* end, void* arg) {
         auto instance = static_cast<RocTracerService*>(arg);
 
+	// we might actually have to copy the data here.
+	
         buffer_chunk_t chunk = { begin, end };
         instance->m_flushed_chunks.push_back(chunk);
         ++instance->m_num_flushes;
@@ -375,13 +376,13 @@ class RocTracerService {
         Log(1).stream() << channel->name() << ": roctracer: Callbacks stopped" << std::endl;
     }
 
-    void init_cb(Caliper* c, Channel* channel) {
+    void post_init_cb(Caliper* c, Channel* channel) {
 	subscribe_attributes(c, channel);
 
 	init_callbacks(channel); // apparently must happen before init_tracing()
 
 	if (m_enable_tracing)
-	    init_tracing(channel);	
+	    init_tracing(channel);
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
@@ -427,21 +428,35 @@ class RocTracerService {
             delete[] buffer;
 #endif
     }
-
+    
 public:
 
     static void register_roctracer(Caliper* c, Channel* channel) {
-        RocTracerService* instance = new RocTracerService(c, channel);
+	if (s_instance) {
+	    Log(0).stream() << channel->name()
+			    << ": roctracer service is already active, disabling!"
+			    << std::endl;
+	}
+	
+        s_instance = new RocTracerService(c, channel);
 
         channel->events().post_init_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-		instance->init_cb(c, channel);
+            [](Caliper* c, Channel* channel){
+		s_instance->post_init_cb(c, channel);
             });
         channel->events().finish_evt.connect(
-            [instance](Caliper* c, Channel* channel){
-                instance->finish_cb(c, channel);
-                delete instance;
+            [](Caliper* c, Channel* channel){
+                s_instance->finish_cb(c, channel);
+                delete s_instance;
+		s_instance = nullptr;
             });
+
+	Log(1).stream() << channel->name()
+			<< ": Registered roctracer service."
+			<< " Activity tracing is "
+			<< (s_instance->m_enable_tracing ? "on" : "off")
+			<< std::endl;
+	  
     }
 };
 
@@ -452,6 +467,8 @@ const ConfigSet::Entry RocTracerService::s_configdata[] = {
     },
     ConfigSet::Terminator
 };
+
+RocTracerService* RocTracerService::s_instance = nullptr;
     
 } // namespace [anonymous]
 

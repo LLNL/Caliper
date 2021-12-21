@@ -71,6 +71,14 @@ const char* nvtx_spec =
     " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
     "}";
 
+const char* roctx_spec =
+    "{"
+    " \"name\"        : \"roctx\","
+    " \"services\"    : [ \"roctx\" ],"
+    " \"description\" : \"Forward Caliper regions to ROCm rocprofiler\","
+    " \"config\"      : { \"CALI_CHANNEL_FLUSH_ON_EXIT\": \"false\" }"
+    "}";
+
 const char* mpireport_spec =
     "{"
     " \"name\"        : \"mpi-report\","
@@ -109,6 +117,7 @@ const char* mpireport_spec =
 cali::ConfigManager::ConfigInfo event_trace_controller_info { event_trace_spec, nullptr, nullptr };
 cali::ConfigManager::ConfigInfo nvprof_controller_info      { nvprof_spec,      nullptr, nullptr };
 cali::ConfigManager::ConfigInfo nvtx_controller_info        { nvtx_spec,        nullptr, nullptr };
+cali::ConfigManager::ConfigInfo roctx_controller_info       { roctx_spec,       nullptr, nullptr };
 cali::ConfigManager::ConfigInfo mpireport_controller_info   { mpireport_spec,   nullptr, nullptr };
 
 }
@@ -133,6 +142,7 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &::event_trace_controller_info,
     &::nvprof_controller_info,
     &::nvtx_controller_info,
+    &::roctx_controller_info,
     &::mpireport_controller_info,
     &hatchet_region_profile_controller_info,
     &hatchet_sample_profile_controller_info,
@@ -159,6 +169,14 @@ const char* builtin_option_specs =
     " \"description\" : \"Profile CUDA API functions\","
     " \"category\"    : \"region\","
     " \"services\"    : [ \"cupti\" ]"
+    "},"
+    "{"
+    " \"name\"        : \"profile.hip\","
+    " \"type\"        : \"bool\","
+    " \"description\" : \"Profile HIP API functions\","
+    " \"category\"    : \"region\","
+    " \"services\"    : [ \"roctracer\" ],"
+    " \"config\"      : { \"CALI_ROCTRACER_TRACE_ACTIVITIES\": \"false\" } "
     "},"
     "{"
     " \"name\"        : \"profile.kokkos\","
