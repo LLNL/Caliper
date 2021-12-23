@@ -59,6 +59,7 @@ class RocTracerService {
     roctracer_pool_t* m_roctracer_pool;
 
     bool     m_enable_tracing;
+    bool     m_record_names;
 
     static const ConfigSet::Entry s_configdata[];
     static RocTracerService* s_instance;
@@ -108,7 +109,7 @@ class RocTracerService {
     void push_correlation(uint64_t id, cali::Node* node) {
 	std::lock_guard<std::mutex>
 	    g(m_correlation_map_mutex);
-	
+
 	m_correlation_map[id] = node;
     }
 
@@ -124,7 +125,7 @@ class RocTracerService {
 	    ret = it->second;
 	    m_correlation_map.erase(it);
 	}
-	
+
 	return ret;
     }
 
@@ -133,36 +134,38 @@ class RocTracerService {
 	if (cid == HIP_API_ID___hipPushCallConfiguration ||
 	    cid == HIP_API_ID___hipPopCallConfiguration)
 	    return;
-	
+
         auto instance = static_cast<RocTracerService*>(arg);
 	auto data = static_cast<const hip_api_data_t*>(callback_data);
 	Caliper c;
-	
+
         if (data->phase == ACTIVITY_API_PHASE_ENTER) {
             c.begin(instance->m_api_attr, Variant(roctracer_op_string(ACTIVITY_DOMAIN_HIP_API, cid, 0)));
 
 	    if (instance->m_enable_tracing) {
 		//   When tracing, store a correlation id with the kernel name and the
-		// current region context 
+		// current region context
 		std::string kernel;
-		
-		switch (cid) {
-		case HIP_API_ID_hipLaunchKernel:
-		case HIP_API_ID_hipExtLaunchKernel:
-		    {
-			kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
-						       data->args.hipLaunchKernel.stream);
+
+		if (instance->m_record_names) {
+		    switch (cid) {
+		    case HIP_API_ID_hipLaunchKernel:
+		    case HIP_API_ID_hipExtLaunchKernel:
+			{
+			    kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
+							   data->args.hipLaunchKernel.stream);
+			}
+			break;
+		    case HIP_API_ID_hipModuleLaunchKernel:
+		    case HIP_API_ID_hipExtModuleLaunchKernel:
+		    case HIP_API_ID_hipHccModuleLaunchKernel:
+			{
+			    kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
+			}
+			break;
+		    default:
+			break;
 		    }
-		    break;
-		case HIP_API_ID_hipModuleLaunchKernel:
-		case HIP_API_ID_hipExtModuleLaunchKernel:
-		case HIP_API_ID_hipHccModuleLaunchKernel:
-		    {
-			kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
-		    }
-		    break;
-		default:
-		    break;
 		}
 
 		Entry e = c.get(instance->m_api_attr);
@@ -189,7 +192,7 @@ class RocTracerService {
 
     unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
 	unsigned num_records = 0;
-       
+
 	if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
 	    Attribute attr[7] = {
 		m_activity_name_attr,
@@ -248,10 +251,10 @@ class RocTracerService {
                 reinterpret_cast<const roctracer_record_t*>(chunk.begin);
             const roctracer_record_t* end_record =
                 reinterpret_cast<const roctracer_record_t*>(chunk.end);
-	    
+
             while (record < end_record) {
 		num_flushed += flush_record(c, snap_fn, record);
-	
+
                 ++num_records;
                 if (roctracer_next_record(record, &record) != 0)
                     break;
@@ -285,12 +288,12 @@ class RocTracerService {
         }
     }
 #endif
-    
+
     static void rt_activity_callback(const char* begin, const char* end, void* arg) {
         auto instance = static_cast<RocTracerService*>(arg);
 
 	// we might actually have to copy the data here.
-	
+
         buffer_chunk_t chunk = { begin, end };
         instance->m_flushed_chunks.push_back(chunk);
         ++instance->m_num_flushes;
@@ -303,7 +306,7 @@ class RocTracerService {
         }
     }
 
-    void init_tracing(Channel* channel) {    
+    void init_tracing(Channel* channel) {
         roctracer_properties_t properties {};
 	memset(&properties, 0, sizeof(roctracer_properties_t));
 
@@ -352,8 +355,8 @@ class RocTracerService {
         roctracer_set_properties(ACTIVITY_DOMAIN_HIP_API, NULL);
 
         if (roctracer_enable_domain_callback(ACTIVITY_DOMAIN_HIP_API, RocTracerService::hip_api_callback, this) != 0) {
-            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): " 
-                            << roctracer_error_string() 
+            Log(0).stream() << channel->name() << ": roctracer: enable callback (HIP): "
+                            << roctracer_error_string()
                             << std::endl;
             return;
         }
@@ -388,7 +391,7 @@ class RocTracerService {
     void finish_cb(Caliper* c, Channel* channel) {
         finish_callbacks(channel);
 
-	if (m_enable_tracing) {	    
+	if (m_enable_tracing) {
 	    finish_tracing(channel);
 
 	    Log(1).stream() << channel->name() << ": roctracer: "
@@ -405,7 +408,7 @@ class RocTracerService {
 	    }
 	}
     }
-    
+
     RocTracerService(Caliper* c, Channel* channel)
         : m_api_attr       { Attribute::invalid },
           m_num_buffers    { 0 },
@@ -415,9 +418,11 @@ class RocTracerService {
 	  m_num_correlations_missed { 0 },
           m_roctracer_pool { nullptr }
     {
-	auto config = channel->config().init("roctracer", s_configdata);	
+	auto config = channel->config().init("roctracer", s_configdata);
+
 	m_enable_tracing = config.get("trace_activities").to_bool();
-     
+	m_record_names   = config.get("record_kernel_names").to_bool();
+
         create_callback_attributes(c);
         create_activity_attributes(c);
     }
@@ -428,7 +433,7 @@ class RocTracerService {
             delete[] buffer;
 #endif
     }
-    
+
 public:
 
     static void register_roctracer(Caliper* c, Channel* channel) {
@@ -437,7 +442,7 @@ public:
 			    << ": roctracer service is already active, disabling!"
 			    << std::endl;
 	}
-	
+
         s_instance = new RocTracerService(c, channel);
 
         channel->events().post_init_evt.connect(
@@ -456,7 +461,7 @@ public:
 			<< " Activity tracing is "
 			<< (s_instance->m_enable_tracing ? "on" : "off")
 			<< std::endl;
-	  
+
     }
 };
 
@@ -465,11 +470,15 @@ const ConfigSet::Entry RocTracerService::s_configdata[] = {
       "Enable ROCm activity tracing",
       "Enable ROCm activity tracing"
     },
+    { "record_kernel_names", CALI_TYPE_BOOL, "false",
+      "Record kernel names when activity tracing is enabled",
+      "Record kernel names when activity tracing is enabled"
+    },
     ConfigSet::Terminator
 };
 
 RocTracerService* RocTracerService::s_instance = nullptr;
-    
+
 } // namespace [anonymous]
 
 namespace cali
