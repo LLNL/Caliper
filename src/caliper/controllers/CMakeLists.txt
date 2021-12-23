@@ -6,6 +6,8 @@ set(CALIPER_CONTROLLERS_SOURCES
   controllers/HatchetSampleProfileController.cpp
   controllers/LoopReportController.cpp
   controllers/OpenMPReportController.cpp
+  controllers/ROCmActivityProfileController.cpp
+  controllers/ROCmActivityReportController.cpp
   controllers/RuntimeReportController.cpp
   controllers/SpotController.cpp
   controllers/controllers.cpp

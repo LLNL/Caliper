@@ -132,6 +132,8 @@ extern ConfigManager::ConfigInfo hatchet_region_profile_controller_info;
 extern ConfigManager::ConfigInfo hatchet_sample_profile_controller_info;
 extern ConfigManager::ConfigInfo loop_report_controller_info;
 extern ConfigManager::ConfigInfo openmp_report_controller_info;
+extern ConfigManager::ConfigInfo rocm_activity_report_controller_info;
+extern ConfigManager::ConfigInfo rocm_activity_profile_controller_info;
 extern ConfigManager::ConfigInfo runtime_report_controller_info;
 extern ConfigManager::ConfigInfo spot_controller_info;
 
@@ -148,6 +150,8 @@ const ConfigManager::ConfigInfo* builtin_controllers_table[] = {
     &hatchet_sample_profile_controller_info,
     &loop_report_controller_info,
     &openmp_report_controller_info,
+    &rocm_activity_report_controller_info,
+    &rocm_activity_profile_controller_info,
     &runtime_report_controller_info,
     &spot_controller_info,
     nullptr
@@ -255,7 +259,7 @@ const char* builtin_option_specs =
     " ["
     "   { \"level\"   : \"local\","
     "     \"select\"  : "
-    "     [ { \"expr\": \"inclusive_scale(cupti.activity.duration,1e-9)\", \"as\": \"Time (GPU) (I)\", \"unit\": \"sec\" },"
+    "     [ { \"expr\": \"inclusive_scale(cupti.activity.duration,1e-9)\", \"as\": \"GPU Time (I)\", \"unit\": \"sec\" },"
     "     ]"
     "   },"
     "   { \"level\"   : \"cross\", \"select\":"
@@ -263,6 +267,29 @@ const char* builtin_option_specs =
     "       { \"expr\": \"min(iscale#cupti.activity.duration)\", \"as\": \"Min GPU Time/rank\", \"unit\": \"sec\" },"
     "       { \"expr\": \"max(iscale#cupti.activity.duration)\", \"as\": \"Max GPU Time/rank\", \"unit\": \"sec\" },"
     "       { \"expr\": \"sum(iscale#cupti.activity.duration)\", \"as\": \"Total GPU Time\", \"unit\": \"sec\" }"
+    "     ]"
+    "   }"
+    " ]"
+    "},"
+    "{"
+    " \"name\"        : \"rocm.gputime\","
+    " \"description\" : \"Report GPU time in AMD ROCm activities\","
+    " \"type\"        : \"bool\","
+    " \"category\"    : \"metric\","
+    " \"services\"    : [ \"roctracer\" ],"
+    " \"config\"      : { \"CALI_ROCTRACER_TRACE_ACTIVITIES\": \"true\", \"CALI_ROCTRACER_RECORD_KERNEL_NAMES\": \"false\" },"
+    " \"query\"  : "
+    " ["
+    "   { \"level\"   : \"local\","
+    "     \"select\"  : "
+    "     [ { \"expr\": \"inclusive_scale(rocm.activity.duration,1e-9)\", \"as\": \"GPU Time (I)\", \"unit\": \"sec\" },"
+    "     ]"
+    "   },"
+    "   { \"level\"   : \"cross\", \"select\":"
+    "     [ { \"expr\": \"avg(iscale#rocm.activity.duration)\", \"as\": \"Avg GPU Time/rank\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"min(iscale#rocm.activity.duration)\", \"as\": \"Min GPU Time/rank\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"max(iscale#rocm.activity.duration)\", \"as\": \"Max GPU Time/rank\", \"unit\": \"sec\" },"
+    "       { \"expr\": \"sum(iscale#rocm.activity.duration)\", \"as\": \"Total GPU Time\", \"unit\": \"sec\" }"
     "     ]"
     "   }"
     " ]"
