@@ -34,7 +34,41 @@ enabled. We can see the time spent in CUDA functions like ``cudaMemcpy`` and
 Profiling CUDA activities
 ---------------------------------------
 
-The `cuda-activity-report` and `cuda-activity-profile` configs record the time
+The `cuda.gputime` option for `runtime-report` and `hatchet-region-profile`
+measures and reports times spent in GPU activities::
+
+    CALI_CONFIG=runtime-report,cuda.gputime lrun -n 4 ./tea_leaf
+    Path                       Min time/rank Max time/rank Avg time/rank Time %    Avg GPU Time/rank Min GPU Time/rank Max GPU Time/rank
+    timestep_loop                  16.400791     16.402930     16.401392 99.340451         12.014107         11.990568         12.031210
+      summary                       0.000743      0.000852      0.000772  0.004679          0.000420          0.000419          0.000421
+      total_solve                  16.397178     16.398656     16.398176 99.320973         12.013687         11.990149         12.030790
+        reset                       0.002924      0.004401      0.003682  0.022303          0.001463          0.001461          0.001465
+          internal_halo_update      0.000031      0.000038      0.000033  0.000201
+          halo_update               0.000033      0.000042      0.000036  0.000220
+          halo_exchange             0.002589      0.004060      0.003304  0.020013          0.000223          0.000222          0.000223
+        solve                      16.377495     16.377513     16.377504 99.195768         12.003737         11.980207         12.020827
+          dot_product               0.001003      0.001339      0.001151  0.006971
+          internal_halo_update      0.087994      0.094034      0.089777  0.543764
+          halo_update               0.199130      0.199757      0.199502  1.208347
+          halo_exchange            14.407030     14.427922     14.419671 87.337501          0.624949          0.619820          0.629013
+      tea_init                      0.016205      0.016616      0.016506  0.099973          0.008487          0.008475          0.008501
+        internal_halo_update        0.000096      0.000102      0.000100  0.000603
+        halo_update                 0.000104      0.000113      0.000109  0.000660
+        halo_exchange               0.009489      0.010272      0.009914  0.060046          0.001013          0.001007          0.001022
+      timestep                      0.000311      0.002516      0.001355  0.008205
+
+The GPU Time/rank metrics denote the number of seconds spent in GPU activities,
+such as kernel execution or memory copies. The GPU time values are inclusive,
+i.e. they represent the total amount of GPU time launched from a Caliper region
+and any region below. Thus, the GPU time values for "timestep_loop" in the
+example above represent the GPU activity time for the entire program.
+
+Note that the `cuda.gputime` option is more expensive than regular host-side
+region profiling because it uses the NVidia CUPTI API to trace GPU activities.
+It is primarily intended for short, dedicated performance profiling experiments.
+
+There are also dedicated configs for examining GPU activities:
+the `cuda-activity-report` and `cuda-activity-profile` configs record the time
 spent in CUDA activities (e.g. kernel executions or memory copies) on the CUDA
 device. The GPU times are mapped to the Caliper regions that launched those
 GPU activities. Here is example output for `cuda-activity-report`::
