@@ -1,4 +1,4 @@
-// Copyright (c) 2019, Lawrence Livermore National Security, LLC.
+// Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // Copyright (c) 2018, University of Oregon
 // See top-level LICENSE file for details.
 
