@@ -136,62 +136,62 @@ class RocTracerService {
             cid == HIP_API_ID___hipPopCallConfiguration)
             return;
 
-            auto instance = static_cast<RocTracerService*>(arg);
-            auto data = static_cast<const hip_api_data_t*>(callback_data);
-            Caliper c;
+        auto instance = static_cast<RocTracerService*>(arg);
+        auto data = static_cast<const hip_api_data_t*>(callback_data);
+        Caliper c;
 
-            if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-                c.begin(instance->m_api_attr, Variant(roctracer_op_string(ACTIVITY_DOMAIN_HIP_API, cid, 0)));
+        if (data->phase == ACTIVITY_API_PHASE_ENTER) {
+            c.begin(instance->m_api_attr, Variant(roctracer_op_string(ACTIVITY_DOMAIN_HIP_API, cid, 0)));
 
-                if (instance->m_enable_tracing) {
-                    //   When tracing, store a correlation id with the kernel name and the
-                    // current region context
-                    std::string kernel;
+            if (instance->m_enable_tracing) {
+                //   When tracing, store a correlation id with the kernel name and the
+                // current region context
+                std::string kernel;
 
-                    if (instance->m_record_names) {
-                        switch (cid) {
-                        case HIP_API_ID_hipLaunchKernel:
-                        case HIP_API_ID_hipExtLaunchKernel:
-                        {
-                            kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
-                                        data->args.hipLaunchKernel.stream);
-                        }
-                        break;
-                        case HIP_API_ID_hipModuleLaunchKernel:
-                        case HIP_API_ID_hipExtModuleLaunchKernel:
-                        case HIP_API_ID_hipHccModuleLaunchKernel:
-                        {
-                            kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
-                        }
-                        break;
-                        default:
-                        break;
-                        }
+                if (instance->m_record_names) {
+                    switch (cid) {
+                    case HIP_API_ID_hipLaunchKernel:
+                    case HIP_API_ID_hipExtLaunchKernel:
+                    {
+                        kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
+                                    data->args.hipLaunchKernel.stream);
                     }
-
-                    Entry e = c.get(instance->m_api_attr);
-                    cali::Node* node = nullptr;
-
-                    if (e.is_reference())
-                        node = c.node(e.node()->id()); // "de-const"
-                    if (!kernel.empty()) {
-                        kernel = util::demangle(kernel.c_str());
-                        node = c.make_tree_entry(instance->m_kernel_name_attr,
-                                    Variant(kernel.c_str()),
-                                    node);
+                    break;
+                    case HIP_API_ID_hipModuleLaunchKernel:
+                    case HIP_API_ID_hipExtModuleLaunchKernel:
+                    case HIP_API_ID_hipHccModuleLaunchKernel:
+                    {
+                        kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
                     }
-
-                    if (node) {
-                        instance->push_correlation(data->correlation_id, node);
-                        ++instance->m_num_correlations_stored;
+                    break;
+                    default:
+                    break;
                     }
                 }
-            } else {
-                c.end(instance->m_api_attr);
-            }
-        }
 
-        unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
+                Entry e = c.get(instance->m_api_attr);
+                cali::Node* node = nullptr;
+
+                if (e.is_reference())
+                    node = c.node(e.node()->id()); // "de-const"
+                if (!kernel.empty()) {
+                    kernel = util::demangle(kernel.c_str());
+                    node = c.make_tree_entry(instance->m_kernel_name_attr,
+                                Variant(kernel.c_str()),
+                                node);
+                }
+
+                if (node) {
+                    instance->push_correlation(data->correlation_id, node);
+                    ++instance->m_num_correlations_stored;
+                }
+            }
+        } else {
+            c.end(instance->m_api_attr);
+        }
+    }
+
+    unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
         unsigned num_records = 0;
 
         if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
@@ -219,10 +219,10 @@ class RocTracerService {
             if (record->op == HIP_OP_ID_COPY)
                 data[num++] = Variant(cali_make_variant_from_uint(record->bytes));
 
-                cali::Node* parent = pop_correlation(record->correlation_id);
+            cali::Node* parent = pop_correlation(record->correlation_id);
 
-                if (parent) {
-                    ++m_num_correlations_found;
+            if (parent) {
+                ++m_num_correlations_found;
             } else {
                 ++m_num_correlations_missed;
             }
@@ -454,7 +454,7 @@ public:
             [](Caliper* c, Channel* channel){
                 s_instance->finish_cb(c, channel);
                 delete s_instance;
-        s_instance = nullptr;
+                s_instance = nullptr;
             });
 
         Log(1).stream() << channel->name()
