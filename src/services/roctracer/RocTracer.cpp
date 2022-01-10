@@ -96,10 +96,10 @@ class RocTracerService {
             c->create_attribute("rocm.activity.queue", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         m_activity_device_id_attr =
             c->create_attribute("rocm.activity.device", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-	m_activity_bytes_attr =
-	    c->create_attribute("rocm.activity.bytes", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
-	m_kernel_name_attr =
-	    c->create_attribute("rocm.kernel.name", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+        m_activity_bytes_attr =
+            c->create_attribute("rocm.activity.bytes", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
+        m_kernel_name_attr =
+            c->create_attribute("rocm.kernel.name", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
     }
 
     void subscribe_attributes(Caliper* c, Channel* channel) {
@@ -107,140 +107,141 @@ class RocTracerService {
     }
 
     void push_correlation(uint64_t id, cali::Node* node) {
-	std::lock_guard<std::mutex>
-	    g(m_correlation_map_mutex);
+        std::lock_guard<std::mutex>
+            g(m_correlation_map_mutex);
 
-	m_correlation_map[id] = node;
+        m_correlation_map[id] = node;
     }
 
     cali::Node* pop_correlation(uint64_t id) {
-	cali::Node* ret = nullptr;
+        cali::Node* ret = nullptr;
 
-	std::lock_guard<std::mutex>
-	    g(m_correlation_map_mutex);
+        std::lock_guard<std::mutex>
+            g(m_correlation_map_mutex);
 
-	auto it = m_correlation_map.find(id);
+        auto it = m_correlation_map.find(id);
 
-	if (it != m_correlation_map.end()) {
-	    ret = it->second;
-	    m_correlation_map.erase(it);
-	}
-
-	return ret;
-    }
-
-    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) {
-	// skip unneeded callbacks
-	if (cid == HIP_API_ID___hipPushCallConfiguration ||
-	    cid == HIP_API_ID___hipPopCallConfiguration)
-	    return;
-
-        auto instance = static_cast<RocTracerService*>(arg);
-	auto data = static_cast<const hip_api_data_t*>(callback_data);
-	Caliper c;
-
-        if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-            c.begin(instance->m_api_attr, Variant(roctracer_op_string(ACTIVITY_DOMAIN_HIP_API, cid, 0)));
-
-	    if (instance->m_enable_tracing) {
-		//   When tracing, store a correlation id with the kernel name and the
-		// current region context
-		std::string kernel;
-
-		if (instance->m_record_names) {
-		    switch (cid) {
-		    case HIP_API_ID_hipLaunchKernel:
-		    case HIP_API_ID_hipExtLaunchKernel:
-			{
-			    kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
-							   data->args.hipLaunchKernel.stream);
-			}
-			break;
-		    case HIP_API_ID_hipModuleLaunchKernel:
-		    case HIP_API_ID_hipExtModuleLaunchKernel:
-		    case HIP_API_ID_hipHccModuleLaunchKernel:
-			{
-			    kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
-			}
-			break;
-		    default:
-			break;
-		    }
-		}
-
-		Entry e = c.get(instance->m_api_attr);
-		cali::Node* node = nullptr;
-
-		if (e.is_reference())
-		    node = c.node(e.node()->id()); // "de-const"
-		if (!kernel.empty()) {
-		    kernel = util::demangle(kernel.c_str());
-		    node = c.make_tree_entry(instance->m_kernel_name_attr,
-					     Variant(kernel.c_str()),
-					     node);
-		}
-
-		if (node) {
-		    instance->push_correlation(data->correlation_id, node);
-		    ++instance->m_num_correlations_stored;
-		}
-	    }
-        } else {
-            c.end(instance->m_api_attr);
+        if (it != m_correlation_map.end()) {
+            ret = it->second;
+            m_correlation_map.erase(it);
         }
+
+        return ret;
     }
 
-    unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
-	unsigned num_records = 0;
+    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) 
+    {
+        // skip unneeded callbacks
+        if (cid == HIP_API_ID___hipPushCallConfiguration ||
+            cid == HIP_API_ID___hipPopCallConfiguration)
+            return;
 
-	if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
-	    Attribute attr[7] = {
-		m_activity_name_attr,
-		m_activity_start_attr,
-		m_activity_end_attr,
-		m_activity_duration_attr,
-		m_activity_device_id_attr,
-		m_activity_queue_id_attr,
-		m_activity_bytes_attr
-	    };
-	    Variant data[7] = {
-		Variant(roctracer_op_string(record->domain, record->op, record->kind)),
-		Variant(cali_make_variant_from_uint(record->begin_ns)),
-		Variant(cali_make_variant_from_uint(record->end_ns)),
-		Variant(cali_make_variant_from_uint(record->end_ns - record->begin_ns)),
-		Variant(cali_make_variant_from_uint(record->device_id)),
-		Variant(cali_make_variant_from_uint(record->queue_id)),
-		Variant()
-	    };
+            auto instance = static_cast<RocTracerService*>(arg);
+            auto data = static_cast<const hip_api_data_t*>(callback_data);
+            Caliper c;
 
-	    size_t num = 6;
+            if (data->phase == ACTIVITY_API_PHASE_ENTER) {
+                c.begin(instance->m_api_attr, Variant(roctracer_op_string(ACTIVITY_DOMAIN_HIP_API, cid, 0)));
 
-	    if (record->op == HIP_OP_ID_COPY)
-		data[num++] = Variant(cali_make_variant_from_uint(record->bytes));
+                if (instance->m_enable_tracing) {
+                    //   When tracing, store a correlation id with the kernel name and the
+                    // current region context
+                    std::string kernel;
 
-	    cali::Node* parent = pop_correlation(record->correlation_id);
+                    if (instance->m_record_names) {
+                        switch (cid) {
+                        case HIP_API_ID_hipLaunchKernel:
+                        case HIP_API_ID_hipExtLaunchKernel:
+                        {
+                            kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
+                                        data->args.hipLaunchKernel.stream);
+                        }
+                        break;
+                        case HIP_API_ID_hipModuleLaunchKernel:
+                        case HIP_API_ID_hipExtModuleLaunchKernel:
+                        case HIP_API_ID_hipHccModuleLaunchKernel:
+                        {
+                            kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
+                        }
+                        break;
+                        default:
+                        break;
+                        }
+                    }
 
-	    if (parent) {
-		++m_num_correlations_found;
-	    } else {
-		++m_num_correlations_missed;
-	    }
+                    Entry e = c.get(instance->m_api_attr);
+                    cali::Node* node = nullptr;
 
-	    SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-	    SnapshotRecord snapshot(snapshot_data);
-	    c->make_record(num, attr, data, snapshot, parent);
-	    snap_fn(*c, snapshot.to_entrylist());
+                    if (e.is_reference())
+                        node = c.node(e.node()->id()); // "de-const"
+                    if (!kernel.empty()) {
+                        kernel = util::demangle(kernel.c_str());
+                        node = c.make_tree_entry(instance->m_kernel_name_attr,
+                                    Variant(kernel.c_str()),
+                                    node);
+                    }
 
-	    ++num_records;
-	}
+                    if (node) {
+                        instance->push_correlation(data->correlation_id, node);
+                        ++instance->m_num_correlations_stored;
+                    }
+                }
+            } else {
+                c.end(instance->m_api_attr);
+            }
+        }
 
-	return num_records;
+        unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
+        unsigned num_records = 0;
+
+        if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
+            Attribute attr[7] = {
+                m_activity_name_attr,
+                m_activity_start_attr,
+                m_activity_end_attr,
+                m_activity_duration_attr,
+                m_activity_device_id_attr,
+                m_activity_queue_id_attr,
+                m_activity_bytes_attr
+            };
+            Variant data[7] = {
+                Variant(roctracer_op_string(record->domain, record->op, record->kind)),
+                Variant(cali_make_variant_from_uint(record->begin_ns)),
+                Variant(cali_make_variant_from_uint(record->end_ns)),
+                Variant(cali_make_variant_from_uint(record->end_ns - record->begin_ns)),
+                Variant(cali_make_variant_from_uint(record->device_id)),
+                Variant(cali_make_variant_from_uint(record->queue_id)),
+                Variant()
+            };
+
+            size_t num = 6;
+
+            if (record->op == HIP_OP_ID_COPY)
+                data[num++] = Variant(cali_make_variant_from_uint(record->bytes));
+
+                cali::Node* parent = pop_correlation(record->correlation_id);
+
+                if (parent) {
+                    ++m_num_correlations_found;
+            } else {
+                ++m_num_correlations_missed;
+            }
+
+            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
+            SnapshotRecord snapshot(snapshot_data);
+            c->make_record(num, attr, data, snapshot, parent);
+            snap_fn(*c, snapshot.to_entrylist());
+
+            ++num_records;
+        }
+
+        return num_records;
     }
 
     void flush_cb(Caliper* c, Channel* channel, const SnapshotRecord*, SnapshotFlushFn snap_fn) {
         roctracer_flush_activity_expl(m_roctracer_pool);
 
-	unsigned num_flushed = 0;
+        unsigned num_flushed = 0;
         unsigned num_records = 0;
         unsigned num_chunks  = 0;
 
@@ -253,7 +254,7 @@ class RocTracerService {
                 reinterpret_cast<const roctracer_record_t*>(chunk.end);
 
             while (record < end_record) {
-		num_flushed += flush_record(c, snap_fn, record);
+                num_flushed += flush_record(c, snap_fn, record);
 
                 ++num_records;
                 if (roctracer_next_record(record, &record) != 0)
@@ -266,8 +267,8 @@ class RocTracerService {
         Log(1).stream() << channel->name() << ": roctracer: Processed "
                         << num_records << " records in "
                         << num_chunks  << " chunk(s) ("
-			<< num_flushed << " flushed, "
-			<< num_records - num_flushed << " skipped)."
+                        << num_flushed << " flushed, "
+                        << num_records - num_flushed << " skipped)."
                         << std::endl;
     }
 
@@ -292,7 +293,7 @@ class RocTracerService {
     static void rt_activity_callback(const char* begin, const char* end, void* arg) {
         auto instance = static_cast<RocTracerService*>(arg);
 
-	// we might actually have to copy the data here.
+    // we might actually have to copy the data here.
 
         buffer_chunk_t chunk = { begin, end };
         instance->m_flushed_chunks.push_back(chunk);
@@ -308,7 +309,7 @@ class RocTracerService {
 
     void init_tracing(Channel* channel) {
         roctracer_properties_t properties {};
-	memset(&properties, 0, sizeof(roctracer_properties_t));
+        memset(&properties, 0, sizeof(roctracer_properties_t));
 
         properties.buffer_size = 0x100000;
         // properties.alloc_fun   = rt_alloc;
@@ -361,11 +362,11 @@ class RocTracerService {
             return;
         }
 
-	Log(1).stream() << channel->name() << ": roctracer: Callbacks initialized" << std::endl;
+        Log(1).stream() << channel->name() << ": roctracer: Callbacks initialized" << std::endl;
     }
 
     void finish_tracing(Channel* channel) {
-	roctracer_disable_domain_activity(ACTIVITY_DOMAIN_HCC_OPS);
+        roctracer_disable_domain_activity(ACTIVITY_DOMAIN_HCC_OPS);
         roctracer_disable_domain_activity(ACTIVITY_DOMAIN_HIP_OPS);
         roctracer_close_pool_expl(m_roctracer_pool);
         m_roctracer_pool = nullptr;
@@ -380,48 +381,48 @@ class RocTracerService {
     }
 
     void post_init_cb(Caliper* c, Channel* channel) {
-	subscribe_attributes(c, channel);
+        subscribe_attributes(c, channel);
 
-	init_callbacks(channel); // apparently must happen before init_tracing()
+        init_callbacks(channel); // apparently must happen before init_tracing()
 
-	if (m_enable_tracing)
-	    init_tracing(channel);
+        if (m_enable_tracing)
+            init_tracing(channel);
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
         finish_callbacks(channel);
 
-	if (m_enable_tracing) {
-	    finish_tracing(channel);
+        if (m_enable_tracing) {
+            finish_tracing(channel);
 
-	    Log(1).stream() << channel->name() << ": roctracer: "
-			    << m_num_buffers << " buffers allocated, "
-			    << m_num_flushes << " activity flushes"
-			    << std::endl;
+            Log(1).stream() << channel->name() << ": roctracer: "
+                    << m_num_buffers << " buffers allocated, "
+                    << m_num_flushes << " activity flushes"
+                    << std::endl;
 
-	    if (Log::verbosity() >= 2) {
-		Log(2).stream() << channel->name() << ": roctracer: "
-				<< m_num_correlations_stored << " correlations stored; "
-				<< m_num_correlations_found  << " correlations found, "
-				<< m_num_correlations_missed << " missed."
-				<< std::endl;
-	    }
-	}
+            if (Log::verbosity() >= 2) {
+            Log(2).stream() << channel->name() << ": roctracer: "
+                    << m_num_correlations_stored << " correlations stored; "
+                    << m_num_correlations_found  << " correlations found, "
+                    << m_num_correlations_missed << " missed."
+                    << std::endl;
+            }
+        }
     }
 
     RocTracerService(Caliper* c, Channel* channel)
         : m_api_attr       { Attribute::invalid },
           m_num_buffers    { 0 },
           m_num_flushes    { 0 },
-	  m_num_correlations_stored { 0 },
-	  m_num_correlations_found  { 0 },
-	  m_num_correlations_missed { 0 },
+          m_num_correlations_stored { 0 },
+          m_num_correlations_found  { 0 },
+          m_num_correlations_missed { 0 },
           m_roctracer_pool { nullptr }
     {
-	auto config = channel->config().init("roctracer", s_configdata);
+        auto config = channel->config().init("roctracer", s_configdata);
 
-	m_enable_tracing = config.get("trace_activities").to_bool();
-	m_record_names   = config.get("record_kernel_names").to_bool();
+        m_enable_tracing = config.get("trace_activities").to_bool();
+        m_record_names   = config.get("record_kernel_names").to_bool();
 
         create_callback_attributes(c);
         create_activity_attributes(c);
@@ -437,31 +438,30 @@ class RocTracerService {
 public:
 
     static void register_roctracer(Caliper* c, Channel* channel) {
-	if (s_instance) {
-	    Log(0).stream() << channel->name()
-			    << ": roctracer service is already active, disabling!"
-			    << std::endl;
-	}
+        if (s_instance) {
+            Log(0).stream() << channel->name()
+                            << ": roctracer service is already active, disabling!"
+                            << std::endl;
+        }
 
         s_instance = new RocTracerService(c, channel);
 
         channel->events().post_init_evt.connect(
             [](Caliper* c, Channel* channel){
-		s_instance->post_init_cb(c, channel);
+        s_instance->post_init_cb(c, channel);
             });
         channel->events().finish_evt.connect(
             [](Caliper* c, Channel* channel){
                 s_instance->finish_cb(c, channel);
                 delete s_instance;
-		s_instance = nullptr;
+        s_instance = nullptr;
             });
 
-	Log(1).stream() << channel->name()
-			<< ": Registered roctracer service."
-			<< " Activity tracing is "
-			<< (s_instance->m_enable_tracing ? "on" : "off")
-			<< std::endl;
-
+        Log(1).stream() << channel->name()
+                        << ": Registered roctracer service."
+                        << " Activity tracing is "
+                        << (s_instance->m_enable_tracing ? "on" : "off")
+                        << std::endl;
     }
 };
 
