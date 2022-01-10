@@ -39,7 +39,6 @@ class RocTracerService {
     Attribute m_activity_bytes_attr;
     Attribute m_kernel_name_attr;
 
-    unsigned  m_num_buffers;
     unsigned  m_num_flushes;
 
     unsigned  m_num_correlations_stored;
@@ -396,12 +395,11 @@ class RocTracerService {
             finish_tracing(channel);
 
             Log(1).stream() << channel->name() << ": roctracer: "
-                    << m_num_buffers << " buffers allocated, "
-                    << m_num_flushes << " activity flushes"
-                    << std::endl;
+                << m_num_flushes << " activity flushes"
+                << std::endl;
 
             if (Log::verbosity() >= 2) {
-            Log(2).stream() << channel->name() << ": roctracer: "
+                Log(2).stream() << channel->name() << ": roctracer: "
                     << m_num_correlations_stored << " correlations stored; "
                     << m_num_correlations_found  << " correlations found, "
                     << m_num_correlations_missed << " missed."
@@ -412,7 +410,6 @@ class RocTracerService {
 
     RocTracerService(Caliper* c, Channel* channel)
         : m_api_attr       { Attribute::invalid },
-          m_num_buffers    { 0 },
           m_num_flushes    { 0 },
           m_num_correlations_stored { 0 },
           m_num_correlations_found  { 0 },
