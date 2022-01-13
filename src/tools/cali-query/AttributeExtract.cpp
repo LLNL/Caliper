@@ -22,9 +22,12 @@ struct AttributeExtract::AttributeExtractImpl
         if (m_id_attr == Attribute::invalid)
             m_id_attr = db.create_attribute("attribute.id", CALI_TYPE_UINT, CALI_ATTR_ASVALUE);
 
-        EntryList list { Entry(node), Entry(m_id_attr, node->id()) };
+        EntryList rec { Entry(m_id_attr, node->id()) };
 
-        m_snap_fn(db, list);
+        for ( ; node && node->id() != CALI_INV_ID; node = node->parent())
+            rec.push_back(Entry(db.get_attribute(node->attribute()), node->data()));
+
+        m_snap_fn(db, rec);
     }
 
     AttributeExtractImpl(SnapshotProcessFn snap_fn)

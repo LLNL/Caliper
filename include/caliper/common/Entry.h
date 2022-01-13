@@ -7,6 +7,8 @@
 #include "Attribute.h"
 #include "Variant.h"
 
+#include "caliper/caliper-config.h"
+
 namespace cali
 {
 
@@ -20,7 +22,7 @@ namespace cali
 /// a _reference entry_ (reference into the context tree) or an
 /// _immediate entry_ (explicit key:value pair). Reference entries are
 /// stored as context tree node pointer, immediate entries are stored as
-/// (attribute id, value) pair.
+/// (attribute, value) pair.
 
 class Entry
 {

@@ -131,7 +131,7 @@ struct cali::SnapshotTextFormatter::SnapshotTextFormatterImpl
                         break;
                     }
 
-                if (e.node()) {
+                if (e.is_reference()) {
                     for (const Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == f.attr.id())
                             str = node->data().to_string().append(str.size() ? "/" : "").append(str);
