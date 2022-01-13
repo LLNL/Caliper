@@ -238,7 +238,7 @@ class SymbolLookup
 
             for (const Entry& e : rec)
                 if (e.is_reference()) {
-                    for (const cali::Node* node = e.node(); node; node = node->parent())
+                    for (cali::Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == sym_attr_id)
                             add_symbol_attributes(Entry(node), it.second, mempool, attr, data);
                 } else if (e.attribute() == sym_attr_id) {

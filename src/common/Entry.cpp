@@ -8,8 +8,8 @@
 
 using namespace cali;
 
-int 
-Entry::count(cali_id_t attr_id) const 
+int
+Entry::count(cali_id_t attr_id) const
 {
     int res = 0;
 
@@ -24,7 +24,7 @@ Entry::count(cali_id_t attr_id) const
     return res;
 }
 
-Variant 
+Variant
 Entry::value(cali_id_t attr_id) const
 {
     if (m_node && m_node->id() == attr_id)
@@ -36,5 +36,5 @@ Entry::value(cali_id_t attr_id) const
 
     return Variant();
 }
-                  
+
 const Entry Entry::empty;

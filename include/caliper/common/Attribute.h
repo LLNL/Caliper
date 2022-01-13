@@ -1,8 +1,8 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/** 
- * \file Attribute.h 
+/**
+ * \file Attribute.h
  * \brief Attribute class declaration
  */
 
@@ -23,7 +23,7 @@ namespace cali
 /// \brief Encapsulate an attribute key.
 ///
 /// All attribute meta-information (e.g., type, property flags, name) is
-/// stored in the context tree. An attribute key is a context tree 
+/// stored in the context tree. An attribute key is a context tree
 /// reference to a \a cali.attribute.name node. This class encapsulates
 /// an attribute key node and provides access to the attribute's
 /// metadata.
@@ -45,23 +45,23 @@ public:
 
     std::string    name() const;
     const char*    name_c_str() const;
-    
+
     cali_attr_type type() const;
 
     int            properties() const;
 
-    /// \brief Return the context tree node pointer that represents 
+    /// \brief Return the context tree node pointer that represents
     ///   this attribute key.
-    const Node*    node() const {
+    Node*          node() const {
         return m_node;
     }
 
     Variant        get(const Attribute& attr) const;
 
-    bool store_as_value() const { 
-        return properties() & CALI_ATTR_ASVALUE; 
+    bool store_as_value() const {
+        return properties() & CALI_ATTR_ASVALUE;
     }
-    bool is_autocombineable() const   { 
+    bool is_autocombineable() const   {
         return !store_as_value() && !(properties() & CALI_ATTR_NOMERGE);
     }
     bool skip_events() const {
@@ -76,8 +76,8 @@ public:
     bool is_global() const {
         return properties() & CALI_ATTR_GLOBAL;
     }
-    
-    static Attribute make_attribute(const Node* node);
+
+    static Attribute make_attribute(Node* node);
 
     static bool is_attribute(const Node* node) {
         return node && node->attribute() == NAME_ATTR_ID;
@@ -87,9 +87,9 @@ public:
 
 private:
 
-    const Node*            m_node;
+    Node* m_node;
 
-    Attribute(const Node* node)
+    Attribute(Node* node)
         : m_node(node)
         { }
 

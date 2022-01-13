@@ -16,9 +16,9 @@ TEST(MetaDBTest, MergeSnapshotFromDB) {
 
     IdMap idmap;
 
-    const Node* a_in =
+    Node* a_in =
         db1.merge_node(200, str_attr.id(), CALI_INV_ID, Variant("a"), idmap);
-    const Node* b_in =
+    Node* b_in =
         db1.merge_node(201, str_attr.id(), 200,         Variant("b"), idmap);
 
     EntryList list_in { Entry(b_in), Entry(int_attr, Variant(42)) };
@@ -41,7 +41,7 @@ TEST(MetaDBTest, MergeSnapshotFromDB) {
 
     // assume order is nodes, immediate
 
-    const Node* b_out = list_out[0].node();
+    Node* b_out = list_out[0].node();
 
     ASSERT_NE(b_out, nullptr);
     ASSERT_NE(b_out->parent(), nullptr);
@@ -65,7 +65,7 @@ int count_in_record(const std::vector<Entry>& rec, const Attribute& a, const Var
 
     for (const Entry& e : rec)
         if (e.is_reference()) {
-            for (const Node* node = e.node(); node; node = node->parent())
+            for (Node* node = e.node(); node; node = node->parent())
                 if (node->attribute() == a.id() && node->data() == v)
                     ++count;
         } else if (e.is_immediate() && e.attribute() == a.id() && e.value() == v)
@@ -137,13 +137,13 @@ TEST(MetadataDBTest, StringDB) {
 
     IdMap idmap;
 
-    const Node* n0 =
+    Node* n0 =
         db.merge_node(100, attr.id(), CALI_INV_ID, Variant("a.b"  ), idmap);
-    const Node* n1 =
+    Node* n1 =
         db.merge_node(101, attr.id(), 100,         Variant("a"    ), idmap);
-    const Node* n2 =
+    Node* n2 =
         db.merge_node(102, attr.id(), 101,         Variant("a.b.c"), idmap);
-    const Node* n3 =
+    Node* n3 =
         db.merge_node(103, attr.id(), 102,         Variant("a.b"  ), idmap);
 
     EXPECT_EQ(n0->data().to_string(), std::string("a.b"));

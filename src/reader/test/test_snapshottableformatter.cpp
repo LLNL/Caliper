@@ -18,7 +18,7 @@ TEST(SnapshotTableFormatter, Format) {
     Attribute s = db.create_attribute("str",  CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
 
     IdMap idmap;
-    const Node* node = db.merge_node(101, s.id(), CALI_INV_ID, Variant("a string value"), idmap);
+    Node* node = db.merge_node(101, s.id(), CALI_INV_ID, Variant("a string value"), idmap);
 
     std::vector<Entry> rec;
     rec.push_back(Entry(a,   Variant(42)));

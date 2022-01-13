@@ -10,18 +10,18 @@
 using namespace cali;
 using namespace std;
 
-Attribute 
-Attribute::make_attribute(const Node* node)
+Attribute
+Attribute::make_attribute(Node* node)
 {
     // sanity check: make sure we have the necessary attributes (name and type)
 
-    // Given node must be attribute name 
+    // Given node must be attribute name
 
     if (!node || node->attribute() == CALI_INV_ID || node->attribute() != NAME_ATTR_ID)
         return Attribute::invalid;
 
     // Find type attribute
-    for (const Node* p = node; p && p->attribute() != CALI_INV_ID; p = p->parent()) 
+    for (const Node* p = node; p && p->attribute() != CALI_INV_ID; p = p->parent())
         if (p->attribute() == TYPE_ATTR_ID)
             return Attribute(node);
 
@@ -29,7 +29,7 @@ Attribute::make_attribute(const Node* node)
 }
 
 std::string
-Attribute::name() const 
+Attribute::name() const
 {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == NAME_ATTR_ID)
@@ -49,7 +49,7 @@ Attribute::name_c_str() const
 }
 
 cali_attr_type
-Attribute::type() const 
+Attribute::type() const
 {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == TYPE_ATTR_ID)
@@ -59,7 +59,7 @@ Attribute::type() const
 }
 
 int
-Attribute::properties() const 
+Attribute::properties() const
 {
     for (const Node* node = m_node; node; node = node->parent())
         if (node->attribute() == PROP_ATTR_ID)

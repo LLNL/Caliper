@@ -256,7 +256,7 @@ struct JsonSplitFormatter::JsonSplitFormatterImpl
         std::vector<Entry> path;
 
         for (const Entry& e : list)
-            for (const Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent())
+            for (Node* node = e.node(); node && node->id() != CALI_INV_ID; node = node->parent())
                 for (const Attribute& a : path_attrs)
                     if (node->attribute() == a.id()) {
                         path.push_back(Entry(node));

@@ -89,7 +89,7 @@ class EventTrigger
 
         c->make_tree_entry(exp_marker_attr,
                            Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)),
-                           c->node(attr.node()->id()));
+                           attr.node());
 
         Log(2).stream() << chn->name() << ": event: Marked attribute " << attr.name() << std::endl;
     }

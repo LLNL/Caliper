@@ -71,7 +71,7 @@ AnnotationBinding::mark_attribute(Caliper *c, Channel* chn, const Attribute& att
     // Add the binding marker for this attribute
 
     Variant v_true(true);
-    c->make_tree_entry(m_marker_attr, v_true, c->node(attr.node()->id()));
+    c->make_tree_entry(m_marker_attr, v_true, attr.node());
 
     // Invoke derived functions
 

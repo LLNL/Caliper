@@ -26,8 +26,8 @@ namespace cali
 
 class Entry
 {
-    const Node* m_node;  // reference or attribute node
-    Variant     m_value;
+    Node*   m_node;  // reference or attribute node
+    Variant m_value;
 
 public:
 
@@ -35,7 +35,7 @@ public:
         : m_node(nullptr)
         { }
 
-    Entry(const Node* node)
+    Entry(Node* node)
         : m_node(node)
         { }
 
@@ -45,7 +45,7 @@ public:
 
     /// \brief Return context tree node pointer for reference entries.
     /// \return The context tree node or attribute node
-    const Node* node() const {
+    Node* node() const {
         return m_node;
     }
 
@@ -101,7 +101,7 @@ inline bool operator == (const Entry& lhs, const Entry& rhs)
     if (lhs.m_node->id() == rhs.m_node->id()) {
         if (Attribute::is_attribute(lhs.m_node))
             return lhs.m_value == rhs.m_value;
-        else 
+        else
             return true;
     }
 
