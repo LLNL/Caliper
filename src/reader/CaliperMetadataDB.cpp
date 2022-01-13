@@ -224,7 +224,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             }
         }
 
-        if (new_node && node->attribute() == Attribute::meta_attribute_keys().name_attr_id) {
+        if (new_node && node->attribute() == Attribute::NAME_ATTR_ID) {
             std::lock_guard<std::mutex>
                 g(m_attribute_lock);
 
@@ -418,8 +418,8 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
             parent = make_tree_entry(1, &m_alias_attr, &v_alias, parent);
         }
 
-        Attribute n_attr[2] = { attribute(Attribute::meta_attribute_keys().prop_attr_id),
-                                attribute(Attribute::meta_attribute_keys().name_attr_id) };
+        Attribute n_attr[2] = { attribute(Attribute::PROP_ATTR_ID),
+                                attribute(Attribute::NAME_ATTR_ID) };
         Variant   n_data[2] = { Variant(prop),
                                 make_variant(CALI_TYPE_STRING, name) };
 

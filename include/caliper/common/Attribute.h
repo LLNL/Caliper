@@ -19,14 +19,6 @@
 
 namespace cali
 {
-    
-struct MetaAttributeIDs {
-    cali_id_t name_attr_id;
-    cali_id_t type_attr_id;
-    cali_id_t prop_attr_id;
-
-    static const MetaAttributeIDs invalid;
-};    
 
 /// \brief Encapsulate an attribute key.
 ///
@@ -41,8 +33,12 @@ class Attribute
 
 public:
 
+    constexpr static cali_id_t NAME_ATTR_ID =  8;
+    constexpr static cali_id_t TYPE_ATTR_ID =  9;
+    constexpr static cali_id_t PROP_ATTR_ID = 10;
+
     constexpr Attribute()
-        : m_node(0)
+        : m_node(nullptr)
         { }
 
     cali_id_t      id() const { return m_node ? m_node->id() : CALI_INV_ID; }
@@ -59,6 +55,8 @@ public:
     const Node*    node() const {
         return m_node;
     }
+
+    Variant        get(const Attribute& attr) const;
 
     bool store_as_value() const { 
         return properties() & CALI_ATTR_ASVALUE; 
@@ -78,17 +76,11 @@ public:
     bool is_global() const {
         return properties() & CALI_ATTR_GLOBAL;
     }
-
-    Variant        get(const Attribute& attr) const;
     
     static Attribute make_attribute(const Node* node);
 
-    static MetaAttributeIDs meta_attribute_keys() {
-        return s_keys;
-    }
-
     static bool is_attribute(const Node* node) {
-        return node && node->attribute() == s_keys.name_attr_id;
+        return node && node->attribute() == NAME_ATTR_ID;
     }
 
     static const Attribute invalid;
@@ -96,8 +88,6 @@ public:
 private:
 
     const Node*            m_node;
-
-    static const MetaAttributeIDs s_keys;
 
     Attribute(const Node* node)
         : m_node(node)
