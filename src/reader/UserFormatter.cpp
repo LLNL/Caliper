@@ -129,7 +129,7 @@ struct UserFormatter::FormatImpl
 
             if (attr != Attribute::invalid)
                 for (const Entry& e: list) {
-                    if (e.node()) {
+                    if (e.is_reference()) {
                         for (const Node* node = e.node(); node; node = node->parent())
                             if (node->attribute() == attr.id())
                                 str = node->data().to_string().append(str.size() ? "/" : "").append(str);

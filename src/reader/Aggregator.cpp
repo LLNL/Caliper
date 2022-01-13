@@ -1519,15 +1519,16 @@ struct Aggregator::AggregatorImpl
 
         bool select_all = m_select_all;
 
-        for (const Entry& e : list)
-            for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
-                if (select_all || is_key(db, key_attrs, node->attribute()))
-                    nodes.push_back(node);
-
-        // Only include explicitly selected immediate entries in the key.
-        for (const Entry& e : list)
-            if (e.is_immediate() && is_key(db, key_attrs, e.attribute()))
+        for (const Entry& e : list) {
+            if (e.is_reference()) {
+                for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
+                    if (select_all || is_key(db, key_attrs, node->attribute()))
+                        nodes.push_back(node);
+            } else if (e.is_immediate() && is_key(db, key_attrs, e.attribute())) {
+                // Only include explicitly selected immediate entries in the key.
                 immediates.push_back(e);
+            }
+        }
 
         // --- Group by attribute, reverse nodes (restores original order) and get/create tree node.
         //       Keeps nested attributes separate.

@@ -34,15 +34,15 @@ TEST(NestedExclusiveRegionProfileTest, NestedRegion) {
     NestedExclusiveRegionProfile rp(db, "metric.attr");
 
     rp(db,
-       { Entry(a_node), Entry(metric_attr.id(), Variant(2))   } );
+       { Entry(a_node), Entry(metric_attr, Variant(2))   } );
     rp(db,
-       { Entry(b_node), Entry(metric_attr.id(), Variant(40))  } );
+       { Entry(b_node), Entry(metric_attr, Variant(40))  } );
     rp(db,
-       { Entry(c_node), Entry(metric_attr.id(), Variant(100)) } );
+       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
     rp(db,
-       { Entry(metric_attr.id(), Variant(1000)) });
+       { Entry(metric_attr, Variant(1000)) });
     rp(db,
-       { Entry(d_node), Entry(metric_attr.id(), Variant(400)) } );
+       { Entry(d_node), Entry(metric_attr, Variant(400)) } );
     rp(db,
        { Entry(b_node) });
 
@@ -87,13 +87,13 @@ TEST(NestedExclusiveRegionProfileTest, GivenRegion) {
     NestedExclusiveRegionProfile rp(db, "metric.attr", "reg_c");
 
     rp(db,
-       { Entry(a_node), Entry(metric_attr.id(), Variant(2))   } );
+       { Entry(a_node), Entry(metric_attr, Variant(2))   } );
     rp(db,
-       { Entry(b_node), Entry(metric_attr.id(), Variant(40))  } );
+       { Entry(b_node), Entry(metric_attr, Variant(40))  } );
     rp(db,
-       { Entry(c_node), Entry(metric_attr.id(), Variant(100)) } );
+       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
     rp(db,
-       { Entry(metric_attr.id(), Variant(1000)) });
+       { Entry(metric_attr, Variant(1000)) });
     rp(db,
        { Entry(b_node) });
 

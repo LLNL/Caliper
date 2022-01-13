@@ -349,13 +349,13 @@ struct AggregationDB::AggregationDBImpl
             if (k->count == 0)
                 continue;
 
-            rec.push_back(Entry(info.result_attrs[a].min_attr.id(), Variant(k->min)));
-            rec.push_back(Entry(info.result_attrs[a].max_attr.id(), Variant(k->max)));
-            rec.push_back(Entry(info.result_attrs[a].sum_attr.id(), Variant(k->sum)));
-            rec.push_back(Entry(info.result_attrs[a].avg_attr.id(), Variant(k->avg)));
+            rec.push_back(Entry(info.result_attrs[a].min_attr, Variant(k->min)));
+            rec.push_back(Entry(info.result_attrs[a].max_attr, Variant(k->max)));
+            rec.push_back(Entry(info.result_attrs[a].sum_attr, Variant(k->sum)));
+            rec.push_back(Entry(info.result_attrs[a].avg_attr, Variant(k->avg)));
 #ifdef CALIPER_ENABLE_HISTOGRAMS
             for (int ii=0; ii<CALI_AGG_HISTOGRAM_BINS; ii++) {
-                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii].id(), Variant(cali_make_variant_from_uint(k->histogram[ii]))));
+                rec.push_back(Entry(info.stats_attributes[a].histogram_attr[ii], Variant(cali_make_variant_from_uint(k->histogram[ii]))));
             }
 #endif
         }

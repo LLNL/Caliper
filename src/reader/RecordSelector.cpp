@@ -122,10 +122,8 @@ struct RecordSelector::RecordSelectorImpl
 
     template<class Op>
     bool have_match(const Entry& entry, Op match) {
-        const Node* node = entry.node();
-
-        if (node) {
-            for ( ; node && node->id() != CALI_INV_ID; node = node->parent())
+        if (entry.is_reference()) {
+            for (const Node* node = entry.node() ; node && node->id() != CALI_INV_ID; node = node->parent())
                 if (match(node->attribute(), node->data()))
                     return true;
         } else if  (match(entry.attribute(), entry.value()))

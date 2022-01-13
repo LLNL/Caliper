@@ -41,7 +41,7 @@ std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
     stream.set_stream(&os);
 
     cali::Expand exp(stream, "");
-    exp.process_record(*c, snapshot.to_entrylist());
+    exp.process_record(*c, snapshot.to_entrylist(*c));
 
     return os << " }";
 }

@@ -257,7 +257,7 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         for (size_t i = 0; i < n_nodes; ++i)
             list.push_back(Entry(node(::map_id(node_ids[i], idmap))));
         for (size_t i = 0; i < n_imm; ++i)
-            list.push_back(Entry(::map_id(attr_ids[i], idmap), values[i]));
+            list.push_back(Entry(attribute(::map_id(attr_ids[i], idmap)), values[i]));
 
         return list;
     }
@@ -287,11 +287,14 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
         EntryList list;
         list.reserve(rec.size());
 
-        for (const Entry& e : rec)
+        for (const Entry& e : rec) {
+            const Node* node = recursive_merge_node(e.node(), db);
+
             if (e.is_reference())
-                list.push_back(Entry(recursive_merge_node(e.node(), db)));
+                list.push_back(Entry(node));
             else if (e.is_immediate())
-                list.push_back(Entry(recursive_merge_node(db.node(e.attribute()), db)->id(), e.value()));
+                list.push_back(Entry(Attribute::make_attribute(node), e.value()));
+        }
 
         return list;
     }
@@ -480,11 +483,15 @@ struct CaliperMetadataDB::CaliperMetadataDBImpl
 
         m_globals.clear();
 
-        for (const Entry& e : import_globals)
+        for (const Entry& e : import_globals) {
+            const Node* node = recursive_merge_node(e.node(), db);
+
             if (e.is_reference())
-                m_globals.push_back(Entry(recursive_merge_node(e.node(), db)));
+                m_globals.push_back(Entry(node));
             else if (e.is_immediate())
-                m_globals.push_back(Entry(recursive_merge_node(db.node(e.attribute()), db)->id(), e.value()));
+                m_globals.push_back(Entry(Attribute::make_attribute(node), e.value()));
+        }
+
 
         return m_globals;
     }

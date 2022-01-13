@@ -177,9 +177,11 @@ get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
         ret.push_back(Entry(c->make_tree_entry(nodes.size(), nodes.data(), nullptr)));
 
     // Add potential AS_VALUE global entries
-    for (size_t i = 0; i < size.n_immediate; ++i)
-        if (c->get_attribute(data.immediate_attr[i]).properties() & CALI_ATTR_GLOBAL)
-            ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
+    for (size_t i = 0; i < size.n_immediate; ++i) {
+        Attribute attr = c->get_attribute(data.immediate_attr[i]);
+        if (attr.is_global())
+            ret.push_back(Entry(attr, data.immediate_data[i]));
+    }
 
     return ret;
 }

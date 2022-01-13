@@ -56,7 +56,7 @@ class Report {
         std::string filename = config.get("filename").to_string();
 
         if (!filename.empty())
-            stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+            stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist(*c));
 
         CaliperMetadataDB db;
         QueryProcessor queryP(spec, stream);

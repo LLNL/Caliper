@@ -124,7 +124,7 @@ class TextLogService
         if (!is_triggering_snapshot(trigger_info))
             return;
 
-        auto rec = snapshot->to_entrylist();
+        auto rec = snapshot->to_entrylist(*c);
 
         std::lock_guard<std::mutex>
             g(stream_mutex);

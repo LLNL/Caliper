@@ -125,7 +125,7 @@ public:
     Entry get(const Attribute&) const;
 
     std::vector<Entry> 
-    to_entrylist() const;
+    to_entrylist(CaliperMetadataAccessInterface& db) const;
 
 private:
     

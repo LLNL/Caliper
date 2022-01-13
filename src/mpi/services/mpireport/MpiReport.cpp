@@ -66,7 +66,7 @@ class MpiReport
             stream.set_stream(OutputStream::StdOut);
 
             if (!m_filename.empty())
-                stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
+                stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist(*c));
         }
 
         collective_flush(stream, *c, *channel, flush_info, m_local_spec, m_cross_spec, comm);

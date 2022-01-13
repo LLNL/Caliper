@@ -87,6 +87,10 @@ public:
         return s_keys;
     }
 
+    static bool is_attribute(const Node* node) {
+        return node && node->attribute() == s_keys.name_attr_id;
+    }
+
     static const Attribute invalid;
 
 private:

@@ -70,7 +70,7 @@ size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
         for (size_t i = 0; i < n_attr;  ++i) {
             cali_id_t attr_id = vldec_u64(m_data + p, &p);
             Variant   data    = Variant::unpack(m_data + p, &p, nullptr);
-            rec.push_back(Entry(attr_id, data));
+            rec.push_back(Entry(c->get_attribute(attr_id), data));
         }
         
         // write snapshot                

@@ -75,14 +75,14 @@ SnapshotRecord::get(const Attribute& attr) const
 }
 
 std::vector<Entry> 
-SnapshotRecord::to_entrylist() const
+SnapshotRecord::to_entrylist(CaliperMetadataAccessInterface& db) const
 {
     std::vector<Entry> vec(m_sizes.n_nodes + m_sizes.n_immediate);
 
     for (size_t i = 0; i < m_sizes.n_nodes; ++i)
         vec.push_back(Entry(m_node_array[i]));
     for (size_t i = 0; i < m_sizes.n_immediate; ++i)
-        vec.push_back(Entry(m_attr_array[i], m_data_array[i]));
+        vec.push_back(Entry(db.get_attribute(m_attr_array[i]), m_data_array[i]));
 
     return vec;
 }
