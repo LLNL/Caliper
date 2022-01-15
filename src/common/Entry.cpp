@@ -37,4 +37,22 @@ Entry::value(cali_id_t attr_id) const
     return Variant();
 }
 
+Entry
+Entry::get(const Attribute& attr) const
+{
+    if (is_empty())
+        return Entry();
+
+    cali_id_t attr_id = attr.id();
+
+    if (m_node->id() == attr_id) // covers immediate entries
+        return *this;
+    else if (m_node->attribute() != Attribute::NAME_ATTR_ID) // this is a reference entry
+        for (Node* node = m_node; node; node = node->parent())
+            if (node->attribute() == attr_id)
+                return Entry(node);
+
+    return Entry();
+}
+
 const Entry Entry::empty;

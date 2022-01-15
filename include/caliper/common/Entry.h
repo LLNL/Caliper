@@ -78,6 +78,10 @@ public:
         return value(attr.id());
     }
 
+    /// \brief Find and return entry for the given attribute in this entries'
+    ///    value or path
+    Entry     get(const Attribute& attr) const;
+
     bool      is_empty() const {
         return m_node == nullptr;
     }
