@@ -4,7 +4,10 @@
 // Entry class definition
 
 #include "caliper/common/Entry.h"
+
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
+
 
 using namespace cali;
 
@@ -53,4 +56,19 @@ Entry::get(const Attribute& attr) const
                 return Entry(node);
 
     return Entry();
+}
+
+Entry
+Entry::unpack(const CaliperMetadataAccessInterface& db, unsigned char* buffer, size_t* inc)
+{
+    size_t p = 0;
+    Entry ret { db.node(vldec_u64(buffer, &p)) };
+
+    if (ret.m_node->attribute() == Attribute::NAME_ATTR_ID)
+        ret.m_value = Variant::unpack(buffer+p, &p);
+
+    if (inc)
+        *inc += p;
+
+    return ret;
 }

@@ -7,10 +7,14 @@
 #include "Attribute.h"
 #include "Variant.h"
 
+#include "c-util/vlenc.h"
+
 #include "caliper/caliper-config.h"
 
 namespace cali
 {
+
+class CaliperMetadataAccessInterface;
 
 //
 // --- Class for either a node or immediate data element
@@ -30,6 +34,8 @@ class Entry
     Variant m_value;
 
 public:
+
+    constexpr static size_t MAX_PACKED_SIZE = 30;
 
     CONSTEXPR_UNLESS_PGI Entry()
         : m_node(nullptr)
@@ -91,6 +97,16 @@ public:
     bool      is_reference() const {
         return !empty() && !is_immediate();
     }
+
+    size_t    pack(unsigned char* buffer) const {
+        size_t pos = 0;
+        pos += vlenc_u64(m_node->id(), buffer);
+        if (m_node->attribute() == Attribute::NAME_ATTR_ID)
+            pos += m_value.pack(buffer+pos);
+        return pos;
+    }
+
+    static Entry unpack(const CaliperMetadataAccessInterface& db, unsigned char* buffer, size_t* inc);
 
     friend bool operator == (const Entry&, const Entry&);
 };

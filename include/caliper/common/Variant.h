@@ -102,7 +102,7 @@ public:
         return cali_variant_pack(m_v, buf);
     }
     
-    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok) {
+    static Variant unpack(const unsigned char* buf, size_t* inc, bool* ok = nullptr) {
         return Variant(cali_variant_unpack(buf, inc, ok));
     }
 
