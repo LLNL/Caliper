@@ -265,7 +265,7 @@ class AllocService
         for (int i = 0; i < std::min<int>(g_memoryaddress_attrs.size(), MAX_ADDRESS_ATTRIBUTES); ++i) {
             Entry e = trigger_info->get(g_memoryaddress_attrs[i].memoryaddress_attr);
 
-            if (e.is_empty())
+            if (e.empty())
                 continue;
 
             uint64_t addr = e.value().to_uint();

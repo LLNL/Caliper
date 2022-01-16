@@ -92,7 +92,7 @@ CompressedSnapshotRecordView::unpack_next_entry(const CaliperMetadataAccessInter
         return Entry(c->get_attribute(id), data);
     }
 
-    return Entry::empty;
+    return Entry();
 }
 
 /// \brief Unpack node entries

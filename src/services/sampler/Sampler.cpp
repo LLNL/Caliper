@@ -140,7 +140,7 @@ void setup_settimer(Caliper* c)
 void clear_timer(Caliper* c, Channel* chn) {
     Entry e = c->get(timer_attr);
 
-    if (e.is_empty()) {
+    if (e.empty()) {
         Log(0).stream() << chn->name() << ": Sampler: Timer attribute not found " << endl;
         return;
     }

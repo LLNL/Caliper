@@ -859,7 +859,7 @@ class CuptiTraceService
     void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, const SnapshotRecord* info, SnapshotRecord* snapshot) {
         if (c->is_signal())
             return;
-        if (flush_trigger_attr == Attribute::invalid || info->get(flush_trigger_attr).is_empty())
+        if (flush_trigger_attr == Attribute::invalid || info->get(flush_trigger_attr).empty())
             return;
 
         do_flush(c, nullptr, [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){

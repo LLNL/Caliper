@@ -88,7 +88,7 @@ class TextLogService
 
         Entry event = trigger_info->get(event_attr);
 
-        if (!event.is_empty()) {
+        if (!event.empty()) {
             std::lock_guard<std::mutex>
                 g(trigger_attr_mutex);
 
@@ -111,7 +111,7 @@ class TextLogService
                 g(trigger_attr_mutex);
 
             for (const Attribute& a : trigger_attributes)
-                if (!trigger_info->get(a).is_empty())
+                if (!trigger_info->get(a).empty())
                     return true;
         }
 

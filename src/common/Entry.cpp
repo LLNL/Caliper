@@ -40,7 +40,7 @@ Entry::value(cali_id_t attr_id) const
 Entry
 Entry::get(const Attribute& attr) const
 {
-    if (is_empty())
+    if (empty())
         return Entry();
 
     cali_id_t attr_id = attr.id();
@@ -54,5 +54,3 @@ Entry::get(const Attribute& attr) const
 
     return Entry();
 }
-
-const Entry Entry::empty;

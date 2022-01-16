@@ -120,9 +120,9 @@ class Timestamp
         if (record_inclusive_duration && info && !c->is_signal()) {
             Entry event = info->get(begin_evt_attr);
 
-            if (event.is_empty())
+            if (event.empty())
                 event = info->get(end_evt_attr);
-            if (event.is_empty())
+            if (event.empty())
                 return;
             
             cali_id_t evt_attr_id = event.value().to_id();

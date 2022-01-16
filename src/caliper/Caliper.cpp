@@ -1069,7 +1069,7 @@ Caliper::end(const Attribute& attr)
     Entry entry = merged_entry.get(attr);
 
     if (merged_entry.attribute() != attr.id()) {
-        if (entry.is_empty())
+        if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
         if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
             return sT->log_stack_error(merged_entry.node(), attr);
@@ -1214,7 +1214,7 @@ Caliper::end(Channel* channel, const Attribute& attr)
     Entry entry = merged_entry.get(attr);
 
     if (merged_entry.attribute() != attr.id()) {
-        if (entry.is_empty())
+        if (entry.empty())
             return sT->log_stack_error(nullptr, attr);
         if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
             return sT->log_stack_error(entry.node(), attr);
@@ -1286,7 +1286,7 @@ Entry
 Caliper::get(const Attribute& attr)
 {
     if (attr == Attribute::invalid)
-        return Entry::empty;
+        return Entry();
 
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
@@ -1313,7 +1313,7 @@ Entry
 Caliper::get(Channel* channel, const Attribute& attr)
 {
     if (attr == Attribute::invalid)
-        return Entry::empty;
+        return Entry();
 
     cali_id_t key = sG->get_blackboard_key(attr);
 

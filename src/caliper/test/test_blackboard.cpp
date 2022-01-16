@@ -30,8 +30,8 @@ TEST(BlackboardTest, BasicFunctionality) {
     // --- basic get/set
     //
 
-    EXPECT_TRUE(bb.get(attr_imm.id()).is_empty());
-    EXPECT_TRUE(bb.get(attr_ref.id()).is_empty());
+    EXPECT_TRUE(bb.get(attr_imm.id()).empty());
+    EXPECT_TRUE(bb.get(attr_ref.id()).empty());
 
     bb.set(attr_ref.id(), Entry(node_c), true);
     EXPECT_EQ(bb.get(attr_ref.id()).node()->id(), node_c->id());
@@ -50,14 +50,14 @@ TEST(BlackboardTest, BasicFunctionality) {
     //
 
     bb.del(attr_ref.id());
-    EXPECT_TRUE(bb.get(attr_ref.id()).is_empty());
+    EXPECT_TRUE(bb.get(attr_ref.id()).empty());
     bb.set(attr_ref.id(), Entry(node_c), true);
     EXPECT_EQ(bb.get(attr_ref.id()).node(), node_c);
 
     bb.set(attr_uns.id(), Entry(attr_uns, Variant(3344)), true);
     EXPECT_EQ(bb.get(attr_uns.id()).value().to_int(), 3344);
     bb.del(attr_uns.id());
-    EXPECT_TRUE(bb.get(attr_uns.id()).is_empty());
+    EXPECT_TRUE(bb.get(attr_uns.id()).empty());
 
     EXPECT_EQ(bb.count(), 8);
 
@@ -105,7 +105,7 @@ TEST(BlackboardTest, Exchange) {
 
     Blackboard bb;
 
-    EXPECT_TRUE(bb.exchange(attr_imm.id(), Entry(attr_imm, Variant(42)), true).is_empty());
+    EXPECT_TRUE(bb.exchange(attr_imm.id(), Entry(attr_imm, Variant(42)), true).empty());
     EXPECT_EQ(bb.exchange(attr_imm.id(), Entry(attr_imm, Variant(24)), true).value().to_int(), 42);
     EXPECT_EQ(bb.get(attr_imm.id()).value().to_int(), 24);
 
@@ -162,7 +162,7 @@ TEST(BlackboardTest, Snapshot) {
     // --- basic get/set
     //
 
-    EXPECT_TRUE(bb.get(attr_imm.id()).is_empty());
+    EXPECT_TRUE(bb.get(attr_imm.id()).empty());
     EXPECT_EQ(bb.get(attr_ref.id()).node(), nullptr);
 
     bb.set(attr_ref.id(), Entry(node_c), true);

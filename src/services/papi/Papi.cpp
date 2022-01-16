@@ -246,7 +246,7 @@ class PapiService
     get_thread_info(Caliper* c) {
         Entry e = c->get(m_thread_attr);
 
-        if (e.is_empty())
+        if (e.empty())
             return nullptr;
 
         return static_cast<ThreadInfo*>(e.value().get_ptr());

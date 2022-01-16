@@ -58,7 +58,7 @@ Entry
 SnapshotRecord::get(const Attribute& attr) const
 {
     if (attr == Attribute::invalid)
-        return Entry::empty;
+        return Entry();
 
     if (attr.store_as_value()) {
         for (size_t i = 0; i < m_sizes.n_immediate; ++i)
@@ -71,7 +71,7 @@ SnapshotRecord::get(const Attribute& attr) const
                     return Entry(node);
     }
 
-    return Entry::empty;
+    return Entry();
 }
 
 std::vector<Entry> 

@@ -82,24 +82,22 @@ public:
     ///    value or path
     Entry     get(const Attribute& attr) const;
 
-    bool      is_empty() const {
+    bool      empty() const {
         return m_node == nullptr;
     }
     bool      is_immediate() const {
         return Attribute::is_attribute(m_node);
     }
     bool      is_reference() const {
-        return !is_empty() && !is_immediate();
+        return !empty() && !is_immediate();
     }
-
-    static const Entry empty;
 
     friend bool operator == (const Entry&, const Entry&);
 };
 
 inline bool operator == (const Entry& lhs, const Entry& rhs)
 {
-    if (lhs.is_empty() || rhs.is_empty())
+    if (lhs.empty() || rhs.empty())
         return lhs.m_node == rhs.m_node;
 
     if (lhs.m_node->id() == rhs.m_node->id()) {
