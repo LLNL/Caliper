@@ -27,6 +27,8 @@ void kokkosp_parse_args(int argc, char *argv_raw[]) {
       std::cerr << "Kokkos Caliper connector error: " << ::kokkos::mgr.error_msg()
                 << std::endl;
     }
+  }
+  if (::kokkos::mgr.get_all_channels().size() > 0) {
     ::kokkos::mgr.start();
   }
 }
@@ -195,7 +197,22 @@ __attribute__((weak)) void kokkosp_end_deep_copy() {
 }
 }
 namespace cali {
-  extern Kokkos::Tools::Experimental::EventSet get_event_set() {
+  void set_cali_config(const char* config_str) {
+    if (config_str == nullptr or strlen(config_str) <= 0)
+      return;
+    if (::kokkos::mgr.add(config_str))
+      return;
+    if (::kokkos::mgr.error()) {
+      std::cerr << "Kokkos Caliper connector error: " << ::kokkos::mgr.error_msg()
+                << std::endl;
+    } else {
+      std::cerr << "Failed to configure Caliper with: " << config_str
+                << std::endl;
+    }
+  }
+
+  extern Kokkos::Tools::Experimental::EventSet get_event_set(const char* config_str = nullptr) {
+    set_cali_config(config_str);
     Kokkos::Tools::Experimental::EventSet my_event_set;
     memset(&my_event_set, 0, sizeof(my_event_set)); // zero any pointers not set here
     my_event_set.init = cali::kokkosp_init_library;
