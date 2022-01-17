@@ -197,6 +197,7 @@ __attribute__((weak)) void kokkosp_end_deep_copy() {
 namespace cali {
   extern Kokkos::Tools::Experimental::EventSet get_event_set() {
     Kokkos::Tools::Experimental::EventSet my_event_set;
+    memset(&my_event_set, 0, sizeof(my_event_set)); // zero any pointers not set here
     my_event_set.init = cali::kokkosp_init_library;
     my_event_set.finalize = cali::kokkosp_finalize_library;
     my_event_set.begin_parallel_for = cali::kokkosp_begin_parallel_for;
