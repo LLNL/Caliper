@@ -78,7 +78,7 @@ void kokkosp_end_fence(const uint64_t kID) {
   kokkosp_callbacks.kokkosp_end_fence_callback(kID);
 }
 
-void kokkosp_push_profile_region(char *regionName) {
+void kokkosp_push_profile_region(const char *regionName) {
   kokkosp_callbacks.kokkosp_push_region_callback(regionName);
 }
 void kokkosp_pop_profile_region() {
