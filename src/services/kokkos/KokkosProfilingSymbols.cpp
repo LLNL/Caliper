@@ -109,78 +109,80 @@ void kokkosp_end_deep_copy() {
 }
 } // end namespace cali
 
-__attribute__((weak)) extern "C" void kokkosp_print_help(char* progName){
+extern "C" {
+
+__attribute__((weak)) void kokkosp_print_help(char* progName){
   cali::kokkosp_print_help(progName);
 }
 
-__attribute__((weak)) extern "C" void kokkosp_parse_args(int argc, char *argv_raw[]) {
+__attribute__((weak)) void kokkosp_parse_args(int argc, char *argv_raw[]) {
   cali::kokkosp_parse_args(argc, argv_raw);
 }
 
-__attribute__((weak)) extern "C" void kokkosp_init_library(const int loadSeq,
+__attribute__((weak)) void kokkosp_init_library(const int loadSeq,
                                      const uint64_t interfaceVer,
                                      const uint32_t devInfoCount,
                                      Kokkos::Profiling::KokkosPDeviceInfo *deviceInfo) {
   cali::kokkosp_init_library(loadSeq, interfaceVer, devInfoCount, deviceInfo);
 }
 
-__attribute__((weak)) extern "C" void kokkosp_finalize_library() {
+__attribute__((weak)) void kokkosp_finalize_library() {
   cali::kokkosp_finalize_library();
 }
 
-__attribute__((weak)) extern "C" void kokkosp_begin_parallel_for(const char *name,
+__attribute__((weak)) void kokkosp_begin_parallel_for(const char *name,
                                            const uint32_t devID,
                                            uint64_t *kID) {
   cali::kokkosp_begin_parallel_for(name, devID, kID);
 }
-__attribute__((weak)) extern "C" void kokkosp_begin_parallel_reduce(const char *name,
+__attribute__((weak)) void kokkosp_begin_parallel_reduce(const char *name,
                                               const uint32_t devID,
                                               uint64_t *kID) {
   cali::kokkosp_begin_parallel_reduce(name, devID, kID);
   
 }
-__attribute__((weak)) extern "C" void kokkosp_begin_parallel_scan(const char *name,
+__attribute__((weak)) void kokkosp_begin_parallel_scan(const char *name,
                                             const uint32_t devID,
                                             uint64_t *kID) {
   cali::kokkosp_begin_parallel_scan(name, devID, kID);
 }
-__attribute__((weak)) extern "C" void kokkosp_begin_fence(const char *name, const uint32_t devID,
+__attribute__((weak)) void kokkosp_begin_fence(const char *name, const uint32_t devID,
                                     uint64_t *kID) {
   cali::kokkosp_begin_fence(name, devID, kID);
 }
 
-__attribute__((weak)) extern "C" void kokkosp_end_parallel_for(const uint64_t kID) {
+__attribute__((weak)) void kokkosp_end_parallel_for(const uint64_t kID) {
   cali::kokkosp_end_parallel_for(kID);
 }
-__attribute__((weak)) extern "C" void kokkosp_end_parallel_reduce(const uint64_t kID) {
+__attribute__((weak)) void kokkosp_end_parallel_reduce(const uint64_t kID) {
   cali::kokkosp_end_parallel_reduce(kID);
 }
-__attribute__((weak)) extern "C" void kokkosp_end_parallel_scan(const uint64_t kID) {
+__attribute__((weak)) void kokkosp_end_parallel_scan(const uint64_t kID) {
   cali::kokkosp_end_parallel_scan(kID);
 }
-__attribute__((weak)) extern "C" void kokkosp_end_fence(const uint64_t kID) {
+__attribute__((weak)) void kokkosp_end_fence(const uint64_t kID) {
   cali::kokkosp_end_fence(kID);
 }
 
-__attribute__((weak)) extern "C" void kokkosp_push_profile_region(char *regionName) {
+__attribute__((weak)) void kokkosp_push_profile_region(char *regionName) {
   cali::kokkosp_push_profile_region(regionName);
 }
-__attribute__((weak)) extern "C" void kokkosp_pop_profile_region() {
+__attribute__((weak)) void kokkosp_pop_profile_region() {
   cali::kokkosp_pop_profile_region();
 }
-__attribute__((weak)) extern "C" void kokkosp_allocate_data(const SpaceHandle space,
+__attribute__((weak)) void kokkosp_allocate_data(const SpaceHandle space,
                                       const char *label, const void *const ptr,
                                       const uint64_t size) {
   cali::kokkosp_allocate_data(space, label, ptr, size);
 }
-__attribute__((weak)) extern "C" void kokkosp_deallocate_data(const SpaceHandle space,
+__attribute__((weak)) void kokkosp_deallocate_data(const SpaceHandle space,
                                         const char *label,
                                         const void *const ptr,
                                         const uint64_t size) {
   cali::kokkosp_deallocate_data(space, label, ptr, size);
 }
 
-__attribute__((weak)) extern "C" void
+__attribute__((weak)) void
 kokkosp_begin_deep_copy(const SpaceHandle dst_handle, const char *dst_name,
                         const void *dst_ptr, const SpaceHandle src_space,
                         const char *src_name, const void *src_ptr,
@@ -188,10 +190,10 @@ kokkosp_begin_deep_copy(const SpaceHandle dst_handle, const char *dst_name,
   cali::kokkosp_begin_deep_copy(
       dst_handle, dst_name, dst_ptr, src_space, src_name, src_ptr, size);
 }
-__attribute__((weak)) extern "C" void kokkosp_end_deep_copy() {
+__attribute__((weak)) void kokkosp_end_deep_copy() {
   cali::kokkosp_end_deep_copy();
 }
-
+}
 namespace cali {
   extern Kokkos::Tools::Experimental::EventSet get_event_set() {
     Kokkos::Tools::Experimental::EventSet my_event_set;
