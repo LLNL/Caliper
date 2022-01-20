@@ -9,6 +9,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 #include "../../caliper/MemoryPool.h"
 
 #include "caliper/common/Log.h"
@@ -299,7 +300,7 @@ public:
         SymbolLookup* instance = new SymbolLookup(c, chn);
 
         chn->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+            [instance](Caliper* c, Channel* chn, SnapshotView){
                 instance->check_attributes(c);
                 instance->init_lookup();
             });

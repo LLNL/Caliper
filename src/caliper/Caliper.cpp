@@ -38,6 +38,8 @@
 using namespace cali;
 using namespace std;
 
+using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
+
 namespace cali
 {
 
@@ -152,36 +154,26 @@ print_available_services(std::ostream& os)
 std::vector<Entry>
 get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
 {
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
-    SnapshotRecord rec(rec_data);
+    FixedSizeSnapshotRecord<SNAP_MAX> rec;
+    blackboard.snapshot(rec.builder());
 
-    blackboard.snapshot(&rec);
-
+    std::vector<Entry> ret;
     std::vector<const Node*> nodes;
 
-    SnapshotRecord::Data  data = rec.data();
-    SnapshotRecord::Sizes size = rec.size();
-
-    // Go through all process nodes and filter out the global entries
-    for (size_t i = 0; i < size.n_nodes; ++i)
-        for (const Node* node = data.node_entries[i]; node; node = node->parent())
-            if (c->get_attribute(node->attribute()).properties() & CALI_ATTR_GLOBAL)
-                nodes.push_back(node);
+    for (const Entry& e : rec.view()) {
+        if (e.is_reference()) {
+            for (const Node* node = e.node(); node; node = node->parent())
+                if (c->get_attribute(node->attribute()).is_global())
+                    nodes.push_back(node);
+        } else if (c->get_attribute(e.attribute()).is_global())
+            ret.push_back(e);
+    }
 
     // Restore original order
     std::reverse(nodes.begin(), nodes.end());
 
-    std::vector<Entry> ret;
-
     if (!nodes.empty())
         ret.push_back(Entry(c->make_tree_entry(nodes.size(), nodes.data(), nullptr)));
-
-    // Add potential AS_VALUE global entries
-    for (size_t i = 0; i < size.n_immediate; ++i) {
-        Attribute attr = c->get_attribute(data.immediate_attr[i]);
-        if (attr.is_global())
-            ret.push_back(Entry(attr, data.immediate_data[i]));
-    }
 
     return ret;
 }
@@ -306,10 +298,8 @@ struct Caliper::ThreadData
     Blackboard     thread_blackboard;
 
     // copy of the last process blackboard snapshot
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> process_snapshot_data;
     SnapshotRecord process_snapshot;
     // copy of the last channel blackboard snapshot
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> channel_snapshot_data;
     SnapshotRecord channel_snapshot;
 
     // versions of the last process blackboard and channel snapshots
@@ -322,8 +312,7 @@ struct Caliper::ThreadData
     bool           stack_error;
 
     ThreadData(bool initial_thread = false)
-        : process_snapshot(process_snapshot_data),
-          process_bb_count(-1),
+        : process_bb_count(-1),
           channel_bb_count(-1),
           channel_bb_id(-1),
           is_initial_thread(initial_thread),
@@ -859,23 +848,22 @@ Caliper::get_globals(Channel* channel)
 // --- Snapshot interface
 
 void
-Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
+Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // Save trigger info in snapshot buf
 
-    if (trigger_info)
-        sbuf->append(*trigger_info);
+    rec.append(trigger_info);
 
     // Invoke callbacks
 
-    channel->mP->events.snapshot(this, channel, scopes, trigger_info, sbuf);
+    channel->mP->events.snapshot(this, channel, scopes, trigger_info, rec);
 
     // Get thread blackboard data
     if (scopes & CALI_SCOPE_THREAD) {
-        sT->thread_blackboard.snapshot(sbuf);
+        sT->thread_blackboard.snapshot(rec);
     }
 
     // Get process and channel blackboard data
@@ -890,46 +878,43 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
         if (process_bb_count_now > sT->process_bb_count) {
             //   Process blackboard has been updated:
             // update thread-local snapshot data
-            sT->process_snapshot = SnapshotRecord(sT->process_snapshot_data);
-            sG->process_blackboard.snapshot(&sT->process_snapshot);
-
+            sT->process_snapshot.reset();
+            sG->process_blackboard.snapshot(sT->process_snapshot.builder());
             sT->process_bb_count = process_bb_count_now;
         }
 
-        sbuf->append(sT->process_snapshot);
+        rec.append(sT->process_snapshot.view());
     }
 
     if (scopes & CALI_SCOPE_CHANNEL) {
         int channel_bb_count_now = channel->mP->channel_blackboard.count();
         if (sT->channel_bb_id   != static_cast<int>(channel->id()) ||
             channel_bb_count_now > sT->channel_bb_count) {
-            sT->channel_snapshot = SnapshotRecord(sT->channel_snapshot_data);
-            channel->mP->channel_blackboard.snapshot(&sT->channel_snapshot);
+            sT->channel_snapshot.reset();
+            channel->mP->channel_blackboard.snapshot(sT->channel_snapshot.builder());
 
             sT->channel_bb_count = channel_bb_count_now;
             sT->channel_bb_id    = static_cast<int>(channel->id());
         }
 
-        sbuf->append(sT->channel_snapshot);
+        rec.append(sT->channel_snapshot.view());
     }
 }
 
 void
-Caliper::push_snapshot(Channel* channel, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-    SnapshotRecord sbuf(snapshot_data);
+    SnapshotRecord rec;
 
-    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, &sbuf);
-
-    channel->mP->events.process_snapshot(this, channel, trigger_info, &sbuf);
+    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, rec.builder());
+    channel->mP->events.process_snapshot(this, channel, trigger_info, rec.view());
 }
 
 void
-Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -951,24 +936,21 @@ Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn p
 }
 
 void
-Caliper::flush_and_write(Channel* channel, const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-    SnapshotRecord flush_info(snapshot_data);
+    SnapshotRecord flush_info;
+    flush_info.builder().append(input_flush_info);
 
-    if (input_flush_info)
-        flush_info.append(*input_flush_info);
-
-    channel->mP->channel_blackboard.snapshot(&flush_info);
-    sG->process_blackboard.snapshot(&flush_info);
-    sT->thread_blackboard.snapshot(&flush_info);
+    channel->mP->channel_blackboard.snapshot(flush_info.builder());
+    sG->process_blackboard.snapshot(flush_info.builder());
+    sT->thread_blackboard.snapshot(flush_info.builder());
 
     Log(1).stream() << channel->name() << ": Flushing Caliper data" << std::endl;
 
-    channel->mP->events.write_output_evt(this, channel, &flush_info);
+    channel->mP->events.write_output_evt(this, channel, flush_info.view());
 }
 
 void
@@ -1347,7 +1329,7 @@ Caliper::memory_region_end(Channel* channel, const void* ptr)
 // --- Generic entry API
 
 void
-Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
+Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotBuilder& rec, Node* parent)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1356,12 +1338,12 @@ Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, Snap
 
     for (size_t i = 0; i < n; ++i)
         if (attr[i].store_as_value())
-            list.append(attr[i].id(), value[i]);
+            rec.append(Entry(attr[i], value[i]));
         else
             node = sT->tree.get_path(1, &attr[i], &value[i], node);
 
     if (node && node != parent)
-        list.append(node);
+        rec.append(Entry(node));
 }
 
 Node*
@@ -1535,7 +1517,7 @@ Caliper::finalize()
             Channel* channel = chnI.get();
 
             if (channel->is_active() && channel->mP->flush_on_exit)
-                flush_and_write(channel, nullptr);
+                flush_and_write(channel, SnapshotView());
 
             delete_channel(channel);
         }

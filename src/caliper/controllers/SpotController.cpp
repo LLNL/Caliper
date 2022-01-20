@@ -52,7 +52,7 @@ local_aggregate(const char* query, Caliper& c, Channel* channel, CaliperMetadata
     Preprocessor   prp(spec);
     Aggregator     agg(spec);
 
-    c.flush(channel, nullptr, [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
+    c.flush(channel, SnapshotView(), [&db,&filter,&prp,&agg](CaliperMetadataAccessInterface& in_db, const std::vector<Entry>& rec){
             EntryList mrec = prp.process(db, db.merge_snapshot(in_db, rec));
 
             if (filter.pass(db, mrec))

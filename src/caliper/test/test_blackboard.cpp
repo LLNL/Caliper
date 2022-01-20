@@ -178,16 +178,15 @@ TEST(BlackboardTest, Snapshot) {
     // --- snapshot
     //
     
-    SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-    SnapshotRecord rec(snapshot_data);
+    FixedSizeSnapshotRecord<8> rec;
+    bb.snapshot(rec.builder());
 
-    bb.snapshot(&rec);
+    auto view = rec.view();
 
-    EXPECT_EQ(rec.num_nodes(), 1);
-    EXPECT_EQ(rec.num_immediate(), 1);
+    EXPECT_EQ(view.size(), 2);
 
-    EXPECT_EQ(rec.get(attr_ref).value().to_int(), 24);
-    EXPECT_EQ(rec.get(attr_imm).value().to_int(), 1122);
+    EXPECT_EQ(view.get(attr_ref).value().to_int(), 24);
+    EXPECT_EQ(view.get(attr_imm).value().to_int(), 1122);
 
-    EXPECT_EQ(bb.num_skipped_entries(), 0);
+    EXPECT_EQ(rec.builder().skipped(), 0);
 }

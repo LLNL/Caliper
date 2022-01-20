@@ -35,12 +35,8 @@ class ThreadMonitor
 
     void snapshot() {
         Caliper c;
-
-        cali_id_t attr_id = monitor_attr.id();
-        Variant   v_event(cali_make_variant_from_int(num_events++));
-
-        SnapshotRecord trigger_info(1, &attr_id, &v_event);
-        c.push_snapshot(channel, &trigger_info);
+        Entry   data(monitor_attr, cali_make_variant_from_int(num_events++));
+        c.push_snapshot(channel, SnapshotView(1, &data));
     }
 
     // the main monitor loop

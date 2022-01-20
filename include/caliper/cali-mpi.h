@@ -13,6 +13,8 @@
 
 #ifdef __cplusplus
 
+#include "caliper/SnapshotRecord.h"
+
 namespace cali
 {
 
@@ -22,7 +24,6 @@ class Channel;
 class CaliperMetadataDB;
 class OutputStream;
 class QuerySpec;
-class SnapshotRecord;
 
 /**
  * \brief Perform cross-process aggregation over MPI
@@ -54,7 +55,7 @@ void
 collective_flush(OutputStream&    stream,
                  Caliper&         c,
                  Channel&         channel,
-                 const SnapshotRecord* flush_info,
+                 SnapshotView     flush_info,
                  const QuerySpec& local_query,
                  const QuerySpec& cross_query,
                  MPI_Comm         comm);

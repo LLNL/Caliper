@@ -35,7 +35,6 @@ namespace
 Attribute   timer_attr   { Attribute::invalid };
 Attribute   sampler_attr { Attribute::invalid };
 
-cali_id_t   sampler_attr_id     = CALI_INV_ID;
 int         nsec_interval       = 0;
 
 int         n_samples           = 0;
@@ -63,13 +62,13 @@ void on_prof(int sig, siginfo_t *info, void *context)
 #ifdef CALI_SAMPLER_GET_PC
     uint64_t  pc = static_cast<uint64_t>( CALI_SAMPLER_GET_PC(context) );
     Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
-
-    SnapshotRecord trigger_info(1, &sampler_attr_id, &v_pc);
+    Entry data(sampler_attr, v_pc);
+    SnapshotView trigger_info(1, &data);
 #else
-    SnapshotRecord trigger_info;
+    SnapshotView trigger_info;
 #endif
 
-    c.push_snapshot(channel, &trigger_info);
+    c.push_snapshot(channel, trigger_info);
 
     ++n_processed_samples;
 }
@@ -206,8 +205,6 @@ void sampler_register(Caliper* c, Channel* chn)
                             CALI_ATTR_SKIP_EVENTS  |
                             CALI_ATTR_ASVALUE,
                             1, &symbol_class_attr, &v_true);
-
-    sampler_attr_id = sampler_attr.id();
 
     int frequency = config.get("frequency").to_int();
 

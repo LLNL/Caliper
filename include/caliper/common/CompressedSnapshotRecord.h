@@ -14,8 +14,6 @@
 namespace cali
 {
 
-class SnapshotRecord;
-    
 class CaliperMetadataAccessInterface;
 class Node;
 
@@ -153,9 +151,6 @@ public:
     /// \brief Append entry list
     size_t
     append(size_t n, const Entry entrylist[]);
-
-    size_t
-    append(const SnapshotRecord* rec);
     
     CompressedSnapshotRecordView
     view() const {

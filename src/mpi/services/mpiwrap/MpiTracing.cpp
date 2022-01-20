@@ -166,15 +166,14 @@ struct MpiTracing::MpiTracingImpl
     //
 
     void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
-        cali_id_t attr[3] = {
-            msg_dst_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
-        };
-        Variant   data[3] = {
-            Variant(dest),     Variant(tag),      Variant(size)
+        Entry data[] = {
+            { comm_node },
+            { msg_dst_attr,  Variant(dest) },
+            { msg_tag_attr,  Variant(tag)  },
+            { msg_size_attr, Variant(size) }
         };
 
-        SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(channel, &rec);
+        c->push_snapshot(channel, SnapshotView(4, data));
     }
 
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
@@ -198,15 +197,14 @@ struct MpiTracing::MpiTracingImpl
     }
 
     void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
-        cali_id_t attr[3] = {
-            msg_src_attr.id(), msg_tag_attr.id(), msg_size_attr.id()
-        };
-        Variant   data[3] = {
-            Variant(src),      Variant(tag),      Variant(size)
+        Entry data[] = {
+            { comm_node },
+            { msg_src_attr,  Variant(src)  },
+            { msg_tag_attr,  Variant(tag)  },
+            { msg_size_attr, Variant(size) }
         };
 
-        SnapshotRecord rec(1, &comm_node, 3, attr, data);
-        c->push_snapshot(channel, &rec);
+        c->push_snapshot(channel, SnapshotView(4, data));
     }
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
@@ -307,20 +305,22 @@ struct MpiTracing::MpiTracingImpl
     //
 
     void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root, Node* comm_node) {
-        cali_id_t attr[2] = { msg_size_attr.id(), coll_root_attr.id() };
-        Variant   data[2] = { Variant(size),      Variant(root)       };
-
         Node* node = c->make_tree_entry(coll_type_attr, Variant(static_cast<int>(coll_type)), comm_node);
 
-        int ne = 0;
+        Entry data[] = {
+            { node },
+            { msg_size_attr,  Variant(size) },
+            { coll_root_attr, Variant(root) }
+        };
+
+        int ne = 1;
 
         if (coll_type == Coll_12N || coll_type == Coll_N21)
-            ne = 2;
+            ne = 3;
         else if (coll_type == Coll_NxN)
-            ne = 1;
+            ne = 2;
 
-        SnapshotRecord rec(1, &node, ne, attr, data);
-        c->push_snapshot(channel, &rec);
+        c->push_snapshot(channel, SnapshotView(ne, data));
     }
 
     // --- constructor

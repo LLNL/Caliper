@@ -271,16 +271,14 @@ class KokkosLookup
 
     void kokkos_deepcopy(const void* dst, const void* src, uint64_t size) {
         Caliper c;
-
-        cali_id_t attr[3] = { m_dst_attr.id(), m_src_attr.id(), m_size_attr.id() };
-        Variant   data[3] = {
-            Variant(CALI_TYPE_ADDR, &dst, sizeof(void*)),
-            Variant(CALI_TYPE_ADDR, &src, sizeof(void*)),
-            Variant(cali_make_variant_from_uint(size))
+ 
+        Entry data[] = {
+            { m_dst_attr,  Variant(CALI_TYPE_ADDR, &dst, sizeof(void*)) },
+            { m_src_attr,  Variant(CALI_TYPE_ADDR, &src, sizeof(void*)) },
+            { m_size_attr, Variant(cali_make_variant_from_uint(size))   }
         };
 
-        SnapshotRecord info(0, nullptr, 3, attr, data);
-        c.push_snapshot(m_channel, &info);
+        c.push_snapshot(m_channel, SnapshotView(3, data));
 
         ++m_num_copies;
     }
@@ -337,7 +335,7 @@ public:
             });
 #if 0
         chn->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+            [instance](Caliper* c, Channel* chn, SnapshotView info){
                 instance->check_attributes(c);
             });
         chn->events().postprocess_snapshot.connect(

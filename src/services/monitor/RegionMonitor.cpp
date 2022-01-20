@@ -61,8 +61,8 @@ class RegionMonitor
 
         if (it != m_tracking_regions.end()) {
             if (it->second.inclusive_time > 2.0 * it->second.child_time) {
-                SnapshotRecord rec;
-                c->pull_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, nullptr, &rec);
+                SnapshotBuilder tmp;
+                c->pull_snapshot(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, SnapshotView(), tmp);
                 m_measuring = true;
                 m_skip = 1;
             }
@@ -79,7 +79,7 @@ class RegionMonitor
 
             m_measuring = false;
             ++m_num_measured;
-            c->push_snapshot(channel, nullptr);
+            c->push_snapshot(channel, SnapshotView());
         }
 
         const Node* node = c->get(attr).node();

@@ -24,7 +24,7 @@ namespace cali
 {
 
 void
-collective_flush(OutputStream& stream, Caliper& c, Channel& channel, const SnapshotRecord* flush_info, const QuerySpec& local_query, const QuerySpec& cross_query, MPI_Comm comm)
+collective_flush(OutputStream& stream, Caliper& c, Channel& channel, SnapshotView flush_info, const QuerySpec& local_query, const QuerySpec& cross_query, MPI_Comm comm)
 {
     CaliperMetadataDB db;
 

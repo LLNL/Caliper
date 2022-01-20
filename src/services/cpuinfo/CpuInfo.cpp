@@ -20,17 +20,15 @@ namespace
 Attribute cpu_attr;
 Attribute node_attr;
 
-void snapshot_cb(Caliper*, Channel*, int scopes, const SnapshotRecord*, SnapshotRecord* rec)
+void snapshot_cb(Caliper*, Channel*, int scopes, SnapshotView, SnapshotBuilder& rec)
 {
 #ifdef SYS_getcpu
     if (scopes & CALI_SCOPE_THREAD) {
         unsigned cpu = 0, node = 0;
 
         if (syscall(SYS_getcpu, &cpu, &node, NULL) == 0) {
-            rec->append(cpu_attr.id(),
-                        cali_make_variant_from_uint(cpu));
-            rec->append(node_attr.id(),
-                        cali_make_variant_from_uint(node));
+            rec.append(cpu_attr, cali_make_variant_from_uint(cpu));
+            rec.append(node_attr, cali_make_variant_from_uint(node));
         }
     }
 #endif

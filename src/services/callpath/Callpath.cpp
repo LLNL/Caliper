@@ -53,7 +53,7 @@ class Callpath
     uintptr_t caliper_start_addr { 0 };
     uintptr_t caliper_end_addr   { 0 };
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotBuilder& snapshot) {
         Variant v_addr[MAX_PATH];
         Variant v_name[MAX_PATH];
 
@@ -112,13 +112,13 @@ class Callpath
 
         if (n > 0) {
             if (use_addr)
-                snapshot->append(
-                    c->make_tree_entry(callpath_addr_attr, n, v_addr+(MAX_PATH-n),
-                                       &callpath_root_node));
+                snapshot.append(
+                    Entry(c->make_tree_entry(callpath_addr_attr, n, v_addr+(MAX_PATH-n),
+                                             &callpath_root_node)));
             if (use_name)
-                snapshot->append(
-                    c->make_tree_entry(callpath_name_attr, n, v_name+(MAX_PATH-n),
-                                       &callpath_root_node));
+                snapshot.append(
+                    Entry(c->make_tree_entry(callpath_name_attr, n, v_name+(MAX_PATH-n),
+                                             &callpath_root_node)));
         }
     }
 
@@ -214,8 +214,8 @@ public:
         Callpath* instance = new Callpath(c, chn);
 
         chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
-                instance->snapshot_cb(c, chn, scope, info, snapshot);
+            [instance](Caliper* c, Channel* chn, int scope, SnapshotView, SnapshotBuilder& snapshot){
+                instance->snapshot_cb(c, chn, scope, snapshot);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){

@@ -84,7 +84,7 @@ void init_builtin_configmanager(Caliper* c)
     mgr.start();
 
     channel->events().write_output_evt.connect(
-        [mgr,flag_attr](Caliper* c, Channel* channel, const SnapshotRecord*) mutable {
+        [mgr,flag_attr](Caliper* c, Channel* channel, SnapshotView) mutable {
             if (c->get(channel, flag_attr).value().to_bool() == true)
                 return;
 

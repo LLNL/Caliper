@@ -169,7 +169,7 @@ public:
         PcpMemory* instance = new PcpMemory(c, channel);
 
         channel->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* channel, const SnapshotRecord*){
+            [instance](Caliper* c, Channel* channel, SnapshotView){
                 instance->pre_flush_cb(c, channel);
             });
         channel->events().finish_evt.connect(

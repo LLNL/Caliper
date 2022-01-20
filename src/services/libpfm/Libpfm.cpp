@@ -66,7 +66,7 @@ class LibpfmService
     cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
     Attribute libpfm_event_name_attr;
     cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
-    std::vector<cali_id_t> libpfm_event_counter_attr_ids;
+    std::vector<Attribute> libpfm_event_counter_attr;
     size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     uint64_t perf_event_sample_t::* sample_attribute_pointers[MAX_ATTRIBUTES];
@@ -153,14 +153,15 @@ class LibpfmService
             return;
         }
 
-        Variant data[MAX_ATTRIBUTES];
+        Entry data[MAX_ATTRIBUTES+1];
 
         for (int i = 0; i < num_attributes; ++i)
-            data[i] = cali_make_variant_from_uint(sample.*sample_attribute_pointers[i]);
+            data[i] = Entry(num_attributes[i], 
+                            cali_make_variant_from_uint(sample.*sample_attribute_pointers[i]));
 
-        SnapshotRecord info(1, &event_name_nodes[event_index], num_attributes, libpfm_attributes, data);
+        data[num_attributes] = Entry(event_name_nodes[event_index]);
 
-        c.push_snapshot(sC, &info);
+        c.push_snapshot(sC, SnapshotInfo(num_attributes+1, data));
 
         sI->samples_produced++;
     }
@@ -492,7 +493,7 @@ class LibpfmService
                                             | CALI_ATTR_SCOPE_THREAD
                                             | CALI_ATTR_SKIP_EVENTS,
                                             1, &aggr_class_attr, &v_true);
-                libpfm_event_counter_attr_ids.push_back(event_counter_attr.id());
+                libpfm_event_counter_attrs.push_back(event_counter_attr);
             }
         }
 
@@ -551,8 +552,9 @@ class LibpfmService
         //uint64_t id;        /* if PERF_FORMAT_ID */
     };
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord*, SnapshotRecord* snapshot) {
-        Variant data[MAX_EVENTS] = { Variant() };
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotBuilder& snapshot) {
+        Entry data[MAX_EVENTS];
+        size_t count = 0;
 
         for (int i=0; i<sT.num_events; i++) {
             struct read_format counter_reads = { 0, 0, 0 };
@@ -569,7 +571,7 @@ class LibpfmService
                 // double enabled = (double)counter_reads[i].time_enabled;
                 // double running = (double)counter_reads[i].time_running;
                 // uint64_t scaled = (uint64_t)((enabled < running) ? (raw * enabled / running) : raw);
-                data[i] = Variant(counter_reads.value);
+                data[count++] = Entry(libpfm_event_counter_attrs[i], Variant(counter_reads.value));
             }
 
             int iret = ioctl(sT.fds[i].fd, PERF_EVENT_IOC_RESET, 0);
@@ -578,7 +580,7 @@ class LibpfmService
                 ++event_reset_fail;
         }
 
-        snapshot->append(sT.num_events, libpfm_event_counter_attr_ids.data(), data);
+        snapshot.append(count, data);
     }
 
     void post_init_cb(Caliper* c, Channel*) {

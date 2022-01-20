@@ -6,8 +6,6 @@
 
 #include "caliper/common/CompressedSnapshotRecord.h"
 
-#include "caliper/SnapshotRecord.h"
-
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Entry.h"
 #include "caliper/common/Node.h"
@@ -296,21 +294,6 @@ CompressedSnapshotRecord::append(size_t n, const Entry entrylist[])
 
     skipped += append(nn, nodes);
     skipped += append(ni, attr, data);
-
-    return skipped;
-}
-
-/// \brief Append snapshot record
-size_t
-CompressedSnapshotRecord::append(const SnapshotRecord* rec)
-{
-    size_t skipped = 0;
-
-    SnapshotRecord::Sizes size = rec->size();
-    SnapshotRecord::Data  data = rec->data();
-
-    skipped += append(size.n_nodes, data.node_entries);
-    skipped += append(size.n_immediate, data.immediate_attr, data.immediate_data);
 
     return skipped;
 }

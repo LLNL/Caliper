@@ -183,7 +183,7 @@ class Aggregate
                                 CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
     }
 
-    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* chn, SnapshotFlushFn proc_fn) {
         ThreadDB* tdb = nullptr;
 
         {
@@ -282,11 +282,11 @@ class Aggregate
                             << std::endl;
     }
 
-    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* rec) {
+    void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView rec) {
         ThreadDB* tdb = acquire_tdb(c, chn, !c->is_signal());
 
         if (tdb && !tdb->stopped.load())
-            tdb->db.process_snapshot(c, rec, info, implicit_grouping);
+            tdb->db.process_snapshot(c, rec, info);
         else
             ++num_dropped_snapshots;
     }
@@ -317,8 +317,7 @@ class Aggregate
             }
 
             key_attribute_names.erase(it);
-        } else if (group_nested && attr.is_nested())
-            info.ref_key_attrs.push_back(attr);
+        }
     }
 
     void post_init_cb(Caliper* c, Channel* chn) {
@@ -361,11 +360,11 @@ class Aggregate
 
     void apply_key_config() {
         if (key_attribute_names.empty()) {
-            implicit_grouping = true;
+            info.implicit_grouping = true;
             return;
         }
 
-        implicit_grouping = false;
+        info.implicit_grouping = false;
 
         // Check for "*" and "prop:nested" special arguments to determine
         // nested or implicit grouping
@@ -374,7 +373,7 @@ class Aggregate
             auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "*");
 
             if (it != key_attribute_names.end()) {
-                implicit_grouping = true;
+                info.implicit_grouping = true;
                 key_attribute_names.erase(it);
             }
         }
@@ -383,7 +382,7 @@ class Aggregate
             auto it = std::find(key_attribute_names.begin(), key_attribute_names.end(), "prop:nested");
 
             if (it != key_attribute_names.end()) {
-                group_nested = true;
+                info.group_nested = true;
                 key_attribute_names.erase(it);
             }
         }
@@ -396,6 +395,9 @@ class Aggregate
           num_dropped_snapshots(0)
         {
             tdb_lock.unlock();
+
+            info.implicit_grouping = true;
+            info.group_nested = false;
 
             key_attribute_names = config.get("key").to_stringlist(",");
             apply_key_config();
@@ -447,12 +449,12 @@ public:
                 instance->release_thread_cb(c, chn);
             });
         chn->events().process_snapshot.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info, const SnapshotRecord* snapshot){
-                instance->process_snapshot_cb(c, chn, info, snapshot);
+            [instance](Caliper* c, Channel* chn, SnapshotView, SnapshotView rec){
+                instance->process_snapshot_cb(c, chn, rec);
             });
         chn->events().flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info, SnapshotFlushFn proc_fn){
-                instance->flush_cb(c, chn, info, proc_fn);
+            [instance](Caliper* c, Channel* chn, SnapshotView, SnapshotFlushFn proc_fn){
+                instance->flush_cb(c, chn, proc_fn);
             });
         chn->events().clear_evt.connect(
             [instance](Caliper* c, Channel* chn){

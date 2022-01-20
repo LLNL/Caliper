@@ -62,7 +62,7 @@ public:
     /// attribute id.
     cali_id_t attribute() const {
         return Attribute::is_attribute(m_node) ? m_node->id() : (m_node ? m_node->attribute() : CALI_INV_ID);
-    };
+    }
 
     /// \brief Count instances of attribute \a attr_id in this entry
     int       count(cali_id_t attr_id = CALI_INV_ID) const;
@@ -106,7 +106,7 @@ public:
         return pos;
     }
 
-    static Entry unpack(const CaliperMetadataAccessInterface& db, unsigned char* buffer, size_t* inc);
+    static Entry unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc);
 
     friend bool operator == (const Entry&, const Entry&);
 };

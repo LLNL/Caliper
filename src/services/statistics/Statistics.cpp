@@ -114,17 +114,15 @@ public:
                 ++instance->num_set;
             });
         chn->events().snapshot.connect(
-            [instance](Caliper*,Channel*,int,const SnapshotRecord*,SnapshotRecord* rec){
+            [instance](Caliper*,Channel*,int,SnapshotView,SnapshotBuilder& rec){
                 ++instance->num_snapshots;
             });
         chn->events().process_snapshot.connect(
-            [instance](Caliper*,Channel*,const SnapshotRecord*,const SnapshotRecord* rec){
-                unsigned len = rec->num_nodes() + rec->num_immediate();
-
+            [instance](Caliper*,Channel*,SnapshotView,SnapshotView rec){
                 std::lock_guard<std::mutex>
                     g(instance->lock);
 
-                instance->max_snapshot_len = std::max(len, instance->max_snapshot_len);
+                instance->max_snapshot_len = std::max<unsigned int>(rec.size(), instance->max_snapshot_len);
             });
 
         if (chn->id() == 0) {

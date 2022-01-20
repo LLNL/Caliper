@@ -8,6 +8,8 @@
 
 #include "cali_definitions.h"
 
+#include "SnapshotRecord.h"
+
 #include "common/Attribute.h"
 #include "common/CaliperMetadataAccessInterface.h"
 #include "common/Entry.h"
@@ -27,7 +29,6 @@ class  Caliper;
 struct CaliperService;
 class  Node;
 class  RuntimeConfig;
-class  SnapshotRecord;
 
 // --- Typedefs
 
@@ -60,16 +61,16 @@ public:
         typedef util::callback<void(Caliper*,Channel*)>
             caliper_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,int,const SnapshotRecord*,SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,int,SnapshotView,SnapshotBuilder&)>
             snapshot_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotView)>
             process_snapshot_cbvec;
         typedef util::callback<void(Caliper*,Channel*,std::vector<Entry>&)>
             edit_snapshot_cbvec;
 
-        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*,SnapshotFlushFn)>
+        typedef util::callback<void(Caliper*,Channel*,SnapshotView,SnapshotFlushFn)>
             flush_cbvec;
-        typedef util::callback<void(Caliper*,Channel*,const SnapshotRecord*)>
+        typedef util::callback<void(Caliper*,Channel*,SnapshotView)>
             write_cbvec;
 
         typedef util::callback<void(Caliper*,Channel*,const void*, const char*, size_t, size_t, const size_t*,
@@ -313,7 +314,7 @@ public:
     /// \param trigger_info A caller-provided list of attributes that is passed
     ///   to the snapshot and process_snapshot callbacks, and added to the
     ///   returned snapshot record.
-    void      push_snapshot(Channel* channel, const SnapshotRecord* trigger_info);
+    void      push_snapshot(Channel* channel, SnapshotView trigger_info);
 
     /// \brief Trigger and return a snapshot.
     ///
@@ -338,7 +339,7 @@ public:
     /// \param sbuf A caller-provided snapshot record buffer in which the
     ///   snapshot record is returned. Must have sufficient space for the
     ///   snapshot contents.
-    void      pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot);
+    void      pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec);
 
     // --- Flush and I/O API
 
@@ -348,7 +349,7 @@ public:
 
     /// \brief Flush aggregation/trace buffer contents into the \a proc_fn
     ///   processing function.
-    void      flush(Channel* channel, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn);
+    void      flush(Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn);
 
     /// \brief Flush snapshot buffer contents on \a channel into the registered
     ///   output services.
@@ -359,7 +360,7 @@ public:
     ///
     /// \param channel The channel to flush
     /// \param input_flush_info User-provided flush context information
-    void      flush_and_write(Channel* channel, const SnapshotRecord* flush_info);
+    void      flush_and_write(Channel* channel, SnapshotView flush_info);
 
     /// \brief Clear snapshot buffers on \a channel
     ///
@@ -487,12 +488,12 @@ public:
     /// \param n      Number of elements in attribute/value lists
     /// \param attr   Attribute list
     /// \param data   Value list
-    /// \param list   Output record
+    /// \param list   Output record builder
     /// \param parent (Optional) parent node for any treee elements.
     void      make_record(size_t n,
                           const Attribute  attr[],
                           const Variant    data[],
-                          SnapshotRecord&  list,
+                          SnapshotBuilder& rec,
                           cali::Node*      parent = nullptr);
 
     // --- Metadata Access Interface

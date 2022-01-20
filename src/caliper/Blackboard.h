@@ -23,7 +23,7 @@ namespace cali
 {
 
 class CompressedSnapshotRecord;
-class SnapshotRecord;
+class SnapshotBuilder;
 
 class Blackboard {
     constexpr static size_t Nmax = 1021;
@@ -101,7 +101,7 @@ public:
 #if 0
     void    snapshot(CompressedSnapshotRecord* rec) const;
 #endif
-    void    snapshot(SnapshotRecord* rec) const;
+    void    snapshot(SnapshotBuilder& rec) const;
 
     size_t  num_skipped_entries() const { return num_skipped; }
 

@@ -19,7 +19,7 @@ namespace cali
 {
 
 class Caliper;
-class SnapshotRecord;
+class SnapshotBuilder;
     
 namespace Cupti
 {
@@ -57,7 +57,7 @@ public:
 
     void stop_all();
 
-    void snapshot(Caliper* c, const SnapshotRecord*, SnapshotRecord* snapshot);
+    void snapshot(Caliper* c, SnapshotBuilder& snapshot);
 
     std::ostream&
     print_statistics(std::ostream& os);

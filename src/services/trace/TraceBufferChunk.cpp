@@ -4,7 +4,6 @@
 #include "TraceBufferChunk.h"
 
 #include "caliper/Caliper.h"
-#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
@@ -38,7 +37,7 @@ void TraceBufferChunk::reset()
 {
     m_pos  = 0;
     m_nrec = 0;
-            
+
     memset(m_data, 0, m_size);
 
     delete m_next;
@@ -58,72 +57,52 @@ size_t TraceBufferChunk::flush(Caliper* c, SnapshotFlushFn proc_fn)
 
     for (size_t r = 0; r < m_nrec; ++r) {
         // decode snapshot record
-        std::vector<Entry> rec;        
-                
-        uint64_t n_nodes = vldec_u64(m_data + p, &p);
-        uint64_t n_attr  = vldec_u64(m_data + p, &p);
+        std::vector<Entry> rec;
 
-        rec.reserve(n_nodes + n_attr);
+        uint64_t n = vldec_u64(m_data + p, &p);
+        rec.reserve(n);
 
-        for (size_t i = 0; i < n_nodes; ++i)
-            rec.push_back(Entry(c->node(vldec_u64(m_data + p, &p))));
-        for (size_t i = 0; i < n_attr;  ++i) {
-            cali_id_t attr_id = vldec_u64(m_data + p, &p);
-            Variant   data    = Variant::unpack(m_data + p, &p, nullptr);
-            rec.push_back(Entry(c->get_attribute(attr_id), data));
-        }
-        
-        // write snapshot                
+        while (n-- > 0)
+            rec.push_back(Entry::unpack(*c, m_data + p, &p));
 
+        // write snapshot
         proc_fn(*c, rec);
     }
 
     written += m_nrec;
-            
+
     //
     // flush subsequent buffers in list
-    // 
-            
+    //
+
     if (m_next)
         written += m_next->flush(c, proc_fn);
-            
+
     return written;
 }
 
 
-void TraceBufferChunk::save_snapshot(const SnapshotRecord* s)
+void TraceBufferChunk::save_snapshot(SnapshotView s)
 {
-    SnapshotRecord::Sizes sizes = s->size();
-
-    if ((sizes.n_nodes + sizes.n_immediate) == 0)
+    if (s.empty())
         return;
-                
-    m_pos += vlenc_u64(sizes.n_nodes,     m_data + m_pos);
-    m_pos += vlenc_u64(sizes.n_immediate, m_data + m_pos);
 
-    SnapshotRecord::Data addr = s->data();
+    m_pos += vlenc_u64(s.size(), m_data + m_pos);
 
-    for (size_t i = 0; i < sizes.n_nodes; ++i)
-        m_pos += vlenc_u64(addr.node_entries[i]->id(), m_data + m_pos);
-    for (size_t i = 0; i < sizes.n_immediate;  ++i) {
-        m_pos += vlenc_u64(addr.immediate_attr[i], m_data + m_pos);
-        m_pos += addr.immediate_data[i].pack(m_data + m_pos);
-    }
+    for (const Entry& e : s)
+        m_pos += e.pack(m_data + m_pos);
 
     ++m_nrec;
 }
 
 
-bool TraceBufferChunk::fits(const SnapshotRecord* s) const
+bool TraceBufferChunk::fits(SnapshotView rec) const
 {
-    SnapshotRecord::Sizes sizes = s->size();
-
     // get worst-case estimate of packed snapshot size:
-    //   20 bytes for size indicators
-    //   10 bytes per node id
-    //   10+22 bytes per immediate entry (10 for attr, 22 for variant)
-            
-    size_t max = 20 + 10 * sizes.n_nodes + 32 * sizes.n_immediate;
+    //   10 bytes for size indicator
+    //   n times Entry max size for data
+
+    size_t max = 10 + rec.size() * Entry::MAX_PACKED_SIZE;
 
     return (m_pos + max) < m_size;
 }

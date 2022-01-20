@@ -163,7 +163,7 @@ Blackboard::snapshot(CompressedSnapshotRecord* rec) const
 #endif
 
 void
-Blackboard::snapshot(SnapshotRecord* rec) const
+Blackboard::snapshot(SnapshotBuilder& rec) const
 {
     std::lock_guard<util::spinlock>
         g(lock);
@@ -182,11 +182,7 @@ Blackboard::snapshot(SnapshotRecord* rec) const
                 int j = first_high_bit(tmp) - 1;
                 tmp &= ~(1 << j);
 
-                Entry e = hashtable[i*32+j].value;
-                if (e.is_immediate())
-                    rec->append(e.attribute(), e.value());
-                else
-                    rec->append(e.node());
+                rec.append(hashtable[i*32+j].value);
             }
         }
     }

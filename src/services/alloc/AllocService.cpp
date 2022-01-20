@@ -154,19 +154,14 @@ class AllocService
                             const Variant& v_size,
                             const Variant& v_uid,
                             const Variant& v_addr) {
-        cali_id_t attr[] = {
-            alloc_total_size_attr.id(),
-            alloc_uid_attr.id(),
-            alloc_addr_attr.id()
-        };
-        Variant   data[] = {
-            v_size,
-            v_uid,
-            v_addr
+        Entry data[] = {
+            { alloc_total_size_attr, v_size },
+            { alloc_uid_attr,        v_uid  },
+            { alloc_addr_attr,       v_addr },
+            { label_node }
         };
 
-        SnapshotRecord trigger_info(1, &label_node, 3, attr, data);
-        c->push_snapshot(chn, &trigger_info);
+        c->push_snapshot(chn, SnapshotView(4, data));
     }
 
     void track_mem_cb(Caliper* c, Channel* chn, const void* ptr, const char* label, size_t elem_size, size_t ndims, const size_t* dims,
@@ -261,20 +256,16 @@ class AllocService
         }
     }
 
-    void resolve_addresses(Caliper* c, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
+    void resolve_addresses(Caliper* c, const SnapshotView trigger_info, SnapshotBuilder& snapshot) {
         for (int i = 0; i < std::min<int>(g_memoryaddress_attrs.size(), MAX_ADDRESS_ATTRIBUTES); ++i) {
-            Entry e = trigger_info->get(g_memoryaddress_attrs[i].memoryaddress_attr);
+            Entry e = trigger_info.get(g_memoryaddress_attrs[i].memoryaddress_attr);
 
             if (e.empty())
                 continue;
 
             uint64_t addr = e.value().to_uint();
 
-            cali_id_t   attr[2] = {
-                g_memoryaddress_attrs[i].alloc_uid_attr.id(),
-                g_memoryaddress_attrs[i].alloc_index_attr.id()
-            };
-            Variant     data[2];
+            Entry       data[2];
             cali::Node* label_node = nullptr;
 
             {
@@ -286,20 +277,22 @@ class AllocService
                 if (!tree_node)
                     continue;
 
-                data[0] = (*tree_node).v_uid;
-                data[1] = cali_make_variant_from_uint((*tree_node).index_1D(addr));
+                data[0] = Entry(g_memoryaddress_attrs[i].alloc_uid_attr,  
+                                (*tree_node).v_uid);
+                data[1] = Entry(g_memoryaddress_attrs[i].alloc_index_attr, 
+                                cali_make_variant_from_uint((*tree_node).index_1D(addr)));
 
                 label_node = (*tree_node).addr_label_nodes[i];
             }
 
-            snapshot->append(2, attr, data);
+            snapshot.append(2, data);
 
             if (label_node)
-                snapshot->append(label_node);
+                snapshot.append(Entry(label_node));
         }
     }
 
-    void record_highwatermark(Caliper* c, Channel* chn, SnapshotRecord* rec) {
+    void record_highwatermark(Caliper* c, Channel* chn, SnapshotBuilder& rec) {
         uint64_t hwm = 0;
 
         {
@@ -310,16 +303,16 @@ class AllocService
             g_region_hwm = g_active_mem;
         }
 
-        rec->append(region_hwm_attr.id(), Variant(hwm));
+        rec.append(region_hwm_attr, Variant(hwm));
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* trigger_info, SnapshotRecord *snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot) {
         // Record currently active amount of allocated memory
         if (g_record_active_mem)
-            snapshot->append(active_mem_attr.id(), Variant(cali_make_variant_from_uint(g_active_mem)));
+            snapshot.append(active_mem_attr, Variant(cali_make_variant_from_uint(g_active_mem)));
 
-        if (g_resolve_addresses && trigger_info != nullptr)
-            resolve_addresses(c, trigger_info, snapshot);
+        if (g_resolve_addresses && !info.empty())
+            resolve_addresses(c, info, snapshot);
 
         if (g_record_highwatermark)
             record_highwatermark(c, chn, snapshot);
@@ -456,7 +449,7 @@ public:
 
         if (instance->g_resolve_addresses || instance->g_record_active_mem || instance->g_record_highwatermark)
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* snapshot){
+                [instance](Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot){
                     instance->snapshot_cb(c, chn, scope, info, snapshot);
                 });
 

@@ -169,9 +169,9 @@ int main(int argc, char* argv[])
 
     for (cali::Channel* chn : channels)
         if (cfg.write)
-            c.flush_and_write(chn, nullptr);
+            c.flush_and_write(chn, cali::SnapshotView());
         else
-            c.flush(chn, nullptr, [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
+            c.flush(chn, cali::SnapshotView(), [](cali::CaliperMetadataAccessInterface&, const std::vector<cali::Entry>&) { });
 
     auto etime = std::chrono::system_clock::now();
 

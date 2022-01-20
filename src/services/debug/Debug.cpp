@@ -78,37 +78,34 @@ void release_thread_cb(Caliper* c, Channel* chn)
     Log(1).stream() << chn->name() << ": Event: release_thread" << endl;
 }
 
-void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* trigger_info, SnapshotRecord*)
+void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView, SnapshotBuilder&)
 {
     lock_guard<mutex> lock(dbg_mutex);
     Log(1).stream() << chn->name() << ": Event: snapshot (scope=" << scope2string(scope) << ", "
                     << ")" << endl;
 }
 
-std::ostream& print_snapshot_record(std::ostream& os, const SnapshotRecord* s)
+std::ostream& print_snapshot_record(Caliper* c, std::ostream& os, SnapshotView rec)
 {
-    os << "{ references: ";
-    
-    int c = 0;
-    for (size_t i = 0; i < s->num_nodes(); ++i)
-        os << (c++ > 0 ? "," : "") << s->data().node_entries[i]->id();
+    os << "{ ";
 
-    os << "; immediate: ";
-    
-    c = 0;
-    for (size_t i = 0; i < s->num_immediate(); ++i)
-        os << (c++ > 0 ? "," : "")
-           << s->data().immediate_attr[i] << ":"
-           << s->data().immediate_data[i];
+    int count = 0;
+    for (const Entry& e : rec) {
+        os << (count++ > 0 ? ", " : "");
+        if (e.is_reference())
+            os << e.node()->id();
+        else
+            os << c->get_attribute(e.attribute()).name_c_str() << ": " << e.value().to_string();
+    }
 
     return (os << " }");
 }
     
-void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord* trigger_info, const SnapshotRecord* sbuf)
+void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView, SnapshotView rec)
 {
     lock_guard<mutex> lock(dbg_mutex);    
 
-    print_snapshot_record( Log(1).stream() << chn->name() << ": Event: process_snapshot: ", sbuf ) << std::endl;
+    print_snapshot_record( c, Log(1).stream() << chn->name() << ": Event: process_snapshot: ", rec ) << std::endl;
 }
 
 void finish_cb(Caliper* c, Channel* chn)

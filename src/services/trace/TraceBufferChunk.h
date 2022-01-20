@@ -4,25 +4,19 @@
 #pragma once
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include <cstring>
 
-
-namespace cali
-{
-    class SnapshotRecord;
-}
-
 namespace trace
 {
-
     class TraceBufferChunk {
         size_t            m_size;
         size_t            m_pos;
         size_t            m_nrec;
-        
+
         unsigned char*    m_data;
-        
+
         TraceBufferChunk* m_next;
 
     public:
@@ -38,8 +32,8 @@ namespace trace
 
         size_t flush(cali::Caliper* c, cali::SnapshotFlushFn proc_fn);
 
-        void   save_snapshot(const cali::SnapshotRecord* s);
-        bool   fits(const cali::SnapshotRecord* s) const;
+        void   save_snapshot(cali::SnapshotView s);
+        bool   fits(cali::SnapshotView s) const;
 
         struct UsageInfo {
             size_t nchunks;
@@ -49,6 +43,4 @@ namespace trace
 
         UsageInfo info() const;
     };
-    
 } // namespace trace
-

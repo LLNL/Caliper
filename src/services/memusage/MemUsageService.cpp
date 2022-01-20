@@ -19,7 +19,7 @@ namespace
 Attribute malloc_total_bytes_attr;
 Attribute malloc_bytes_attr;
 
-void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotRecord*, SnapshotRecord* rec)
+void snapshot_cb(Caliper* c, Channel* chn, int scopes, SnapshotView, SnapshotBuilder& rec)
 {
     if (scopes & CALI_SCOPE_PROCESS) {
         struct mallinfo mi = mallinfo();
@@ -28,7 +28,7 @@ void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotRecord*, Sn
         Variant v_prev =
             c->exchange(malloc_total_bytes_attr, Variant(total));
 
-        rec->append(malloc_bytes_attr.id(), Variant(total - v_prev.to_int()));
+        rec.append(malloc_bytes_attr, Variant(total - v_prev.to_int()));
     }
 }
 

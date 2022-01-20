@@ -59,7 +59,7 @@ Entry::get(const Attribute& attr) const
 }
 
 Entry
-Entry::unpack(const CaliperMetadataAccessInterface& db, unsigned char* buffer, size_t* inc)
+Entry::unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc)
 {
     size_t p = 0;
     Entry ret { db.node(vldec_u64(buffer, &p)) };

@@ -31,10 +31,9 @@ int main()
 
     chn->events().postprocess_snapshot.connect(::postprocess_snapshot_cb);
         
-    cali_id_t snapshot_attr_id = 
-        c.create_attribute("snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE).id();
-    Variant   snapshot_val(49);
+    Attribute snapshot_attr = 
+        c.create_attribute("snapshot.val", CALI_TYPE_INT, CALI_ATTR_ASVALUE);
 
-    SnapshotRecord trigger_info(1, &snapshot_attr_id, &snapshot_val);
-    c.push_snapshot(chn, &trigger_info);
+    Entry trigger_info(snapshot_attr, Variant(49));
+    c.push_snapshot(chn, SnapshotView(1, &trigger_info));
 }

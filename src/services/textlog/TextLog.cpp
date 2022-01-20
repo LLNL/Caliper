@@ -82,26 +82,28 @@ class TextLogService
         }
     }
 
-    bool is_triggering_event(const Attribute& event_attr, const SnapshotRecord* trigger_info) {
+    bool is_triggering_event(const Attribute& event_attr, SnapshotView trigger_info) {
         if (event_attr == Attribute::invalid)
             return false;
 
-        Entry event = trigger_info->get(event_attr);
+        Entry event = trigger_info.get(event_attr);
 
         if (!event.empty()) {
+            cali_id_t id = event.value().to_id();
+
             std::lock_guard<std::mutex>
                 g(trigger_attr_mutex);
 
             for (const Attribute& a : trigger_attributes)
-                if (event.value().to_id() == a.id())
+                if (id == a.id())
                     return true;
         }
 
         return false;
     }
 
-    bool is_triggering_snapshot(const SnapshotRecord* trigger_info) {
-        if (!trigger_info)
+    bool is_triggering_snapshot(SnapshotView trigger_info) {
+        if (trigger_info.empty())
             return false;
 
         // check if any of the textlog trigger attributes are in trigger_info
@@ -111,7 +113,7 @@ class TextLogService
                 g(trigger_attr_mutex);
 
             for (const Attribute& a : trigger_attributes)
-                if (!trigger_info->get(a).empty())
+                if (!trigger_info.get(a).empty())
                     return true;
         }
 
@@ -120,11 +122,11 @@ class TextLogService
                is_triggering_event(set_event_attr, trigger_info);
     }
 
-    void process_snapshot(Caliper* c, const SnapshotRecord* trigger_info, const SnapshotRecord* snapshot) {
+    void process_snapshot(Caliper* c, SnapshotView trigger_info, SnapshotView snapshot) {
         if (!is_triggering_snapshot(trigger_info))
             return;
 
-        auto rec = snapshot->to_entrylist(*c);
+        std::vector<Entry> rec(snapshot.begin(), snapshot.end());
 
         std::lock_guard<std::mutex>
             g(stream_mutex);
@@ -150,7 +152,7 @@ class TextLogService
             check_attribute(a);
 
         chn->events().process_snapshot.connect(
-            [this](Caliper* c, Channel* chn, const SnapshotRecord* info, const SnapshotRecord* rec){
+            [this](Caliper* c, Channel* chn, SnapshotView info, SnapshotView rec){
                 process_snapshot(c, info, rec);
             });
     }

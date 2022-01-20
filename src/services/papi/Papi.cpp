@@ -45,7 +45,7 @@ class PapiService
 {
     struct event_group_t {
         std::vector<int> codes;
-        std::vector<cali_id_t> attrs;
+        std::vector<Attribute> attrs;
     };
 
     typedef std::map< int, std::shared_ptr<event_group_t> >
@@ -137,7 +137,7 @@ class PapiService
             }
 
             it->second->codes.push_back(code);
-            it->second->attrs.push_back(attr.id());
+            it->second->attrs.push_back(attr);
 
             ++count;
         }
@@ -252,7 +252,7 @@ class PapiService
         return static_cast<ThreadInfo*>(e.value().get_ptr());
     }
 
-    void read_events(int eventset, const event_group_t& grp, SnapshotRecord* rec) {
+    void read_events(int eventset, const event_group_t& grp, SnapshotBuilder& rec) {
         long long values[MAX_COUNTERS];
 
         int ret = PAPI_read(eventset, values);
@@ -273,7 +273,7 @@ class PapiService
         }
 
         for (int i = 0; i < count; ++i)
-            rec->append(grp.attrs[i], Variant(cali_make_variant_from_uint(values[i])));
+            rec.append(grp.attrs[i], Variant(cali_make_variant_from_uint(values[i])));
     }
 
     bool
@@ -352,7 +352,7 @@ class PapiService
     }
 
     void
-    snapshot(Caliper* c, SnapshotRecord* rec) {
+    snapshot(Caliper* c, SnapshotBuilder& rec) {
         ThreadInfo* td = get_thread_info(c);
 
         if (!td)
@@ -494,7 +494,7 @@ public:
                 instance->finish_thread_eventsets(c);
             });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel*, int, const SnapshotRecord*, SnapshotRecord* rec){
+            [instance](Caliper* c, Channel*, int, SnapshotView, SnapshotBuilder& rec){
                 instance->snapshot(c, rec);
             });
         channel->events().finish_evt.connect(

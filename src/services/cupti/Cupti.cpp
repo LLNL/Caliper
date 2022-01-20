@@ -474,8 +474,8 @@ public:
 
         if (instance->event_sampling.is_enabled())
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
-                    instance->snapshot_cb(c, chn, scope, info, rec);
+                [instance](Caliper* c, Channel* chn, int scope, SnapshotView, SnapshotBuilder& rec){
+                    instance->snapshot_cb(c, chn, scope, rec);
                 });
 
         chn->events().post_init_evt.connect(

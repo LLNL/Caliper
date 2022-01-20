@@ -112,7 +112,7 @@ public:
         }
 
         Caliper c;
-        cali::collective_flush(stream, c, *chn, nullptr, local_spec, cross_spec, comm);
+        cali::collective_flush(stream, c, *chn, SnapshotView(), local_spec, cross_spec, comm);
     }
 
     void collective_flush(MPI_Comm comm) override {
