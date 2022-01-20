@@ -122,7 +122,7 @@ public:
     SnapshotView view() const  { return m_builder.view(); }
 
     void reset() {
-        m_builder = std::move(SnapshotBuilder(N, m_data));
+        m_builder = SnapshotBuilder(N, m_data);
     }
 };
 

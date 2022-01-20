@@ -79,9 +79,6 @@ class Aggregate
     AttributeInfo                  info;
     std::vector<std::string>       key_attribute_names;
 
-    bool                           implicit_grouping;
-    bool                           group_nested;
-
     Attribute                      tdb_attr;
 
     size_t                         num_dropped_snapshots;
@@ -390,8 +387,6 @@ class Aggregate
 
     Aggregate(Caliper* c, Channel* chn)
         : config(chn->config().init("aggregate", s_configdata)),
-          implicit_grouping(true),
-          group_nested(false),
           num_dropped_snapshots(0)
         {
             tdb_lock.unlock();
