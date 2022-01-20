@@ -1,7 +1,5 @@
 #include "../Blackboard.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
-
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -64,33 +62,18 @@ TEST(BlackboardTest, BasicFunctionality) {
     //
     // --- snapshot
     //
-#if 0    
-    CompressedSnapshotRecord rec;
 
-    bb.snapshot(&rec);
+    FixedSizeSnapshotRecord<8> rec;
+    bb.snapshot(rec.builder());
+    SnapshotView view = rec.view();
 
-    CompressedSnapshotRecordView view = rec.view();
+    EXPECT_EQ(view.size(), 2);
 
-    EXPECT_EQ(view.num_nodes(), 1);
-    EXPECT_EQ(view.num_immediates(), 1);
+    ASSERT_FALSE(view.get(attr_ref).empty());
+    ASSERT_FALSE(view.get(attr_imm).empty());
 
-    {
-        cali_id_t node_id;
-        view.unpack_nodes(1, &node_id);
-
-        EXPECT_EQ(node_id, node_c->id());
-    }
-
-    {
-        cali_id_t attr_id;
-        Variant   data;
-
-        view.unpack_immediate(1, &attr_id, &data);
-
-        EXPECT_EQ(attr_id, attr_imm.id());
-        EXPECT_EQ(data.to_int(), 1122);
-    }
-#endif
+    EXPECT_EQ(view.get(attr_ref).node()->id(), node_c->id());
+    EXPECT_EQ(view.get(attr_imm).value().to_int(), 1122);
 
     EXPECT_EQ(bb.num_skipped_entries(), 0);
 

@@ -132,58 +132,24 @@ Blackboard::exchange(cali_id_t key, const Entry& value, bool include_in_snapshot
     return ret;
 }
 
-#if 0
-void
-Blackboard::snapshot(CompressedSnapshotRecord* rec) const
-{
-    std::lock_guard<util::spinlock>
-        g(lock);
-
-    {
-        int tmptoc = toctoc;
-
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
-
-            int tmp = toc[i];
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                const Entry e = hashtable[i*32+j].value;
-                if (e.is_immediate())
-                    rec->append(e.attribute(), e.value());
-                else
-                    rec->append(e.node());
-            }
-        }
-    }
-}
-#endif
-
 void
 Blackboard::snapshot(SnapshotBuilder& rec) const
 {
     std::lock_guard<util::spinlock>
         g(lock);
 
-    // reference entries
+    int tmptoc = toctoc;
 
-    {
-        int tmptoc = toctoc;
+    while (tmptoc) {
+        int i = first_high_bit(tmptoc) - 1;
+        tmptoc &= ~(1 << i);
 
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
+        int tmp = toc[i];
+        while (tmp) {
+            int j = first_high_bit(tmp) - 1;
+            tmp &= ~(1 << j);
 
-            int tmp = toc[i];
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                rec.append(hashtable[i*32+j].value);
-            }
+            rec.append(hashtable[i*32+j].value);
         }
     }
 }

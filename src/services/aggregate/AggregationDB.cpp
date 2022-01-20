@@ -144,50 +144,6 @@ public:
     }
 };
 
-const cali::Node* get_key_node(Caliper* c, std::size_t n_ref, const cali::Node* const rec_nodes[], const std::vector<cali::Attribute>& ref_key_attrs, cali::Node* root)
-{
-    // --- count number of key entries
-    std::size_t  key_entries = 0;
-    const Node* *start_nodes = static_cast<const Node**>(alloca(n_ref * sizeof(const Node*)));
-
-    memset(start_nodes, 0, n_ref * sizeof(const Node*));
-
-    for (std::size_t i = 0; i < n_ref; ++i)
-        for (const Node* node = rec_nodes[i]; node; node = node->parent())
-            for (const Attribute& a : ref_key_attrs)
-                if (a.id() == node->attribute()) {
-                    ++key_entries;
-
-                    // Save the snapshot nodes that lead to key nodes
-                    // to short-cut the subsequent loop a bit
-                    if (!start_nodes[i])
-                        start_nodes[i] = node;
-                }
-
-    // FIXME: Strictly, we need to partition between nested/nonnested attribute nodes here
-    //   and order nonnested ones by attribute ID, as nodes of different attributes
-    //   can appear in any order in the context tree.
-
-    // --- construct path of key nodes in reverse order, make/find new entry
-
-    if (key_entries > 0) {
-        const Node* *nodelist = static_cast<const Node**>(alloca(key_entries*sizeof(const Node*)));
-        std::size_t  filled   = 0;
-
-        memset(nodelist, 0, key_entries * sizeof(const Node*));
-
-        for (std::size_t i = 0; i < n_ref; ++i)
-            for (const Node* node = start_nodes[i]; node; node = node->parent())
-                for (const Attribute& a : ref_key_attrs)
-                    if (a.id() == node->attribute())
-                        nodelist[key_entries - ++filled] = node;
-
-        return c->make_tree_entry(key_entries, nodelist, root);
-    }
-
-    return root;
-}
-
 size_t pack_key(unsigned char* key, SnapshotView key_entries, size_t &skipped)
 {
     unsigned char packbuf[MAX_KEYLEN];

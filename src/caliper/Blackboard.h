@@ -36,6 +36,11 @@ class Blackboard {
 
     blackboard_entry_t hashtable[Nmax];
 
+    //   The toc ("table of contents") array is a bitfield that
+    // indicates which elements in the hashtable are occupied. We use
+    // it to speed up iterating over all entries in snapshot().
+    //   Similarly, toctoc indicates which elements in toc are
+    // occupied.
     int      toc[(Nmax+31)/32];
     int      toctoc;
 
@@ -98,9 +103,6 @@ public:
 
     Entry   exchange(cali_id_t key, const Entry& value, bool include_in_snapshots);
 
-#if 0
-    void    snapshot(CompressedSnapshotRecord* rec) const;
-#endif
     void    snapshot(SnapshotBuilder& rec) const;
 
     size_t  num_skipped_entries() const { return num_skipped; }
