@@ -386,12 +386,14 @@ class CuptiTraceService
                 Variant(cali_make_variant_from_uint(memcpy->end - memcpy->start))
             };
 
-            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-            SnapshotRecord snapshot(snapshot_data);
+            FixedSizeSnapshotRecord<8> snapshot;
 
-            c->make_record(6, attr, data, snapshot, parent);
+            c->make_record(6, attr, data, snapshot.builder(), parent);
+            SnapshotView view = snapshot.view();
 
-            auto rec = snapshot.to_entrylist();
+            std::vector<Entry> rec;
+            rec.reserve(view.size() + irec.size());
+            rec.assign(view.begin(), view.end());
             rec.insert(rec.end(), irec.begin(), irec.end());
             proc_fn(*c, rec);
 
@@ -455,12 +457,14 @@ class CuptiTraceService
                 Variant(cali_make_variant_from_uint(kernel->end - kernel->start))
             };
 
-            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-            SnapshotRecord snapshot(snapshot_data);
+            FixedSizeSnapshotRecord<8> snapshot;
 
-            c->make_record(5, attr, data, snapshot, parent);
+            c->make_record(5, attr, data, snapshot.builder(), parent);
+            SnapshotView view = snapshot.view();
 
-            auto rec = snapshot.to_entrylist();
+            std::vector<Entry> rec;
+            rec.reserve(view.size() + irec.size());
+            rec.assign(view.begin(), view.end());
             rec.insert(rec.end(), irec.begin(), irec.end());
             proc_fn(*c, rec);
 
@@ -864,17 +868,8 @@ class CuptiTraceService
         if (flush_trigger_attr == Attribute::invalid || trigger_info.get(flush_trigger_attr).empty())
             return;
 
-        do_flush(c, nullptr, [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                FixedSizeSnapshotRecord<8> info;
-
-                for (const Entry& e : rec) {
-                    if (e.is_reference())
-                        info.builder().append(Entry(db.node(e.node()->id())));
-                    else if (e.is_immediate())
-                        info.builder().append(e.attribute(), e.value());
-                }
-
-                c->push_snapshot(channel, info.view());
+        do_flush(c, SnapshotView(), [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                c->push_snapshot(channel, SnapshotView(rec.size(), rec.data()));
             });
 
         clear_cb(c, channel);
