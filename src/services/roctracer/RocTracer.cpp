@@ -237,7 +237,7 @@ class RocTracerService {
         return num_records;
     }
 
-    void flush_cb(Caliper* c, Channel* channel, SnapshotView, SnapshotFlushFn snap_fn) {
+    void flush_cb(Caliper* c, Channel* channel, SnapshotFlushFn snap_fn) {
         roctracer_flush_activity_expl(m_roctracer_pool);
 
         unsigned num_flushed = 0;
@@ -345,7 +345,7 @@ class RocTracerService {
 
         channel->events().flush_evt.connect(
             [this](Caliper* c, Channel* chn, SnapshotView, SnapshotFlushFn flush_fn){
-                this->flush_cb(c, chn, info, flush_fn);
+                this->flush_cb(c, chn, flush_fn);
             });
 
         Log(1).stream() << channel->name() << ": roctracer: Tracing initialized" << std::endl;
