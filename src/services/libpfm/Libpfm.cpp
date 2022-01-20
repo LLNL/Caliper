@@ -63,10 +63,10 @@ namespace {
 
 class LibpfmService
 {
-    cali_id_t libpfm_attributes[MAX_ATTRIBUTES] = {CALI_INV_ID};
+    Attribute libpfm_attributes[MAX_ATTRIBUTES] = { Attribute::invalid };
     Attribute libpfm_event_name_attr;
     cali_id_t libpfm_event_name_attr_id = {CALI_INV_ID};
-    std::vector<Attribute> libpfm_event_counter_attr;
+    std::vector<Attribute> libpfm_event_counter_attrs;
     size_t libpfm_attribute_types[MAX_ATTRIBUTES];
     std::map<size_t, Attribute> libpfm_attribute_type_to_attr;
     uint64_t perf_event_sample_t::* sample_attribute_pointers[MAX_ATTRIBUTES];
@@ -156,12 +156,12 @@ class LibpfmService
         Entry data[MAX_ATTRIBUTES+1];
 
         for (int i = 0; i < num_attributes; ++i)
-            data[i] = Entry(num_attributes[i], 
+            data[i] = Entry(libpfm_attributes[i],
                             cali_make_variant_from_uint(sample.*sample_attribute_pointers[i]));
 
         data[num_attributes] = Entry(event_name_nodes[event_index]);
 
-        c.push_snapshot(sC, SnapshotInfo(num_attributes+1, data));
+        c.push_snapshot(sC, SnapshotView(num_attributes+1, data));
 
         sI->samples_produced++;
     }
@@ -439,8 +439,7 @@ class LibpfmService
                 }
 
                 // Add to attribute ids
-                cali_id_t attribute_id = new_attribute.id();
-                libpfm_attributes[num_attributes] = attribute_id;
+                libpfm_attributes[num_attributes] = new_attribute;
 
                 // Record type of attribute
                 libpfm_attribute_types[num_attributes] = attribute_bits;
@@ -552,7 +551,7 @@ class LibpfmService
         //uint64_t id;        /* if PERF_FORMAT_ID */
     };
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotBuilder& snapshot) {
+    void snapshot_cb(SnapshotBuilder& snapshot) {
         Entry data[MAX_EVENTS];
         size_t count = 0;
 
@@ -737,8 +736,8 @@ public:
                 });
         if (sI->record_counters)
             chn->events().snapshot.connect(
-                [](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
-                    sI->snapshot_cb(c, chn, scope, info, rec);
+                [](Caliper*, Channel*, int, SnapshotView, SnapshotBuilder& rec){
+                    sI->snapshot_cb(rec);
                 });
 
         Log(1).stream() << chn->name() << ": Registered libpfm service" << endl;
