@@ -6,6 +6,7 @@
 #include "caliper/caliper-config.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Attribute.h"
 
@@ -38,6 +39,9 @@ struct AttributeInfo
     std::vector<ResultAttributes> result_attrs;
 
     cali::Attribute               count_attr;
+
+    bool implicit_grouping;
+    bool group_nested;
 };
 
 //
@@ -55,7 +59,7 @@ public:
     
     ~AggregationDB();
     
-    void   process_snapshot(cali::Caliper*, const cali::SnapshotRecord*, const AttributeInfo&, bool implicit_grouping);
+    void   process_snapshot(cali::Caliper*, cali::SnapshotView, const AttributeInfo&);
     
     void   clear();
     size_t flush(const AttributeInfo&, cali::Caliper*, cali::SnapshotFlushFn);

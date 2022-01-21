@@ -48,7 +48,7 @@ TEST(AdiakServiceTest, AdiakImport)
 
     ASSERT_NE(chn, nullptr);
 
-    chn->events().pre_flush_evt(&c, chn, nullptr);
+    chn->events().pre_flush_evt(&c, chn, SnapshotView());
 
     Attribute int_attr = c.get_attribute("import.int");
     Attribute str_attr = c.get_attribute("import.str");
@@ -94,7 +94,7 @@ TEST(AdiakServiceTest, AdiakImportLonglong)
 
     ASSERT_NE(chn, nullptr);
 
-    chn->events().pre_flush_evt(&c, chn, nullptr);
+    chn->events().pre_flush_evt(&c, chn, SnapshotView());
 
     Attribute i64_attr = c.get_attribute("import.i64");
     Attribute vec_attr = c.get_attribute("import.vec");
@@ -131,7 +131,7 @@ TEST(AdiakServiceTest, AdiakImportCategoryFilter)
 
     ASSERT_NE(chn, nullptr);
 
-    chn->events().pre_flush_evt(&c, chn, nullptr);
+    chn->events().pre_flush_evt(&c, chn, SnapshotView());
 
     Attribute do_import_attr_1 = c.get_attribute("do.import.1");
     Attribute do_import_attr_2 = c.get_attribute("do.import.2");
@@ -171,7 +171,7 @@ TEST(AdiakServiceTest, AdiakExport)
 
     ASSERT_NE(chn, nullptr);
 
-    chn->events().pre_flush_evt(&c, chn, nullptr);
+    chn->events().pre_flush_evt(&c, chn, SnapshotView());
 
     std::map<std::string, std::string> res;
 

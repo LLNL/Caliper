@@ -386,12 +386,14 @@ class CuptiTraceService
                 Variant(cali_make_variant_from_uint(memcpy->end - memcpy->start))
             };
 
-            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-            SnapshotRecord snapshot(snapshot_data);
+            FixedSizeSnapshotRecord<8> snapshot;
 
-            c->make_record(6, attr, data, snapshot, parent);
+            c->make_record(6, attr, data, snapshot.builder(), parent);
+            SnapshotView view = snapshot.view();
 
-            auto rec = snapshot.to_entrylist();
+            std::vector<Entry> rec;
+            rec.reserve(view.size() + irec.size());
+            rec.assign(view.begin(), view.end());
             rec.insert(rec.end(), irec.begin(), irec.end());
             proc_fn(*c, rec);
 
@@ -455,12 +457,14 @@ class CuptiTraceService
                 Variant(cali_make_variant_from_uint(kernel->end - kernel->start))
             };
 
-            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-            SnapshotRecord snapshot(snapshot_data);
+            FixedSizeSnapshotRecord<8> snapshot;
 
-            c->make_record(5, attr, data, snapshot, parent);
+            c->make_record(5, attr, data, snapshot.builder(), parent);
+            SnapshotView view = snapshot.view();
 
-            auto rec = snapshot.to_entrylist();
+            std::vector<Entry> rec;
+            rec.reserve(view.size() + irec.size());
+            rec.assign(view.begin(), view.end());
             rec.insert(rec.end(), irec.begin(), irec.end());
             proc_fn(*c, rec);
 
@@ -541,11 +545,13 @@ class CuptiTraceService
                 break;
             }
 
-            SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-            SnapshotRecord snapshot(snapshot_data);
-            c->make_record(n, attr, data, snapshot);
+            FixedSizeSnapshotRecord<8> snapshot;
+            c->make_record(n, attr, data, snapshot.builder());
+            SnapshotView view = snapshot.view();
 
-            auto rec = snapshot.to_entrylist();
+            std::vector<Entry> rec;
+            rec.reserve(view.size() + irec.size());
+            rec.assign(view.begin(), view.end());
             rec.insert(rec.end(), irec.begin(), irec.end());
             proc_fn(*c, rec);
 
@@ -585,12 +591,12 @@ class CuptiTraceService
         return num_records;
     }
 
-    std::vector<Entry> get_flush_info(Caliper* c, const SnapshotRecord* flush_info) {
+    std::vector<Entry> get_flush_info(Caliper* c, SnapshotView flush_info) {
         // Extract requested flush_info_attributes from flush_info
 
         std::vector<Entry> ret;
 
-        if (!flush_info)
+        if (flush_info.empty())
             return ret;
 
         std::vector<const Node*> nodes;
@@ -600,7 +606,7 @@ class CuptiTraceService
             if (attr == Attribute::invalid)
                 continue;
 
-            Entry e = flush_info->get(attr);
+            Entry e = flush_info.get(attr);
 
             if (e.is_reference())
                 nodes.push_back(e.node());
@@ -614,7 +620,7 @@ class CuptiTraceService
         return ret;
     }
 
-    size_t do_flush(Caliper* c, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    size_t do_flush(Caliper* c, SnapshotView flush_info, SnapshotFlushFn proc_fn) {
         //   Flush CUpti. Apppends all currently active CUpti trace buffers
         // to the retired_buffers_list.
 
@@ -649,7 +655,7 @@ class CuptiTraceService
     // --- Caliper callbacks
     //
 
-    void flush_cb(Caliper* c, Channel* channel, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* channel, SnapshotView flush_info, SnapshotFlushFn proc_fn) {
         size_t num_written = do_flush(c, flush_info, proc_fn);
 
         Log(1).stream() << channel->name() << ": cuptitrace: Wrote "
@@ -844,7 +850,7 @@ class CuptiTraceService
 
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scopes, const SnapshotView, SnapshotBuilder& snapshot) {
         uint64_t timestamp = 0;
         cuptiGetTimestamp(&timestamp);
 
@@ -852,28 +858,18 @@ class CuptiTraceService
         Variant  v_prev = c->exchange(timestamp_attr, v_now);
 
         if (record_host_duration)
-            snapshot->append(duration_attr.id(),
-                             Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint())));
+            snapshot.append(Entry(duration_attr,
+                                  Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint()))));
     }
 
-    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, const SnapshotRecord* info, SnapshotRecord* snapshot) {
+    void snapshot_flush_activities_cb(Caliper* c, Channel* channel, int, SnapshotView trigger_info, SnapshotBuilder& snapshot) {
         if (c->is_signal())
             return;
-        if (flush_trigger_attr == Attribute::invalid || info->get(flush_trigger_attr).is_empty())
+        if (flush_trigger_attr == Attribute::invalid || trigger_info.get(flush_trigger_attr).empty())
             return;
 
-        do_flush(c, nullptr, [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
-                SnapshotRecord::FixedSnapshotRecord<8> snapshot_data;
-                SnapshotRecord info(snapshot_data);
-
-                for (const Entry& e : rec) {
-                    if (e.is_reference())
-                        info.append(db.node(e.node()->id()));
-                    else if (e.is_immediate())
-                        info.append(e.attribute(), e.value());
-                }
-
-                c->push_snapshot(channel, &info);
+        do_flush(c, SnapshotView(), [c,channel](CaliperMetadataAccessInterface& db, const std::vector<Entry>& rec){
+                c->push_snapshot(channel, SnapshotView(rec.size(), rec.data()));
             });
 
         clear_cb(c, channel);
@@ -914,7 +910,7 @@ class CuptiTraceService
             c->set(timestamp_attr, cali_make_variant_from_uint(starttime));
 
             chn->events().snapshot.connect(
-                [](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
+                [](Caliper* c, Channel* chn, int scopes, SnapshotView info, SnapshotBuilder& rec){
                     s_instance->snapshot_cb(c, chn, scopes, info, rec);
                 });
         }
@@ -933,7 +929,7 @@ class CuptiTraceService
                     });
 
             chn->events().snapshot.connect(
-                [](Caliper* c, Channel* channel, int scopes, const SnapshotRecord* info, SnapshotRecord* rec){
+                [](Caliper* c, Channel* channel, int scopes, SnapshotView info, SnapshotBuilder& rec){
                     s_instance->snapshot_flush_activities_cb(c, channel, scopes, info, rec);
                 });
 
@@ -942,7 +938,7 @@ class CuptiTraceService
                             << std::endl;
         } else {
             chn->events().flush_evt.connect(
-                [](Caliper* c, Channel* chn, const SnapshotRecord* info, SnapshotFlushFn flush_fn){
+                [](Caliper* c, Channel* chn, SnapshotView info, SnapshotFlushFn flush_fn){
                     s_instance->flush_cb(c, chn, info, flush_fn);
                 });
             chn->events().clear_evt.connect(

@@ -90,8 +90,8 @@ class VariorumService
     void snapshot_cb(Caliper* c,
                      Channel* /*channel*/,
                      int /*scopes*/,
-                     const SnapshotRecord* /*trigger_info*/,
-                     SnapshotRecord* rec)
+                     SnapshotView /*trigger_info*/,
+                     SnapshotBuilder& rec)
     {
         // The snapshot callback triggers performance measurements.
         // Measurement services should make measurements and add them to the
@@ -121,7 +121,7 @@ class VariorumService
             // Append measurement value to the snapshot record
             Variant v_val(cali_make_variant_from_uint(val));
 
-            rec->append(m.value_attr, val);
+            rec.append(m.value_attr, val);
 
             // We store the previous measurement value on the Caliper thread
             // blackboard so we can compute the difference since the last
@@ -130,7 +130,7 @@ class VariorumService
             // TODO: For aggregation, we use average power instead of
             // difference.
             Variant v_prev = c->exchange(m.prval_attr, v_val);
-            rec->append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
+            rec.append(m.delta_attr, cali_make_variant_from_uint((val + v_prev.to_uint())/2));
         }
     }
 
@@ -292,7 +292,7 @@ public:
                 instance->post_init_cb(c, channel);
             });
         channel->events().snapshot.connect(
-            [instance](Caliper* c, Channel* channel, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* rec){
+            [instance](Caliper* c, Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec){
                 instance->snapshot_cb(c, channel, scopes, trigger_info, rec);
             });
         channel->events().finish_evt.connect(

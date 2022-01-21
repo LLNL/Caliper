@@ -50,9 +50,9 @@ class Timestamp
 
     Attribute timerinfo_attr { Attribute::invalid } ;
 
-    cali_id_t snapshot_duration_attr_id  { CALI_INV_ID };
-    cali_id_t inclusive_duration_attr_id { CALI_INV_ID };
-    cali_id_t offset_attr_id             { CALI_INV_ID };
+    Attribute snapshot_duration_attr;
+    Attribute inclusive_duration_attr;
+    Attribute offset_attr;
 
     // Keeps all created timer info objects so we can delete them later
     std::vector<TimerInfo*>  info_obj_list;
@@ -91,17 +91,18 @@ class Timestamp
         return ti;
     }
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& rec) {
         auto now = chrono::high_resolution_clock::now();
         uint64_t usec = chrono::duration_cast<chrono::microseconds>(now - tstart).count();
 
         if (record_offset)
-            rec->append(offset_attr_id, Variant(usec));
+            rec.append(offset_attr, Variant(usec));
 
-        if (record_timestamp && (scope & CALI_SCOPE_PROCESS))
-            rec->append(timestamp_attr.id(),
-                        Variant(cali_make_variant_from_uint(
-                                chrono::duration_cast<chrono::nanoseconds>(chrono::system_clock::now().time_since_epoch()).count())));
+        if (record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
+            auto timestamp = 
+                chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch()).count();
+            rec.append(timestamp_attr, cali_make_variant_from_uint(timestamp));
+        }
 
         if ((!record_snapshot_duration && !record_inclusive_duration) || !(scope & CALI_SCOPE_THREAD))
             return;
@@ -113,16 +114,16 @@ class Timestamp
             return;
 
         if (record_snapshot_duration)
-            rec->append(snapshot_duration_attr_id, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
+            rec.append(snapshot_duration_attr, Variant(scale_factor * (usec - ti->prev_snapshot_timestamp)));
 
         ti->prev_snapshot_timestamp = usec;
 
-        if (record_inclusive_duration && info && !c->is_signal()) {
-            Entry event = info->get(begin_evt_attr);
+        if (record_inclusive_duration && !info.empty() && !c->is_signal()) {
+            Entry event = info.get(begin_evt_attr);
 
-            if (event.is_empty())
-                event = info->get(end_evt_attr);
-            if (event.is_empty())
+            if (event.empty())
+                event = info.get(end_evt_attr);
+            if (event.empty())
                 return;
             
             cali_id_t evt_attr_id = event.value().to_id();
@@ -139,7 +140,7 @@ class Timestamp
                     return;
                 }
 
-                rec->append(inclusive_duration_attr_id, Variant(scale_factor * (usec - stack_it->second.back())));
+                rec.append(inclusive_duration_attr, Variant(scale_factor * (usec - stack_it->second.back())));
                 stack_it->second.pop_back();
             }
         }
@@ -214,24 +215,24 @@ class Timestamp
                                     CALI_ATTR_SCOPE_PROCESS |
                                     CALI_ATTR_SKIP_EVENTS,
                                     1, &unit_attr, &sec_val);
-            offset_attr_id =
+            offset_attr =
                 c->create_attribute("time.offset",    CALI_TYPE_UINT,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
-                                    1, &unit_attr, &usec_val).id();
-            snapshot_duration_attr_id =
+                                    1, &unit_attr, &usec_val);
+            snapshot_duration_attr =
                 c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals).id();
-            inclusive_duration_attr_id =
+                                    2, meta_attr, meta_vals);
+            inclusive_duration_attr =
                 c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
                                     CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals).id();
+                                    2, meta_attr, meta_vals);
             timerinfo_attr = 
                 c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
                                     CALI_ATTR_ASVALUE       |
@@ -262,8 +263,8 @@ public:
                 instance->acquire_timerinfo(c);
             });
         chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, int scopes, const SnapshotRecord* info, SnapshotRecord* snapshot){
-                instance->snapshot_cb(c, chn, scopes, info, snapshot);
+            [instance](Caliper* c, Channel* chn, int scopes, SnapshotView info, SnapshotBuilder& rec){
+                instance->snapshot_cb(c, chn, scopes, info, rec);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){

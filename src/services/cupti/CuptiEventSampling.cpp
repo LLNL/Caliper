@@ -278,7 +278,7 @@ EventSampling::stop_all()
 }
 
 void
-EventSampling::snapshot(Caliper* c, const SnapshotRecord*, SnapshotRecord* snapshot)
+EventSampling::snapshot(Caliper* c, SnapshotBuilder& snapshot)
 {
     ++m_num_snapshots;
 
@@ -313,7 +313,7 @@ EventSampling::snapshot(Caliper* c, const SnapshotRecord*, SnapshotRecord* snaps
     if (res != CUPTI_SUCCESS || bytes_read != sizeof(val))
         return;
 
-    snapshot->append(m_event_attr.id(), Variant(cali_make_variant_from_uint(val)));
+    snapshot.append(m_event_attr, Variant(cali_make_variant_from_uint(val)));
     
     ++m_num_reads;
 }

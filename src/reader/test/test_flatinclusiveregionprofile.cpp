@@ -22,23 +22,23 @@ TEST(FlatInclusiveRegionProfileTest, NestedRegion) {
 
     IdMap idmap;
 
-    const Node* a_node =
+    Node* a_node =
         db.merge_node(200, reg_a_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "a", 2), idmap);
-    const Node* b_node =
+    Node* b_node =
         db.merge_node(201, reg_b_attr.id(), 200,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
-    const Node* c_node =
+    Node* c_node =
         db.merge_node(202, reg_c_attr.id(), 201,         Variant(CALI_TYPE_STRING, "c", 2), idmap);
 
     FlatInclusiveRegionProfile rp(db, "metric.attr");
 
     rp(db,
-       { Entry(a_node), Entry(metric_attr.id(), Variant(2))    } );
+       { Entry(a_node), Entry(metric_attr, Variant(2))    } );
     rp(db,
-       { Entry(b_node), Entry(metric_attr.id(), Variant(40))   } );
+       { Entry(b_node), Entry(metric_attr, Variant(40))   } );
     rp(db,
-       { Entry(c_node), Entry(metric_attr.id(), Variant(100)) } );
+       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
     rp(db,
-       { Entry(metric_attr.id(), Variant(1000)) });
+       { Entry(metric_attr, Variant(1000)) });
     rp(db,
        { Entry(b_node) });
 
@@ -72,23 +72,23 @@ TEST(FlatInclusiveRegionProfileTest, GivenRegion) {
 
     IdMap idmap;
     
-    const Node* c_node =
+    Node* c_node =
         db.merge_node(200, reg_c_attr.id(), CALI_INV_ID, Variant(CALI_TYPE_STRING, "c", 2), idmap);
-    const Node* a_node =
+    Node* a_node =
         db.merge_node(201, reg_a_attr.id(), 200,         Variant(CALI_TYPE_STRING, "a", 2), idmap);
-    const Node* b_node =
+    Node* b_node =
         db.merge_node(202, reg_b_attr.id(), 201,         Variant(CALI_TYPE_STRING, "b", 2), idmap);
 
     FlatInclusiveRegionProfile rp(db, "metric.attr", "reg_c");
 
     rp(db,
-       { Entry(a_node), Entry(metric_attr.id(), Variant(2))   } );
+       { Entry(a_node), Entry(metric_attr, Variant(2))   } );
     rp(db,
-       { Entry(b_node), Entry(metric_attr.id(), Variant(40))  } );
+       { Entry(b_node), Entry(metric_attr, Variant(40))  } );
     rp(db,
-       { Entry(c_node), Entry(metric_attr.id(), Variant(100)) } );
+       { Entry(c_node), Entry(metric_attr, Variant(100)) } );
     rp(db,
-       { Entry(metric_attr.id(), Variant(1000)) });
+       { Entry(metric_attr, Variant(1000)) });
     rp(db,
        { Entry(b_node) });
 

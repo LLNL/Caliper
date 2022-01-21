@@ -12,7 +12,8 @@ class CaliperValidatorTest(unittest.TestCase):
         env = {
             'CALI_LOG_VERBOSITY'   : '1',
             'CALI_LOG_LOGFILE'     : 'stdout',
-            'CALI_SERVICES_ENABLE' : 'validator'
+            'CALI_SERVICES_ENABLE' : 'validator',
+            'CALI_CALIPER_ALLOW_REGION_OVERLAP' : 'true'
         }
 
         log_targets = [

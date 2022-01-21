@@ -195,10 +195,10 @@ struct TableFormatter::TableImpl
 
         if (m_auto_column)
             for (Entry e : list) {
-                if (e.node()) {
+                if (e.is_reference()) {
                     for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent())
                         update_column_attribute(db, node->attribute());
-                } else
+                } else if (e.is_immediate())
                     update_column_attribute(db, e.attribute());
             }
 
@@ -225,7 +225,7 @@ struct TableFormatter::TableImpl
             std::string val;
 
             for (Entry e : list) {
-                if (e.node()) {
+                if (e.is_reference()) {
                     std::string str;
 
                     for (const Node* node = e.node(); node; node = node->parent())

@@ -118,13 +118,11 @@ class CuptiService
                               Variant(static_cast<uint64_t>(stream_id)),
                               v_name };
 
-        SnapshotRecord::FixedSnapshotRecord<4> trigger_info_data;
-        SnapshotRecord trigger_info(trigger_info_data);
-
+        FixedSizeSnapshotRecord<4> trigger_info;
         Caliper c;
 
-        c.make_record(4, attr, vals, trigger_info);
-        c.push_snapshot(channel, &trigger_info);
+        c.make_record(4, attr, vals, trigger_info.builder());
+        c.push_snapshot(channel, trigger_info.view());
     }
 
     void
@@ -145,13 +143,11 @@ class CuptiService
                               Variant(static_cast<uint64_t>(context_id)),
                               v_name };
 
-        SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
-        SnapshotRecord trigger_info(trigger_info_data);
-
+        FixedSizeSnapshotRecord<4> trigger_info;
         Caliper c;
 
-        c.make_record(3, attr, vals, trigger_info);
-        c.push_snapshot(channel, &trigger_info);
+        c.make_record(3, attr, vals, trigger_info.builder());
+        c.push_snapshot(channel, trigger_info.view());
     }
 
     void
@@ -320,9 +316,9 @@ class CuptiService
     }
 
     void
-    snapshot_cb(Caliper* c, Channel*, int /* scope */, const SnapshotRecord* trigger_info, SnapshotRecord* snapshot)
+    snapshot_cb(Caliper* c, SnapshotBuilder& snapshot)
     {
-        event_sampling.snapshot(c, trigger_info, snapshot);
+        event_sampling.snapshot(c, snapshot);
     }
 
     void
@@ -474,8 +470,8 @@ public:
 
         if (instance->event_sampling.is_enabled())
             chn->events().snapshot.connect(
-                [instance](Caliper* c, Channel* chn, int scope, const SnapshotRecord* info, SnapshotRecord* rec){
-                    instance->snapshot_cb(c, chn, scope, info, rec);
+                [instance](Caliper* c, Channel*, int, SnapshotView, SnapshotBuilder& rec){
+                    instance->snapshot_cb(c, rec);
                 });
 
         chn->events().post_init_evt.connect(

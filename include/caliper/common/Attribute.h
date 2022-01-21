@@ -1,8 +1,8 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/** 
- * \file Attribute.h 
+/**
+ * \file Attribute.h
  * \brief Attribute class declaration
  */
 
@@ -19,19 +19,11 @@
 
 namespace cali
 {
-    
-struct MetaAttributeIDs {
-    cali_id_t name_attr_id;
-    cali_id_t type_attr_id;
-    cali_id_t prop_attr_id;
-
-    static const MetaAttributeIDs invalid;
-};    
 
 /// \brief Encapsulate an attribute key.
 ///
 /// All attribute meta-information (e.g., type, property flags, name) is
-/// stored in the context tree. An attribute key is a context tree 
+/// stored in the context tree. An attribute key is a context tree
 /// reference to a \a cali.attribute.name node. This class encapsulates
 /// an attribute key node and provides access to the attribute's
 /// metadata.
@@ -41,29 +33,35 @@ class Attribute
 
 public:
 
+    constexpr static cali_id_t NAME_ATTR_ID =  8;
+    constexpr static cali_id_t TYPE_ATTR_ID =  9;
+    constexpr static cali_id_t PROP_ATTR_ID = 10;
+
     constexpr Attribute()
-        : m_node(0)
+        : m_node(nullptr)
         { }
 
     cali_id_t      id() const { return m_node ? m_node->id() : CALI_INV_ID; }
 
     std::string    name() const;
     const char*    name_c_str() const;
-    
+
     cali_attr_type type() const;
 
     int            properties() const;
 
-    /// \brief Return the context tree node pointer that represents 
+    /// \brief Return the context tree node pointer that represents
     ///   this attribute key.
-    const Node*    node() const {
+    Node*          node() const {
         return m_node;
     }
 
-    bool store_as_value() const { 
-        return properties() & CALI_ATTR_ASVALUE; 
+    Variant        get(const Attribute& attr) const;
+
+    bool store_as_value() const {
+        return properties() & CALI_ATTR_ASVALUE;
     }
-    bool is_autocombineable() const   { 
+    bool is_autocombineable() const   {
         return !store_as_value() && !(properties() & CALI_ATTR_NOMERGE);
     }
     bool skip_events() const {
@@ -79,23 +77,19 @@ public:
         return properties() & CALI_ATTR_GLOBAL;
     }
 
-    Variant        get(const Attribute& attr) const;
-    
-    static Attribute make_attribute(const Node* node);
+    static Attribute make_attribute(Node* node);
 
-    static MetaAttributeIDs meta_attribute_keys() {
-        return s_keys;
+    static bool is_attribute(const Node* node) {
+        return node && node->attribute() == NAME_ATTR_ID;
     }
 
     static const Attribute invalid;
 
 private:
 
-    const Node*            m_node;
+    Node* m_node;
 
-    static const MetaAttributeIDs s_keys;
-
-    Attribute(const Node* node)
+    Attribute(Node* node)
         : m_node(node)
         { }
 

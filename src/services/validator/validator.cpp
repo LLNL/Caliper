@@ -30,10 +30,9 @@ namespace
 
 std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
 {
-    SnapshotRecord::FixedSnapshotRecord<80> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
+    FixedSizeSnapshotRecord<120> snapshot;
 
-    c->pull_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, nullptr, &snapshot);
+    c->pull_snapshot(chn, CALI_SCOPE_THREAD | CALI_SCOPE_PROCESS, SnapshotView(), snapshot.builder());
 
     os << "{ ";
 
@@ -41,7 +40,7 @@ std::ostream& print_snapshot(Caliper* c, Channel* chn, std::ostream& os)
     stream.set_stream(&os);
 
     cali::Expand exp(stream, "");
-    exp.process_record(*c, snapshot.to_entrylist());
+    exp.process_record(*c, std::vector<Entry>(snapshot.view().begin(), snapshot.view().end()));
 
     return os << " }";
 }

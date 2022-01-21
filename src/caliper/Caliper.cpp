@@ -25,18 +25,18 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
-#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <utility>
 
 #define SNAP_MAX 120
 
 using namespace cali;
 using namespace std;
+
+using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
 
 namespace cali
 {
@@ -152,34 +152,26 @@ print_available_services(std::ostream& os)
 std::vector<Entry>
 get_globals_from_blackboard(Caliper* c, const Blackboard& blackboard)
 {
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> rec_data;
-    SnapshotRecord rec(rec_data);
+    FixedSizeSnapshotRecord<SNAP_MAX> rec;
+    blackboard.snapshot(rec.builder());
 
-    blackboard.snapshot(&rec);
-
+    std::vector<Entry> ret;
     std::vector<const Node*> nodes;
 
-    SnapshotRecord::Data  data = rec.data();
-    SnapshotRecord::Sizes size = rec.size();
-
-    // Go through all process nodes and filter out the global entries
-    for (size_t i = 0; i < size.n_nodes; ++i)
-        for (const Node* node = data.node_entries[i]; node; node = node->parent())
-            if (c->get_attribute(node->attribute()).properties() & CALI_ATTR_GLOBAL)
-                nodes.push_back(node);
+    for (const Entry& e : rec.view()) {
+        if (e.is_reference()) {
+            for (const Node* node = e.node(); node; node = node->parent())
+                if (c->get_attribute(node->attribute()).is_global())
+                    nodes.push_back(node);
+        } else if (c->get_attribute(e.attribute()).is_global())
+            ret.push_back(e);
+    }
 
     // Restore original order
     std::reverse(nodes.begin(), nodes.end());
 
-    std::vector<Entry> ret;
-
     if (!nodes.empty())
         ret.push_back(Entry(c->make_tree_entry(nodes.size(), nodes.data(), nullptr)));
-
-    // Add potential AS_VALUE global entries
-    for (size_t i = 0; i < size.n_immediate; ++i)
-        if (c->get_attribute(data.immediate_attr[i]).properties() & CALI_ATTR_GLOBAL)
-            ret.push_back(Entry(data.immediate_attr[i], data.immediate_data[i]));
 
     return ret;
 }
@@ -304,10 +296,8 @@ struct Caliper::ThreadData
     Blackboard     thread_blackboard;
 
     // copy of the last process blackboard snapshot
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> process_snapshot_data;
     SnapshotRecord process_snapshot;
     // copy of the last channel blackboard snapshot
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> channel_snapshot_data;
     SnapshotRecord channel_snapshot;
 
     // versions of the last process blackboard and channel snapshots
@@ -320,8 +310,7 @@ struct Caliper::ThreadData
     bool           stack_error;
 
     ThreadData(bool initial_thread = false)
-        : process_snapshot(process_snapshot_data),
-          process_bb_count(-1),
+        : process_bb_count(-1),
           channel_bb_count(-1),
           channel_bb_id(-1),
           is_initial_thread(initial_thread),
@@ -516,22 +505,22 @@ struct Caliper::GlobalData
         Log(1).stream() << "Initialized" << std::endl;
     }
 
-    // Get the attribute key, which determines the blackboard slot for each
+    // Get the blackboard key, which determines the blackboard slot for each
     // attribute. By default, we merge most attributes into two slots:
     // region_key for region-type (begin/end) attributes, unaligned_key for
     // set-type attributes. We skip stack nesting checks for unaligned
     // attributes. Immediate (as_value) and nomerge attributes get
     // their own slots.
-    inline const Attribute&
-    get_key(const Attribute& attr) const {
+    inline cali_id_t
+    get_blackboard_key(const Attribute& attr) const {
         int prop = attr.properties();
 
         if ((prop & CALI_ATTR_ASVALUE) || (prop & CALI_ATTR_NOMERGE) || !automerge)
-            return attr;
+            return attr.id();
         if (prop & CALI_ATTR_UNALIGNED)
-            return unaligned_key_attr;
+            return unaligned_key_attr.id();
 
-        return region_key_attr;
+        return region_key_attr.id();
     }
 
     ThreadData* add_thread_data(ThreadData* t) {
@@ -857,23 +846,22 @@ Caliper::get_globals(Channel* channel)
 // --- Snapshot interface
 
 void
-Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigger_info, SnapshotRecord* sbuf)
+Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // Save trigger info in snapshot buf
 
-    if (trigger_info)
-        sbuf->append(*trigger_info);
+    rec.append(trigger_info);
 
     // Invoke callbacks
 
-    channel->mP->events.snapshot(this, channel, scopes, trigger_info, sbuf);
+    channel->mP->events.snapshot(this, channel, scopes, trigger_info, rec);
 
     // Get thread blackboard data
     if (scopes & CALI_SCOPE_THREAD) {
-        sT->thread_blackboard.snapshot(sbuf);
+        sT->thread_blackboard.snapshot(rec);
     }
 
     // Get process and channel blackboard data
@@ -888,46 +876,43 @@ Caliper::pull_snapshot(Channel* channel, int scopes, const SnapshotRecord* trigg
         if (process_bb_count_now > sT->process_bb_count) {
             //   Process blackboard has been updated:
             // update thread-local snapshot data
-            sT->process_snapshot = SnapshotRecord(sT->process_snapshot_data);
-            sG->process_blackboard.snapshot(&sT->process_snapshot);
-
+            sT->process_snapshot.reset();
+            sG->process_blackboard.snapshot(sT->process_snapshot.builder());
             sT->process_bb_count = process_bb_count_now;
         }
 
-        sbuf->append(sT->process_snapshot);
+        rec.append(sT->process_snapshot.view());
     }
 
     if (scopes & CALI_SCOPE_CHANNEL) {
         int channel_bb_count_now = channel->mP->channel_blackboard.count();
         if (sT->channel_bb_id   != static_cast<int>(channel->id()) ||
             channel_bb_count_now > sT->channel_bb_count) {
-            sT->channel_snapshot = SnapshotRecord(sT->channel_snapshot_data);
-            channel->mP->channel_blackboard.snapshot(&sT->channel_snapshot);
+            sT->channel_snapshot.reset();
+            channel->mP->channel_blackboard.snapshot(sT->channel_snapshot.builder());
 
             sT->channel_bb_count = channel_bb_count_now;
             sT->channel_bb_id    = static_cast<int>(channel->id());
         }
 
-        sbuf->append(sT->channel_snapshot);
+        rec.append(sT->channel_snapshot.view());
     }
 }
 
 void
-Caliper::push_snapshot(Channel* channel, const SnapshotRecord* trigger_info)
+Caliper::push_snapshot(Channel* channel, SnapshotView trigger_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-    SnapshotRecord sbuf(snapshot_data);
+    SnapshotRecord rec;
 
-    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, &sbuf);
-
-    channel->mP->events.process_snapshot(this, channel, trigger_info, &sbuf);
+    pull_snapshot(channel, channel->mP->snapshot_scopes, trigger_info, rec.builder());
+    channel->mP->events.process_snapshot(this, channel, trigger_info, rec.view());
 }
 
 void
-Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn proc_fn)
+Caliper::flush(Channel* chn, SnapshotView flush_info, SnapshotFlushFn proc_fn)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -949,24 +934,21 @@ Caliper::flush(Channel* chn, const SnapshotRecord* flush_info, SnapshotFlushFn p
 }
 
 void
-Caliper::flush_and_write(Channel* channel, const SnapshotRecord* input_flush_info)
+Caliper::flush_and_write(Channel* channel, SnapshotView input_flush_info)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    SnapshotRecord::FixedSnapshotRecord<SNAP_MAX> snapshot_data;
-    SnapshotRecord flush_info(snapshot_data);
+    SnapshotRecord flush_info;
+    flush_info.builder().append(input_flush_info);
 
-    if (input_flush_info)
-        flush_info.append(*input_flush_info);
-
-    channel->mP->channel_blackboard.snapshot(&flush_info);
-    sG->process_blackboard.snapshot(&flush_info);
-    sT->thread_blackboard.snapshot(&flush_info);
+    channel->mP->channel_blackboard.snapshot(flush_info.builder());
+    sG->process_blackboard.snapshot(flush_info.builder());
+    sT->thread_blackboard.snapshot(flush_info.builder());
 
     Log(1).stream() << channel->name() << ": Flushing Caliper data" << std::endl;
 
-    channel->mP->events.write_output_evt(this, channel, &flush_info);
+    channel->mP->events.write_output_evt(this, channel, flush_info.view());
 }
 
 void
@@ -994,32 +976,37 @@ Caliper::begin(const Attribute& attr, const Variant& data)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* bb = nullptr;
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
+
+    Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->thread_blackboard;
+        blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &sG->process_blackboard;
+        blackboard = &sG->process_blackboard;
     }
+
+    assert(blackboard != nullptr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+    if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
                 channel->mP->events.pre_begin_evt(this, channel.get(), attr, data);
 
     if (prop & CALI_ATTR_ASVALUE)
-        bb->set(attr, data);
-    else {
-        Attribute key = sG->get_key(attr);
-        bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(sG->get_key(attr))));
-    }
+        blackboard->set(key, Entry(attr, data), include_in_snapshot);
+    else
+        blackboard->set(key, Entry(sT->tree.get_path(1, &attr, &data, blackboard->get(key).node())), include_in_snapshot);
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+    if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
                 channel->mP->events.post_begin_evt(this, channel.get(), attr, data);
@@ -1032,61 +1019,64 @@ Caliper::end(const Attribute& attr)
 {
     cali_err ret = CALI_SUCCESS;
 
+    if (attr == Attribute::invalid)
+        return CALI_EINV;
     if (sT->stack_error)
         return CALI_ESTACK;
-
-    Entry e = get(attr);
-
-    if (e.is_empty())
-        return sT->log_stack_error(nullptr, attr);
 
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* bb = nullptr;
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
+
+    Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->thread_blackboard;
+        blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &sG->process_blackboard;
+        blackboard = &sG->process_blackboard;
     }
+
+    assert(blackboard != nullptr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
-        for (auto& channel : sG->channels)
-            if (channel && channel->is_active())
-                channel->mP->events.pre_end_evt(this, channel.get(), attr, e.value());
+    Entry merged_entry = blackboard->get(key);
+    Entry entry = merged_entry.get(attr);
 
-    if (prop & CALI_ATTR_ASVALUE)
-        bb->unset(attr);
-    else {
-        Attribute key = sG->get_key(attr);
-        Node*    node = bb->get_node(key);
-
-        if (node) {
-            if (node->attribute() != attr.id() && key != sG->unaligned_key_attr && !sG->allow_region_overlap)
-                return sT->log_stack_error(node, attr);
-
-            node = sT->tree.remove_first_in_path(node, attr);
-
-            if (node == sT->tree.root())
-                bb->unset(key);
-            else if (node)
-                bb->set(key, node);
-        }
-
-        if (!node)
-            return CALI_ESTACK;
+    if (merged_entry.attribute() != attr.id()) {
+        if (entry.empty())
+            return sT->log_stack_error(nullptr, attr);
+        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+            return sT->log_stack_error(merged_entry.node(), attr);
     }
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+    if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
-                channel->mP->events.post_end_evt(this, channel.get(), attr, e.value());
+                channel->mP->events.pre_end_evt(this, channel.get(), attr, entry.value());
+
+    if (prop & CALI_ATTR_ASVALUE)
+        blackboard->del(key);
+    else {
+        Node* node = sT->tree.remove_first_in_path(merged_entry.node(), attr);
+
+        if (node == sT->tree.root())
+            blackboard->del(key);
+        else
+            blackboard->set(key, Entry(node), include_in_snapshot);
+    }
+
+    // invoke callbacks
+    if (run_events)
+        for (auto& channel : sG->channels)
+            if (channel && channel->is_active())
+                channel->mP->events.post_end_evt(this, channel.get(), attr, entry.value());
 
     return ret;
 }
@@ -1102,32 +1092,39 @@ Caliper::set(const Attribute& attr, const Variant& data)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* bb = nullptr;
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->thread_blackboard;
+        blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &sG->process_blackboard;
+        blackboard = &sG->process_blackboard;
     }
+
+    assert(blackboard != nullptr);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+    if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
                 channel->mP->events.pre_set_evt(this, channel.get(), attr, data);
 
     if (prop & CALI_ATTR_ASVALUE)
-        bb->set(attr, data);
+        blackboard->set(key, Entry(attr, data), include_in_snapshot);
     else {
-        Attribute key = sG->get_key(attr);
-        bb->set(key, sT->tree.replace_first_in_path(bb->get_node(key), attr, data));
+        Node* node = blackboard->get(key).node();
+        blackboard->set(key, sT->tree.replace_first_in_path(node, attr, data), include_in_snapshot);
     }
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS))
+    if (run_events)
         for (auto& channel : sG->channels)
             if (channel && channel->is_active())
                 channel->mP->events.post_set_evt(this, channel.get(), attr, data);
@@ -1144,24 +1141,30 @@ Caliper::begin(Channel* channel, const Attribute& attr, const Variant& data)
         return CALI_EINV;
 
     int prop = attr.properties();
-    Blackboard* bb = &channel->mP->channel_blackboard;
+
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    Blackboard* blackboard = &channel->mP->channel_blackboard;
+
+    cali_id_t key = sG->get_blackboard_key(attr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
+    if (run_events && channel->is_active())
         channel->mP->events.pre_begin_evt(this, channel, attr, data);
 
     if (prop & CALI_ATTR_ASVALUE)
-        bb->set(attr, data);
+        blackboard->set(key, Entry(attr, data), include_in_snapshot);
     else {
-        Attribute key = sG->get_key(attr);
-        bb->set(key, sT->tree.get_path(1, &attr, &data, bb->get_node(sG->get_key(attr))));
+        Node* node = sT->tree.get_path(1, &attr, &data, blackboard->get(key).node());
+        blackboard->set(key, Entry(node), include_in_snapshot);
     }
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
+    if (run_events && channel->is_active())
         channel->mP->events.post_begin_evt(this, channel, attr, data);
 
     return ret;
@@ -1172,46 +1175,49 @@ Caliper::end(Channel* channel, const Attribute& attr)
 {
     cali_err ret = CALI_SUCCESS;
 
-    Entry e = get(channel, attr);
-
-    if (e.is_empty())
-        return sT->log_stack_error(nullptr, attr);
+    if (attr == Attribute::invalid)
+        return CALI_EINV;
 
     int prop = attr.properties();
-    Blackboard* bb = &channel->mP->channel_blackboard;
+
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
+
+    Blackboard* blackboard = &channel->mP->channel_blackboard;
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
-        channel->mP->events.pre_end_evt(this, channel, attr, e.value());
+    Entry merged_entry = blackboard->get(key);
+    Entry entry = merged_entry.get(attr);
 
-    if (prop & CALI_ATTR_ASVALUE)
-        bb->unset(attr);
-    else {
-        Attribute key = sG->get_key(attr);
-        Node*    node = bb->get_node(key);
-
-        if (node) {
-            if (node->attribute() != attr.id() && key != sG->unaligned_key_attr && !sG->allow_region_overlap)
-                return sT->log_stack_error(node, attr);
-
-            node = sT->tree.remove_first_in_path(node, attr);
-
-            if (node == sT->tree.root())
-                bb->unset(key);
-            else if (node)
-                bb->set(key, node);
-        }
-
-        if (!node)
-            return CALI_ESTACK;
+    if (merged_entry.attribute() != attr.id()) {
+        if (entry.empty())
+            return sT->log_stack_error(nullptr, attr);
+        if (key != sG->unaligned_key_attr.id() && !sG->allow_region_overlap)
+            return sT->log_stack_error(entry.node(), attr);
     }
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
-        channel->mP->events.post_end_evt(this, channel, attr, e.value());
+    if (run_events && channel->is_active())
+        channel->mP->events.pre_end_evt(this, channel, attr, entry.value());
+
+    if (prop & CALI_ATTR_ASVALUE)
+        blackboard->del(key);
+    else {
+        Node* node = sT->tree.remove_first_in_path(merged_entry.node(), attr);
+
+        if (node == sT->tree.root())
+            blackboard->del(key);
+        else
+            blackboard->set(key, Entry(node), include_in_snapshot);
+    }
+
+    // invoke callbacks
+    if (run_events && channel->is_active())
+        channel->mP->events.post_end_evt(this, channel, attr, entry.value());
 
     return ret;
 }
@@ -1225,24 +1231,30 @@ Caliper::set(Channel* channel, const Attribute& attr, const Variant& data)
         return CALI_EINV;
 
     int prop = attr.properties();
-    Blackboard* bb = &channel->mP->channel_blackboard;
+
+    bool run_events = !(prop & CALI_ATTR_SKIP_EVENTS);
+    bool include_in_snapshot = !(prop & CALI_ATTR_HIDDEN);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
+
+    Blackboard* blackboard = &channel->mP->channel_blackboard;
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
+    if (run_events && channel->is_active())
         channel->mP->events.pre_set_evt(this, channel, attr, data);
 
-    if (attr.store_as_value())
-        bb->set(attr, data);
+    if (prop & CALI_ATTR_ASVALUE)
+        blackboard->set(key, Entry(attr, data), include_in_snapshot);
     else {
-        Attribute key = sG->get_key(attr);
-        bb->set(key, sT->tree.replace_first_in_path(bb->get_node(key), attr, data));
+        Node* node = blackboard->get(key).node();
+        blackboard->set(key, sT->tree.replace_first_in_path(node, attr, data), include_in_snapshot);
     }
 
     // invoke callbacks
-    if (!(prop & CALI_ATTR_SKIP_EVENTS) && channel->is_active())
+    if (run_events && channel->is_active())
         channel->mP->events.post_set_evt(this, channel, attr, data);
 
     return ret;
@@ -1254,41 +1266,41 @@ Entry
 Caliper::get(const Attribute& attr)
 {
     if (attr == Attribute::invalid)
-        return Entry::empty;
+        return Entry();
 
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* bb = nullptr;
+    Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->thread_blackboard;
+        blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &sG->process_blackboard;
+        blackboard = &sG->process_blackboard;
     }
+
+    assert(blackboard != nullptr);
+
+    cali_id_t key = sG->get_blackboard_key(attr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    if (prop & CALI_ATTR_ASVALUE)
-        return Entry(attr, bb->get_immediate(attr));
-    else
-        return Entry(sT->tree.find_node_with_attribute(attr, bb->get_node(sG->get_key(attr))));
+    return blackboard->get(key).get(attr);
 }
 
 Entry
 Caliper::get(Channel* channel, const Attribute& attr)
 {
     if (attr == Attribute::invalid)
-        return Entry::empty;
+        return Entry();
+
+    cali_id_t key = sG->get_blackboard_key(attr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    if (attr.store_as_value())
-        return Entry(attr, channel->mP->channel_blackboard.get_immediate(attr));
-    else
-        return Entry(sT->tree.find_node_with_attribute(attr, channel->mP->channel_blackboard.get_node(sG->get_key(attr))));
+    return channel->mP->channel_blackboard.get(key).get(attr);
 }
 
 // --- Memory region tracking
@@ -1315,7 +1327,7 @@ Caliper::memory_region_end(Channel* channel, const void* ptr)
 // --- Generic entry API
 
 void
-Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotRecord& list, Node* parent)
+Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, SnapshotBuilder& rec, Node* parent)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
@@ -1324,12 +1336,12 @@ Caliper::make_record(size_t n, const Attribute* attr, const Variant* value, Snap
 
     for (size_t i = 0; i < n; ++i)
         if (attr[i].store_as_value())
-            list.append(attr[i].id(), value[i]);
+            rec.append(Entry(attr[i], value[i]));
         else
             node = sT->tree.get_path(1, &attr[i], &value[i], node);
 
     if (node && node != parent)
-        list.append(node);
+        rec.append(Entry(node));
 }
 
 Node*
@@ -1379,18 +1391,20 @@ Caliper::exchange(const Attribute& attr, const Variant& data)
     int prop  = attr.properties();
     int scope = prop & CALI_ATTR_SCOPE_MASK;
 
-    Blackboard* bb = nullptr;
+    Blackboard* blackboard = nullptr;
 
     if (scope == CALI_ATTR_SCOPE_THREAD) {
-        bb = &sT->thread_blackboard;
+        blackboard = &sT->thread_blackboard;
     } else if (scope == CALI_ATTR_SCOPE_PROCESS) {
-        bb = &sG->process_blackboard;
+        blackboard = &sG->process_blackboard;
     }
+
+    cali_id_t key = sG->get_blackboard_key(attr);
 
     std::lock_guard<::siglock>
         g(sT->lock);
 
-    return bb->exchange(attr, data);
+    return blackboard->exchange(key, Entry(attr, data), !attr.is_hidden()).value();
 }
 
 //
@@ -1501,7 +1515,7 @@ Caliper::finalize()
             Channel* channel = chnI.get();
 
             if (channel->is_active() && channel->mP->flush_on_exit)
-                flush_and_write(channel, nullptr);
+                flush_and_write(channel, SnapshotView());
 
             delete_channel(channel);
         }

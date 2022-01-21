@@ -4,6 +4,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/Node.h"
@@ -263,7 +264,7 @@ register_adiak_import(Caliper* c, Channel* channel)
        c->create_attribute("adiak.subcategory", CALI_TYPE_STRING, CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
     channel->events().pre_flush_evt.connect(
-        [categories](Caliper*, Channel* channel, const SnapshotRecord*){
+        [categories](Caliper*, Channel* channel, SnapshotView){
             nameval_usr_args_t args { channel, 0 };
 
             for (int category : categories)

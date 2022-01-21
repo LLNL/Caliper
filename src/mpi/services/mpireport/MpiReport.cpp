@@ -36,7 +36,7 @@ class MpiReport
     QuerySpec   m_local_spec;
     std::string m_filename;
 
-    void write_output_cb(Caliper* c, Channel* channel, const SnapshotRecord* flush_info) {
+    void write_output_cb(Caliper* c, Channel* channel, SnapshotView flush_info) {
         // check if we can use MPI
 
         int initialized = 0;
@@ -66,7 +66,7 @@ class MpiReport
             stream.set_stream(OutputStream::StdOut);
 
             if (!m_filename.empty())
-                stream.set_filename(m_filename.c_str(), *c, flush_info->to_entrylist());
+                stream.set_filename(m_filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
         }
 
         collective_flush(stream, *c, *channel, flush_info, m_local_spec, m_cross_spec, comm);
@@ -104,7 +104,7 @@ public:
             new MpiReport(cross_parser.spec(), local_parser.spec(), config.get("filename").to_string());
 
         chn->events().write_output_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+            [instance](Caliper* c, Channel* chn, SnapshotView info){
                 instance->write_output_cb(c, chn, info);
             });
         chn->events().finish_evt.connect(
@@ -115,7 +115,7 @@ public:
         if (config.get("write_on_finalize").to_bool() == true)
             mpiwrap_get_events(chn).mpi_finalize_evt.connect(
                 [](Caliper* c, Channel* chn){
-                    c->flush_and_write(chn, nullptr);
+                    c->flush_and_write(chn, SnapshotView());
                 });
 
         Log(1).stream() << chn->name() << ": Registered mpireport service" << std::endl;

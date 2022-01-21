@@ -61,37 +61,6 @@ TEST(C_Snapshot_Test, UnpackEmpty) {
     EXPECT_EQ(t1.entries.size(), 0);
 }
 
-TEST(C_Snapshot_Test, UnpackImmediates) {
-    cali_id_t attr_in[] = { 7, CALI_INV_ID, 42, 1337 };
-    Variant   data_in[] = { Variant(CALI_TYPE_TYPE), Variant(), Variant(1.23), Variant(true) };
-
-    CompressedSnapshotRecord rec;
-
-    EXPECT_EQ(rec.append(4, attr_in, data_in), 0);
-
-    ASSERT_EQ(rec.num_nodes(), 0);
-    ASSERT_EQ(rec.num_immediates(), 4);
-
-    UnpackSnapshotTestData t1;
-    size_t bytes_read = 0;
-
-    cali_unpack_snapshot(rec.data(), &bytes_read, ::test_entry_proc_op, &t1);
-
-    EXPECT_EQ(t1.visit_count, 3);
-    EXPECT_EQ(t1.entries.size(), 3);
-
-    for (int i : { 0, 2, 3 } ) {
-        auto it = std::find_if(t1.entries.begin(), t1.entries.end(),
-                               [i,attr_in,data_in](const entry_data_t& e) {
-                                   return (attr_in[i] == e.attr_id && data_in[i] == e.val);
-                               });
-
-        EXPECT_NE(it, t1.entries.end()) << " immediate entry ("
-                                        << attr_in[i] << "," << data_in[i]
-                                        << ") not found!" << std::endl;
-    }
-}
-
 TEST(C_Snapshot_Test, Unpack) {
     // Mixed node/immediate record unpack test. Modifies a Caliper instance.
 
@@ -113,8 +82,7 @@ TEST(C_Snapshot_Test, Unpack) {
     Variant val_int_1(2020);
     Variant val_int_2(1212);
 
-    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
+    FixedSizeSnapshotRecord<20> snapshot;
 
     Attribute attr_in[] = {
         node_str_attr,
@@ -133,14 +101,13 @@ TEST(C_Snapshot_Test, Unpack) {
         node_int_2
     };
 
-    c.make_record(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot.builder());
 
-    ASSERT_EQ(snapshot.size().n_nodes, 1);
-    ASSERT_EQ(snapshot.size().n_immediate, 2);
+    ASSERT_EQ(snapshot.view().size(), 3);
 
     CompressedSnapshotRecord rec;
 
-    ASSERT_EQ(rec.append(&snapshot), 0);
+    ASSERT_EQ(rec.append(snapshot.view().size(), snapshot.view().data()), 0);
 
     {
         // do a full unpack
@@ -216,9 +183,6 @@ TEST(C_Snapshot_Test, PullSnapshot) {
 
     Variant val_int_1(2020);
     Variant val_dbl_2(0.25);
-
-    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
 
     Attribute attr_in[] = {
         node_str_attr,
@@ -348,8 +312,7 @@ TEST(C_Snapshot_Test, FindFirstInSnapshot) {
     Variant val_int_1(2020);
     Variant val_int_2(1212);
 
-    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
+    FixedSizeSnapshotRecord<20> snapshot;
 
     Attribute attr_in[] = {
         node_str_attr,
@@ -368,14 +331,13 @@ TEST(C_Snapshot_Test, FindFirstInSnapshot) {
         node_int_2
     };
 
-    c.make_record(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot.builder());
 
-    ASSERT_EQ(snapshot.size().n_nodes, 1);
-    ASSERT_EQ(snapshot.size().n_immediate, 2);
+    ASSERT_EQ(snapshot.view().size(), 3);
 
     CompressedSnapshotRecord rec;
 
-    ASSERT_EQ(rec.append(&snapshot), 0);
+    ASSERT_EQ(rec.append(snapshot.view().size(), snapshot.view().data()), 0);
 
     UnpackSnapshotTestData t1;
     size_t bytes_read = 0;
@@ -427,8 +389,7 @@ TEST(C_Snapshot_Test, FindAllInSnapshot) {
     Variant val_int_1(2020);
     Variant val_int_2(1212);
 
-    SnapshotRecord::FixedSnapshotRecord<20> snapshot_data;
-    SnapshotRecord snapshot(snapshot_data);
+    FixedSizeSnapshotRecord<20> snapshot;
 
     Attribute attr_in[] = {
         node_str_attr,
@@ -447,14 +408,14 @@ TEST(C_Snapshot_Test, FindAllInSnapshot) {
         node_int_2
     };
 
-    c.make_record(6, attr_in, data_in, snapshot);
+    c.make_record(6, attr_in, data_in, snapshot.builder());
+    auto snapshot_view = snapshot.view();
 
-    ASSERT_EQ(snapshot.size().n_nodes, 1);
-    ASSERT_EQ(snapshot.size().n_immediate, 2);
+    ASSERT_EQ(snapshot_view.size(), 3);
 
     CompressedSnapshotRecord rec;
 
-    ASSERT_EQ(rec.append(&snapshot), 0);
+    ASSERT_EQ(rec.append(snapshot_view.size(), snapshot_view.data()), 0);
 
     {
         UnpackSnapshotTestData t1;

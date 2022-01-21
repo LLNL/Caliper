@@ -58,17 +58,12 @@ class LoopMonitor
     }
 
     void snapshot(Caliper* c, Channel* channel) {
-        cali_id_t attr[2] = {
-            num_iterations_attr.id(), start_iteration_attr.id()
+        Entry data[] = {
+            { num_iterations_attr,  Variant(num_iterations)  },
+            { start_iteration_attr, Variant(start_iteration) }
         };
-        Variant   data[2] = {
-             Variant(num_iterations), Variant(start_iteration)
-        };
-
         size_t n = start_iteration >= 0 ? 2 : 1;
-
-        SnapshotRecord trigger_info(n, attr, data);
-        c->push_snapshot(channel, &trigger_info);
+        c->push_snapshot(channel, SnapshotView(n, data));
 
         start_iteration = -1;
         num_iterations  =  0;

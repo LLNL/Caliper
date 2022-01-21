@@ -105,7 +105,7 @@ public:
 
         assert(m_color_attr != Attribute::invalid);
 
-        c->make_tree_entry(m_color_attr, v_color, c->node(attr.node()->id()));
+        c->make_tree_entry(m_color_attr, v_color, attr.node());
     }
 
     void on_begin(Caliper*, Channel*, const Attribute &attr, const Variant& value) {

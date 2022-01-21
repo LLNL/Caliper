@@ -42,13 +42,13 @@ public:
     // --- I/O API
     //
 
-    const Node* merge_node    (cali_id_t       node_id,
+    Node*       merge_node    (cali_id_t       node_id,
                                cali_id_t       attr_id,
                                cali_id_t       prnt_id,
                                const Variant&  v_data,
                                IdMap&          idmap);
 
-    const Node* merge_node    (cali_id_t       node_id,
+    Node*       merge_node    (cali_id_t       node_id,
                                cali_id_t       attr_id,
                                cali_id_t       prnt_id,
                                const std::string& data,

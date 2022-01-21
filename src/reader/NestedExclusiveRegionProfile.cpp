@@ -60,7 +60,7 @@ struct NestedExclusiveRegionProfile::NestedExclusiveRegionProfileImpl
         cali_id_t r_a_id = region_attr.id();
         
         for (const Entry& e : rec) {
-            if (!e.node())
+            if (!e.is_reference())
                 continue;
             
             cali_id_t n_a_id = e.attribute();

@@ -33,7 +33,7 @@ class Report {
     // --- callback functions
     //
 
-    void write_output(Caliper* c, Channel* channel, const SnapshotRecord* flush_info) {
+    void write_output(Caliper* c, Channel* channel, SnapshotView flush_info) {
         ConfigSet   config(channel->config().init("report", s_configdata));
         CalQLParser parser(config.get("config").to_string().c_str());
 
@@ -56,7 +56,7 @@ class Report {
         std::string filename = config.get("filename").to_string();
 
         if (!filename.empty())
-            stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+            stream.set_filename(filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
 
         CaliperMetadataDB db;
         QueryProcessor queryP(spec, stream);
@@ -82,7 +82,7 @@ public:
         Report* instance = new Report;
 
         channel->events().write_output_evt.connect(
-            [instance](Caliper* c, Channel* channel, const SnapshotRecord* info){
+            [instance](Caliper* c, Channel* channel, SnapshotView info){
                 instance->write_output(c, channel, info);
             });
         channel->events().finish_evt.connect(

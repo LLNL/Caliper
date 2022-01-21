@@ -6,136 +6,124 @@
 
 #pragma once
 
-#include "common/Attribute.h"
 #include "common/Entry.h"
 
 #include <algorithm>
-#include <map>
-#include <vector>
 
 namespace cali
 {
 
 class CaliperMetadataAccessInterface;
 
-// Snapshots are fixed-size, stack-allocated objects that can be used in 
-// a signal handler  
+/// \brief Non-owning read-only view for snapshot record
+class SnapshotView 
+{
+    const Entry* m_data;
+    size_t m_len;
 
-/// \brief Snapshot record representation.
-
-class SnapshotRecord 
-{    
 public:
 
-    struct Data {
-        const cali::Node* const* node_entries;
-        const cali_id_t*     immediate_attr;
-        const cali::Variant* immediate_data;
-    };
+    SnapshotView()
+        : m_data { nullptr }, m_len { 0 }
+    { }
+    SnapshotView(size_t len, const Entry* data)
+        : m_data { data }, m_len { len }
+    { }
 
-    struct Sizes {
-        std::size_t n_nodes;
-        std::size_t n_immediate;
-    };
+    using iterator = Entry*;
+    using const_iterator = const Entry*;
 
-    template<std::size_t N>
-    struct FixedSnapshotRecord {
-        cali::Node*   node_array[N];
-        cali_id_t     attr_array[N];
-        cali::Variant data_array[N];
+    const_iterator begin() const { return m_data;       }
+    const_iterator end()   const { return m_data+m_len; }
 
-        FixedSnapshotRecord() {
-            std::fill_n(node_array, N, nullptr);
-            std::fill_n(attr_array, N, CALI_INV_ID);
-            std::fill_n(data_array, N, cali::Variant());            
+    size_t size()  const { return m_len;      }
+    const Entry* data() const { return m_data;     }
+    bool   empty() const { return m_len == 0; }
+
+    Entry get(const Attribute& attr) const {
+        for (const Entry& e : *this) {
+            Entry ret = e.get(attr);
+            if (!ret.empty())
+                return ret;
         }
-    };
-
-    SnapshotRecord()
-        : m_node_array { 0 },
-          m_attr_array { 0 },
-          m_data_array { 0 },
-          m_sizes    { 0, 0 },
-          m_capacity { 0, 0 }
-        { }
-    
-    template<std::size_t N>
-    SnapshotRecord(FixedSnapshotRecord<N>& list)
-        : m_node_array { list.node_array },
-          m_attr_array { list.attr_array },
-          m_data_array { list.data_array },
-          m_sizes    { 0, 0 },
-          m_capacity { N, N }
-        { }
-
-    SnapshotRecord(size_t n_nodes, cali::Node **nodes, size_t n, cali_id_t* attr, Variant* data)
-        : m_node_array { nodes },
-          m_attr_array { attr },
-          m_data_array { data },
-          m_sizes    { n_nodes, n },
-          m_capacity { n_nodes, n }
-        { } 
-
-    SnapshotRecord(size_t n, cali_id_t* attr, Variant* data)
-        : m_node_array { 0 },
-          m_attr_array { attr },
-          m_data_array { data },
-          m_sizes    { 0, n },
-          m_capacity { 0, n }
-        { } 
-
-    void append(const SnapshotRecord& list);
-    void append(size_t n, const cali_id_t*, const cali::Variant*);
-    void append(size_t n, cali::Node* const*, size_t m, const cali_id_t*, const cali::Variant*);
-    
-    void append(cali::Node* node) {
-        if (m_sizes.n_nodes < m_capacity.n_nodes)
-            m_node_array[m_sizes.n_nodes++] = node;
+        
+        return Entry();
     }
-    
-    void append(cali_id_t attr, const cali::Variant& data) {
-        if (m_sizes.n_immediate < m_capacity.n_immediate) {
-            m_attr_array[m_sizes.n_immediate] = attr;
-            m_data_array[m_sizes.n_immediate] = data;
-            ++m_sizes.n_immediate;
-        }
-    }
-
-    void append(const cali::Attribute& attr, const cali::Variant& data) {
-        append(attr.id(), data);
-    }
-
-    Sizes capacity() const { 
-        return { m_capacity.n_nodes     - m_sizes.n_nodes,
-                 m_capacity.n_immediate - m_sizes.n_immediate };
-    }
-
-    Sizes size() const {
-        return m_sizes;
-    }
-    
-    Data data() const {
-        Data addr = { m_node_array, m_attr_array, m_data_array };
-        return addr;
-    }    
-
-    std::size_t num_nodes() const     { return m_sizes.n_nodes;     }
-    std::size_t num_immediate() const { return m_sizes.n_immediate; }
-    
-    Entry get(const Attribute&) const;
-
-    std::vector<Entry> 
-    to_entrylist() const;
-
-private:
-    
-    cali::Node**   m_node_array;
-    cali_id_t*     m_attr_array;
-    cali::Variant* m_data_array;
-    
-    Sizes          m_sizes;
-    Sizes          m_capacity;
-
 };
 
-}
+/// \brief Non-owning writable view for snapshot record
+class SnapshotBuilder
+{
+    Entry* m_data;
+    size_t m_capacity;
+    size_t m_len;
+    size_t m_skipped;
+
+public:
+
+    SnapshotBuilder()
+        : m_data { nullptr}, m_capacity { 0 }, m_len { 0 }, m_skipped { 0 }
+    { }
+    SnapshotBuilder(size_t capacity, Entry* data)
+        : m_data { data }, m_capacity { capacity }, m_len { 0 }, m_skipped { 0 }
+    { }
+
+    SnapshotBuilder(SnapshotBuilder&&) = default;
+    SnapshotBuilder(const SnapshotBuilder&) = delete;
+
+    SnapshotBuilder& operator = (SnapshotBuilder&&) = default;
+    SnapshotBuilder& operator = (const SnapshotBuilder&) = delete;
+
+    size_t capacity() const { return m_capacity; }
+    size_t size() const     { return m_len;      }
+    size_t skipped() const  { return m_skipped;  }
+
+    void append(const Entry& e) {
+        if (m_len < m_capacity)
+            m_data[m_len++] = e;
+        else
+            ++m_skipped;
+    }
+
+    void append(size_t n, const Entry* entries) {
+        size_t num_copied = std::min(n, m_capacity - m_len);
+        std::copy_n(entries, num_copied, m_data+m_len);
+        m_len += num_copied;
+        m_skipped += n-num_copied;
+    }
+
+    void append(const Attribute& attr, const Variant& val) {
+        append(Entry(attr, val));
+    }
+
+    void append(SnapshotView view) {
+        append(view.size(), view.data());
+    }
+
+    SnapshotView view() const {
+        return SnapshotView { m_len, m_data };
+    }
+};
+
+/// \brief A fixed-size snapshot record
+template <std::size_t N>
+class FixedSizeSnapshotRecord
+{
+    Entry m_data[N];
+    SnapshotBuilder m_builder;
+
+public:
+
+    FixedSizeSnapshotRecord()
+        : m_builder { N, m_data }
+    { }
+
+    SnapshotBuilder& builder() { return m_builder; }
+    SnapshotView view() const  { return m_builder.view(); }
+
+    void reset() {
+        m_builder = SnapshotBuilder(N, m_data);
+    }
+};
+
+} // namespace cali

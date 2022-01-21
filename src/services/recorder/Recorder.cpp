@@ -43,7 +43,7 @@ const ConfigSet::Entry configdata[] = {
     ConfigSet::Terminator
 };
 
-void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info)
+void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info)
 {
     ConfigSet cfg = chn->config().init("recorder", configdata);
 
@@ -56,7 +56,7 @@ void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info)
         filename = directory + "/" + filename;
 
     OutputStream stream;
-    stream.set_filename(filename.c_str(), *c, flush_info->to_entrylist());
+    stream.set_filename(filename.c_str(), *c, std::vector<Entry>(flush_info.begin(), flush_info.end()));
 
     CaliWriter writer(stream);
 

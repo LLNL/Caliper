@@ -4,52 +4,71 @@
 // Entry class definition
 
 #include "caliper/common/Entry.h"
+
+#include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Node.h"
 
-#include <functional>
 
 using namespace cali;
 
-int 
-Entry::count(cali_id_t attr_id) const 
+int
+Entry::count(cali_id_t attr_id) const
 {
     int res = 0;
 
-    if (m_node) {
+    if (is_immediate()) {
+        res += (m_node->id() == attr_id ? 1 : 0);
+    } else {
         for (const Node* node = m_node; node; node = node->parent())
             if (node->attribute() == attr_id)
                 ++res;
-    } else {
-        if (m_attr_id != CALI_INV_ID && m_attr_id == attr_id)
-            ++res;
     }
 
     return res;
 }
 
-Variant 
+Variant
 Entry::value(cali_id_t attr_id) const
 {
-    if (!m_node && attr_id == m_attr_id)
-	return m_value;
+    if (m_node && m_node->id() == attr_id)
+        return m_value;
 
     for (const Node* node = m_node; node; node = node->parent())
-	if (node->attribute() == attr_id)
-	    return node->data();
+        if (node->attribute() == attr_id)
+	       return node->data();
 
     return Variant();
 }
 
-bool cali::operator == (const Entry& lhs, const Entry& rhs)
+Entry
+Entry::get(const Attribute& attr) const
 {
-    if (lhs.m_node)
-        return rhs.m_node ? (lhs.m_node->id() == rhs.m_node->id()) : false;
-    else if (rhs.m_node)
-        return false;
-    else if (lhs.m_attr_id == rhs.m_attr_id)
-        return lhs.m_value == rhs.m_value;
+    if (empty())
+        return Entry();
 
-    return false;
+    cali_id_t attr_id = attr.id();
+
+    if (m_node->id() == attr_id) // covers immediate entries
+        return *this;
+    else if (m_node->attribute() != Attribute::NAME_ATTR_ID) // this is a reference entry
+        for (Node* node = m_node; node; node = node->parent())
+            if (node->attribute() == attr_id)
+                return Entry(node);
+
+    return Entry();
 }
-                  
-const Entry Entry::empty;
+
+Entry
+Entry::unpack(const CaliperMetadataAccessInterface& db, const unsigned char* buffer, size_t* inc)
+{
+    size_t p = 0;
+    Entry ret { db.node(vldec_u64(buffer, &p)) };
+
+    if (ret.m_node->attribute() == Attribute::NAME_ATTR_ID)
+        ret.m_value = Variant::unpack(buffer+p, &p);
+
+    if (inc)
+        *inc += p;
+
+    return ret;
+}

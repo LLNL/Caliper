@@ -7,6 +7,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 #include "caliper/common/RuntimeConfig.h"
@@ -410,7 +411,7 @@ public:
         IntelTopdown* instance = new IntelTopdown(level);
 
         channel->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* channel, const SnapshotRecord*){
+            [instance](Caliper* c, Channel* channel, SnapshotView){
                 if (instance->find_counter_attrs(*c))
                     instance->make_result_attrs(*c);
                 else

@@ -89,7 +89,7 @@ class EventTrigger
 
         c->make_tree_entry(exp_marker_attr,
                            Variant(CALI_TYPE_USR, evt_attr_ids, sizeof(evt_attr_ids)),
-                           c->node(attr.node()->id()));
+                           attr.node());
 
         Log(2).stream() << chn->name() << ": event: Marked attribute " << attr.name() << std::endl;
     }
@@ -147,13 +147,12 @@ class EventTrigger
             Attribute attrs[2] = { trigger_begin_attr, begin_attr };
             Variant    vals[2] = { Variant(attr.id()), value };
 
-            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
-            SnapshotRecord trigger_info(trigger_info_data);
+            FixedSizeSnapshotRecord<2> trigger_info;
 
-            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, &trigger_info);
+            c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
+            c->push_snapshot(chn, trigger_info.view());
         } else {
-            c->push_snapshot(chn, nullptr);
+            c->push_snapshot(chn, SnapshotView());
         }
     }
 
@@ -180,13 +179,12 @@ class EventTrigger
             Attribute attrs[2] = { trigger_set_attr,   set_attr };
             Variant    vals[2] = { Variant(attr.id()), value    };
 
-            SnapshotRecord::FixedSnapshotRecord<2> trigger_info_data;
-            SnapshotRecord trigger_info(trigger_info_data);
+            FixedSizeSnapshotRecord<2> trigger_info;
 
-            c->make_record(2, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, &trigger_info);
+            c->make_record(2, attrs, vals, trigger_info.builder(), &event_root_node);
+            c->push_snapshot(chn, trigger_info.view());
         } else {
-            c->push_snapshot(chn, nullptr);
+            c->push_snapshot(chn, SnapshotView());
         }
     }
 
@@ -211,17 +209,13 @@ class EventTrigger
             Attribute attrs[3] = { trigger_end_attr, end_attr, region_count_attr };
             Variant    vals[3] = { Variant(attr.id()), value, cali_make_variant_from_uint(1) };
 
-            SnapshotRecord::FixedSnapshotRecord<3> trigger_info_data;
-            SnapshotRecord trigger_info(trigger_info_data);
+            FixedSizeSnapshotRecord<3> trigger_info;
 
-            c->make_record(3, attrs, vals, trigger_info, &event_root_node);
-            c->push_snapshot(chn, &trigger_info);
+            c->make_record(3, attrs, vals, trigger_info.builder(), &event_root_node);
+            c->push_snapshot(chn, trigger_info.view());
         } else {
-            cali_id_t attr_id = region_count_attr.id();
-            Variant   v_1(cali_make_variant_from_uint(1));
-            SnapshotRecord trigger_info(1, &attr_id, &v_1);
-
-            c->push_snapshot(chn, &trigger_info);
+            Entry rcount { region_count_attr, cali_make_variant_from_uint(1) };
+            c->push_snapshot(chn, SnapshotView(1, &rcount));
         }
     }
 

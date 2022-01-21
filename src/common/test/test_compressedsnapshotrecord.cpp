@@ -60,21 +60,56 @@ TEST(CompressedSnapshotRecordTest, Append) {
 }
 
 TEST(CompressedSnapshotRecordTest, AppendEntrylist) {
-    cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
-    Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
+    // setup mock attribute keys
 
-    Node* n1 = new Node(1, 1, Variant(CALI_TYPE_STRING, "whee", 4));
-    Node* n2 = new Node(2, 2, Variant(-1.0));
-    Node* n3 = new Node(3, 2, Variant(42.0));
+    cali::Node meta_db_nodes[] = {
+        { 100, 10, Variant(CALI_ATTR_ASVALUE) },
+        {   1,  9, Variant(CALI_TYPE_INT)     },
+        {   3,  9, Variant(CALI_TYPE_STRING)  },
+        {   5,  9, Variant(CALI_TYPE_DOUBLE)  },
+        { 200,  8, Variant("int.attr")        },
+        { 201,  8, Variant("str.attr")        },
+        { 202,  8, Variant("dbl.attr")        }
+    };
 
-    n1->append(n2);
-    n1->append(n3);
+    meta_db_nodes[0].append(&meta_db_nodes[1]);
+    meta_db_nodes[0].append(&meta_db_nodes[3]);
+    meta_db_nodes[1].append(&meta_db_nodes[4]);
+    meta_db_nodes[2].append(&meta_db_nodes[5]);
+    meta_db_nodes[3].append(&meta_db_nodes[6]);
+      
+    MockupMetadataDB db;
 
-    std::vector<Entry> entrylist { Entry(n2),
-            Entry(attr_in[0], data_in[0]),
-            Entry(n3),
-            Entry(attr_in[1], data_in[1]),
-            Entry(attr_in[2], data_in[2]) };
+    for (size_t i = 0; i < 7; ++i)
+        db.add_node(&meta_db_nodes[i]);
+
+    Attribute int_attr = Attribute::make_attribute(&meta_db_nodes[4]);
+    Attribute str_attr = Attribute::make_attribute(&meta_db_nodes[5]);
+    Attribute dbl_attr = Attribute::make_attribute(&meta_db_nodes[6]);
+
+    db.add_attribute(int_attr);
+    db.add_attribute(str_attr);
+    db.add_attribute(dbl_attr);
+
+    // setup data
+
+    Attribute attr_in[3] = { int_attr, Attribute::invalid, dbl_attr };
+    Variant   data_in[3] = { Variant(42), Variant(), Variant(1.23) };
+
+    Node n1(401, str_attr.id(), Variant("whee"));
+    Node n2(402, str_attr.id(), Variant("whoa"));
+    Node n3(403, str_attr.id(), Variant("whop"));
+
+    n1.append(&n2);
+    n1.append(&n3);
+
+    std::vector<Entry> entrylist { 
+        Entry(&n2),
+        Entry(attr_in[0], data_in[0]),
+        Entry(&n3),
+        Entry(attr_in[1], data_in[1]),
+        Entry(attr_in[2], data_in[2]) 
+    };
 
     CompressedSnapshotRecord rec;
 
@@ -92,32 +127,61 @@ TEST(CompressedSnapshotRecordTest, AppendEntrylist) {
     view.unpack_nodes(2, node_out);
     view.unpack_immediate(2, attr_out, data_out);
 
-    EXPECT_EQ(node_out[0], n2->id());
-    EXPECT_EQ(node_out[1], n3->id());
+    EXPECT_EQ(node_out[0], n2.id());
+    EXPECT_EQ(node_out[1], n3.id());
 
-    EXPECT_EQ(attr_out[0], attr_in[0]);
-    EXPECT_EQ(attr_out[1], attr_in[2]); // attr_in[1] was skipped
+    EXPECT_EQ(attr_out[0], attr_in[0].id());
+    EXPECT_EQ(attr_out[1], attr_in[2].id()); // attr_in[1] was skipped
 
     EXPECT_EQ(data_out[0], data_in[0]);
     EXPECT_EQ(data_out[1], data_in[2]); // data_in[1] was skipped
-
-    delete n3;
-    delete n2;
-    delete n1;
 }
 
 TEST(CompressedSnapshotRecordTest, Decode) {
-    cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
-    Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
+    // setup mock attribute keys
 
-    Node* n1 = new Node(1, 1, Variant(CALI_TYPE_STRING, "whee", 4));
-    Node* n2 = new Node(2, 2, Variant(-1.0));
-    Node* n3 = new Node(3, 2, Variant(42.0));
+    cali::Node meta_db_nodes[] = {
+        { 100, 10, Variant(CALI_ATTR_ASVALUE) },
+        {   1,  9, Variant(CALI_TYPE_INT)     },
+        {   3,  9, Variant(CALI_TYPE_STRING)  },
+        {   5,  9, Variant(CALI_TYPE_DOUBLE)  },
+        { 200,  8, Variant("int.attr")        },
+        { 201,  8, Variant("str.attr")        },
+        { 202,  8, Variant("dbl.attr")        }
+    };
 
-    n1->append(n2);
-    n1->append(n3);
+    meta_db_nodes[0].append(&meta_db_nodes[1]);
+    meta_db_nodes[0].append(&meta_db_nodes[3]);
+    meta_db_nodes[1].append(&meta_db_nodes[4]);
+    meta_db_nodes[2].append(&meta_db_nodes[5]);
+    meta_db_nodes[3].append(&meta_db_nodes[6]);
+      
+    MockupMetadataDB db;
 
-    const Node* node_in[2] = { n2, n3 };
+    for (size_t i = 0; i < 7; ++i)
+        db.add_node(&meta_db_nodes[i]);
+
+    Attribute int_attr = Attribute::make_attribute(&meta_db_nodes[4]);
+    Attribute str_attr = Attribute::make_attribute(&meta_db_nodes[5]);
+    Attribute dbl_attr = Attribute::make_attribute(&meta_db_nodes[6]);
+
+    db.add_attribute(int_attr);
+    db.add_attribute(str_attr);
+    db.add_attribute(dbl_attr);
+
+    // setup data
+
+    cali_id_t attr_in[3] = { int_attr.id(), CALI_INV_ID, dbl_attr.id() };
+    Variant   data_in[3] = { Variant(42), Variant(), Variant(1.23) };
+
+    Node n1(401, str_attr.id(), Variant("whee"));
+    Node n2(402, str_attr.id(), Variant("whoa"));
+    Node n3(403, str_attr.id(), Variant("whop"));
+
+    n1.append(&n2);
+    n1.append(&n3);
+
+    const Node* node_in[2] = { &n2, &n3 };
 
     CompressedSnapshotRecord rec;
 
@@ -141,8 +205,8 @@ TEST(CompressedSnapshotRecordTest, Decode) {
     view.unpack_nodes(2, node_out);
     view.unpack_immediate(3, attr_out, data_out);
 
-    EXPECT_EQ(node_out[0], n2->id());
-    EXPECT_EQ(node_out[1], n3->id());
+    EXPECT_EQ(node_out[0], n2.id());
+    EXPECT_EQ(node_out[1], n3.id());
 
     EXPECT_EQ(attr_out[0], attr_in[0]);
     EXPECT_EQ(attr_out[1], attr_in[1]);
@@ -151,24 +215,53 @@ TEST(CompressedSnapshotRecordTest, Decode) {
     EXPECT_EQ(data_out[0], data_in[0]);
     EXPECT_EQ(data_out[1], data_in[1]);
     EXPECT_EQ(data_out[2], data_in[2]);
-
-    delete n3;
-    delete n2;
-    delete n1;
 }
 
 TEST(CompressedSnapshotRecordTest, MakeEntrylist) {
-    cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
-    Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
+    // setup mock attribute keys
 
-    Node* n1 = new Node(1, 1, Variant(CALI_TYPE_STRING, "whee", 4));
-    Node* n2 = new Node(2, 2, Variant(-1.0));
-    Node* n3 = new Node(3, 2, Variant(42.0));
+    cali::Node meta_db_nodes[] = {
+        { 100, 10, Variant(CALI_ATTR_ASVALUE) },
+        {   1,  9, Variant(CALI_TYPE_INT)     },
+        {   3,  9, Variant(CALI_TYPE_STRING)  },
+        {   5,  9, Variant(CALI_TYPE_DOUBLE)  },
+        { 200,  8, Variant("int.attr")        },
+        { 201,  8, Variant("str.attr")        },
+        { 202,  8, Variant("dbl.attr")        }
+    };
 
-    n1->append(n2);
-    n1->append(n3);
+    meta_db_nodes[0].append(&meta_db_nodes[1]);
+    meta_db_nodes[0].append(&meta_db_nodes[3]);
+    meta_db_nodes[1].append(&meta_db_nodes[4]);
+    meta_db_nodes[2].append(&meta_db_nodes[5]);
+    meta_db_nodes[3].append(&meta_db_nodes[6]);
+      
+    MockupMetadataDB db;
 
-    Node* node_in[2] = { n2, n3 };
+    for (size_t i = 0; i < 7; ++i)
+        db.add_node(&meta_db_nodes[i]);
+
+    Attribute int_attr = Attribute::make_attribute(&meta_db_nodes[4]);
+    Attribute str_attr = Attribute::make_attribute(&meta_db_nodes[5]);
+    Attribute dbl_attr = Attribute::make_attribute(&meta_db_nodes[6]);
+
+    db.add_attribute(int_attr);
+    db.add_attribute(str_attr);
+    db.add_attribute(dbl_attr);
+
+    // setup data
+
+    cali_id_t attr_in[3] = { int_attr.id(), CALI_INV_ID, dbl_attr.id() };
+    Variant   data_in[3] = { Variant(42), Variant(), Variant(1.23) };
+
+    Node n1(401, str_attr.id(), Variant("whee"));
+    Node n2(402, str_attr.id(), Variant("whoa"));
+    Node n3(403, str_attr.id(), Variant("whop"));
+
+    n1.append(&n2);
+    n1.append(&n3);
+
+    Node* node_in[2] = { &n2, &n3 };
 
     CompressedSnapshotRecord rec;
 
@@ -179,7 +272,6 @@ TEST(CompressedSnapshotRecordTest, MakeEntrylist) {
     ASSERT_EQ(rec.num_nodes(), static_cast<size_t>(2));
     ASSERT_EQ(rec.num_immediates(), static_cast<size_t>(3));
 
-    MockupMetadataDB db;
     db.add_nodes(2, node_in);
 
     std::vector<Entry> list_out = rec.view().to_entrylist(&db);
@@ -190,11 +282,11 @@ TEST(CompressedSnapshotRecordTest, MakeEntrylist) {
     // implementation detail that's not guaranteed by the interface
 
     Entry list_in[] = {
-        Entry(n2),
-        Entry(n3),
-        Entry(attr_in[0], data_in[0]),
-        Entry(attr_in[1], data_in[1]),
-        Entry(attr_in[2], data_in[2])
+        Entry(&n2),
+        Entry(&n3),
+        Entry(int_attr, data_in[0]),
+        Entry(Attribute::invalid, data_in[1]),
+        Entry(dbl_attr, data_in[2])
     };
 
     for (size_t i = 0; i < 5; ++i) {
@@ -250,17 +342,50 @@ namespace
 }
 
 TEST(CompressedSnapshotRecordTest, Unpack) {
-    cali_id_t attr_in[3] = { 7, CALI_INV_ID, 42 };
-    Variant   data_in[3] = { Variant(CALI_TYPE_INT), Variant(), Variant(1.23) };
+    // setup mock attribute keys
 
-    Node* n1 = new Node(1, 1, Variant(CALI_TYPE_STRING, "whee", 4));
-    Node* n2 = new Node(2, 2, Variant(-1.0));
-    Node* n3 = new Node(3, 2, Variant(42.0));
+    cali::Node meta_db_nodes[] = {
+        { 100, 10, Variant(CALI_ATTR_ASVALUE) },
+        {   1,  9, Variant(CALI_TYPE_INT)     },
+        {   3,  9, Variant(CALI_TYPE_STRING)  },
+        {   5,  9, Variant(CALI_TYPE_DOUBLE)  },
+        { 200,  8, Variant("int.attr")        },
+        { 201,  8, Variant("str.attr")        },
+        { 202,  8, Variant("dbl.attr")        }
+    };
 
-    n1->append(n2);
-    n1->append(n3);
+    meta_db_nodes[0].append(&meta_db_nodes[1]);
+    meta_db_nodes[0].append(&meta_db_nodes[3]);
+    meta_db_nodes[1].append(&meta_db_nodes[4]);
+    meta_db_nodes[2].append(&meta_db_nodes[5]);
+    meta_db_nodes[3].append(&meta_db_nodes[6]);
+      
+    MockupMetadataDB db;
 
-    Node* node_in[2] = { n2, n3 };
+    for (size_t i = 0; i < 7; ++i)
+        db.add_node(&meta_db_nodes[i]);
+
+    Attribute int_attr = Attribute::make_attribute(&meta_db_nodes[4]);
+    Attribute str_attr = Attribute::make_attribute(&meta_db_nodes[5]);
+    Attribute dbl_attr = Attribute::make_attribute(&meta_db_nodes[6]);
+
+    db.add_attribute(int_attr);
+    db.add_attribute(str_attr);
+    db.add_attribute(dbl_attr);
+
+    // setup data
+
+    cali_id_t attr_in[3] = { int_attr.id(), CALI_INV_ID, dbl_attr.id() };
+    Variant   data_in[3] = { Variant(42), Variant(), Variant(1.23) };
+
+    Node n1(401, str_attr.id(), Variant("whee"));
+    Node n2(402, str_attr.id(), Variant("whoa"));
+    Node n3(403, str_attr.id(), Variant("whop"));
+
+    n1.append(&n2);
+    n1.append(&n3);
+
+    Node* node_in[2] = { &n2, &n3 };
 
     CompressedSnapshotRecord rec;
 
@@ -271,15 +396,14 @@ TEST(CompressedSnapshotRecordTest, Unpack) {
     ASSERT_EQ(rec.num_nodes(), static_cast<size_t>(2));
     ASSERT_EQ(rec.num_immediates(), static_cast<size_t>(3));
 
-    MockupMetadataDB db;
     db.add_nodes(2, node_in);
 
     Entry list_in[5] = {
-        Entry(n2),
-        Entry(n3),
-        Entry(attr_in[0], data_in[0]),
-        Entry(attr_in[1], data_in[1]),
-        Entry(attr_in[2], data_in[2])
+        Entry(&n2),
+        Entry(&n3),
+        Entry(int_attr, data_in[0]),
+        Entry(Attribute::invalid, data_in[1]),
+        Entry(dbl_attr, data_in[2])
     };
 
     CompressedSnapshotRecordView view(rec.view());

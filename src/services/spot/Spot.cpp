@@ -93,7 +93,7 @@ namespace
         std::string recorded_time;
         std::vector<std::string> title;
 
-        void write_output_cb(Caliper* c, Channel* chn, const SnapshotRecord* flush_info) {
+        void write_output_cb(Caliper* c, Channel* chn, SnapshotView flush_info) {
             int num_queries = m_queries.size();
             for (int i = 0; i < num_queries; ++i) {
                 Log(2).stream() << "spot: Flushing query " << i << std::endl;
@@ -283,7 +283,7 @@ namespace
             Spot* instance = new Spot(c, chn);
 
             chn->events().write_output_evt.connect(
-                [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+                [instance](Caliper* c, Channel* chn, SnapshotView info){
                     instance->write_output_cb(c, chn, info);
                 });
             chn->events().finish_evt.connect(

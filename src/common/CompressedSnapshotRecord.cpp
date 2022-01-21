@@ -6,8 +6,6 @@
 
 #include "caliper/common/CompressedSnapshotRecord.h"
 
-#include "caliper/SnapshotRecord.h"
-
 #include "caliper/common/CaliperMetadataAccessInterface.h"
 #include "caliper/common/Entry.h"
 #include "caliper/common/Node.h"
@@ -86,13 +84,13 @@ CompressedSnapshotRecordView::unpack_next_entry(const CaliperMetadataAccessInter
     if (n < m_num_nodes + m_num_imm) {
         ++n;
 
-        cali_id_t attr = vldec_u64(m_buffer+pos, &pos);
+        cali_id_t id   = vldec_u64(m_buffer+pos, &pos);
         Variant   data = Variant::unpack(m_buffer+pos, &pos, nullptr);
 
-        return Entry(attr, data);
+        return Entry(c->get_attribute(id), data);
     }
 
-    return Entry::empty;
+    return Entry();
 }
 
 /// \brief Unpack node entries
@@ -137,10 +135,10 @@ CompressedSnapshotRecordView::to_entrylist(const CaliperMetadataAccessInterface*
         size_t pos = m_imm_pos + 1;
 
         for (size_t i = 0; i < m_num_imm; ++i) {
-            cali_id_t attr = vldec_u64(m_buffer+pos, &pos);
+            cali_id_t id   = vldec_u64(m_buffer+pos, &pos);
             Variant   data = Variant::unpack(m_buffer+pos, &pos, nullptr);
 
-            list.push_back(Entry(attr, data));
+            list.push_back(Entry(c->get_attribute(id), data));
         }
     }
 
@@ -276,7 +274,7 @@ CompressedSnapshotRecord::append(size_t n, const Entry entrylist[])
     for (size_t p = 0; p < n; ++p) {
         const Entry& e(entrylist[p]);
 
-        if (e.node()) {
+        if (e.is_reference()) {
             nodes[nn] = e.node();
 
             if (++nn == m_blocksize) {
@@ -296,21 +294,6 @@ CompressedSnapshotRecord::append(size_t n, const Entry entrylist[])
 
     skipped += append(nn, nodes);
     skipped += append(ni, attr, data);
-
-    return skipped;
-}
-
-/// \brief Append snapshot record
-size_t
-CompressedSnapshotRecord::append(const SnapshotRecord* rec)
-{
-    size_t skipped = 0;
-
-    SnapshotRecord::Sizes size = rec->size();
-    SnapshotRecord::Data  data = rec->data();
-
-    skipped += append(size.n_nodes, data.node_entries);
-    skipped += append(size.n_immediate, data.immediate_attr, data.immediate_data);
 
     return skipped;
 }

@@ -9,7 +9,6 @@ set(CALIPER_RUNTIME_SOURCES
   MemoryPool.cpp
   MetadataTree.cpp
   RegionProfile.cpp
-  SnapshotRecord.cpp
   api.cpp
   builtin_configmanager.cpp
   cali.cpp

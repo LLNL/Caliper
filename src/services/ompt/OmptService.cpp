@@ -106,9 +106,9 @@ void cb_thread_end(ompt_data_t*)
         return;
     }
 
-    if (!c.get(thread_type_attr).is_empty())
+    if (!c.get(thread_type_attr).empty())
         c.end(thread_type_attr);
-    if (!c.get(proc_id_attr).is_empty())
+    if (!c.get(proc_id_attr).empty())
         c.end(proc_id_attr);
 }
 

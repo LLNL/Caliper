@@ -80,7 +80,7 @@ struct Expand::ExpandImpl
         std::ostringstream os;
         
         for (const Entry& e : list) {
-            if (e.node()) {
+            if (e.is_reference()) {
                 vector<const Node*> nodes;
 
                 for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
@@ -116,7 +116,7 @@ struct Expand::ExpandImpl
                     }
                     os << (*it)->data().to_string();
                 }
-            } else if (e.attribute() != CALI_INV_ID) {
+            } else if (e.is_immediate()) {
                 string name = db.get_attribute(e.attribute()).name();
 
                 if ((!m_selected.empty() && m_selected.count(name) == 0) || m_deselected.count(name))

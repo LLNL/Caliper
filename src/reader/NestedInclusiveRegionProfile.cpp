@@ -67,6 +67,9 @@ struct NestedInclusiveRegionProfile::NestedInclusiveRegionProfileImpl
         std::string pathstr;
         
         for (const Entry& e : rec) {
+            if (!e.is_reference())
+                continue;
+
             pathstr = ::recursive_update(db, reg_profile, e.node(), val, r_a_id);
 
             if (!pathstr.empty())

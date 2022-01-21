@@ -4,6 +4,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 
 #include "caliper/common/Log.h"
 
@@ -94,7 +95,7 @@ void
 register_adiak_export(Caliper* c, Channel* chn)
 {
     chn->events().pre_flush_evt.connect(
-        [](Caliper* c, Channel* chn, const SnapshotRecord*){
+        [](Caliper* c, Channel* chn, SnapshotView){
             export_globals_to_adiak(c, chn);
         });
     

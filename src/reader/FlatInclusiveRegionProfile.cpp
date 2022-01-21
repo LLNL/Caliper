@@ -36,7 +36,10 @@ struct FlatInclusiveRegionProfile::FlatInclusiveRegionProfileImpl
         cali_id_t r_a_id = region_attr.id();
         bool have_reg_entry = false;
         
-        for (const Entry& e : rec)
+        for (const Entry& e : rec) {
+            if (!e.is_reference())
+                continue;
+
             for (const Node* node = e.node(); node && node->attribute() != CALI_INV_ID; node = node->parent()) {
                 cali_id_t n_a_id = node->attribute();
                 bool is_target_reg =
@@ -47,6 +50,7 @@ struct FlatInclusiveRegionProfile::FlatInclusiveRegionProfileImpl
                     reg_profile[node->data().to_string()] += val;
                 }
             }
+        }
 
         if (have_reg_entry)
             total_reg += val;

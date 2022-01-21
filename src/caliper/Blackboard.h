@@ -7,6 +7,7 @@
 #define CALI_BLACKBOARD_H
 
 #include "caliper/common/Attribute.h"
+#include "caliper/common/Entry.h"
 #include "caliper/common/Node.h"
 #include "caliper/common/Variant.h"
 
@@ -21,35 +22,26 @@
 namespace cali
 {
 
-class CompressedSnapshotRecord;
-class SnapshotRecord;
+class SnapshotBuilder;
 
 class Blackboard {
     constexpr static size_t Nmax = 1021;
-    constexpr static size_t jump = 7;
-    
+
     struct blackboard_entry_t {
-        cali_id_t id    { CALI_INV_ID };
-        
-        enum {
-            Empty = 0, ReferenceEntry, ImmediateEntry
-        }         state { Empty };
-        
-        union blackboard_entry_data_t {
-            CONSTEXPR_UNLESS_PGI blackboard_entry_data_t() : immediate() {};
-            CONSTEXPR_UNLESS_PGI blackboard_entry_data_t(const cali::Variant& iref) : immediate(iref) {};
-            cali::Variant immediate;
-            cali::Node*   reference { nullptr };
-        }         data;
+        cali_id_t key   { CALI_INV_ID };
+        bool      is_occupied { false };
+        Entry     value { };
     };
 
     blackboard_entry_t hashtable[Nmax];
-    
-    int      ref_toc[(Nmax+31)/32];
-    int      ref_toctoc;
 
-    int      imm_toc[(Nmax+31)/32];
-    int      imm_toctoc;
+    //   The toc ("table of contents") array is a bitfield that
+    // indicates which elements in the hashtable are occupied. We use
+    // it to speed up iterating over all entries in snapshot().
+    //   Similarly, toctoc indicates which elements in toc are
+    // occupied.
+    int      toc[(Nmax+31)/32];
+    int      toctoc;
 
     size_t   num_entries;
     size_t   max_num_entries;
@@ -59,87 +51,58 @@ class Blackboard {
     std::atomic<int>   ucount; // update count
 
     mutable util::spinlock lock;
-    
-    inline size_t find_existing_entry(cali_id_t id) const {
-        size_t I = id % Nmax;
 
-        while (hashtable[I].state != blackboard_entry_t::Empty && hashtable[I].id != id)
-            I = (I + jump) % Nmax;            
+    inline size_t find_existing_entry(cali_id_t key) const {
+        size_t I = key % Nmax;
 
-        return I;
-    }
-
-    inline size_t find_free_slot(cali_id_t id) const {
-        size_t I = id % Nmax;
-
-        while (hashtable[I].state != blackboard_entry_t::Empty)
-            I = (I + jump) % Nmax;            
+        while (hashtable[I].is_occupied && hashtable[I].key != key)
+            I = (I+1) % Nmax;
 
         return I;
     }
 
-    void add_entry(const cali::Attribute& attr, const cali::Variant& val);
-    void add_entry(const cali::Attribute& attr, cali::Node* node);
-    
+    inline size_t find_free_slot(cali_id_t key) const {
+        size_t I = key % Nmax;
+
+        while (hashtable[I].is_occupied)
+            I = (I+1) % Nmax;
+
+        return I;
+    }
+
+    void add(cali_id_t key, const Entry& value, bool include_in_snapshot);
+
 public:
 
     Blackboard()
         : hashtable       {   },
-          ref_toc         { 0 },
-          ref_toctoc      { 0 },
-          imm_toc         { 0 },
-          imm_toctoc      { 0 },
+          toc             { 0 },
+          toctoc          { 0 },
           num_entries     { 0 },
           max_num_entries { 0 },
           num_skipped     { 0 },
-          ucount          { 0 } 
+          ucount          { 0 }
         { }
 
-    inline cali::Variant
-    get(const cali::Attribute& attr) const {
-        std::lock_guard<util::spinlock>
-            g(lock);
-        
-        size_t I = find_existing_entry(attr.id());
-
-        if (hashtable[I].id != attr.id())
-            return Variant();
-
-        if (attr.store_as_value())
-            return hashtable[I].data.immediate;
-        else
-            return hashtable[I].data.reference->data();
-    }
-
-    inline cali::Node*
-    get_node(const cali::Attribute& attr) const {
+    inline Entry
+    get(cali_id_t key) const {
         std::lock_guard<util::spinlock>
             g(lock);
 
-        size_t I = find_existing_entry(attr.id());
-        
-        return hashtable[I].id == attr.id() ? hashtable[I].data.reference : nullptr;
+        size_t I = find_existing_entry(key);
+
+        if (!hashtable[I].is_occupied || hashtable[I].key != key)
+            return Entry();
+
+        return hashtable[I].value;
     }
 
-    inline Variant
-    get_immediate(const cali::Attribute& attr) const {
-        std::lock_guard<util::spinlock>
-            g(lock);
+    void    set(cali_id_t key, const Entry& value, bool include_in_snapshots);
+    void    del(cali_id_t key);
 
-        size_t I = find_existing_entry(attr.id());
-        
-        return hashtable[I].id == attr.id() ? hashtable[I].data.immediate : Variant();
-    }
+    Entry   exchange(cali_id_t key, const Entry& value, bool include_in_snapshots);
 
-    void    set(const cali::Attribute& attr, const cali::Variant& val);
-    void    set(const cali::Attribute& attr, cali::Node* node);
-
-    void    unset(const Attribute& attr);
-
-    Variant exchange(const Attribute& attr, const cali::Variant& value);
-
-    void    snapshot(CompressedSnapshotRecord* rec) const;
-    void    snapshot(SnapshotRecord* rec) const;
+    void    snapshot(SnapshotBuilder& rec) const;
 
     size_t  num_skipped_entries() const { return num_skipped; }
 

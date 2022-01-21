@@ -130,7 +130,7 @@ class Trace
         {
             Log(1).stream() << chn->name() << ": Trace buffer full: flushing." << std::endl;
 
-            c->flush_and_write(chn, nullptr);
+            c->flush_and_write(chn, SnapshotView());
 
             return tbuf;
         }
@@ -140,7 +140,7 @@ class Trace
         return 0;
     }
 
-    void process_snapshot_cb(Caliper* c, Channel* chn, const SnapshotRecord*, const SnapshotRecord* sbuf) {
+    void process_snapshot_cb(Caliper* c, Channel* chn, SnapshotView rec) {
         TraceBuffer* tbuf = acquire_tbuf(c, chn, !c->is_signal());
 
         if (!tbuf || tbuf->stopped.load()) {
@@ -148,15 +148,15 @@ class Trace
             return;
         }
 
-        if (!tbuf->chunks->fits(sbuf))
+        if (!tbuf->chunks->fits(rec))
             tbuf = handle_overflow(c, chn, tbuf);
         if (!tbuf)
             return;
 
-        tbuf->chunks->save_snapshot(sbuf);
+        tbuf->chunks->save_snapshot(rec);
     }
 
-    void flush_cb(Caliper* c, Channel* chn, const SnapshotRecord*, SnapshotFlushFn proc_fn) {
+    void flush_cb(Caliper* c, Channel* chn, SnapshotFlushFn proc_fn) {
         std::lock_guard<std::mutex>
             g(flush_lock);
 
@@ -339,12 +339,12 @@ public:
                 instance->release_thread_cb(c, chn);
             });
         chn->events().process_snapshot.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* trigger, const SnapshotRecord* snapshot){
-                instance->process_snapshot_cb(c, chn, trigger, snapshot);
+            [instance](Caliper* c, Channel* chn, SnapshotView, SnapshotView rec){
+                instance->process_snapshot_cb(c, chn, rec);
             });
         chn->events().flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* trigger, SnapshotFlushFn fn){
-                instance->flush_cb(c, chn, trigger, fn);
+            [instance](Caliper* c, Channel* chn, SnapshotView, SnapshotFlushFn fn){
+                instance->flush_cb(c, chn, fn);
             });
         chn->events().clear_evt.connect(
             [instance](Caliper* c, Channel* chn){

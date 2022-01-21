@@ -116,7 +116,7 @@ ChannelController::flush()
     Channel* chn = channel();
 
     if (chn)
-        Caliper().flush_and_write(chn, nullptr);
+        Caliper().flush_and_write(chn, SnapshotView());
 }
 
 std::string

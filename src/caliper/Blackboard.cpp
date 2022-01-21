@@ -5,8 +5,6 @@
 
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
-
 #include <iostream>
 
 #ifdef _WIN32
@@ -37,23 +35,22 @@ int first_high_bit(int x)
 using namespace cali;
 
 void
-Blackboard::add_entry(const Attribute& attr, const Variant& val)
+Blackboard::add(cali_id_t key, const Entry& value, bool include_in_snapshots)
 {
-    cali_id_t attr_id = attr.id();
-    size_t I = find_free_slot(attr_id);
+    size_t I = find_free_slot(key);
 
     if (num_entries + (Nmax/10+10) > Nmax) {
         ++num_skipped; // Uh oh, we're full
         return;
     }
 
-    hashtable[I].id    = attr_id;
-    hashtable[I].state = blackboard_entry_t::ImmediateEntry;
-    hashtable[I].data.immediate = val;
+    hashtable[I].key   = key;
+    hashtable[I].is_occupied = true;
+    hashtable[I].value = value;
 
-    if (!attr.is_hidden()) {
-        imm_toc[I/32] |= (1 << (I%32));
-        imm_toctoc    |= (1 << (I/32));
+    if (include_in_snapshots) {
+        toc[I/32] |= (1 << (I%32));
+        toctoc    |= (1 << (I/32));
     }
 
     ++num_entries;
@@ -61,110 +58,72 @@ Blackboard::add_entry(const Attribute& attr, const Variant& val)
 }
 
 void
-Blackboard::add_entry(const Attribute& attr, cali::Node* node)
-{
-    cali_id_t attr_id = attr.id();
-    size_t I = find_free_slot(attr_id);
-
-    if (num_entries + (Nmax/10+10) > Nmax) {
-        ++num_skipped; // Uh oh, we're full
-        return;
-    }
-
-    hashtable[I].id    = attr_id;
-    hashtable[I].state = blackboard_entry_t::ReferenceEntry;
-    hashtable[I].data.reference = node;
-
-    if (!attr.is_hidden()) {
-        ref_toc[I/32] |= (1 << (I%32));
-        ref_toctoc    |= (1 << (I/32));
-    }
-
-    ++num_entries;
-    max_num_entries = std::max(num_entries, max_num_entries);
-}
-
-void
-Blackboard::set(const Attribute& attr, const Variant& val)
+Blackboard::set(cali_id_t key, const Entry& value, bool include_in_snapshots)
 {
     std::lock_guard<util::spinlock>
         g(lock);
 
-    cali_id_t attr_id = attr.id();
-    size_t I = find_existing_entry(attr_id);
+    size_t I = find_existing_entry(key);
 
-    if (hashtable[I].id == attr_id)
-        hashtable[I].data.immediate = val;
+    if (hashtable[I].key == key)
+        hashtable[I].value = value;
     else
-        add_entry(attr, val);
+        add(key, value, include_in_snapshots);
 
     ++ucount;
 }
 
 void
-Blackboard::set(const Attribute& attr, Node* node)
+Blackboard::del(cali_id_t key)
 {
     std::lock_guard<util::spinlock>
         g(lock);
 
-    size_t I = find_existing_entry(attr.id());
+    size_t I = find_existing_entry(key);
 
-    if (hashtable[I].id == attr.id())
-        hashtable[I].data.reference = node;
-    else
-        add_entry(attr, node);
-
-    ++ucount;
-}
-
-void
-Blackboard::unset(const Attribute& attr)
-{
-    std::lock_guard<util::spinlock>
-        g(lock);
-
-    size_t I = find_existing_entry(attr.id());
-
-    if (hashtable[I].id != attr.id())
+    if (!hashtable[I].is_occupied || hashtable[I].key != key)
         return;
 
-    hashtable[I].id    = CALI_INV_ID;
-    hashtable[I].state = blackboard_entry_t::Empty;
-    hashtable[I].data.immediate = Variant();
+    {
+        size_t j = I;
+        while (true) {
+            j = (j+1) % Nmax;
+            if (!hashtable[j].is_occupied)
+                break;
+            size_t k = hashtable[j].key % Nmax;
+            if ((j > I && (k <= I || k > j)) || (j < I && (k <= I && k > j))) {
+                hashtable[I] = hashtable[j];
+                I = j;
+            }
+        }
+    }
+
+    hashtable[I].key   = CALI_INV_ID;
+    hashtable[I].is_occupied = false;
+    hashtable[I].value = Entry();
 
     --num_entries;
     ++ucount;
 
-    if (attr.is_hidden())
-        return;
-
-    if (attr.store_as_value()) {
-        imm_toc[I/32] &= ~(1 << (I%32));
-
-        if (imm_toc[I/32] == 0)
-            imm_toctoc &= ~(1 << (I/32));
-    } else {
-        ref_toc[I/32] &= ~(1 << (I%32));
-
-        if (ref_toc[I/32] == 0)
-            ref_toctoc &= ~(1 << (I/32));
-    }
+    toc[I/32] &= ~(1 << (I%32));
+    if (toc[I/32] == 0)
+        toctoc &= ~(1 << (I/32));
 }
 
-Variant
-Blackboard::exchange(const Attribute& attr, const Variant& value)
+Entry
+Blackboard::exchange(cali_id_t key, const Entry& value, bool include_in_snapshots)
 {
     std::lock_guard<util::spinlock>
         g(lock);
 
-    size_t  I = find_existing_entry(attr.id());
-    Variant ret(cali_make_empty_variant());
+    size_t  I = find_existing_entry(key);
+    Entry ret;
 
-    if (hashtable[I].id == attr.id()) {
-        ret = hashtable[I].data.immediate;
-        hashtable[I].data.immediate = value;
+    if (hashtable[I].key == key) {
+        ret = hashtable[I].value;
+        hashtable[I].value = value;
     } else
-        add_entry(attr, value);
+        add(key, value, include_in_snapshots);
 
     ++ucount;
 
@@ -172,103 +131,23 @@ Blackboard::exchange(const Attribute& attr, const Variant& value)
 }
 
 void
-Blackboard::snapshot(CompressedSnapshotRecord* rec) const
+Blackboard::snapshot(SnapshotBuilder& rec) const
 {
     std::lock_guard<util::spinlock>
         g(lock);
 
-    // reference entries
+    int tmptoc = toctoc;
 
-    {
-        int tmptoc = ref_toctoc;
+    while (tmptoc) {
+        int i = first_high_bit(tmptoc) - 1;
+        tmptoc &= ~(1 << i);
 
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
+        int tmp = toc[i];
+        while (tmp) {
+            int j = first_high_bit(tmp) - 1;
+            tmp &= ~(1 << j);
 
-            int tmp = ref_toc[i];
-
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                const blackboard_entry_t* entry = hashtable+(i*32+j);
-
-                rec->append(1, &(entry->data.reference));
-            }
-        }
-    }
-
-    // immediate entries
-
-    {
-        int tmptoc = imm_toctoc;
-
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
-
-            int tmp = imm_toc[i];
-
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                const blackboard_entry_t* entry = hashtable+(i*32+j);
-
-                rec->append(1, &(entry->id), &(entry->data.immediate));
-            }
-        }
-    }
-}
-
-void
-Blackboard::snapshot(SnapshotRecord* rec) const
-{
-    std::lock_guard<util::spinlock>
-        g(lock);
-
-    // reference entries
-
-    {
-        int tmptoc = ref_toctoc;
-
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
-
-            int tmp = ref_toc[i];
-
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                const blackboard_entry_t* entry = hashtable+(i*32+j);
-
-                rec->append(entry->data.reference);
-            }
-        }
-    }
-
-    // immediate entries
-
-    {
-        int tmptoc = imm_toctoc;
-
-        while (tmptoc) {
-            int i = first_high_bit(tmptoc) - 1;
-            tmptoc &= ~(1 << i);
-
-            int tmp = imm_toc[i];
-
-            while (tmp) {
-                int j = first_high_bit(tmp) - 1;
-                tmp &= ~(1 << j);
-
-                const blackboard_entry_t* entry = hashtable+(i*32+j);
-
-                rec->append(entry->id, entry->data.immediate);
-            }
+            rec.append(hashtable[i*32+j].value);
         }
     }
 }
@@ -280,7 +159,7 @@ Blackboard::print_statistics(std::ostream& os) const
        << " entries (" << 100.0*max_num_entries/Nmax << "% occupancy).";
 
     if (num_skipped > 0)
-        os << num_skipped << " entries skipped!";
+        os << " " << num_skipped << " entries skipped!";
 
     return os;
 }

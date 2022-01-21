@@ -9,6 +9,7 @@
 #include "caliper/CaliperService.h"
 
 #include "caliper/Caliper.h"
+#include "caliper/SnapshotRecord.h"
 #include "../../caliper/MemoryPool.h"
 
 #include "caliper/common/Log.h"
@@ -238,7 +239,7 @@ class SymbolLookup
 
             for (const Entry& e : rec)
                 if (e.is_reference()) {
-                    for (const cali::Node* node = e.node(); node; node = node->parent())
+                    for (cali::Node* node = e.node(); node; node = node->parent())
                         if (node->attribute() == sym_attr_id)
                             add_symbol_attributes(Entry(node), it.second, mempool, attr, data);
                 } else if (e.attribute() == sym_attr_id) {
@@ -299,7 +300,7 @@ public:
         SymbolLookup* instance = new SymbolLookup(c, chn);
 
         chn->events().pre_flush_evt.connect(
-            [instance](Caliper* c, Channel* chn, const SnapshotRecord* info){
+            [instance](Caliper* c, Channel* chn, SnapshotView){
                 instance->check_attributes(c);
                 instance->init_lookup();
             });
