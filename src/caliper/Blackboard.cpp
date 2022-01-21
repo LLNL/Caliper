@@ -5,8 +5,6 @@
 
 #include "caliper/SnapshotRecord.h"
 
-#include "caliper/common/CompressedSnapshotRecord.h"
-
 #include <iostream>
 
 #ifdef _WIN32

@@ -22,7 +22,6 @@
 namespace cali
 {
 
-class CompressedSnapshotRecord;
 class SnapshotBuilder;
 
 class Blackboard {

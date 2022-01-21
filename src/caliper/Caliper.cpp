@@ -25,13 +25,11 @@
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
-#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <utility>
 
 #define SNAP_MAX 120
 
