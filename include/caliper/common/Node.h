@@ -11,7 +11,6 @@
 
 #include "cali_types.h"
 
-#include "IdType.h"
 #include "Variant.h"
 
 #include "util/lockfree-tree.hpp"
@@ -24,8 +23,9 @@ namespace cali
 /// \brief A metadata tree node.
 ///   Represents a metadata tree node and its (attribute key, value) pair.
 
-class Node : public IdType, public util::LockfreeIntrusiveTree<Node>
+class Node : public util::LockfreeIntrusiveTree<Node>
 {
+    cali_id_t m_id;
     util::LockfreeIntrusiveTree<Node>::Node m_treenode;
 
     cali_id_t m_attribute;
@@ -34,8 +34,8 @@ class Node : public IdType, public util::LockfreeIntrusiveTree<Node>
 public:
 
     Node(cali_id_t id, cali_id_t attr, const Variant& data)
-        : IdType(id),
-          util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode),
+        : util::LockfreeIntrusiveTree<Node>(this, &Node::m_treenode),
+        m_id        { id   },
         m_attribute { attr },
         m_data      { data }
         { }
@@ -56,6 +56,8 @@ public:
     cali_id_t attribute() const { return m_attribute; }
     /// \brief Return the node's data element
     Variant   data() const      { return m_data;      }
+
+    cali_id_t id() const        { return m_id;        }
 };
 
 } // namespace cali

@@ -13,7 +13,6 @@
 #include "common/Attribute.h"
 #include "common/CaliperMetadataAccessInterface.h"
 #include "common/Entry.h"
-#include "common/IdType.h"
 #include "common/Variant.h"
 #include "common/util/callback.hpp"
 
@@ -38,7 +37,7 @@ typedef std::function<void(CaliperMetadataAccessInterface&,const std::vector<cal
 
 /// \brief Maintain a single data collection configuration with
 ///    callbacks and associated measurement data.
-class Channel : public IdType
+class Channel
 {
     struct ChannelImpl;
 
@@ -177,6 +176,8 @@ public:
     /// Channels can be enabled and disabled with Caliper::activate_channel()
     /// and Caliper::deactivate_channel().
     bool           is_active() const;
+
+    cali_id_t      id() const;
 
     friend class Caliper;
 };

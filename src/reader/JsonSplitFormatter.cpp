@@ -32,17 +32,18 @@ namespace
 
 class Hierarchy
 {
-    class HierarchyNode : public IdType, public util::LockfreeIntrusiveTree<HierarchyNode>
+    class HierarchyNode : public util::LockfreeIntrusiveTree<HierarchyNode>
     {
         util::LockfreeIntrusiveTree<HierarchyNode>::Node m_treenode;
+        cali_id_t   m_id;
         std::string m_label;
         std::string m_column;
 
     public:
 
         HierarchyNode(cali_id_t id, const std::string& label, const std::string& column)
-            : IdType(id),
-              util::LockfreeIntrusiveTree<HierarchyNode>(this, &HierarchyNode::m_treenode),
+            : util::LockfreeIntrusiveTree<HierarchyNode>(this, &HierarchyNode::m_treenode),
+            m_id(id),
             m_label(label),
             m_column(column)
         { }
@@ -60,6 +61,8 @@ class Hierarchy
 
             return os;
         }
+
+        cali_id_t id() const { return m_id; }
     };
 
     HierarchyNode*              m_root;
