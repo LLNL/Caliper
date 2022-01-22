@@ -197,6 +197,8 @@ struct Channel::ChannelImpl
 {
     static const ConfigSet::Entry   s_configdata[];
 
+    cali_id_t                       id;
+
     std::string                     name;
     bool                            active;
 
@@ -209,8 +211,8 @@ struct Channel::ChannelImpl
 
     int                             snapshot_scopes;
 
-    ChannelImpl(const char* _name, const RuntimeConfig& cfg)
-        : name(_name), active(true), config(cfg), snapshot_scopes(0)
+    ChannelImpl(cali_id_t _id, const char* _name, const RuntimeConfig& cfg)
+        : id(_id), name(_name), active(true), config(cfg), snapshot_scopes(0)
         {
             ConfigSet cali_cfg =
                 config.init("channel", s_configdata);
@@ -249,8 +251,7 @@ const ConfigSet::Entry Channel::ChannelImpl::s_configdata[] = {
 };
 
 Channel::Channel(cali_id_t id, const char* name, const RuntimeConfig& cfg)
-    : IdType(id),
-      mP(new ChannelImpl(name, cfg))
+    : mP(new ChannelImpl(id, name, cfg))
 {
 }
 
@@ -280,6 +281,12 @@ bool
 Channel::is_active() const
 {
     return mP->active;
+}
+
+cali_id_t
+Channel::id() const
+{
+    return mP->id;
 }
 
 //

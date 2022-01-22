@@ -652,39 +652,6 @@ struct _cali_configset_t {
     std::map<std::string, std::string> cfgset;
 };
 
-
-/**
- *
- * When the BG/Q machines die at LLNL, we can delete these.
- * They exist because BG/Q had Clang compilers that *mostly*
- * supported C++11, except for features like std::vector<T>::emplace.
- */
-
-template<typename Container, typename = void>
-struct emplace_helper{
-    template<typename Emplaced>
-    static void emplace(Container& emplace_into, Emplaced object){
-        emplace_into.insert(object);
-    }
-};
-
-template<typename Container>
-struct emplace_helper<
-   Container,
-   typename std::enable_if<
-       std::is_same<
-           decltype(std::declval<Container>().emplace(std::make_pair("",""))),
-           decltype(std::declval<Container>().emplace(std::make_pair("","")))
-       >::value
-       , void
-   >::type
-> {
-    template<typename Emplaced>
-    static void emplace(Container& emplace_into, Emplaced&& object){
-        emplace_into.emplace(object);
-    }
-};
-
 cali_configset_t
 cali_create_configset(const char* keyvallist[][2])
 {
@@ -693,10 +660,8 @@ cali_create_configset(const char* keyvallist[][2])
     if (!keyvallist)
         return cfg;
 
-    for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist){
-        emplace_helper<decltype(cfg->cfgset)>::emplace( cfg->cfgset, std::make_pair(std::string((*keyvallist)[0]),
-                                            std::string((*keyvallist)[1])) );
-    }
+    for ( ; (*keyvallist)[0] && (*keyvallist)[1]; ++keyvallist)
+        cfg->cfgset.insert(std::make_pair((*keyvallist)[0], (*keyvallist)[1]));
 
     return cfg;
 }
