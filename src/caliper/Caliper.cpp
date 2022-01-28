@@ -853,18 +853,10 @@ Caliper::get_globals(Channel* channel)
 // --- Snapshot interface
 
 void
-Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec)
+Caliper::pull_context(Channel* channel, int scopes, SnapshotBuilder& rec)
 {
     std::lock_guard<::siglock>
         g(sT->lock);
-
-    // Save trigger info in snapshot buf
-
-    rec.append(trigger_info);
-
-    // Invoke callbacks
-
-    channel->mP->events.snapshot(this, channel, scopes, trigger_info, rec);
 
     // Get thread blackboard data
     if (scopes & CALI_SCOPE_THREAD) {
@@ -904,6 +896,17 @@ Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, 
 
         rec.append(sT->channel_snapshot.view());
     }
+}
+
+void
+Caliper::pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec)
+{
+    std::lock_guard<::siglock>
+        g(sT->lock);
+
+    rec.append(trigger_info);
+    channel->mP->events.snapshot(this, channel, scopes, trigger_info, rec);
+    pull_context(channel, scopes, rec);
 }
 
 void

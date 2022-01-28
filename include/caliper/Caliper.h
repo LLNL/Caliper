@@ -317,10 +317,26 @@ public:
     ///   returned snapshot record.
     void      push_snapshot(Channel* channel, SnapshotView trigger_info);
 
+    /// \brief Return context data from blackboards.
+    ///
+    /// This function updates the caller-provided snapshot record builder
+    /// with the %Caliper blackboard contents.
+    ///
+    /// This function is signal safe.
+    ///
+    /// \param channel The %Caliper channel to fetch the context from.
+    /// \param scopes Defines which blackboard contents (thread, process,
+    ///   channel) are returned. Bitwise combination of cali_context_scope_t
+    ///   flags.
+    /// \param trigger_info A caller-provided record that is passed to the
+    ///   snapshot callback, and added to the returned snapshot record.
+    /// \param rec The snapshot record buffer to update.
+    void     pull_context(Channel* channel, int scopes, SnapshotBuilder& rec);
+
     /// \brief Trigger and return a snapshot.
     ///
-    /// This function triggers a snapshot for a given channel and returns a
-    /// snapshot record to the caller. The returned snapshot record contains
+    /// This function triggers a snapshot for a given channel and updates the
+    /// snapshot record provided the caller. The updated record contains
     /// the  current blackboard contents, measurement values provided by
     /// service modules, and the contents of the trigger_info list provided by
     /// the caller.
@@ -335,11 +351,12 @@ public:
     /// This function is signal safe.
     ///
     /// \param channel The %Caliper channel to fetch the snapshot from.
+    /// \param scopes Defines which blackboard contents (thread, process,
+    ///   channel) are returned. Bitwise combination of cali_context_scope_t
+    ///   flags.
     /// \param trigger_info A caller-provided record that is passed to the
     ///   snapshot callback, and added to the returned snapshot record.
-    /// \param sbuf A caller-provided snapshot record buffer in which the
-    ///   snapshot record is returned. Must have sufficient space for the
-    ///   snapshot contents.
+    /// \param rec The snapshot record buffer to update.
     void      pull_snapshot(Channel* channel, int scopes, SnapshotView trigger_info, SnapshotBuilder& rec);
 
     // --- Flush and I/O API
