@@ -27,35 +27,65 @@ namespace
 
 class UmpireService
 {
-    Attribute m_allocator_name_attr;
-    Attribute m_current_size_attr;
-    Attribute m_actual_size_attr;
+    Attribute m_alloc_name_attr;
+    Attribute m_alloc_current_size_attr;
+    Attribute m_alloc_actual_size_attr;
+    Attribute m_alloc_hwm_attr;
+    Attribute m_total_size_attr;
 
     Node      m_root_node;
 
-    void push_allocator_statistics(Caliper* c, Channel* channel, const std::string& name, umpire::Allocator& alloc) {
+    void process_allocator(Caliper* c, Channel* channel, const std::string& name, umpire::Allocator& alloc, SnapshotView context) {
         uint64_t actual_size = alloc.getActualSize();
         uint64_t current_size = alloc.getCurrentSize();
+        uint64_t hwm = alloc.getHighWatermark();
 
         Attribute attr[] = {
-            m_allocator_name_attr, m_actual_size_attr,   m_current_size_attr
+            m_alloc_name_attr,
+            m_alloc_actual_size_attr,
+            m_alloc_current_size_attr,
+            m_alloc_hwm_attr
         };
         Variant   data[] = {
-            Variant(name.c_str()), Variant(actual_size), Variant(current_size)
+            Variant(name.c_str()),
+            Variant(actual_size),
+            Variant(current_size),
+            Variant(hwm)
         };
 
-        FixedSizeSnapshotRecord<3> rec;
-        c->make_record(3, attr, data, rec.builder(), &m_root_node);
-        c->push_snapshot(channel, rec.view());
+        FixedSizeSnapshotRecord<64> rec;
+        rec.builder().append(context);
+
+        c->make_record(4, attr, data, rec.builder(), &m_root_node);
+        channel->events().process_snapshot(c, channel, SnapshotView(), rec.view());
     }
 
-    void snapshot(Caliper* c, Channel* channel, const Attribute& attr, const Variant& val) {
+    void snapshot(Caliper* c, Channel* channel, SnapshotView info, SnapshotBuilder& snapshot_rec) {
         auto& rm = umpire::ResourceManager::getInstance();
+        auto allocators = rm.getAllocatorNames();
 
-        for (auto s : rm.getAllocatorNames()) {
+        if (allocators.empty())
+            return;
+
+        //   Bit of a hack: We create one record for each allocator for
+        // allocator-specific info. This way we can use generic allocator.name
+        // and allocator.size attributes. To avoid issues with repeated
+        // snapshots in the same spot (e.g. for timestamps) we just grab the
+        // context info and move the records directly to postprocessing.
+
+        FixedSizeSnapshotRecord<60> context;
+        context.builder().append(info);
+        c->pull_context(channel, CALI_SCOPE_PROCESS | CALI_SCOPE_THREAD, context.builder());
+
+        uint64_t total_size = 0;
+
+        for (auto s : allocators) {
             auto alloc = rm.getAllocator(s);
-            push_allocator_statistics(c, channel, s, alloc);
+            total_size += alloc.getCurrentSize();
+            process_allocator(c, channel, s, alloc, context.view());
         }
+
+        snapshot_rec.append(m_total_size_attr, Variant(total_size));
     }
 
     void finish_cb(Caliper* c, Channel* channel) {
@@ -66,16 +96,26 @@ class UmpireService
     void create_attributes(Caliper* c) {
         Variant v_true(true);
 
-        m_allocator_name_attr =
+        m_alloc_name_attr =
             c->create_attribute("umpire.alloc.name", CALI_TYPE_STRING,
                                 CALI_ATTR_SKIP_EVENTS);
-        m_current_size_attr =
+        m_alloc_current_size_attr =
             c->create_attribute("umpire.alloc.current.size",
                                 CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                 1, &class_aggregatable_attr, &v_true);
-        m_actual_size_attr =
+        m_alloc_actual_size_attr =
             c->create_attribute("umpire.alloc.actual.size",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggregatable_attr, &v_true);
+        m_alloc_hwm_attr =
+            c->create_attribute("umpire.alloc.highwatermark",
+                                CALI_TYPE_UINT,
+                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggregatable_attr, &v_true);
+        m_total_size_attr =
+            c->create_attribute("umpire.total.size",
                                 CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                 1, &class_aggregatable_attr, &v_true);
@@ -92,13 +132,9 @@ public:
     static void umpire_register(Caliper* c, Channel* channel) {
         UmpireService* instance = new UmpireService(c, channel);
 
-        channel->events().post_begin_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val){
-                instance->snapshot(c, channel, attr, val);
-            });
-        channel->events().pre_end_evt.connect(
-            [instance](Caliper* c, Channel* channel, const Attribute& attr, const Variant& val){
-                instance->snapshot(c, channel, attr, val);
+        channel->events().snapshot.connect(
+            [instance](Caliper* c, Channel* channel, int, SnapshotView info, SnapshotBuilder& rec){
+                instance->snapshot(c, channel, info, rec);
             });
         channel->events().finish_evt.connect(
             [instance](Caliper* c, Channel* channel){
