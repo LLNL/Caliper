@@ -69,27 +69,25 @@ struct MpiTracing::MpiTracingImpl
         const struct attr_info_t {
             const char* name; cali_attr_type type; int prop; Attribute* ptr;
         } attr_info_tbl[] = {
-            { "mpi.msg.src",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
+            { "mpi.msg.src",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
               &msg_src_attr    },
-            { "mpi.msg.dst",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
+            { "mpi.msg.dst",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
               &msg_dst_attr    },
-            { "mpi.msg.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
-              &msg_size_attr   },
-            { "mpi.msg.tag",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
+            { "mpi.msg.tag",       CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
               &msg_tag_attr    },
 
-            { "mpi.coll.type",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT,
+            { "mpi.coll.type",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &coll_type_attr  },
-            { "mpi.coll.root",     CALI_TYPE_INT,   CALI_ATTR_ASVALUE,
+            { "mpi.coll.root",     CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
               &coll_root_attr  },
 
-            { "mpi.comm",          CALI_TYPE_INT,   CALI_ATTR_DEFAULT,
+            { "mpi.comm",          CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &comm_attr       },
-            { "mpi.comm.size",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT,
+            { "mpi.comm.size",     CALI_TYPE_INT,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &comm_size_attr  },
-            { "mpi.comm.is_world", CALI_TYPE_BOOL,  CALI_ATTR_DEFAULT,
+            { "mpi.comm.is_world", CALI_TYPE_BOOL,  CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &comm_is_world_attr },
-            { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT,
+            { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &comm_list_attr  },
 
             { nullptr, CALI_TYPE_INV, 0, nullptr }
@@ -97,6 +95,13 @@ struct MpiTracing::MpiTracingImpl
 
         for (const attr_info_t* p = attr_info_tbl; p->name; ++p)
             *(p->ptr) = c->create_attribute(p->name, p->type, p->prop);
+
+        Attribute class_aggr_attr = c->get_attribute("class.aggregatable");
+        Variant v_true(true);
+
+        msg_size_attr =
+            c->create_attribute("mpi.msg.size", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggr_attr, &v_true);
     }
 
     void init_mpi(Caliper* c, Channel* chn) {
