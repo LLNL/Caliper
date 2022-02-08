@@ -487,7 +487,7 @@ const char* builtin_option_specs =
     "     \"let\"     : "
     "       [ \"umpt.size.bytes=first(max#umpire.total.size,umpire.total.size)\", "
     "         \"umpt.count=first(max#umpire.total.count,umpire.total.count)\","
-    "         \"umpt.size=scale(ump.size.bytes,1e-6)\""
+    "         \"umpt.size=scale(umpt.size.bytes,1e-6)\""
     "       ],"
     "     \"select\"  : "
     "       [ { \"expr\": \"inclusive_max(umpt.size)\", \"as\": \"Allocated MB (Total)\", \"unit\": \"MB\" },"
