@@ -23,9 +23,12 @@ struct MpiTracing::MpiTracingImpl
     Attribute msg_dst_attr;
     Attribute msg_size_attr;
     Attribute msg_tag_attr;
+    Attribute send_count_attr;
+    Attribute recv_count_attr;
 
     Attribute coll_type_attr;
     Attribute coll_root_attr;
+    Attribute coll_count_attr;
 
     Attribute comm_attr;
     Attribute comm_is_world_attr;
@@ -102,6 +105,16 @@ struct MpiTracing::MpiTracingImpl
         msg_size_attr =
             c->create_attribute("mpi.msg.size", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
                                 1, &class_aggr_attr, &v_true);
+        send_count_attr =
+            c->create_attribute("mpi.send.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggr_attr, &v_true);
+        recv_count_attr =
+            c->create_attribute("mpi.recv.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggr_attr, &v_true);
+        coll_count_attr =
+            c->create_attribute("mpi.coll.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
+                                1, &class_aggr_attr, &v_true);
+        
     }
 
     void init_mpi(Caliper* c, Channel* chn) {
@@ -171,14 +184,15 @@ struct MpiTracing::MpiTracingImpl
     //
 
     void push_send_event(Caliper* c, Channel* channel, int size, int dest, int tag, cali::Node* comm_node) {
-        Entry data[] = {
+        const Entry data[] = {
             { comm_node },
-            { msg_dst_attr,  Variant(dest) },
-            { msg_tag_attr,  Variant(tag)  },
-            { msg_size_attr, Variant(size) }
+            { msg_dst_attr,    Variant(dest) },
+            { msg_tag_attr,    Variant(tag)  },
+            { msg_size_attr,   Variant(size) },
+            { send_count_attr, Variant(1)    }
         };
 
-        c->push_snapshot(channel, SnapshotView(4, data));
+        c->push_snapshot(channel, SnapshotView(5, data));
     }
 
     void handle_send_init(Caliper* c, Channel* chn, int count, MPI_Datatype type, int dest, int tag, MPI_Comm comm, MPI_Request* req) {
@@ -202,14 +216,15 @@ struct MpiTracing::MpiTracingImpl
     }
 
     void push_recv_event(Caliper* c, Channel* channel, int src, int size, int tag, Node* comm_node) {
-        Entry data[] = {
+        const Entry data[] = {
             { comm_node },
-            { msg_src_attr,  Variant(src)  },
-            { msg_tag_attr,  Variant(tag)  },
-            { msg_size_attr, Variant(size) }
+            { msg_src_attr,    Variant(src)  },
+            { msg_tag_attr,    Variant(tag)  },
+            { msg_size_attr,   Variant(size) },
+            { recv_count_attr, Variant(1)    }
         };
 
-        c->push_snapshot(channel, SnapshotView(4, data));
+        c->push_snapshot(channel, SnapshotView(5, data));
     }
 
     void handle_recv(Caliper* c, Channel* chn, MPI_Datatype type, MPI_Comm comm, MPI_Status* status) {
@@ -312,18 +327,19 @@ struct MpiTracing::MpiTracingImpl
     void push_coll_event(Caliper* c, Channel* channel, CollectiveType coll_type, int size, int root, Node* comm_node) {
         Node* node = c->make_tree_entry(coll_type_attr, Variant(static_cast<int>(coll_type)), comm_node);
 
-        Entry data[] = {
+        const Entry data[] = {
             { node },
-            { msg_size_attr,  Variant(size) },
-            { coll_root_attr, Variant(root) }
+            { coll_count_attr, Variant(1)    },
+            { msg_size_attr,   Variant(size) },
+            { coll_root_attr,  Variant(root) }
         };
 
-        int ne = 1;
+        int ne = 2;
 
         if (coll_type == Coll_12N || coll_type == Coll_N21)
-            ne = 3;
+            ne = 4;
         else if (coll_type == Coll_NxN)
-            ne = 2;
+            ne = 3;
 
         c->push_snapshot(channel, SnapshotView(ne, data));
     }
