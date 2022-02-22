@@ -204,7 +204,7 @@ __attribute__((weak)) void kokkosp_end_deep_copy() {
 
 namespace cali {
   void set_kokkos_cali_config(const char* config_str) {
-    if (config_str == nullptr or strlen(config_str) <= 0)
+    if (config_str == nullptr || strlen(config_str) <= 0)
       return;
     if (::kokkos::mgr.add(config_str))
       return;
