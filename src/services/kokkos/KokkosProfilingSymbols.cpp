@@ -111,6 +111,10 @@ void kokkosp_end_deep_copy() {
 }
 } // end namespace cali
 
+#ifndef _MSC_VER
+// MSVC doesn't support __attribute__((weak))
+// Since we don't have Windows DLL dllexport/dllimport here,
+// we can just disable it as well.
 extern "C" {
 
 __attribute__((weak)) void kokkosp_print_help(char* progName){
@@ -196,6 +200,8 @@ __attribute__((weak)) void kokkosp_end_deep_copy() {
   cali::kokkosp_end_deep_copy();
 }
 }
+#endif // _MSC_VER
+
 namespace cali {
   void set_kokkos_cali_config(const char* config_str) {
     if (config_str == nullptr or strlen(config_str) <= 0)
