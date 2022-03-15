@@ -711,9 +711,14 @@ class CuptiTraceService
         }
     }
 
-    void finish_cb(Caliper* c, Channel* chn) {
-        cuptiFinalize();
+    void pre_finish_cb(Caliper* c, Channel* channel) {
+        if (Log::verbosity() >= 2)
+            Log(2).stream() << channel->name() << ": finalizing CUpti\n";
 
+        cuptiFinalize();
+    }
+
+    void finish_cb(Caliper* c, Channel* chn) {
         if (Log::verbosity() < 1)
             return;
 
@@ -947,6 +952,10 @@ class CuptiTraceService
                 });
         }
 
+        chn->events().pre_finish_evt.connect(
+            [](Caliper* c, Channel* chn){
+                s_instance->pre_finish_cb(c, chn);
+            });
         chn->events().finish_evt.connect(
             [](Caliper* c, Channel* chn){
                 s_instance->finish_cb(c, chn);

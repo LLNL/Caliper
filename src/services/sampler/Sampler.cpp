@@ -163,10 +163,12 @@ void release_thread_cb(Caliper* c, Channel* chn) {
     clear_timer(c, chn);
 }
 
-void finish_cb(Caliper* c, Channel* chn) {
+void pre_finish_cb(Caliper* c, Channel* chn) {
     clear_timer(c, chn);
     clear_signal();
+}
 
+void finish_cb(Caliper* c, Channel* chn) {
     Log(1).stream() << chn->name()
                     << ": Sampler: processed " << n_processed_samples << " samples ("
                     << n_samples << " total, "
@@ -217,6 +219,7 @@ void sampler_register(Caliper* c, Channel* chn)
 
     chn->events().create_thread_evt.connect(create_thread_cb);
     chn->events().release_thread_evt.connect(release_thread_cb);
+    chn->events().pre_finish_evt.connect(pre_finish_cb);
     chn->events().finish_evt.connect(finish_cb);
 
     channel = chn;
