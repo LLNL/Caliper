@@ -322,6 +322,14 @@ class CuptiService
     }
 
     void
+    pre_finish_cb() {
+        cuptiUnsubscribe(subscriber);
+        cuptiFinalize();
+
+        event_sampling.stop_all();
+    }
+
+    void
     finish_cb(Caliper* c, Channel* chn)
     {
         if (Log::verbosity() >= 2) {
@@ -336,11 +344,6 @@ class CuptiService
             if (event_sampling.is_enabled())
                 event_sampling.print_statistics(Log(2).stream());
         }
-
-        event_sampling.stop_all();
-
-        cuptiUnsubscribe(subscriber);
-        cuptiFinalize();
     }
 
     void
@@ -477,6 +480,10 @@ public:
         chn->events().post_init_evt.connect(
             [instance](Caliper* c, Channel* channel){
                 instance->subscribe_attributes(c, channel);
+            });
+        chn->events().pre_finish_evt.connect(
+            [instance](Caliper*, Channel*){
+                instance->pre_finish_cb();
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
