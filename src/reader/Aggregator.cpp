@@ -458,6 +458,8 @@ public:
 
         StatisticsAttributes m_stat_attrs;
 
+        bool                 m_inclusive;
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -487,23 +489,29 @@ public:
             int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
             m_stat_attrs.min =
-                db.create_attribute("min#" + m_target_attr_name, type, prop);
+                db.create_attribute(std::string(m_inclusive ? "imin#" : "min#") + m_target_attr_name, type, prop);
 
             a = m_stat_attrs;
             return true;
         }
 
+        bool is_inclusive() const { return m_inclusive; }
+
         AggregateKernel* make_kernel() {
             return new MinKernel(this);
         }
 
-        Config(const std::string& name)
+        Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid)
+              m_target_attr(Attribute::invalid),
+              m_inclusive(inclusive)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg.front());
+            return new Config(cfg.front(), false);
+        }
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front(), true);
         }
     };
 
@@ -580,6 +588,8 @@ public:
 
         StatisticsAttributes m_stat_attrs;
 
+        bool                 m_inclusive;
+
     public:
 
         Attribute get_target_attr(CaliperMetadataAccessInterface& db) {
@@ -609,23 +619,29 @@ public:
             int            prop = CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE;
 
             m_stat_attrs.max =
-                db.create_attribute("max#" + m_target_attr_name, type, prop);
+                db.create_attribute(std::string(m_inclusive ? "imax#" : "max#") + m_target_attr_name, type, prop);
 
             a = m_stat_attrs;
             return true;
         }
 
+        bool is_inclusive() const { return m_inclusive; }
+
         AggregateKernel* make_kernel() {
             return new MaxKernel(this);
         }
 
-        Config(const std::string& name)
+        Config(const std::string& name, bool inclusive)
             : m_target_attr_name(name),
-              m_target_attr(Attribute::invalid)
+              m_target_attr(Attribute::invalid),
+              m_inclusive(inclusive)
             { }
 
         static AggregateKernelConfig* create(const std::vector<std::string>& cfg) {
-            return new Config(cfg.front());
+            return new Config(cfg.front(), false);
+        }
+        static AggregateKernelConfig* create_inclusive(const std::vector<std::string>& cfg) {
+            return new Config(cfg.front(), true);
         }
     };
 
@@ -1227,10 +1243,12 @@ enum KernelID {
     IPercentTotal = 10,
     Any           = 11,
     ScaledCount   = 12,
-    IRatio        = 13
+    IRatio        = 13,
+    IMin          = 14,
+    IMax          = 15
 };
 
-#define MAX_KERNEL_ID IRatio
+#define MAX_KERNEL_ID IMax
 
 const char* kernel_args[]  = { "attribute" };
 const char* sratio_args[]  = { "numerator", "denominator", "scale" };
@@ -1252,6 +1270,8 @@ const QuerySpec::FunctionSignature kernel_signatures[] = {
     { KernelID::Any,           "any",           1, 1, kernel_args  },
     { KernelID::ScaledCount,   "scale_count",   1, 1, scount_args  },
     { KernelID::IRatio,        "inclusive_ratio", 2, 3, sratio_args },
+    { KernelID::IMin,          "inclusive_min", 1, 1, kernel_args  },
+    { KernelID::IMax,          "inclusive_max", 1, 1, kernel_args  },
 
     QuerySpec::FunctionSignatureTerminator
 };
@@ -1274,6 +1294,9 @@ const struct KernelInfo {
     { "any",             AnyKernel::Config::create           },
     { "scale_count",     ScaledCountKernel::Config::create   },
     { "inclusive_ratio", ScaledRatioKernel::Config::create_inclusive },
+    { "inclusive_min",   MinKernel::Config::create_inclusive },
+    { "inclusive_max",   MaxKernel::Config::create_inclusive },
+
     { 0, 0 }
 };
 
@@ -1725,6 +1748,10 @@ Aggregator::get_aggregation_attribute_name(const QuerySpec::AggregationOp& op)
         return std::string("scount");
     case KernelID::IRatio:
         return std::string("iratio#") + op.args[0] + std::string("/") + op.args[1];
+    case KernelID::IMin:
+        return std::string("imin#") + op.args[0];
+    case KernelID::IMax:
+        return std::string("imax#") + op.args[0];
     }
 
     return std::string();

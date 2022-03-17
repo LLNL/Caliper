@@ -80,6 +80,7 @@ add_caliper_option(WITH_ADIAK     "Enable adiak support" FALSE)
 add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" TRUE)
 add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
+add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -447,6 +448,14 @@ if (WITH_VARIORUM)
   endif()
 endif()
 
+if (WITH_UMPIRE)
+  find_package(umpire REQUIRED)
+  set(CALIPER_HAVE_UMPIRE TRUE)
+  get_target_property(_umpire_location umpire LOCATION)
+  set(CALIPER_umpire_CMAKE_MSG "Yes, using ${_umpire_location}")
+  list(APPEND CALIPER_EXTERNAL_LIBS umpire)
+endif()
+
 # PGI 17.x has issues with some constexpr constructors
 if(CMAKE_CXX_COMPILER_ID MATCHES PGI)
   set(CALIPER_REDUCED_CONSTEXPR_USAGE TRUE)
@@ -567,7 +576,8 @@ set(CALIPER_MODULES
   VTune
   PCP
   histogram
-  variorum)
+  variorum
+  umpire)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
