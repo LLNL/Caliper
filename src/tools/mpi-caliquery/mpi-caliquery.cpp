@@ -60,7 +60,7 @@ const Args::Table option_table[] = {
       "Format output according to format string: %[<width+alignment(l|r|c)>]attr_name%...",
       "FORMAT_STRING"
     },
-    { "title",  "title",  'T', true,
+    { "title",  "title",  0, true,
       "Set the title row for formatted output",
       "STRING"
     },
@@ -83,6 +83,10 @@ const Args::Table option_table[] = {
     { "query", "query", 'q', true,
       "Execute a query in CalQL format",
       "QUERY STRING"
+    },
+    { "query-file", "query-file", 'Q', true,
+      "Read a CalQL query from a file",
+      "FILENAME"
     },
     { "caliper-config", "caliper-config", 'P', true,
       "Set Caliper configuration for profiling mpi-caliquery",

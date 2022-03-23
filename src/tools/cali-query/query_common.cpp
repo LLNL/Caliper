@@ -118,7 +118,25 @@ QueryArgsParser::parse_args(const Args& args)
 
     // parse CalQL query (if any)
 
-    if (args.is_set("query")) {
+    if (args.is_set("query-file")) {
+        std::string filename = args.get("query-file");
+        std::ifstream in { filename.c_str() };
+
+        if (!in) {
+            m_error = true;
+            m_error_msg = "cannot open query file " + filename;
+            return false;
+        }
+
+        CalQLParser p(in);
+
+        if (p.error()) {
+            m_error = true;
+            m_error_msg = p.error_msg();
+            return false;
+        } else
+            m_spec = p.spec();
+    } else if (args.is_set("query")) {
         std::string q = args.get("query");
         CalQLParser p(q.c_str());
 
