@@ -103,6 +103,10 @@ namespace
           "Execute a query in CalQL format",
           "QUERY STRING"
         },
+        { "query-file", "query-file", 'Q', true,
+          "Read a CalQL query from a file",
+          "FILENAME"
+        },
         { "caliper-config", "caliper-config", 'P', true,
           "Set Caliper configuration for profiling cali-query",
           "CALIPER-CONFIG"

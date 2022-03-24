@@ -1,0 +1,7 @@
+select
+  sum(time.duration) as Time,
+  count()
+group by
+  prop:nested
+format
+  tree
