@@ -39,6 +39,10 @@ class RocTracerService {
     Attribute m_activity_bytes_attr;
     Attribute m_kernel_name_attr;
 
+    Attribute m_flush_region_attr;
+
+    unsigned  m_num_records;
+    unsigned  m_num_flushed;
     unsigned  m_num_flushes;
 
     unsigned  m_num_correlations_stored;
@@ -56,6 +60,8 @@ class RocTracerService {
     std::map<uint64_t, cali::Node*> m_correlation_map;
 
     roctracer_pool_t* m_roctracer_pool;
+
+    Channel* m_channel;
 
     bool     m_enable_tracing;
     bool     m_record_names;
@@ -99,6 +105,9 @@ class RocTracerService {
             c->create_attribute("rocm.activity.bytes", CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS);
         m_kernel_name_attr =
             c->create_attribute("rocm.kernel.name", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
+
+        m_flush_region_attr =
+            c->create_attribute("roctracer.flush", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
     }
 
     void subscribe_attributes(Caliper* c, Channel* channel) {
@@ -128,7 +137,7 @@ class RocTracerService {
         return ret;
     }
 
-    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg) 
+    static void hip_api_callback(uint32_t domain, uint32_t cid, const void* callback_data, void* arg)
     {
         // skip unneeded callbacks
         if (cid == HIP_API_ID___hipPushCallConfiguration ||
@@ -172,7 +181,7 @@ class RocTracerService {
                 cali::Node* node = nullptr;
 
                 if (e.is_reference())
-                    node = c.node(e.node()->id()); // "de-const"
+                    node = e.node();
                 if (!kernel.empty()) {
                     kernel = util::demangle(kernel.c_str());
                     node = c.make_tree_entry(instance->m_kernel_name_attr,
@@ -190,7 +199,7 @@ class RocTracerService {
         }
     }
 
-    unsigned flush_record(Caliper* c, SnapshotFlushFn snap_fn, const roctracer_record_t* record) {
+    unsigned flush_record(Caliper* c, const roctracer_record_t* record) {
         unsigned num_records = 0;
 
         if (record->domain == ACTIVITY_DOMAIN_HIP_OPS || record->domain == ACTIVITY_DOMAIN_HCC_OPS) {
@@ -228,8 +237,7 @@ class RocTracerService {
 
             FixedSizeSnapshotRecord<8> snapshot;
             c->make_record(num, attr, data, snapshot.builder(), parent);
-            SnapshotView view = snapshot.view();
-            snap_fn(*c, std::vector<Entry>(view.begin(), view.end()));
+            m_channel->events().process_snapshot(c, m_channel, SnapshotView(), snapshot.view());
 
             ++num_records;
         }
@@ -237,38 +245,41 @@ class RocTracerService {
         return num_records;
     }
 
-    void flush_cb(Caliper* c, Channel* channel, SnapshotFlushFn snap_fn) {
-        roctracer_flush_activity_expl(m_roctracer_pool);
+    void flush_activity_records(Caliper* c, const char* begin, const char* end) {
+        c->begin(m_flush_region_attr, Variant("ROCTRACER FLUSH"));
 
         unsigned num_flushed = 0;
         unsigned num_records = 0;
-        unsigned num_chunks  = 0;
 
-        auto chunks = std::move(m_flushed_chunks);
+        const roctracer_record_t* record =
+            reinterpret_cast<const roctracer_record_t*>(begin);
+        const roctracer_record_t* end_record =
+            reinterpret_cast<const roctracer_record_t*>(end);
 
-        for (const buffer_chunk_t& chunk : chunks) {
-            const roctracer_record_t* record =
-                reinterpret_cast<const roctracer_record_t*>(chunk.begin);
-            const roctracer_record_t* end_record =
-                reinterpret_cast<const roctracer_record_t*>(chunk.end);
+        while (record < end_record) {
+            num_flushed += flush_record(c, record);
 
-            while (record < end_record) {
-                num_flushed += flush_record(c, snap_fn, record);
-
-                ++num_records;
-                if (roctracer_next_record(record, &record) != 0)
-                    break;
-            }
-
-            ++num_chunks;
+            ++num_records;
+            if (roctracer_next_record(record, &record) != 0)
+                break;
         }
 
-        Log(1).stream() << channel->name() << ": roctracer: Processed "
-                        << num_records << " records in "
-                        << num_chunks  << " chunk(s) ("
-                        << num_flushed << " flushed, "
-                        << num_records - num_flushed << " skipped)."
-                        << std::endl;
+        if (Log::verbosity() >= 2) {
+            Log(2).stream() << m_channel->name() << ": roctracer: Flushed "
+                            << num_records << " records ("
+                            << num_flushed << " flushed, "
+                            << num_records - num_flushed << " skipped).\n";
+        }
+
+        m_num_flushed += num_flushed;
+        m_num_records += num_records;
+        m_num_flushes++;
+
+        c->end(m_flush_region_attr);
+    }
+
+    void pre_flush_cb() {
+        roctracer_flush_activity_expl(m_roctracer_pool);
     }
 
 #if 0
@@ -292,17 +303,15 @@ class RocTracerService {
     static void rt_activity_callback(const char* begin, const char* end, void* arg) {
         auto instance = static_cast<RocTracerService*>(arg);
 
-    // we might actually have to copy the data here.
-
-        buffer_chunk_t chunk = { begin, end };
-        instance->m_flushed_chunks.push_back(chunk);
-        ++instance->m_num_flushes;
+        Caliper c;
+        instance->flush_activity_records(&c, begin, end);
 
         if (Log::verbosity() >= 2) {
             unitfmt_result bytes = unitfmt(end-begin, unitfmt_bytes);
-            Log(2).stream() << "roctracer: storing "
+            Log(2).stream() << instance->m_channel->name()
+                            << ": roctracer: processed "
                             << bytes.val << bytes.symbol
-                            << " chunk" << std::endl;
+                            << " buffer" << std::endl;
         }
     }
 
@@ -343,9 +352,9 @@ class RocTracerService {
             return;
         }
 
-        channel->events().flush_evt.connect(
-            [this](Caliper* c, Channel* chn, SnapshotView, SnapshotFlushFn flush_fn){
-                this->flush_cb(c, chn, flush_fn);
+        channel->events().pre_flush_evt.connect(
+            [this](Caliper*, Channel*, SnapshotView){
+                this->pre_flush_cb();
             });
 
         Log(1).stream() << channel->name() << ": roctracer: Tracing initialized" << std::endl;
@@ -388,14 +397,19 @@ class RocTracerService {
             init_tracing(channel);
     }
 
-    void finish_cb(Caliper* c, Channel* channel) {
+    void pre_finish_cb(Caliper* c, Channel* channel) {
         finish_callbacks(channel);
 
-        if (m_enable_tracing) {
+        if (m_enable_tracing)
             finish_tracing(channel);
+    }
 
+    void finish_cb(Caliper* c, Channel* channel) {
+        if (m_enable_tracing) {
             Log(1).stream() << channel->name() << ": roctracer: "
-                << m_num_flushes << " activity flushes"
+                << m_num_flushes << " activity flushes, "
+                << m_num_records << " records processed, "
+                << m_num_flushed << " records flushed."
                 << std::endl;
 
             if (Log::verbosity() >= 2) {
@@ -410,11 +424,14 @@ class RocTracerService {
 
     RocTracerService(Caliper* c, Channel* channel)
         : m_api_attr       { Attribute::invalid },
+          m_num_records    { 0 },
+          m_num_flushed    { 0 },
           m_num_flushes    { 0 },
           m_num_correlations_stored { 0 },
           m_num_correlations_found  { 0 },
           m_num_correlations_missed { 0 },
-          m_roctracer_pool { nullptr }
+          m_roctracer_pool { nullptr },
+          m_channel        { channel }
     {
         auto config = channel->config().init("roctracer", s_configdata);
 
@@ -445,7 +462,11 @@ public:
 
         channel->events().post_init_evt.connect(
             [](Caliper* c, Channel* channel){
-        s_instance->post_init_cb(c, channel);
+                s_instance->post_init_cb(c, channel);
+            });
+        channel->events().pre_finish_evt.connect(
+            [](Caliper* c, Channel* channel){
+                s_instance->pre_finish_cb(c, channel);
             });
         channel->events().finish_evt.connect(
             [](Caliper* c, Channel* channel){
