@@ -319,7 +319,7 @@ class RocTracerService {
         roctracer_properties_t properties {};
         memset(&properties, 0, sizeof(roctracer_properties_t));
 
-        properties.buffer_size = 0x100000;
+        properties.buffer_size = 0x1000000;
         // properties.alloc_fun   = rt_alloc;
         // properties.alloc_arg   = this;
         properties.buffer_callback_fun = rt_activity_callback;

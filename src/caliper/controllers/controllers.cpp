@@ -282,7 +282,7 @@ const char* builtin_option_specs =
     " ["
     "   { \"level\"   : \"local\","
     "     \"select\"  : "
-    "     [ { \"expr\": \"inclusive_scale(rocm.activity.duration,1e-9)\", \"as\": \"GPU Time (I)\", \"unit\": \"sec\" },"
+    "     [ { \"expr\": \"inclusive_scale(sum#rocm.activity.duration,1e-9)\", \"as\": \"GPU Time (I)\", \"unit\": \"sec\" },"
     "     ]"
     "   },"
     "   { \"level\"   : \"cross\", \"select\":"
