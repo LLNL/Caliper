@@ -62,7 +62,7 @@ public:
                 config()["CALI_MPIREPORT_CONFIG"  ] =
                     opts.build_query("local", {
                             { "select",
-                              "*,scale(rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
+                              "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
                               " ,sum(sum#time.duration) as \"time\" unit sec"
                             },
                             { "group by", "prop:nested,rocm.kernel.name,rocm.activity.kind,mpi.rank" },
@@ -74,7 +74,7 @@ public:
                 config()["CALI_REPORT_CONFIG"     ] =
                     opts.build_query("local", {
                             { "select",
-                              "*,scale(rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
+                              "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
                               " ,sum(sum#time.duration) as \"time\" unit sec" },
                             { "group by", "prop:nested,rocm.kernel.name,rocm.activity.kind" },
                             { "format",   format }
