@@ -1,0 +1,73 @@
+# If you are referencing Caliper in a publication, please cite the paper
+# described here:
+# 
+#   David Boehme, Todd Gamblin, David Beckingsale, Peer-Timo Bremer,
+#   Alfredo Gimenez, Matthew Legendre, Olga Pearce, and Martin Schulz.
+#   Caliper: Performance Introspection for HPC Software Stacks.
+#   In Supercomputing 2016 (SC'16), Salt Lake City, Utah, USA, November 2016.
+#   LLNL-CONF-699263
+#
+# Or, in BibTeX:
+# 
+# @inproceedings{boehme:sc2016,
+#   Articleno = {47},
+#   Author = {Boehme, David and Gamblin, Todd and Beckingsale, David and Bremer, Peer-Timo and Gimenez, Alfredo and LeGendre, Matthew and Pearce, Olga and Schulz, Martin},
+#     Booktitle = {Proceedings of the ACM/IEEE International Conference for High Performance Computing, Networking, Storage and Analysis},
+#   Month = nov,
+#   Note = {LLNL-CONF-699263},
+#   Numpages = {11},
+#   Pages = {47:1--47:11},
+#   Publisher = {IEEE Computer Society},
+#   Series = {SC '16},
+#   Title = {Caliper: Performance Introspection for {HPC} Software Stacks},
+#   Url = {http://dl.acm.org/citation.cfm?id=3014904.3014967},
+#   Year = {2016},
+#   Bdsk-Url-1 = {http://dl.acm.org/citation.cfm?id=3014904.3014967}}
+# }
+#
+# And here is the CITATION.cff format:
+
+cff-version: 1.2.0
+message: "If you are referencing Caliper in a publication, please cite the paper below"
+authors:
+- family-names: "Boehme"
+  given-names: "David"
+  orcid: "0000-0002-4159-1519"
+title: "Caliper"
+url: "https://github.com/LLNL/Caliper"
+preferred-citation:
+  type: conference-paper
+  doi: 10.1109/SC.2016.46
+  authors:
+  - family-names: "Boehme"
+    given-names: "David"
+    orcid: "https://orcid.org/0000-0002-4159-1519"
+  - family-names: "Gamblin"
+    given-names: "Todd"
+  - family-names: "Beckingsale"
+    given-names: "David"
+    orcid: "https://orcid.org/0000-0003-2545-4837"
+  - family-names: "Boehme"
+    given-names: "David"
+  - family-names: "Bremer"
+    given-names: "Peer-Timo"
+    orcid: "https://orcid.org/0000-0003-4107-3831"
+  - family-names: "Gimenez"
+    given-names: "Alfredo"
+  - family-names: "LeGendre"
+    given-names: "Matthew"
+  - family-names: "Pearce"
+    given-names: "Olga"
+  - family-names: "Schulz"
+    given-names: "Martin"
+    orcid: "https://orcid.org/0000-0001-9013-435X"
+  title: "Caliper: Performance Introspection for HPC Software Stacks"
+  url: "http://dl.acm.org/citation.cfm?id=3014904.3014967"
+  conference:
+    name: "Supercomputing 2016 (SC'16)"
+    city: "Salt Lake City"
+    region: "Utah"
+    country: "USA"
+  month: November 13-18
+  year: 2016
+  notes: LLNL-CONF-699263

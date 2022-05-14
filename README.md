@@ -225,6 +225,10 @@ To reference Caliper in a publication, please cite the following paper:
   In *Supercomputing 2016 (SC16)*, Salt Lake City, Utah,
   November 13-18, 2016. LLNL-CONF-699263.
 
+On GitHub, you can copy this citation in APA or BibTeX format via the
+"Cite this repository" button. Or, see the comments in CITATION.cff
+for the raw BibTeX.
+
 Release
 ------------------------------------------
 
