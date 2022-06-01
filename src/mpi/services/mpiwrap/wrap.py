@@ -129,11 +129,20 @@ _EXTERN_C_ void *MPIR_ToPointer(int);
 #pragma weak pmpi_init__
 #endif /* PIC */
 
-_EXTERN_C_ void pmpi_init(MPI_Fint *ierr);
-_EXTERN_C_ void PMPI_INIT(MPI_Fint *ierr);
-_EXTERN_C_ void pmpi_init_(MPI_Fint *ierr);
-_EXTERN_C_ void pmpi_init__(MPI_Fint *ierr);
+/* Work around MPI_Fint definition not being present in ExaMPI */
 
+#ifdef MPI_Fint
+#define WRAP_PY_MPI_Fint MPI_Fint
+#else
+#define WRAP_PY_MPI_Fint int
+#endif
+
+_EXTERN_C_ void pmpi_init(WRAP_PY_MPI_Fint *ierr);
+_EXTERN_C_ void PMPI_INIT(WRAP_PY_MPI_Fint *ierr);
+_EXTERN_C_ void pmpi_init_(WRAP_PY_MPI_Fint *ierr);
+_EXTERN_C_ void pmpi_init__(WRAP_PY_MPI_Fint *ierr);
+
+#undef WRAP_PY_MPI_Fint
 '''
 
 gotcha_wrapper_includes = ''' 
@@ -327,6 +336,11 @@ def syntax_error(msg):
     if cur_function:
         sys.stderr.write("    While handling %s.\n" % cur_function)
     raise WrapSyntaxError
+
+def print_warning(msg):
+    sys.stderr.write("%s:%d: %s\n" % (cur_filename, 0, msg))
+    if cur_function:
+        sys.stderr.write("    While handling %s.\n" % cur_function)
 
 ################################################################################
 # MPI Semantics:
@@ -949,7 +963,8 @@ def foreachfn(out, scope, args, children):
     for fn_name in args[1:]:
         cur_function = fn_name
         if not fn_name in mpi_functions:
-            syntax_error(fn_name + " is not an MPI function")
+            print_warning(fn_name + " is not an MPI function, skipping")
+            continue
 
         fn = mpi_functions[fn_name]
         fn_scope = Scope(scope)
@@ -970,7 +985,8 @@ def fn(out, scope, args, children):
     for fn_name in args[1:]:
         cur_function = fn_name
         if not fn_name in mpi_functions:
-            syntax_error(fn_name + " is not an MPI function")
+            print_warning(fn_name + " is not an MPI function, skipping")
+            continue
 
         fn = mpi_functions[fn_name]
         return_val = "_wrap_py_return_val"
