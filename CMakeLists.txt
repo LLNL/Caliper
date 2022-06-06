@@ -2,17 +2,13 @@
 # Caliper
 #
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.12)
 project (caliper C CXX)
 
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.3)
-    # ensure visibility gets honored for all targets
-    cmake_policy(SET CMP0063 NEW)
-endif()
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-   # Use <PackageName>_ROOT variables in find_package()
-   cmake_policy(SET CMP0074 NEW)
-endif()
+# ensure visibility gets honored for all targets
+cmake_policy(SET CMP0063 NEW)
+# Use <PackageName>_ROOT variables in find_package()
+cmake_policy(SET CMP0074 NEW)
 
 # set the default visibility settings
 set(CMAKE_VISIBILITY_INLINES_HIDDEN OFF)
@@ -402,13 +398,8 @@ if(WITH_TAU)
 endif()
 
 # Find Python
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.12)
-  find_package(Python COMPONENTS Interpreter REQUIRED)
-  set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
-else()
-  find_package(PythonInterp REQUIRED)
-  set(CALI_PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE})
-endif()
+find_package(Python COMPONENTS Interpreter REQUIRED)
+set(CALI_PYTHON_EXECUTABLE Python::Interpreter)
 
 if (WITH_SAMPLER)
   # Sampler is currently Linux-specific: check for Linux
