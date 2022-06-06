@@ -39,6 +39,10 @@ class RocTracerService {
     Attribute m_activity_bytes_attr;
     Attribute m_kernel_name_attr;
 
+    Attribute m_host_starttime_attr;
+    Attribute m_host_duration_attr;
+    Attribute m_host_timestamp_attr;
+
     Attribute m_flush_region_attr;
 
     unsigned  m_num_records;
@@ -49,22 +53,17 @@ class RocTracerService {
     unsigned  m_num_correlations_found;
     unsigned  m_num_correlations_missed;
 
-    struct buffer_chunk_t {
-        const char* begin;
-        const char* end;
-    };
-
-    std::vector<buffer_chunk_t> m_flushed_chunks;
-
     std::mutex m_correlation_map_mutex;
     std::map<uint64_t, cali::Node*> m_correlation_map;
 
     roctracer_pool_t* m_roctracer_pool;
 
-    Channel* m_channel;
+    Channel*  m_channel;
 
-    bool     m_enable_tracing;
-    bool     m_record_names;
+    bool      m_enable_tracing;
+    bool      m_record_names;
+    bool      m_record_host_duration;
+    bool      m_record_host_timestamp;
 
     static const ConfigSet::Entry s_configdata[];
     static RocTracerService* s_instance;
@@ -108,6 +107,37 @@ class RocTracerService {
 
         m_flush_region_attr =
             c->create_attribute("roctracer.flush", CALI_TYPE_STRING, CALI_ATTR_DEFAULT);
+    }
+
+    void create_host_attributes(Caliper* c) {
+        m_host_starttime_attr =
+            c->create_attribute("rocm.host.starttime", CALI_TYPE_UINT,
+                                CALI_ATTR_SCOPE_PROCESS |
+                                CALI_ATTR_SKIP_EVENTS);
+
+        if (!(m_record_host_duration || m_record_host_timestamp))
+            return;
+
+        int hide_offset = m_record_host_timestamp ? 0 : CALI_ATTR_HIDDEN;
+
+        m_host_timestamp_attr =
+            c->create_attribute("rocm.host.timestamp", CALI_TYPE_UINT,
+                                CALI_ATTR_SCOPE_THREAD |
+                                CALI_ATTR_ASVALUE      |
+                                CALI_ATTR_SKIP_EVENTS  |
+                                hide_offset);
+
+        if (m_record_host_duration) {
+            Attribute aggr_attr = c->get_attribute("class.aggregatable");
+            Variant v_true(true);
+
+            m_host_duration_attr =
+                c->create_attribute("rocm.host.duration", CALI_TYPE_UINT,
+                                    CALI_ATTR_SCOPE_THREAD |
+                                    CALI_ATTR_ASVALUE      |
+                                    CALI_ATTR_SKIP_EVENTS,
+                                    1, &aggr_attr, &v_true);
+        }
     }
 
     void subscribe_attributes(Caliper* c, Channel* channel) {
@@ -282,6 +312,18 @@ class RocTracerService {
         roctracer_flush_activity_expl(m_roctracer_pool);
     }
 
+    void snapshot_cb(Caliper* c, Channel* channel, int scopes, const SnapshotView, SnapshotBuilder& snapshot) {
+        uint64_t timestamp = 0;
+        roctracer_get_timestamp(&timestamp);
+
+        Variant  v_now(cali_make_variant_from_uint(timestamp));
+        Variant  v_prev = c->exchange(m_host_timestamp_attr, v_now);
+
+        if (m_record_host_duration)
+            snapshot.append(Entry(m_host_duration_attr,
+                                  Variant(cali_make_variant_from_uint(timestamp - v_prev.to_uint()))));
+    }
+
 #if 0
     static void rt_alloc(char** ptr, size_t size, void* arg) {
         auto instance = static_cast<RocTracerService*>(arg);
@@ -319,7 +361,7 @@ class RocTracerService {
         roctracer_properties_t properties {};
         memset(&properties, 0, sizeof(roctracer_properties_t));
 
-        properties.buffer_size = 0x1000000;
+        properties.buffer_size = 0x800000;
         // properties.alloc_fun   = rt_alloc;
         // properties.alloc_arg   = this;
         properties.buffer_callback_fun = rt_activity_callback;
@@ -391,6 +433,20 @@ class RocTracerService {
     void post_init_cb(Caliper* c, Channel* channel) {
         subscribe_attributes(c, channel);
 
+        uint64_t starttime = 0;
+        roctracer_get_timestamp(&starttime);
+
+        c->set(m_host_starttime_attr, cali_make_variant_from_uint(starttime));
+
+        if (m_record_host_timestamp || m_record_host_duration) {
+            c->set(m_host_timestamp_attr, cali_make_variant_from_uint(starttime));
+
+            channel->events().snapshot.connect(
+                [](Caliper* c, Channel* chn, int scopes, SnapshotView info, SnapshotBuilder& rec){
+                    s_instance->snapshot_cb(c, chn, scopes, info, rec);
+                });
+        }
+
         init_callbacks(channel); // apparently must happen before init_tracing()
 
         if (m_enable_tracing)
@@ -437,9 +493,14 @@ class RocTracerService {
 
         m_enable_tracing = config.get("trace_activities").to_bool();
         m_record_names   = config.get("record_kernel_names").to_bool();
+        m_record_host_duration  =
+            config.get("snapshot_duration").to_bool();
+        m_record_host_timestamp =
+            config.get("snapshot_timestamps").to_bool();
 
         create_callback_attributes(c);
         create_activity_attributes(c);
+        create_host_attributes(c);
     }
 
     ~RocTracerService() {
@@ -492,6 +553,16 @@ const ConfigSet::Entry RocTracerService::s_configdata[] = {
       "Record kernel names when activity tracing is enabled",
       "Record kernel names when activity tracing is enabled"
     },
+    { "snapshot_duration", CALI_TYPE_BOOL, "false",
+      "Record duration of host-side activities using ROCm timestamps",
+      "Record duration of host-side activities using ROCm timestamps",
+    },
+    { "snapshot_timestamps", CALI_TYPE_BOOL, "false",
+      "Record host-side timestamps with ROCm",
+      "Record host-side timestamps with ROCm. "
+      "Allows comparisons between CPU and GPU timestamps."
+    },
+
     ConfigSet::Terminator
 };
 
