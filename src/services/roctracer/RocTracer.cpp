@@ -183,35 +183,85 @@ class RocTracerService {
 
             if (instance->m_enable_tracing) {
                 //   When tracing, store a correlation id with the kernel name and the
-                // current region context
+                // current region context. We only store correlation IDs for the subset
+                // of calls that produce activities.
                 std::string kernel;
+                cali::Node* node = nullptr;
 
-                if (instance->m_record_names) {
-                    switch (cid) {
+                switch (cid) {
                     case HIP_API_ID_hipLaunchKernel:
                     case HIP_API_ID_hipExtLaunchKernel:
                     {
-                        kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
-                                    data->args.hipLaunchKernel.stream);
+                        Entry e = c.get(instance->m_api_attr);
+                        if (e.is_reference())
+                            node = e.node();
+                        if (instance->m_record_names) {
+                            kernel = hipKernelNameRefByPtr(data->args.hipLaunchKernel.function_address,
+                                        data->args.hipLaunchKernel.stream);
+                        }
                     }
                     break;
                     case HIP_API_ID_hipModuleLaunchKernel:
                     case HIP_API_ID_hipExtModuleLaunchKernel:
                     case HIP_API_ID_hipHccModuleLaunchKernel:
                     {
-                        kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
+                        Entry e = c.get(instance->m_api_attr);
+                        if (e.is_reference())
+                            node = e.node();
+                        if (instance->m_record_names) {
+                            kernel = hipKernelNameRef(data->args.hipExtModuleLaunchKernel.f);
+                        }
                     }
                     break;
+                    case HIP_API_ID_hipMemcpy:
+                    case HIP_API_ID_hipMemcpy2D:
+                    case HIP_API_ID_hipMemcpy2DAsync:
+                    case HIP_API_ID_hipMemcpy2DFromArray:
+                    case HIP_API_ID_hipMemcpy2DFromArrayAsync:
+                    case HIP_API_ID_hipMemcpy2DToArray:
+                    case HIP_API_ID_hipMemcpy2DToArrayAsync:
+                    case HIP_API_ID_hipMemcpy3D:
+                    case HIP_API_ID_hipMemcpy3DAsync:
+                    case HIP_API_ID_hipMemcpyAsync:
+                    case HIP_API_ID_hipMemcpyAtoH:
+                    case HIP_API_ID_hipMemcpyDtoD:
+                    case HIP_API_ID_hipMemcpyDtoDAsync:
+                    case HIP_API_ID_hipMemcpyDtoH:
+                    case HIP_API_ID_hipMemcpyDtoHAsync:
+                    case HIP_API_ID_hipMemcpyFromArray:
+                    case HIP_API_ID_hipMemcpyFromSymbol:
+                    case HIP_API_ID_hipMemcpyFromSymbolAsync:
+                    case HIP_API_ID_hipMemcpyHtoA:
+                    case HIP_API_ID_hipMemcpyHtoD:
+                    case HIP_API_ID_hipMemcpyHtoDAsync:
+                    case HIP_API_ID_hipMemcpyParam2D:
+                    case HIP_API_ID_hipMemcpyParam2DAsync:
+                    case HIP_API_ID_hipMemcpyPeer:
+                    case HIP_API_ID_hipMemcpyPeerAsync:
+                    case HIP_API_ID_hipMemcpyToArray:
+                    case HIP_API_ID_hipMemcpyToSymbol:
+                    case HIP_API_ID_hipMemcpyToSymbolAsync:
+                    case HIP_API_ID_hipMemcpyWithStream:
+                    case HIP_API_ID_hipMemset:
+                    case HIP_API_ID_hipMemset2D:
+                    case HIP_API_ID_hipMemset2DAsync:
+                    case HIP_API_ID_hipMemset3D:
+                    case HIP_API_ID_hipMemset3DAsync:
+                    case HIP_API_ID_hipMemsetAsync:
+                    case HIP_API_ID_hipMemsetD16:
+                    case HIP_API_ID_hipMemsetD32:
+                    case HIP_API_ID_hipMemsetD32Async:
+                    case HIP_API_ID_hipMemsetD8:
+                    case HIP_API_ID_hipMemsetD8Async:
+                    {
+                        Entry e = c.get(instance->m_api_attr);
+                        if (e.is_reference())
+                            node = e.node();
+                    }
                     default:
                     break;
-                    }
                 }
 
-                Entry e = c.get(instance->m_api_attr);
-                cali::Node* node = nullptr;
-
-                if (e.is_reference())
-                    node = e.node();
                 if (!kernel.empty()) {
                     kernel = util::demangle(kernel.c_str());
                     node = c.make_tree_entry(instance->m_kernel_name_attr,
