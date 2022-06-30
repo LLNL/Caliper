@@ -75,6 +75,13 @@ WITH_OMPT
 WITH_PAPI
   Enable PAPI support. Set PAPI installation dir in PAPI_PREFIX.
 
+WITH_ROCTX
+  Build adapters to forward Caliper annotations to AMD's roctx annotation API.
+
+WITH_ROCTRACER
+  Enable support for ROCm/HIP performance analysis (runtime API profiling and
+  GPU activity tracing).
+
 WITH_SAMPLER
   Enable time-based sampling on Linux.
 

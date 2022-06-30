@@ -204,10 +204,18 @@ runtime-report
       Maximum column width in the tree display
    mem.highwatermark
       Record memory high-water mark for regions
+   mpi.message.count
+      Number of MPI send/recv/collective operations
+   mpi.message.size
+      MPI message size
    output
       Output location ('stdout', 'stderr', or filename)
    profile.cuda
       Profile CUDA API functions
+   profile.hip
+      Profile HIP API functions
+   profile.kokkos
+      Profile Kokkos functions
    profile.mpi
       Profile MPI functions
    topdown.all
