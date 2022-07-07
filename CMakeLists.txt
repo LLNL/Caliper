@@ -78,6 +78,7 @@ add_caliper_option(WITH_KOKKOS    "Enable Kokkos profiling support" TRUE)
 add_caliper_option(WITH_PCP       "Enable performance co-pilot support" FALSE)
 add_caliper_option(WITH_VARIORUM  "Enable Variorum support" FALSE)
 add_caliper_option(WITH_UMPIRE    "Enable Umpire statistics support" FALSE)
+add_caliper_option(WITH_CRAYPAT   "Enable CrayPAT region forwarding support" FALSE)
 
 add_caliper_option(USE_EXTERNAL_GOTCHA "Use pre-installed gotcha instead of building our own" FALSE)
 
@@ -382,6 +383,18 @@ if (WITH_ROCTRACER OR WITH_ROCM)
   endif()
 endif()
 
+if (WITH_CRAYPAT)
+  include(FindCrayPAT)
+  if (CRAYPAT_FOUND)
+    set(CALIPER_HAVE_CRAYPAT TRUE)
+    set(CALIPER_CrayPAT_CMAKE_MSG "Yes, using ${CRAYPAT_LIBRARIES}")
+    list(APPEND CALIPER_EXTERNAL_LIBS ${CRAYPAT_LIBRARIES})
+  else()
+    message(WARNING "CrayPAT support requested but CrayPAT was not found!\n"
+      "Set CRAYPAT_ROOT to installation path and re-run cmake.")
+  endif()
+endif()
+
 if(WITH_TAU)
   if (CALIPER_HAVE_MPI)
     find_package(TAU QUIET)
@@ -570,7 +583,8 @@ set(CALIPER_MODULES
   PCP
   histogram
   variorum
-  umpire)
+  umpire
+  CrayPAT)
 
 foreach(_caliper_module ${CALIPER_MODULES})
   string(LENGTH "${_caliper_module}" _strlen)
