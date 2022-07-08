@@ -17,11 +17,15 @@
 
 extern char** environ;
 
+using namespace cali;
+
 extern "C"
 {
-    void *sbrk(__intptr_t increment);
-    void __pat_init (int, const char *[ ], const char *[ ], const void *, const void *);
-    void __pat_exit (void);
+
+void *sbrk(__intptr_t increment);
+void __pat_init (int, const char *[ ], const char *[ ], const void *, const void *);
+void __pat_exit (void);
+
 }
 
 namespace
@@ -49,13 +53,6 @@ std::vector<std::string> read_cmdline()
 
     return ret;
 }
-
-} // namespace [anonymous]
-
-using namespace cali;
-
-namespace
-{
 
 class CrayPATBinding : public AnnotationBinding
 {
