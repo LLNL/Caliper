@@ -28,21 +28,21 @@ public:
         {
             // Config for first aggregation step in MPI mode (process-local aggregation)
             std::string local_select =
-                " inclusive_scale(sum#rocm.host.duration,1e-9)"
+                " inclusive_sum(sum#time.duration)"
                 ",inclusive_scale(sum#rocm.activity.duration,1e-9)";
             // Config for serial-mode aggregation
             std::string serial_select =
-                " inclusive_scale(sum#rocm.host.duration,1e-9) as \"Host Time\""
+                " inclusive_sum(sum#time.duration) as \"Host Time\""
                 ",inclusive_scale(sum#rocm.activity.duration,1e-9) as \"GPU Time\""
-                ",inclusive_ratio(sum#rocm.activity.duration,sum#rocm.host.duration,100.0) as \"GPU %\"";
+                ",inclusive_ratio(sum#rocm.activity.duration,sum#time.duration,1e-7) as \"GPU %\"";
 
             // Config for second aggregation step in MPI mode (cross-process aggregation)
             std::string cross_select =
-                " avg(iscale#sum#rocm.host.duration) as \"Avg Host Time\""
-                ",max(iscale#sum#rocm.host.duration) as \"Max Host Time\""
+                " avg(inclusive#sum#time.duration) as \"Avg Host Time\""
+                ",max(inclusive#sum#time.duration) as \"Max Host Time\""
                 ",avg(iscale#sum#rocm.activity.duration) as \"Avg GPU Time\""
                 ",max(iscale#sum#rocm.activity.duration) as \"Max GPU Time\""
-                ",ratio(iscale#sum#rocm.activity.duration,iscale#sum#rocm.host.duration,100.0) as \"GPU %\"";
+                ",ratio(iscale#sum#rocm.activity.duration,inclusive#sum#time.duration,100.0) as \"GPU %\"";
 
             std::string groupby = "prop:nested";
 
@@ -120,12 +120,11 @@ const char* controller_spec = R"json(
      "name"        : "rocm-activity-report",
      "description" : "Record and print AMD ROCm activities (kernel executions, memcopies, etc.)",
      "categories"  : [ "output", "region", "treeformatter" ],
-     "services"    : [ "aggregate", "roctracer", "event" ],
+     "services"    : [ "aggregate", "roctracer", "event", "timestamp" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",
          "CALI_EVENT_ENABLE_SNAPSHOT_INFO"  : "false",
-         "CALI_ROCTRACER_TRACE_ACTIVITIES"  : "true",
-         "CALI_ROCTRACER_SNAPSHOT_DURATION" : "true"
+         "CALI_ROCTRACER_TRACE_ACTIVITIES"  : "true"
        },
      "options":
      [
