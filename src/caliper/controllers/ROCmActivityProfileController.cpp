@@ -63,7 +63,7 @@ public:
                     opts.build_query("local", {
                             { "select",
                               "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                              " ,scale(sum#rocm.host.duration,1e-9) as \"time\" unit sec"
+                              " ,sum(sum#time.duration) as \"time\" unit sec"
                             },
                             { "group by", "prop:nested,rocm.kernel.name,rocm.activity.kind,mpi.rank" },
                             { "format",   format }
@@ -75,7 +75,7 @@ public:
                     opts.build_query("local", {
                             { "select",
                               "*,scale(sum#rocm.activity.duration,1e-9) as \"time (gpu)\" unit sec"
-                              " ,scale(sum#rocm.host.duration,1e-9) as \"time\" unit sec" },
+                              " ,sum(sum#time.duration) as \"time\" unit sec" },
                             { "group by", "prop:nested,rocm.kernel.name,rocm.activity.kind" },
                             { "format",   format }
                         });
@@ -121,13 +121,13 @@ const char* controller_spec = R"json(
      "name"        : "rocm-activity-profile",
      "description" : "Record AMD ROCm activities and a write profile",
      "categories"  : [ "adiak", "metric", "output", "region" ],
-     "services"    : [ "aggregate", "roctracer", "event" ],
+     "services"    : [ "aggregate", "roctracer", "event", "timestamp" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
          "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
          "CALI_ROCTRACER_TRACE_ACTIVITIES"   : "true",
          "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "true",
-         "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "true"
+         "CALI_ROCTRACER_SNAPSHOT_DURATION"  : "false"
        },
      "options":
      [
