@@ -139,7 +139,7 @@ expand_variables(const std::string& in, const std::string& val)
 
     while (is.good()) {
         char c = is.get();
-       
+
         if (c == '\\') {
             c = is.get();
             if (is.good())
@@ -807,6 +807,24 @@ struct ConfigManager::ConfigManagerImpl
         m_error_msg = msg;
     }
 
+    void
+    set_error(const std::string& msg, std::istream& is) {
+        m_error = true;
+        m_error_msg = msg;
+
+        size_t maxctx = 16;
+
+        if (is.good()) {
+            is.unget();
+            m_error_msg.append(" at ");
+
+            for (char c = is.get(); is.good() && --maxctx > 0; c = is.get())
+                m_error_msg.push_back(c);
+            if (maxctx == 0)
+                m_error_msg.append("...");
+        }
+    }
+
     // sets error if err is set
     void
     check_error(const std::string& err) {
@@ -923,7 +941,7 @@ struct ConfigManager::ConfigManagerImpl
             val = util::read_word(is, ",=()\n");
 
             if (val.empty())
-                set_error("Expected value after \"" + key + "=\"");
+                set_error("Expected value after \"" + key + "=\"", is);
         }
         else
             is.unget();
@@ -972,8 +990,7 @@ struct ConfigManager::ConfigManagerImpl
         } while (is.good() && c == ',');
 
         if (c != ')') {
-            set_error("Expected ')'");
-            is.unget();
+            set_error("Expected ')'", is);
             args.clear();
         }
 
@@ -1072,7 +1089,7 @@ struct ConfigManager::ConfigManagerImpl
         char c = util::read_char(is);
 
         if (c != '(') {
-            set_error("Expected '(' after \"load\"");
+            set_error("Expected '(' after \"load\"", is);
             return;
         }
 
@@ -1082,7 +1099,7 @@ struct ConfigManager::ConfigManagerImpl
             if (!filename.empty())
                 load_file(filename);
             else
-                set_error("Expected filename for \"load\"");
+                set_error("Expected filename for \"load\"", is);
 
             if (m_error)
                 return;
@@ -1091,8 +1108,7 @@ struct ConfigManager::ConfigManagerImpl
         } while (is.good() && c == ',');
 
         if (c != ')') {
-            set_error("Missing ')' after \"load(\"");
-            is.unget();
+            set_error("Missing ')' after \"load(\"", is);
         }
     }
 
@@ -1157,6 +1173,11 @@ struct ConfigManager::ConfigManagerImpl
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
+
+        if (!m_error && is.good()) {
+            // We read something unexpected
+            set_error(std::string("Unexpected \'").append(1, c).append("\'"), is);
+        }
 
         return ret;
     }

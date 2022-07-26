@@ -32,7 +32,7 @@ TEST(ConfigManagerTest, ParseErrors) {
         cali::ConfigManager mgr(" runtime-report(output=)");
 
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\"");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\" at =)");
     }
 
     {
