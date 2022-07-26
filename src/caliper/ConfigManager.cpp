@@ -129,6 +129,44 @@ find_or(const std::map<std::string,std::string>& m, const std::string& k, const 
     return it != m.end() ? it->second : v;
 }
 
+std::string
+expand_variables(const std::string& in, const std::string& val)
+{
+    std::string ret;
+    std::istringstream is(in);
+
+    bool esc = false;
+
+    while (is.good()) {
+        char c = is.get();
+       
+        if (c == '\\') {
+            c = is.get();
+            if (is.good())
+                ret.push_back(c);
+            continue;
+        } else if (c == '"') {
+            esc = !esc;
+            continue;
+        } else if (c == '{') {
+            c = is.get();
+            if (c == '}') {
+                ret.append(val);
+                continue;
+            } else {
+                ret.push_back('{');
+            }
+        }
+
+        if (!is.good())
+            break;
+
+        ret.push_back(c);
+    }
+
+    return ret;
+}
+
 } // namespace [anonymous]
 
 
@@ -441,11 +479,18 @@ struct ConfigManager::Options::OptionsImpl
     void
     append_config(config_map_t& config) {
         for (const std::string &opt : enabled_options) {
-            auto o_it = spec.data.find(opt);
-            if (o_it == spec.data.end())
+            auto spec_it = spec.data.find(opt);
+            if (spec_it == spec.data.end())
                 continue;
 
-            config.insert(o_it->second.config.begin(), o_it->second.config.end());
+            if (spec_it->second.type == "bool") {
+                config.insert(spec_it->second.config.begin(), spec_it->second.config.end());
+            } else {
+                for (const auto &kv_p : spec_it->second.config) {
+                    // replace "{}" variable placeholders in spec with argument, if any
+                    config[kv_p.first] = ::expand_variables(kv_p.second, args[opt]);
+                }
+            }
         }
     }
 
