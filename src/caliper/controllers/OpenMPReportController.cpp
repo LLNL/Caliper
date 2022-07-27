@@ -135,7 +135,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"openmp-report\","
     " \"description\" : \"Record and print OpenMP performance metrics (loops, barriers, etc.)\","
-    " \"categories\"  : [ \"output\", \"region\", \"metric\" ],"
+    " \"categories\"  : [ \"output\", \"region\", \"metric\", \"event\" ],"
     " \"services\"    : [ \"aggregate\", \"ompt\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","

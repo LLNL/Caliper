@@ -8,7 +8,8 @@ set(CALIPER_TEST_SOURCES
   test_configmanager.cpp
   test_metadatatree.cpp
   test_postprocess_snapshot.cpp
-  test_c_snapshot.cpp)
+  test_c_snapshot.cpp
+  test_regionfilter.cpp)
 
 add_executable(test_caliper ${CALIPER_TEST_SOURCES})
 

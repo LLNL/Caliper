@@ -8,6 +8,7 @@ set(CALIPER_RUNTIME_SOURCES
   CustomOutputController.cpp
   MemoryPool.cpp
   MetadataTree.cpp
+  RegionFilter.cpp
   RegionProfile.cpp
   api.cpp
   builtin_configmanager.cpp

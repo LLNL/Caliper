@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../../caliper/RegionFilter.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -57,6 +59,8 @@ class EventTrigger
     bool                     enable_snapshot_info;
 
     Node                     event_root_node;
+
+    RegionFilter             region_filter;
 
     //
     // --- Helpers / misc
@@ -129,6 +133,8 @@ class EventTrigger
 
         if (!marker_node)
             return;
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
+            return;
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
@@ -161,6 +167,8 @@ class EventTrigger
 
         if (!marker_node)
             return;
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
+            return;
 
         if (enable_snapshot_info) {
             assert(!marker_node->data().empty());
@@ -192,6 +200,8 @@ class EventTrigger
         const Node* marker_node = find_exp_marker(attr);
 
         if (!marker_node)
+            return;
+        if (attr.type() == CALI_TYPE_STRING && !region_filter.pass(static_cast<const char*>(value.data())))
             return;
 
         if (enable_snapshot_info) {
@@ -247,6 +257,23 @@ class EventTrigger
 
             trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
             enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
+
+            {
+                std::string i_filter =
+                    cfg.get("include_regions").to_string();
+                std::string e_filter =
+                    cfg.get("exclude_regions").to_string();
+
+                auto p = RegionFilter::from_config(i_filter, e_filter);
+
+                if (!p.second.empty()) {
+                    Log(0).stream() << chn->name() << ": event: filter parse error: "
+                                    << p.second
+                                    << std::endl;
+                } else {
+                    region_filter = p.first;
+                }
+            }
 
             // register trigger events
 
@@ -312,6 +339,14 @@ const ConfigSet::Entry EventTrigger::s_configdata[] = {
     { "enable_snapshot_info", CALI_TYPE_BOOL, "true",
       "Enable snapshot info records",
       "Enable snapshot info records."
+    },
+    { "include_regions", CALI_TYPE_STRING, "",
+      "Region filter to specify regions that will trigger snapshots",
+      "Region filter to specify regions that will trigger snapshots"
+    },
+    { "exclude_regions", CALI_TYPE_STRING, "",
+      "Region filter to specify regions that won't trigger snapshots",
+      "Region filter to specify regions that won't trigger snapshots"
     },
 
     ConfigSet::Terminator

@@ -552,6 +552,32 @@ only trigger snapshot for "iteration" attribute updates:
                 event.set#iteration=3,cali.snapshot.event.set=63,iteration=2,loop=true
                 event.end#iteration=3,cali.snapshot.event.end=63,iteration=3,loop=true
 
+Value filtering
+................................
+
+With filtering, the event service only triggers snapshots for specific
+values or patterns (e.g., region names). You can provide include or
+exclude filters. There are three pattern types:
+
+match
+   Match the exact value
+
+startswith
+   Match the start of the string
+
+regex
+   Match a regular expression
+
+You can specify multiple patterns and combine them as needed, e.g. to
+include only "important_region" as well as any region starting with
+"MPI_" or "mylib_":
+
+.. code-block:: sh
+      $ CALI_EVENT_INCLUDE_REGIONS="match(important_region),startswith(MPI_,mylib_)"
+
+Config variables
+................................
+
 CALI_EVENT_TRIGGER
    List of attributes that trigger measurement snapshots.
    If empty, all user attributes trigger snapshots.
@@ -563,6 +589,18 @@ CALI_EVENT_ENABLE_SNAPSHOT_INFO
    Turning this off can decrease runtime overheads.
 
    Default: true
+
+CALI_EVENT_INCLUDE_REGIONS
+   Specify a value filter to only trigger snapshots for the provided
+   patterns. See above for the different pattern options.
+
+   Default: empty (no filter)
+
+CALI_EVENT_EXCLUDE_REGIONS
+   Like above, but defines a value filter to skip snapshots for
+   the provided patterns.
+
+   Default: empty (no filter)
 
 Debug
 --------------------------------

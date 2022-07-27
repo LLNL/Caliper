@@ -129,6 +129,44 @@ find_or(const std::map<std::string,std::string>& m, const std::string& k, const 
     return it != m.end() ? it->second : v;
 }
 
+std::string
+expand_variables(const std::string& in, const std::string& val)
+{
+    std::string ret;
+    std::istringstream is(in);
+
+    bool esc = false;
+
+    while (is.good()) {
+        char c = is.get();
+
+        if (c == '\\') {
+            c = is.get();
+            if (is.good())
+                ret.push_back(c);
+            continue;
+        } else if (c == '"') {
+            esc = !esc;
+            continue;
+        } else if (c == '{') {
+            c = is.get();
+            if (c == '}') {
+                ret.append(val);
+                continue;
+            } else {
+                ret.push_back('{');
+            }
+        }
+
+        if (!is.good())
+            break;
+
+        ret.push_back(c);
+    }
+
+    return ret;
+}
+
 } // namespace [anonymous]
 
 
@@ -441,11 +479,18 @@ struct ConfigManager::Options::OptionsImpl
     void
     append_config(config_map_t& config) {
         for (const std::string &opt : enabled_options) {
-            auto o_it = spec.data.find(opt);
-            if (o_it == spec.data.end())
+            auto spec_it = spec.data.find(opt);
+            if (spec_it == spec.data.end())
                 continue;
 
-            config.insert(o_it->second.config.begin(), o_it->second.config.end());
+            if (spec_it->second.type == "bool") {
+                config.insert(spec_it->second.config.begin(), spec_it->second.config.end());
+            } else {
+                for (const auto &kv_p : spec_it->second.config) {
+                    // replace "{}" variable placeholders in spec with argument, if any
+                    config[kv_p.first] = ::expand_variables(kv_p.second, args[opt]);
+                }
+            }
         }
     }
 
@@ -762,6 +807,24 @@ struct ConfigManager::ConfigManagerImpl
         m_error_msg = msg;
     }
 
+    void
+    set_error(const std::string& msg, std::istream& is) {
+        m_error = true;
+        m_error_msg = msg;
+
+        size_t maxctx = 16;
+
+        if (is.good()) {
+            is.unget();
+            m_error_msg.append(" at ");
+
+            for (char c = is.get(); is.good() && --maxctx > 0; c = is.get())
+                m_error_msg.push_back(c);
+            if (maxctx == 0)
+                m_error_msg.append("...");
+        }
+    }
+
     // sets error if err is set
     void
     check_error(const std::string& err) {
@@ -878,7 +941,7 @@ struct ConfigManager::ConfigManagerImpl
             val = util::read_word(is, ",=()\n");
 
             if (val.empty())
-                set_error("Expected value after \"" + key + "=\"");
+                set_error("Expected value after \"" + key + "=\"", is);
         }
         else
             is.unget();
@@ -927,8 +990,7 @@ struct ConfigManager::ConfigManagerImpl
         } while (is.good() && c == ',');
 
         if (c != ')') {
-            set_error("Expected ')'");
-            is.unget();
+            set_error("Expected ')'", is);
             args.clear();
         }
 
@@ -1027,7 +1089,7 @@ struct ConfigManager::ConfigManagerImpl
         char c = util::read_char(is);
 
         if (c != '(') {
-            set_error("Expected '(' after \"load\"");
+            set_error("Expected '(' after \"load\"", is);
             return;
         }
 
@@ -1037,7 +1099,7 @@ struct ConfigManager::ConfigManagerImpl
             if (!filename.empty())
                 load_file(filename);
             else
-                set_error("Expected filename for \"load\"");
+                set_error("Expected filename for \"load\"", is);
 
             if (m_error)
                 return;
@@ -1046,8 +1108,7 @@ struct ConfigManager::ConfigManagerImpl
         } while (is.good() && c == ',');
 
         if (c != ')') {
-            set_error("Missing ')' after \"load(\"");
-            is.unget();
+            set_error("Missing ')' after \"load(\"", is);
         }
     }
 
@@ -1112,6 +1173,11 @@ struct ConfigManager::ConfigManagerImpl
 
             c = util::read_char(is);
         } while (!m_error && is.good() && c == ',');
+
+        if (!m_error && is.good()) {
+            // We read something unexpected
+            set_error(std::string("Unexpected \'").append(1, c).append("\'"), is);
+        }
 
         return ret;
     }

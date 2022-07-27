@@ -120,7 +120,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"cuda-activity-profile\","
     " \"description\" : \"Record CUDA activities and a write profile\","
-    " \"categories\"  : [ \"adiak\", \"metric\", \"cuptitrace.metric\", \"output\", \"region\" ],"
+    " \"categories\"  : [ \"adiak\", \"metric\", \"cuptitrace.metric\", \"output\", \"region\", \"event\" ],"
     " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
