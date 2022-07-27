@@ -118,7 +118,7 @@ const char* runtime_report_spec =
     "{"
     " \"name\"        : \"runtime-report\","
     " \"description\" : \"Print a time profile for annotated regions\","
-    " \"categories\"  : [ \"metric\", \"output\", \"region\", \"treeformatter\" ],"
+    " \"categories\"  : [ \"metric\", \"output\", \"region\", \"treeformatter\", \"event\" ],"
     " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","

@@ -32,7 +32,7 @@ TEST(ConfigManagerTest, ParseErrors) {
         cali::ConfigManager mgr(" runtime-report(output=)");
 
         EXPECT_TRUE(mgr.error());
-        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\"");
+        EXPECT_STREQ(mgr.error_msg().c_str(), "Expected value after \"output=\" at =)");
     }
 
     {
@@ -125,7 +125,8 @@ class TestController : public cali::ChannelController
     TestController(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& o)
         : ChannelController(name, 0, initial_cfg),
           opts(o)
-    { }
+    { 
+    }
 
 public:
 
@@ -153,6 +154,12 @@ public:
         return opts.build_query(level, in, aliases);
     }
 
+    std::string get_config(const std::string& key) {
+        config_map_t cfg;
+        opts.update_channel_config(cfg);
+        return cfg[key];
+    }
+
     static cali::ChannelController* create(const char* name, const config_map_t& initial_cfg, const cali::ConfigManager::Options& opts) {
         return new TestController(name, initial_cfg, opts);
     }
@@ -161,69 +168,77 @@ public:
         { }
 };
 
-const char* testcontroller_spec =
-    "{"
-    " \"name\"        : \"testcontroller\","
-    " \"description\" : \"Test controller for ConfigManager unit tests\","
-    " \"categories\"  : [ \"testcategory\" ],"
-    " \"defaults\"    : { \"defaultopt\": \"true\" },"
-    " \"config\"      : "
-    " {"
-    "  \"CALI_CHANNEL_CONFIG_CHECK\"  : \"false\","
-    "  \"CALI_CHANNEL_FLUSH_ON_EXIT\" : \"false\""
-    " },"
-    " \"options\" : "
-    " ["
-    "  {"
-    "   \"name\": \"boolopt\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"A boolean option\","
-    "   \"query\": "
-    "    ["
-    "     { \"level\": \"local\", \"group by\": \"g\", \"let\": \"x=scale(y,2)\", \"select\": "
-    "       [ { \"expr\": \"sum(x)\", \"as\": X, \"unit\": \"Foos\" } ]"
-    "     }"
-    "    ]"
-    "  },"
-    "  {"
-    "   \"name\": \"another_opt\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Another boolean option\""
-    "  },"
-    "  {"
-    "   \"name\": \"not_set_opt\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Yet another boolean option\""
-    "  },"
-    "  {"
-    "   \"name\": \"defaultopt\","
-    "   \"type\": \"bool\","
-    "   \"description\": \"Yet another boolean option again\""
-    "  },"
-    "  {"
-    "   \"name\": \"stringopt\","
-    "   \"type\": \"string\","
-    "   \"description\": \"A string option\""
-    "  },"
-    "  {"
-    "   \"name\": \"intopt\","
-    "   \"type\": \"int\","
-    "   \"description\": \"An integer option\""
-    "  }"
-    " ]"
-    "}";
+const char* testcontroller_spec = R"json(
+    {
+     "name"        : "testcontroller",
+     "description" : "Test controller for ConfigManager unit tests",
+     "categories"  : [ "testcategory" ],
+     "defaults"    : { "defaultopt": "true" },
+     "config"      : 
+     {
+      "CALI_CHANNEL_CONFIG_CHECK"  : "false",
+      "CALI_CHANNEL_FLUSH_ON_EXIT" : "false"
+     },
+     "options" : 
+     [
+      {
+       "name": "boolopt",
+       "type": "bool",
+       "description": "A boolean option",
+       "query": 
+        [
+         { "level": "local", "group by": "g", "let": "x=scale(y,2)", "select": 
+           [ { "expr": "sum(x)", "as": X, "unit": "Foos" } ]
+         }
+        ]
+      },
+      {
+       "name": "another_opt",
+       "type": "bool",
+       "description": "Another boolean option"
+      },
+      {
+       "name": "not_set_opt",
+       "type": "bool",
+       "description": "Yet another boolean option"
+      },
+      {
+       "name": "defaultopt",
+       "type": "bool",
+       "description": "Yet another boolean option again"
+      },
+      {
+       "name": "stringopt",
+       "type": "string",
+       "description": "A string option"
+      },
+      {
+       "name": "intopt",
+       "type": "int",
+       "description": "An integer option"
+      },
+      { 
+       "name": "varopt",
+       "type": "string",
+       "description": "An option that uses its argument",
+       "config": { "config_var_with_arg": "hello{_{}! \\\{\\\}" }
+      }
+     ]
+    };
+)json";
 
-const char* test_option_spec =
-    "["
-    " {  \"name\"     : \"global_boolopt\","
-    "    \"category\" : \"testcategory\","
-    "    \"type\"     : \"bool\""
-    " },"
-    " {  \"name\"     : \"invisible_opt\","
-    "    \"category\" : \"not_the_testcategory\","
-    "    \"type\"     : \"bool\""
-    " }"
-    "]";
+const char* test_option_spec = R"json(
+    [
+     {  "name"     : "global_boolopt",
+        "category" : "testcategory",
+        "type"     : "bool"
+     },
+     {  "name"     : "invisible_opt",
+        "category" : "not_the_testcategory",
+        "type"     : "bool"
+     }
+    ];
+)json";
 
 } // namespace [anonymous]
 
@@ -307,6 +322,26 @@ TEST(ConfigManagerTest, Options)
     }
 }
 
+TEST(ConfigManagerTest, VariableOption)
+{
+    const ConfigManager::ConfigInfo testcontroller_info { testcontroller_spec, TestController::create, nullptr };
+
+    {
+        ConfigManager mgr;
+        mgr.add_config_spec(testcontroller_info);
+        mgr.add("testcontroller(boolopt,varopt=\"world\")");
+
+        auto cP = mgr.get_channel("testcontroller");
+        ASSERT_TRUE(cP);
+        auto tP = std::dynamic_pointer_cast<TestController>(cP);
+        ASSERT_TRUE(tP);
+
+        EXPECT_TRUE(tP->is_enabled("boolopt"));
+        EXPECT_TRUE(tP->is_enabled("varopt"));
+
+        EXPECT_EQ(tP->get_config("config_var_with_arg"), std::string("hello{_world! {}"));
+    }
+}
 
 TEST(ConfigManagerTest, BuildQuery)
 {

@@ -60,6 +60,7 @@ This section lists how-to articles for various use cases.
 
    CUDA
    OpenMP
+   RegionFiltering
 
 Reference documentation
 -------------------------------

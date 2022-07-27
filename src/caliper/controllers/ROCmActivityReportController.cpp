@@ -119,7 +119,7 @@ const char* controller_spec = R"json(
     {
      "name"        : "rocm-activity-report",
      "description" : "Record and print AMD ROCm activities (kernel executions, memcopies, etc.)",
-     "categories"  : [ "output", "region", "treeformatter" ],
+     "categories"  : [ "output", "region", "treeformatter", "event" ],
      "services"    : [ "aggregate", "roctracer", "event", "timestamp" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",

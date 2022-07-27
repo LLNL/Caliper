@@ -119,7 +119,7 @@ const char* controller_spec =
     "{"
     " \"name\"        : \"cuda-activity-report\","
     " \"description\" : \"Record and print CUDA activities (kernel executions, memcopies, etc.)\","
-    " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\", \"treeformatter\" ],"
+    " \"categories\"  : [ \"output\", \"region\", \"cuptitrace.metric\", \"treeformatter\", \"event\" ],"
     " \"services\"    : [ \"aggregate\", \"cupti\", \"cuptitrace\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"        : \"false\","
