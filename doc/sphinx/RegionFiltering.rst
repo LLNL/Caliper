@@ -21,7 +21,7 @@ startswith
     Match the start of the region name, e.g. `startswith(mylib_)`
     matches any region starting with `mylib_`.
 
-reges
+regex
     Match a regular expression in ECMAScript grammar. E.g., `regex(.*loop.*)`
     matches any region with `loop` in the name.
 
