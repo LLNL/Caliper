@@ -188,7 +188,7 @@ class PcpService {
                                 CALI_ATTR_SCOPE_PROCESS |
                                 CALI_ATTR_SKIP_EVENTS   |
                                 CALI_ATTR_AGGREGATABLE,
-                                1, &unit_attr, &sec_vals);
+                                1, &unit_attr, &sec_val);
     }
 
     static bool init_pcp_context(const char* hostname) {

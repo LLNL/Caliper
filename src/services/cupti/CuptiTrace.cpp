@@ -972,7 +972,8 @@ class CuptiTraceService
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
             Attribute addr_class_attr =
                 c->get_attribute("class.memoryaddress");
-            Variant   nsec_val = Variant(CALI_TYPE_STRING, "nsec", 4);
+            Variant nsec_val(CALI_TYPE_STRING, "nsec", 4);
+            Variant true_val(true);
 
             activity_start_attr =
                 c->create_attribute("cupti.activity.start",    CALI_TYPE_UINT,
