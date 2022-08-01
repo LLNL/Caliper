@@ -65,6 +65,7 @@ class Attribute:
     CALI_ATTR_HIDDEN  = 128
     CALI_ATTR_NESTED  = 256
     CALI_ATTR_GLOBAL  = 512
+    CALI_ATTR_AGGREGATABLE = 2048
 
     SCOPE_PROCESS     =  12
     SCOPE_THREAD      =  20
@@ -138,6 +139,12 @@ class Attribute:
 
         return (self.prop & self.CALI_ATTR_HIDDEN) != 0
 
+    def is_aggregatable(self):
+        """ Is this an aggregatable attribute (i.e., a metric)?
+        """
+
+        return (self.prop & self.CALI_ATTR_AGGREGATABLE) != 0
+
     def scope(self):
         """ Returns the attribute's scope ("process", "thread", or "task")
         """
@@ -159,6 +166,8 @@ class Attribute:
             "is_global" : self.is_global() ,
             "is_value"  : self.is_value()  ,
             "is_nested" : self.is_nested() ,
+            "is_aggregatable"    : self.is_aggregatable() ,
+            "class.aggregatable" : self.is_aggregatable() , # legacy support
             "type"      : self.attribute_type()
         }
 

@@ -466,9 +466,6 @@ class LibpfmService
             }
         }
 
-        Attribute aggr_class_attr = c->get_attribute("class.aggregatable");
-        Variant   v_true(true);
-
         for (size_t i=0; i<events_listed; i++) {
             if (enable_sampling) {
                 try {
@@ -490,8 +487,8 @@ class LibpfmService
                                             CALI_TYPE_UINT,
                                             CALI_ATTR_ASVALUE
                                             | CALI_ATTR_SCOPE_THREAD
-                                            | CALI_ATTR_SKIP_EVENTS,
-                                            1, &aggr_class_attr, &v_true);
+                                            | CALI_ATTR_SKIP_EVENTS
+                                            | CALI_ATTR_AGGREGATABLE);
                 libpfm_event_counter_attrs.push_back(event_counter_attr);
             }
         }

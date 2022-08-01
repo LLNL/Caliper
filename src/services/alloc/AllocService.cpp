@@ -277,9 +277,9 @@ class AllocService
                 if (!tree_node)
                     continue;
 
-                data[0] = Entry(g_memoryaddress_attrs[i].alloc_uid_attr,  
+                data[0] = Entry(g_memoryaddress_attrs[i].alloc_uid_attr,
                                 (*tree_node).v_uid);
-                data[1] = Entry(g_memoryaddress_attrs[i].alloc_index_attr, 
+                data[1] = Entry(g_memoryaddress_attrs[i].alloc_index_attr,
                                 cali_make_variant_from_uint((*tree_node).index_1D(addr)));
 
                 label_node = (*tree_node).addr_label_nodes[i];
@@ -370,10 +370,6 @@ class AllocService
 
     AllocService(Caliper* c, Channel* chn)
         {
-            Attribute class_aggr_attr =
-                c->get_attribute("class.aggregatable");
-            Variant   v_true(true);
-
             struct attr_info_t {
                 const char*    name;
                 cali_attr_type type;
@@ -411,12 +407,14 @@ class AllocService
                   0, nullptr, nullptr,
                   &alloc_num_elems_attr
                 },
-                { "alloc.total_size", CALI_TYPE_INT,     CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_ASVALUE,
-                  1, &class_aggr_attr, &v_true,
+                { "alloc.total_size", CALI_TYPE_INT,
+                  CALI_ATTR_SCOPE_THREAD  | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE,
+                  0, nullptr, nullptr,
                   &alloc_total_size_attr
                 },
-                { "alloc.region.highwatermark", CALI_TYPE_UINT, CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE,
-                  1, &class_aggr_attr, &v_true,
+                { "alloc.region.highwatermark", CALI_TYPE_UINT,
+                  CALI_ATTR_SCOPE_PROCESS | CALI_ATTR_ASVALUE | CALI_ATTR_AGGREGATABLE,
+                  0, nullptr, nullptr,
                   &region_hwm_attr
                 },
                 { 0, CALI_TYPE_INV, CALI_ATTR_DEFAULT, 0, nullptr, nullptr, nullptr }

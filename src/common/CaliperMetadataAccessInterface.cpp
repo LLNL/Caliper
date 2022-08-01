@@ -20,3 +20,16 @@ CaliperMetadataAccessInterface::find_attributes_with(const Attribute& meta) cons
 
     return ret;
 }
+
+std::vector<Attribute>
+CaliperMetadataAccessInterface::find_attributes_with_prop(int prop) const
+{
+    std::vector<Attribute> vec = get_all_attributes();
+    std::vector<Attribute> ret;
+
+    for (Attribute attr : vec)
+        if (attr.properties() & prop)
+            ret.push_back(attr);
+
+    return ret;
+}

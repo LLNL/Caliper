@@ -23,13 +23,6 @@ using namespace cali;
 
 #include <papi.h>
 
-namespace cali
-{
-
-extern cali::Attribute class_aggregatable_attr;
-
-}
-
 namespace
 {
 
@@ -93,7 +86,6 @@ class PapiService
     bool setup_event_info(Caliper* c, const std::vector<std::string>& eventlist) {
         m_event_groups.clear();
 
-        Variant v_true(true);
         int count = 0;
 
         for (auto &name : eventlist) {
@@ -124,8 +116,8 @@ class PapiService
                 c->create_attribute(std::string("papi.")+name, CALI_TYPE_UINT,
                                     CALI_ATTR_SCOPE_THREAD |
                                     CALI_ATTR_SKIP_EVENTS  |
-                                    CALI_ATTR_ASVALUE,
-                                    1, &class_aggregatable_attr, &v_true);
+                                    CALI_ATTR_ASVALUE      |
+                                    CALI_ATTR_AGGREGATABLE);
 
             int component = PAPI_get_event_component(code);
 

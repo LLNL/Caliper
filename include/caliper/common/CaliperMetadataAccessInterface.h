@@ -1,7 +1,7 @@
 // Copyright (c) 2015-2022, Lawrence Livermore National Security, LLC.
 // See top-level LICENSE file for details.
 
-/// \file CaliperMetadataAccessInterface.h 
+/// \file CaliperMetadataAccessInterface.h
 /// \brief Abstract Caliper metadata access interface
 
 #pragma once
@@ -28,7 +28,7 @@ public:
     virtual Node*
     node(cali_id_t) const = 0;
 
-    virtual Attribute 
+    virtual Attribute
     get_attribute(cali_id_t id) const = 0;
     virtual Attribute
     get_attribute(const std::string& str) const = 0;
@@ -41,6 +41,10 @@ public:
     std::vector<Attribute>
     find_attributes_with(const Attribute& meta) const;
 
+    /// \brief Return all attributes with the given property flag(s)
+    std::vector<Attribute>
+    find_attributes_with_prop(int prop) const;
+
     // --- modifying operations
 
     virtual Attribute
@@ -51,7 +55,7 @@ public:
                      const Attribute*   meta_attr = nullptr,
                      const Variant*     meta_data = nullptr) = 0;
 
-    virtual Node* 
+    virtual Node*
     make_tree_entry(std::size_t n, const Node* nodelist[], Node* parent = 0) = 0;
 
     // --- globals

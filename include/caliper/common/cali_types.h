@@ -115,7 +115,15 @@ typedef enum {
    * tree branch, but one that is separate from the properly nested
    * region branch. Stack nesting checks are skipped.
    */
-  CALI_ATTR_UNALIGNED     =  1024
+  CALI_ATTR_UNALIGNED     =  1024,
+
+  /** \brief This attribute is aggregatable (i.e., a metric).
+   *
+   * Attributes with this flag will automatically be aggregated by the
+   * \a aggregate service. This flag replaces the previous
+   * \a class.aggregatable meta-attribute.
+   */
+   CALI_ATTR_AGGREGATABLE =  2048
 } cali_attr_properties;
 
 #define CALI_ATTR_SCOPE_MASK 60

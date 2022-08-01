@@ -93,28 +93,17 @@ struct MpiTracing::MpiTracingImpl
             { "mpi.comm.list",     CALI_TYPE_USR,   CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS,
               &comm_list_attr  },
 
+            { "mpi.msg.size",      CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &msg_size_attr   },
+            { "mpi.send.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &send_count_attr },
+            { "mpi.recv.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &recv_count_attr },
+            { "mpi.coll.count",    CALI_TYPE_INT,   CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS | CALI_ATTR_AGGREGATABLE,
+              &coll_count_attr },
+
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
-
-        for (const attr_info_t* p = attr_info_tbl; p->name; ++p)
-            *(p->ptr) = c->create_attribute(p->name, p->type, p->prop);
-
-        Attribute class_aggr_attr = c->get_attribute("class.aggregatable");
-        Variant v_true(true);
-
-        msg_size_attr =
-            c->create_attribute("mpi.msg.size", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggr_attr, &v_true);
-        send_count_attr =
-            c->create_attribute("mpi.send.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggr_attr, &v_true);
-        recv_count_attr =
-            c->create_attribute("mpi.recv.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggr_attr, &v_true);
-        coll_count_attr =
-            c->create_attribute("mpi.coll.count", CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggr_attr, &v_true);
-        
     }
 
     void init_mpi(Caliper* c, Channel* chn) {

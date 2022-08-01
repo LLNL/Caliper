@@ -17,7 +17,6 @@ using namespace cali;
 namespace cali
 {
 
-extern Attribute class_aggregatable_attr;
 extern Attribute class_iteration_attr;
 extern Attribute loop_attr;
 
@@ -129,8 +128,8 @@ class LoopMonitor
         num_iterations_attr =
             c->create_attribute("loop.iterations", CALI_TYPE_INT,
                                 CALI_ATTR_SKIP_EVENTS |
-                                CALI_ATTR_ASVALUE,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_AGGREGATABLE);
         start_iteration_attr =
             c->create_attribute("loop.start_iteration", CALI_TYPE_INT,
                                 CALI_ATTR_SKIP_EVENTS |

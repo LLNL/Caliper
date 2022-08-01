@@ -15,13 +15,6 @@
 using namespace cali;
 
 
-namespace cali
-{
-
-extern cali::Attribute class_aggregatable_attr;
-
-}
-
 namespace
 {
 
@@ -108,41 +101,45 @@ class UmpireService
     }
 
     void create_attributes(Caliper* c) {
-        Variant v_true(true);
-
         m_alloc_name_attr =
             c->create_attribute("umpire.alloc.name", CALI_TYPE_STRING,
                                 CALI_ATTR_SKIP_EVENTS);
         m_alloc_current_size_attr =
             c->create_attribute("umpire.alloc.current.size",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
         m_alloc_actual_size_attr =
             c->create_attribute("umpire.alloc.actual.size",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
         m_alloc_hwm_attr =
             c->create_attribute("umpire.alloc.highwatermark",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
         m_alloc_count_attr =
             c->create_attribute("umpire.alloc.count",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
         m_total_size_attr =
             c->create_attribute("umpire.total.size",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
         m_total_count_attr =
             c->create_attribute("umpire.total.count",
                                 CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &class_aggregatable_attr, &v_true);
+                                CALI_ATTR_ASVALUE     |
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
     }
 
     UmpireService(Caliper* c, Channel* channel)

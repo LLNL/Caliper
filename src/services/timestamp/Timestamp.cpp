@@ -29,7 +29,7 @@ namespace
 
 class Timestamp
 {
-    //   This keeps per-thread per-channel timer data, which we can look up 
+    //   This keeps per-thread per-channel timer data, which we can look up
     // on the thread-local blackboard
     struct TimerInfo {
         // The timestamp of the last snapshot on this channel+thread
@@ -74,7 +74,7 @@ class Timestamp
 
 
     TimerInfo* acquire_timerinfo(Caliper* c) {
-        TimerInfo* ti = 
+        TimerInfo* ti =
             static_cast<TimerInfo*>(c->get(timerinfo_attr).value().get_ptr());
 
         if (!ti && !c->is_signal()) {
@@ -84,7 +84,7 @@ class Timestamp
 
             std::lock_guard<std::mutex>
                 g(info_obj_mutex);
-            
+
             info_obj_list.push_back(ti);
         }
 
@@ -99,7 +99,7 @@ class Timestamp
             rec.append(offset_attr, Variant(usec));
 
         if (record_timestamp && (scope & CALI_SCOPE_PROCESS)) {
-            auto timestamp = 
+            auto timestamp =
                 chrono::duration_cast<chrono::nanoseconds>(now.time_since_epoch()).count();
             rec.append(timestamp_attr, cali_make_variant_from_uint(timestamp));
         }
@@ -125,7 +125,7 @@ class Timestamp
                 event = info.get(end_evt_attr);
             if (event.empty())
                 return;
-            
+
             cali_id_t evt_attr_id = event.value().to_id();
 
             if (event.attribute() == begin_evt_attr.id()) {
@@ -166,7 +166,7 @@ class Timestamp
 
     void finish_cb(Caliper*, Channel* chn) {
         if (n_stack_errors > 0)
-            Log(1).stream() << chn->name() << ": timestamp: Encountered " 
+            Log(1).stream() << chn->name() << ": timestamp: Encountered "
                             << n_stack_errors
                             << " inclusive time stack errors!"
                             << std::endl;
@@ -177,23 +177,20 @@ class Timestamp
         {
             ConfigSet config = chn->config().init("timer", s_configdata);
 
-            record_snapshot_duration = 
+            record_snapshot_duration =
                 config.get("snapshot_duration").to_bool();
-            record_offset    = 
+            record_offset    =
                 config.get("offset").to_bool();
-            record_timestamp = 
+            record_timestamp =
                 config.get("timestamp").to_bool();
             record_inclusive_duration
                 = config.get("inclusive_duration").to_bool();
 
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-            Attribute aggr_class_attr =
-                c->get_attribute("class.aggregatable");
 
             Variant   usec_val  = Variant("usec");
             Variant   sec_val   = Variant("sec");
-            Variant   true_val  = Variant(true);
 
             Variant   unit_val  = usec_val;
 
@@ -205,9 +202,6 @@ class Timestamp
             } else if (unitstr != "usec")
                 Log(0).stream() << chn->name() << ": timestamp: Unknown unit " << unitstr
                                 << std::endl;
-
-            Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
-            Variant   meta_vals[2] = { true_val,        unit_val  };
 
             timestamp_attr =
                 c->create_attribute("time.timestamp", CALI_TYPE_UINT,
@@ -225,15 +219,17 @@ class Timestamp
                 c->create_attribute("time.duration",  CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals);
+                                    CALI_ATTR_SKIP_EVENTS   |
+                                    CALI_ATTR_AGGREGATABLE,
+                                    1, &unit_attr, &unit_val);
             inclusive_duration_attr =
                 c->create_attribute("time.inclusive.duration", CALI_TYPE_DOUBLE,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals);
-            timerinfo_attr = 
+                                    CALI_ATTR_SKIP_EVENTS   |
+                                    CALI_ATTR_AGGREGATABLE,
+                                    1, &unit_attr, &unit_val);
+            timerinfo_attr =
                 c->create_attribute(std::string("timer.info.") + std::to_string(chn->id()), CALI_TYPE_PTR,
                                     CALI_ATTR_ASVALUE       |
                                     CALI_ATTR_SCOPE_THREAD  |

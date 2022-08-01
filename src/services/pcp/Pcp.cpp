@@ -19,13 +19,6 @@
 
 using namespace cali;
 
-namespace cali
-{
-
-extern cali::Attribute class_aggregatable_attr;
-
-}
-
 namespace
 {
 
@@ -95,7 +88,7 @@ class PcpService {
 
                 rec.append(m_metric_info[i].attr, Variant(val));
             }
-            
+
             m_prev_value[i] = total;
         }
 
@@ -148,12 +141,11 @@ class PcpService {
 
             // TODO: Do some sanity checking
 
-            Variant v_true(true);
             Attribute attr =
                 c->create_attribute(std::string("pcp.")+name, CALI_TYPE_DOUBLE,
                                     CALI_ATTR_SKIP_EVENTS |
-                                    CALI_ATTR_ASVALUE,
-                                    1, &class_aggregatable_attr, &v_true);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_AGGREGATABLE);
 
             list.push_back(pmid);
             info.push_back( { name, attr, pmdesc} );
@@ -176,33 +168,27 @@ class PcpService {
     {
         Attribute unit_attr =
             c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-        Attribute aggr_class_attr =
-            c->get_attribute("class.aggregatable");
-
         Variant   sec_val   = Variant("sec");
-        Variant   true_val  = Variant(true);
-
-        Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
-        Variant   meta_vals[2] = { true_val,        sec_val   };
 
         m_timestamp_sec_attr =
             c->create_attribute("pcp.timestamp.sec", CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE       |
                                 CALI_ATTR_SCOPE_PROCESS |
-                                CALI_ATTR_SKIP_EVENTS,
-                                1, &unit_attr, &sec_val);
+                                CALI_ATTR_SKIP_EVENTS   |
+                                CALI_ATTR_AGGREGATABLE);
         m_timestamp_attr =
             c->create_attribute("pcp.timestamp", CALI_TYPE_DOUBLE,
                                 CALI_ATTR_ASVALUE       |
                                 CALI_ATTR_SCOPE_PROCESS |
-                                CALI_ATTR_SKIP_EVENTS,
-                                1, &unit_attr, &sec_val);
+                                CALI_ATTR_SKIP_EVENTS   |
+                                CALI_ATTR_AGGREGATABLE);
         m_time_duration_attr =
             c->create_attribute("pcp.time.duration", CALI_TYPE_DOUBLE,
                                 CALI_ATTR_ASVALUE       |
                                 CALI_ATTR_SCOPE_PROCESS |
-                                CALI_ATTR_SKIP_EVENTS,
-                                2, meta_attr, meta_vals);
+                                CALI_ATTR_SKIP_EVENTS   |
+                                CALI_ATTR_AGGREGATABLE,
+                                1, &unit_attr, &sec_val);
     }
 
     static bool init_pcp_context(const char* hostname) {
