@@ -86,13 +86,11 @@ class RocTracerService {
             c->create_attribute("rocm.endtime", CALI_TYPE_UINT,
                                 CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
 
-        Attribute aggr_attr = c->get_attribute("class.aggregatable");
-        Variant v_true(true);
-
         m_activity_duration_attr =
             c->create_attribute("rocm.activity.duration", CALI_TYPE_UINT,
-                                CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                1, &aggr_attr, &v_true);
+                                CALI_ATTR_ASVALUE     | 
+                                CALI_ATTR_SKIP_EVENTS |
+                                CALI_ATTR_AGGREGATABLE);
 
         m_activity_name_attr =
             c->create_attribute("rocm.activity", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
@@ -128,15 +126,12 @@ class RocTracerService {
                                 hide_offset);
 
         if (m_record_host_duration) {
-            Attribute aggr_attr = c->get_attribute("class.aggregatable");
-            Variant v_true(true);
-
             m_host_duration_attr =
                 c->create_attribute("rocm.host.duration", CALI_TYPE_UINT,
                                     CALI_ATTR_SCOPE_THREAD |
                                     CALI_ATTR_ASVALUE      |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_attr, &v_true);
+                                    CALI_ATTR_SKIP_EVENTS  |
+                                    CALI_ATTR_AGGREGATABLE);
         }
     }
 

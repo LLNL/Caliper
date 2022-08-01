@@ -135,19 +135,16 @@ class PcpMemory
     PcpMemory(Caliper* c, Channel*)
         : num_computed(0), num_flushes(0)
         {
-            Attribute aggr_attr = c->get_attribute("class.aggregatable");
-            Variant v_true(true);
-
             rd_result_attr =
                 c->create_attribute("mem.bytes.read", CALI_TYPE_DOUBLE,
-                                    CALI_ATTR_ASVALUE |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_attr, &v_true);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE);
             wr_result_attr =
                 c->create_attribute("mem.bytes.written", CALI_TYPE_DOUBLE,
-                                    CALI_ATTR_ASVALUE |
-                                    CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_attr, &v_true);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE);
         }
 
 public:

@@ -42,19 +42,16 @@ void post_init_cb(Caliper* c, Channel* chn)
 
 void memusage_register(Caliper* c, Channel* chn)
 {
-    Attribute aggr_attr = c->get_attribute("class.aggregatable");
-    Variant v_true(true);
-
     malloc_total_bytes_attr =
         c->create_attribute("malloc.total.bytes", CALI_TYPE_UINT,
                             CALI_ATTR_SCOPE_PROCESS |
-                            CALI_ATTR_ASVALUE,
-                            1, &aggr_attr, &v_true);
+                            CALI_ATTR_ASVALUE       |
+                            CALI_ATTR_AGGREGATABLE);
     malloc_bytes_attr =
         c->create_attribute("malloc.bytes", CALI_TYPE_INT,
                             CALI_ATTR_SCOPE_PROCESS |
-                            CALI_ATTR_ASVALUE,
-                            1, &aggr_attr, &v_true);
+                            CALI_ATTR_ASVALUE       |
+                            CALI_ATTR_AGGREGATABLE);
 
     chn->events().post_init_evt.connect(post_init_cb);
     chn->events().snapshot.connect(snapshot_cb);

@@ -14,7 +14,7 @@
 
 static const struct typemap_t {
   const char* str; cali_attr_type type;
-} typemap[] = { 
+} typemap[] = {
   { "inv",    CALI_TYPE_INV    },
   { "usr",    CALI_TYPE_USR    },
   { "int",    CALI_TYPE_INT    },
@@ -47,17 +47,18 @@ cali_string2type(const char* str)
 static const struct propmap_t {
   const char* str; cali_attr_properties prop; int mask;
 } propmap[] = {
-  { "default",       CALI_ATTR_DEFAULT,       CALI_ATTR_DEFAULT     },
-  { "asvalue",       CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE     },
-  { "nomerge",       CALI_ATTR_NOMERGE,       CALI_ATTR_NOMERGE     },
-  { "process_scope", CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK  },
-  { "thread_scope",  CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK  }, 
-  { "task_scope",    CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK  },
-  { "skip_events",   CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS },
-  { "hidden",        CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN      },
-  { "nested",        CALI_ATTR_NESTED,        CALI_ATTR_NESTED      },
-  { "global",        CALI_ATTR_GLOBAL,        CALI_ATTR_GLOBAL      },
-  { "unaligned",     CALI_ATTR_UNALIGNED,     CALI_ATTR_UNALIGNED   },
+  { "default",       CALI_ATTR_DEFAULT,       CALI_ATTR_DEFAULT      },
+  { "asvalue",       CALI_ATTR_ASVALUE,       CALI_ATTR_ASVALUE      },
+  { "nomerge",       CALI_ATTR_NOMERGE,       CALI_ATTR_NOMERGE      },
+  { "process_scope", CALI_ATTR_SCOPE_PROCESS, CALI_ATTR_SCOPE_MASK   },
+  { "thread_scope",  CALI_ATTR_SCOPE_THREAD,  CALI_ATTR_SCOPE_MASK   },
+  { "task_scope",    CALI_ATTR_SCOPE_TASK,    CALI_ATTR_SCOPE_MASK   },
+  { "skip_events",   CALI_ATTR_SKIP_EVENTS,   CALI_ATTR_SKIP_EVENTS  },
+  { "hidden",        CALI_ATTR_HIDDEN,        CALI_ATTR_HIDDEN       },
+  { "nested",        CALI_ATTR_NESTED,        CALI_ATTR_NESTED       },
+  { "global",        CALI_ATTR_GLOBAL,        CALI_ATTR_GLOBAL       },
+  { "unaligned",     CALI_ATTR_UNALIGNED,     CALI_ATTR_UNALIGNED    },
+  { "aggregatable",  CALI_ATTR_AGGREGATABLE,  CALI_ATTR_AGGREGATABLE },
   { 0, CALI_ATTR_DEFAULT, CALI_ATTR_DEFAULT }
 };
 
@@ -65,18 +66,18 @@ int
 cali_prop2string(int prop, char* buf, size_t len)
 {
   int ret = 0;
-  
+
   for (const struct propmap_t* p = propmap; p->str; ++p) {
       if (!((prop & p->mask) == (int) p->prop))
       continue;
-    
+
     size_t slen = strlen(p->str);
-    
+
     if ((slen + (ret>0?2:1)) > len)
       return -1;
     if (ret > 0)
       buf[ret++] = ':';
-    
+
     strcpy(buf+ret, p->str);
 
     ret      += slen;
@@ -90,7 +91,7 @@ int
 cali_string2prop(const char* str)
 {
   int prop = 0;
-  
+
   for (const struct propmap_t* p = propmap; p->str; ++p) {
     const char* pos = strstr(str, p->str);
     size_t      len = strlen(p->str);

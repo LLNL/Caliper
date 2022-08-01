@@ -38,6 +38,8 @@ using namespace std;
 
 using SnapshotRecord = FixedSizeSnapshotRecord<SNAP_MAX>;
 
+extern cali_id_t cali_class_aggregatable_attr_id;
+
 namespace cali
 {
 
@@ -706,6 +708,13 @@ Caliper::create_attribute(const std::string& name, cali_attr_type type, int prop
         // Set scope to default scope if none is set
         if ((prop & CALI_ATTR_SCOPE_MASK) == 0)
             prop |= sG->attribute_default_scope;
+
+        // Set CALI_ATTR_AGGREGATABLE property if class.aggregatable metadata is set
+        for (const Node* tmp = node; tmp; tmp = tmp->parent())
+            if (tmp->attribute() == cali_class_aggregatable_attr_id && tmp->data() == Variant(true)) {
+                prop |= CALI_ATTR_AGGREGATABLE;
+                break;
+            }
 
         Attribute attr[2] { prop_attr, name_attr };
         Variant   data[2] { { prop },  { CALI_TYPE_STRING, name.c_str(), name.size() } };

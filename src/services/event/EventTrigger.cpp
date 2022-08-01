@@ -244,13 +244,11 @@ class EventTrigger
     EventTrigger(Caliper* c, Channel* chn)
         : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
-            Attribute aggr_attr = c->get_attribute("class.aggregatable");
-            Variant   v_true(true);
-
             region_count_attr =
                 c->create_attribute("region.count", CALI_TYPE_UINT,
-                                    CALI_ATTR_SKIP_EVENTS | CALI_ATTR_ASVALUE,
-                                    1, &aggr_attr, &v_true);
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_AGGREGATABLE);
 
             ConfigSet cfg =
                 chn->config().init("event", s_configdata);

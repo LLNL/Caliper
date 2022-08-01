@@ -21,13 +21,6 @@
 
 using namespace cali;
 
-namespace cali
-{
-
-extern cali::Attribute class_aggregatable_attr;
-
-}
-
 namespace
 {
 
@@ -151,16 +144,15 @@ class MeasurementTemplateService
         Variant v_true(true);
 
         //   The delta attribute stores the difference of the measurement
-        // value since the last snapshot. We add the "class.aggregatable"
-        // metadata attribute here, which lets Caliper aggregate these values
-        // automatically.
+        // value since the last snapshot. We add the "aggregatable" property
+        // here, which lets Caliper aggregate these values automatically.
         m.delta_attr =
             c->create_attribute(std::string("measurement.") + name,
                         CALI_TYPE_UINT,
                         CALI_ATTR_SCOPE_THREAD |
                         CALI_ATTR_ASVALUE      |
-                        CALI_ATTR_SKIP_EVENTS,
-                        1, &class_aggregatable_attr, &v_true);
+                        CALI_ATTR_SKIP_EVENTS  |
+                        CALI_ATTR_AGGREGATABLE);
 
         //   We use a hidden attribute to store the previous measurement
         // for <name> on Caliper's per-thread blackboard. This is a

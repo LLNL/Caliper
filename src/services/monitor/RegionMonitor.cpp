@@ -14,14 +14,6 @@
 
 using namespace cali;
 
-namespace cali
-{
-
-extern Attribute class_aggregatable_attr;
-extern Attribute class_iteration_attr;
-
-}
-
 namespace
 {
 

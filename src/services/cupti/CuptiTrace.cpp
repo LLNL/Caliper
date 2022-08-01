@@ -970,16 +970,9 @@ class CuptiTraceService
         {
             Attribute unit_attr =
                 c->create_attribute("time.unit", CALI_TYPE_STRING, CALI_ATTR_SKIP_EVENTS);
-            Attribute aggr_class_attr =
-                c->get_attribute("class.aggregatable");
             Attribute addr_class_attr =
                 c->get_attribute("class.memoryaddress");
-
-            Variant   nsec_val  = Variant(CALI_TYPE_STRING, "nsec", 4);
-            Variant   true_val  = Variant(true);
-
-            Attribute meta_attr[2] = { aggr_class_attr, unit_attr };
-            Variant   meta_vals[2] = { true_val,        nsec_val  };
+            Variant   nsec_val = Variant(CALI_TYPE_STRING, "nsec", 4);
 
             activity_start_attr =
                 c->create_attribute("cupti.activity.start",    CALI_TYPE_UINT,
@@ -989,8 +982,10 @@ class CuptiTraceService
                                     CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS);
             activity_duration_attr =
                 c->create_attribute("cupti.activity.duration", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                    2, meta_attr, meta_vals);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE,
+                                    1, &unit_attr, &nsec_val);
             activity_kind_attr =
                 c->create_attribute("cupti.activity.kind",     CALI_TYPE_STRING,
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
@@ -1002,8 +997,9 @@ class CuptiTraceService
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
             memcpy_bytes_attr =
                 c->create_attribute("cupti.memcpy.bytes",      CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_class_attr, &true_val);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE);
             starttime_attr =
                 c->create_attribute("cupti.starttime",         CALI_TYPE_UINT,
                                     CALI_ATTR_SCOPE_PROCESS |
@@ -1020,12 +1016,14 @@ class CuptiTraceService
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
             uvm_bytes_attr =
                 c->create_attribute("cupti.uvm.bytes",      CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_class_attr, &true_val);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE);
             uvm_pagefault_groups_attr =
                 c->create_attribute("cupti.uvm.pagefault.groups", CALI_TYPE_UINT,
-                                    CALI_ATTR_ASVALUE | CALI_ATTR_SKIP_EVENTS,
-                                    1, &aggr_class_attr, &true_val);
+                                    CALI_ATTR_ASVALUE     |
+                                    CALI_ATTR_SKIP_EVENTS |
+                                    CALI_ATTR_AGGREGATABLE);
             uvm_migration_cause_attr =
                 c->create_attribute("cupti.uvm.migration.cause", CALI_TYPE_STRING,
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
@@ -1052,8 +1050,9 @@ class CuptiTraceService
                     c->create_attribute("cupti.host.duration", CALI_TYPE_UINT,
                                         CALI_ATTR_SCOPE_THREAD |
                                         CALI_ATTR_ASVALUE      |
-                                        CALI_ATTR_SKIP_EVENTS,
-                                        2, meta_attr, meta_vals);
+                                        CALI_ATTR_SKIP_EVENTS  |
+                                        CALI_ATTR_AGGREGATABLE,
+                                        1, &unit_attr, &nsec_val);
             }
 
             flush_info_attributes = config.get("info_attributes").to_stringlist();

@@ -115,8 +115,7 @@ class Aggregate
         if (aggr_attr_names.empty()) {
             // find all attributes of class "class.aggregatable"
 
-            info.aggr_attrs =
-                c->find_attributes_with(c->get_attribute("class.aggregatable"));
+            info.aggr_attrs = c->find_attributes_with_prop(CALI_ATTR_AGGREGATABLE);
         } else if (aggr_attr_names.front() != "none") {
             for (const std::string& name : aggr_attr_names) {
                 Attribute attr = c->get_attribute(name);

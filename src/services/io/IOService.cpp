@@ -181,16 +181,16 @@ namespace
       c->create_attribute("io.mount.point",   CALI_TYPE_STRING,
                           CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
 
-    Attribute aggr_attr = c->get_attribute("class.aggregatable");
-
     io_bytes_read_attr =
       c->create_attribute("io.bytes.read",    CALI_TYPE_UINT,
-                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
-                          1, &aggr_attr, &v_true);
+                          CALI_ATTR_SCOPE_THREAD |
+                          CALI_ATTR_ASVALUE      |
+                          CALI_ATTR_AGGREGATABLE);
     io_bytes_written_attr =
       c->create_attribute("io.bytes.written", CALI_TYPE_UINT,
-                          CALI_ATTR_SCOPE_THREAD | CALI_ATTR_ASVALUE,
-                          1, &aggr_attr, &v_true);
+                          CALI_ATTR_SCOPE_THREAD |
+                          CALI_ATTR_ASVALUE      |
+                          CALI_ATTR_AGGREGATABLE);
 
     // register Caliper post_init_evt and finish_evt callbacks
     channel->events().post_init_evt.connect(init_curious_in_channel);
