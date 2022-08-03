@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Caliper services &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Caliper services &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>  
 
@@ -40,8 +46,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="caliper-services">
-<h1>Caliper services<a class="headerlink" href="#caliper-services" title="Permalink to this headline">¶</a></h1>
+  <section id="caliper-services">
+<h1>Caliper services<a class="headerlink" href="#caliper-services" title="Permalink to this heading">¶</a></h1>
 <p>Caliper comes with a number of optional modules (<em>services</em>) that
 provide measurement data or processing and data recording
 capabilities. The flexible combination and configuration of these
@@ -55,8 +61,8 @@ range of usage scenarios.</p>
 <p>to create event-triggered context traces for an application.</p>
 <p>The following sections describe the available service modules and
 their configuration.</p>
-<div class="section" id="aggregate">
-<span id="aggregate-service"></span><h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this headline">¶</a></h2>
+<section id="aggregate">
+<span id="aggregate-service"></span><h2>Aggregate<a class="headerlink" href="#aggregate" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>aggregate</cite> service accumulates aggregation attributes (e.g., time
 durations) of snapshots with a similar <cite>key</cite>, creating a profile.</p>
 <dl>
@@ -79,8 +85,8 @@ snapshots with similar keys.</p>
 <p>Default: Empty (determine aggregation attributes automatically).</p>
 </dd>
 </dl>
-<div class="section" id="aggregation-key">
-<h3>Aggregation key<a class="headerlink" href="#aggregation-key" title="Permalink to this headline">¶</a></h3>
+<section id="aggregation-key">
+<h3>Aggregation key<a class="headerlink" href="#aggregation-key" title="Permalink to this heading">¶</a></h3>
 <p>The aggregation key defines for which attributes separate (aggregate)
 snapshot records will be kept. That is, the aggregate service will
 generate an aggregate snapshot record for each unique combination of
@@ -92,40 +98,40 @@ input snapshots with the given aggregation key were found. Attributes
 that are neither aggregation attributes nor part of the aggregation
 key will not appear in the aggregate snapshot records.</p>
 <p>As an example, consider the following program:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/Annotation.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/Annotation.h&gt;</span><span class="cp"></span>
 
-<span class="kt">void</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
-      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;function&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;foo&quot;</span><span class="p">)</span> <span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;function&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;foo&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
 
-    <span class="c1">// ...</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
-<span class="p">{</span>
-  <span class="p">{</span> <span class="c1">// &quot;A&quot; loop</span>
-    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
-      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">)</span> <span class="p">);</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="c1">// &quot;A&quot; loop</span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;A&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
 
-        <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-        <span class="n">foo</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="p">{</span> <span class="c1">// &quot;B&quot; loop</span>
-    <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span>
-      <span class="n">g</span><span class="p">(</span> <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">)</span> <span class="p">);</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="c1">// &quot;B&quot; loop</span>
+<span class="w">    </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="o">::</span><span class="n">Guard</span><span class="w"></span>
+<span class="w">      </span><span class="n">g</span><span class="p">(</span><span class="w"> </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;loop.id&quot;</span><span class="p">).</span><span class="n">begin</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">);</span><span class="w"></span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">4</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">cali</span><span class="o">::</span><span class="n">Annotation</span><span class="p">(</span><span class="s">&quot;iteration&quot;</span><span class="p">).</span><span class="n">set</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"></span>
 
-        <span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">}</span>
+<span class="w">        </span><span class="n">foo</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Assuming snapshots are generated from the <cite>function</cite> annotation and
@@ -148,9 +154,9 @@ single aggregate snapshot:</p>
 <span class="n">loop</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="n">B</span>  <span class="n">function</span><span class="o">=</span><span class="n">foo</span>  <span class="n">count</span><span class="o">=</span><span class="mi">4</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="aggregation-attributes">
-<h3>Aggregation attributes<a class="headerlink" href="#aggregation-attributes" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="aggregation-attributes">
+<h3>Aggregation attributes<a class="headerlink" href="#aggregation-attributes" title="Permalink to this heading">¶</a></h3>
 <p>The aggregate service accumulates values of aggregation attributes in
 input snapshots with similar aggregation keys. Specifically, it
 reports the minimum and maximum value, and computes the sum of the
@@ -160,9 +166,9 @@ minimum, maximum, and sum values for each aggregation attribute,
 respectively.</p>
 <p>Note that only attributes with the <code class="docutils literal notranslate"><span class="pre">ASVALUE</span></code> property can be
 aggregation attributes.</p>
-</div>
-<div class="section" id="example">
-<h3>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="example">
+<h3>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
 <p>The following configuration generates a time profile for the function
 annotation separated by loop id. Note: when using
 <cite>time.inclusive.duration</cite> as aggregation attribute, we strongly
@@ -193,10 +199,10 @@ annotations of interest in the aggregation key (e.g.,
   <span class="nb">sum</span><span class="c1">#time.inclusice.duration=102</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="alloc">
-<span id="alloc-service"></span><h2>Alloc<a class="headerlink" href="#alloc" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="alloc">
+<span id="alloc-service"></span><h2>Alloc<a class="headerlink" href="#alloc" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>alloc</cite> service adds data tracking information to Caliper.
 It records snapshots of allocation calls with their arguments and
 return values, and resolves the containing allocations of any memory
@@ -230,9 +236,9 @@ snapshot, in the <cite>mem.active</cite> attribute.</p>
 <p>Default: false</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="callpath">
-<span id="callpath-service"></span><h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="callpath">
+<span id="callpath-service"></span><h2>Callpath<a class="headerlink" href="#callpath" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>callpath</cite> service uses libunwind to add callpaths to Caliper
 context snapshots. By default, the callpath service provides
 call-stack addresses. Set <code class="docutils literal notranslate"><span class="pre">CALI_CALLPATH_USE_NAMES=true</span></code> to retrieve
@@ -262,9 +268,9 @@ within the Caliper library.</p>
 <p>Default: 10</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="cupti">
-<span id="cupti-service"></span><h2>CUpti<a class="headerlink" href="#cupti" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="cupti">
+<span id="cupti-service"></span><h2>CUpti<a class="headerlink" href="#cupti" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cupti</cite> service records CUDA events and wraps CUDA API calls
 through the CUpti interface. Specifically, it can intercept runtime
 API calls, driver API calls, resource creation and destruction events
@@ -290,14 +296,10 @@ when launching kernels). Default: <cite>true</cite>.</p>
 <dt>CALI_CUPTI_RECORD_CONTEXT</dt><dd><p>Boolean. Record CUDA context ID. Default: <cite>true</cite>.</p>
 </dd>
 </dl>
-<div class="section" id="cupti-attributes">
-<h3>CUpti Attributes<a class="headerlink" href="#cupti-attributes" title="Permalink to this headline">¶</a></h3>
+<section id="cupti-attributes">
+<h3>CUpti Attributes<a class="headerlink" href="#cupti-attributes" title="Permalink to this heading">¶</a></h3>
 <p>The <cite>cupti</cite> service adds the following attributes:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 31%" />
-<col style="width: 69%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>cupti.runtimeAPI</p></td>
 <td><p>Name of CUDA runtime API call. Nested.</p></td>
@@ -333,9 +335,9 @@ sync events.</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="cupti-event-sampling-experimental">
-<h3>CUpti event sampling (EXPERIMENTAL)<a class="headerlink" href="#cupti-event-sampling-experimental" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="cupti-event-sampling-experimental">
+<h3>CUpti event sampling (EXPERIMENTAL)<a class="headerlink" href="#cupti-event-sampling-experimental" title="Permalink to this heading">¶</a></h3>
 <p>The CUpti service can read hardware “events” from CUDA devices at
 every snapshot using CUpti’s continuous event collection. However,
 note that this capability is only available on Tesla devices, and it
@@ -385,10 +387,10 @@ following configuration can do that:</p>
 <span class="o">...</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="cuptitrace">
-<h2>CUptiTrace<a class="headerlink" href="#cuptitrace" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="cuptitrace">
+<h2>CUptiTrace<a class="headerlink" href="#cuptitrace" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cuptitrace</cite> service records an asynchronous stream of CUDA
 activities, such as memory copies or kernel executions. CUDA activity
 records contain the kind of activity, its start and end time, and
@@ -438,10 +440,6 @@ device-to-host transfers.</p>
 </dl>
 <p>CUptiTrace records contain the following attributes:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 67%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>cupti.activity.kind</p></td>
 <td><p>Kind of the CUDA activity. Possible values:
@@ -501,9 +499,9 @@ fault.</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="environment-information">
-<h2>Environment Information<a class="headerlink" href="#environment-information" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="environment-information">
+<h2>Environment Information<a class="headerlink" href="#environment-information" title="Permalink to this heading">¶</a></h2>
 <p>The environment information (<cite>env</cite>) service collects runtime
 environment information at process startup and adds it to the Caliper
 context.</p>
@@ -523,9 +521,9 @@ variable defined at program start on the Caliper blackboard.</p>
 <p>Default: empty</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="event">
-<span id="event-service"></span><h2>Event<a class="headerlink" href="#event" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="event">
+<span id="event-service"></span><h2>Event<a class="headerlink" href="#event" title="Permalink to this heading">¶</a></h2>
 <p>The event trigger service triggers snapshots when attributes are
 updated. It is possible to select a list of snapshot-triggering
 attributes, or have any attribute update trigger snapshots.
@@ -578,9 +576,9 @@ Turning this off can decrease runtime overheads.</p>
 <p>Default: true</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="debug">
-<h2>Debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="debug">
+<h2>Debug<a class="headerlink" href="#debug" title="Permalink to this heading">¶</a></h2>
 <p>The debug service prints an event log on the selected Caliper log
 stream. This is useful to debug source-code annotations. Note that you
 need to set Caliper’s verbosity level to at least 2 to see the log
@@ -610,19 +608,15 @@ $ ./test/cali-basic
 <span class="o">==</span> CALIPER: Finished
 </pre></div>
 </div>
-</div>
-<div class="section" id="io">
-<span id="io-service"></span><h2>IO<a class="headerlink" href="#io" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="io">
+<span id="io-service"></span><h2>IO<a class="headerlink" href="#io" title="Permalink to this heading">¶</a></h2>
 <p>The io service wraps POSIX IO calls (open,close,read,write) and
 collects information about the amount of bytes read and written
 through these IO calls, as well as filesystems and mount points
 read from or written to. IO operations trigger <cite>io.region</cite> begin
 and end events. It provides the following attributes:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 31%" />
-<col style="width: 69%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p><cite>io.region</cite></p></td>
 <td><p>An I/O region. Either “metadata”, “read” or
@@ -642,9 +636,9 @@ and end events. It provides the following attributes:</p>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="libpfm">
-<span id="libpfm-service"></span><h2>Libpfm<a class="headerlink" href="#libpfm" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="libpfm">
+<span id="libpfm-service"></span><h2>Libpfm<a class="headerlink" href="#libpfm" title="Permalink to this heading">¶</a></h2>
 <p>The libpfm service performs per-thread event-based sampling. The user
 may configure the event upon which to sample, the values to record for
 each sample, and the sampling period.</p>
@@ -721,9 +715,9 @@ Haswell):</p>
 <span class="nv">CALI_LIBPFM_SAMPLE_ATTRIBUTES</span><span class="o">=</span>ip,time,tid,cpu,addr,weight
 </pre></div>
 </div>
-</div>
-<div class="section" id="mpi">
-<span id="mpi-service"></span><h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="mpi">
+<span id="mpi-service"></span><h2>MPI<a class="headerlink" href="#mpi" title="Permalink to this heading">¶</a></h2>
 <p>The MPI service records MPI operations and the MPI rank. Use it to
 keep track of the program execution spent in MPI. You can select the
 MPI functions to track by setting <code class="docutils literal notranslate"><span class="pre">CALI_MPI_WHITELIST</span></code> or
@@ -742,8 +736,8 @@ are set, only whitelisted functions will be instrumented, and the
 blacklist will be applied to the whitelisted functions.</p>
 </dd>
 </dl>
-<div class="section" id="mpi-message-tracing-experimental">
-<h3>MPI message tracing (EXPERIMENTAL)<a class="headerlink" href="#mpi-message-tracing-experimental" title="Permalink to this headline">¶</a></h3>
+<section id="mpi-message-tracing-experimental">
+<h3>MPI message tracing (EXPERIMENTAL)<a class="headerlink" href="#mpi-message-tracing-experimental" title="Permalink to this heading">¶</a></h3>
 <p>The MPI service can record communication information about
 point-to-point messages being sent and received, as well as collective
 communications. When enabled, message tracing will create snapshot
@@ -776,10 +770,6 @@ sent, and communicator info.</p></li>
 </ul>
 <p>Specifically, this information is encoded in the following attributes:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 31%" />
-<col style="width: 69%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p><cite>mpi.call.id</cite></p></td>
 <td><p>Integer.
@@ -849,10 +839,6 @@ array.</p></td>
 <p>Currently, we record communication information for the
 following MPI functions:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 44%" />
-<col style="width: 56%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>Function / function group</p></td>
 <td><p>Records</p></td>
@@ -911,10 +897,10 @@ receive requests)</p></td>
 <li><p>One-sided communication</p></li>
 <li><p>Process creation and management</p></li>
 </ul>
-</div>
-</div>
-<div class="section" id="mpi-report">
-<span id="mpireport-service"></span><h2>MPI Report<a class="headerlink" href="#mpi-report" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="mpi-report">
+<span id="mpireport-service"></span><h2>MPI Report<a class="headerlink" href="#mpi-report" title="Permalink to this heading">¶</a></h2>
 <p>The MPI report service (<cite>mpireport</cite>) aggregates, formats, and writes
 collected Caliper records from all ranks in an MPI program into a
 single global report.  By default, the mpireport service prints a
@@ -960,9 +946,9 @@ then compute the average inclusive time per MPI rank:</p>
 <span class="n">CALI_MPIREPORT_CONFIG</span><span class="o">=</span><span class="s2">&quot;select avg(inclusive#sum#time.duration) as </span><span class="se">\&quot;</span><span class="s2">Time (Avg)</span><span class="se">\&quot;</span><span class="s2"> group by prop:nested format tree&quot;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="ompt">
-<span id="ompt-service"></span><h2>OMPT<a class="headerlink" href="#ompt" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="ompt">
+<span id="ompt-service"></span><h2>OMPT<a class="headerlink" href="#ompt" title="Permalink to this heading">¶</a></h2>
 <p>The OMPT service records OpenMP information using the OpenMP tools interface
 (OMPT). It creates Caliper regions for OpenMP parallel regions, worksharing
 constructs (e.g., loops), and synchronization regions (e.g., barriers).</p>
@@ -975,10 +961,6 @@ have to activate manually OMPT by setting the <span class="target" id="index-0">
 environment variable to “1” or “true”.</p>
 <p>The ompt service provides the following attributes:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 31%" />
-<col style="width: 69%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>omp.parallel</p></td>
 <td><p>An OpenMP parallel region. The value is the
@@ -1009,9 +991,9 @@ the innermost parallel region</p></td>
 </tr>
 </tbody>
 </table>
-</div>
-<div class="section" id="papi">
-<span id="papi-service"></span><h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="papi">
+<span id="papi-service"></span><h2>PAPI<a class="headerlink" href="#papi" title="Permalink to this heading">¶</a></h2>
 <p>The PAPI service collects hardware counter information through the
 PAPI library.</p>
 <dl class="simple">
@@ -1035,18 +1017,18 @@ papi.PAPI_TOT_CYC papi.PAPI_L1_DCM <span class="k">function</span> annotation lo
              <span class="m">8425</span>              <span class="m">115</span> main                mainloop                  <span class="m">0</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="pthread">
-<span id="pthread-service"></span><h2>Pthread<a class="headerlink" href="#pthread" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="pthread">
+<span id="pthread-service"></span><h2>Pthread<a class="headerlink" href="#pthread" title="Permalink to this heading">¶</a></h2>
 <p>The Pthread service wraps <cite>pthread_create</cite> using GOTCHA, and adds a
 <code class="docutils literal notranslate"><span class="pre">pthread.id</span></code> attribute with a numeric thread ID for the new child
 thread. In doing so, the pthread service automatically creates a
 Caliper thread scope on the child thread: this is useful to
 automatically start sampling (e.g. with the <cite>sampler</cite> service) on each
 new thread.</p>
-</div>
-<div class="section" id="recorder">
-<span id="recorder-service"></span><h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="recorder">
+<span id="recorder-service"></span><h2>Recorder<a class="headerlink" href="#recorder" title="Permalink to this heading">¶</a></h2>
 <p>The recorder service writes Caliper snapshot records into a file
 using a custom text-based I/O format. These files can be read
 with the <cite>cali-query</cite> tool.</p>
@@ -1075,9 +1057,9 @@ Caliper does not create it. Default: not set, use current working
 directory.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="report">
-<span id="report-service"></span><h2>Report<a class="headerlink" href="#report" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="report">
+<span id="report-service"></span><h2>Report<a class="headerlink" href="#report" title="Permalink to this heading">¶</a></h2>
 <p>The report service aggregates, formats, and writes collected Caliper
 records into files or stdout on Caliper flush events (typically, at
 program end). By default, the report service prints a tabular,
@@ -1118,14 +1100,14 @@ flushed snapshots:</p>
 <p>Only snapshots where <code class="docutils literal notranslate"><span class="pre">phase=loop</span></code> are selected (due to the filter
 configuration), and the <code class="docutils literal notranslate"><span class="pre">function</span></code> and <code class="docutils literal notranslate"><span class="pre">time.duration</span></code> attributes
 are printed, in ascending order of <code class="docutils literal notranslate"><span class="pre">time.duration</span></code>.</p>
-</div>
-<div class="section" id="roctx">
-<h2>RocTX<a class="headerlink" href="#roctx" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="roctx">
+<h2>RocTX<a class="headerlink" href="#roctx" title="Permalink to this heading">¶</a></h2>
 <p>The RocTX service forwards Caliper annotations as ROCm RocTX
 ranges for AMD’s rocprof tool.</p>
-</div>
-<div class="section" id="sampler">
-<span id="sampler-service"></span><h2>Sampler<a class="headerlink" href="#sampler" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="sampler">
+<span id="sampler-service"></span><h2>Sampler<a class="headerlink" href="#sampler" title="Permalink to this heading">¶</a></h2>
 <p>The sampler service implements time-based sampling. It triggers
 snapshots at regular intervals. Sampling allows for low-overhead
 performance data collection, and can provide insights into code
@@ -1152,9 +1134,9 @@ a flat profile of the number of samples per function:</p>
 <span class="n">CALI_REPORT_CONFIG</span><span class="o">=</span><span class="s2">&quot;SELECT source.function#cali.sampler.pc,count() GROUP BY source.function#cali.sampler.pc FORMAT table ORDER BY count DESC&quot;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="symbollookup">
-<span id="symbollookup-service"></span><h2>Symbollookup<a class="headerlink" href="#symbollookup" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="symbollookup">
+<span id="symbollookup-service"></span><h2>Symbollookup<a class="headerlink" href="#symbollookup" title="Permalink to this heading">¶</a></h2>
 <p>The symbollookup service provides function name, source file, and
 source line number lookup for binary program addresses from, e.g.,
 stack unwinding or program counter sampling. The symbol lookup takes
@@ -1189,15 +1171,15 @@ default <cite>FALSE</cite>.</p>
 default <cite>FALSE</cite>.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="sysalloc">
-<h2>Sysalloc<a class="headerlink" href="#sysalloc" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="sysalloc">
+<h2>Sysalloc<a class="headerlink" href="#sysalloc" title="Permalink to this heading">¶</a></h2>
 <p>The sysalloc service wraps <cite>malloc</cite>, <cite>free</cite>, <cite>calloc</cite>, and <cite>realloc</cite>
 memory allocation calls, and marks the allocated memory regions so
 they can be tracked with the alloc service.</p>
-</div>
-<div class="section" id="textlog">
-<h2>Textlog<a class="headerlink" href="#textlog" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="textlog">
+<h2>Textlog<a class="headerlink" href="#textlog" title="Permalink to this heading">¶</a></h2>
 <p>The textlog service prints a text representation of snapshots to a configurable
 output stream. This can be used to print out a log of the program’s
 progress at runtime.</p>
@@ -1246,9 +1228,9 @@ to print to the standard output or error streams, respectively.</p>
 <p>Default: stdout</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="timestamp">
-<span id="timestamp-service"></span><h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="timestamp">
+<span id="timestamp-service"></span><h2>Timestamp<a class="headerlink" href="#timestamp" title="Permalink to this heading">¶</a></h2>
 <p>The timestamp service adds a time offset, timestamp, or duration to
 context records. Note that timestamps are <em>not</em> synchronized between
 nodes in a distributed-memory program.</p>
@@ -1277,9 +1259,9 @@ to be enabled for this feature.</p>
 <p>Default: sec</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="trace">
-<span id="trace-service"></span><h2>Trace<a class="headerlink" href="#trace" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="trace">
+<span id="trace-service"></span><h2>Trace<a class="headerlink" href="#trace" title="Permalink to this heading">¶</a></h2>
 <p>The trace service creates an I/O record for each snapshot. With the
 <code class="docutils literal notranslate"><span class="pre">recorder</span></code> service enabled, this will create a snapshot trace file.</p>
 <p>The trace service maintains per-thread snapshot buffers. By default,
@@ -1304,10 +1286,11 @@ is full, another chunk of this size is added.</p>
 <p>Default: <cite>grow</cite>.</p>
 </dd>
 </dl>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -1316,8 +1299,9 @@ is full, another chunk of this size is added.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Caliper services</a><ul>
 <li><a class="reference internal" href="#aggregate">Aggregate</a><ul>
 <li><a class="reference internal" href="#aggregation-key">Aggregation key</a></li>
@@ -1359,12 +1343,17 @@ is full, another chunk of this size is added.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="workflow.html"
-                        title="previous chapter">Architecture and workflow</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="calql.html"
-                        title="next chapter">The CalQL query language</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="workflow.html"
+                          title="previous chapter">Architecture and workflow</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="calql.html"
+                          title="next chapter">The CalQL query language</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -1376,12 +1365,12 @@ is full, another chunk of this size is added.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -1393,17 +1382,21 @@ is full, another chunk of this size is added.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              >next</a> |</li>
         <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Caliper services</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

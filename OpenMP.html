@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>OpenMP profiling &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>OpenMP profiling &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="build.html" title="Building Caliper"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="CUDA.html" title="CUDA profiling"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">OpenMP profiling</a></li> 
       </ul>
     </div>  
 
@@ -40,8 +46,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="openmp-profiling">
-<h1>OpenMP profiling<a class="headerlink" href="#openmp-profiling" title="Permalink to this headline">¶</a></h1>
+  <section id="openmp-profiling">
+<h1>OpenMP profiling<a class="headerlink" href="#openmp-profiling" title="Permalink to this heading">¶</a></h1>
 <p>Caliper can profile OpenMP constructs with the help of the OpenMP tools
 interface (OMPT). This requires a compiler with OMPT support, e.g. clang 9+.
 Build Caliper with <code class="docutils literal notranslate"><span class="pre">-DWITH_OMPT=On</span></code> to enable it.</p>
@@ -49,8 +55,8 @@ Build Caliper with <code class="docutils literal notranslate"><span class="pre">
 config, as well as the <cite>openmp.times</cite> and <cite>openmp.threads</cite> options for configs
 like <cite>runtime-report</cite> and <cite>hatchet-region-profile</cite>. With manual configurations,
 you can use the <a class="reference internal" href="services.html#ompt-service"><span class="std std-ref">OMPT</span></a> service.</p>
-<div class="section" id="openmp-profiling-with-openmp-report">
-<h2>OpenMP profiling with openmp-report<a class="headerlink" href="#openmp-profiling-with-openmp-report" title="Permalink to this headline">¶</a></h2>
+<section id="openmp-profiling-with-openmp-report">
+<h2>OpenMP profiling with openmp-report<a class="headerlink" href="#openmp-profiling-with-openmp-report" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>openmp-report</cite> config measures and prints the time spent in OpenMP
 constructs on each thread:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=openmp-report ./caliper-openmp-example
@@ -89,8 +95,8 @@ also an inclusive metric.</p>
 <dt>Time (barrier)</dt><dd><p>CPU time spent in OpenMP barriers (both implicit and explicit barriers).</p>
 </dd>
 </dl>
-<div class="section" id="profiling-by-thread">
-<h3>Profiling by thread<a class="headerlink" href="#profiling-by-thread" title="Permalink to this headline">¶</a></h3>
+<section id="profiling-by-thread">
+<h3>Profiling by thread<a class="headerlink" href="#profiling-by-thread" title="Permalink to this heading">¶</a></h3>
 <p>With the “show_threads” option, we can see the times spent on each thread:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=openmp-report,show_threads=1,show_regions=true ./caliper-openmp-example
 Path   #Threads Time (thread) Time (total) Thread Work %     Barrier % Time (work) Time (barrier)
@@ -112,9 +118,9 @@ main
 “Time (total)” shows the CPU time in each OpenMP thread per Caliper region.
 The rows without a “Thread” entry refer to time spent outside OpenMP parallel
 regions.</p>
-</div>
-<div class="section" id="thread-summary-view">
-<h3>Thread summary view<a class="headerlink" href="#thread-summary-view" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="thread-summary-view">
+<h3>Thread summary view<a class="headerlink" href="#thread-summary-view" title="Permalink to this heading">¶</a></h3>
 <p>With “show_regions=false”, we can disable the grouping by Caliper region and
 just show a performance summary across OpenMP threads:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=openmp-report,show_threads=true,show_regions=false
@@ -126,10 +132,10 @@ just show a performance summary across OpenMP threads:</p>
        4      0.004913     0.004913      0  62.682091 37.317909    0.002926       0.00174
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="openmp-options-for-other-configs">
-<span id="omp-instrumentation"></span><h2>OpenMP options for other configs<a class="headerlink" href="#openmp-options-for-other-configs" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="openmp-options-for-other-configs">
+<span id="omp-instrumentation"></span><h2>OpenMP options for other configs<a class="headerlink" href="#openmp-options-for-other-configs" title="Permalink to this heading">¶</a></h2>
 <dl class="simple">
 <dt>Caliper also provides the OpenMP options for other profiling configs such as</dt><dd><p><cite>hatchet-region-profile</cite>. These are:</p>
 </dd>
@@ -142,9 +148,9 @@ shown above.</p>
 as with the “show_threads” option for <cite>openmp-report</cite> shown above.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="instrumentation">
-<h2>Instrumentation<a class="headerlink" href="#instrumentation" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="instrumentation">
+<h2>Instrumentation<a class="headerlink" href="#instrumentation" title="Permalink to this heading">¶</a></h2>
 <p>When instrumenting the code, make sure to use “process”-scope annotations
 to mark code regions outside of OpenMP parallel regions, <em>or</em> put thread-scope
 annotations onto every OpenMP thread. Mixing both approaches is possible but
@@ -155,37 +161,38 @@ Caliper regions should use process or thread scope. They use thread scope
 by default. The following example sets the attribute default scope to
 “process” so that the “main” and “work” Caliper regions are visible on all
 OpenMP threads inside the parallel region:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;caliper/cali.h&gt;</span><span class="cp"></span>
 
-<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
-<span class="p">{</span>
-    <span class="n">cali_config_set</span><span class="p">(</span><span class="s">&quot;CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE&quot;</span><span class="p">,</span> <span class="s">&quot;process&quot;</span><span class="p">);</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">cali_config_set</span><span class="p">(</span><span class="s">&quot;CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;process&quot;</span><span class="p">);</span><span class="w"></span>
 
-    <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
-    <span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;work&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_BEGIN</span><span class="p">(</span><span class="s">&quot;work&quot;</span><span class="p">);</span><span class="w"></span>
 
 <span class="cp">#pragma omp parallel</span>
-    <span class="p">{</span>
-        <span class="c1">// ...</span>
-    <span class="p">}</span>
+<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// ...</span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
 
-    <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;work&quot;</span><span class="p">);</span>
-    <span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;work&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">CALI_MARK_END</span><span class="p">(</span><span class="s">&quot;main&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="enabling-ompt">
-<h2>Enabling OMPT<a class="headerlink" href="#enabling-ompt" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="enabling-ompt">
+<h2>Enabling OMPT<a class="headerlink" href="#enabling-ompt" title="Permalink to this heading">¶</a></h2>
 <p>Caliper enables the OpenMP tools interface automatically when the <cite>ompt</cite>
 service is active. In some cases this can fail: this is often the case when
 the OpenMP runtime is initialized before Caliper. In this case, set the
 <span class="target" id="index-0"></span><a class="reference internal" href="configuration.html#envvar-CALI_USE_OMPT"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_USE_OMPT</span></code></a> environment variable to “1” or “true” to enable
 OpenMP support manually.</p>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -194,8 +201,9 @@ OpenMP support manually.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">OpenMP profiling</a><ul>
 <li><a class="reference internal" href="#openmp-profiling-with-openmp-report">OpenMP profiling with openmp-report</a><ul>
 <li><a class="reference internal" href="#profiling-by-thread">Profiling by thread</a></li>
@@ -209,12 +217,17 @@ OpenMP support manually.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="CUDA.html"
-                        title="previous chapter">CUDA profiling</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="build.html"
-                        title="next chapter">Building Caliper</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="CUDA.html"
+                          title="previous chapter">CUDA profiling</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="build.html"
+                          title="next chapter">Building Caliper</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -226,12 +239,12 @@ OpenMP support manually.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -243,17 +256,21 @@ OpenMP support manually.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="build.html" title="Building Caliper"
              >next</a> |</li>
         <li class="right" >
           <a href="CUDA.html" title="CUDA profiling"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">OpenMP profiling</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

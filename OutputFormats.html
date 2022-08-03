@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Output formatting &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Output formatting &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="tools.html" title="Caliper tools"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>  
 
@@ -40,14 +46,14 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="output-formatting">
-<h1>Output formatting<a class="headerlink" href="#output-formatting" title="Permalink to this headline">¶</a></h1>
+  <section id="output-formatting">
+<h1>Output formatting<a class="headerlink" href="#output-formatting" title="Permalink to this heading">¶</a></h1>
 <p>Caliper provides a variety of formatters to create machine or
 human-readable output. These can be used in all I/O services and tools
 that process CalQL, e.g. <cite>cali-query</cite>, the <cite>report</cite> and <cite>mpireport</cite>
 services, as well as the report generation API.</p>
-<div class="section" id="formatter-configuration">
-<h2>Formatter configuration<a class="headerlink" href="#formatter-configuration" title="Permalink to this headline">¶</a></h2>
+<section id="formatter-configuration">
+<h2>Formatter configuration<a class="headerlink" href="#formatter-configuration" title="Permalink to this heading">¶</a></h2>
 <p>To select a formatter, use the <cite>FORMAT</cite> statement in CalQL. Some
 formatters, e.g. <cite>tree</cite>, take additional arguments in a “function
 call” syntax, e.g.</p>
@@ -60,14 +66,14 @@ applicable, attributes will be printed in the order they are listed in
 the <cite>SELECT</cite> statement.</p>
 <p>Some formatters (e.g., <cite>table</cite>) support the <cite>ORDER BY</cite> CalQL statement
 to print records in a given order, but not all of them do.</p>
-</div>
-<div class="section" id="cali">
-<h2>Cali<a class="headerlink" href="#cali" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="cali">
+<h2>Cali<a class="headerlink" href="#cali" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cali</cite> formatter writes Caliper raw data that can be read by
 <cite>cali-query</cite>.</p>
-</div>
-<div class="section" id="expand">
-<h2>Expand<a class="headerlink" href="#expand" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="expand">
+<h2>Expand<a class="headerlink" href="#expand" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>expand</cite> formatter writes records as comma-separated key-value
 lists, with each record in a single line. Hierachical values are
 written with slash <code class="docutils literal notranslate"><span class="pre">/</span></code> separators.</p>
@@ -85,9 +91,9 @@ written with slash <code class="docutils literal notranslate"><span class="pre">
 <span class="n">event</span><span class="o">.</span><span class="n">end</span><span class="c1">#function=LagrangeNodal,count=100,time.inclusive.duration=1508828</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="table">
-<h2>Table<a class="headerlink" href="#table" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="table">
+<h2>Table<a class="headerlink" href="#table" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>table</cite> formatter prints a human-readable text table with
 automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <p>Example:</p>
@@ -122,9 +128,9 @@ automatically determined column widths. It supports <cite>ORDER BY</cite>.</p>
 <span class="n">TimeIncrement</span>                     <span class="mi">100</span>                    <span class="mi">1280</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="tree">
-<h2>Tree<a class="headerlink" href="#tree" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="tree">
+<h2>Tree<a class="headerlink" href="#tree" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>tree</cite> formatter prints records in hierarchical form based on the
 input data, such as nested functions and regions.</p>
 <p>The attribute used to build the hierarchy can be given as an argument
@@ -167,9 +173,9 @@ there is only one record for each node.</p>
   <span class="n">TimeIncrement</span>                              <span class="mi">100</span>                    <span class="mi">1280</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="json">
-<span id="json-format"></span><h2>Json<a class="headerlink" href="#json" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="json">
+<span id="json-format"></span><h2>Json<a class="headerlink" href="#json" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>json</cite> formatter writes a list-of-dicts style json file, where
 each Caliper record is a JSON object with attribute:value
 entries. Hierarchical values are written as a single string with a
@@ -198,9 +204,9 @@ produces larger files than <cite>json-split</cite>.</p>
 <span class="p">{</span><span class="s2">&quot;loop&quot;</span><span class="p">:</span><span class="s2">&quot;lulesh.cycle&quot;</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">:</span><span class="s2">&quot;main/LagrangeLeapFrog/LagrangeNodal/CalcForceForNodes/CalcVolumeForceForElems&quot;</span><span class="p">,</span><span class="s2">&quot;count&quot;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span><span class="s2">&quot;time.inclusive.duration&quot;</span><span class="p">:</span><span class="mi">1456613</span><span class="p">},</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="json-split">
-<span id="json-split-format"></span><h2>Json-split<a class="headerlink" href="#json-split" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="json-split">
+<span id="json-split-format"></span><h2>Json-split<a class="headerlink" href="#json-split" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>json-split</cite> formatter writes a JSON file with separate fields for
 Caliper records and metadata. It is generally a more efficient format
 than the list-of-dicts produced by the <cite>json</cite> formatter, and
@@ -275,10 +281,11 @@ in the array.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -287,8 +294,9 @@ in the array.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Output formatting</a><ul>
 <li><a class="reference internal" href="#formatter-configuration">Formatter configuration</a></li>
 <li><a class="reference internal" href="#cali">Cali</a></li>
@@ -301,12 +309,17 @@ in the array.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="calql.html"
-                        title="previous chapter">The CalQL query language</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="tools.html"
-                        title="next chapter">Caliper tools</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="calql.html"
+                          title="previous chapter">The CalQL query language</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="tools.html"
+                          title="next chapter">Caliper tools</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -318,12 +331,12 @@ in the array.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -335,17 +348,21 @@ in the array.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="tools.html" title="Caliper tools"
              >next</a> |</li>
         <li class="right" >
           <a href="calql.html" title="The CalQL query language"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Output formatting</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

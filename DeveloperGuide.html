@@ -1,22 +1,24 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Developer guide &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Developer guide &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Caliper tools" href="tools.html" /> 
+    <link rel="prev" title="Python reader API" href="pythonreader.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -25,9 +27,13 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper tools"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pythonreader.html" title="Python reader API"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Developer guide</a></li> 
       </ul>
     </div>  
 
@@ -36,34 +42,34 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="developer-guide">
-<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this headline">¶</a></h1>
+  <section id="developer-guide">
+<h1>Developer guide<a class="headerlink" href="#developer-guide" title="Permalink to this heading">¶</a></h1>
 <p>This section describes internal APIs for Caliper service developers.</p>
-<div class="section" id="caliper-instance-objects">
-<h2>Caliper instance objects<a class="headerlink" href="#caliper-instance-objects" title="Permalink to this headline">¶</a></h2>
+<section id="caliper-instance-objects">
+<h2>Caliper instance objects<a class="headerlink" href="#caliper-instance-objects" title="Permalink to this heading">¶</a></h2>
 <p>The Caliper API is accessed through objects of the <cite>cali::Caliper</cite>
 class. The class constructor or the static
 <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::instance()</span></code> and
 <code class="xref cpp cpp-func docutils literal notranslate"><span class="pre">Caliper::sigsafe_instance()</span></code> methods can create Caliper
 instance objects. Example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
 
-<span class="kt">int</span> <span class="nf">foo</span><span class="p">()</span>
-<span class="p">{</span>
-  <span class="n">cali</span><span class="o">::</span><span class="n">Caliper</span> <span class="n">c</span><span class="p">;</span> <span class="c1">// Create a Caliper instance object</span>
-  <span class="n">c</span><span class="p">.</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">);</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">foo</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Caliper</span><span class="w"> </span><span class="n">c</span><span class="p">;</span><span class="w"> </span><span class="c1">// Create a Caliper instance object</span>
+<span class="w">  </span><span class="n">c</span><span class="p">.</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"></span>
 
-  <span class="n">cali</span><span class="o">::</span><span class="n">Caliper</span><span class="o">::</span><span class="n">instance</span><span class="p">().</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">);</span> <span class="c1">// alternative</span>
-<span class="p">}</span>
+<span class="w">  </span><span class="n">cali</span><span class="o">::</span><span class="n">Caliper</span><span class="o">::</span><span class="n">instance</span><span class="p">().</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"> </span><span class="c1">// alternative</span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
 <p>Caliper instance objects contain thread-specific information. We
 highly recommend creating Caliper objects only on the stack (i.e., as
 non-static local variable within a function). In particular, <em>do
 not</em> share Caliper objects between different threads.</p>
-</div>
-<div class="section" id="signal-safety">
-<h2>Signal safety<a class="headerlink" href="#signal-safety" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="signal-safety">
+<h2>Signal safety<a class="headerlink" href="#signal-safety" title="Permalink to this heading">¶</a></h2>
 <p>(Most of) Caliper’s API is async-signal safe. This works as follows:</p>
 <blockquote>
 <div><ul class="simple">
@@ -99,56 +105,57 @@ necessary to skip functionality when it can’t be performed in a
 signal-safe way; in this case it is good practice to count and report
 the number of times the functionality had to be skipped.</p>
 <p>Example:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;Caliper.h&gt;</span><span class="cp"></span>
 
-<span class="k">static</span> <span class="kt">unsigned</span> <span class="n">n_snapshots_dropped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="k">static</span> <span class="kt">unsigned</span> <span class="n">n_signals_dropped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="k">static</span> <span class="kt">unsigned</span> <span class="n">n_signals</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">n_snapshots_dropped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">n_signals_dropped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="k">static</span><span class="w"> </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">n_signals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
-<span class="k">using</span> <span class="k">namespace</span> <span class="n">cali</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">cali</span><span class="p">;</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">async_signal_handler</span><span class="p">()</span>
-<span class="p">{</span>
-  <span class="o">++</span><span class="n">n_signals</span><span class="p">;</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">async_signal_handler</span><span class="p">()</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="o">++</span><span class="n">n_signals</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// Request a signal-safe caliper instance object</span>
-  <span class="n">Caliper</span> <span class="n">c</span> <span class="o">=</span> <span class="n">Caliper</span><span class="o">::</span><span class="n">sigsafe_instance</span><span class="p">();</span>
+<span class="w">  </span><span class="c1">// Request a signal-safe caliper instance object</span>
+<span class="w">  </span><span class="n">Caliper</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Caliper</span><span class="o">::</span><span class="n">sigsafe_instance</span><span class="p">();</span><span class="w"></span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// Could not obtain a signal-safe Caliper object -&gt; bail out</span>
-    <span class="o">++</span><span class="n">n_signals_dropped</span><span class="p">;</span>
-    <span class="k">return</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Could not obtain a signal-safe Caliper object -&gt; bail out</span>
+<span class="w">    </span><span class="o">++</span><span class="n">n_signals_dropped</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="c1">// Now it&#39;s safe to perform signal-safe actions, e.g. push_snapshot()</span>
-  <span class="n">c</span><span class="p">.</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">);</span>
-<span class="p">}</span>
+<span class="w">  </span><span class="c1">// Now it&#39;s safe to perform signal-safe actions, e.g. push_snapshot()</span>
+<span class="w">  </span><span class="n">c</span><span class="p">.</span><span class="n">push_snapshot</span><span class="p">(</span><span class="n">CALI_SCOPE_THREAD</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="kt">void</span> <span class="nf">snapshot_cb</span><span class="p">(</span><span class="n">Caliper</span><span class="o">*</span> <span class="n">c</span><span class="p">,</span> <span class="kt">int</span> <span class="n">scope</span><span class="p">,</span> <span class="k">const</span> <span class="n">EntryList</span><span class="o">*</span><span class="p">,</span> <span class="n">EntryList</span><span class="o">*</span> <span class="n">snapshot</span><span class="p">)</span>
-<span class="p">{</span>
-  <span class="c1">// Inside this Caliper callback function, check if it is safe</span>
-  <span class="c1">// to perform non-sigsafe actions</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">snapshot_cb</span><span class="p">(</span><span class="n">Caliper</span><span class="o">*</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">scope</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">EntryList</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">EntryList</span><span class="o">*</span><span class="w"> </span><span class="n">snapshot</span><span class="p">)</span><span class="w"></span>
+<span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Inside this Caliper callback function, check if it is safe</span>
+<span class="w">  </span><span class="c1">// to perform non-sigsafe actions</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">is_signal</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// If functionality can&#39;t be performed in signal-safe manner, bail out</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">c</span><span class="o">-&gt;</span><span class="n">is_signal</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// If functionality can&#39;t be performed in signal-safe manner, bail out</span>
 
-    <span class="o">++</span><span class="n">n_snapshots_dropped</span><span class="p">;</span>
-    <span class="k">return</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">// Memory allocations are not signal safe:</span>
-    <span class="c1">// only run this code if we&#39;re not called from a signal handler</span>
+<span class="w">    </span><span class="o">++</span><span class="n">n_snapshots_dropped</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Memory allocations are not signal safe:</span>
+<span class="w">    </span><span class="c1">// only run this code if we&#39;re not called from a signal handler</span>
 
-    <span class="kt">int</span><span class="o">*</span> <span class="n">buf</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="p">[</span><span class="n">size</span><span class="p">];</span>
-    <span class="n">do_stuff</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
-    <span class="k">delete</span><span class="p">[]</span> <span class="n">buf</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
+<span class="w">    </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">int</span><span class="p">[</span><span class="n">size</span><span class="p">];</span><span class="w"></span>
+<span class="w">    </span><span class="n">do_stuff</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">delete</span><span class="p">[]</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -157,8 +164,9 @@ the number of times the functionality had to be skipped.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Developer guide</a><ul>
 <li><a class="reference internal" href="#caliper-instance-objects">Caliper instance objects</a></li>
 <li><a class="reference internal" href="#signal-safety">Signal safety</a></li>
@@ -166,9 +174,12 @@ the number of times the functionality had to be skipped.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="tools.html"
-                        title="previous chapter">Caliper tools</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="pythonreader.html"
+                          title="previous chapter">Python reader API</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -180,12 +191,12 @@ the number of times the functionality had to be skipped.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -197,14 +208,18 @@ the number of times the functionality had to be skipped.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tools.html" title="Caliper tools"
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pythonreader.html" title="Python reader API"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Developer guide</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

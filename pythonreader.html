@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Python reader API &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Developer guide" href="DeveloperGuide.html" />
+    <link rel="prev" title="Caliper tools" href="tools.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="DeveloperGuide.html" title="Developer guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper tools"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python reader API</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="python-reader-api">
+<h1>Python reader API<a class="headerlink" href="#python-reader-api" title="Permalink to this heading">¶</a></h1>
+<p>The caliper-reader is a Python API for reading Caliper’s .cali file
+format. You can install it via pip:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install caliper-reader
+</pre></div>
+</div>
+<p>or add the <code class="docutils literal notranslate"><span class="pre">python/caliper-reader</span></code> directory in the cloned Caliper
+repository to <code class="docutils literal notranslate"><span class="pre">PYTHONPATH</span></code>.</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading">¶</a></h2>
+<p>The <a class="reference internal" href="#caliperreader.CaliperReader" title="caliperreader.CaliperReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">caliperreader.CaliperReader</span></code></a> class reads a Caliper file and then provides its
+contents in the <cite>records</cite> and <cite>globals</cite> class members, where <cite>records</cite>
+is a Python list-of-dicts containing the recorded performance data
+and <cite>globals</cite> is a Python dict with program metadata about the run.
+The dicts represent Caliper attribute:value records: the key is the
+Caliper attribute name; the value is a string or list of strings.
+The example below prints the <cite>avg#inclusive#sum#time.duration</cite> metric
+for every region path in the provided example profile data file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">caliperreader</span> <span class="k">as</span> <span class="nn">cr</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">CaliperReader</span><span class="p">()</span>
+<span class="n">r</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;example-profile.cali&#39;</span><span class="p">)</span>
+
+<span class="n">metric</span> <span class="o">=</span> <span class="s1">&#39;avg#inclusive#sum#time.duration&#39;</span>
+
+<span class="k">for</span> <span class="n">rec</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">records</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">in</span> <span class="n">rec</span> <span class="k">else</span> <span class="s1">&#39;UNKNOWN&#39;</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="n">metric</span><span class="p">]</span> <span class="k">if</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">rec</span> <span class="k">else</span> <span class="s1">&#39;0&#39;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="s2">&quot;/&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">time</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The CaliperReader <cite>attributes()</cite> function returns the list of Caliper
+attributes. The <cite>attribute()</cite> function returns an <cite>Attribute</cite> object
+to query metadata for a given Caliper attribute name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">attribute</span><span class="p">(</span><span class="s1">&#39;avg#inclusive#sum#time.duration&#39;</span><span class="p">)</span>
+<span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;attribute.unit&#39;</span><span class="p">)</span>
+<span class="s1">&#39;sec&#39;</span>
+</pre></div>
+</div>
+<p>You can use the <a class="reference internal" href="#caliperreader.read_caliper_contents" title="caliperreader.read_caliper_contents"><code class="xref py py-func docutils literal notranslate"><span class="pre">caliperreader.read_caliper_contents()</span></code></a> function as a
+shortcut to read Caliper data without creating a <cite>CaliperReader</cite> object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">records</span><span class="p">,</span><span class="nb">globals</span><span class="p">)</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">read_caliper_contents</span><span class="p">(</span><span class="s1">&#39;example-profile.cali&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="module-caliperreader">
+<span id="api-reference"></span><h2>API reference<a class="headerlink" href="#module-caliperreader" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="caliperreader.read_caliper_contents">
+<span class="sig-prename descclassname"><span class="pre">caliperreader.</span></span><span class="sig-name descname"><span class="pre">read_caliper_contents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename_or_stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.read_caliper_contents" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a Caliper .cali file and returns its contents.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>filename_or_stream:</dt><dd><p>Stream object or the filename of the .cali file.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>(records, globals):</dt><dd><p>A tuple with the Caliper snapshot records and globals. The first
+element contains the snapshot record as a list of dicts. The
+second element contains the global key:value attributes as a
+dict.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="caliperreader.read_caliper_globals">
+<span class="sig-prename descclassname"><span class="pre">caliperreader.</span></span><span class="sig-name descname"><span class="pre">read_caliper_globals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename_or_stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.read_caliper_globals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a Caliper .cali file and returns its global attributes.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>filename_or_stream:</dt><dd><p>Stream object or the filename of the .cali file.</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>dict:</dt><dd><p>The global key:value attributes as a dict.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caliperreader.CaliperReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caliperreader.</span></span><span class="sig-name descname"><span class="pre">CaliperReader</span></span><a class="headerlink" href="#caliperreader.CaliperReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a Caliper .cali file and exports its contents.</p>
+<p>Use the read() method to read a Caliper .cali file. Contents are then
+available in the “records” and “globals” attributes. Each CaliperReader
+object should read a single file.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><dl class="simple">
+<dt>records<span class="classifier">list-of-dicts</span></dt><dd><p>The snapshot records read from the .cali file.</p>
+</dd>
+<dt>globals<span class="classifier">dict</span></dt><dd><p>The global key:value attributes defined in the .cali file</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperReader.attribute">
+<span class="sig-name descname"><span class="pre">attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperReader.attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Caliper Attribute object for the given attribute name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperReader.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperReader.attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of attribute names.</p>
+<p>A file must have been read with read().
+Only returns attribute keys not marked as hidden.</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>The attribute keys (list of strings).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperReader.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename_or_stream</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperReader.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a .cali file or stream.</p>
+<p>After reading, the file’s contents are available in the CaliperReader
+object’s “records” and “globals” attributes.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>filename_or_stream<span class="classifier">str or stream object</span></dt><dd><p>The filename or stream to read.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caliperreader.CaliperStreamReader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caliperreader.</span></span><span class="sig-name descname"><span class="pre">CaliperStreamReader</span></span><a class="headerlink" href="#caliperreader.CaliperStreamReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a Caliper .cali data stream</p>
+<p>Use the read() method to read a Caliper .cali file and process
+records using callback methods.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><dl class="simple">
+<dt>globals<span class="classifier">dict</span></dt><dd><p>The global key:value attributes defined in the .cali file</p>
+</dd>
+<dt>num_records<span class="classifier">dict</span></dt><dd><p>The number of different kinds of records read</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperStreamReader.attribute">
+<span class="sig-name descname"><span class="pre">attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperStreamReader.attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a Caliper Attribute object for the given attribute name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperStreamReader.attributes">
+<span class="sig-name descname"><span class="pre">attributes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperStreamReader.attributes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the list of attribute names.</p>
+<p>A file must have been read with read().</p>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>The attribute keys (list of strings).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.CaliperStreamReader.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename_or_stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_record_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.CaliperStreamReader.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a .cali file or stream.</p>
+<p>Snapshot records being read are fed to the user-provided
+process_record_fn callback function.
+After reading, global (metadata) values are stored in the
+globals attribute.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>filename_or_stream<span class="classifier">str or stream object</span></dt><dd><p>The filename or stream to read.</p>
+</dd>
+<dt>process_record_fn<span class="classifier">Function accepting a dict</span></dt><dd><p>A callback function to process performance data records</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">caliperreader.metadatadb.</span></span><span class="sig-name descname"><span class="pre">Attribute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Caliper attribute key.</p>
+<p>Provides information about Caliper attribute keys.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.attribute_type">
+<span class="sig-name descname"><span class="pre">attribute_type</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.attribute_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the name of the attribute’s Caliper data type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return metadata value for this attribute.</p>
+<dl class="simple">
+<dt>Arguments:</dt><dd><dl class="simple">
+<dt>attribute<span class="classifier">string or integer</span></dt><dd><p>Metadata attribute name or ID</p>
+</dd>
+</dl>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>(object):</dt><dd><p>The metadata value.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.id">
+<span class="sig-name descname"><span class="pre">id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the node ID of the Caliper attribute.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.is_global">
+<span class="sig-name descname"><span class="pre">is_global</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.is_global" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is this a global attribute (run metadata)?</p>
+<p>Attributes with the “global” property describe run metadata
+like the execution environment or program configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.is_hidden">
+<span class="sig-name descname"><span class="pre">is_hidden</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.is_hidden" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is this a hidden attribute?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.is_nested">
+<span class="sig-name descname"><span class="pre">is_nested</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.is_nested" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does this attribute have the Caliper “nested” property?</p>
+<p>Attributes with the “nested” property define the hierarchy of Caliper
+begin/end annotations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.is_value">
+<span class="sig-name descname"><span class="pre">is_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.is_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does this attribute have the “as_value” property?</p>
+<p>Attributes with the “as_value” property are stored directly in
+snapshot records.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dict with all metadata entries for this attribute</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the name of the Caliper attribute.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caliperreader.metadatadb.Attribute.scope">
+<span class="sig-name descname"><span class="pre">scope</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#caliperreader.metadatadb.Attribute.scope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the attribute’s scope (“process”, “thread”, or “task”)</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
+            </a></p>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Python reader API</a><ul>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#module-caliperreader">API reference</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="tools.html"
+                          title="previous chapter">Caliper tools</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="DeveloperGuide.html"
+                          title="next chapter">Developer guide</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/pythonreader.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="DeveloperGuide.html" title="Developer guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tools.html" title="Caliper tools"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Python reader API</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    </div>
+  </body>
+</html>

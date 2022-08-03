@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>CUDA profiling &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>CUDA profiling &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="OpenMP.html" title="OpenMP profiling"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CUDA profiling</a></li> 
       </ul>
     </div>  
 
@@ -40,13 +46,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="cuda-profiling">
-<h1>CUDA profiling<a class="headerlink" href="#cuda-profiling" title="Permalink to this headline">¶</a></h1>
+  <section id="cuda-profiling">
+<h1>CUDA profiling<a class="headerlink" href="#cuda-profiling" title="Permalink to this heading">¶</a></h1>
 <p>Caliper can profile CUDA API functions and CUDA device-side activities like
 kernel executions and memory copies. This requires Caliper to be built with
 CUpti support (<cite>-DWITH_CUPTI=On</cite>).</p>
-<div class="section" id="profiling-cuda-host-side-api-functions">
-<h2>Profiling CUDA host-side API functions<a class="headerlink" href="#profiling-cuda-host-side-api-functions" title="Permalink to this headline">¶</a></h2>
+<section id="profiling-cuda-host-side-api-functions">
+<h2>Profiling CUDA host-side API functions<a class="headerlink" href="#profiling-cuda-host-side-api-functions" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>profile.cuda</cite> option is available for many ConfigManager configs like
 <cite>runtime-report</cite>, <cite>hatchet-region-profile</cite>, and <cite>spot</cite>. It intercepts host-side
 CUDA API functions like <code class="docutils literal notranslate"><span class="pre">cudaMemcpy</span></code> and <code class="docutils literal notranslate"><span class="pre">cudaDeviceSynchronize</span></code>.
@@ -70,10 +76,42 @@ timestep_loop                    0.000175      0.000791      0.000345  0.002076
 ...
 </pre></div>
 </div>
+</section>
+<section id="profiling-cuda-activities">
+<h2>Profiling CUDA activities<a class="headerlink" href="#profiling-cuda-activities" title="Permalink to this heading">¶</a></h2>
+<p>The <cite>cuda.gputime</cite> option for <cite>runtime-report</cite> and <cite>hatchet-region-profile</cite>
+measures and reports times spent in GPU activities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CALI_CONFIG</span><span class="o">=</span><span class="n">runtime</span><span class="o">-</span><span class="n">report</span><span class="p">,</span><span class="n">cuda</span><span class="o">.</span><span class="n">gputime</span> <span class="n">lrun</span> <span class="o">-</span><span class="n">n</span> <span class="mi">4</span> <span class="o">./</span><span class="n">tea_leaf</span>
+<span class="n">Path</span>                       <span class="n">Min</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Max</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Avg</span> <span class="n">time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Time</span> <span class="o">%</span>    <span class="n">Avg</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Min</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span> <span class="n">Max</span> <span class="n">GPU</span> <span class="n">Time</span><span class="o">/</span><span class="n">rank</span>
+<span class="n">timestep_loop</span>                  <span class="mf">16.400791</span>     <span class="mf">16.402930</span>     <span class="mf">16.401392</span> <span class="mf">99.340451</span>         <span class="mf">12.014107</span>         <span class="mf">11.990568</span>         <span class="mf">12.031210</span>
+  <span class="n">summary</span>                       <span class="mf">0.000743</span>      <span class="mf">0.000852</span>      <span class="mf">0.000772</span>  <span class="mf">0.004679</span>          <span class="mf">0.000420</span>          <span class="mf">0.000419</span>          <span class="mf">0.000421</span>
+  <span class="n">total_solve</span>                  <span class="mf">16.397178</span>     <span class="mf">16.398656</span>     <span class="mf">16.398176</span> <span class="mf">99.320973</span>         <span class="mf">12.013687</span>         <span class="mf">11.990149</span>         <span class="mf">12.030790</span>
+    <span class="n">reset</span>                       <span class="mf">0.002924</span>      <span class="mf">0.004401</span>      <span class="mf">0.003682</span>  <span class="mf">0.022303</span>          <span class="mf">0.001463</span>          <span class="mf">0.001461</span>          <span class="mf">0.001465</span>
+      <span class="n">internal_halo_update</span>      <span class="mf">0.000031</span>      <span class="mf">0.000038</span>      <span class="mf">0.000033</span>  <span class="mf">0.000201</span>
+      <span class="n">halo_update</span>               <span class="mf">0.000033</span>      <span class="mf">0.000042</span>      <span class="mf">0.000036</span>  <span class="mf">0.000220</span>
+      <span class="n">halo_exchange</span>             <span class="mf">0.002589</span>      <span class="mf">0.004060</span>      <span class="mf">0.003304</span>  <span class="mf">0.020013</span>          <span class="mf">0.000223</span>          <span class="mf">0.000222</span>          <span class="mf">0.000223</span>
+    <span class="n">solve</span>                      <span class="mf">16.377495</span>     <span class="mf">16.377513</span>     <span class="mf">16.377504</span> <span class="mf">99.195768</span>         <span class="mf">12.003737</span>         <span class="mf">11.980207</span>         <span class="mf">12.020827</span>
+      <span class="n">dot_product</span>               <span class="mf">0.001003</span>      <span class="mf">0.001339</span>      <span class="mf">0.001151</span>  <span class="mf">0.006971</span>
+      <span class="n">internal_halo_update</span>      <span class="mf">0.087994</span>      <span class="mf">0.094034</span>      <span class="mf">0.089777</span>  <span class="mf">0.543764</span>
+      <span class="n">halo_update</span>               <span class="mf">0.199130</span>      <span class="mf">0.199757</span>      <span class="mf">0.199502</span>  <span class="mf">1.208347</span>
+      <span class="n">halo_exchange</span>            <span class="mf">14.407030</span>     <span class="mf">14.427922</span>     <span class="mf">14.419671</span> <span class="mf">87.337501</span>          <span class="mf">0.624949</span>          <span class="mf">0.619820</span>          <span class="mf">0.629013</span>
+  <span class="n">tea_init</span>                      <span class="mf">0.016205</span>      <span class="mf">0.016616</span>      <span class="mf">0.016506</span>  <span class="mf">0.099973</span>          <span class="mf">0.008487</span>          <span class="mf">0.008475</span>          <span class="mf">0.008501</span>
+    <span class="n">internal_halo_update</span>        <span class="mf">0.000096</span>      <span class="mf">0.000102</span>      <span class="mf">0.000100</span>  <span class="mf">0.000603</span>
+    <span class="n">halo_update</span>                 <span class="mf">0.000104</span>      <span class="mf">0.000113</span>      <span class="mf">0.000109</span>  <span class="mf">0.000660</span>
+    <span class="n">halo_exchange</span>               <span class="mf">0.009489</span>      <span class="mf">0.010272</span>      <span class="mf">0.009914</span>  <span class="mf">0.060046</span>          <span class="mf">0.001013</span>          <span class="mf">0.001007</span>          <span class="mf">0.001022</span>
+  <span class="n">timestep</span>                      <span class="mf">0.000311</span>      <span class="mf">0.002516</span>      <span class="mf">0.001355</span>  <span class="mf">0.008205</span>
+</pre></div>
 </div>
-<div class="section" id="profiling-cuda-activities">
-<h2>Profiling CUDA activities<a class="headerlink" href="#profiling-cuda-activities" title="Permalink to this headline">¶</a></h2>
-<p>The <cite>cuda-activity-report</cite> and <cite>cuda-activity-profile</cite> configs record the time
+<p>The GPU Time/rank metrics denote the number of seconds spent in GPU activities,
+such as kernel execution or memory copies. The GPU time values are inclusive,
+i.e. they represent the total amount of GPU time launched from a Caliper region
+and any region below. Thus, the GPU time values for “timestep_loop” in the
+example above represent the GPU activity time for the entire program.</p>
+<p>Note that the <cite>cuda.gputime</cite> option is more expensive than regular host-side
+region profiling because it uses the NVidia CUPTI API to trace GPU activities.
+It is primarily intended for short, dedicated performance profiling experiments.</p>
+<p>There are also dedicated configs for examining GPU activities:
+the <cite>cuda-activity-report</cite> and <cite>cuda-activity-profile</cite> configs record the time
 spent in CUDA activities (e.g. kernel executions or memory copies) on the CUDA
 device. The GPU times are mapped to the Caliper regions that launched those
 GPU activities. Here is example output for <cite>cuda-activity-report</cite>:</p>
@@ -125,9 +163,9 @@ launched from the Caliper region. Maximum value among all MPI ranks.</p>
 represents the GPU utilization in the Caliper region.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="show-gpu-kernels">
-<h2>Show GPU kernels<a class="headerlink" href="#show-gpu-kernels" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="show-gpu-kernels">
+<h2>Show GPU kernels<a class="headerlink" href="#show-gpu-kernels" title="Permalink to this heading">¶</a></h2>
 <p>Use the <cite>show_kernels</cite> option in <cite>cuda-activity-report</cite> to distinguish
 individual CUDA kernels:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span> $ CALI_CONFIG=cuda-activity-report,show_kernels lrun -n 4 ./tea_leaf
@@ -156,9 +194,9 @@ individual CUDA kernels:</p>
 for each Caliper region, we see kernels launched from this region as well as
 all regions below it. Under the top-level region (<code class="docutils literal notranslate"><span class="pre">timestep_loop</span></code>),
 we see the total time spent in each CUDA kernel in the program.</p>
-</div>
-<div class="section" id="profiling-memory-copies">
-<h2>Profiling memory copies<a class="headerlink" href="#profiling-memory-copies" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="profiling-memory-copies">
+<h2>Profiling memory copies<a class="headerlink" href="#profiling-memory-copies" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cuda.memcpy</cite> option shows the amount of data copied between CPU and GPU
 memory:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ CALI_CONFIG=cuda-activity-report,cuda.memcpy lrun -n 4 ./tea_leaf
@@ -188,9 +226,9 @@ and back. There are four new metrics:</p>
 <dt>Copy GPU-&gt;CPU (max)</dt><dd><p>Data copied (Megabytes) from GPU to CPU memory. Maximum among MPI ranks.</p>
 </dd>
 </dl>
-</div>
-<div class="section" id="profiles-in-json-or-cali-format">
-<h2>Profiles in JSON or CALI format<a class="headerlink" href="#profiles-in-json-or-cali-format" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="profiles-in-json-or-cali-format">
+<h2>Profiles in JSON or CALI format<a class="headerlink" href="#profiles-in-json-or-cali-format" title="Permalink to this heading">¶</a></h2>
 <p>The <cite>cuda-activity-profile</cite> config records data similar to
 <cite>cuda-activity-report</cite> but writes it in machine-readable JSON or Caliper’s
 “.cali” format for processing with <cite>cali-query</cite>. By default, it writes the
@@ -210,10 +248,11 @@ values:</p>
 <dt>json</dt><dd><p>Easy-to-parse list-of-dicts style JSON. See <a class="reference internal" href="OutputFormats.html#json-format"><span class="std std-ref">Json</span></a>.</p>
 </dd>
 </dl>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -222,8 +261,9 @@ values:</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">CUDA profiling</a><ul>
 <li><a class="reference internal" href="#profiling-cuda-host-side-api-functions">Profiling CUDA host-side API functions</a></li>
 <li><a class="reference internal" href="#profiling-cuda-activities">Profiling CUDA activities</a></li>
@@ -234,12 +274,17 @@ values:</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="CaliperBasics.html"
-                        title="previous chapter">Caliper Basics</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="OpenMP.html"
-                        title="next chapter">OpenMP profiling</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="CaliperBasics.html"
+                          title="previous chapter">Caliper Basics</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="OpenMP.html"
+                          title="next chapter">OpenMP profiling</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -251,12 +296,12 @@ values:</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -268,17 +313,21 @@ values:</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="OpenMP.html" title="OpenMP profiling"
              >next</a> |</li>
         <li class="right" >
           <a href="CaliperBasics.html" title="Caliper Basics"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">CUDA profiling</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

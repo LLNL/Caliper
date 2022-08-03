@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Manual configuration &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Manual configuration &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Manual configuration</a></li> 
       </ul>
     </div>  
 
@@ -40,8 +46,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="manual-configuration">
-<h1>Manual configuration<a class="headerlink" href="#manual-configuration" title="Permalink to this headline">¶</a></h1>
+  <section id="manual-configuration">
+<h1>Manual configuration<a class="headerlink" href="#manual-configuration" title="Permalink to this heading">¶</a></h1>
 <p>When not using built-in performance measurement configurations (<a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>),
 through the ConfigManager API or the <cite>CALI_CONFIG</cite> environment variable,
 Caliper can be configured manually by setting configuration
@@ -65,8 +71,8 @@ for example by setting it as an environment variable:</p>
 </div>
 <p>Many services have additional configuration variables. See <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a>
 for a complete list of available services and their configuration.</p>
-<div class="section" id="configuration-files">
-<h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this headline">¶</a></h2>
+<section id="configuration-files">
+<h2>Configuration files<a class="headerlink" href="#configuration-files" title="Permalink to this heading">¶</a></h2>
 <p>Configuration variables can be put in configuration files. By default,
 Caliper reads the file <cite>caliper.config</cite> in the current working
 directory, if present. Alternatively, you can provide a list of
@@ -85,9 +91,9 @@ Example:</p>
 definition is taken. When multiple configuration files are provided,
 they are processed in the order they are given. Values set through
 environment variables override values given in configuration files.</p>
-</div>
-<div class="section" id="configuration-profiles">
-<h2>Configuration profiles<a class="headerlink" href="#configuration-profiles" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="configuration-profiles">
+<h2>Configuration profiles<a class="headerlink" href="#configuration-profiles" title="Permalink to this heading">¶</a></h2>
 <p>Configuration profiles allow you to put multiple Caliper
 configurations into a file and select one of them with a single
 switch. You can declare a profile in a configuration file with <code class="docutils literal notranslate"><span class="pre">#</span>
@@ -116,27 +122,27 @@ the profile selection by setting a different value in the
 <cite>CALI_CONFIG_PROFILE</cite> environment variable. Note that environment
 variables always override values set in a configuration file,
 regardless of the selected profile.</p>
-</div>
-<div class="section" id="configuration-variables-reference">
-<h2>Configuration variables reference<a class="headerlink" href="#configuration-variables-reference" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="configuration-variables-reference">
+<h2>Configuration variables reference<a class="headerlink" href="#configuration-variables-reference" title="Permalink to this heading">¶</a></h2>
 <p>This section describes the configuration variables of the Caliper
 runtime system.</p>
 <p>Many Caliper services define additional configuration variables. See
 <a class="reference internal" href="services.html"><span class="doc">Caliper services</span></a> for a list of Caliper services and their
 configuration.</p>
-<div class="section" id="environment-variables">
-<h3>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h3>
+<section id="environment-variables">
+<h3>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h3>
 <p>These variables can only be set as environment variables.</p>
 <dl class="std envvar">
-<dt id="envvar-CALI_CONFIG">
-<code class="sig-name descname">CALI_CONFIG</code><a class="headerlink" href="#envvar-CALI_CONFIG" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="envvar-CALI_CONFIG">
+<span class="sig-name descname"><span class="pre">CALI_CONFIG</span></span><a class="headerlink" href="#envvar-CALI_CONFIG" title="Permalink to this definition">¶</a></dt>
 <dd><p>A configuration string to enable one (or more) of Caliper’s built-in
 performance profiling configurations. See <a class="reference internal" href="BuiltinConfigurations.html"><span class="doc">Built-in profiling configurations</span></a>.</p>
 </dd></dl>
 
 <dl class="std envvar">
-<dt id="envvar-CALI_USE_OMPT">
-<code class="sig-name descname">CALI_USE_OMPT</code><a class="headerlink" href="#envvar-CALI_USE_OMPT" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object std" id="envvar-CALI_USE_OMPT">
+<span class="sig-name descname"><span class="pre">CALI_USE_OMPT</span></span><a class="headerlink" href="#envvar-CALI_USE_OMPT" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set to “1” or “true” to activate the OpenMP tools interface in the OpenMP
 runtime. This is required for the ompt service. It is only necessary to set
 this if the OpenMP runtime is first initialized before the ompt service is
@@ -145,9 +151,9 @@ interface automatically. When set to “0” or “false” Caliper will not use
 the OpenMP tools interface. See <a class="reference internal" href="services.html#ompt-service"><span class="std std-ref">ompt</span></a></p>
 </dd></dl>
 
-</div>
-<div class="section" id="configuration-variables">
-<h3>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this headline">¶</a></h3>
+</section>
+<section id="configuration-variables">
+<h3>Configuration variables<a class="headerlink" href="#configuration-variables" title="Permalink to this heading">¶</a></h3>
 <p>These variables can be set using environment variables, config files,
 or the configuration API.</p>
 <dl>
@@ -179,11 +185,12 @@ is enabled but no output service.</p>
 <p>Default: enabled (<code class="docutils literal notranslate"><span class="pre">true</span></code>)</p>
 </dd>
 </dl>
-</div>
-</div>
-</div>
+</section>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -192,8 +199,9 @@ is enabled but no output service.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Manual configuration</a><ul>
 <li><a class="reference internal" href="#configuration-files">Configuration files</a></li>
 <li><a class="reference internal" href="#configuration-profiles">Configuration profiles</a></li>
@@ -206,12 +214,17 @@ is enabled but no output service.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="BuiltinConfigurations.html"
-                        title="previous chapter">Built-in profiling configurations</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="workflow.html"
-                        title="next chapter">Architecture and workflow</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="BuiltinConfigurations.html"
+                          title="previous chapter">Built-in profiling configurations</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="workflow.html"
+                          title="next chapter">Architecture and workflow</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -223,12 +236,12 @@ is enabled but no output service.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -240,17 +253,21 @@ is enabled but no output service.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="workflow.html" title="Architecture and workflow"
              >next</a> |</li>
         <li class="right" >
           <a href="BuiltinConfigurations.html" title="Built-in profiling configurations"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Manual configuration</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

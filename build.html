@@ -1,23 +1,25 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Building Caliper &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Building Caliper &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Annotation API reference" href="AnnotationAPI.html" />
-    <link rel="prev" title="Caliper Basics" href="CaliperBasics.html" /> 
+    <link rel="prev" title="OpenMP profiling" href="OpenMP.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="AnnotationAPI.html" title="Annotation API reference"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="CaliperBasics.html" title="Caliper Basics"
+          <a href="OpenMP.html" title="OpenMP profiling"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>  
 
@@ -40,8 +46,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="building-caliper">
-<h1>Building Caliper<a class="headerlink" href="#building-caliper" title="Permalink to this headline">¶</a></h1>
+  <section id="building-caliper">
+<h1>Building Caliper<a class="headerlink" href="#building-caliper" title="Permalink to this heading">¶</a></h1>
 <p>Building and installing Caliper requires cmake, a current C++11-compatible
 compiler, and a Python interpreter. To build Caliper manually, clone it from the
 <a class="reference external" href="https://github.com/LLNL/Caliper">github repository</a>.
@@ -54,8 +60,8 @@ $ make install
 </pre></div>
 </div>
 <p>This is a minimal configuration, see below for additional CMake configuration flags.</p>
-<div class="section" id="cmake-flags">
-<h2>CMake Flags<a class="headerlink" href="#cmake-flags" title="Permalink to this headline">¶</a></h2>
+<section id="cmake-flags">
+<h2>CMake Flags<a class="headerlink" href="#cmake-flags" title="Permalink to this heading">¶</a></h2>
 <p>Configure Caliper using the usual CMake flags to select the C and C++ compiler,
 build type, and install prefix (CMAKE_C_COMPILER, CMAKE_CXX_COMPILER,
 CMAKE_BUILD_TYPE, and CMAKE_INSTALL_PREFIX).
@@ -107,8 +113,8 @@ Set Intel ITT API installation dir in <code class="docutils literal notranslate"
 </dd>
 </dl>
 <p>All options are off by default. On Linux, Gotcha is enabled by default.</p>
-<div class="section" id="linking-caliper-programs">
-<h3>Linking Caliper programs<a class="headerlink" href="#linking-caliper-programs" title="Permalink to this headline">¶</a></h3>
+<section id="linking-caliper-programs">
+<h3>Linking Caliper programs<a class="headerlink" href="#linking-caliper-programs" title="Permalink to this heading">¶</a></h3>
 <p>Typically, all that is needed to create a Caliper-enabled program is
 to link it with the Caliper runtime library, which resides in
 <cite>libcaliper.so</cite>. An example link command for a C++ program built
@@ -118,10 +124,10 @@ with g++ could look like this:</p>
 g++ -o target-program $(OBJECTS) -L$(CALIPER_DIR)/lib64 -lcaliper
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="using-caliper-in-cmake-projects">
-<h2>Using Caliper in CMake projects<a class="headerlink" href="#using-caliper-in-cmake-projects" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+<section id="using-caliper-in-cmake-projects">
+<h2>Using Caliper in CMake projects<a class="headerlink" href="#using-caliper-in-cmake-projects" title="Permalink to this heading">¶</a></h2>
 <p>Caliper creates a CMake package file (caliper-config.cmake) and
 installs it in &lt;caliper-installation-dir&gt;/lib64/cmake/caliper. The
 package file defines Caliper’s include directories and exports targets
@@ -150,10 +156,6 @@ Caliper installation with <cite>caliper_DIR</cite>:</p>
 </div>
 <p>The CMake package defines the following variables and targets:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 40%" />
-<col style="width: 60%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>${caliper_INCLUDE_DIR}</p></td>
 <td><p>Caliper include directory (variable)</p></td>
@@ -171,10 +173,11 @@ dependencies (target)</p></td>
 </tbody>
 </table>
 <p>In most cases, just link the “caliper” target.</p>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -183,8 +186,9 @@ dependencies (target)</p></td>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Building Caliper</a><ul>
 <li><a class="reference internal" href="#cmake-flags">CMake Flags</a><ul>
 <li><a class="reference internal" href="#linking-caliper-programs">Linking Caliper programs</a></li>
@@ -195,12 +199,17 @@ dependencies (target)</p></td>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="CaliperBasics.html"
-                        title="previous chapter">Caliper Basics</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="AnnotationAPI.html"
-                        title="next chapter">Annotation API reference</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="OpenMP.html"
+                          title="previous chapter">OpenMP profiling</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="AnnotationAPI.html"
+                          title="next chapter">Annotation API reference</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -212,12 +221,12 @@ dependencies (target)</p></td>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -229,17 +238,21 @@ dependencies (target)</p></td>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="AnnotationAPI.html" title="Annotation API reference"
              >next</a> |</li>
         <li class="right" >
-          <a href="CaliperBasics.html" title="Caliper Basics"
+          <a href="OpenMP.html" title="OpenMP profiling"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Building Caliper</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

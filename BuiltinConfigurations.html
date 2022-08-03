@@ -1,18 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Built-in profiling configurations &#8212; Caliper 2.6.0-dev documentation</title>
-    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Built-in profiling configurations &#8212; Caliper 2.8.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/classic.css" />
     
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -26,12 +28,16 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="configuration.html" title="Manual configuration"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Built-in profiling configurations</a></li> 
       </ul>
     </div>  
 
@@ -40,13 +46,13 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="built-in-profiling-configurations">
-<h1>Built-in profiling configurations<a class="headerlink" href="#built-in-profiling-configurations" title="Permalink to this headline">¶</a></h1>
+  <section id="built-in-profiling-configurations">
+<h1>Built-in profiling configurations<a class="headerlink" href="#built-in-profiling-configurations" title="Permalink to this heading">¶</a></h1>
 <p>Caliper includes built-in configurations for many common performance analysis
 tasks. These configurations can be enabled through the <a class="reference internal" href="ConfigManagerAPI.html"><span class="doc">ConfigManager API reference</span></a>
 or the <span class="target" id="index-0"></span><a class="reference internal" href="configuration.html#envvar-CALI_CONFIG"><code class="xref std std-envvar docutils literal notranslate"><span class="pre">CALI_CONFIG</span></code></a> environment variable.</p>
-<div class="section" id="configuration-string-syntax">
-<h2>Configuration String Syntax<a class="headerlink" href="#configuration-string-syntax" title="Permalink to this headline">¶</a></h2>
+<section id="configuration-string-syntax">
+<h2>Configuration String Syntax<a class="headerlink" href="#configuration-string-syntax" title="Permalink to this heading">¶</a></h2>
 <p>A configuration string for the <cite>ConfigManager</cite> class or <cite>CALI_CONFIG</cite> environment
 variable is a comma-separated list of <em>configs</em> and <em>parameters</em>.</p>
 <p>A <em>config</em> is the name of one of Caliper’s built-in measurement configurations,
@@ -71,9 +77,9 @@ any order.</p>
 <p>This will print a runtime profile to stdout, including CUDA API calls and memory
 high-water marks in the profile, and write an event trace with region begin/end and I/O
 operations into the trace.cali file.</p>
-</div>
-<div class="section" id="built-in-configs">
-<h2>Built-in configs<a class="headerlink" href="#built-in-configs" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="built-in-configs">
+<h2>Built-in configs<a class="headerlink" href="#built-in-configs" title="Permalink to this heading">¶</a></h2>
 <p>The following list describes the ConfigManager’s built-in configs and their
 parameters. Note that depending on the Caliper build configuration, not all
 configs or options may be available in a particular Caliper installation.</p>
@@ -283,10 +289,11 @@ configs or options may be available in a particular Caliper installation.</p>
 </dl>
 </dd>
 </dl>
-</div>
-</div>
+</section>
+</section>
 
 
+            <div class="clearer"></div>
           </div>
         </div>
       </div>
@@ -295,8 +302,9 @@ configs or options may be available in a particular Caliper installation.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/caliper-logo-small.png" alt="Logo"/>
             </a></p>
-  <h3><a href="index.html">Table of Contents</a></h3>
-  <ul>
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
 <li><a class="reference internal" href="#">Built-in profiling configurations</a><ul>
 <li><a class="reference internal" href="#configuration-string-syntax">Configuration String Syntax</a></li>
 <li><a class="reference internal" href="#built-in-configs">Built-in configs</a></li>
@@ -304,12 +312,17 @@ configs or options may be available in a particular Caliper installation.</p>
 </li>
 </ul>
 
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="ThirdPartyTools.html"
-                        title="previous chapter">Connection to third-party tools</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="configuration.html"
-                        title="next chapter">Manual configuration</a></p>
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="ThirdPartyTools.html"
+                          title="previous chapter">Connection to third-party tools</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="configuration.html"
+                          title="next chapter">Manual configuration</a></p>
+  </div>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
@@ -321,12 +334,12 @@ configs or options may be available in a particular Caliper installation.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -338,17 +351,21 @@ configs or options may be available in a particular Caliper installation.</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="configuration.html" title="Manual configuration"
              >next</a> |</li>
         <li class="right" >
           <a href="ThirdPartyTools.html" title="Connection to third-party tools"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.6.0-dev documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Caliper 2.8.0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Built-in profiling configurations</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2015-2016, Lawrence Livermore National Laboratory.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.0.1.
+        &#169; Copyright 2015-2021, Lawrence Livermore National Laboratory.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>
