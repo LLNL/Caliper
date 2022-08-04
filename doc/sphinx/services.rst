@@ -570,9 +570,10 @@ regex
 
 You can specify multiple patterns and combine them as needed, e.g. to
 include only "important_region" as well as any region starting with
-"MPI_" or "mylib_":
+``MPI_`` or ``mylib_``:
 
 .. code-block:: sh
+
       $ CALI_EVENT_INCLUDE_REGIONS="match(important_region),startswith(MPI_,mylib_)"
 
 Config variables
