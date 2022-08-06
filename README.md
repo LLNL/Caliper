@@ -51,20 +51,25 @@ See the "Getting started" section below for a brief tutorial.
 Building and installing
 ------------------------------------------
 
-Building and installing Caliper requires cmake 3.1+ and a current
+You can install Caliper with the [spack](https://github.com/spack/spack) 
+package manager:
+
+    $ spack install caliper
+
+To build Caliper manually, you need cmake 3.12+ and a current
 C++11-compatible Compiler. Clone Caliper from github and proceed
 as follows:
 
-     $ git clone https://github.com/LLNL/Caliper.git
-     $ cd Caliper
-     $ mkdir build && cd build
-     $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> ..
-     $ make
-     $ make install
+    $ git clone https://github.com/LLNL/Caliper.git
+    $ cd Caliper
+    $ mkdir build && cd build
+    $ cmake -DCMAKE_INSTALL_PREFIX=<path to install location> ..
+    $ make
+    $ make install
 
 Link Caliper to a program by adding `libcaliper`:
 
-    g++ -o app app.o -L<path install location>/lib64 -lcaliper
+    $ g++ -o app app.o -L<path install location>/lib64 -lcaliper
 
 There are many build flags to enable optional features, such as `-DWITH_MPI`
 for MPI support.
@@ -124,7 +129,7 @@ With the source-code annotations in place, we can run performance measurements.
 By default, Caliper does not record data - we have to activate performance
 profiling at runtime.
 An easy way to do this is to use one of Caliper's built-in measurement
-configurations. For example, the `runtime-report` config prints out the time
+recipes. For example, the `runtime-report` config prints out the time
 spent in the annotated regions. You can activate built-in measurement
 configurations with the ConfigManager API or with the `CALI_CONFIG`
 environment variable. Let's try this on Caliper's cxx-example program:
