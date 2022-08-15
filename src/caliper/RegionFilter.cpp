@@ -6,6 +6,7 @@
 #include "../common/util/parse_util.h"
 
 #include <iostream>
+#include <sstream>
 
 using namespace cali;
 
