@@ -259,18 +259,31 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
             std::cout << (i++ > 0 ? "," : "") << s;
         std::cout << std::endl;
     } else if (!helpopt.empty()) {
-        auto list = mgr.available_config_specs();
-
-        if (std::find(list.begin(), list.end(), helpopt) == list.end()) {
-            std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
-                      << "\n  [none]:   Describe cali-query usage (default)"
-                      << "\n  configs:  Describe all Caliper profiling configurations"
-                      << "\n  [configname]: Describe profiling configuration [configname]"
-                      << "\n  services: List available services"
-                      << std::endl;
-        } else {
-            std::cout << mgr.get_documentation_for_spec(helpopt.c_str()) << std::endl;
+        {
+            auto cfgs = mgr.available_config_specs();
+            auto it = std::find(cfgs.begin(), cfgs.end(), helpopt);
+            if (it != cfgs.end()) {
+                std::cout << mgr.get_documentation_for_spec(helpopt.c_str()) << "\n";
+                return;
+            }
         }
+
+        {
+            services::add_default_service_specs();
+            auto srvs = services::get_available_services();
+            auto it = std::find(srvs.begin(), srvs.end(), helpopt);
+            if (it != srvs.end()) {
+                services::print_service_description(std::cout << *it << " service:\n", helpopt.c_str());
+                return;
+            }
+        }
+
+        std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
+                    << "\n  [none]:   Describe cali-query usage (default)"
+                    << "\n  configs:  Describe all Caliper profiling configurations"
+                    << "\n  [configname]: Describe profiling configuration [configname]"
+                    << "\n  services: List available services"
+                    << std::endl;
     } else {
         std::cout << usage << "\n\n";
         args.print_available_options(std::cout);

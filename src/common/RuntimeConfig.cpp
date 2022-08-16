@@ -71,11 +71,6 @@ namespace
     }
 
     typedef map< string, string > config_profile_t;
-
-    struct config_value_t {
-        std::string key;
-        std::string value;
-    };
 }
 
 namespace cali
@@ -89,20 +84,20 @@ struct ConfigSetImpl
 {
     // --- data
 
-    std::unordered_map<string, string> m_dict;
+    std::unordered_map<string, StringConverter> m_dict;
 
     // --- interface
 
     StringConverter get(const char* key) const {
         auto it = m_dict.find(key);
-        return (it == m_dict.end() ? StringConverter() : StringConverter(it->second));
+        return (it == m_dict.end() ? StringConverter() : it->second);
     }
 
-    void init(const char* name, const std::vector<config_value_t>& list, bool read_env, const ::config_profile_t& profile, const ::config_profile_t& top_profile)
+    void init(const char* name, const RuntimeConfig::config_entry_list_t& list, bool read_env, const ::config_profile_t& profile, const ::config_profile_t& top_profile)
     {
         for (const auto &e : list) {
-            std::string varname { ::config_var_name(name, e.key) };
-            std::string value   { e.value };
+            std::string varname { ::config_var_name(name, e.first) };
+            std::string value   { e.second };
 
             // See if there is an entry in the top config profile
             auto topit = top_profile.find(varname);
@@ -117,13 +112,13 @@ struct ConfigSetImpl
 
                 if (read_env) {
                     // See if there is a config variable set
-                    char* val = getenv(::config_var_name(name, e.key).c_str());
+                    char* val = getenv(::config_var_name(name, e.first).c_str());
                     if (val)
                         value = val;
                 }
             }
 
-            m_dict.emplace(make_pair(e.key, value));
+            m_dict.emplace(make_pair(e.first, StringConverter(value)));
         }
     }
 };
@@ -214,7 +209,7 @@ struct RuntimeConfig::RuntimeConfigImpl
     }
 
     void init_config_database() {
-        const std::vector<config_value_t> configdata {
+        const config_entry_list_t configdata {
             { "profile", "default"        },
             { "file",    "caliper.config" }
         };
@@ -279,7 +274,7 @@ struct RuntimeConfig::RuntimeConfigImpl
             m_top_profile[p.first] = p.second;
     }
 
-    shared_ptr<ConfigSetImpl> init_configset(const char* name, const std::vector<config_value_t>& list) {
+    shared_ptr<ConfigSetImpl> init_configset(const char* name, const config_entry_list_t& list) {
         if (m_database.empty())
             init_config_database();
 
@@ -296,22 +291,11 @@ struct RuntimeConfig::RuntimeConfigImpl
         return ret;
     }
 
-    shared_ptr<ConfigSetImpl> init_configset(const char* name, const ConfigSet::Entry* list) {
-        // convert ConfigSet::Entry entries to config_value_t list
-
-        std::vector<config_value_t> converted_list;
-
-        for (const ConfigSet::Entry* e = list; e && e->key; ++e)
-            converted_list.emplace_back( config_value_t { e->key, e->value } );
-
-        return init_configset(name, converted_list);
-    }
-
     void print(std::ostream& os) const {
         for ( auto set : m_database )
             for ( auto entry : set.second->m_dict )
                 os << ::config_var_name(set.first, entry.first)
-                   << '=' << entry.second << std::endl;
+                   << '=' << entry.second.to_string() << std::endl;
     }
 };
 
@@ -330,7 +314,7 @@ StringConverter
 ConfigSet::get(const char* key) const
 {
     if (!mP)
-        return std::string();
+        return StringConverter();
 
     return mP->get(key);
 }
@@ -352,6 +336,17 @@ RuntimeConfig::get(const char* set, const char* key)
 
 ConfigSet
 RuntimeConfig::init(const char* name, const ConfigSet::Entry* list)
+{
+    config_entry_list_t converted_list;
+
+    for (const ConfigSet::Entry* e = list; e && e->key; ++e)
+        converted_list.emplace_back( std::make_pair<std::string, std::string>(e->key, e->value) );
+
+    return ConfigSet(mP->init_configset(name, converted_list));
+}
+
+ConfigSet
+RuntimeConfig::init(const char* name, const config_entry_list_t& list)
 {
     return ConfigSet(mP->init_configset(name, list));
 }

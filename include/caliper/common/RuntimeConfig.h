@@ -20,7 +20,7 @@ namespace cali
 
 struct ConfigSetImpl;
 
-class ConfigSet 
+class ConfigSet
 {
     std::shared_ptr<ConfigSetImpl> mP;
 
@@ -52,16 +52,21 @@ class RuntimeConfig
     struct RuntimeConfigImpl;
 
     std::shared_ptr<RuntimeConfigImpl> mP;
-    
+
 public:
+
+    typedef std::vector< std::pair<std::string, std::string > > config_entry_list_t;
 
     RuntimeConfig();
 
     /// \brief Get config entry with given \a key from given \a set
     StringConverter get(const char* set, const char* key);
 
-    /// \brief Initialize a ConfigSet.
+    /// \brief Initialize a ConfigSet from ConfigSet::Entry list (old method)
     ConfigSet       init(const char* name, const ConfigSet::Entry* set);
+
+    /// \brief Initialize a ConfigSet
+    ConfigSet       init(const char* name, const config_entry_list_t&);
 
     /// \brief Pre-set config entry \a key to \a value.
     ///
@@ -77,7 +82,7 @@ public:
 
     /// \brief Import config values from the given the \a values map
     void            import(const std::map<std::string, std::string>& values);
-    
+
     bool            allow_read_env();
 
     /// \brief Enable or disable reading of configuration settings
@@ -103,7 +108,7 @@ public:
     // --- Static API (temporary)
     //
 
-    static RuntimeConfig  get_default_config(); 
+    static RuntimeConfig  get_default_config();
 
 }; // class RuntimeConfig
 

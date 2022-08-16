@@ -19,8 +19,10 @@ typedef void (*ServiceRegisterFn)(Caliper* c, Channel* chn);
 /// To register services, provide a list of CaliperService entries
 /// to Caliper::add_services() _before_ %Caliper is initialized.
 struct CaliperService {
-    const char*       name;        ///< Service name (short, no spaces).
-    ServiceRegisterFn register_fn; ///< Registration function.
+    /// \brief Name (old style) or JSON spec (new) of the service
+    const char*       name_or_spec;
+    /// \brief Registration function
+    ServiceRegisterFn register_fn;
 };
 
 } // namespace cali
