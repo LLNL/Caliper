@@ -104,6 +104,9 @@ struct MpiTracing::MpiTracingImpl
 
             { nullptr, CALI_TYPE_INV, 0, nullptr }
         };
+
+        for (const struct attr_info_t* a = attr_info_tbl; a && a->name; a++)
+            *(a->ptr) = c->create_attribute(a->name, a->type, a->prop);
     }
 
     void init_mpi(Caliper* c, Channel* chn) {
