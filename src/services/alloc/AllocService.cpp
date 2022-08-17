@@ -104,8 +104,6 @@ struct AllocInfoCmp {
 
 class AllocService
 {
-    static const ConfigSet::Entry s_configdata[];
-
     bool g_resolve_addresses        { false };
     bool g_track_allocations        { true  };
     bool g_record_active_mem        { false };

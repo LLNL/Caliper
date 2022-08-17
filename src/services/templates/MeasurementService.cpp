@@ -46,8 +46,6 @@ std::tuple<bool, uint64_t> measure(const TimePoint& start, const std::string& na
 // for a performance measurement) to Caliper snapshot records.
 class MeasurementTemplateService
 {
-    static const ConfigSet::Entry s_configdata[]; // Configuration variables for this service
-
     struct MeasurementInfo {
         std::string name;       // Measurement name / ID
         Attribute   value_attr; // Attribute for the measurement value

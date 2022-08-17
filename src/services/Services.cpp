@@ -111,7 +111,7 @@ public:
                 os << '=' << val;
 
             it = cfg_dict.find("type");
-            if (it != cfg_dict.end());
+            if (it != cfg_dict.end())
                 os << " (" << it->second.to_string() << ")\n";
 
             it = cfg_dict.find("description");

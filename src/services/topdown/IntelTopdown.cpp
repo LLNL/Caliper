@@ -31,8 +31,6 @@ class IntelTopdown
     static const char* s_top_counters;
     static const char* s_all_counters;
 
-    static const ConfigSet::Entry s_configdata[];
-
     std::map<std::string, Attribute> counter_attrs;
     std::map<std::string, Attribute> result_attrs;
 
