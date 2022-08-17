@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -79,9 +81,6 @@ class PapiService
     util::spinlock m_thread_lock;
 
     static int s_num_instances;
-
-    static const ConfigSet::Entry s_configdata[];
-
 
     bool setup_event_info(Caliper* c, const std::vector<std::string>& eventlist) {
         m_event_groups.clear();
@@ -442,9 +441,11 @@ public:
         }
     }
 
+    static const char* s_spec;
+
     static void register_papi(Caliper* c, Channel* channel) {
         auto eventlist =
-            channel->config().init("papi", s_configdata).get("counters").to_stringlist(",");
+            services::init_config_from_spec(channel->config(), s_spec).get("counters").to_stringlist(",");
 
         if (eventlist.empty()) {
             Log(1).stream() << channel->name()
@@ -502,13 +503,17 @@ public:
 
 int PapiService::s_num_instances = 0;
 
-const ConfigSet::Entry PapiService::s_configdata[] = {
-    { "counters", CALI_TYPE_STRING, "",
-      "List of PAPI events to record",
-      "List of PAPI events to record, separated by ','"
-    },
-    ConfigSet::Terminator
-};
+const char* PapiService::s_spec = R"json(
+{   "name": "papi",
+    "description": "Record PAPI counters",
+    "config": [
+        {   "name": "counters",
+            "description": "List of PAPI events to record",
+            "type": "string"
+        }
+    ]
+}
+)json";
 
 } // namespace
 
@@ -516,6 +521,6 @@ const ConfigSet::Entry PapiService::s_configdata[] = {
 namespace cali
 {
 
-CaliperService papi_service = { "papi", ::PapiService::register_papi };
+CaliperService papi_service = { ::PapiService::s_spec, ::PapiService::register_papi };
 
 } // namespace cali

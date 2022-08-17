@@ -281,7 +281,7 @@ void print_caliquery_help(const Args& args, const char* usage, const ConfigManag
         std::cerr << "Unknown help option \"" << helpopt << "\". Available options: "
                     << "\n  [none]:   Describe cali-query usage (default)"
                     << "\n  configs:  Describe all Caliper profiling configurations"
-                    << "\n  [configname]: Describe profiling configuration [configname]"
+                    << "\n  [config or service name]: Describe profiling configuration or service"
                     << "\n  services: List available services"
                     << std::endl;
     } else {

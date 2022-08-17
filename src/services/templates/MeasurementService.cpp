@@ -8,6 +8,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -181,7 +183,7 @@ class MeasurementTemplateService
         // config set, so the configuration variables for our service are
         // prefixed with "CALI_MEASUREMENT_TEMPLATE_". For example, set
         // "CALI_MEASUREMENT_TEMPLATE_NAMES=a,b" to set "names" to "a,b".
-        ConfigSet config = channel->config().init("measurement_template", s_configdata);
+        ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
 
         //   Read the "names" variable and treat it as a string list
         // (comma-separated list). Returns a std::vector<std::string>.
@@ -194,6 +196,10 @@ class MeasurementTemplateService
     }
 
 public:
+
+    //   The service specification in JSON format. It contains the service
+    // name, a short description, and its configuration variables.
+    static const char* s_spec;
 
     //   This is the entry function to initialize the service, specified
     // in the CaliperService structure below. It is invoked when a Caliper
@@ -238,17 +244,18 @@ public:
     }
 };
 
-const ConfigSet::Entry MeasurementTemplateService::s_configdata[] = {
-    { "names",          // config variable name
-      CALI_TYPE_STRING, // datatype
-      "a,b",            // default value
-      // short description
-      "Names of measurements to record",
-      // long description
-      "Names of measurements to record, separated by ','"
-    },
-    ConfigSet::Terminator
-};
+const char* MeasurementTemplateService::s_spec = R"json(
+{   "name": "measurement_template",
+    "description": "A Caliper measurement service example",
+    "config": [
+        {   "name": "names",
+            "type": "string",
+            "description": "Names of measurements to record, separated by ','",
+            "value": "a,b"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
 
@@ -256,7 +263,7 @@ namespace cali
 {
 
 CaliperService measurement_template_service = {
-    "measurement_template",
+    ::MeasurementTemplateService::s_spec,
     ::MeasurementTemplateService::register_measurement_template_service
 };
 

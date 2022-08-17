@@ -7,6 +7,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -27,14 +29,12 @@ namespace
 {
 
 class Report {
-    static const ConfigSet::Entry s_configdata[];
-
     //
     // --- callback functions
     //
 
     void write_output(Caliper* c, Channel* channel, SnapshotView flush_info) {
-        ConfigSet   config(channel->config().init("report", s_configdata));
+        ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
         CalQLParser parser(config.get("config").to_string().c_str());
 
         if (parser.error()) {
@@ -78,6 +78,8 @@ public:
     ~Report()
         { }
 
+    static const char* s_spec;
+
     static void create(Caliper* c, Channel* channel) {
         Report* instance = new Report;
 
@@ -94,24 +96,26 @@ public:
     }
 };
 
-const ConfigSet::Entry  Report::s_configdata[] = {
-    { "filename", CALI_TYPE_STRING, "stdout",
-      "File name for report stream. Default: stdout.",
-      "File name for report stream. Either one of\n"
-      "   stdout: Standard output stream,\n"
-      "   stderr: Standard error stream,\n"
-      " or a file name.\n"
-    },
-    { "config", CALI_TYPE_STRING, "",
-      "Report configuration/query specification in CalQL",
-      "Report configuration/query specification in CalQL"
-    },
-    ConfigSet::Terminator
-};
+const char* Report::s_spec = R"json(
+{   "name": "report",
+    "description": "Write output using CalQL query",
+    "config": [
+        {   "name": "filename",
+            "description": "File name for report stream",
+            "type": "string",
+            "value": "stdout"
+        },
+        {   "name": "config",
+            "description": "CalQL query to generate report",
+            "type": "string"
+        }
+    ]
+}
+)json";
 
 } // namespace
 
 namespace cali
 {
-    CaliperService report_service { "report", ::Report::create };
+    CaliperService report_service { ::Report::s_spec, ::Report::create };
 }

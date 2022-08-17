@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -42,13 +44,18 @@ int         n_processed_samples = 0;
 
 Channel* channel          = nullptr;
 
-static const ConfigSet::Entry s_configdata[] = {
-    { "frequency", CALI_TYPE_INT, "50",
-      "Sampling frequency (in Hz)",
-      "Sampling frequency (in Hz)"
-    },
-    ConfigSet::Terminator
-};
+const char* spec = R"json(
+{   "name": "sampler",
+    "description": "Trigger snapshots via sampling timer",
+    "config": [
+        { "name": "frequency", 
+          "description": "Sampling frequency in Hz",
+          "type": "int",
+          "value": "50"
+        }
+    ]
+}
+)json";
 
 void on_prof(int sig, siginfo_t *info, void *context)
 {
@@ -190,7 +197,7 @@ void sampler_register(Caliper* c, Channel* chn)
         return;
     }
 
-    ConfigSet config = chn->config().init("sampler", s_configdata);
+    ConfigSet config = services::init_config_from_spec(chn->config(), spec);
 
     Attribute symbol_class_attr = c->get_attribute("class.symboladdress");
     Variant v_true(true);
@@ -236,6 +243,6 @@ void sampler_register(Caliper* c, Channel* chn)
 namespace cali
 {
 
-CaliperService sampler_service { "sampler", ::sampler_register };
+CaliperService sampler_service { spec, ::sampler_register };
 
 }

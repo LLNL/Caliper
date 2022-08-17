@@ -3,6 +3,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -27,8 +29,6 @@ namespace
 
 class LoopMonitor
 {
-    static const ConfigSet::Entry s_configdata[];
-
     int       loop_level;
     int       target_level;
     int       start_iteration;
@@ -135,7 +135,7 @@ class LoopMonitor
                                 CALI_ATTR_SKIP_EVENTS |
                                 CALI_ATTR_ASVALUE);
 
-        ConfigSet config = channel->config().init("loop_monitor", s_configdata);
+        ConfigSet config = services::init_config_from_spec(channel->config(), s_spec);
 
         iteration_interval = config.get("iteration_interval").to_int();
         time_interval      = config.get("time_interval").to_double();
@@ -143,6 +143,8 @@ class LoopMonitor
     }
 
 public:
+
+    static const char* s_spec;
 
     static void create(Caliper* c, Channel* channel) {
         LoopMonitor* instance = new LoopMonitor(c, channel);
@@ -167,27 +169,33 @@ public:
     }
 };
 
-const ConfigSet::Entry LoopMonitor::s_configdata[] = {
-    { "iteration_interval", CALI_TYPE_INT, "0",
-      "Trigger snapshot every N iterations."
-      "Trigger snapshot every N iterations. Set to 0 to disable."
-    },
-    { "time_interval",     CALI_TYPE_DOUBLE, "0",
-      "Trigger snapshot every t seconds."
-      "Trigger snapshot every t seconds. Set to 0 to disable."
-    },
-    { "target_loops",      CALI_TYPE_STRING, "",
-      "List of loops to instrument. Default: empty (any top-level loop)",
-      "List of loops to instrument. Default: empty (any top-level loop)"
-    },
-    ConfigSet::Terminator
-};
+const char* LoopMonitor::s_spec = R"json(
+{   "name"        : "loop_monitor",
+    "description" : "Trigger snapshots on loop iterations",
+    "config"      : [
+        {   "name"        : "iteration_interval",
+            "description" : "Trigger snapshots every N iterations",
+            "type"        : "int",
+            "value"       : "0"
+        },
+        {   "name"        : "time_interval",
+            "description" : "Trigger snapshots every t seconds",
+            "type"        : "double",
+            "value"       : "0"
+        },
+        {   "name"        : "target_loops",
+            "description" : "List of loops to instrument",
+            "type"        : "string"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
 
 namespace cali
 {
 
-CaliperService loop_monitor_service { "loop_monitor", ::LoopMonitor::create };
+CaliperService loop_monitor_service { ::LoopMonitor::s_spec, ::LoopMonitor::create };
 
 }
