@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -40,8 +42,6 @@ namespace
 
 class CuptiTraceService
 {
-    static const ConfigSet::Entry s_configdata[];
-
     struct ActivityBuffer {
         uint8_t*        buffer;
         CUcontext       ctx;
@@ -883,8 +883,7 @@ class CuptiTraceService
     }
 
     void post_init_cb(Caliper* c, Channel* chn) {
-        ConfigSet config = chn->config().init("cuptitrace", s_configdata);
-
+        ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
         enable_cupti_activities(config);
 
         CUptiResult res =
@@ -1032,7 +1031,7 @@ class CuptiTraceService
                 c->create_attribute("cupti.uvm.access.type", CALI_TYPE_STRING,
                                     CALI_ATTR_DEFAULT | CALI_ATTR_SKIP_EVENTS);
 
-            ConfigSet config = chn->config().init("cuptitrace", s_configdata);
+            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
             record_host_timestamp = config.get("snapshot_timestamps").to_bool();
             record_host_duration  = config.get("snapshot_duration").to_bool();
@@ -1061,6 +1060,8 @@ class CuptiTraceService
 
 public:
 
+    static const char* s_spec;
+
     static void cuptitrace_initialize(Caliper* c, Channel* chn) {
         if (s_instance) {
             Log(0).stream() << chn->name() << ": cuptitrace service is already initialized!"
@@ -1078,53 +1079,59 @@ public:
 
 };
 
-const struct ConfigSet::Entry CuptiTraceService::s_configdata[] = {
-    { "activities", CALI_TYPE_STRING, "correlation,device,runtime,kernel,memcpy",
-      "The CUpti activity kinds to record",
-      "\nThe CUpti activity kinds to record. Possible values: "
-      "\n  device:       Device info"
-      "\n  correlation:  Correlation records. Required for Caliper context correlation."
-      "\n  driver:       Driver API."
-      "\n  runtime:      Runtime API."
-      "\n    Runtime records are also required for Caliper context correlation."
-      "\n  kernel:       CUDA Kernels being executed."
-      "\n  memcpy:       CUDA memory copies."
-      "\n  uvm:          Unified memory events."
-    },
-    { "correlate_context",   CALI_TYPE_BOOL, "true",
-      "Correlate CUpti records with Caliper context",
-      "Correlate CUpti records with Caliper context" },
-    { "snapshot_timestamps", CALI_TYPE_BOOL, "false",
-      "Record CUpti timestamps for all Caliper snapshots",
-      "Record CUpti timestamps for all Caliper snapshots"
-    },
-    { "uvm_transfers",       CALI_TYPE_BOOL, "true",
-      "When recording uvm events, record memory transfers",
-      "When recording uvm events, record memory transfers"
-    },
-    { "uvm_pagefaults",      CALI_TYPE_BOOL, "true",
-      "When recording uvm events, record pagefaults",
-      "When recording uvm events, record pagefaults"
-    },
-    { "snapshot_duration",   CALI_TYPE_BOOL, "false",
-      "Record duration of host-side activities using CUpti timestamps",
-      "Record duration of host-side activities using CUpti timestamps"
-    },
-    { "info_attributes",     CALI_TYPE_STRING, "mpi.rank",
-      "Flush info attributes to append to the cupti activity records",
-      "Flush info attributes to append to the cupti activity records"
-    },
-    { "flush_on_snapshot",   CALI_TYPE_BOOL, "false",
-      "Flush CUpti buffers at snapshots instead of regular flush events.",
-      "Flush CUpti buffers at snapshots instead of regular flush events"
-    },
-    { "flush_trigger",       CALI_TYPE_STRING, "cupti.sync",
-      "Attributes to trigger flushes when flush_on_snapshot is enabled",
-      "Attributes to trigger flushes when flush_on_snapshot is enabled"
-    },
-
-    ConfigSet::Terminator
-};
+const char* CuptiTraceService::s_spec = R"json(
+{   "name": "cuptitrace",
+    "description": "CUDA GPU event tracing via the CUpti activity API",
+    "config": [
+        {   "name": "activities",
+            "description":
+"The CUpti activities to record (device, correlation, driver, runtime, kernel, memcpy, uvm)",
+            "type": "string",
+            "value": "correlation,device,runtime,kernel,memcpy"
+        },
+        {   "name": "correlate_context",
+            "description": "Correlate CUpti records with Caliper context",
+            "type": "bool",
+            "value": "true"
+        },
+        {   "name": "uvm_transfers",
+            "description": "When recording uvm events, record UVM transfers",
+            "type": "bool",
+            "value": "true"
+        },
+        {   "name": "uvm_pagefaults",
+            "description": "When recording uvm events, record UVM pagefaults",
+            "type": "bool",
+            "value": "true"
+        },
+        {   "name": "snapshot_timestamps",
+            "description": "Record CUpti timestamps for Caliper host-side snapshots",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "snapshot_duration",
+            "description": "Record duration of host-side activities using CUpti timestamps",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "flush_on_snapshot",
+            "description": "Flush CUpti buffers at snapshots instead of regular flush",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "flush_trigger",
+            "description": "Attributes to trigger a flush when flush_on_snapshot is on",
+            "type": "string",
+            "value": "cupti.sync"
+        },
+        {   "name": "info_attributes",
+            "description": "Flush info attributes to append to the cupti activity records",
+            "type": "string",
+            "value": "mpi.rank"
+        }
+    ]
+}
+)json";
 
 CuptiTraceService* CuptiTraceService::s_instance = nullptr;
 
@@ -1133,6 +1140,6 @@ CuptiTraceService* CuptiTraceService::s_instance = nullptr;
 namespace cali
 {
 
-CaliperService cuptitrace_service = { "cuptitrace", ::CuptiTraceService::cuptitrace_initialize };
+CaliperService cuptitrace_service = { ::CuptiTraceService::s_spec, ::CuptiTraceService::cuptitrace_initialize };
 
 }
