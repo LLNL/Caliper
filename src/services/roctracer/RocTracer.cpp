@@ -3,6 +3,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -65,7 +67,6 @@ class RocTracerService {
     bool      m_record_host_duration;
     bool      m_record_host_timestamp;
 
-    static const ConfigSet::Entry s_configdata[];
     static RocTracerService* s_instance;
 
     void create_callback_attributes(Caliper* c) {
@@ -534,7 +535,7 @@ class RocTracerService {
           m_roctracer_pool { nullptr },
           m_channel        { channel }
     {
-        auto config = channel->config().init("roctracer", s_configdata);
+        auto config = services::init_config_from_spec(channel->config(), s_spec);
 
         m_enable_tracing = config.get("trace_activities").to_bool();
         m_record_names   = config.get("record_kernel_names").to_bool();
@@ -556,6 +557,8 @@ class RocTracerService {
     }
 
 public:
+
+    static const char* s_spec;
 
     static void register_roctracer(Caliper* c, Channel* channel) {
         if (s_instance) {
@@ -589,27 +592,33 @@ public:
     }
 };
 
-const ConfigSet::Entry RocTracerService::s_configdata[] = {
-    { "trace_activities", CALI_TYPE_BOOL, "true",
-      "Enable ROCm activity tracing",
-      "Enable ROCm activity tracing"
-    },
-    { "record_kernel_names", CALI_TYPE_BOOL, "false",
-      "Record kernel names when activity tracing is enabled",
-      "Record kernel names when activity tracing is enabled"
-    },
-    { "snapshot_duration", CALI_TYPE_BOOL, "false",
-      "Record duration of host-side activities using ROCm timestamps",
-      "Record duration of host-side activities using ROCm timestamps",
-    },
-    { "snapshot_timestamps", CALI_TYPE_BOOL, "false",
-      "Record host-side timestamps with ROCm",
-      "Record host-side timestamps with ROCm. "
-      "Allows comparisons between CPU and GPU timestamps."
-    },
-
-    ConfigSet::Terminator
-};
+const char* RocTracerService::s_spec = R"json(
+{   "name": "roctracer",
+    "description": "Record ROCm API and GPU activities",
+    "config": [
+        {   "name": "trace_activities",
+            "type": "bool",
+            "description": "Enable ROCm GPU activity tracing",
+            "value": "true"
+        },
+        {   "name": "record_kernel_names",
+            "type": "bool",
+            "description": "Record kernel names when activity tracing is enabled",
+            "value": "false"
+        },
+        {   "name": "snapshot_duration",
+            "type": "bool",
+            "description": "Record duration of host-side activities using ROCm timestamps",
+            "value": "false"
+        },
+        {   "name": "snapshot_timestamps",
+            "type": "bool",
+            "description": "Record host-side timestamps with ROCm",
+            "value": "false"
+        }
+    ]
+}
+)json";
 
 RocTracerService* RocTracerService::s_instance = nullptr;
 
@@ -618,6 +627,6 @@ RocTracerService* RocTracerService::s_instance = nullptr;
 namespace cali
 {
 
-CaliperService roctracer_service { "roctracer", ::RocTracerService::register_roctracer };
+CaliperService roctracer_service { ::RocTracerService::s_spec, ::RocTracerService::register_roctracer };
 
 }
