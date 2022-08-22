@@ -3,6 +3,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../../services/Services.h"
+
 #include "caliper/Caliper.h"
 
 #include "caliper/common/Log.h"
@@ -20,7 +22,7 @@ Attribute mpisize_attr     { Attribute::invalid };
 Attribute mpicall_attr     { Attribute::invalid };
 Attribute mpi_call_id_attr { Attribute::invalid };
 
-extern void mpiwrap_init(Caliper* c, Channel* chn);
+extern void mpiwrap_init(Caliper* c, Channel* chn, cali::ConfigSet& cfg);
 
 extern Attribute subscription_event_attr;
 
@@ -28,6 +30,27 @@ extern Attribute subscription_event_attr;
 
 namespace
 {
+
+const char* mpi_service_spec = R"json(
+{   "name": "mpi",
+    "description": "MPI function wrapping and message tracing",
+    "config": [
+        {   "name": "blacklist",
+            "description": "List of MPI functions to filter",
+            "type": "string"
+        },
+        {   "name": "whitelist",
+            "description": "List of MPI functions to instrument",
+            "type": "string"
+        },
+        {   "name": "msg_tracing",
+            "description": "List of MPI functions to instrument",
+            "type": "bool",
+            "value": "false"
+        }
+    ]
+}
+)json";
 
 void mpi_register(Caliper* c, Channel* chn)
 {
@@ -55,7 +78,10 @@ void mpi_register(Caliper* c, Channel* chn)
                                 CALI_ATTR_SCOPE_THREAD  |
                                 CALI_ATTR_ASVALUE       |
                                 CALI_ATTR_SKIP_EVENTS);
-    mpiwrap_init(c, chn);
+
+    ConfigSet cfg = services::init_config_from_spec(chn->config(), mpi_service_spec);
+
+    mpiwrap_init(c, chn, cfg);
 
     Log(1).stream() << chn->name() << ": Registered MPI service" << std::endl;
 }
@@ -66,6 +92,6 @@ void mpi_register(Caliper* c, Channel* chn)
 namespace cali
 {
 
-CaliperService mpiwrap_service = { "mpi", ::mpi_register };
+CaliperService mpiwrap_service = { ::mpi_service_spec, ::mpi_register };
 
 } // namespace cali

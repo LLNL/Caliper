@@ -73,13 +73,30 @@ inline void pop_mpifn(Caliper* c, bool enabled)
 
 struct MpiWrapperConfig
 {
-    static ConfigSet::Entry  s_configdata[];
-
     static MpiWrapperConfig* s_mwcs;
 
     //
     // The list of MPI configs
     //
+
+    static MpiWrapperConfig* init_wrapper_config(Channel* chn, ConfigSet& cfg) {
+        MpiWrapperConfig* mwc = s_mwcs;
+
+        while (mwc && mwc->channel->id() != chn->id())
+            mwc = mwc->next;
+
+        if (!mwc) {
+            mwc = new MpiWrapperConfig(chn, cfg);
+
+            if (s_mwcs)
+                s_mwcs->prev = mwc;
+
+            mwc->next = s_mwcs;
+            s_mwcs = mwc;
+        }
+
+        return mwc;
+    }
 
     static MpiWrapperConfig* get_wrapper_config() {
         return s_mwcs;
@@ -90,16 +107,6 @@ struct MpiWrapperConfig
 
         while (mwc && mwc->channel->id() != chn->id())
             mwc = mwc->next;
-
-        if (!mwc) {
-            mwc = new MpiWrapperConfig(chn);
-
-            if (s_mwcs)
-                s_mwcs->prev = mwc;
-
-            mwc->next = s_mwcs;
-            s_mwcs = mwc;
-        }
 
         return mwc;
     }
@@ -122,11 +129,9 @@ struct MpiWrapperConfig
     // Constructor / destructor
     //
 
-    MpiWrapperConfig(Channel* chn)
+    MpiWrapperConfig(Channel* chn, ConfigSet& cfg)
         : channel(chn), next(nullptr), prev(nullptr)
         {
-            ConfigSet cfg = chn->config().init("mpi", s_configdata);
-
             setup_filter(cfg.get("whitelist").to_string(), cfg.get("blacklist").to_string());
             enable_msg_tracing = cfg.get("msg_tracing").to_bool();
         }
@@ -238,24 +243,6 @@ struct MpiWrapperConfig
 }; // struct MpiWrapperConfig
 
 MpiWrapperConfig* MpiWrapperConfig::s_mwcs = nullptr;
-
-ConfigSet::Entry MpiWrapperConfig::s_configdata[] = {
-    { "whitelist", CALI_TYPE_STRING, "",
-      "List of MPI functions to instrument",
-      "Colon-separated list of MPI functions to instrument.\n"
-      "If set, the whitelisted MPI functions will be instrumented."
-    },
-    { "blacklist", CALI_TYPE_STRING, "",
-      "List of MPI functions to filter",
-      "Colon-separated list of functions to blacklist."
-    },
-    { "msg_tracing", CALI_TYPE_BOOL, "false",
-      "Enable MPI message tracing",
-      "Enable MPI message tracing"
-    },
-    ConfigSet::Terminator
-};
-
 
 void
 mpi_init_cb(Caliper* c, Channel* chn)
@@ -1248,7 +1235,7 @@ MpiEvents& mpiwrap_get_events(Channel* chn)
 // --- Init function
 //
 
-void mpiwrap_init(Caliper* c, Channel* chn)
+void mpiwrap_init(Caliper* c, Channel* chn, ConfigSet& cfg)
 {
     // --- register callbacks
 
@@ -1265,7 +1252,7 @@ void mpiwrap_init(Caliper* c, Channel* chn)
 
     ::enable_wrapper = true;
 
-    MpiWrapperConfig* mwc = MpiWrapperConfig::get_wrapper_config(chn);
+    MpiWrapperConfig* mwc = MpiWrapperConfig::init_wrapper_config(chn, cfg);
 
     mwc->mpi_events.mpi_init_evt.connect(::mpi_init_cb);
 
