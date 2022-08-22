@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -28,8 +30,6 @@ class IntelTopdown
 {
     static const char* s_top_counters;
     static const char* s_all_counters;
-
-    static const ConfigSet::Entry s_configdata[];
 
     std::map<std::string, Attribute> counter_attrs;
     std::map<std::string, Attribute> result_attrs;
@@ -383,12 +383,14 @@ class IntelTopdown
 
 public:
 
+    static const char* s_spec;
+
     static void intel_topdown_register(Caliper* c, Channel* channel) {
         Level level = Top;
         const char* counters = s_top_counters;
 
-        std::string lvlcfg =
-            channel->config().init("topdown", s_configdata).get("level").to_string();
+        auto config = services::init_config_from_spec(channel->config(), s_spec);
+        std::string lvlcfg = config.get("level").to_string();
 
         if (lvlcfg == "all") {
             level    = All;
@@ -458,19 +460,24 @@ const char* IntelTopdown::s_all_counters =
     ",UOPS_ISSUED:ANY"
     ",UOPS_RETIRED:RETIRE_SLOTS";
 
-const ConfigSet::Entry IntelTopdown::s_configdata[] = {
-    { "level", CALI_TYPE_STRING, "top",
-      "Top-down analysis level to compute ('all' or 'top')",
-      "Top-down analysis level to compute ('all' or 'top')"
-    },
-    ConfigSet::Terminator
-};
+const char* IntelTopdown::s_spec = R"json(
+{   "name": "topdown",
+    "description": "Record PAPI counters and compute top-down analysis for Intel CPUs",
+    "config": [
+        {   "name": "level",
+            "description": "Top-down analysis level to compute ('all' or 'top')",
+            "type": "string",
+            "value": "top"
+        }
+    ]
+}
+)json";
 
 }
 
 namespace cali
 {
 
-CaliperService topdown_service { "topdown", ::IntelTopdown::intel_topdown_register };
+CaliperService topdown_service { ::IntelTopdown::s_spec, ::IntelTopdown::intel_topdown_register };
 
 }

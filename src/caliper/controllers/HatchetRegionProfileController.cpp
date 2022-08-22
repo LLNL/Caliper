@@ -116,7 +116,7 @@ const char* controller_spec =
     " \"name\"        : \"hatchet-region-profile\","
     " \"description\" : \"Record a region time profile for processing with hatchet\","
     " \"categories\"  : [ \"adiak\", \"metric\", \"output\", \"region\", \"event\" ],"
-    " \"services\"    : [ \"aggregate\", \"event\", \"timestamp\" ],"
+    " \"services\"    : [ \"aggregate\", \"event\", \"timer\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_EVENT_ENABLE_SNAPSHOT_INFO\" : \"false\","

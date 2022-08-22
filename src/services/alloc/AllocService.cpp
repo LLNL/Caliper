@@ -6,6 +6,7 @@
 #include "SplayTree.hpp"
 
 #include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
@@ -103,8 +104,6 @@ struct AllocInfoCmp {
 
 class AllocService
 {
-    static const ConfigSet::Entry s_configdata[];
-
     bool g_resolve_addresses        { false };
     bool g_track_allocations        { true  };
     bool g_record_active_mem        { false };
@@ -423,7 +422,7 @@ class AllocService
             for (attr_info_t *p = attr_info; p->name; ++p)
                 *(p->attr) = c->create_attribute(p->name, p->type, p->prop | CALI_ATTR_SKIP_EVENTS, p->meta_count, p->meta_attr, p->meta_vals);
 
-            ConfigSet config = chn->config().init("alloc", s_configdata);
+            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
             g_resolve_addresses    = config.get("resolve_addresses").to_bool();
             g_track_allocations    = config.get("track_allocations").to_bool();
@@ -432,6 +431,8 @@ class AllocService
         }
 
 public:
+
+    static const char* s_spec;
 
     static void allocservice_initialize(Caliper* c, Channel* chn) {
         AllocService* instance = new AllocService(c, chn);
@@ -465,33 +466,39 @@ public:
     }
 };
 
-const ConfigSet::Entry AllocService::s_configdata[] = {
-    { "resolve_addresses", CALI_TYPE_BOOL, "false",
-      "Whether to resolve memory addresses in snapshots.",
-      "Whether to resolve memory addresses in snapshots.\n"
-    },
-    { "track_allocations", CALI_TYPE_BOOL, "true",
-      "Whether to record snapshots for annotated memory allocations.",
-      "Whether to record snapshots for annotated memory allocations.\n"
-    },
-    { "record_active_mem", CALI_TYPE_BOOL, "false",
-      "Record the active allocated memory at each snapshot.",
-      "Record the active allocated memory at each snapshot."
-    },
-    { "record_highwatermark", CALI_TYPE_BOOL, "false",
-      "Record the high water mark of allocated memory at each snapshot.",
-      "Record the high water mark of allocated memory at each snapshot."
-    },
-
-    ConfigSet::Terminator
-};
+const char* AllocService::s_spec = R"json(
+{   "name" : "alloc",
+    "description" : "Track user-defined memory allocations",
+    "config" : [
+        {   "name"        : "resolve_addresses",
+            "type"        : "bool",
+            "description" : "Resolve memory addresses in snapshots",
+            "value"       : "false"
+        },
+        {   "name"        : "track_allocations",
+            "type"        : "bool",
+            "description" : "Record snapshots for annotated memory regions",
+            "value"       : "true"
+        },
+        {   "name"        : "record_active_mem",
+            "type"        : "bool",
+            "description" : "Record the active allocated memory at each snapshot",
+            "value"       : "false"
+        },
+        {   "name"        : "record_highwatermark",
+            "type"        : "bool",
+            "description" : "Record the high water mark of allocated memory at each snapshot",
+            "value"       : "false"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
-
 
 namespace cali
 {
 
-CaliperService alloc_service { "alloc", ::AllocService::allocservice_initialize };
+CaliperService alloc_service { ::AllocService::s_spec, ::AllocService::allocservice_initialize };
 
 }

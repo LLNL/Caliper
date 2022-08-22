@@ -5,6 +5,7 @@
 // Callpath provider for caliper records using libunwind
 
 #include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
@@ -37,8 +38,6 @@ namespace
 
 class Callpath
 {
-    static const ConfigSet::Entry s_configdata[];
-
     Attribute callpath_name_attr { Attribute::invalid};
     Attribute callpath_addr_attr { Attribute::invalid };
 
@@ -177,8 +176,7 @@ class Callpath
     Callpath(Caliper* c, Channel* chn)
         : callpath_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
-            ConfigSet config =
-                chn->config().init("callpath", s_configdata);
+            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
             use_name      = config.get("use_name").to_bool();
             use_addr      = config.get("use_address").to_bool();
@@ -210,6 +208,8 @@ class Callpath
 
 public:
 
+    static const char* s_spec;
+
     static void callpath_service_register(Caliper* c, Channel* chn) {
         Callpath* instance = new Callpath(c, chn);
 
@@ -227,33 +227,39 @@ public:
 
 }; // class Callpath
 
-const ConfigSet::Entry Callpath::s_configdata[] = {
-    { "use_name", CALI_TYPE_BOOL, "false",
-      "Record region names for call path.",
-      "Record region names for call path. Incurs higher overhead."
-    },
-    { "use_address", CALI_TYPE_BOOL, "true",
-      "Record region addresses for call path",
-      "Record region addresses for call path"
-    },
-    { "skip_frames", CALI_TYPE_UINT, "0",
-      "Skip this number of stack frames",
-      "Skip this number of stack frames.\n"
-      "Avoids recording stack frames within the caliper library"
-    },
-    { "skip_internal", CALI_TYPE_BOOL, "true",
-      "Skip caliper-internal stack frames",
-      "Skip caliper-internal stack frames. Requires libdw support.\n"
-    },
-    ConfigSet::Terminator
-};
+const char* Callpath::s_spec = R"json(
+{   "name"        : "callpath",
+    "description" : "Record call stack at each snapshot",
+    "config"      : [
+        { "name"        : "use_name",
+          "type"        : "bool",
+          "description" : "Record function names",
+          "value"       : "false"
+        },
+        { "name"        : "use_address",
+          "type"        : "bool",
+          "description" : "Record function addresses",
+          "value"       : "true"
+        },
+        { "name"        : "skip_frames",
+          "type"        : "uint",
+          "description" : "Skip this number of stack frames",
+          "value"       : "0"
+        },
+        { "name"        : "skip_internal",
+          "type"        : "bool",
+          "description" : "Skip internal (inside Caliper library) stack frames",
+          "value"       : "true"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
-
 
 namespace cali
 {
 
-CaliperService callpath_service = { "callpath", ::Callpath::callpath_service_register };
+CaliperService callpath_service = { ::Callpath::s_spec, ::Callpath::callpath_service_register };
 
 } // namespace cali

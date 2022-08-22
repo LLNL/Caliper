@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "../../caliper/RegionFilter.h"
 
 #include "caliper/Caliper.h"
@@ -36,12 +38,6 @@ namespace
 
 class EventTrigger
 {
-    //
-    // --- Static data
-    //
-
-    static const ConfigSet::Entry s_configdata[];
-
     //
     // --- Per-channel instance data
     //
@@ -241,7 +237,7 @@ class EventTrigger
                 check_attribute(c, chn, attr);
     }
 
-    EventTrigger(Caliper* c, Channel* chn)
+    EventTrigger(Caliper* c, Channel* channel)
         : event_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
             region_count_attr =
@@ -251,7 +247,7 @@ class EventTrigger
                                     CALI_ATTR_AGGREGATABLE);
 
             ConfigSet cfg =
-                chn->config().init("event", s_configdata);
+                services::init_config_from_spec(channel->config(), s_spec);
 
             trigger_attr_names   = cfg.get("trigger").to_stringlist(",:");
             enable_snapshot_info = cfg.get("enable_snapshot_info").to_bool();
@@ -265,7 +261,7 @@ class EventTrigger
                 auto p = RegionFilter::from_config(i_filter, e_filter);
 
                 if (!p.second.empty()) {
-                    Log(0).stream() << chn->name() << ": event: filter parse error: "
+                    Log(0).stream() << channel->name() << ": event: filter parse error: "
                                     << p.second
                                     << std::endl;
                 } else {
@@ -285,15 +281,17 @@ class EventTrigger
                 c->create_attribute("cali.event.end",
                                     CALI_TYPE_UINT, CALI_ATTR_SKIP_EVENTS | CALI_ATTR_HIDDEN);
             exp_marker_attr =
-                c->create_attribute(std::string("event.exp#")+std::to_string(chn->id()),
+                c->create_attribute(std::string("event.exp#")+std::to_string(channel->id()),
                                     CALI_TYPE_USR,
                                     CALI_ATTR_SKIP_EVENTS |
                                     CALI_ATTR_HIDDEN);
 
-            check_existing_attributes(c, chn);
+            check_existing_attributes(c, channel);
         }
 
 public:
+
+    static const char* s_spec;
 
     static void event_trigger_register(Caliper* c, Channel* chn) {
         EventTrigger* instance = new EventTrigger(c, chn);
@@ -328,27 +326,31 @@ public:
     }
 };
 
-const ConfigSet::Entry EventTrigger::s_configdata[] = {
-    { "trigger", CALI_TYPE_STRING, "",
-      "List of attributes that trigger measurement snapshots.",
-      "Colon-separated list of attributes that trigger measurement snapshots.\n"
-      "If empty, all user attributes trigger measurement snapshots."
-    },
-    { "enable_snapshot_info", CALI_TYPE_BOOL, "true",
-      "Enable snapshot info records",
-      "Enable snapshot info records."
-    },
-    { "include_regions", CALI_TYPE_STRING, "",
-      "Region filter to specify regions that will trigger snapshots",
-      "Region filter to specify regions that will trigger snapshots"
-    },
-    { "exclude_regions", CALI_TYPE_STRING, "",
-      "Region filter to specify regions that won't trigger snapshots",
-      "Region filter to specify regions that won't trigger snapshots"
-    },
-
-    ConfigSet::Terminator
-};
+const char* EventTrigger::s_spec = R"json(
+    {   "name"        : "event",
+        "description" : "Trigger snapshots for Caliper region begin and end events",
+        "config"      :
+        [
+            { "name"        : "trigger",
+              "type"        : "stringlist",
+              "description" : "List of attributes that trigger measurements (optional)"
+            },
+            { "name"        : "enable_snapshot_info",
+              "type"        : "bool",
+              "description" : "If true, add begin/end attributes at each event. Increases overhead.",
+              "value"       : "True"
+            },
+            { "name"        : "include_regions",
+              "type"        : "string",
+              "description" : "Region filter to specify regions that will trigger snapshots"
+            },
+            { "name"        : "exclude_regions",
+              "type"        : "string",
+              "description" : "Region filter to specify regions that won't trigger snapshots"
+            }
+        ]
+    }
+)json";
 
 } // namespace
 
@@ -356,6 +358,6 @@ const ConfigSet::Entry EventTrigger::s_configdata[] = {
 namespace cali
 {
 
-CaliperService event_service { "event", ::EventTrigger::event_trigger_register };
+CaliperService event_service { ::EventTrigger::s_spec, ::EventTrigger::event_trigger_register };
 
 }

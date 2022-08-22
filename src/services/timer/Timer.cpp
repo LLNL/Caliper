@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -27,7 +29,7 @@ using namespace std;
 namespace
 {
 
-class Timestamp
+class TimerService
 {
     //   This keeps per-thread per-channel timer data, which we can look up
     // on the thread-local blackboard
@@ -69,9 +71,6 @@ class Timestamp
     Attribute end_evt_attr   { Attribute::invalid };
 
     int       n_stack_errors { 0 };
-
-    static const ConfigSet::Entry s_configdata[];
-
 
     TimerInfo* acquire_timerinfo(Caliper* c) {
         TimerInfo* ti =
@@ -172,10 +171,10 @@ class Timestamp
                             << std::endl;
     }
 
-    Timestamp(Caliper* c, Channel* chn)
+    TimerService(Caliper* c, Channel* chn)
         : tstart(chrono::high_resolution_clock::now())
         {
-            ConfigSet config = chn->config().init("timer", s_configdata);
+            ConfigSet config = services::init_config_from_spec(chn->config(), s_spec);
 
             record_snapshot_duration =
                 config.get("snapshot_duration").to_bool();
@@ -237,7 +236,7 @@ class Timestamp
                                     CALI_ATTR_HIDDEN);
         }
 
-        ~Timestamp() {
+        ~TimerService() {
             std::lock_guard<std::mutex>
                 g(info_obj_mutex);
 
@@ -247,8 +246,10 @@ class Timestamp
 
 public:
 
-    static void timestamp_register(Caliper* c, Channel* chn) {
-        Timestamp* instance = new Timestamp(c, chn);
+    static const char* s_spec;
+
+    static void timer_register(Caliper* c, Channel* chn) {
+        TimerService* instance = new TimerService(c, chn);
 
         chn->events().post_init_evt.connect(
             [instance](Caliper* c, Channel* chn){
@@ -268,34 +269,49 @@ public:
                 delete instance;
             });
 
-        Log(1).stream() << chn->name() << ": Registered timestamp service" << endl;
+        Log(1).stream() << chn->name() << ": Registered timer service" << endl;
     }
 
-}; // class Timestamp
+}; // class TimerService
 
-const ConfigSet::Entry Timestamp::s_configdata[] = {
-    { "snapshot_duration", CALI_TYPE_BOOL, "true",
-      "Include duration of snapshot epoch with each context record",
-      "Include duration of snapshot epoch with each context record"
-    },
-    { "offset", CALI_TYPE_BOOL, "false",
-      "Include time offset (time since program start) with each context record",
-      "Include time offset (time since program start) with each context record"
-    },
-    { "timestamp", CALI_TYPE_BOOL, "false",
-      "Include absolute timestamp (POSIX time) with each context record",
-      "Include absolute timestamp (POSIX time) with each context record"
-    },
-    { "inclusive_duration", CALI_TYPE_BOOL, "true",
-      "Record inclusive duration of begin/end phases.",
-      "Record inclusive duration of begin/end phases."
-    },
-    { "unit", CALI_TYPE_STRING, "sec",
-      "Unit for time durations (sec or usec)",
-      "Unit for time durations (sec or usec)"
-    },
-    ConfigSet::Terminator
-};
+const char* TimerService::s_spec = R"json(
+{   "name": "timer",
+    "description": "Record timestamps and time durations",
+    "config": [
+        {   "name": "snapshot_duration",
+            "description": "Include duration of snapshot epoch with each snapshot record",
+            "type": "bool",
+            "value": "true"
+        },
+        {   "name": "offset",
+            "description": "Include timestamp (time since program start) in snapshots",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "timestamp",
+            "description": "Include absolute timestamp in POSIX time",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "inclusive_duration",
+            "description": "Record inclusive duration of begin/end regions",
+            "type": "bool",
+            "value": "true"
+        },
+        {   "name": "unit",
+            "description": "Unit for time durations (sec, usec)",
+            "type": "string",
+            "value": "sec"
+        }
+    ]
+}
+)json";
+
+const char* timestamp_spec = R"json(
+{   "name": "timestamp",
+    "description": "Deprecated name for 'timer' service"
+}
+)json";
 
 }  // namespace
 
@@ -303,6 +319,7 @@ const ConfigSet::Entry Timestamp::s_configdata[] = {
 namespace cali
 {
 
-CaliperService timestamp_service = { "timestamp", ::Timestamp::timestamp_register };
+CaliperService timer_service = { ::TimerService::s_spec, ::TimerService::timer_register };
+CaliperService timestamp_service = { timestamp_spec, ::TimerService::timer_register };
 
 } // namespace cali

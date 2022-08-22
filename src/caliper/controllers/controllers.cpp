@@ -12,7 +12,7 @@ const char* event_trace_spec =
     "{"
     " \"name\"        : \"event-trace\","
     " \"description\" : \"Record a trace of region enter/exit events in .cali format\","
-    " \"services\"    : [ \"event\", \"recorder\", \"timestamp\", \"trace\" ],"
+    " \"services\"    : [ \"event\", \"recorder\", \"timer\", \"trace\" ],"
     " \"categories\"  : [ \"output\", \"event\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"   : \"false\","
@@ -82,7 +82,7 @@ const char* roctx_spec =
 const char* mpireport_spec =
     "{"
     " \"name\"        : \"mpi-report\","
-    " \"services\"    : [ \"aggregate\", \"event\", \"mpi\", \"mpireport\", \"timestamp\" ],"
+    " \"services\"    : [ \"aggregate\", \"event\", \"mpi\", \"mpireport\", \"timer\" ],"
     " \"description\" : \"Print time spent in MPI functions\","
     " \"categories\"  : [ \"event\" ],"
     " \"config\"      : "

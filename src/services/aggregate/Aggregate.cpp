@@ -6,6 +6,7 @@
 #include "AggregationDB.h"
 
 #include "caliper/CaliperService.h"
+#include "../Services.h"
 
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
@@ -68,8 +69,6 @@ class Aggregate
             : stopped(false), retired(false)
             { }
     };
-
-    static const ConfigSet::Entry  s_configdata[];
 
     ConfigSet                      config;
 
@@ -385,9 +384,10 @@ class Aggregate
     }
 
     Aggregate(Caliper* c, Channel* chn)
-        : config(chn->config().init("aggregate", s_configdata)),
-          num_dropped_snapshots(0)
+        : num_dropped_snapshots(0)
         {
+            config = services::init_config_from_spec(chn->config(), s_spec);
+
             tdb_lock.unlock();
 
             info.implicit_grouping = true;
@@ -406,6 +406,8 @@ class Aggregate
         }
 
 public:
+
+    static const char* s_spec;
 
     ~Aggregate() {
         ThreadDB* tdb = tdb_list;
@@ -466,25 +468,28 @@ public:
 
 }; // class Aggregate
 
-const ConfigSet::Entry Aggregate::s_configdata[] = {
-    { "attributes",   CALI_TYPE_STRING, "",
-      "List of attributes to be aggregated",
-      "List of attributes to be aggregated."
-      "If specified, only aggregate the given attributes."
-      "By default, aggregate all aggregatable attributes." },
-    { "key",   CALI_TYPE_STRING, "",
-      "List of attributes in the aggregation key",
-      "List of attributes in the aggregation key."
-      "If specified, only group by the given attributes." },
-    ConfigSet::Terminator
-};
+const char* Aggregate::s_spec = R"json(
+{   "name"        : "aggregate",
+    "description" : "Aggregate snapshots at runtime",
+    "config" : [
+        {   "name"        : "attributes",
+            "description" : "List of attributes to aggregate. By default, all METRIC attributes are aggregated",
+            "type"        : "string"
+        },
+        {
+            "name"        : "key",
+            "description" : "Attributes in the aggregation key (i.e., group by)",
+            "type"        : "string"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
-
 
 namespace cali
 {
 
-CaliperService aggregate_service { "aggregate", ::Aggregate::aggregate_register };
+CaliperService aggregate_service { ::Aggregate::s_spec, ::Aggregate::aggregate_register };
 
 }

@@ -6,6 +6,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "TraceBufferChunk.h"
 
 #include "caliper/Caliper.h"
@@ -57,8 +59,6 @@ class Trace
                 prev->next = next;
         }
     };
-
-    static const ConfigSet::Entry    s_configdata[];
 
     BufferPolicy   policy            = BufferPolicy::Grow;
     size_t         buffersize        = 2 * 1024 * 1024;
@@ -300,7 +300,7 @@ class Trace
             tbuf_lock.unlock();
             flush_lock.unlock();
 
-            ConfigSet cfg = chn->config().init("trace", s_configdata);
+            ConfigSet cfg = services::init_config_from_spec(chn->config(), s_spec);
 
             init_overflow_policy(cfg.get("buffer_policy").to_string());
             buffersize = cfg.get("buffer_size").to_uint() * 1024 * 1024;
@@ -315,6 +315,8 @@ class Trace
         }
 
 public:
+
+    static const char* s_spec;
 
     ~Trace()
         {
@@ -365,26 +367,29 @@ public:
     }
 }; // class Trace
 
-const ConfigSet::Entry Trace::s_configdata[] = {
-    { "buffer_size",   CALI_TYPE_UINT, "2",
-      "Size of initial per-thread trace buffer in MiB",
-      "Size of initial per-thread trace buffer in MiB" },
-    { "buffer_policy", CALI_TYPE_STRING, "grow",
-      "What to do when trace buffer is full",
-      "What to do when trace buffer is full:\n"
-      "   flush:  Write out contents\n"
-      "   grow:   Increase buffer size\n"
-      "   stop:   Stop recording.\n"
-      "Default: grow" },
-
-    ConfigSet::Terminator
-};
+const char* Trace::s_spec = R"json(
+{   "name": "trace",
+    "description": "Store snapshots in trace buffer",
+    "config": [
+        {   "name": "buffer_size",
+            "description": "Size of initial per-thread trace buffer in MiB",
+            "type": "uint",
+            "value": "2"
+        },
+        {   "name": "buffer_policy",
+            "description": "What to do when the buffer is full ('flush', 'stop', 'grow')",
+            "type": "string",
+            "value": "grow"
+        }
+    ]
+}
+)json";
 
 } // namespace
 
 namespace cali
 {
 
-CaliperService trace_service { "trace", ::Trace::trace_register };
+CaliperService trace_service { ::Trace::s_spec, ::Trace::trace_register };
 
 }

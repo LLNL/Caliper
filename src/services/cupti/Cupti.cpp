@@ -8,6 +8,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -40,7 +42,6 @@ class CuptiService
     //
 
     ConfigSet config;
-    static const ConfigSet::Entry   s_configdata[];
 
     struct CallbackDomainInfo {
         CUpti_CallbackDomain domain;
@@ -444,7 +445,7 @@ class CuptiService
     }
 
     CuptiService(Caliper* c, Channel* chn)
-        : config(chn->config().init("cupti", s_configdata)),
+        : config(services::init_config_from_spec(chn->config(), s_spec)),
           num_cb(0),
           num_api_cb(0),
           num_resource_cb(0),
@@ -462,6 +463,8 @@ class CuptiService
         }
 
 public:
+
+    static const char* s_spec;
 
     static void
     cuptiservice_initialize(Caliper* c, Channel* chn)
@@ -496,32 +499,32 @@ public:
 
 }; // CuptiService
 
-const ConfigSet::Entry CuptiService::s_configdata[] = {
-    { "callback_domains", CALI_TYPE_STRING, "runtime:sync",
-      "List of CUDA callback domains to capture",
-      "List of CUDA callback domains to capture. Possible values:\n"
-      "  runtime  :  Capture CUDA runtime API calls\n"
-      "  driver   :  Capture CUDA driver calls\n"
-      "  resource :  Capture CUDA resource creation events\n"
-      "  sync     :  Capture CUDA synchronization events\n"
-      "  nvtx     :  Capture NVidia NVTX annotations\n"
-      "  none     :  Don't capture callbacks"
-    },
-    { "record_symbol", CALI_TYPE_BOOL, "false",
-      "Record symbol name (kernel) for CUDA runtime and driver callbacks",
-      "Record symbol name (kernel) for CUDA runtime and driver callbacks"
-    },
-    { "sample_events", CALI_TYPE_STRING, "",
-      "CUpti events to sample",
-      "CUpti events to sample"
-    },
-    { "sample_event_id", CALI_TYPE_UINT, "0",
-      "CUpti event ID to sample",
-      "CUpti event ID to sample"
-    },
-
-    ConfigSet::Terminator
-};
+const char* CuptiService::s_spec = R"json(
+{   "name": "cupti",
+    "description": "CUDA API instrumentation",
+    "config": [
+        {   "name": "callback_domains",
+            "description": "List of CUDA callback domains to capture (runtime, driver, resource, sync, nvtx)",
+            "type": "string",
+            "value": "runtime,sync"
+        },
+        {   "name": "record_symbol",
+            "description": "Record kernel symbol name for CUDA runtime and driver callbacks",
+            "type": "bool",
+            "value": "false"
+        },
+        {   "name": "sample_events",
+            "description": "List of CUpti events to sample",
+            "type": "string"
+        },
+        {   "name": "sample_event_id",
+            "description": "CUpti event ID to sample",
+            "type": "uint",
+            "value": "0"
+        }
+    ]
+}
+)json";
 
 const CuptiService::CallbackDomainInfo CuptiService::s_callback_domains[] = {
     { CUPTI_CB_DOMAIN_RUNTIME_API, "runtime"  },
@@ -538,6 +541,6 @@ const CuptiService::CallbackDomainInfo CuptiService::s_callback_domains[] = {
 namespace cali
 {
 
-CaliperService cupti_service = { "cupti", ::CuptiService::cuptiservice_initialize };
+CaliperService cupti_service = { ::CuptiService::s_spec, ::CuptiService::cuptiservice_initialize };
 
 }

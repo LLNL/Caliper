@@ -278,7 +278,7 @@ const char* loop_report_controller_spec =
     " \"name\"        : \"loop-report\","
     " \"description\" : \"Print summary and time-series information for loops\","
     " \"categories\"  : [ \"metric\", \"output\" ],"
-    " \"services\"    : [ \"loop_monitor\", \"timestamp\", \"trace\" ],"
+    " \"services\"    : [ \"loop_monitor\", \"timer\", \"trace\" ],"
     " \"config\"      : "
     "   { \"CALI_CHANNEL_FLUSH_ON_EXIT\"      : \"false\","
     "     \"CALI_CHANNEL_CONFIG_CHECK\"       : \"false\","

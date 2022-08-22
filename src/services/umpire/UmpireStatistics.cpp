@@ -3,6 +3,8 @@
 
 #include "caliper/CaliperService.h"
 
+#include "../Services.h"
+
 #include "caliper/Caliper.h"
 #include "caliper/SnapshotRecord.h"
 
@@ -20,8 +22,6 @@ namespace
 
 class UmpireService
 {
-    static const ConfigSet::Entry s_configdata[];
-
     Attribute m_alloc_name_attr;
     Attribute m_alloc_current_size_attr;
     Attribute m_alloc_actual_size_attr;
@@ -146,7 +146,7 @@ class UmpireService
         : m_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
           m_per_allocator_stats(true)
         {
-            auto config = channel->config().init("umpire", s_configdata);
+            auto config = services::init_config_from_spec(channel->config(), s_spec);
 
             m_per_allocator_stats =
                 config.get("per_allocator_statistics").to_bool();
@@ -155,6 +155,8 @@ class UmpireService
         }
 
 public:
+
+    static const char* s_spec;
 
     static void umpire_register(Caliper* c, Channel* channel) {
         UmpireService* instance = new UmpireService(c, channel);
@@ -174,19 +176,24 @@ public:
     }
 };
 
-const ConfigSet::Entry UmpireService::s_configdata[] = {
-    { "per_allocator_statistics", CALI_TYPE_BOOL, "true",
-      "Include statistics for each Umpire allocator",
-      "Include statistics for each Umpire allocator"
-    },
-    ConfigSet::Terminator
-};
+const char UmpireService::s_spec = R"json(
+{   "name": "umpire",
+    "description": "Record Umpire memory manager statistics",
+    "config": [
+        {   "name": "per_allocator_statistics",
+            "description": Include statistics for each Umpire allocator",
+            "type": "bool",
+            "value": "true"
+        }
+    ]
+}
+)json";
 
 } // namespace [anonymous]
 
 namespace cali
 {
 
-CaliperService umpire_service = { "umpire", ::UmpireService::umpire_register };
+CaliperService umpire_service = { ::UmpireService::s_spec, ::UmpireService::umpire_register };
 
 }
