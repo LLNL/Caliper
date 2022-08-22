@@ -121,7 +121,7 @@ const char* controller_spec = R"json(
      "name"        : "rocm-activity-profile",
      "description" : "Record AMD ROCm activities and a write profile",
      "categories"  : [ "adiak", "metric", "output", "region", "event" ],
-     "services"    : [ "aggregate", "roctracer", "event", "timestamp" ],
+     "services"    : [ "aggregate", "roctracer", "event", "timer" ],
      "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"        : "false",
          "CALI_EVENT_ENABLE_SNAPSHOT_INFO"   : "false",
