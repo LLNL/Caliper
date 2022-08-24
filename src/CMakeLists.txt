@@ -8,6 +8,8 @@ else()
 endif()
 set(CMAKE_C_STANDARD   99)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+
 include(CheckCXXCompilerFlag)
 set(Wall_flag)
 check_cxx_compiler_flag("-Wall" Supports_Wall_Flag)
