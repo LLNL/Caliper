@@ -28,9 +28,6 @@ endmacro()
 # Used when service subdirectories needs additional includes etc.
 
 macro(add_service_objlib)
-  if(${BUILD_SHARED_LIBS})
-    set_property(TARGET "${ARGN}" PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-  endif()
   target_compile_options("${ARGN}" PRIVATE ${Wall_flag})
   list(APPEND CALIPER_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)
@@ -148,9 +145,5 @@ add_library(caliper-services OBJECT ${CALIPER_SERVICES_SOURCES})
 target_compile_options(caliper-services PRIVATE ${Wall_flag})
 
 add_dependencies(caliper-services gen-services)
-
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-services PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
 
 set(CALIPER_SERVICES_LIBS ${CALIPER_SERVICES_LIBS} PARENT_SCOPE)

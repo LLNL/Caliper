@@ -22,10 +22,6 @@ add_library(caliper-runtime OBJECT ${CALIPER_RUNTIME_SOURCES})
 
 target_compile_options(caliper-runtime PRIVATE ${Wall_flag})
 
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-runtime PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
-
 list(APPEND CALIPER_SERIAL_OBJS
   caliper/machine_serial.cpp
   caliper/setup_serial.cpp)

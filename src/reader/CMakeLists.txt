@@ -27,10 +27,6 @@ add_library(caliper-reader OBJECT
 
 target_compile_options(caliper-reader PRIVATE ${Wall_flag})
 
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-reader PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
-
 if (BUILD_TESTING)
   add_subdirectory(test)
 endif()

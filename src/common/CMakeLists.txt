@@ -22,10 +22,6 @@ add_library(caliper-common OBJECT
 
 target_compile_options(caliper-common PRIVATE ${Wall_flag})
 
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-common PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
-
 if (BUILD_TESTING)
   add_subdirectory(test)
 endif()

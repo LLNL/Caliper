@@ -14,7 +14,3 @@ if (WITH_FORTRAN)
 endif()
 
 add_library(caliper-interface OBJECT ${CALIPER_INTERFACE_SOURCES})
-
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-interface PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()

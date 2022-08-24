@@ -29,9 +29,6 @@ macro(add_mpi_service_sources)
 endmacro()
 
 macro(add_mpi_service_objlib)
-  if(${BUILD_SHARED_LIBS})
-    set_property(TARGET "${ARGN}" PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-  endif()
   list(APPEND CALIPER_MPI_SERVICES_LIBS "$<TARGET_OBJECTS:${ARGN}>")
   set(CALIPER_MPI_SERVICES_LIBS ${CALIPER_MPI_SERVICES_LIBS} PARENT_SCOPE)
 endmacro()
@@ -49,10 +46,6 @@ if (CALIPER_HAVE_MPIT)
 endif()
 
 add_library(caliper-mpi OBJECT ${CALIPER_MPI_SOURCES})
-
-if (${BUILD_SHARED_LIBS})
-  set_property(TARGET caliper-mpi PROPERTY POSITION_INDEPENDENT_CODE TRUE)
-endif()
 
 # Spot controller needs adiak
 if (${CALIPER_HAVE_ADIAK})
