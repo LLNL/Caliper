@@ -2,18 +2,34 @@
 
 # Convert a .cali trace to Google TraceEvent JSON
 
-import caliperreader
-
 import json
 import sys
 
+import caliperreader
+
 
 def _get_first_from_list(rec, attribute_list, fallback=0):
-    for a in attribute_list:
-        if a in rec:
-            return rec[a]
+    for attr in attribute_list:
+        if attr in rec:
+            return rec[attr]
     return fallback
 
+def _get_timestamp(rec):
+    """Get timestamp from rec and convert to milliseconds
+    """
+
+    TS_ATTRIBUTES = {
+        "cupti.timestamp"      : 1e3,
+        "cupti.activity.start" : 1e3,
+        "cupti.activity.end"   : 1e3,
+        "time.offset"          : 1.0
+    }
+
+    for attr,factor in TS_ATTRIBUTES.items():
+        if attr in rec:
+            return float(rec[attr]) * factor
+
+    return None
 
 class CaliTraceEventConverter:
     PID_ATTRIBUTES = [
@@ -50,30 +66,37 @@ class CaliTraceEventConverter:
         pid  = int(_get_first_from_list(rec, self.PID_ATTRIBUTES))
         tid  = int(_get_first_from_list(rec, self.TID_ATTRIBUTES))
 
-        ts   = float(_get_first_from_list(rec, self.TS_ATTRIBUTES, None))
-        ts  *= 1e-3
-
-        if ts is None:
-            self.skipped += 1
-            return
-
-        trec = dict(pid=pid,tid=tid,ts=ts)
+        trec = {}
         keys = list(rec.keys())
 
-        for k in keys:
-            if k.startswith("event.begin#"):
-                attr = k[len("event.begin#"):]
-                trec.update(ph="B", name=rec[k], cat=attr)
+        for key in keys:
+            if key.startswith("event.end#"):
+                self._process_event_end(rec, key, trec)
                 break
-            elif k.startswith("event.end#"):
-                attr = k[len("event.end#"):]
-                trec.update(ph="E", name=rec[k], cat=attr)
-                break
-        
+
+        trec.update(pid=pid,tid=tid)
+
         if "name" in trec:
             self.records.append(trec)
         else:
             self.skipped += 1
+
+    def _process_event_end(self, rec, key, trec):
+        attr = key[len("event.end#"):]
+
+        if not self.reader.attribute(attr).is_nested():
+            return
+
+        tst = _get_timestamp(rec)
+        dur = rec.get("time.inclusive.duration", None)
+
+        if tst is None or dur is None:
+            return
+
+        dur = float(dur)*1e6
+        tst = tst-dur
+
+        trec.update(ph="X", name=rec[key], cat=attr, ts=tst, dur=dur)
 
 
 def main():
@@ -86,7 +109,7 @@ def main():
 
     if len(args) > 1 and args[-1].endswith(".json"):
         output = open(args.pop(), "w")
-    
+
     converter = CaliTraceEventConverter()
 
     for f in args:
@@ -98,10 +121,10 @@ def main():
     if output is not sys.stdout:
         output.close()
 
-    w = converter.written
-    s = converter.skipped
+    wrt = converter.written
+    skp = converter.skipped
 
-    print("{} records written, {} skipped.".format(w, s), file=sys.stderr)
+    print("{} records written, {} skipped.".format(wrt, skp), file=sys.stderr)
 
 
 if __name__ == "__main__":
