@@ -35,6 +35,52 @@ def _get_timestamp(rec):
     return None
 
 
+class StackFrames:
+    """ Helper class to build the stackframe dictionary reasonably efficiently
+    """
+    class Node:
+        def __init__(self, tree, name, category, parent=None):
+            self.parent = parent
+            self.name = name
+            self.category = category
+            self.children = {}
+            self.id = len(tree.nodes)
+            tree.nodes.append(self)
+
+    def __init__(self):
+        self.nodes = []
+        self.roots = {}
+
+    def get_stackframe_id(self, path, category):
+        if not isinstance(path, list):
+            path = [ path ]
+
+        name = path[0]
+        key = (category, name)
+        if key not in self.roots:
+            self.roots[key] = StackFrames.Node(self, name, category)
+
+        node = self.roots[key]
+        for name in path[1:]:
+            key = (category, name)
+            if key not in node.children:
+                node.children[key] = StackFrames.Node(self, name, category, node)
+            node = node.children[key]
+
+        return node.id
+
+    def get_stackframes(self):
+        result = {}
+
+        for node in self.nodes:
+            d = dict(name=node.name,category=node.category)
+            if node.parent is not None:
+                d["parent"] = node.parent.id
+            result[node.id] = d
+
+        return result
+
+
 class CaliTraceEventConverter:
     PID_ATTRIBUTES = [
         'mpi.rank',
@@ -45,10 +91,13 @@ class CaliTraceEventConverter:
         'pthread.id',
     ]
 
-    def __init__(self):
+    def __init__(self, use_stack=False):
         self.records = []
         self.reader  = caliperreader.CaliperStreamReader()
         self.rstack  = {}
+
+        self.stackframes = StackFrames()
+        self.samples = []
 
         self.skipped = 0
         self.written = 0
@@ -72,8 +121,15 @@ class CaliTraceEventConverter:
         for rec in trace:
             self._process_record(rec[1])
 
-    def write(self, output):
-        json.dump(self.records, output)
+    def write(self, output, pretty_print=False):
+        result = dict(traceEvents=self.records, otherData=self.reader.globals)
+
+        if len(self.stackframes.nodes) > 0:
+            result["stackFrames"] = self.stackframes.get_stackframes()
+        if len(self.samples) > 0:
+            result["samples"] = self.samples
+
+        json.dump(result, output, indent=1 if pretty_print else None)
         self.written += len(self.records)
 
     def _process_record(self, rec):
@@ -86,6 +142,9 @@ class CaliTraceEventConverter:
             self._process_cupti_activity_rec(rec, trec)
         elif "rocm.activity" in rec:
             self._process_roctracer_activity_rec(rec, trec)
+        elif "source.function#cali.sampler.pc" in rec:
+            self._process_sample_rec(rec, trec)
+            return
         else:
             keys = list(rec.keys())
             for key in keys:
@@ -115,11 +174,9 @@ class CaliTraceEventConverter:
     def _process_event_end_rec(self, rec, loc, key, trec):
         attr = key[len("event.end#"):]
         btst = self.rstack[(loc,attr)].pop()
-
-        # if not self.reader.attribute(attr).is_nested():
-        #     return
-
         tst  = _get_timestamp(rec)
+
+        self._get_stackframe(rec, trec)
 
         trec.update(ph="X", name=rec[key], cat=attr, ts=btst, dur=(tst-btst))
 
@@ -139,10 +196,27 @@ class CaliTraceEventConverter:
 
         trec.update(ph="X", name=name, cat=cat, ts=tst, dur=dur, tid="rocm")
 
+    def _process_sample_rec(self, rec, trec):
+        trec.update(name="sampler", weight=1, ts=_get_timestamp(rec))
+
+        if "cpuinfo.cpu" in rec:
+            trec.update(cpu=rec["cpuinfo.cpu"])
+
+        self._get_stackframe(rec, trec)
+        self.samples.append(trec)
+
+    def _get_stackframe(self, rec, trec):
+        key = "source.function#callpath.address"
+        if key in rec:
+            sf = self.stackframes.get_stackframe_id(rec[key], "callstack")
+            trec.update(sf=sf)
+
+
 helpstr = """Usage: cali2traceevent.py 1.cali 2.cali ... [output.json]
 Options:
---sort      Sort the trace before processing.
-            Enable this when encountering stack errors.
+--pretty        Pretty-print output
+--sort          Sort the trace before processing.
+                Enable this when encountering stack errors.
 """
 
 def main():
@@ -153,6 +227,7 @@ def main():
 
     output = sys.stdout
     sort_the_trace = False
+    pretty_print = False
 
     while args[0].startswith("-"):
         arg = args.pop(0)
@@ -160,6 +235,8 @@ def main():
             break
         if arg == "--sort":
             sort_the_trace = True
+        if arg == "--pretty":
+            pretty_print = True
         elif arg == "--help":
             sys.exit(helpstr)
         else:
@@ -181,7 +258,7 @@ def main():
 
     read_end = time.perf_counter()
 
-    converter.write(output)
+    converter.write(output, pretty_print)
 
     write_end = time.perf_counter()
 
