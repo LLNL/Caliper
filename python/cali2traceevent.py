@@ -16,8 +16,7 @@ def _get_first_from_list(rec, attribute_list, fallback=0):
     return fallback
 
 def _get_timestamp(rec):
-    """Get timestamp from rec and convert to microseconds
-    """
+    """Get timestamp from rec and convert to microseconds"""
 
     timestamp_attributes = {
         "cupti.timestamp"      : 1e-3,
@@ -34,6 +33,10 @@ def _get_timestamp(rec):
     return None
 
 def _parse_counter_spec(spec):
+    """Parse spec strings in the form
+        "group=counter1,counter2,..."
+    and return a string->map of strings dict
+    """
     res = {}
 
     if spec is None:
@@ -49,8 +52,7 @@ def _parse_counter_spec(spec):
 
 
 class StackFrames:
-    """ Helper class to build the stackframe dictionary reasonably efficiently
-    """
+    """Helper class to build the stackframe dictionary reasonably efficiently"""
     class Node:
         def __init__(self, tree, name, category, parent=None):
             self.parent = parent
@@ -104,7 +106,9 @@ class CaliTraceEventConverter:
         'pthread.id',
     ]
 
-    def __init__(self, counters=None):
+    def __init__(self, cfg):
+        self.cfg     = cfg
+
         self.records = []
         self.reader  = caliperreader.CaliperStreamReader()
         self.rstack  = {}
@@ -112,7 +116,7 @@ class CaliTraceEventConverter:
         self.stackframes = StackFrames()
         self.samples = []
 
-        self.counters = counters
+        self.counters = self.cfg["counters"]
 
         self.skipped = 0
         self.written = 0
@@ -136,7 +140,7 @@ class CaliTraceEventConverter:
         for rec in trace:
             self._process_record(rec[1])
 
-    def write(self, output, pretty_print=False):
+    def write(self, output):
         result = dict(traceEvents=self.records, otherData=self.reader.globals)
 
         if len(self.stackframes.nodes) > 0:
@@ -144,8 +148,9 @@ class CaliTraceEventConverter:
         if len(self.samples) > 0:
             result["samples"] = self.samples
 
-        json.dump(result, output, indent=1 if pretty_print else None)
-        self.written += len(self.records)
+        indent = 1 if self.cfg["pretty_print"] else None
+        json.dump(result, output, indent=indent)
+        self.written += len(self.records) + len(self.samples)
 
     def _process_record(self, rec):
         pid  = int(_get_first_from_list(rec, self.PID_ATTRIBUTES))
@@ -171,11 +176,11 @@ class CaliTraceEventConverter:
                 if key.startswith("event.end#"):
                     self._process_event_end_rec(rec, (pid, tid), key, trec)
                     break
+            else:
+                self.skipped += 1
 
         if "name" in trec:
             self.records.append(trec)
-        else:
-            self.skipped += 1
 
     def _process_event_begin_rec(self, rec, loc, key):
         attr = key[len("event.begin#"):]
@@ -287,7 +292,7 @@ def main():
 
     cfg = _parse_args(args)
     output = cfg["output"]
-    converter = CaliTraceEventConverter(cfg["counters"])
+    converter = CaliTraceEventConverter(cfg)
 
     read_begin = time.perf_counter()
 
@@ -299,7 +304,7 @@ def main():
                 converter.read(input)
 
     read_end = time.perf_counter()
-    converter.write(output, cfg["pretty_print"])
+    converter.write(output)
     write_end = time.perf_counter()
 
     if output is not sys.stdout:
