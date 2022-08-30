@@ -19,6 +19,7 @@ const char* event_trace_spec =
     "     \"CALI_TIMER_SNAPSHOT_DURATION\" : \"true\","
     "     \"CALI_TIMER_UNIT\"              : \"sec\""
     "   },"
+    " \"defaults\"    : { \"event.timestamps\": \"true\" },"
     " \"options\": "
     " ["
     "  { \"name\"        : \"trace.io\","
