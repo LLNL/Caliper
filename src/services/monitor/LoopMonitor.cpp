@@ -181,7 +181,7 @@ const char* LoopMonitor::s_spec = R"json(
         {   "name"        : "time_interval",
             "description" : "Trigger snapshots every t seconds",
             "type"        : "double",
-            "value"       : "0"
+            "value"       : "0.5"
         },
         {   "name"        : "target_loops",
             "description" : "List of loops to instrument",
