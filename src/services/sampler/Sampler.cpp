@@ -26,6 +26,11 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+#ifdef CALIPER_HAVE_LIBUNWIND
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+#endif
+
 #include "context.h"
 
 using namespace cali;
@@ -36,6 +41,7 @@ namespace
 
 Attribute   timer_attr   { Attribute::invalid };
 Attribute   sampler_attr { Attribute::invalid };
+Attribute   ucursor_attr { Attribute::invalid };
 
 int         nsec_interval       = 0;
 
@@ -48,7 +54,7 @@ const char* spec = R"json(
 {   "name": "sampler",
     "description": "Trigger snapshots via sampling timer",
     "config": [
-        { "name": "frequency", 
+        { "name": "frequency",
           "description": "Sampling frequency in Hz",
           "type": "int",
           "value": "50"
@@ -66,17 +72,34 @@ void on_prof(int sig, siginfo_t *info, void *context)
     if (!c)
         return;
 
+    Entry data[2];
+    unsigned count = 0;
+
 #ifdef CALI_SAMPLER_GET_PC
     uint64_t  pc = static_cast<uint64_t>( CALI_SAMPLER_GET_PC(context) );
     Variant v_pc(CALI_TYPE_ADDR, &pc, sizeof(uint64_t));
-    Entry data(sampler_attr, v_pc);
-    SnapshotView trigger_info(1, &data);
-#else
-    SnapshotView trigger_info;
+    data[count++] = Entry(sampler_attr, v_pc);
 #endif
 
-    c.push_snapshot(channel, trigger_info);
+#ifdef CALIPER_HAVE_LIBUNWIND
+    unw_context_t unw_ctx;
+    unw_cursor_t  unw_cursor;
 
+#ifdef __aarch64__
+    unw_getcontext(unw_ctx);
+#else
+    unw_getcontext(&unw_ctx);
+#endif
+
+    if (unw_init_local(&unw_cursor, &unw_ctx) >= 0) {
+        unw_step(&unw_cursor); // get us out of the sample handler frame
+
+        Variant v_cursor(cali_make_variant_from_ptr(&unw_cursor));
+        data[count++] = Entry(ucursor_attr, v_cursor);
+    }
+#endif
+
+    c.push_snapshot(channel, SnapshotView(count, data));
     ++n_processed_samples;
 }
 
@@ -214,6 +237,12 @@ void sampler_register(Caliper* c, Channel* chn)
                             CALI_ATTR_SKIP_EVENTS  |
                             CALI_ATTR_ASVALUE,
                             1, &symbol_class_attr, &v_true);
+    ucursor_attr =
+        c->create_attribute("cali.unw_cursor", CALI_TYPE_PTR,
+                            CALI_ATTR_SCOPE_THREAD |
+                            CALI_ATTR_SKIP_EVENTS  |
+                            CALI_ATTR_ASVALUE      |
+                            CALI_ATTR_HIDDEN);
 
     int frequency = config.get("frequency").to_int();
 

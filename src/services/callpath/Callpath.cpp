@@ -38,8 +38,9 @@ namespace
 
 class Callpath
 {
-    Attribute callpath_name_attr { Attribute::invalid};
+    Attribute callpath_name_attr { Attribute::invalid };
     Attribute callpath_addr_attr { Attribute::invalid };
+    Attribute ucursor_attr       { Attribute::invalid };
 
     bool      use_name { false };
     bool      use_addr { false };
@@ -52,25 +53,33 @@ class Callpath
     uintptr_t caliper_start_addr { 0 };
     uintptr_t caliper_end_addr   { 0 };
 
-    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotBuilder& snapshot) {
+    void snapshot_cb(Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot) {
         Variant v_addr[MAX_PATH];
         Variant v_name[MAX_PATH];
 
         char    strbuf[MAX_PATH][NAMELEN];
 
         // Init unwind context
-        unw_context_t unw_ctx;
         unw_cursor_t  unw_cursor;
 
-#ifdef __aarch64__
-        unw_getcontext(unw_ctx);
-#else
-        unw_getcontext(&unw_ctx);
-#endif
+        Entry e;
+        if (ucursor_attr != Attribute::invalid)
+            e = info.get(ucursor_attr);
+        if (!e.empty()) {
+            unw_cursor = *static_cast<unw_cursor_t*>(e.value().get_ptr());
+        } else {
+            unw_context_t unw_ctx;
 
-        if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
-            Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
-            return;
+            #ifdef __aarch64__
+            unw_getcontext(unw_ctx);
+            #else
+            unw_getcontext(&unw_ctx);
+            #endif
+
+            if (unw_init_local(&unw_cursor, &unw_ctx) < 0) {
+                Log(0).stream() << "callpath: unable to init libunwind cursor" << endl;
+                return;
+            }
         }
 
         // skip n frames
@@ -173,6 +182,10 @@ class Callpath
 #endif
     }
 
+    void post_init_evt(Caliper* c, Channel*) {
+        ucursor_attr = c->get_attribute("cali.unw_cursor");
+    }
+
     Callpath(Caliper* c, Channel* chn)
         : callpath_root_node(CALI_INV_ID, CALI_INV_ID, Variant())
         {
@@ -213,9 +226,13 @@ public:
     static void callpath_service_register(Caliper* c, Channel* chn) {
         Callpath* instance = new Callpath(c, chn);
 
+        chn->events().post_init_evt.connect(
+            [instance](Caliper* c, Channel* chn){
+                instance->post_init_evt(c, chn);
+            });
         chn->events().snapshot.connect(
-            [instance](Caliper* c, Channel* chn, int scope, SnapshotView, SnapshotBuilder& snapshot){
-                instance->snapshot_cb(c, chn, scope, snapshot);
+            [instance](Caliper* c, Channel* chn, int scope, SnapshotView info, SnapshotBuilder& snapshot){
+                instance->snapshot_cb(c, chn, scope, info, snapshot);
             });
         chn->events().finish_evt.connect(
             [instance](Caliper* c, Channel* chn){
