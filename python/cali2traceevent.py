@@ -15,7 +15,6 @@ def _get_first_from_list(rec, attribute_list, fallback=0):
             return rec[attr]
     return fallback
 
-
 def _get_timestamp(rec):
     """Get timestamp from rec and convert to microseconds
     """
@@ -33,6 +32,20 @@ def _get_timestamp(rec):
             return float(rec[attr]) * factor
 
     return None
+
+def _parse_counter_spec(spec):
+    res = {}
+
+    if spec is None:
+        return res
+
+    pos = spec.find('=')
+    grp = spec[:pos]   if pos > 0 else "counter"
+    ctr = spec[pos+1:] if pos > 0 else spec
+
+    res[grp] = ctr.split(",")
+
+    return res
 
 
 class StackFrames:
@@ -91,13 +104,15 @@ class CaliTraceEventConverter:
         'pthread.id',
     ]
 
-    def __init__(self, use_stack=False):
+    def __init__(self, counters=None):
         self.records = []
         self.reader  = caliperreader.CaliperStreamReader()
         self.rstack  = {}
 
         self.stackframes = StackFrames()
         self.samples = []
+
+        self.counters = counters
 
         self.skipped = 0
         self.written = 0
@@ -137,6 +152,8 @@ class CaliTraceEventConverter:
         tid  = int(_get_first_from_list(rec, self.TID_ATTRIBUTES))
 
         trec = dict(pid=pid,tid=tid)
+
+        self._process_counters(rec, (pid, tid))
 
         if "cupti.activity.kind" in rec:
             self._process_cupti_activity_rec(rec, trec)
@@ -205,6 +222,17 @@ class CaliTraceEventConverter:
         self._get_stackframe(rec, trec)
         self.samples.append(trec)
 
+    def _process_counters(self, rec, loc):
+        for grp, counters in self.counters.items():
+            args = {}
+            for counter in counters:
+                if counter in rec:
+                    args[counter] = float(rec[counter])
+            if len(args) > 0:
+                ts = _get_timestamp(rec)
+                trec = dict(ph="C", name=grp, pid=loc[0], tid=loc[1], ts=ts, args=args)
+                self.records.append(trec)
+
     def _get_stackframe(self, rec, trec):
         key = "source.function#callpath.address"
         if key in rec:
@@ -214,10 +242,42 @@ class CaliTraceEventConverter:
 
 helpstr = """Usage: cali2traceevent.py 1.cali 2.cali ... [output.json]
 Options:
+--counters      Specify attributes for "counter" records in the form
+                    group=attribute1,attribute2,...
 --pretty        Pretty-print output
 --sort          Sort the trace before processing.
                 Enable this when encountering stack errors.
 """
+
+def _parse_args(args):
+    cfg = {
+        "output": sys.stdout,
+        "sort_the_trace": False,
+        "pretty_print": False,
+        "counters": {}
+    }
+
+    while args[0].startswith("-"):
+        arg = args.pop(0)
+        if arg == "--":
+            break
+        if arg == "--sort":
+            cfg["sort_the_trace"] = True
+        elif arg == "--pretty":
+            cfg["pretty_print"] = True
+        elif arg == "--counters":
+            cfg["counters"].update(_parse_counter_spec(args.pop(0)))
+        elif arg.startswith("--counters="):
+            cfg["counters"].update(_parse_counter_spec(arg[len("--counters="):]))
+        elif arg == "--help" or arg == "-h":
+            sys.exit(helpstr)
+        else:
+            sys.exit(f'Unknown argument "{arg}"')
+
+    if len(args) > 1 and args[-1].endswith(".json"):
+        cfg["output"] = open(args.pop(), "w")
+
+    return cfg
 
 def main():
     args = sys.argv[1:]
@@ -225,41 +285,21 @@ def main():
     if len(args) < 1:
         sys.exit(helpstr)
 
-    output = sys.stdout
-    sort_the_trace = False
-    pretty_print = False
-
-    while args[0].startswith("-"):
-        arg = args.pop(0)
-        if arg == "--":
-            break
-        if arg == "--sort":
-            sort_the_trace = True
-        if arg == "--pretty":
-            pretty_print = True
-        elif arg == "--help":
-            sys.exit(helpstr)
-        else:
-            sys.exit(f'Unknown argument "{arg}"')
-
-    if len(args) > 1 and args[-1].endswith(".json"):
-        output = open(args.pop(), "w")
-
-    converter = CaliTraceEventConverter()
+    cfg = _parse_args(args)
+    output = cfg["output"]
+    converter = CaliTraceEventConverter(cfg["counters"])
 
     read_begin = time.perf_counter()
 
     for file in args:
         with open(file) as input:
-            if sort_the_trace:
+            if cfg["sort_the_trace"]:
                 converter.read_and_sort(input)
             else:
                 converter.read(input)
 
     read_end = time.perf_counter()
-
-    converter.write(output, pretty_print)
-
+    converter.write(output, cfg["pretty_print"])
     write_end = time.perf_counter()
 
     if output is not sys.stdout:
