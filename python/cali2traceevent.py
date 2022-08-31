@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2022, Lawrence Livermore National Security, LLC.
+# See top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Convert a .cali trace to Google TraceEvent JSON
 
 import json
