@@ -97,11 +97,11 @@ class StackFrames:
 
 
 class CaliTraceEventConverter:
-    PID_ATTRIBUTES = [
+    BUILTIN_PID_ATTRIBUTES = [
         'mpi.rank',
     ]
 
-    TID_ATTRIBUTES = [
+    BUILTIN_TID_ATTRIBUTES = [
         'omp.thread.id',
         'pthread.id',
     ]
@@ -117,6 +117,9 @@ class CaliTraceEventConverter:
         self.samples = []
 
         self.counters = self.cfg["counters"]
+
+        self.pid_attributes = self.cfg["pid_attributes"] + self.BUILTIN_PID_ATTRIBUTES
+        self.tid_attributes = self.cfg["tid_attributes"] + self.BUILTIN_TID_ATTRIBUTES
 
         self.skipped = 0
         self.written = 0
@@ -153,8 +156,8 @@ class CaliTraceEventConverter:
         self.written += len(self.records) + len(self.samples)
 
     def _process_record(self, rec):
-        pid  = int(_get_first_from_list(rec, self.PID_ATTRIBUTES))
-        tid  = int(_get_first_from_list(rec, self.TID_ATTRIBUTES))
+        pid  = int(_get_first_from_list(rec, self.pid_attributes))
+        tid  = int(_get_first_from_list(rec, self.tid_attributes))
 
         trec = dict(pid=pid,tid=tid)
 
@@ -247,11 +250,13 @@ class CaliTraceEventConverter:
 
 helpstr = """Usage: cali2traceevent.py 1.cali 2.cali ... [output.json]
 Options:
---counters      Specify attributes for "counter" records in the form
-                    group=attribute1,attribute2,...
---pretty        Pretty-print output
---sort          Sort the trace before processing.
-                Enable this when encountering stack errors.
+--counters          Specify attributes for "counter" records in the form
+                      group=attribute1,attribute2,...
+--pretty            Pretty-print output
+--sort              Sort the trace before processing.
+                      Enable this when encountering stack errors.
+--pid-attributes    List of process ID attributes
+--tid-attributes    List of thread ID attributes
 """
 
 def _parse_args(args):
@@ -259,7 +264,9 @@ def _parse_args(args):
         "output": sys.stdout,
         "sort_the_trace": False,
         "pretty_print": False,
-        "counters": {}
+        "counters": {},
+        "tid_attributes": [],
+        "pid_attributes": [],
     }
 
     while args[0].startswith("-"):
@@ -274,6 +281,14 @@ def _parse_args(args):
             cfg["counters"].update(_parse_counter_spec(args.pop(0)))
         elif arg.startswith("--counters="):
             cfg["counters"].update(_parse_counter_spec(arg[len("--counters="):]))
+        elif arg == "--pid-attributes":
+            cfg["pid_attributes"] = args.pop(0).split(",")
+        elif arg.startswith("--pid-attributes="):
+            cfg["pid_attributes"] = arg[len("--pid-attributes="):].split(",")
+        elif arg == "--tid-attributes":
+            cfg["tid_attributes"] = args.pop(0).split(",")
+        elif arg.startswith("--tid-attributes="):
+            cfg["tid_attributes"] = arg[len("--tid-attributes="):].split(",")
         elif arg == "--help" or arg == "-h":
             sys.exit(helpstr)
         else:
