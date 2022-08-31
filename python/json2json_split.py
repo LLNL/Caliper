@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2022, Lawrence Livermore National Security, LLC.
+# See top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 # Convert the "simple" Caliper json format to Caliper json-split json format
 
 import json
@@ -53,7 +58,7 @@ def json_to_json_split(records):
         for k in rec.keys():
             if not k in coldict:
                 coldict[k] = { "is_value": not isinstance(rec[k], str) }
-    
+
     columns = list(coldict.keys())
     column_metadata = [ coldict[k] for k in columns ]
 
@@ -87,7 +92,7 @@ def main():
 
     with open(args[0]) as input:
         records = json.load(input)
-    
+
     output = open(args[1], "w") if len(args) > 1 else sys.stdout
     json.dump(json_to_json_split(records), output)
 
