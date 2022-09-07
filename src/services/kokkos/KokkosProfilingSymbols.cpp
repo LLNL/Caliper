@@ -105,3 +105,6 @@ kokkosp_begin_deep_copy(const SpaceHandle dst_handle, const char *dst_name,
 extern "C" void kokkosp_end_deep_copy() {
   kokkosp_callbacks.kokkosp_end_deep_copy_callback();
 }
+extern "C" void kokkosp_declare_metadata(const char* key, const char* value){
+    kokkosp_callbacks.kokkosp_declare_metadata(key, value);
+}

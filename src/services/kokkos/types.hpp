@@ -32,8 +32,9 @@ namespace kokkos {
         using end_deep_copy_callback = util::callback<void()>;
          
 	using begin_fence_callback = util::callback<void(const char*, const uint32_t, uint64_t*)>; 
-	using end_fence_callback = util::callback<void(uint64_t)>; 
-        struct callbacks {
+	using end_fence_callback = util::callback<void(uint64_t)>;
+    using metadata_callback = util::callback<void(const char*, const char*)>;
+    struct callbacks {
 
             init_callback kokkosp_init_callback;
             finalize_callback kokkosp_finalize_callback;
@@ -58,7 +59,9 @@ namespace kokkos {
 
             begin_fence_callback kokkosp_begin_fence_callback;
             end_fence_callback kokkosp_end_fence_callback;
-        };
+
+            metadata_callback kokkosp_declare_metadata;
+    };
 
 } // end namespace kokkos
 
