@@ -21,7 +21,7 @@ namespace
 
 void mpiflush_init(Caliper* c, Channel* channel)
 {
-    mpiwrap_get_events(channel).mpi_finalize_evt.connect(
+    mpiwrap_get_events(channel)->mpi_finalize_evt.connect(
         [](Caliper* c, Channel* channel){
             c->flush_and_write(channel, SnapshotView());
         });

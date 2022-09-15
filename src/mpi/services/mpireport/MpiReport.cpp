@@ -75,6 +75,20 @@ class MpiReport
             MPI_Comm_free(&comm);
     }
 
+    void connect_mpi_finalize(Channel* channel) {
+        MpiEvents* events = mpiwrap_get_events(channel);
+
+        if (!events) {
+            Log(1).stream() << channel->name() << ": mpireport: mpi service is missing\n";
+            return;
+        }
+
+        events->mpi_finalize_evt.connect(
+            [](Caliper* c, Channel* channel){
+                c->flush_and_write(channel, SnapshotView());
+            });
+    }
+
     MpiReport(const QuerySpec& cross_spec, const QuerySpec &local_spec, const std::string& filename)
         : m_cross_spec(cross_spec),
           m_local_spec(local_spec),
@@ -112,11 +126,12 @@ public:
                 delete instance;
             });
 
-        if (config.get("write_on_finalize").to_bool() == true)
-            mpiwrap_get_events(chn).mpi_finalize_evt.connect(
-                [](Caliper* c, Channel* chn){
-                    c->flush_and_write(chn, SnapshotView());
+        if (config.get("write_on_finalize").to_bool() == true) {
+            chn->events().post_init_evt.connect(
+                [instance](Caliper*, Channel* channel){
+                    instance->connect_mpi_finalize(channel);
                 });
+        }
 
         Log(1).stream() << chn->name() << ": Registered mpireport service" << std::endl;
     }

@@ -28,6 +28,6 @@ struct MpiEvents {
 };
 
 /// \brief Return the MpiEvents instance for the given channel.
-MpiEvents& mpiwrap_get_events(Channel* chn); // defined in mpiwrap/Wrapper.w
+MpiEvents* mpiwrap_get_events(Channel* chn); // defined in mpiwrap/Wrapper.w
 
 }
