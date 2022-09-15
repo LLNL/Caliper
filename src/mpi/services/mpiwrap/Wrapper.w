@@ -1226,9 +1226,14 @@ namespace cali
 // --- MpiEvents access
 //
 
-MpiEvents& mpiwrap_get_events(Channel* chn)
+MpiEvents* mpiwrap_get_events(Channel* channel)
 {
-    return MpiWrapperConfig::get_wrapper_config(chn)->mpi_events;
+    auto wrapper = MpiWrapperConfig::get_wrapper_config(channel);
+
+    if (!wrapper)
+        return nullptr;
+
+    return &wrapper->mpi_events;
 }
 
 //
