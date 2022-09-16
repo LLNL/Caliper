@@ -190,6 +190,29 @@ class CaliperMPITest(unittest.TestCase):
             else:
                 self.fail('%s not found in log' % target)
 
+    def test_mpi_inst_options(self):
+        target_cmd = [ './ci_test_mpi_before_cali', 'spot,profile.mpi,mpi.exclude=MPI_Barrier,output=stdout' ]
+        query_cmd  = [ '../../src/tools/cali-query/cali-query', '-e' ]
+
+        caliper_config = {
+            'PATH'                    : '/usr/bin', # for ssh/rsh
+            'CALI_LOG_VERBOSITY'      : '0',
+        }
+
+        query_output = cat.run_test_with_query(target_cmd, query_cmd, caliper_config)
+        snapshots = cat.get_snapshots_from_text(query_output)
+
+        self.assertTrue(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'mpi.function'      : 'MPI_Bcast',
+                         'spot.channel'      : 'regionprofile'
+            }))
+        self.assertFalse(cat.has_snapshot_with_attributes(
+            snapshots, { 'function'          : 'main',
+                         'mpi.function'      : 'MPI_Barrier',
+                         'spot.channel'      : 'regionprofile'
+            }))
+
     def test_collective_output_channel(self):
         target_cmd = [ './ci_test_collective_output_channel', 'mpi-report' ]
 
