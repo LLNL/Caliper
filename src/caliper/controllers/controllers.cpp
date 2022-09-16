@@ -224,6 +224,20 @@ const char* builtin_option_specs = R"json(
      "config"      : { "CALI_EVENT_EXCLUDE_REGIONS": "{}" }
     },
     {
+     "name"        : "mpi.include",
+     "type"        : "string",
+     "description" : "Only instrument these MPI functions.",
+     "category"    : "region",
+     "config"      : { "CALI_MPI_WHITELIST": "{}" }
+    },
+    {
+     "name"        : "mpi.exclude",
+     "type"        : "string",
+     "description" : "Do not instrument these MPI functions.",
+     "category"    : "region",
+     "config"      : { "CALI_MPI_BLACKLIST": "{}" }
+    },
+    {
      "name"        : "region.count",
      "description" : "Report number of begin/end region instances",
      "type"        : "bool",
