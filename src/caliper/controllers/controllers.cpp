@@ -14,18 +14,18 @@ const char* event_trace_spec = R"json(
      "description" : "Record a trace of region enter/exit events in .cali format",
      "services"    : [ "event", "recorder", "timer", "trace" ],
      "categories"  : [ "output", "event" ],
-     "config"      : 
+     "config"      :
        { "CALI_CHANNEL_FLUSH_ON_EXIT"   : "false",
          "CALI_TIMER_SNAPSHOT_DURATION" : "true",
          "CALI_TIMER_UNIT"              : "sec"
        },
      "defaults"    : { "event.timestamps": "true" },
-     "options": 
+     "options":
      [
       { "name"        : "trace.io",
         "description" : "Trace I/O events",
         "type"        : "bool",
-        "services"    : [ "io" ] 
+        "services"    : [ "io" ]
       },
       { "name"        : "trace.mpi",
         "description" : "Trace MPI events",
@@ -41,17 +41,29 @@ const char* event_trace_spec = R"json(
       { "name"        : "trace.io",
         "description" : "Trace I/O events",
         "type"        : "bool",
-        "services"    : [ "io" ] 
+        "services"    : [ "io" ]
       },
       { "name"        : "trace.openmp",
         "description" : "Trace OpenMP events",
         "type"        : "bool",
-        "services"    : [ "ompt" ] 
+        "services"    : [ "ompt" ]
       },
       { "name"        : "event.timestamps",
         "description" : "Record event timestamps",
         "type"        : "bool",
         "config"      : { "CALI_TIMER_OFFSET": "true" }
+      },
+      { "name"        : "sampling",
+        "description" : "Enable call-path sampling",
+        "type"        : "bool",
+        "services"    : [ "callpath", "pthread", "sampler", "symbollookup" ],
+        "config"      : { "CALI_SAMPLER_FREQUENCY": "200" }
+      },
+      { "name"        : "sample.frequency",
+        "description" : "Sampling frequency when sampling",
+        "type"        : "int",
+        "inherit"     : "sampling",
+        "config"      : { "CALI_SAMPLER_FREQUENCY": "{}" }
       }
      ]
     }
@@ -90,7 +102,7 @@ const char* mpireport_spec = R"json(
      "services"    : [ "aggregate", "event", "mpi", "mpireport", "timer" ],
      "description" : "Print time spent in MPI functions",
      "categories"  : [ "event" ],
-     "config"      : 
+     "config"      :
       { "CALI_CHANNEL_FLUSH_ON_EXIT"       : "false",
         "CALI_AGGREGATE_KEY"               : "mpi.function",
         "CALI_EVENT_TRIGGER"               : "mpi.function",
@@ -102,7 +114,7 @@ const char* mpireport_spec = R"json(
           "MPI_Comm_size,MPI_Comm_rank,MPI_Wtime",
         "CALI_MPIREPORT_WRITE_ON_FINALIZE" : "false",
         "CALI_MPIREPORT_CONFIG" :
-          "select 
+          "select
               mpi.function as Function,
               min(count) as \"Count (min)\",
               max(count) as \"Count (max)\",
@@ -110,11 +122,11 @@ const char* mpireport_spec = R"json(
               max(sum#time.duration) as \"Time (max)\",
               avg(sum#time.duration) as \"Time (avg)\",
               percent_total(sum#time.duration) as \"Time %\"
-            group by       
-              mpi.function 
-            format         
-              table        
-            order by       
+            group by
+              mpi.function
+            format
+              table
+            order by
               percent_total#sum#time.duration desc
           "
       }
@@ -187,7 +199,7 @@ const char* builtin_option_specs = R"json(
      "description" : "Profile HIP API functions",
      "category"    : "region",
      "services"    : [ "roctracer" ],
-     "config"      : { "CALI_ROCTRACER_TRACE_ACTIVITIES": "false" } 
+     "config"      : { "CALI_ROCTRACER_TRACE_ACTIVITIES": "false" }
     },
     {
      "name"        : "profile.kokkos",
@@ -202,7 +214,7 @@ const char* builtin_option_specs = R"json(
      "description" : "Only include measurements from the main thread in results.",
      "category"    : "region",
      "services"    : [ "pthread" ],
-     "query"  : 
+     "query"  :
      [
       { "level"    : "local",
         "where"    : "pthread.is_master=true"
@@ -242,9 +254,9 @@ const char* builtin_option_specs = R"json(
      "description" : "Report number of begin/end region instances",
      "type"        : "bool",
      "category"    : "metric",
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
+       { "level"   : "local",
          "let"     : [ "rc.count=first(sum#region.count,region.count)" ],
          "select"  : [ { "expr": "sum(rc.count)", "as": "Calls", "unit": "count" } ]
        },
@@ -262,15 +274,15 @@ const char* builtin_option_specs = R"json(
      "description" : "Report MB copied between host and device with cudaMemcpy",
      "type"        : "bool",
      "category"    : "cuptitrace.metric",
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
-         "let"     : 
-         [ 
+         "let"     :
+         [
           "cuda.memcpy.dtoh=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=DtoH",
           "cuda.memcpy.htod=scale(cupti.memcpy.bytes,1e-6) if cupti.memcpy.kind=HtoD"
          ],
-         "select"  : 
+         "select"  :
          [ { "expr": "sum(cuda.memcpy.htod)", "as": "Copy CPU->GPU", "unit": "MB" },
            { "expr": "sum(cuda.memcpy.dtoh)", "as": "Copy GPU->CPU", "unit": "MB" }
          ]
@@ -290,10 +302,10 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "cuptitrace" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
-         "select"  : 
+         "select"  :
          [ { "expr": "inclusive_scale(cupti.activity.duration,1e-9)", "as": "GPU Time (I)", "unit": "sec" },
          ]
        },
@@ -313,10 +325,10 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "roctracer" ],
      "config"      : { "CALI_ROCTRACER_TRACE_ACTIVITIES": "true", "CALI_ROCTRACER_RECORD_KERNEL_NAMES": "false" },
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
-         "select"  : 
+         "select"  :
          [ { "expr": "inclusive_scale(sum#rocm.activity.duration,1e-9)", "as": "GPU Time (I)", "unit": "sec" },
          ]
        },
@@ -336,21 +348,21 @@ const char* builtin_option_specs = R"json(
      "category"   : "metric",
      "services"   : [ "mpi" ],
      "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
-     "query"      : 
+     "query"      :
      [
-      { "level"   : "local", 
-        "let"     : [ 
+      { "level"   : "local",
+        "let"     : [
           "mpimsg.min=first(min#mpi.msg.size,mpi.msg.size)",
           "mpimsg.avg=first(avg#mpi.msg.size,mpi.msg.size)",
           "mpimsg.max=first(max#mpi.msg.size,mpi.msg.size)"
         ],
-        "select"  : [ 
+        "select"  : [
           { "expr": "min(mpimsg.min)", "as": "Msg size (min)", "unit": "Byte" },
           { "expr": "avg(mpimsg.avg)", "as": "Msg size (avg)", "unit": "Byte" },
           { "expr": "max(mpimsg.max)", "as": "Msg size (max)", "unit": "Byte" }
         ]
       },
-      { "level"   : "cross", 
+      { "level"   : "cross",
         "select"  : [
           { "expr": "min(min#mpimsg.min)", "as": "Msg size (min)", "unit": "Byte" },
           { "expr": "avg(avg#mpimsg.avg)", "as": "Msg size (avg)", "unit": "Byte" },
@@ -366,21 +378,21 @@ const char* builtin_option_specs = R"json(
      "category"   : "metric",
      "services"   : [ "mpi" ],
      "config"     : { "CALI_MPI_MSG_TRACING": "true", "CALI_MPI_BLACKLIST": "MPI_Wtime,MPI_Comm_rank,MPI_Comm_size" },
-     "query"      : 
+     "query"      :
      [
-      { "level"   : "local", 
-        "let"     : [ 
+      { "level"   : "local",
+        "let"     : [
           "mpicount.recv=first(sum#mpi.recv.count,mpi.recv.count)",
           "mpicount.send=first(sum#mpi.send.count,mpi.send.count)",
           "mpicount.coll=first(sum#mpi.coll.count,mpi.coll.count)"
         ],
-        "select"  : [ 
+        "select"  : [
           { "expr": "sum(mpicount.send)", "as": "Msgs sent", "unit": "Count" },
           { "expr": "sum(mpicount.recv)", "as": "Msgs recvd", "unit": "Count" },
           { "expr": "sum(mpicount.coll)", "as": "Collectives", "unit": "Count" }
         ]
       },
-      { "level"   : "cross", 
+      { "level"   : "cross",
         "select"  : [
           { "expr": "avg(sum#mpicount.send)", "as": "Msgs sent (avg)", "unit": "Count" },
           { "expr": "max(sum#mpicount.send)", "as": "Msgs sent (max)", "unit": "Count" },
@@ -397,16 +409,16 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "ompt", "timestamp" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
-         "let"     : 
-         [ 
+         "let"     :
+         [
           "t.omp.work=first(sum#time.duration,time.duration) if omp.work",
           "t.omp.sync=first(sum#time.duration,time.duration) if omp.sync",
           "t.omp.total=first(t.omp.work,t.omp.sync)"
          ],
-         "select"  : 
+         "select"  :
          [ { "expr": "sum(t.omp.work)", "as": "Time (work)",    "unit": "sec" },
            { "expr": "sum(t.omp.sync)", "as": "Time (barrier)", "unit": "sec" }
          ]
@@ -426,10 +438,10 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "inherit"     : [ "openmp.times" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
-         "select"  : 
+         "select"  :
          [ { "expr": "inclusive_ratio(t.omp.work,t.omp.total,100.0)", "as": "Work %",    "unit": "percent" },
            { "expr": "inclusive_ratio(t.omp.sync,t.omp.total,100.0)", "as": "Barrier %", "unit": "percent" }
          ]
@@ -449,17 +461,17 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "ompt" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
          "let"     : [ "n.omp.threads=first(omp.num.threads)" ],
          "group by": "omp.thread.id,omp.thread.type",
-         "select"  : 
+         "select"  :
          [ { "expr": "max(n.omp.threads)", "as": "#Threads" },
            { "expr": "omp.thread.id", "as": "Thread" }
          ]
        },
-       { "level"   : "cross", 
+       { "level"   : "cross",
          "group by": "omp.thread.id,omp.thread.type",
          "select"  :
          [ { "expr": "max(max#n.omp.threads)", "as": "#Threads" },
@@ -474,9 +486,9 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "io" ],
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
+       { "level"   : "local",
          "let"     : [ "ibw.bytes.written=first(sum#io.bytes.written,io.bytes.written)" ],
          "select"  : [ { "expr": "sum(ibw.bytes.written)", "as": "Bytes written", "unit": "Byte" } ]
        },
@@ -493,11 +505,11 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "io" ],
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
+       { "level"   : "local",
          "let"     : [ "ibr.bytes.read=first(sum#io.bytes.read,io.bytes.read)" ],
-         "select"  : [ { "expr": "sum(ibr.bytes.read)", "as": "Bytes read", "unit": "Byte" } ] 
+         "select"  : [ { "expr": "sum(ibr.bytes.read)", "as": "Bytes read", "unit": "Byte" } ]
        },
        { "level"   : "cross", "select":
          [ { "expr": "avg(sum#ibr.bytes.read)", "as": "Avg read",   "unit": "Byte" },
@@ -521,11 +533,11 @@ const char* builtin_option_specs = R"json(
      "services"    : [ "io" ],
      "query"  :
      [
-      { "level"    : "local", 
-        "group by" : "io.region", 
-        "let"      : 
-         [ 
-           "irb.bytes.read=first(sum#io.bytes.read,io.bytes.read)", 
+      { "level"    : "local",
+        "group by" : "io.region",
+        "let"      :
+         [
+           "irb.bytes.read=first(sum#io.bytes.read,io.bytes.read)",
            "irb.time=first(sum#time.duration,time.duration)"
          ],
         "select"   :
@@ -535,7 +547,7 @@ const char* builtin_option_specs = R"json(
          ]
       },
       { "level": "cross", "select":
-       [ 
+       [
         { "expr": "avg(ratio#irb.bytes_read/irb.time)", "as": "Avg read Mbit/s", "unit": "Mb/s" },
         { "expr": "max(ratio#irb.bytes_read/irb.time)", "as": "Max read Mbit/s", "unit": "Mb/s" }
        ]
@@ -550,11 +562,11 @@ const char* builtin_option_specs = R"json(
      "services"    : [ "io" ],
      "query"  :
      [
-      { "level"    : "local", 
-        "group by" : "io.region", 
-        "let"      : 
-         [ 
-           "iwb.bytes.written=first(sum#io.bytes.written,io.bytes.written)", 
+      { "level"    : "local",
+        "group by" : "io.region",
+        "let"      :
+         [
+           "iwb.bytes.written=first(sum#io.bytes.written,io.bytes.written)",
            "iwb.time=first(sum#time.duration,time.duration)"
          ],
         "select"   :
@@ -564,7 +576,7 @@ const char* builtin_option_specs = R"json(
          ]
       },
       { "level": "cross", "select":
-       [ 
+       [
         { "expr": "avg(ratio#iwb.bytes.written/iwb.time)", "as": "Avg write Mbit/s", "unit": "Mb/s" },
         { "expr": "max(ratio#iwb.bytes.written/iwb.time)", "as": "Max write Mbit/s", "unit": "Mb/s" }
        ]
@@ -578,21 +590,21 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "umpire" ],
      "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "false" },
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
-         "let"     : 
-           [ "umpt.size.bytes=first(max#umpire.total.size,umpire.total.size)", 
+       { "level"   : "local",
+         "let"     :
+           [ "umpt.size.bytes=first(max#umpire.total.size,umpire.total.size)",
              "umpt.count=first(max#umpire.total.count,umpire.total.count)",
              "umpt.size=scale(umpt.size.bytes,1e-6)"
            ],
-         "select"  : 
+         "select"  :
            [ { "expr": "inclusive_max(umpt.size)", "as": "Ump MB (Total)", "unit": "MB" },
              { "expr": "inclusive_max(umpt.count)", "as": "Ump allocs (Total)" }
            ]
        },
-       { "level"   : "cross", 
-         "select"  : 
+       { "level"   : "cross",
+         "select"  :
            [ { "expr": "avg(imax#umpt.size)", "as": "Ump MB (avg)", "unit": "MB" },
              { "expr": "max(imax#umpt.size)", "as": "Ump MB (max)", "unit": "MB" },
              { "expr": "avg(imax#umpt.count)", "as": "Ump allocs (avg)" },
@@ -608,17 +620,17 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "umpire" ],
      "config"      : { "CALI_UMPIRE_PER_ALLOCATOR_STATISTICS": "true" },
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
-         "let"     : 
-           [ "ump.size.bytes=first(max#umpire.alloc.current.size,umpire.alloc.current.size)", 
+       { "level"   : "local",
+         "let"     :
+           [ "ump.size.bytes=first(max#umpire.alloc.current.size,umpire.alloc.current.size)",
              "ump.hwm.bytes=first(max#umpire.alloc.highwatermark,umpire.alloc.highwatermark)",
              "ump.count=first(max#umpire.alloc.count,umpire.alloc.count)",
              "ump.size=scale(ump.size.bytes,1e-6)",
              "ump.hwm=scale(ump.hwm.bytes,1e-6)"
            ],
-         "select"  : 
+         "select"  :
            [ { "expr": "umpire.alloc.name", "as": "Allocator" },
              { "expr": "inclusive_max(ump.size)", "as": "Alloc MB", "unit": "MB" },
              { "expr": "inclusive_max(ump.hwm)", "as": "Alloc HWM", "unit": "MB" },
@@ -626,8 +638,8 @@ const char* builtin_option_specs = R"json(
            ],
          "group by": [ "umpire.alloc.name" ]
        },
-       { "level"   : "cross", 
-         "select"  : 
+       { "level"   : "cross",
+         "select"  :
            [ { "expr": "umpire.alloc.name", "as": "Allocator" },
              { "expr": "avg(imax#ump.size)", "as": "Alloc MB (avg)", "unit": "MB" },
              { "expr": "max(imax#ump.size)", "as": "Alloc MB (max)", "unit": "MB" },
@@ -647,17 +659,17 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "alloc", "sysalloc" ],
      "config"      : { "CALI_ALLOC_TRACK_ALLOCATIONS": "false", "CALI_ALLOC_RECORD_HIGHWATERMARK": "true" },
-     "query"  : 
+     "query"  :
      [
-       { "level"   : "local", 
-         "let"     : 
-           [ "mem.highwatermark.bytes = first(max#alloc.region.highwatermark,alloc.region.highwatermark)", 
-             "mem.highwatermark = scale(mem.highwatermark.bytes,1e-6)" 
+       { "level"   : "local",
+         "let"     :
+           [ "mem.highwatermark.bytes = first(max#alloc.region.highwatermark,alloc.region.highwatermark)",
+             "mem.highwatermark = scale(mem.highwatermark.bytes,1e-6)"
            ],
          "select"  : [ { "expr": "max(mem.highwatermark)", "as": "Allocated MB", "unit": "MB" } ]
        },
-       { "level"   : "cross", 
-         "select"  : [ { "expr": "max(max#mem.highwatermark)", "as": "Allocated MB", "unit": "MB" } ] 
+       { "level"   : "cross",
+         "select"  : [ { "expr": "max(max#mem.highwatermark)", "as": "Allocated MB", "unit": "MB" } ]
        }
      ]
     },
@@ -667,18 +679,18 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "pcp.memory" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
          "let"     : [ "mrb.time=first(pcp.time.duration,sum#pcp.time.duration)" ],
          "select"  : [ { "expr": "ratio(mem.bytes.read,mrb.time,1e-6)", "as": "MemBW (r)", "unit": "MB/s" } ]
        },
-       { "level"   : "cross", "select": 
+       { "level"   : "cross", "select":
         [
          { "expr"  : "avg(ratio#mem.bytes.read/mrb.time)", "as": "Avg MemBW (r) (MB/s)",   "unit": "MB/s" },
          { "expr"  : "max(ratio#mem.bytes.read/mrb.time)", "as": "Max MemBW (r) (MB/s) ",  "unit": "MB/s" },
          { "expr"  : "sum(ratio#mem.bytes.read/mrb.time)", "as": "Total MemBW (r) (MB/s)", "unit": "MB/s" }
-        ] 
+        ]
        }
      ]
     },
@@ -688,18 +700,18 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "pcp.memory" ],
-     "query"  : 
+     "query"  :
      [
        { "level"   : "local",
          "let"     : [ "mwb.time=first(pcp.time.duration,sum#pcp.time.duration) " ],
          "select"  : [ { "expr": "ratio(mem.bytes.written,mwb.time,1e-6)", "as": "MB/s (w)", "unit": "MB/s" } ]
        },
-       { "level"   : "cross", "select": 
+       { "level"   : "cross", "select":
         [
          { "expr"  : "avg(ratio#mem.bytes.written/mwb.time)", "as": "Avg MemBW (w) (MB/s)",   "unit": "MB/s" },
          { "expr"  : "max(ratio#mem.bytes.written/mwb.time)", "as": "Max MemBW (w) (MB/s)",   "unit": "MB/s" },
          { "expr"  : "sum(ratio#mem.bytes.written/mwb.time)", "as": "Total MemBW (w) (MB/s)", "unit": "MB/s" },
-        ] 
+        ]
        }
      ]
     },
@@ -717,9 +729,9 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "topdown" ],
      "config"      : { "CALI_TOPDOWN_LEVEL": "top" },
-     "query"  : 
+     "query"  :
      [
-      { "level": "local", "select": 
+      { "level": "local", "select":
        [
         { "expr": "any(topdown.retiring)", "as": "Retiring" },
         { "expr": "any(topdown.backend_bound)", "as": "Backend bound" },
@@ -727,7 +739,7 @@ const char* builtin_option_specs = R"json(
         { "expr": "any(topdown.bad_speculation)", "as": "Bad speculation" }
        ]
       },
-      { "level": "cross", "select": 
+      { "level": "cross", "select":
        [
         { "expr": "any(any#topdown.retiring)", "as": "Retiring" },
         { "expr": "any(any#topdown.backend_bound)", "as": "Backend bound" },
@@ -744,9 +756,9 @@ const char* builtin_option_specs = R"json(
      "category"    : "metric",
      "services"    : [ "topdown" ],
      "config"      : { "CALI_TOPDOWN_LEVEL": "all" },
-     "query"  : 
+     "query"  :
      [
-      { "level": "local", "select": 
+      { "level": "local", "select":
        [
         { "expr": "any(topdown.retiring)", "as": "Retiring" },
         { "expr": "any(topdown.backend_bound)", "as": "Backend bound" },
@@ -764,7 +776,7 @@ const char* builtin_option_specs = R"json(
         { "expr": "any(topdown.l3_bound)", "as": "L3 bound" }
        ]
       },
-      { "level": "cross", "select": 
+      { "level": "cross", "select":
        [
         { "expr": "any(any#topdown.retiring)", "as": "Retiring" },
         { "expr": "any(any#topdown.backend_bound)", "as": "Backend bound" },
@@ -790,14 +802,14 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "papi" ],
-     "config"      : 
+     "config"      :
      {
-       "CALI_PAPI_COUNTERS": 
+       "CALI_PAPI_COUNTERS":
          "CPU_CLK_THREAD_UNHALTED:THREAD_P,UOPS_RETIRED:RETIRE_SLOTS,UOPS_ISSUED:ANY,INT_MISC:RECOVERY_CYCLES,IDQ_UOPS_NOT_DELIVERED:CORE"
      },
-     "query"  : 
+     "query"  :
      [
-      { "level": "local", "select": 
+      { "level": "local", "select":
        [
         { "expr": "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
         { "expr": "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    },
@@ -806,7 +818,7 @@ const char* builtin_option_specs = R"json(
         { "expr": "inclusive_sum(sum#papi.IDQ_UOPS_NOT_DELIVERED:CORE)", "as": "idq_uops_note_delivered:core" }
        ]
       },
-      { "level": "cross", "select": 
+      { "level": "cross", "select":
        [
         { "expr": "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
         { "expr": "sum(inclusive#sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    },
@@ -823,9 +835,9 @@ const char* builtin_option_specs = R"json(
      "type"        : "bool",
      "category"    : "metric",
      "services"    : [ "papi" ],
-     "config"      : 
+     "config"      :
      {
-       "CALI_PAPI_COUNTERS": 
+       "CALI_PAPI_COUNTERS":
          "BR_MISP_RETIRED:ALL_BRANCHES
           ,CPU_CLK_THREAD_UNHALTED:THREAD_P
           ,CYCLE_ACTIVITY:CYCLES_NO_EXECUTE
@@ -843,9 +855,9 @@ const char* builtin_option_specs = R"json(
           ,UOPS_ISSUED:ANY
           ,UOPS_RETIRED:RETIRE_SLOTS"
      },
-     "query"  : 
+     "query"  :
      [
-      { "level": "local", "select": 
+      { "level": "local", "select":
        [
         { "expr": "inclusive_sum(sum#papi.BR_MISP_RETIRED:ALL_BRANCHES)", "as": "br_misp_retired:all_branches" },
         { "expr": "inclusive_sum(sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
@@ -865,7 +877,7 @@ const char* builtin_option_specs = R"json(
         { "expr": "inclusive_sum(sum#papi.UOPS_RETIRED:RETIRE_SLOTS)",   "as": "uops_retired:retire_slots"    }
        ]
       },
-      { "level": "cross", "select": 
+      { "level": "cross", "select":
        [
         { "expr": "sum(inclusive#sum#papi.BR_MISP_RETIRED:ALL_BRANCHES)", "as": "br_misp_retired:all_branches" },
         { "expr": "sum(inclusive#sum#papi.CPU_CLK_THREAD_UNHALTED:THREAD_P)", "as": "cpu_clk_thread_unhalted:thread_p" },
