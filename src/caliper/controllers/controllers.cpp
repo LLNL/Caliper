@@ -64,6 +64,24 @@ const char* event_trace_spec = R"json(
         "type"        : "int",
         "inherit"     : "sampling",
         "config"      : { "CALI_SAMPLER_FREQUENCY": "{}" }
+      },
+      { "name"        : "papi.counters",
+        "description" : "List of PAPI counters to read",
+        "type"        : "string",
+        "services"    : [ "papi" ],
+        "config"      : { "CALI_PAPI_COUNTERS": "{}" }
+      },
+      { "name"        : "cuda.activities",
+        "description" : "Trace CUDA activities",
+        "type"        : "bool",
+        "services"    : [ "cuptitrace" ],
+        "config"      : { "CALI_CUPTITRACE_SNAPSHOT_TIMESTAMPS": "true" }
+      },
+      { "name"        : "rocm.activities",
+        "description" : "Trace ROCm activities",
+        "type"        : "bool",
+        "services"    : [ "roctracer" ],
+        "config"      : { "CALI_ROCTRACER_SNAPSHOT_TIMESTAMPS": "true" }
       }
      ]
     }
