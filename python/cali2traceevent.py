@@ -121,6 +121,8 @@ class CaliTraceEventConverter:
         self.stackframes = StackFrames()
         self.samples = []
 
+        self.tsync   = {}
+
         self.counters = self.cfg["counters"]
 
         self.pid_attributes = self.cfg["pid_attributes"] + self.BUILTIN_PID_ATTRIBUTES
@@ -160,6 +162,18 @@ class CaliTraceEventConverter:
         json.dump(result, output, indent=indent)
         self.written += len(self.records) + len(self.samples)
 
+    def sync_timestamps(self):
+        if len(self.tsync) == 0:
+            return
+
+        maxts = max(self.tsync.values())
+        adjust = { pid: maxts - ts for pid, ts in self.tsync.items() }
+
+        for rec in self.records:
+            rec["ts"] += adjust.get(rec["pid"], 0.0)
+        for rec in self.samples:
+            rec["ts"] += adjust.get(rec["pid"], 0.0)
+
     def _process_record(self, rec):
         pid  = int(_get_first_from_list(rec, self.pid_attributes))
         tid  = int(_get_first_from_list(rec, self.tid_attributes))
@@ -175,6 +189,9 @@ class CaliTraceEventConverter:
         elif "source.function#cali.sampler.pc" in rec:
             self._process_sample_rec(rec, trec)
             return
+        elif "ts.sync" in rec:
+            self._process_timesync_rec(rec, pid)
+            return
         else:
             keys = list(rec.keys())
             for key in keys:
@@ -189,6 +206,9 @@ class CaliTraceEventConverter:
 
         if "name" in trec:
             self.records.append(trec)
+
+    def _process_timesync_rec(self, rec, pid):
+        self.tsync[pid] = _get_timestamp(rec)
 
     def _process_event_begin_rec(self, rec, loc, key):
         attr = key[len("event.begin#"):]
@@ -260,6 +280,8 @@ Options:
 --pretty            Pretty-print output
 --sort              Sort the trace before processing.
                       Enable this when encountering stack errors.
+--sync              Enable time-stamp synchronization
+                      Requires timestamp sync records in the input traces
 --pid-attributes    List of process ID attributes
 --tid-attributes    List of thread ID attributes
 """
@@ -269,6 +291,7 @@ def _parse_args(args):
         "output": sys.stdout,
         "sort_the_trace": False,
         "pretty_print": False,
+        "sync_timestamps": False,
         "counters": {},
         "tid_attributes": [],
         "pid_attributes": [],
@@ -280,6 +303,8 @@ def _parse_args(args):
             break
         if arg == "--sort":
             cfg["sort_the_trace"] = True
+        elif arg == "--sync":
+            cfg["sync_timestamps"] = True
         elif arg == "--pretty":
             cfg["pretty_print"] = True
         elif arg == "--counters":
@@ -324,7 +349,12 @@ def main():
                 converter.read(input)
 
     read_end = time.perf_counter()
+
+    if cfg["sync_timestamps"]:
+        converter.sync_timestamps()
+
     converter.write(output)
+
     write_end = time.perf_counter()
 
     if output is not sys.stdout:
