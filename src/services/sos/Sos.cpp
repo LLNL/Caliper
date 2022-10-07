@@ -1,5 +1,5 @@
 // Sos.cpp
-// Caliper Sos Integration Service
+// Caliper SOS Integration Service
 
 #include "caliper/CaliperService.h"
 
@@ -21,7 +21,7 @@
 #include <sstream>
 #include <vector>
 
-#include<sos.h>
+#include <sos.h>
 
 using namespace cali;
 using namespace std;
@@ -41,6 +41,10 @@ const ConfigSet::Entry   configdata[] = {
 
 // Takes an unpacked Caliper snapshot and publishes it in SOS
 void pack_snapshot(SOS_pub* sos_pub, bool yn_publish, int snapshot_id, const std::map< Attribute, std::vector<Variant> >& unpacked_snapshot) {
+    if (sos_pub == NULL) {
+        // Do nothing, relatively efficiently.
+        return;
+    }
     for (auto &p : unpacked_snapshot) {
         switch (p.first.type()) {
         case CALI_TYPE_STRING:
@@ -72,6 +76,7 @@ void pack_snapshot(SOS_pub* sos_pub, bool yn_publish, int snapshot_id, const std
         }
     }
     if (yn_publish == true) {
+        Log(2).stream() << "Publishing data to SOS daemon" << std::endl;
         SOS_publish(sos_pub);
     }
     
@@ -86,17 +91,20 @@ class SosService
 
     SOS_runtime *sos_runtime;
     SOS_pub     *sos_publication_handle;
-
+    
     Attribute   trigger_attr;
 
     void flush_and_publish(Caliper* c) {
-        Log(2).stream() << "sos: Publishing Caliper data" << std::endl;
-
         c->flush(nullptr, [this,c](const SnapshotRecord* snapshot){
                 pack_snapshot(sos_publication_handle, false, ++snapshot_id, snapshot->unpack(*c));
                 return true;
             });
-        SOS_publish(sos_publication_handle);
+        if (sos_publication_handle != NULL) {
+            Log(2).stream() << "Publishing data to SOS daemon" << std::endl;
+            SOS_publish(sos_publication_handle);
+        } else {
+            Log(2).stream() << "Skipping publish step, SOS is not initialized" << std::endl;
+        }
         c->clear(); //Avoids re-publishing snapshots.
     }
 
@@ -113,17 +121,23 @@ class SosService
         if (trigger_attr != Attribute::invalid && attr.id() == trigger_attr.id()) 
             flush_and_publish(c);
     }
-
+    
+    
     // Initialize the SOS runtime, and create our publication handle
     void post_init(Caliper* c) {
-        sos_runtime            = NULL;
-        sos_publication_handle = NULL;
+        sos_runtime             = NULL;
+        sos_publication_handle  = NULL;
         //
         SOS_init(&sos_runtime, SOS_ROLE_CLIENT, SOS_RECEIVES_NO_FEEDBACK, NULL);
-        SOS_pub_init(sos_runtime, &sos_publication_handle, "caliper.data", SOS_NATURE_DEFAULT);
-
+        
+        if (sos_runtime == NULL) {
+            Log(0).stream() << "[WARNING] Unable to communicate with the SOS daemon." << std::endl;
+            // If there is a way to deactivate the service entirely at this point, that would be fine.
+        } else {
+            SOS_pub_init(sos_runtime, &sos_publication_handle, "caliper.data", SOS_NATURE_DEFAULT);
+        }
         // trigger_attr will be invalid if it's not found - still need to check attributes in create_attribute_cb
-        trigger_attr = c->get_attribute(config.get("trigger_attr").to_string());
+        trigger_attr = c->get_attribute(config.get("trigger_attr").to_string());        
     }
 
     // static callbacks
@@ -154,7 +168,7 @@ class SosService
             // c->events().process_snapshot.connect(&SosService::process_snapshot_cb);
             c->events().post_end_evt.connect(&SosService::post_end_cb);
 
-            Log(1).stream() << "Registered SOS service" << std::endl;
+            Log(1).stream() << "Registered sos service" << std::endl;
         }
 
 public:
@@ -173,3 +187,4 @@ namespace cali
 {
     CaliperService sos_service = { "sos", ::SosService::sos_register };
 } // namespace cali
+
