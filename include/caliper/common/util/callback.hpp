@@ -31,13 +31,13 @@ public:
     template<class... Args>
     void operator()(Args&&... a) {
         for ( auto& f : mCb )
-            f(std::forward<Args>(a)...);
+            f(a...);
     }
 
     template<class Op, class R, class... Args>
     R accumulate(Op op, R init, Args&&... a) {
         for ( auto& f : mCb )
-            init = Op(init, f(std::forward<Args>(a)...));
+            init = Op(init, f(a...));
 
         return init;
     }
