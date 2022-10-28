@@ -115,7 +115,7 @@ bool key_equal(SnapshotView lhs, SnapshotView rhs)
         return false;
 
     for (size_t i = 0; i < lhs.size(); ++i)
-        if (!(lhs[i] == rhs[i]))
+        if (lhs[i] != rhs[i])
             return false;
 
     return true;
@@ -126,15 +126,15 @@ bool key_equal(SnapshotView lhs, SnapshotView rhs)
 
 struct AggregationDB::AggregationDBImpl
 {
-    Node                        m_aggr_root_node;
+    Node                         m_aggr_root_node;
 
-    // we maintain some internal statistics
-    size_t                      m_max_hash_len;
+    size_t                       m_max_hash_len;
 
     std::vector<AggregateEntry>  m_entries;
     std::vector<AggregateKernel> m_kernels;
     std::vector<size_t>          m_hashmap;
 
+    //
     // ---
     //
 
