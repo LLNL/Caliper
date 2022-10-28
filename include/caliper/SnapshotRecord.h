@@ -29,6 +29,9 @@ public:
     SnapshotView(size_t len, const Entry* data)
         : m_data { data }, m_len { len }
     { }
+    SnapshotView(const Entry& e)
+        : m_data { &e }, m_len { 1 }
+    { }
 
     using iterator = Entry*;
     using const_iterator = const Entry*;
@@ -39,6 +42,8 @@ public:
     size_t size()  const { return m_len;      }
     const Entry* data() const { return m_data;     }
     bool   empty() const { return m_len == 0; }
+
+    const Entry& operator[](std::size_t n) const { return m_data[n]; }
 
     Entry get(const Attribute& attr) const {
         for (const Entry& e : *this) {

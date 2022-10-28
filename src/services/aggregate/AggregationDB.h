@@ -55,12 +55,12 @@ class AggregationDB
 
 public:
 
-    AggregationDB();
-    
+    AggregationDB(cali::Caliper* c, const AttributeInfo& info);
+
     ~AggregationDB();
-    
+
     void   process_snapshot(cali::Caliper*, cali::SnapshotView, const AttributeInfo&);
-    
+
     void   clear();
     size_t flush(const AttributeInfo&, cali::Caliper*, cali::SnapshotFlushFn);
 

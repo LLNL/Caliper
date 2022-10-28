@@ -65,8 +65,8 @@ class Aggregate
                 prev->next = next;
         }
 
-        ThreadDB()
-            : stopped(false), retired(false)
+        ThreadDB(Caliper* c, const AttributeInfo& info)
+            : stopped(false), retired(false), db(c, info)
             { }
     };
 
@@ -90,7 +90,7 @@ class Aggregate
             static_cast<ThreadDB*>(c->get(tdb_attr).value().get_ptr());
 
         if (!tdb && can_alloc) {
-            tdb = new ThreadDB;
+            tdb = new ThreadDB(c, info);
 
             c->set(tdb_attr, Variant(cali_make_variant_from_ptr(tdb)));
 
