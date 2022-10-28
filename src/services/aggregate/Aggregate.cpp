@@ -209,26 +209,20 @@ class Aggregate
             tdb = tdb_list;
         }
 
-        size_t num_trie_entries    = 0;
-        size_t num_kernel_entries  = 0;
-        size_t num_trie_blocks     = 0;
-        size_t num_kernel_blocks   = 0;
-        size_t bytes_reserved      = 0;
-        size_t num_skipped_keys    = 0;
-        size_t num_dropped_entries = 0;
-        size_t max_keylen          = 0;
+        size_t num_entries    = 0;
+        size_t num_kernels    = 0;
+        size_t bytes_reserved = 0;
+        size_t num_dropped    = 0;
+        size_t max_hash_len   = 0;
 
         while (tdb) {
             tdb->stopped.store(true);
 
-            num_trie_entries    += tdb->db.num_trie_entries();
-            num_kernel_entries  += tdb->db.num_kernel_entries();
-            num_trie_blocks     += tdb->db.num_trie_blocks();
-            num_kernel_blocks   += tdb->db.num_kernel_blocks();
-            bytes_reserved      += tdb->db.bytes_reserved();
-            num_skipped_keys    += tdb->db.num_skipped_keys();
-            num_dropped_entries += tdb->db.num_dropped();
-            max_keylen           = std::max(max_keylen, tdb->db.max_keylen());
+            num_entries    += tdb->db.num_entries();
+            num_kernels    += tdb->db.num_kernels();
+            bytes_reserved += tdb->db.bytes_reserved();
+            num_dropped    += tdb->db.num_dropped();
+            max_hash_len    = std::max(max_hash_len, tdb->db.max_hash_len());
 
             tdb->db.clear();
 
@@ -258,22 +252,19 @@ class Aggregate
             unitfmt_result bytes_reserved_fmt =
                 unitfmt(bytes_reserved, unitfmt_bytes);
 
-            Log(2).stream() << chn->name() << ": Aggregate: Releasing aggregation DB:\n    max key len "
-                            << max_keylen << ", "
-                            << num_kernel_entries << " entries, "
-                            << num_trie_entries << " nodes, "
-                            << num_trie_blocks + num_kernel_blocks << " blocks ("
-                            << bytes_reserved_fmt.val << " " << bytes_reserved_fmt.symbol << " reserved)"
+            Log(2).stream() << chn->name()  << ": Aggregate: Releasing aggregation DB.\n"
+                            << "  max hash len: "
+                            << max_hash_len << ", "
+                            << num_entries  << " entries, "
+                            << num_kernels  << " kernels, "
+                            << bytes_reserved_fmt.val    << " "
+                            << bytes_reserved_fmt.symbol << " reserved."
                             << std::endl;
         }
 
-        if (num_skipped_keys > 0)
-            Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_skipped_keys
-                            << " entries because key exceeded max length!"
-                            << std::endl;
-        if (num_dropped_entries > 0)
-            Log(1).stream() << chn->name() << ": Aggregate: Dropped " << num_dropped_entries
-                            << " entries because key could not be allocated!"
+        if (num_dropped > 0)
+            Log(1).stream() << chn->name() << ": Aggregate: " << num_dropped
+                            << " entries dropped because aggregation buffers are full!"
                             << std::endl;
     }
 

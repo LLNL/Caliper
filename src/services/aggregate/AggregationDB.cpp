@@ -129,11 +129,7 @@ struct AggregationDB::AggregationDBImpl
     Node                        m_aggr_root_node;
 
     // we maintain some internal statistics
-    size_t                      m_num_trie_entries;
-    size_t                      m_num_kernel_entries;
-    size_t                      m_num_dropped;
-    size_t                      m_num_skipped_keys;
-    size_t                      m_max_keylen;
+    size_t                      m_max_hash_len;
 
     std::vector<AggregateEntry>  m_entries;
     std::vector<AggregateKernel> m_kernels;
@@ -178,11 +174,13 @@ struct AggregationDB::AggregationDBImpl
 
     AggregateEntry* find_or_create_entry(SnapshotView key, std::size_t hash, std::size_t num_aggr_attrs, bool can_alloc) {
         hash = hash % m_hashmap.size();
+        size_t count = 0;
 
         for (std::size_t idx = m_hashmap[hash]; idx != 0; idx = m_entries[idx].next_entry_idx) {
             AggregateEntry* e = &m_entries[idx];
             if (key_equal(key, e->key.view()))
                 return e;
+            ++count;
         }
 
         // --- entry not found, check if we can create a new entry
@@ -201,6 +199,8 @@ struct AggregationDB::AggregationDBImpl
         size_t entry_idx = m_entries.size();
         m_entries.emplace_back(key, kernels_idx, num_aggr_attrs, m_hashmap[hash]);
         m_hashmap[hash] = entry_idx;
+
+        m_max_hash_len = std::max(m_max_hash_len, count+1);
 
         return &m_entries[entry_idx];
     }
@@ -317,16 +317,10 @@ struct AggregationDB::AggregationDBImpl
 
     AggregationDBImpl(Caliper* c, const AttributeInfo& info)
         : m_aggr_root_node(CALI_INV_ID, CALI_INV_ID, Variant()),
-          m_num_trie_entries(0),
-          m_num_kernel_entries(0),
-          m_num_dropped(0),
-          m_num_skipped_keys(0),
-          m_max_keylen(0)
+          m_max_hash_len(0)
         {
-            Log(2).stream() << "Aggregate: creating aggregation database" << std::endl;
-
             m_kernels.reserve(16384);
-            m_entries.reserve(8192);
+            m_entries.reserve(4096);
             m_hashmap.assign(8192, static_cast<std::size_t>(0));
 
             m_kernels.resize(info.aggr_attrs.size());
@@ -372,45 +366,27 @@ AggregationDB::flush(const AttributeInfo& info, Caliper* c, SnapshotFlushFn proc
 }
 
 size_t
-AggregationDB::num_trie_entries() const
-{
-    return mP->m_num_trie_entries;
-}
-
-size_t
-AggregationDB::num_kernel_entries() const
-{
-    return mP->m_num_kernel_entries;
-}
-
-size_t
 AggregationDB::num_dropped() const
 {
-    return mP->m_num_dropped;
+    return mP->m_entries[0].count;
 }
 
 size_t
-AggregationDB::num_skipped_keys() const
+AggregationDB::max_hash_len() const
 {
-    return mP->m_num_skipped_keys;
+    return mP->m_max_hash_len;
 }
 
 size_t
-AggregationDB::max_keylen() const
+AggregationDB::num_entries() const
 {
-    return mP->m_max_keylen;
+    return mP->m_entries.size();
 }
 
 size_t
-AggregationDB::num_trie_blocks() const
+AggregationDB::num_kernels() const
 {
-    return 0;
-}
-
-size_t
-AggregationDB::num_kernel_blocks() const
-{
-    return 0;
+    return mP->m_kernels.size();
 }
 
 size_t
