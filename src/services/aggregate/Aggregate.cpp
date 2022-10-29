@@ -77,6 +77,7 @@ class Aggregate
 
     AttributeInfo                  info;
     std::vector<std::string>       key_attribute_names;
+    std::vector<std::string>       aggr_attribute_names;
 
     Attribute                      tdb_attr;
 
@@ -107,75 +108,47 @@ class Aggregate
         return tdb;
     }
 
+    ResultAttributes make_result_attributes(Caliper* c, const Attribute& attr) {
+        std::string name = attr.name();
+        ResultAttributes res;
+
+        int prop = CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS;
+
+        res.min_attr = c->create_attribute(std::string("min#") + name, CALI_TYPE_DOUBLE, prop);
+        res.max_attr = c->create_attribute(std::string("max#") + name, CALI_TYPE_DOUBLE, prop);
+        res.sum_attr = c->create_attribute(std::string("sum#") + name, CALI_TYPE_DOUBLE, prop);
+        res.avg_attr = c->create_attribute(std::string("avg#") + name, CALI_TYPE_DOUBLE, prop);
+    #ifdef CALIPER_ENABLE_HISTOGRAMS
+        for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
+            res.histogram_attr[jj] =
+                c->create_attribute(std::string("histogram.bin.") + std::to_string(jj) + std::string("#") + name,
+                                    CALI_TYPE_INT, prop);
+        }
+    #endif
+
+        return res;
+    }
+
+    void check_aggregation_attribute(Caliper* c, const Attribute& attr) {
+        if (!(attr.properties() & CALI_ATTR_AGGREGATABLE))
+            return;
+
+        if (std::find(info.aggr_attrs.begin(), info.aggr_attrs.end(),
+                      attr) != info.aggr_attrs.end())
+            return;
+
+        info.aggr_attrs.push_back(attr);
+        info.result_attrs.push_back(make_result_attributes(c, attr));
+    }
+
     void init_aggregation_attributes(Caliper* c) {
-        std::vector<std::string> aggr_attr_names =
-            config.get("attributes").to_stringlist();
+        auto attrs = c->find_attributes_with_prop(CALI_ATTR_AGGREGATABLE);
 
-        if (aggr_attr_names.empty()) {
-            // find all attributes of class "class.aggregatable"
+        for (const auto &a : attrs)
+            check_aggregation_attribute(c, a);
 
-            info.aggr_attrs = c->find_attributes_with_prop(CALI_ATTR_AGGREGATABLE);
-        } else if (aggr_attr_names.front() != "none") {
-            for (const std::string& name : aggr_attr_names) {
-                Attribute attr = c->get_attribute(name);
-
-                if (attr == Attribute::invalid) {
-                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \""
-                                    << name
-                                    << "\" not found."
-                                    << std::endl;
-
-                    continue;
-                }
-
-                cali_attr_type type = attr.type();
-
-                if (!(type == CALI_TYPE_INT  ||
-                      type == CALI_TYPE_UINT ||
-                      type == CALI_TYPE_DOUBLE)) {
-                    Log(1).stream() << "Aggregate: Warning: Aggregation attribute \""
-                                    << name << "\" has invalid type \""
-                                    << cali_type2string(type) << "\""
-                                    << std::endl;
-
-                    continue;
-                }
-
-                info.aggr_attrs.push_back(attr);
-            }
-        }
-
-        // Create the derived statistics attributes
-
-        info.result_attrs.resize(info.aggr_attrs.size());
-
-        for (size_t i = 0; i < info.aggr_attrs.size(); ++i) {
-            std::string name = info.aggr_attrs[i].name();
-
-            info.result_attrs[i].min_attr =
-                c->create_attribute(std::string("min#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            info.result_attrs[i].max_attr =
-                c->create_attribute(std::string("max#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            info.result_attrs[i].sum_attr =
-                c->create_attribute(std::string("sum#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-            info.result_attrs[i].avg_attr =
-                c->create_attribute(std::string("avg#") + name,
-                                    CALI_TYPE_DOUBLE, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
-#ifdef CALIPER_ENABLE_HISTOGRAMS
-            for (int jj = 0; jj < CALI_AGG_HISTOGRAM_BINS; jj++) {
-                info.result_attrs[i].histogram_attr[jj] =
-                   c->create_attribute(std::string("histogram.bin.") + std::to_string(jj) + std::string("#") + name,
-                                       CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD);
-            }
-#endif
-        }
-
-        info.count_attr =
-            c->create_attribute("count",
-                                CALI_TYPE_INT, CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS);
+        const int prop = CALI_ATTR_ASVALUE | CALI_ATTR_SCOPE_THREAD | CALI_ATTR_SKIP_EVENTS;
+        info.count_attr = c->create_attribute("count", CALI_TYPE_INT, prop);
     }
 
     void flush_cb(Caliper* c, Channel* chn, SnapshotFlushFn proc_fn) {
@@ -317,8 +290,9 @@ class Aggregate
         acquire_tdb(c, chn, true);
     }
 
-    void create_attribute_cb(Caliper*, const Attribute& attr) {
+    void create_attribute_cb(Caliper* c, const Attribute& attr) {
         check_key_attribute(attr);
+        check_aggregation_attribute(c, attr);
     }
 
     void create_thread_cb(Caliper* c, Channel* chn) {
@@ -463,15 +437,10 @@ const char* Aggregate::s_spec = R"json(
 {   "name"        : "aggregate",
     "description" : "Aggregate snapshots at runtime",
     "config" : [
-        {   "name"        : "attributes",
-            "description" : "List of attributes to aggregate. By default, all METRIC attributes are aggregated",
-            "type"        : "string"
-        },
-        {
-            "name"        : "key",
-            "description" : "Attributes in the aggregation key (i.e., group by)",
-            "type"        : "string"
-        }
+      { "name"        : "key",
+        "description" : "Attributes in the aggregation key (i.e., group by)",
+        "type"        : "string"
+      }
     ]
 }
 )json";
